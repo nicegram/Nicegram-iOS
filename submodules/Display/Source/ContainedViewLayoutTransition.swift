@@ -12,7 +12,6 @@ extension CGRect {
 public enum ContainedViewLayoutTransitionCurve: Equatable, Hashable {
     case linear
     case easeInOut
-    case easeIn
     case spring
     case customSpring(damping: CGFloat, initialVelocity: CGFloat)
     case custom(Float, Float, Float, Float)
@@ -29,8 +28,6 @@ public extension ContainedViewLayoutTransitionCurve {
             return offset
         case .easeInOut:
             return listViewAnimationCurveEaseInOut(offset)
-        case .easeIn:
-            return listViewAnimationCurveEaseIn(offset)
         case .spring:
             return listViewAnimationCurveSystem(offset)
         case .customSpring:
@@ -48,8 +45,6 @@ public extension ContainedViewLayoutTransitionCurve {
                 return CAMediaTimingFunctionName.linear.rawValue
             case .easeInOut:
                 return CAMediaTimingFunctionName.easeInEaseOut.rawValue
-            case .easeIn:
-                return CAMediaTimingFunctionName.easeIn.rawValue
             case .spring:
                 return kCAMediaTimingFunctionSpring
             case let .customSpring(damping, initialVelocity):
@@ -64,8 +59,6 @@ public extension ContainedViewLayoutTransitionCurve {
             case .linear:
                 return nil
             case .easeInOut:
-                return nil
-            case .easeIn:
                 return nil
             case .spring:
                 return nil
@@ -82,8 +75,6 @@ public extension ContainedViewLayoutTransitionCurve {
                 return [.curveLinear]
             case .easeInOut:
                 return [.curveEaseInOut]
-            case .easeIn:
-                return [.curveEaseIn]
             case .spring:
                 return UIView.AnimationOptions(rawValue: 7 << 16)
             case .customSpring:
@@ -145,10 +136,6 @@ private extension CALayer {
             completion: completion
         )
     }
-}
-
-private func bounceParameters(duration: Double) -> (duration: Double, damping: CGFloat, stiffness: CGFloat) {
-    return (duration: duration * 1.25, damping: 88.0, stiffness: 750.0)
 }
 
 public extension ContainedViewLayoutTransition {
@@ -474,106 +461,6 @@ public extension ContainedViewLayoutTransition {
                 let previousPosition = layer.position
                 layer.position = position
                 layer.animatePosition(from: previousPosition, to: position, duration: duration, timingFunction: curve.timingFunction, mediaTimingFunction: curve.mediaTimingFunction, completion: { result in
-                    if let completion = completion {
-                        completion(result)
-                    }
-                })
-            }
-        }
-    }
-    
-    func updatePositionSpring(layer: CALayer, position: CGPoint, completion: ((Bool) -> Void)? = nil) {
-        if layer.position.equalTo(position) {
-            completion?(true)
-        } else {
-            switch self {
-            case .immediate:
-                layer.removeAnimation(forKey: "position")
-                if let view = layer.delegate as? UIView {
-                    view.center = position
-                } else {
-                    layer.position = position
-                }
-                if let completion = completion {
-                    completion(true)
-                }
-            case let .animated(duration, curve):
-                let _ = curve
-                let previousPosition = layer.position
-                if let view = layer.delegate as? UIView {
-                    view.center = position
-                } else {
-                    layer.position = position
-                }
-                let params = bounceParameters(duration: duration)
-                layer.animateSpring(from: NSValue(cgPoint: previousPosition), to: NSValue(cgPoint: position), keyPath: "position", duration: params.duration, stiffness: params.stiffness, damping: params.damping, completion: { flag in
-                    if let completion {
-                        completion(flag)
-                    }
-                })
-            }
-        }
-    }
-    
-    func updateScaleSpring(layer: CALayer, scale: CGFloat, completion: ((Bool) -> Void)? = nil) {
-        let t = layer.transform
-        let currentScale = sqrt((t.m11 * t.m11) + (t.m12 * t.m12) + (t.m13 * t.m13))
-        if abs(CGFloat(currentScale) - scale) <= CGFloat(Float.ulpOfOne) {
-            completion?(true)
-        } else {
-            switch self {
-            case .immediate:
-                layer.removeAnimation(forKey: "transform.scale")
-                if let view = layer.delegate as? UIView {
-                    view.transform = CGAffineTransformMakeScale(scale, scale)
-                } else {
-                    layer.transform = CATransform3DMakeScale(scale, scale, 1.0)
-                }
-                if let completion = completion {
-                    completion(true)
-                }
-            case let .animated(duration, curve):
-                let _ = curve
-                if let view = layer.delegate as? UIView {
-                    view.transform = CGAffineTransformMakeScale(scale, scale)
-                } else {
-                    layer.transform = CATransform3DMakeScale(scale, scale, 1.0)
-                }
-                let params = bounceParameters(duration: duration)
-                layer.animateSpring(from: currentScale as NSNumber, to: scale as NSNumber, keyPath: "transform.scale", duration: params.duration, stiffness: params.stiffness, damping: params.damping, completion: { flag in
-                    if let completion {
-                        completion(flag)
-                    }
-                })
-            }
-        }
-    }
-    
-    func updateBoundsSpring(layer: CALayer, bounds: CGRect, completion: ((Bool) -> Void)? = nil) {
-        if layer.bounds.equalTo(bounds) {
-            completion?(true)
-        } else {
-            switch self {
-            case .immediate:
-                layer.removeAnimation(forKey: "bounds")
-                if let view = layer.delegate as? UIView {
-                    view.bounds = bounds
-                } else {
-                    layer.bounds = bounds
-                }
-                if let completion = completion {
-                    completion(true)
-                }
-            case let .animated(duration, curve):
-                let _ = curve
-                let previousBounds = layer.bounds
-                if let view = layer.delegate as? UIView {
-                    view.bounds = bounds
-                } else {
-                    layer.bounds = bounds
-                }
-                let params = bounceParameters(duration: duration)
-                layer.animateSpring(from: NSValue(cgRect: previousBounds), to: NSValue(cgRect: bounds), keyPath: "bounds", duration: params.duration, stiffness: params.stiffness, damping: params.damping, completion: { result in
                     if let completion = completion {
                         completion(result)
                     }
@@ -943,7 +830,7 @@ public extension ContainedViewLayoutTransition {
     }
     
     func updateAlpha(node: ASDisplayNode, alpha: CGFloat, beginWithCurrentState: Bool = false, force: Bool = false, delay: Double = 0.0, completion: ((Bool) -> Void)? = nil) {
-        if node.layer.opacity == Float(alpha) && !force {
+        if node.alpha.isEqual(to: alpha) && !force {
             if let completion = completion {
                 completion(true)
             }
@@ -957,18 +844,14 @@ public extension ContainedViewLayoutTransition {
                 completion(true)
             }
         case let .animated(duration, curve):
-            let previousAlpha: Float
+            let previousAlpha: CGFloat
             if beginWithCurrentState, let presentation = node.layer.presentation() {
-                previousAlpha = presentation.opacity
+                previousAlpha = CGFloat(presentation.opacity)
             } else {
-                previousAlpha = node.layer.opacity
+                previousAlpha = node.alpha
             }
-            if alpha == 0.0 {
-                node.layer.opacity = Float(alpha)
-            } else {
-                node.alpha = alpha
-            }
-            node.layer.animateAlpha(from: CGFloat(previousAlpha), to: alpha, duration: duration, delay: delay, timingFunction: curve.timingFunction, mediaTimingFunction: curve.mediaTimingFunction, completion: { result in
+            node.alpha = alpha
+            node.layer.animateAlpha(from: previousAlpha, to: alpha, duration: duration, delay: delay, timingFunction: curve.timingFunction, mediaTimingFunction: curve.mediaTimingFunction, completion: { result in
                 if let completion = completion {
                     completion(result)
                 }
@@ -2007,7 +1890,6 @@ public protocol ControlledTransitionAnimator: AnyObject {
     func updateContentsRect(layer: CALayer, contentsRect: CGRect, completion: ((Bool) -> Void)?)
     func updateTransform(layer: CALayer, transform: CATransform3D, completion: ((Bool) -> Void)?)
     func updateBackgroundColor(layer: CALayer, color: UIColor, completion: ((Bool) -> Void)?)
-    func updateShapeLayerPath(layer: CAShapeLayer, path: CGPath, completion: ((Bool) -> Void)?)
 }
 
 protocol AnyValueProviding {
@@ -2219,103 +2101,6 @@ extension CGColor: AnyValueProviding {
                     preconditionFailure()
                 }
                 return self.interpolate(with: other.value as! CGColor, fraction: fraction).anyValue
-            }
-        )
-    }
-}
-
-extension CGPath: AnyValueProviding {
-    func interpolate(with other: CGPath, fraction: CGFloat) -> CGPath {
-        if fraction <= 0.0 {
-            return self
-        } else if fraction >= 1.0 {
-            return other
-        }
-
-        enum PathElement {
-            case move(to: CGPoint)
-            case addLine(to: CGPoint)
-            case addQuad(control: CGPoint, to: CGPoint)
-            case addCurve(control1: CGPoint, control2: CGPoint, to: CGPoint)
-            case close
-        }
-
-        func elements(for path: CGPath) -> [PathElement] {
-            var elements: [PathElement] = []
-            path.applyWithBlock { elementPointer in
-                let element = elementPointer.pointee
-                let points = element.points
-                switch element.type {
-                case .moveToPoint:
-                    elements.append(.move(to: points[0]))
-                case .addLineToPoint:
-                    elements.append(.addLine(to: points[0]))
-                case .addQuadCurveToPoint:
-                    elements.append(.addQuad(control: points[0], to: points[1]))
-                case .addCurveToPoint:
-                    elements.append(.addCurve(control1: points[0], control2: points[1], to: points[2]))
-                case .closeSubpath:
-                    elements.append(.close)
-                @unknown default:
-                    break
-                }
-            }
-            return elements
-        }
-
-        let lhsElements = elements(for: self)
-        let rhsElements = elements(for: other)
-
-        guard lhsElements.count == rhsElements.count else {
-            return fraction < 0.5 ? self : other
-        }
-
-        func interpolatedPoint(_ lhs: CGPoint, _ rhs: CGPoint) -> CGPoint {
-            return lhs.interpolate(with: rhs, fraction: fraction)
-        }
-
-        let mutablePath = CGMutablePath()
-        for (lhs, rhs) in zip(lhsElements, rhsElements) {
-            switch (lhs, rhs) {
-            case let (.move(to: lhsPoint), .move(to: rhsPoint)):
-                mutablePath.move(to: interpolatedPoint(lhsPoint, rhsPoint))
-            case let (.addLine(to: lhsPoint), .addLine(to: rhsPoint)):
-                mutablePath.addLine(to: interpolatedPoint(lhsPoint, rhsPoint))
-            case let (.addQuad(control: lhsControl, to: lhsPoint), .addQuad(control: rhsControl, to: rhsPoint)):
-                mutablePath.addQuadCurve(to: interpolatedPoint(lhsPoint, rhsPoint), control: interpolatedPoint(lhsControl, rhsControl))
-            case let (.addCurve(control1: lhsControl1, control2: lhsControl2, to: lhsPoint), .addCurve(control1: rhsControl1, control2: rhsControl2, to: rhsPoint)):
-                mutablePath.addCurve(
-                    to: interpolatedPoint(lhsPoint, rhsPoint),
-                    control1: interpolatedPoint(lhsControl1, rhsControl1),
-                    control2: interpolatedPoint(lhsControl2, rhsControl2)
-                )
-            case (.close, .close):
-                mutablePath.closeSubpath()
-            default:
-                return fraction <= 0.0 ? self : other
-            }
-        }
-
-        return mutablePath.copy() ?? mutablePath
-    }
-    
-    var anyValue: ControlledTransitionProperty.AnyValue {
-        return ControlledTransitionProperty.AnyValue(
-            value: self,
-            nsValue: self,
-            stringValue: { "\(self)" },
-            isEqual: { other in
-                if CFGetTypeID(other.value as CFTypeRef) == CGPath.typeID {
-                    return self == (other.value as! CGPath)
-                } else {
-                    return false
-                }
-            },
-            interpolate: { other, fraction in
-                guard CFGetTypeID(other.value as CFTypeRef) == CGPath.typeID else {
-                    preconditionFailure()
-                }
-                return self.interpolate(with: other.value as! CGPath, fraction: fraction).anyValue
             }
         )
     }
@@ -2656,47 +2441,6 @@ public final class ControlledTransition {
             ))
         }
         
-        public func updateShapeLayerPath(layer: CAShapeLayer, path: CGPath, completion: ((Bool) -> Void)?) {
-            if let currentPath = layer.path, currentPath == path {
-                if let completion = completion {
-                    completion(true)
-                }
-                return
-            }
-            
-            let fromValue: CGPath?
-            if let animationKeys = layer.animationKeys(), animationKeys.contains(where: { key in
-                guard let animation = layer.animation(forKey: key) as? CAPropertyAnimation else {
-                    return false
-                }
-                if animation.keyPath == "path" {
-                    return true
-                } else {
-                    return false
-                }
-            }) {
-                fromValue = layer.presentation()?.path ?? layer.path
-            } else {
-                fromValue = layer.path
-            }
-            
-            var mappedFromValue: CGPath
-            if let fromValue {
-                mappedFromValue = fromValue
-            } else {
-                mappedFromValue = CGMutablePath()
-            }
-            
-            layer.path = path
-            self.add(animation: ControlledTransitionProperty(
-                layer: layer,
-                path: "path",
-                fromValue: mappedFromValue,
-                toValue: path,
-                completion: completion
-            ))
-        }
-        
         public func updateCornerRadius(layer: CALayer, cornerRadius: CGFloat, completion: ((Bool) -> Void)?) {
             if layer.cornerRadius == cornerRadius {
                 return
@@ -2776,10 +2520,6 @@ public final class ControlledTransition {
         
         public func updateBackgroundColor(layer: CALayer, color: UIColor, completion: ((Bool) -> Void)?) {
             self.transition.updateBackgroundColor(layer: layer, color: color, completion: completion)
-        }
-        
-        public func updateShapeLayerPath(layer: CAShapeLayer, path: CGPath, completion: ((Bool) -> Void)?) {
-            self.transition.updatePath(layer: layer, path: path, completion: completion)
         }
         
         public func animatePosition(layer: CALayer, from fromValue: CGPoint, to toValue: CGPoint, completion: ((Bool) -> Void)?) {

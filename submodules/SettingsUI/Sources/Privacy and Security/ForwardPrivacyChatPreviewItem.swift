@@ -16,7 +16,6 @@ class ForwardPrivacyChatPreviewItem: ListViewItem, ItemListItem {
     let context: AccountContext
     let theme: PresentationTheme
     let strings: PresentationStrings
-    let systemStyle: ItemListSystemStyle
     let sectionId: ItemListSectionId
     let fontSize: PresentationFontSize
     let chatBubbleCorners: PresentationChatBubbleCorners
@@ -27,11 +26,10 @@ class ForwardPrivacyChatPreviewItem: ListViewItem, ItemListItem {
     let linkEnabled: Bool
     let tooltipText: String
     
-    init(context: AccountContext, theme: PresentationTheme, strings: PresentationStrings, systemStyle: ItemListSystemStyle = .legacy, sectionId: ItemListSectionId, fontSize: PresentationFontSize, chatBubbleCorners: PresentationChatBubbleCorners, wallpaper: TelegramWallpaper, dateTimeFormat: PresentationDateTimeFormat, nameDisplayOrder: PresentationPersonNameOrder, peerName: String, linkEnabled: Bool, tooltipText: String) {
+    init(context: AccountContext, theme: PresentationTheme, strings: PresentationStrings, sectionId: ItemListSectionId, fontSize: PresentationFontSize, chatBubbleCorners: PresentationChatBubbleCorners, wallpaper: TelegramWallpaper, dateTimeFormat: PresentationDateTimeFormat, nameDisplayOrder: PresentationPersonNameOrder, peerName: String, linkEnabled: Bool, tooltipText: String) {
         self.context = context
         self.theme = theme
         self.strings = strings
-        self.systemStyle = systemStyle
         self.sectionId = sectionId
         self.fontSize = fontSize
         self.chatBubbleCorners = chatBubbleCorners
@@ -115,7 +113,7 @@ class ForwardPrivacyChatPreviewItemNode: ListViewItemNode {
         
         self.measureTextNode = TextNode()
         
-        super.init(layerBacked: false)
+        super.init(layerBacked: false, dynamicBounce: false)
         
         self.clipsToBounds = true
         
@@ -147,11 +145,11 @@ class ForwardPrivacyChatPreviewItemNode: ListViewItemNode {
             var peers = SimpleDictionary<PeerId, Peer>()
             let messages = SimpleDictionary<MessageId, Message>()
             
-            peers[peerId] = TelegramUser(id: peerId, accessHash: nil, firstName: item.peerName, lastName: "", username: nil, phone: nil, photo: [], botInfo: nil, restrictionInfo: nil, flags: [], emojiStatus: nil, usernames: [], storiesHidden: nil, nameColor: .preset(.blue), backgroundEmojiId: nil, profileColor: nil, profileBackgroundEmojiId: nil, subscriberCount: nil, verificationIconFileId: nil)
+            peers[peerId] = TelegramUser(id: peerId, accessHash: nil, firstName: item.peerName, lastName: "", username: nil, phone: nil, photo: [], botInfo: nil, restrictionInfo: nil, flags: [], emojiStatus: nil, usernames: [], storiesHidden: nil, nameColor: .blue, backgroundEmojiId: nil, profileColor: nil, profileBackgroundEmojiId: nil, subscriberCount: nil, verificationIconFileId: nil)
             
             let forwardInfo = MessageForwardInfo(author: item.linkEnabled ? peers[peerId] : nil, source: nil, sourceMessageId: nil, date: 0, authorSignature: item.linkEnabled ? nil : item.peerName, psaType: nil, flags: [])
             
-            let messageItem = item.context.sharedContext.makeChatMessagePreviewItem(context: item.context, messages: [Message(stableId: 1, stableVersion: 0, id: MessageId(peerId: peerId, namespace: 0, id: 1), globallyUniqueId: nil, groupingKey: nil, groupInfo: nil, threadId: nil, timestamp: 66000, flags: [.Incoming], tags: [], globalTags: [], localTags: [], customTags: [], forwardInfo: forwardInfo, author: nil, text: item.strings.Privacy_Forwards_PreviewMessageText, attributes: [], media: [], peers: peers, associatedMessages: messages, associatedMessageIds: [], associatedMedia: [:], associatedThreadInfo: nil, associatedStories: [:])], theme: item.theme, strings: item.strings, wallpaper: item.wallpaper, fontSize: item.fontSize, chatBubbleCorners: item.chatBubbleCorners, dateTimeFormat: item.dateTimeFormat, nameOrder: item.nameDisplayOrder, forcedResourceStatus: nil, tapMessage: nil, clickThroughMessage: nil, backgroundNode: currentBackgroundNode, availableReactions: nil, accountPeer: nil, isCentered: false, isPreview: true, isStandalone: false, rank: nil, rankRole: nil)
+            let messageItem = item.context.sharedContext.makeChatMessagePreviewItem(context: item.context, messages: [Message(stableId: 1, stableVersion: 0, id: MessageId(peerId: peerId, namespace: 0, id: 1), globallyUniqueId: nil, groupingKey: nil, groupInfo: nil, threadId: nil, timestamp: 66000, flags: [.Incoming], tags: [], globalTags: [], localTags: [], customTags: [], forwardInfo: forwardInfo, author: nil, text: item.strings.Privacy_Forwards_PreviewMessageText, attributes: [], media: [], peers: peers, associatedMessages: messages, associatedMessageIds: [], associatedMedia: [:], associatedThreadInfo: nil, associatedStories: [:])], theme: item.theme, strings: item.strings, wallpaper: item.wallpaper, fontSize: item.fontSize, chatBubbleCorners: item.chatBubbleCorners, dateTimeFormat: item.dateTimeFormat, nameOrder: item.nameDisplayOrder, forcedResourceStatus: nil, tapMessage: nil, clickThroughMessage: nil, backgroundNode: currentBackgroundNode, availableReactions: nil, accountPeer: nil, isCentered: false, isPreview: true, isStandalone: false)
             
             var node: ListViewItemNode?
             if let current = currentNode {
@@ -249,7 +247,7 @@ class ForwardPrivacyChatPreviewItemNode: ListViewItemNode {
                             strongSelf.bottomStripeNode.isHidden = hasCorners
                     }
                     
-                    strongSelf.maskNode.image = hasCorners ? PresentationResourcesItemList.cornersImage(item.theme, top: hasTopCorners, bottom: hasBottomCorners, glass: item.systemStyle == .glass) : nil
+                    strongSelf.maskNode.image = hasCorners ? PresentationResourcesItemList.cornersImage(item.theme, top: hasTopCorners, bottom: hasBottomCorners) : nil
                     
                     let backgroundFrame = CGRect(origin: CGPoint(x: 0.0, y: -min(insets.top, separatorHeight)), size: CGSize(width: params.width, height: contentSize.height + min(insets.top, separatorHeight) + min(insets.bottom, separatorHeight)))
 

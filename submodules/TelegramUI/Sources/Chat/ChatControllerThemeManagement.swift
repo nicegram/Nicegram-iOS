@@ -1,5 +1,6 @@
 import Foundation
 import UIKit
+import Postbox
 import SwiftSignalKit
 import Display
 import AsyncDisplayKit
@@ -17,8 +18,10 @@ import AccountContext
 import TelegramStringFormatting
 import OverlayStatusController
 import DeviceLocationManager
+import ShareController
 import UrlEscaping
 import ContextUI
+import ComposePollUI
 import AlertUI
 import PresentationDataUtils
 import UndoUI
@@ -259,7 +262,7 @@ extension ChatControllerImpl {
                         return
                     }
                     if canResetWallpaper && chatTheme != nil {
-                        let _ = context.engine.themes.setChatWallpaper(peerId: peerId, wallpaper: nil, forBoth: true).startStandalone()
+                        let _ = context.engine.themes.setChatWallpaper(peerId: peerId, wallpaper: nil, forBoth: false).startStandalone()
                     }
                     strongSelf.chatThemeAndDarkAppearancePreviewPromise.set(.single((chatTheme ?? .emoticon(""), nil)))
                     let _ = context.engine.themes.setChatTheme(peerId: peerId, chatTheme: chatTheme ?? .emoticon("")).startStandalone(completed: { [weak self] in
@@ -295,11 +298,6 @@ extension ChatControllerImpl {
             return
         }
         self.chatDisplayNode.dismissTextInput()
-        
-        var previewIconFile: TelegramMediaFile? = previewIconFile
-        if let file = previewIconFile, let peerId = self.chatLocation.peerId, !file.isValidForDisplay(chatPeerId: peerId) {
-            previewIconFile = nil
-        }
         
         let presentationData = self.presentationData
         let controller = StickerPackScreen(context: self.context, updatedPresentationData: self.updatedPresentationData, mainStickerPack: packReference, stickerPacks: Array(references), previewIconFile: previewIconFile, parentNavigationController: self.effectiveNavigationController, sendEmoji: canSendMessagesToChat(self.presentationInterfaceState) ? { [weak self] text, attribute in

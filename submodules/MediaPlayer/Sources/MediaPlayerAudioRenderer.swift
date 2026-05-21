@@ -884,11 +884,7 @@ public final class MediaPlayerAudioRenderer {
         self.audioClock = audioClock!
         
         var audioTimebase: CMTimebase?
-        #if os(macOS)
-        CMTimebaseCreateWithMasterClock(allocator: nil, masterClock: audioClock!, timebaseOut: &audioTimebase)
-        #else
         CMTimebaseCreateWithSourceClock(allocator: nil, sourceClock: audioClock!, timebaseOut: &audioTimebase)
-        #endif
         self.audioTimebase = audioTimebase!
         
         audioPlayerRendererQueue.async {

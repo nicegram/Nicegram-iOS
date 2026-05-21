@@ -75,7 +75,7 @@ private func generatePhoneInputBackground(color: UIColor, strokeColor: UIColor) 
 }
 
 
-final class DeleteAccountPhoneItem: ListViewItem, ItemListItem {
+class DeleteAccountPhoneItem: ListViewItem, ItemListItem {
     let theme: PresentationTheme
     let strings: PresentationStrings
     let value: (Int32?, String?, String)
@@ -83,7 +83,7 @@ final class DeleteAccountPhoneItem: ListViewItem, ItemListItem {
     let selectCountryCode: () -> Void
     let updated: (Int) -> Void
     
-    public init(theme: PresentationTheme, strings: PresentationStrings, value: (Int32?, String?, String), sectionId: ItemListSectionId, selectCountryCode: @escaping () -> Void, updated: @escaping (Int) -> Void) {
+    init(theme: PresentationTheme, strings: PresentationStrings, value: (Int32?, String?, String), sectionId: ItemListSectionId, selectCountryCode: @escaping () -> Void, updated: @escaping (Int) -> Void) {
         self.theme = theme
         self.strings = strings
         self.value = value
@@ -126,7 +126,7 @@ final class DeleteAccountPhoneItem: ListViewItem, ItemListItem {
     }
 }
 
-final class DeleteAccountPhoneItemNode: ListViewItemNode, ItemListItemNode {
+class DeleteAccountPhoneItemNode: ListViewItemNode, ItemListItemNode {
     private let backgroundNode: ASDisplayNode
     private let topStripeNode: ASDisplayNode
     private let bottomStripeNode: ASDisplayNode
@@ -167,7 +167,7 @@ final class DeleteAccountPhoneItemNode: ListViewItemNode, ItemListItemNode {
         
         self.phoneInputNode = PhoneInputNode(fontSize: 17.0)
         
-        super.init(layerBacked: false)
+        super.init(layerBacked: false, dynamicBounce: false)
         
         self.addSubnode(self.phoneBackground)
         self.addSubnode(self.countryButton)

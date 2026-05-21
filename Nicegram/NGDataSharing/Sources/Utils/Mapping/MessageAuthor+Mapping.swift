@@ -53,7 +53,7 @@ extension FeatDataSharing.Message.Author {
 
 extension FeatDataSharing.Message.Author {
     init?(
-        message: Api.Message.Cons_message,
+        message: ApiMessageWrapped.Message,
         chats: [Api.Chat],
         users: [Api.User]
     ) {

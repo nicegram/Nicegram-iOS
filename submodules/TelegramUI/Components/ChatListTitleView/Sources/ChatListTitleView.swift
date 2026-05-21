@@ -60,10 +60,9 @@ public final class ChatListTitleView: UIView, NavigationBarTitleView, Navigation
     private let animationCache: AnimationCache
     private let animationRenderer: MultiAnimationRenderer
     
-    public var requestUpdate: ((ContainedViewLayoutTransition) -> Void)?
     public var openStatusSetup: ((UIView) -> Void)?
     
-    private var validLayout: CGSize?
+    private var validLayout: (CGSize, CGRect)?
     
     public var manualLayout: Bool = false
     
@@ -172,10 +171,10 @@ public final class ChatListTitleView: UIView, NavigationBarTitleView, Navigation
                         particleColor: statusParticleColor,
                         isVisibleForAnimations: true,
                         action: { [weak self] in
-                            guard let self else {
+                            guard let strongSelf = self, let titleCredibilityIconView = strongSelf.titleCredibilityIconView else {
                                 return
                             }
-                            self.openEmojiStatusSetup()
+                            strongSelf.openStatusSetup?(titleCredibilityIconView)
                         }
                     )),
                     environment: {},
@@ -322,25 +321,13 @@ public final class ChatListTitleView: UIView, NavigationBarTitleView, Navigation
     override public func layoutSubviews() {
         super.layoutSubviews()
         
-        if !self.manualLayout, let size = self.validLayout {
-            let _ = self.updateLayout(availableSize: size, transition: .immediate)
+        if !self.manualLayout, let (size, clearBounds) = self.validLayout {
+            let _ = self.updateLayout(size: size, clearBounds: clearBounds, transition: .immediate)
         }
     }
     
-    public func openEmojiStatusSetup() {
-        guard let titleCredibilityIconView = self.titleCredibilityIconView else {
-            return
-        }
-        self.openStatusSetup?(titleCredibilityIconView)
-    }
-    
-    public func updateLayout(availableSize: CGSize, transition: ContainedViewLayoutTransition) -> CGSize {
-        let _ = self.updateLayoutInternal(size: availableSize, transition: transition)
-        return availableSize
-    }
-    
-    public func updateLayoutInternal(size: CGSize, transition: ContainedViewLayoutTransition) -> CGRect {
-        self.validLayout = size
+    public func updateLayout(size: CGSize, clearBounds: CGRect, transition: ContainedViewLayoutTransition) -> CGRect {
+        self.validLayout = (size, clearBounds)
         
         var indicatorPadding: CGFloat = 0.0
         let indicatorSize = self.activityIndicator.bounds.size
@@ -348,7 +335,7 @@ public final class ChatListTitleView: UIView, NavigationBarTitleView, Navigation
         if !self.activityIndicator.isHidden {
             indicatorPadding = indicatorSize.width + 6.0
         }
-        var maxTitleWidth = size.width - indicatorPadding
+        var maxTitleWidth = clearBounds.size.width - indicatorPadding
         var proxyPadding: CGFloat = 0.0
         if !self.proxyNode.isHidden {
             maxTitleWidth -= 25.0
@@ -366,7 +353,7 @@ public final class ChatListTitleView: UIView, NavigationBarTitleView, Navigation
         
         var titleContentRect = CGRect(origin: CGPoint(x: indicatorPadding + floor((size.width - combinedWidth - indicatorPadding) / 2.0), y: floor((size.height - combinedHeight) / 2.0)), size: titleSize)
         
-        titleContentRect.origin.x = min(titleContentRect.origin.x, size.width - proxyPadding - titleContentRect.width)
+        titleContentRect.origin.x = min(titleContentRect.origin.x, clearBounds.maxX - proxyPadding - titleContentRect.width)
         
         let titleFrame = titleContentRect
         var titleTransition = transition
@@ -375,7 +362,7 @@ public final class ChatListTitleView: UIView, NavigationBarTitleView, Navigation
         }
         titleTransition.updateFrame(node: self.titleNode, frame: titleFrame)
         
-        let proxyFrame = CGRect(origin: CGPoint(x: size.width - 9.0 - self.proxyNode.bounds.width, y: floor((size.height - self.proxyNode.bounds.height) / 2.0)), size: self.proxyNode.bounds.size)
+        let proxyFrame = CGRect(origin: CGPoint(x: clearBounds.maxX - 9.0 - self.proxyNode.bounds.width, y: floor((size.height - self.proxyNode.bounds.height) / 2.0)), size: self.proxyNode.bounds.size)
         self.proxyNode.frame = proxyFrame
         
         self.proxyButton.frame = proxyFrame.insetBy(dx: -2.0, dy: -2.0)
@@ -421,10 +408,10 @@ public final class ChatListTitleView: UIView, NavigationBarTitleView, Navigation
                     content: statusContent,
                     isVisibleForAnimations: true,
                     action: { [weak self] in
-                        guard let self else {
+                        guard let strongSelf = self, let titleCredibilityIconView = strongSelf.titleCredibilityIconView else {
                             return
                         }
-                        self.openEmojiStatusSetup()
+                        strongSelf.openStatusSetup?(titleCredibilityIconView)
                     }
                 )),
                 environment: {},

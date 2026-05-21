@@ -49,12 +49,12 @@ final class PeerInfoHeaderEditingContentNode: ASDisplayNode {
         self.itemNodes[key]?.layer.addShakeAnimation()
     }
     
-    func update(width: CGFloat, safeInset: CGFloat, statusBarHeight: CGFloat, navigationHeight: CGFloat, isModalOverlay: Bool, peer: EnginePeer?, threadData: MessageHistoryThreadData?, chatLocation: ChatLocation, cachedData: CachedPeerData?, isContact: Bool, isSettings: Bool, presentationData: PresentationData, transition: ContainedViewLayoutTransition) -> CGFloat {
+    func update(width: CGFloat, safeInset: CGFloat, statusBarHeight: CGFloat, navigationHeight: CGFloat, isModalOverlay: Bool, peer: Peer?, threadData: MessageHistoryThreadData?, chatLocation: ChatLocation, cachedData: CachedPeerData?, isContact: Bool, isSettings: Bool, presentationData: PresentationData, transition: ContainedViewLayoutTransition) -> CGFloat {
         let avatarSize: CGFloat = isModalOverlay ? 200.0 : 100.0
         let avatarFrame = CGRect(origin: CGPoint(x: floor((width - avatarSize) / 2.0), y: statusBarHeight + 22.0), size: CGSize(width: avatarSize, height: avatarSize))
         transition.updateFrameAdditiveToCenter(node: self.avatarNode, frame: CGRect(origin: avatarFrame.center, size: CGSize()))
         
-        var contentHeight: CGFloat = statusBarHeight + 10.0 + avatarSize + 28.0
+        var contentHeight: CGFloat = statusBarHeight + 10.0 + avatarSize + 20.0
         
         if canEditPeerInfo(context: self.context, peer: peer, chatLocation: chatLocation, threadData: threadData)  {
             if self.avatarButtonNode.supernode == nil {
@@ -65,16 +65,16 @@ final class PeerInfoHeaderEditingContentNode: ASDisplayNode {
             
             let avatarTextSize = self.avatarTextNode.updateLayout(CGSize(width: width, height: 32.0))
             transition.updateFrame(node: self.avatarTextNode, frame: CGRect(origin: CGPoint(), size: avatarTextSize))
-            transition.updateFrame(node: self.avatarButtonNode, frame: CGRect(origin: CGPoint(x: floorToScreenPixels((width - avatarTextSize.width) / 2.0), y: contentHeight - 5.0), size: avatarTextSize))
+            transition.updateFrame(node: self.avatarButtonNode, frame: CGRect(origin: CGPoint(x: floorToScreenPixels((width - avatarTextSize.width) / 2.0), y: contentHeight - 1.0), size: avatarTextSize))
             contentHeight += 32.0
         }
         
         var isEditableBot = false
-        if case let .user(user) = peer, let botInfo = user.botInfo, botInfo.flags.contains(.canEdit) {
+        if let user = peer as? TelegramUser, let botInfo = user.botInfo, botInfo.flags.contains(.canEdit) {
             isEditableBot = true
         }
         var fieldKeys: [PeerInfoHeaderTextFieldNodeKey] = []
-        if case let .user(user) = peer {
+        if let user = peer as? TelegramUser {
             if !user.isDeleted {
                 fieldKeys.append(.firstName)
                 if isEditableBot {
@@ -83,12 +83,12 @@ final class PeerInfoHeaderEditingContentNode: ASDisplayNode {
                     fieldKeys.append(.lastName)
                 }
             }
-        } else if case .legacyGroup = peer {
+        } else if let _ = peer as? TelegramGroup {
             fieldKeys.append(.title)
             if canEditPeerInfo(context: self.context, peer: peer, chatLocation: chatLocation, threadData: threadData) {
                 fieldKeys.append(.description)
             }
-        } else if case .channel = peer {
+        } else if let _ = peer as? TelegramChannel {
             fieldKeys.append(.title)
             if canEditPeerInfo(context: self.context, peer: peer, chatLocation: chatLocation, threadData: threadData) {
                 fieldKeys.append(.description)
@@ -104,19 +104,15 @@ final class PeerInfoHeaderEditingContentNode: ASDisplayNode {
                 var isMultiline = false
                 switch key {
                 case .firstName:
-                    if case let .user(user) = peer {
+                    if let peer = peer as? TelegramUser {
                         if let editableBotInfo = (cachedData as? CachedUserData)?.editableBotInfo {
                             updateText = editableBotInfo.name
                         } else {
-                            updateText = user.firstName ?? ""
+                            updateText = peer.firstName ?? ""
                         }
                     }
                 case .lastName:
-                    if case let .user(user) = peer {
-                        updateText = user.lastName ?? ""
-                    } else {
-                        updateText = ""
-                    }
+                    updateText = (peer as? TelegramUser)?.lastName ?? ""
                 case .title:
                     updateText = peer?.debugDisplayTitle ?? ""
                 case .description:
@@ -155,7 +151,7 @@ final class PeerInfoHeaderEditingContentNode: ASDisplayNode {
                 placeholder = presentationData.strings.UserInfo_LastNamePlaceholder
                 isEnabled = isContact || isSettings
             case .title:
-                if case let .channel(channel) = peer, case .broadcast = channel.info {
+                if let channel = peer as? TelegramChannel, case .broadcast = channel.info {
                     placeholder = presentationData.strings.GroupInfo_ChannelListNamePlaceholder
                 } else {
                     placeholder = presentationData.strings.GroupInfo_GroupNamePlaceholder

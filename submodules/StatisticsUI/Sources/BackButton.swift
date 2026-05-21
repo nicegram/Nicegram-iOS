@@ -149,7 +149,7 @@ final class PeerInfoHeaderNavigationButton: HighlightableButtonNode {
             case .back:
                 text = presentationData.strings.Common_Back
                 accessibilityText = presentationData.strings.Common_Back
-                icon = navigationBarBackArrowImage(color: .white)
+                icon = NavigationBar.backArrowImage(color: .white)
             case .edit:
                 text = presentationData.strings.Common_Edit
                 accessibilityText = text

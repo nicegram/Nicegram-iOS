@@ -42,9 +42,6 @@ private func extractFileMedia(_ message: Message) -> TelegramMediaFile? {
         } else if let media = media as? TelegramMediaWebpage, case let .Loaded(content) = media.content, let f = content.file {
             file = f
             break
-        } else if let media = media as? TelegramMediaPoll, let f = media.attachedMedia as? TelegramMediaFile {
-            file = f
-            break
         }
     }
     return file
@@ -437,7 +434,7 @@ public final class PeerMessagesMediaPlaylist: SharedMediaPlaylist {
         self.messagesLocation = location
         
         switch self.messagesLocation.effectiveLocation(context: context) {
-        case let .messages(_, _, messageId), let .singleMessage(messageId), let .custom(_, _, messageId, _, _):
+        case let .messages(_, _, messageId), let .singleMessage(messageId), let .custom(_, _, messageId, _):
             self.loadItem(anchor: .messageId(messageId), navigation: .later, reversed: self.order == .reversed)
         case let .recentActions(message):
             self.loadingItem = false
@@ -611,7 +608,7 @@ public final class PeerMessagesMediaPlaylist: SharedMediaPlaylist {
                                 strongSelf.updateState()
                             }
                         }))
-                    case let .custom(messages, _, at, _, _):
+                    case let .custom(messages, _, at, _):
                         self.navigationDisposable.set((messages
                         |> take(1)
                         |> deliverOnMainQueue).startStrict(next: { [weak self] messages in
@@ -790,7 +787,7 @@ public final class PeerMessagesMediaPlaylist: SharedMediaPlaylist {
                         self.updateState()
                     case .savedMusic:
                         fatalError()
-                    case let .custom(messages, _, _, loadMore, _):
+                    case let .custom(messages, _, _, loadMore):
                         let inputIndex: Signal<MessageIndex, NoError>
                         let looping = self.looping
                         switch self.order {

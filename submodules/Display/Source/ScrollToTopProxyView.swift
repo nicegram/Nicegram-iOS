@@ -8,11 +8,11 @@ class ScrollToTopView: UIScrollView, UIScrollViewDelegate {
         super.init(frame: frame)
         
         self.isOpaque = false
+        self.backgroundColor = .clear
         self.delegate = self
         self.scrollsToTop = true
-        self.contentInsetAdjustmentBehavior = .never
-        if #available(iOS 17.0, *) {
-            self.allowsKeyboardScrolling = false
+        if #available(iOSApplicationExtension 11.0, iOS 11.0, *) {
+            self.contentInsetAdjustmentBehavior = .never
         }
     }
     
@@ -23,8 +23,8 @@ class ScrollToTopView: UIScrollView, UIScrollViewDelegate {
     override var frame: CGRect {
         didSet {
             let frame = self.frame
-            self.contentSize = CGSize(width: frame.width, height: frame.height + 1000.0)
-            self.contentOffset = CGPoint(x: 0.0, y: 1000.0)
+            self.contentSize = CGSize(width: frame.width, height: frame.height + 1.0)
+            self.contentOffset = CGPoint(x: 0.0, y: 1.0)
         }
     }
     
@@ -34,10 +34,6 @@ class ScrollToTopView: UIScrollView, UIScrollViewDelegate {
         }
         
         return false
-    }
-    
-    func scrollViewDidScrollToTop(_ scrollView: UIScrollView) {
-        print("scrollViewDidScrollToTop")
     }
 }
 

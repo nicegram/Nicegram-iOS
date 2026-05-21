@@ -34,15 +34,8 @@
 
 - (TGMediaAttachment *)parseMediaAttachment:(NSInputStream *)is
 {
-    bool readingError = false;
-    int32_t length = [is readInt32:&readingError];
-    if (readingError) {
-        return nil;
-    }
-    NSData *data = [is readData:length failed:&readingError];
-    if (readingError) {
-        return nil;
-    }
+    int32_t length = [is readInt32];
+    NSData *data = [is readData:length];
     
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wdeprecated-declarations"

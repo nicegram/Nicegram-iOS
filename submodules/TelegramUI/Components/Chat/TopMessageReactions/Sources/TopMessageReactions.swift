@@ -10,7 +10,7 @@ public enum AllowedReactions {
     case all
 }
 
-public func peerMessageAllowedReactions(context: AccountContext, message: Message, ignoreDefault: Bool = false) -> Signal<(allowedReactions: AllowedReactions?, areStarsEnabled: Bool), NoError> {
+public func peerMessageAllowedReactions(context: AccountContext, message: Message) -> Signal<(allowedReactions: AllowedReactions?, areStarsEnabled: Bool), NoError> {
     if message.id.peerId == context.account.peerId {
         return .single((.all, false))
     }
@@ -41,10 +41,6 @@ public func peerMessageAllowedReactions(context: AccountContext, message: Messag
             areStarsEnabled = value
         }
         
-        if let peer, !canSendReactionsToPeer(peer, ignoreDefault: ignoreDefault) {
-            return (nil, areStarsEnabled)
-        }
-
         if let effectiveReactions = message.effectiveReactions(isTags: message.areReactionsTags(accountPeerId: context.account.peerId)), effectiveReactions.count >= maxReactionCount {
             return (.set(Set(effectiveReactions.map(\.value))), areStarsEnabled)
         }
@@ -260,7 +256,7 @@ public func tagMessageReactions(context: AccountContext, subPeerId: EnginePeer.I
     }
 }
 
-public func topMessageReactions(context: AccountContext, message: Message, subPeerId: EnginePeer.Id?, ignoreDefault: Bool = false) -> Signal<[ReactionItem], NoError> {
+public func topMessageReactions(context: AccountContext, message: Message, subPeerId: EnginePeer.Id?) -> Signal<[ReactionItem], NoError> {
     if message.id.peerId == context.account.peerId {
         var loadTags = false
         if let effectiveReactionsAttribute = message.effectiveReactionsAttribute(isTags: message.areReactionsTags(accountPeerId: context.account.peerId)) {
@@ -290,7 +286,7 @@ public func topMessageReactions(context: AccountContext, message: Message, subPe
         }
     }
     
-    let allowedReactionsWithFiles: Signal<(reactions: AllowedReactions, files: [Int64: TelegramMediaFile], areStarsEnabled: Bool)?, NoError> = peerMessageAllowedReactions(context: context, message: message, ignoreDefault: ignoreDefault)
+    let allowedReactionsWithFiles: Signal<(reactions: AllowedReactions, files: [Int64: TelegramMediaFile], areStarsEnabled: Bool)?, NoError> = peerMessageAllowedReactions(context: context, message: message)
     |> mapToSignal { allowedReactions, areStarsEnabled -> Signal<(reactions: AllowedReactions, files: [Int64: TelegramMediaFile], areStarsEnabled: Bool)?, NoError> in
         guard let allowedReactions = allowedReactions else {
             return .single(nil)

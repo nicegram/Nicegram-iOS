@@ -3,6 +3,7 @@ import UIKit
 import Display
 import AsyncDisplayKit
 import SwiftSignalKit
+import Postbox
 import TelegramCore
 import TelegramPresentationData
 import MergeLists
@@ -228,7 +229,7 @@ private final class ThemeSettingsThemeItemIconNode : ListViewItemNode {
         
         self.activateAreaNode = AccessibilityAreaNode()
         
-        super.init(layerBacked: false, rotated: false, seeThrough: false)
+        super.init(layerBacked: false, dynamicBounce: false, rotated: false, seeThrough: false)
 
         self.addSubnode(self.containerNode)
         self.containerNode.addSubnode(self.imageNode)
@@ -545,10 +546,10 @@ public class ThemeSettingsThemeItemNode: ListViewItemNode, ItemListItemNode {
 
         self.maskNode = ASImageNode()
 
-        self.listNode = ListViewImpl()
+        self.listNode = ListView()
         self.listNode.transform = CATransform3DMakeRotation(-CGFloat.pi / 2.0, 0.0, 0.0, 1.0)
 
-        super.init(layerBacked: false)
+        super.init(layerBacked: false, dynamicBounce: false)
 
         self.addSubnode(self.containerNode)
         self.addSubnode(self.listNode)

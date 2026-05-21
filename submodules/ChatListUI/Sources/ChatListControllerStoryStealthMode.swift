@@ -37,9 +37,9 @@ extension ChatListControllerImpl {
                     }
                 )
                 tooltipScreen.tag = "no_auto_dismiss"
-                let tooltipScreenValue: UndoOverlayController? = tooltipScreen
+                weak var tooltipScreenValue: UndoOverlayController? = tooltipScreen
                 self.currentTooltipUpdateTimer?.invalidate()
-                self.currentTooltipUpdateTimer = Foundation.Timer.scheduledTimer(withTimeInterval: 0.5, repeats: true, block: { [weak self, weak tooltipScreenValue] _ in
+                self.currentTooltipUpdateTimer = Foundation.Timer.scheduledTimer(withTimeInterval: 0.5, repeats: true, block: { [weak self] _ in
                     guard let self else {
                         return
                     }

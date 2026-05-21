@@ -136,7 +136,7 @@ public func legacyInputMicPalette(from theme: PresentationTheme) -> TGModernConv
     return TGModernConversationInputMicPallete(dark: theme.overallDarkAppearance, buttonColor: inputPanelTheme.actionControlFillColor, iconColor: inputPanelTheme.actionControlForegroundColor, backgroundColor: theme.rootController.navigationBar.opaqueBackgroundColor, borderColor: inputPanelTheme.panelSeparatorColor, lock: inputPanelTheme.panelControlAccentColor, textColor: inputPanelTheme.primaryTextColor, secondaryTextColor: inputPanelTheme.secondaryTextColor, recording: inputPanelTheme.mediaRecordingDotColor)
 }
 
-public func legacyInstantVideoController(theme: PresentationTheme, forStory: Bool, panelFrame: CGRect, context: AccountContext, peerId: PeerId, slowmodeState: ChatSlowmodeState?, hasSchedule: Bool, send: @escaping (InstantVideoController, EnqueueMessage?) -> Void, displaySlowmodeTooltip: @escaping (UIView, CGRect) -> Void, presentSchedulePicker: @escaping (@escaping (Int32, Bool) -> Void) -> Void) -> InstantVideoController {
+public func legacyInstantVideoController(theme: PresentationTheme, forStory: Bool, panelFrame: CGRect, context: AccountContext, peerId: PeerId, slowmodeState: ChatSlowmodeState?, hasSchedule: Bool, send: @escaping (InstantVideoController, EnqueueMessage?) -> Void, displaySlowmodeTooltip: @escaping (UIView, CGRect) -> Void, presentSchedulePicker: @escaping (@escaping (Int32) -> Void) -> Void) -> InstantVideoController {
     let isSecretChat = peerId.namespace == Namespaces.Peer.SecretChat
     
     let legacyController = InstantVideoController(presentation: .custom, theme: theme)
@@ -170,8 +170,8 @@ public func legacyInstantVideoController(theme: PresentationTheme, forStory: Boo
             }, canSendSilently: !isSecretChat, canSchedule: hasSchedule, reminder: peerId == context.account.peerId, useRearCamTelescopy: NGSettings.useRearCamTelescopy)!
             // Nicegram useRearCamTelescopy
             controller.presentScheduleController = { done in
-                presentSchedulePicker { time, silentPosting in
-                    done?(time, silentPosting)
+                presentSchedulePicker { time in
+                    done?(time)
                 }
             }
             controller.finishedWithVideo = { [weak legacyController] videoUrl, previewImage, _, duration, dimensions, liveUploadData, adjustments, isSilent, scheduleTimestamp in
@@ -193,7 +193,7 @@ public func legacyInstantVideoController(theme: PresentationTheme, forStory: Boo
                     let thumbnailSize = finalDimensions.aspectFitted(CGSize(width: 320.0, height: 320.0))
                     let thumbnailImage = TGScaleImageToPixelSize(previewImage, thumbnailSize)!
                     if let thumbnailData = thumbnailImage.jpegData(compressionQuality: 0.4) {
-                        context.engine.resources.storeResourceData(id: EngineMediaResource.Id(resource.id), data: thumbnailData)
+                        context.account.postbox.mediaBox.storeResourceData(resource.id, data: thumbnailData)
                         previewRepresentations.append(TelegramMediaImageRepresentation(dimensions: PixelDimensions(thumbnailSize), resource: resource, progressiveSizes: [], immediateThumbnailData: nil, hasVideo: false, isPersonal: false))
                     }
                 }
@@ -220,7 +220,7 @@ public func legacyInstantVideoController(theme: PresentationTheme, forStory: Boo
                 let resource: TelegramMediaResource
                 if let liveUploadData = liveUploadData as? LegacyLiveUploadInterfaceResult, resourceAdjustments == nil, let data = try? Data(contentsOf: videoUrl) {
                     resource = LocalFileMediaResource(fileId: liveUploadData.id)
-                    context.engine.resources.storeResourceData(id: EngineMediaResource.Id(resource.id), data: data, synchronous: true)
+                    context.account.postbox.mediaBox.storeResourceData(resource.id, data: data, synchronous: true)
                 } else {
                     resource = LocalFileVideoMediaResource(randomId: Int64.random(in: Int64.min ... Int64.max), path: videoUrl.path, adjustments: resourceAdjustments)
                 }
@@ -253,7 +253,7 @@ public func legacyInstantVideoController(theme: PresentationTheme, forStory: Boo
                         attributes.append(NotificationInfoMessageAttribute(flags: .muted))
                     }
                     if let scheduleTime = scheduleTime {
-                        attributes.append(OutgoingScheduleInfoMessageAttribute(scheduleTime: scheduleTime, repeatPeriod: nil))
+                        attributes.append(OutgoingScheduleInfoMessageAttribute(scheduleTime: scheduleTime))
                     }
                     return attributes
                 }

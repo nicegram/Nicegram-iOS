@@ -1,6 +1,7 @@
 import Foundation
 import UIKit
 import Display
+import Postbox
 import SwiftSignalKit
 import AsyncDisplayKit
 import TelegramCore
@@ -12,7 +13,7 @@ import MediaResources
 import WallpaperGalleryScreen
 import GenerateThemeName
 
-private let randomBackgroundColors: [Int32] = [0x0088ff, 0x00c2ed, 0x29b327, 0xeb6ca4, 0xf08200, 0x9472ee, 0xd33213, 0xedb400, 0x6d839e]
+private let randomBackgroundColors: [Int32] = [0x007aff, 0x00c2ed, 0x29b327, 0xeb6ca4, 0xf08200, 0x9472ee, 0xd33213, 0xedb400, 0x6d839e]
 
 public extension TelegramThemeSettings {
     convenience init(baseTheme: TelegramBaseTheme, accentColor: UIColor, outgoingAccentColor: UIColor?, messageColors: [UInt32], animateMessageColors: Bool, wallpaper: TelegramWallpaper?) {
@@ -186,14 +187,14 @@ public final class ThemeAccentColorController: ViewController {
                     let resource = file.file.resource
 
                     var data: Data?
-                    if let path = strongSelf.context.engine.resources.completedResourcePath(id: EngineMediaResource.Id(resource.id)), let maybeData = try? Data(contentsOf: URL(fileURLWithPath: path), options: .mappedRead) {
+                    if let path = strongSelf.context.account.postbox.mediaBox.completedResourcePath(resource), let maybeData = try? Data(contentsOf: URL(fileURLWithPath: path), options: .mappedRead) {
                         data = maybeData
-                    } else if let path = strongSelf.context.sharedContext.accountManager.resources.completedResourcePath(resource: EngineMediaResource(resource)), let maybeData = try? Data(contentsOf: URL(fileURLWithPath: path), options: .mappedRead) {
+                    } else if let path = strongSelf.context.sharedContext.accountManager.mediaBox.completedResourcePath(resource), let maybeData = try? Data(contentsOf: URL(fileURLWithPath: path), options: .mappedRead) {
                         data = maybeData
                     }
-
+                    
                     if let data = data {
-                        strongSelf.context.sharedContext.accountManager.resources.storeResourceData(id: EngineMediaResource.Id(resource.id), data: data, synchronous: true)
+                        strongSelf.context.sharedContext.accountManager.mediaBox.storeResourceData(resource.id, data: data, synchronous: true)
                         prepareWallpaper = .complete()
                     } else {
                         prepareWallpaper = .complete()
@@ -373,7 +374,7 @@ public final class ThemeAccentColorController: ViewController {
         }, ready: self._ready)
         self.controllerNode.themeUpdated = { [weak self] theme in
             if let strongSelf = self {
-                strongSelf.navigationBar?.updatePresentationData(NavigationBarPresentationData(presentationTheme: theme, presentationStrings: strongSelf.presentationData.strings), transition: .immediate)
+                strongSelf.navigationBar?.updatePresentationData(NavigationBarPresentationData(presentationTheme: theme, presentationStrings: strongSelf.presentationData.strings))
                 strongSelf.segmentedTitleView.theme = theme
             }
         }

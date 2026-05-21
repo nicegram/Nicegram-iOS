@@ -6,37 +6,16 @@ import Postbox
 private final class LinkHelperClass: NSObject {
 }
 
-public func canSendMessagesToPeer(_ peer: EnginePeer, ignoreDefault: Bool = false) -> Bool {
-    if case let .user(user) = peer, user.addressName == "replies" {
+public func canSendMessagesToPeer(_ peer: Peer, ignoreDefault: Bool = false) -> Bool {
+    if let peer = peer as? TelegramUser, peer.addressName == "replies" {
         return false
-    }
-    switch peer {
-    case .user, .legacyGroup:
+    } else if peer is TelegramUser || peer is TelegramGroup {
         return !peer.isDeleted
-    case let .secretChat(secretChat):
-        return secretChat.embeddedState == .active
-    case let .channel(channel):
-        return channel.hasPermission(.sendSomething, ignoreDefault: ignoreDefault)
-    }
-}
-
-public func canSendReactionsToPeer(_ peer: EnginePeer, ignoreDefault: Bool = false) -> Bool {
-    switch peer {
-    case .user:
-        return !peer.isDeleted
-    case let .legacyGroup(group):
-        switch group.role {
-        case .creator, .admin:
-            return !peer.isDeleted
-        case .member:
-            if let defaultBannedRights = group.defaultBannedRights, defaultBannedRights.flags.contains(.banSendReactions) && !ignoreDefault {
-                return false
-            }
-            return !peer.isDeleted
-        }
-    case let .secretChat(secretChat):
-        return secretChat.embeddedState == .active
-    case let .channel(channel):
-        return channel.hasBannedPermission(.banSendReactions, ignoreDefault: ignoreDefault) == nil
+    } else if let peer = peer as? TelegramSecretChat {
+        return peer.embeddedState == .active
+    } else if let peer = peer as? TelegramChannel {
+        return peer.hasPermission(.sendSomething, ignoreDefault: ignoreDefault)
+    } else {
+        return false
     }
 }

@@ -30,16 +30,16 @@ func _internal_requestStickerSet(postbox: Postbox, network: Network, reference: 
     switch reference {
     case let .name(name):
         collectionId = nil
-        input = .inputStickerSetShortName(.init(shortName: name))
+        input = .inputStickerSetShortName(shortName: name)
     case let .id(id, accessHash):
         collectionId = ItemCollectionId(namespace: Namespaces.ItemCollection.CloudStickerPacks, id: id)
-        input = .inputStickerSetID(.init(id: id, accessHash: accessHash))
+        input = .inputStickerSetID(id: id, accessHash: accessHash)
     case .animatedEmoji:
         collectionId = nil
         input = .inputStickerSetAnimatedEmoji
     case let .dice(emoji):
         collectionId = nil
-        input = .inputStickerSetDice(.init(emoticon: emoji))
+        input = .inputStickerSetDice(emoticon: emoji)
     case .animatedEmojiAnimations:
         collectionId = nil
         input = .inputStickerSetAnimatedEmojiAnimations
@@ -80,21 +80,18 @@ func _internal_requestStickerSet(postbox: Postbox, network: Network, reference: 
         switch result {
             case .stickerSetNotModified:
                 return .complete()
-            case let .stickerSet(stickerSetData):
-                let (set, packs, keywords, documents) = (stickerSetData.set, stickerSetData.packs, stickerSetData.keywords, stickerSetData.documents)
+            case let .stickerSet(set, packs, keywords, documents):
                 info = StickerPackCollectionInfo(apiSet: set, namespace: Namespaces.ItemCollection.CloudStickerPacks)
                 
                 switch set {
-                    case let .stickerSet(stickerSetData):
-                        let flags = stickerSetData.flags
+                    case let .stickerSet(flags, _, _, _, _, _, _, _, _, _, _, _):
                         installed = (flags & (1 << 0) != 0)
                 }
                 
                 var indexKeysByFile: [MediaId: [MemoryBuffer]] = [:]
                 for pack in packs {
                     switch pack {
-                    case let .stickerPack(stickerPackData):
-                        let (text, fileIds) = (stickerPackData.emoticon, stickerPackData.documents)
+                    case let .stickerPack(text, fileIds):
                         let key = ValueBoxKey(text).toMemoryBuffer()
                         for fileId in fileIds {
                             let mediaId = MediaId(namespace: Namespaces.Media.CloudFile, id: fileId)
@@ -109,8 +106,7 @@ func _internal_requestStickerSet(postbox: Postbox, network: Network, reference: 
                 }
                 for keyword in keywords {
                     switch keyword {
-                    case let .stickerKeyword(stickerKeywordData):
-                        let (documentId, texts) = (stickerKeywordData.documentId, stickerKeywordData.keyword)
+                    case let .stickerKeyword(documentId, texts):
                         for text in texts {
                             let key = ValueBoxKey(text).toMemoryBuffer()
                             let mediaId = MediaId(namespace: Namespaces.Media.CloudFile, id: documentId)
@@ -174,7 +170,7 @@ public final class CoveredStickerSet : Equatable {
 }
 
 func _internal_installStickerSetInteractively(account: Account, info: StickerPackCollectionInfo, items: [ItemCollectionItem]) -> Signal<InstallStickerSetResult, InstallStickerSetError> {
-    return account.network.request(Api.functions.messages.installStickerSet(stickerset: .inputStickerSetID(.init(id: info.id.id, accessHash: info.accessHash)), archived: .boolFalse)) |> mapError { _ -> InstallStickerSetError in
+    return account.network.request(Api.functions.messages.installStickerSet(stickerset: .inputStickerSetID(id: info.id.id, accessHash: info.accessHash), archived: .boolFalse)) |> mapError { _ -> InstallStickerSetError in
         return .generic
     }
     |> mapToSignal { result -> Signal<InstallStickerSetResult, InstallStickerSetError> in
@@ -182,27 +178,22 @@ func _internal_installStickerSetInteractively(account: Account, info: StickerPac
         switch result {
         case .stickerSetInstallResultSuccess:
             addResult = .successful
-        case let .stickerSetInstallResultArchive(stickerSetInstallResultArchiveData):
-            let archived = stickerSetInstallResultArchiveData.sets
+        case let .stickerSetInstallResultArchive(sets: archived):
             var coveredSets: [CoveredStickerSet] = []
             for archived in archived {
                 let apiDocuments:[Api.Document]
                 let apiSet:Api.StickerSet
                 switch archived {
-                case let .stickerSetCovered(stickerSetCoveredData):
-                    let (set, cover) = (stickerSetCoveredData.set, stickerSetCoveredData.cover)
+                case let .stickerSetCovered(set: set, cover: cover):
                     apiSet = set
                     apiDocuments = [cover]
-                case let .stickerSetMultiCovered(stickerSetMultiCoveredData):
-                    let (set, covers) = (stickerSetMultiCoveredData.set, stickerSetMultiCoveredData.covers)
+                case let .stickerSetMultiCovered(set: set, covers: covers):
                     apiSet = set
                     apiDocuments = covers
-                case let .stickerSetFullCovered(stickerSetFullCoveredData):
-                    let (set, documents) = (stickerSetFullCoveredData.set, stickerSetFullCoveredData.documents)
+                case let .stickerSetFullCovered(set, _, _, documents):
                     apiSet = set
                     apiDocuments = documents
-                case let .stickerSetNoCovered(stickerSetNoCoveredData):
-                    let set = stickerSetNoCoveredData.set
+                case let .stickerSetNoCovered(set):
                     apiSet = set
                     apiDocuments = []
                 }
@@ -252,7 +243,7 @@ func _internal_installStickerSetInteractively(account: Account, info: StickerPac
 
 
 func _internal_uninstallStickerSetInteractively(account: Account, info: StickerPackCollectionInfo) -> Signal<Void, NoError> {
-    return account.network.request(Api.functions.messages.uninstallStickerSet(stickerset: .inputStickerSetID(.init(id: info.id.id, accessHash: info.accessHash))))
+    return account.network.request(Api.functions.messages.uninstallStickerSet(stickerset: .inputStickerSetID(id: info.id.id, accessHash: info.accessHash)))
     |> `catch` { _ -> Signal<Api.Bool, NoError> in
         return .single(.boolFalse)
     }

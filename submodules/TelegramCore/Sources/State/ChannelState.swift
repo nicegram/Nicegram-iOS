@@ -14,17 +14,13 @@ func channelUpdatesByPeerId(updates: [ChannelUpdate]) -> [PeerId: [ChannelUpdate
     for update in updates {
         var peerId: PeerId?
         switch update.update {
-            case let .updateNewChannelMessage(updateNewChannelMessageData):
-                let (message, _, _) = (updateNewChannelMessageData.message, updateNewChannelMessageData.pts, updateNewChannelMessageData.ptsCount)
+            case let .updateNewChannelMessage(message, _, _):
                 peerId = apiMessagePeerId(message)
-            case let .updateDeleteChannelMessages(updateDeleteChannelMessagesData):
-                let (channelId, _, _, _) = (updateDeleteChannelMessagesData.channelId, updateDeleteChannelMessagesData.messages, updateDeleteChannelMessagesData.pts, updateDeleteChannelMessagesData.ptsCount)
+            case let .updateDeleteChannelMessages(channelId, _, _, _):
                 peerId = PeerId(namespace: Namespaces.Peer.CloudChannel, id: PeerId.Id._internalFromInt64Value(channelId))
-            case let .updateEditChannelMessage(updateEditChannelMessageData):
-                let (message, _, _) = (updateEditChannelMessageData.message, updateEditChannelMessageData.pts, updateEditChannelMessageData.ptsCount)
+            case let .updateEditChannelMessage(message, _, _):
                 peerId = apiMessagePeerId(message)
-            case let .updateChannelWebPage(updateChannelWebPageData):
-                let (channelId, _, _, _) = (updateChannelWebPageData.channelId, updateChannelWebPageData.webpage, updateChannelWebPageData.pts, updateChannelWebPageData.ptsCount)
+            case let .updateChannelWebPage(channelId, _, _, _):
                 peerId = PeerId(namespace: Namespaces.Peer.CloudChannel, id: PeerId.Id._internalFromInt64Value(channelId))
             default:
                 break

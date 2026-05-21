@@ -5,16 +5,9 @@ import Postbox
 import SwiftSignalKit
 import TelegramCore
 
-public enum GalleryMediaSubject: Hashable {
-    case paidMediaIndex(Int)
-    case pollDescription
-    case pollOption(Data)
-    case pollSolution
-}
-
 public enum GalleryControllerItemSource {
     case peerMessagesAtId(messageId: MessageId, chatLocation: ChatLocation, customTag: MemoryBuffer?, chatLocationContextHolder: Atomic<ChatLocationContextHolder?>)
-    case standaloneMessage(Message, GalleryMediaSubject?)
+    case standaloneMessage(Message, Int?)
     case custom(messages: Signal<([Message], Int32, Bool), NoError>, messageId: MessageId, loadMore: (() -> Void)?)
 }
 
@@ -30,7 +23,6 @@ public final class GalleryControllerActionInteraction {
     public let storeMediaPlaybackState: (MessageId, Double?, Double) -> Void
     public let editMedia: (MessageId, [UIView], @escaping () -> Void) -> Void
     public let updateCanReadHistory: (Bool) -> Void
-    public let sendSticker: ((FileMediaReference) -> Void)?
 
     public init(
         openUrl: @escaping (String, Bool, Bool) -> Void,
@@ -43,9 +35,8 @@ public final class GalleryControllerActionInteraction {
         addContact: @escaping (String) -> Void,
         storeMediaPlaybackState: @escaping (MessageId, Double?, Double) -> Void, 
         editMedia: @escaping (MessageId, [UIView], @escaping () -> Void) -> Void,
-        updateCanReadHistory: @escaping (Bool) -> Void,
-        sendSticker: ((FileMediaReference) -> Void)?
-    ) {
+        updateCanReadHistory: @escaping (Bool) -> Void)
+    {
         self.openUrl = openUrl
         self.openUrlIn = openUrlIn
         self.openPeerMention = openPeerMention
@@ -57,7 +48,6 @@ public final class GalleryControllerActionInteraction {
         self.storeMediaPlaybackState = storeMediaPlaybackState
         self.editMedia = editMedia
         self.updateCanReadHistory = updateCanReadHistory
-        self.sendSticker = sendSticker
     }
 }
 

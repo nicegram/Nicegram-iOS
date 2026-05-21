@@ -43,23 +43,14 @@ plist_fragment(
     """
 )
 
-genrule(
+plist_fragment(
     name = "VersionInfoPlist",
-    srcs = ["//:versions.json"],
-    outs = ["VersionInfoPlist.plist"],
-    cmd = """
-        version=$$(python3 -c "import json; print(json.load(open('$(location //:versions.json)'))['app'])")
-        cat > $@ <<PLIST
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0">
-<dict>
+    extension = "plist",
+    template =
+    """
     <key>CFBundleShortVersionString</key>
-    <string>$$version</string>
-</dict>
-</plist>
-PLIST
-    """,
+    <string>{telegramVersion}</string>
+    """
 )
 
 plist_fragment(

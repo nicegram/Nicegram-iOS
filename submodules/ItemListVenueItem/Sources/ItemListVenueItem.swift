@@ -16,7 +16,6 @@ public final class ItemListVenueItem: ListViewItem, ItemListItem {
     }
     
     let presentationData: ItemListPresentationData
-    let systemStyle: ItemListSystemStyle
     let engine: TelegramEngine
     let venue: TelegramMediaMap?
     let title: String?
@@ -29,9 +28,8 @@ public final class ItemListVenueItem: ListViewItem, ItemListItem {
     public let sectionId: ItemListSectionId
     let header: ListViewItemHeader?
     
-    public init(presentationData: ItemListPresentationData, systemStyle: ItemListSystemStyle = .legacy, engine: TelegramEngine, venue: TelegramMediaMap?, title: String? = nil, subtitle: String? = nil, icon: ItemListVenueItem.InfoIcon = .info, sectionId: ItemListSectionId = 0, style: ItemListStyle, action: (() -> Void)?, infoAction: (() -> Void)? = nil, header: ListViewItemHeader? = nil) {
+    public init(presentationData: ItemListPresentationData, engine: TelegramEngine, venue: TelegramMediaMap?, title: String? = nil, subtitle: String? = nil, icon: ItemListVenueItem.InfoIcon = .info, sectionId: ItemListSectionId = 0, style: ItemListStyle, action: (() -> Void)?, infoAction: (() -> Void)? = nil, header: ListViewItemHeader? = nil) {
         self.presentationData = presentationData
-        self.systemStyle = systemStyle
         self.engine = engine
         self.venue = venue
         self.title = title
@@ -171,7 +169,7 @@ public class ItemListVenueItemNode: ListViewItemNode, ItemListItemNode {
         self.highlightedBackgroundNode = ASDisplayNode()
         self.highlightedBackgroundNode.isLayerBacked = true
         
-        super.init(layerBacked: false, rotated: false, seeThrough: false)
+        super.init(layerBacked: false, dynamicBounce: false, rotated: false, seeThrough: false)
         
         self.isAccessibilityElement = true
         
@@ -203,8 +201,8 @@ public class ItemListVenueItemNode: ListViewItemNode, ItemListItemNode {
             var updatedTheme: PresentationTheme?
             var updatedVenueType: String?
             
-            let titleFont = Font.semibold(item.presentationData.fontSize.itemListBaseFontSize)
-            let addressFont = Font.regular(floor(item.presentationData.fontSize.itemListBaseFontSize * 15.0 / 17.0))
+            let titleFont = Font.medium(item.presentationData.fontSize.itemListBaseFontSize)
+            let addressFont = Font.regular(floor(item.presentationData.fontSize.itemListBaseFontSize * 14.0 / 17.0))
             
             if currentItem?.presentationData.theme !== item.presentationData.theme {
                 updatedTheme = item.presentationData.theme
@@ -267,7 +265,6 @@ public class ItemListVenueItemNode: ListViewItemNode, ItemListItemNode {
             
             let contentSize = CGSize(width: params.width, height: max(minHeight, rawHeight))
             let separatorHeight = UIScreenPixel
-            let separatorRightInset = item.systemStyle == .glass ? 16.0 : 0.0
             
             let layout = ListViewItemNodeLayout(contentSize: contentSize, insets: insets)
             
@@ -331,7 +328,7 @@ public class ItemListVenueItemNode: ListViewItemNode, ItemListItemNode {
                             } else {
                                 stripeInset = leftInset
                             }
-                            strongSelf.bottomStripeNode.frame = CGRect(origin: CGPoint(x: stripeInset, y: contentSize.height - separatorHeight), size: CGSize(width: params.width - stripeInset - params.rightInset - separatorRightInset, height: separatorHeight))
+                            strongSelf.bottomStripeNode.frame = CGRect(origin: CGPoint(x: stripeInset, y: contentSize.height - separatorHeight), size: CGSize(width: params.width - stripeInset, height: separatorHeight))
                             strongSelf.bottomStripeNode.isHidden = last
                         case .blocks:
                             placeholderBackgroundColor = item.presentationData.theme.list.itemBlocksBackgroundColor
@@ -374,7 +371,7 @@ public class ItemListVenueItemNode: ListViewItemNode, ItemListItemNode {
                             strongSelf.backgroundNode.frame = CGRect(origin: CGPoint(x: 0.0, y: -min(insets.top, separatorHeight)), size: CGSize(width: params.width, height: contentSize.height + min(insets.top, separatorHeight) + min(insets.bottom, separatorHeight)))
                             strongSelf.maskNode.frame = strongSelf.backgroundNode.frame.insetBy(dx: params.leftInset, dy: 0.0)
                             strongSelf.topStripeNode.frame = CGRect(origin: CGPoint(x: 0.0, y: -min(insets.top, separatorHeight)), size: CGSize(width: params.width, height: separatorHeight))
-                            strongSelf.bottomStripeNode.frame = CGRect(origin: CGPoint(x: bottomStripeInset, y: contentSize.height - separatorHeight), size: CGSize(width: params.width - bottomStripeInset - params.rightInset - separatorRightInset, height: separatorHeight))
+                            strongSelf.bottomStripeNode.frame = CGRect(origin: CGPoint(x: bottomStripeInset, y: contentSize.height - separatorHeight), size: CGSize(width: params.width - bottomStripeInset, height: separatorHeight))
                     }
                     
                     transition.updateFrame(node: strongSelf.titleNode, frame: CGRect(origin: CGPoint(x: leftInset, y: verticalInset), size: titleLayout.size))

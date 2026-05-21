@@ -1,5 +1,6 @@
 import Foundation
 import UIKit
+import Postbox
 import Display
 import AsyncDisplayKit
 import SwiftSignalKit

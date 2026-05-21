@@ -4,28 +4,11 @@ import AsyncDisplayKit
 import Display
 import TelegramPresentationData
 import SearchBarNode
-import GlassBackgroundComponent
-import ComponentFlow
-import ComponentDisplayAdapters
-import AppBundle
-import ActivityIndicator
 
 private let searchBarFont = Font.regular(17.0)
-public let navigationBarSearchContentHeight: CGFloat = 60.0
+public let navigationBarSearchContentHeight: CGFloat = 54.0
 
 public class NavigationBarSearchContentNode: NavigationBarContentNode {
-    private struct Params: Equatable {
-        let size: CGSize
-        let leftInset: CGFloat
-        let rightInset: CGFloat
-        
-        init(size: CGSize, leftInset: CGFloat, rightInset: CGFloat) {
-            self.size = size
-            self.leftInset = leftInset
-            self.rightInset = rightInset
-        }
-    }
-    
     public var theme: PresentationTheme?
     public var placeholder: String
     public var compactPlaceholder: String
@@ -36,6 +19,8 @@ public class NavigationBarSearchContentNode: NavigationBarContentNode {
     private var disabledOverlay: ASDisplayNode?
     
     public var expansionProgress: CGFloat = 1.0
+    
+    public var additionalHeight: CGFloat = 0.0
 
     private var validLayout: (CGSize, CGFloat, CGFloat)?
     
@@ -45,7 +30,7 @@ public class NavigationBarSearchContentNode: NavigationBarContentNode {
         self.compactPlaceholder = compactPlaceholder ?? placeholder
         self.inline = inline
         
-        self.placeholderNode = SearchBarPlaceholderNode(fieldStyle: .glass)
+        self.placeholderNode = SearchBarPlaceholderNode(fieldStyle: .modern)
         self.placeholderNode.labelNode.displaysAsynchronously = false
         
         super.init()
@@ -56,8 +41,6 @@ public class NavigationBarSearchContentNode: NavigationBarContentNode {
         
         self.addSubnode(self.placeholderNode)
         self.placeholderNode.activate = activate
-        
-        //self.backgroundColor = .red
     }
     
     public func updateThemeAndPlaceholder(theme: PresentationTheme, placeholder: String, compactPlaceholder: String? = nil) {
@@ -119,10 +102,10 @@ public class NavigationBarSearchContentNode: NavigationBarContentNode {
     }
     
     private func updatePlaceholder(_ progress: CGFloat, size: CGSize, leftInset: CGFloat, rightInset: CGFloat, transition: ContainedViewLayoutTransition) {
-        let padding: CGFloat = 16.0
+        let padding: CGFloat = 10.0
         let baseWidth = size.width - padding * 2.0 - leftInset - rightInset
         
-        let fieldHeight: CGFloat = 44.0
+        let fieldHeight: CGFloat = 36.0
         let fraction = fieldHeight / self.nominalHeight
         let fullFraction = navigationBarSearchContentHeight / self.nominalHeight
         
@@ -133,19 +116,21 @@ public class NavigationBarSearchContentNode: NavigationBarContentNode {
         var visibleProgress: CGFloat = toLow + (self.expansionProgress - fromLow) * (toHigh - toLow) / (fromHigh - fromLow)
         visibleProgress = max(0.0, min(1.0, visibleProgress))
         
+        let searchBarNodeLayout = self.placeholderNode.asyncLayout()
+        
         let textColor = self.theme?.rootController.navigationSearchBar.inputPlaceholderTextColor ?? UIColor(rgb: 0x8e8e93)
         var fillColor = self.theme?.rootController.navigationSearchBar.inputFillColor ?? .clear
         if self.inline, let theme = self.theme, fillColor.distance(to: theme.list.blocksBackgroundColor) < 100 {
             fillColor = fillColor.withMultipliedBrightnessBy(0.8)
         }
         
-        let backgroundColor = self.theme?.chatList.regularSearchBarColor ?? .clear
-        let controlColor = self.theme?.chat.inputPanel.panelControlColor ?? .black
+        let backgroundColor = self.theme?.rootController.navigationBar.opaqueBackgroundColor ?? .clear
         
         let placeholderString = NSAttributedString(string: self.placeholder, font: searchBarFont, textColor: textColor)
         let compactPlaceholderString = NSAttributedString(string: self.compactPlaceholder, font: searchBarFont, textColor: textColor)
         
-        let searchBarHeight = self.placeholderNode.updateLayout(placeholderString: placeholderString, compactPlaceholderString: compactPlaceholderString, constrainedSize: CGSize(width: baseWidth, height: fieldHeight), expansionProgress: visibleProgress, iconColor: textColor, foregroundColor: fillColor, backgroundColor: backgroundColor, controlColor: controlColor, transition: transition)
+        let (searchBarHeight, searchBarApply) = searchBarNodeLayout(placeholderString, compactPlaceholderString, CGSize(width: baseWidth, height: fieldHeight), visibleProgress, textColor, fillColor, backgroundColor, transition)
+        searchBarApply()
         
         let searchBarFrame = CGRect(origin: CGPoint(x: padding + leftInset, y: size.height + (1.0 - visibleProgress) * fieldHeight - 8.0 - fieldHeight), size: CGSize(width: baseWidth, height: fieldHeight))
         transition.updateFrame(node: self.placeholderNode, frame: searchBarFrame)
@@ -158,12 +143,10 @@ public class NavigationBarSearchContentNode: NavigationBarContentNode {
         }
     }
     
-    override public func updateLayout(size: CGSize, leftInset: CGFloat, rightInset: CGFloat, transition: ContainedViewLayoutTransition) -> CGSize {
+    override public func updateLayout(size: CGSize, leftInset: CGFloat, rightInset: CGFloat, transition: ContainedViewLayoutTransition) {
         self.validLayout = (size, leftInset, rightInset)
         
         self.updatePlaceholder(self.expansionProgress, size: size, leftInset: leftInset, rightInset: rightInset, transition: transition)
-        
-        return size
     }
     
     override public var height: CGFloat {
@@ -175,7 +158,7 @@ public class NavigationBarSearchContentNode: NavigationBarContentNode {
     }
     
     override public var nominalHeight: CGFloat {
-        return 60.0
+        return navigationBarSearchContentHeight + self.additionalHeight
     }
     
     override public var mode: NavigationBarContentMode {

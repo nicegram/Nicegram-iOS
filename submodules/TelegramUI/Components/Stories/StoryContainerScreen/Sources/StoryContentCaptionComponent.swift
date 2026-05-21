@@ -4,6 +4,7 @@ import Display
 import ComponentFlow
 import MultilineTextComponent
 import AccountContext
+import Postbox
 import TelegramCore
 import TextNodeWithEntities
 import TextFormat
@@ -61,7 +62,6 @@ final class StoryContentCaptionComponent: Component {
     let author: EnginePeer
     let forwardInfo: EngineStoryItem.ForwardInfo?
     let forwardInfoStory: Signal<EngineStoryItem?, NoError>?
-    let music: EngineMedia?
     let entities: [MessageTextEntity]
     let entityFiles: [EngineMedia.Id: TelegramMediaFile]
     let action: (Action) -> Void
@@ -69,7 +69,6 @@ final class StoryContentCaptionComponent: Component {
     let textSelectionAction: (NSAttributedString, TextSelectionAction) -> Void
     let controller: () -> ViewController?
     let openStory: (EnginePeer, EngineStoryItem?) -> Void
-    let openMusic: (TelegramMediaFile, UIView) -> Void
     
     init(
         externalState: ExternalState,
@@ -80,15 +79,13 @@ final class StoryContentCaptionComponent: Component {
         author: EnginePeer,
         forwardInfo: EngineStoryItem.ForwardInfo?,
         forwardInfoStory: Signal<EngineStoryItem?, NoError>?,
-        music: EngineMedia?,
         entities: [MessageTextEntity],
         entityFiles: [EngineMedia.Id: TelegramMediaFile],
         action: @escaping (Action) -> Void,
         longTapAction: @escaping (Action) -> Void,
         textSelectionAction: @escaping (NSAttributedString, TextSelectionAction) -> Void,
         controller: @escaping () -> ViewController?,
-        openStory: @escaping (EnginePeer, EngineStoryItem?) -> Void,
-        openMusic: @escaping (TelegramMediaFile, UIView) -> Void
+        openStory: @escaping (EnginePeer, EngineStoryItem?) -> Void
     ) {
         self.externalState = externalState
         self.context = context
@@ -97,7 +94,6 @@ final class StoryContentCaptionComponent: Component {
         self.author = author
         self.forwardInfo = forwardInfo
         self.forwardInfoStory = forwardInfoStory
-        self.music = music
         self.text = text
         self.entities = entities
         self.entityFiles = entityFiles
@@ -106,7 +102,6 @@ final class StoryContentCaptionComponent: Component {
         self.textSelectionAction = textSelectionAction
         self.controller = controller
         self.openStory = openStory
-        self.openMusic = openMusic
     }
 
     static func ==(lhs: StoryContentCaptionComponent, rhs: StoryContentCaptionComponent) -> Bool {
@@ -126,9 +121,6 @@ final class StoryContentCaptionComponent: Component {
             return false
         }
         if lhs.forwardInfo != rhs.forwardInfo {
-            return false
-        }
-        if lhs.music != rhs.music {
             return false
         }
         if lhs.text != rhs.text {
@@ -188,8 +180,6 @@ final class StoryContentCaptionComponent: Component {
         private let scrollBottomMaskView: UIImageView
         private let scrollBottomFullMaskView: UIView
         private let scrollTopMaskView: UIImageView
-        
-        private var musicPanel: ComponentView<Empty>?
         
         private var forwardInfoPanel: ComponentView<Empty>?
         private var forwardInfoDisposable: Disposable?
@@ -320,10 +310,10 @@ final class StoryContentCaptionComponent: Component {
             
             let contentItem = self.isExpanded ? self.expandedText : self.collapsedText
             
-            if let musicView = self.musicPanel?.view {
-                let musicLocalPoint = self.convert(point, to: musicView)
-                if let result = musicView.hitTest(musicLocalPoint, with: nil) {
-                    return result
+            if let textView = contentItem.textNode?.textNode.view {
+                let textLocalPoint = self.convert(point, to: textView)
+                if textLocalPoint.y >= -7.0 {
+                    return self.textSelectionNode?.view ?? textView
                 }
             }
             
@@ -334,13 +324,6 @@ final class StoryContentCaptionComponent: Component {
                 }
             }
             
-            if let textView = contentItem.textNode?.textNode.view {
-                let textLocalPoint = self.convert(point, to: textView)
-                if textLocalPoint.y >= -7.0 {
-                    return self.textSelectionNode?.view ?? textView
-                }
-            }
-
             return nil
         }
         
@@ -581,8 +564,7 @@ final class StoryContentCaptionComponent: Component {
                         TelegramTextAttributes.BotCommand,
                         TelegramTextAttributes.Hashtag,
                         TelegramTextAttributes.Timecode,
-                        TelegramTextAttributes.BankCard,
-                        TelegramTextAttributes.Date
+                        TelegramTextAttributes.BankCard
                     ]
                     for name in possibleNames {
                         if let _ = attributes[NSAttributedString.Key(rawValue: name)] {
@@ -628,20 +610,13 @@ final class StoryContentCaptionComponent: Component {
             self.state = state
             
             let sideInset: CGFloat = 16.0
-            let verticalInset: CGFloat = 8.0
-            let bottomPanelSpacing: CGFloat = 5.0
+            let verticalInset: CGFloat = 7.0
             let textContainerSize = CGSize(width: availableSize.width - sideInset * 2.0, height: availableSize.height - verticalInset * 2.0)
             
             var baseQuoteSecondaryTintColor: UIColor?
             var baseQuoteTertiaryTintColor: UIColor?
             if let nameColor = component.author.nameColor {
-                let resolvedColor: PeerNameColors.Colors
-                switch nameColor {
-                case let .preset(nameColor):
-                    resolvedColor = component.context.peerNameColors.get(nameColor)
-                case let .collectible(collectibleColor):
-                    resolvedColor = collectibleColor.peerNameColors(dark: false)
-                }
+                let resolvedColor = component.context.peerNameColors.get(nameColor)
                 if resolvedColor.secondary != nil {
                     baseQuoteSecondaryTintColor = .clear
                 }
@@ -728,57 +703,6 @@ final class StoryContentCaptionComponent: Component {
             let visibleTextHeight = collapsedTextLayout.0.size.height - textInsets.top - textInsets.bottom
             let textOverflowHeight: CGFloat = expandedTextLayout.0.size.height - textInsets.top - textInsets.bottom - visibleTextHeight
             let scrollContentSize = CGSize(width: availableSize.width, height: availableSize.height + textOverflowHeight)
-            let hasBottomStackContent = !component.text.isEmpty || component.forwardInfo != nil
-            var bottomContentOffset: CGFloat = 0.0
-            
-            if let music = component.music?._asMedia() as? TelegramMediaFile {
-                let musicPanel: ComponentView<Empty>
-                if let current = self.musicPanel {
-                    musicPanel = current
-                } else {
-                    musicPanel = ComponentView<Empty>()
-                    self.musicPanel = musicPanel
-                }
-                
-                let musicPanelSize = musicPanel.update(
-                    transition: .immediate,
-                    component: AnyComponent(
-                        PlainButtonComponent(
-                            content: AnyComponent(
-                                MusicPanelComponent(
-                                    context: component.context,
-                                    file: music
-                                )
-                            ),
-                            action: { [weak self] in
-                                guard let self else {
-                                    return
-                                }
-                                if let sourceView = self.musicPanel?.view {
-                                    self.component?.openMusic(music, sourceView)
-                                }
-                            },
-                            animateScale: false
-                        )
-                    ),
-                    environment: {},
-                    containerSize: CGSize(width: availableSize.width - sideInset * 2.0, height: availableSize.height)
-                )
-                bottomContentOffset = musicPanelSize.height + (hasBottomStackContent ? bottomPanelSpacing : 0.0)
-                let musicPanelFrame = CGRect(origin: CGPoint(x: sideInset - 8.0, y: availableSize.height - verticalInset - musicPanelSize.height), size: musicPanelSize)
-                if let view = musicPanel.view {
-                    if view.superview == nil {
-                        self.scrollView.addSubview(view)
-                        transition.animateAlpha(view: view, from: 0.0, to: 1.0)
-                    }
-                    view.frame = musicPanelFrame
-                }
-            } else if let musicPanel = self.musicPanel {
-                self.musicPanel = nil
-                musicPanel.view?.removeFromSuperview()
-            }
-            
-            let contentBottomY = availableSize.height - verticalInset - bottomContentOffset
             
             if let forwardInfo = component.forwardInfo {
                 let authorName: String
@@ -841,6 +765,8 @@ final class StoryContentCaptionComponent: Component {
                                         fillsWidth: false
                                     )
                                 ),
+                                effectAlignment: .center,
+                                minSize: nil,
                                 action: { [weak self] in
                                     if let self, case let .known(peer, _, _) = forwardInfo {
                                         self.component?.openStory(peer, self.forwardInfoStory)
@@ -853,14 +779,13 @@ final class StoryContentCaptionComponent: Component {
                                             return nil
                                         }))
                                     }
-                                },
-                                animateScale: false
+                                }
                             )
                         ),
                         environment: {},
                         containerSize: CGSize(width: availableSize.width - sideInset * 2.0, height: availableSize.height)
                     )
-                    let forwardInfoPanelFrame = CGRect(origin: CGPoint(x: sideInset, y: contentBottomY - visibleTextHeight - forwardInfoPanelSize.height - bottomPanelSpacing), size: forwardInfoPanelSize)
+                    let forwardInfoPanelFrame = CGRect(origin: CGPoint(x: sideInset, y: availableSize.height - visibleTextHeight - verticalInset - forwardInfoPanelSize.height - 10.0), size: forwardInfoPanelSize)
                     if let view = forwardInfoPanel.view {
                         if view.superview == nil {
                             self.scrollView.addSubview(view)
@@ -875,8 +800,8 @@ final class StoryContentCaptionComponent: Component {
             }
             
             
-            let collapsedTextFrame = CGRect(origin: CGPoint(x: sideInset - textInsets.left, y: contentBottomY - visibleTextHeight - textInsets.top), size: collapsedTextLayout.0.size)
-            let expandedTextFrame = CGRect(origin: CGPoint(x: sideInset - textInsets.left, y: contentBottomY - visibleTextHeight - textInsets.top), size: expandedTextLayout.0.size)
+            let collapsedTextFrame = CGRect(origin: CGPoint(x: sideInset - textInsets.left, y: availableSize.height - visibleTextHeight - verticalInset - textInsets.top), size: collapsedTextLayout.0.size)
+            let expandedTextFrame = CGRect(origin: CGPoint(x: sideInset - textInsets.left, y: availableSize.height - visibleTextHeight - verticalInset - textInsets.top), size: expandedTextLayout.0.size)
             
             var spoilerExpandRect: CGRect?
             if let location = self.displayContentsUnderSpoilers.location {
@@ -964,7 +889,7 @@ final class StoryContentCaptionComponent: Component {
                     self.textSelectionKnobContainer.addSubview(textSelectionKnobSurface)
                 }
                 
-                let textSelectionNode = TextSelectionNode(theme: TextSelectionTheme(selection: selectionColor, knob: component.theme.list.itemAccentColor, isDark: true), strings: component.strings, textNodeOrView: .node(textNode), updateIsActive: { [weak self] value in
+                let textSelectionNode = TextSelectionNode(theme: TextSelectionTheme(selection: selectionColor, knob: component.theme.list.itemAccentColor, isDark: true), strings: component.strings, textNode: textNode, updateIsActive: { [weak self] value in
                     guard let self else {
                         return
                     }
@@ -980,8 +905,8 @@ final class StoryContentCaptionComponent: Component {
                         return
                     }
                     component.controller()?.presentInGlobalOverlay(c, with: a)
-                }, rootView: { [weak controller] in
-                    return controller?.displayNode.view
+                }, rootNode: { [weak controller] in
+                    return controller?.displayNode
                 }, externalKnobSurface: self.textSelectionKnobSurface, performAction: { [weak self] text, action in
                     guard let self, let component = self.component else {
                         return

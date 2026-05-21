@@ -3,7 +3,6 @@ import UIKit
 import AsyncDisplayKit
 import Display
 import LegacyComponents
-import GlassBackgroundComponent
 
 public final class VoiceBlobNode: ASDisplayNode {
     public init(
@@ -54,8 +53,6 @@ public final class VoiceBlobView: UIView, TGModernConversationInputMicButtonDeco
     public var presentationAudioLevel: CGFloat = 0
     
     private(set) var isAnimating = false
-    
-    public var hitTestSize: CGFloat?
     
     public typealias BlobRange = (min: CGFloat, max: CGFloat)
     
@@ -226,15 +223,6 @@ public final class VoiceBlobView: UIView, TGModernConversationInputMicButtonDeco
         
         self.updateBlobsState()
     }
-    
-    override public func hitTest(_ point: CGPoint, with event: UIEvent?) -> UIView? {
-        if let hitTestSize = self.hitTestSize {
-            if !CGSize(width: hitTestSize, height: hitTestSize).centered(in: self.bounds).contains(point) {
-                return nil
-            }
-        }
-        return super.hitTest(point, with: event)
-    }
 }
 
 final class BlobNode: ASDisplayNode {
@@ -277,8 +265,6 @@ final class BlobNode: ASDisplayNode {
         return layer
     }()
     
-    private var backgroundView: GlassBackgroundView?
-    
     private var transition: CGFloat = 0 {
         didSet {
             guard let currentPoints = currentPoints else { return }
@@ -304,8 +290,6 @@ final class BlobNode: ASDisplayNode {
 
     private let hierarchyTrackingNode: HierarchyTrackingNode
     private var isCurrentlyInHierarchy = true
-    
-    private var color: UIColor?
     
     init(
         pointsCount: Int,
@@ -342,13 +326,6 @@ final class BlobNode: ASDisplayNode {
         self.layer.addSublayer(self.shapeLayer)
         
         self.shapeLayer.transform = CATransform3DMakeScale(minScale, minScale, 1)
-        
-        if isCircle {
-            let backgroundView = GlassBackgroundView()
-            self.backgroundView = backgroundView
-            self.shapeLayer.removeFromSuperlayer()
-            self.view.addSubview(backgroundView)
-        }
 
         updateInHierarchy = { [weak self] value in
             if let strongSelf = self {
@@ -362,8 +339,6 @@ final class BlobNode: ASDisplayNode {
     }
     
     func setColor(_ color: UIColor, animated: Bool) {
-        self.color = color
-        
         let previousColor = self.shapeLayer.fillColor
         self.shapeLayer.fillColor = color.cgColor
         if animated, let previousColor = previousColor, self.isCurrentlyInHierarchy {
@@ -469,12 +444,6 @@ final class BlobNode: ASDisplayNode {
             ).cgPath
         }
         CATransaction.commit()
-        
-        if let backgroundView = self.backgroundView, let color = self.color {
-            let halfWidth = floor(self.bounds.width * self.minScale)
-            backgroundView.update(size: CGSize(width: halfWidth, height: halfWidth), cornerRadius: halfWidth * 0.5, isDark: false, tintColor: .init(kind: .custom(style: .default, color: color)), transition: .immediate)
-            backgroundView.frame = CGRect(origin: CGPoint(x: (self.bounds.width - halfWidth) * 0.5, y: (self.bounds.height - halfWidth) * 0.5), size: CGSize(width: halfWidth, height: halfWidth))
-        }
     }
 }
 

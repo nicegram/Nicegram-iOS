@@ -119,7 +119,7 @@ private final class StorageUsageItemNode: ListViewItemNode {
         self.lineNodes = []
         self.descriptionNodes = []
         
-        super.init(layerBacked: false)
+        super.init(layerBacked: false, dynamicBounce: false)
         
         self.addSubnode(self.lineMaskNode)
     }

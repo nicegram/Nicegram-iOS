@@ -99,7 +99,7 @@ final class VoiceChatPeerProfileNode: ASDisplayNode {
                 return
             }
             strongSelf.avatarListNode.controlsContainerNode.alpha = 0.0
-            let pinchController = makePinchController(sourceNode: sourceNode, getContentAreaInScreenSpace: {
+            let pinchController = PinchController(sourceNode: sourceNode, getContentAreaInScreenSpace: {
                 return UIScreen.main.bounds
             })
             context.sharedContext.mainWindow?.presentInGlobalOverlay(pinchController)

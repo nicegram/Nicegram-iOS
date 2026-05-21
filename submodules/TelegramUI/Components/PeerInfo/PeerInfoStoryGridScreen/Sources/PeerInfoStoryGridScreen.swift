@@ -201,7 +201,7 @@ final class PeerInfoStoryGridScreenComponent: Component {
                 }
             }
 
-            let contextController = makeContextController(presentationData: presentationData, source: .reference(PeerInfoContextReferenceContentSource(controller: controller, sourceNode: source)), items: .single(ContextController.Items(content: .list(items))), gesture: nil)
+            let contextController = ContextController(presentationData: presentationData, source: .reference(PeerInfoContextReferenceContentSource(controller: controller, sourceNode: source)), items: .single(ContextController.Items(content: .list(items))), gesture: nil)
             contextController.passthroughTouchEvent = { [weak self] sourceView, point in
                 guard let self else {
                     return .ignore
@@ -242,7 +242,7 @@ final class PeerInfoStoryGridScreenComponent: Component {
                 guard let self, let component = self.component, let peer else {
                     return
                 }
-                guard let peerReference = PeerReference(peer) else {
+                guard let peerReference = PeerReference(peer._asPeer()) else {
                     return
                 }
                 
@@ -265,7 +265,7 @@ final class PeerInfoStoryGridScreenComponent: Component {
                 for (_, item) in sortedItems {
                     let itemOffset = progressStart
                     progressStart += valueNorm
-                    signals.append(saveToCameraRoll(context: component.context, userLocation: .other, mediaReference: .story(peer: peerReference, id: item.id, media: item.media._asMedia()))
+                    signals.append(saveToCameraRoll(context: component.context, postbox: component.context.account.postbox, userLocation: .other, mediaReference: .story(peer: peerReference, id: item.id, media: item.media._asMedia()))
                     |> map { progress -> Float in
                         return itemOffset + progress * valueNorm
                     })
@@ -310,7 +310,7 @@ final class PeerInfoStoryGridScreenComponent: Component {
                 return
             }
             if let rootController = component.context.sharedContext.mainWindow?.viewController as? TelegramRootControllerInterface {
-                let coordinator = rootController.openStoryCamera(mode: .photo, customTarget: nil, resumeLiveStream: false, transitionIn: nil, transitionedIn: {}, transitionOut: { _, _ in return nil })
+                let coordinator = rootController.openStoryCamera(customTarget: nil, transitionIn: nil, transitionedIn: {}, transitionOut: { _, _ in return nil })
                 coordinator?.animateIn()
             }
         }
@@ -676,7 +676,7 @@ public class PeerInfoStoryGridScreen: ViewControllerComponentContainer {
         let presentationData = self.context.sharedContext.currentPresentationData.with { $0 }
         
         if self.selectionModeCompletion != nil {
-            self.titleView?.titleContent = .custom(title: [ChatTitleContent.TitleTextItem(id: AnyHashable(0), content: .text(presentationData.strings.Stories_AddStoriesTitle))], subtitle: nil, isEnabled: false)
+            self.titleView?.titleContent = .custom(presentationData.strings.Stories_AddStoriesTitle, nil, false)
         } else {
             switch self.scope {
             case .saved:
@@ -691,7 +691,7 @@ public class PeerInfoStoryGridScreen: ViewControllerComponentContainer {
                 } else {
                     title = nil
                 }
-                self.titleView?.titleContent = .custom(title: [ChatTitleContent.TitleTextItem(id: AnyHashable(0), content: .text(presentationData.strings.StoryList_TitleSaved))], subtitle: title, isEnabled: false)
+                self.titleView?.titleContent = .custom(presentationData.strings.StoryList_TitleSaved, title, false)
                 
                 if paneNode.isSelectionModeActive {
                     self.navigationItem.setRightBarButton(self.doneBarButtonItem, animated: false)
@@ -708,7 +708,7 @@ public class PeerInfoStoryGridScreen: ViewControllerComponentContainer {
                 } else {
                     title = presentationData.strings.StoryList_TitleArchive
                 }
-                self.titleView?.titleContent = .custom(title: [ChatTitleContent.TitleTextItem(id: AnyHashable(0), content: .text(title))], subtitle: nil, isEnabled: false)
+                self.titleView?.titleContent = .custom(title, nil, false)
                 
                 var hasMenu = false
                 if componentView.selectedCount != 0 {

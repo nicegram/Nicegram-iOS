@@ -445,7 +445,7 @@ public class AnimatedCountLabelView: UIView {
                 effectiveSegmentWidth = max(effectiveSegmentWidth, 4.0)
             }
             calculatedSegments[segment.key] = (layout, effectiveSegmentWidth, apply)
-            contentSize.width += floor(effectiveSegmentWidth * 0.9)
+            contentSize.width += effectiveSegmentWidth
             contentSize.height = max(contentSize.height, layout.size.height)
             remainingSize.width = max(0.0, remainingSize.width - layout.size.width)
             if layout.truncated {

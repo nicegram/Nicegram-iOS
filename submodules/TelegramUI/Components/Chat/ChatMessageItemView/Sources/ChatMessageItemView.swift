@@ -112,7 +112,7 @@ public final class ChatMessageAccessibilityData {
             if let chatPeer = message.peers[item.message.id.peerId] {
                 let authorName = message.author.flatMap(EnginePeer.init)?.displayTitle(strings: item.presentationData.strings, displayOrder: item.presentationData.nameDisplayOrder)
                 
-                let (_, _, messageText, _, _, _) = chatListItemStrings(strings: item.presentationData.strings, nameDisplayOrder: item.presentationData.nameDisplayOrder, dateTimeFormat: item.presentationData.dateTimeFormat, contentSettings: item.context.currentContentSettings.with { $0 }, messages: [EngineMessage(message)], chatPeer: EngineRenderedPeer(peer: EnginePeer(chatPeer)), accountPeerId: item.context.account.peerId)
+                let (_, _, messageText, _, _) = chatListItemStrings(strings: item.presentationData.strings, nameDisplayOrder: item.presentationData.nameDisplayOrder, dateTimeFormat: item.presentationData.dateTimeFormat, contentSettings: item.context.currentContentSettings.with { $0 }, messages: [EngineMessage(message)], chatPeer: EngineRenderedPeer(peer: EnginePeer(chatPeer)), accountPeerId: item.context.account.peerId)
                 
                 var text = messageText
                 
@@ -388,8 +388,7 @@ public final class ChatMessageAccessibilityData {
                                     inner: for optionVoters in voters {
                                         if optionVoters.opaqueIdentifier == poll.options[i].opaqueIdentifier {
                                             optionVoterCount[i] = optionVoters.count
-                                            //TODO:correct
-                                            maxOptionVoterCount = max(maxOptionVoterCount, optionVoters.count ?? 0)
+                                            maxOptionVoterCount = max(maxOptionVoterCount, optionVoters.count)
                                             break inner
                                         }
                                     }
@@ -623,12 +622,10 @@ public final class ChatMessageAccessibilityData {
 public enum InternalBubbleTapAction {
     public struct Action {
         public var action: () -> Void
-        public var actionWithLongTapRecognizer: ((TapLongTapOrDoubleTapGestureRecognizer) -> Void)?
         public var contextMenuOnLongPress: Bool
         
-        public init(_ action: @escaping () -> Void, actionWithLongTapRecognizer: ((TapLongTapOrDoubleTapGestureRecognizer) -> Void)? = nil, contextMenuOnLongPress: Bool = false) {
+        public init(_ action: @escaping () -> Void, contextMenuOnLongPress: Bool = false) {
             self.action = action
-            self.actionWithLongTapRecognizer = actionWithLongTapRecognizer
             self.contextMenuOnLongPress = contextMenuOnLongPress
         }
     }
@@ -671,7 +668,7 @@ open class ChatMessageItemView: ListViewItemNode, ChatMessageItemNodeProtocol {
     public var effectAnimationNodes: [ChatMessageTransitionNode.DecorationItemNode] = []
     
     public required init(rotated: Bool) {
-        super.init(layerBacked: false, rotated: rotated)
+        super.init(layerBacked: false, dynamicBounce: true, rotated: rotated)
         if rotated {
             self.transform = CATransform3DMakeRotation(CGFloat.pi, 0.0, 0.0, 1.0)
         }
@@ -1025,7 +1022,7 @@ open class ChatMessageItemView: ListViewItemNode, ChatMessageItemNodeProtocol {
         let incomingMessage = item.message.effectivelyIncoming(item.context.account.peerId)
 
         do {
-            let pathPrefix = item.context.engine.resources.shortLivedResourceCachePathPrefix(id: EngineMediaResource.Id(resource.id))
+            let pathPrefix = item.context.account.postbox.mediaBox.shortLivedResourceCachePathPrefix(resource.id)
             
             let additionalAnimationNode: AnimatedStickerNode
             var effectiveScale: CGFloat = 1.0

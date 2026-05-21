@@ -12,7 +12,6 @@ import AnimatedCountLabelNode
 
 final class AttachmentTextInputActionButtonsNode: ASDisplayNode, ChatSendMessageActionSheetControllerSourceSendButtonNode {
     private let strings: PresentationStrings
-    private let glass: Bool
     
     let sendContainerNode: ASDisplayNode
     let backgroundNode: ASDisplayNode
@@ -20,7 +19,6 @@ final class AttachmentTextInputActionButtonsNode: ASDisplayNode, ChatSendMessage
     var sendButtonHasApplyIcon = false
     var animatingSendButton = false
     let textNode: ImmediateAnimatedCountLabelNode
-    let iconNode: ASImageNode
     
     private var theme: PresentationTheme
 
@@ -37,25 +35,20 @@ final class AttachmentTextInputActionButtonsNode: ASDisplayNode, ChatSendMessage
         
     private var validLayout: CGSize?
     
-    init(presentationInterfaceState: ChatPresentationInterfaceState, glass: Bool, presentController: @escaping (ViewController) -> Void) {
+    init(presentationInterfaceState: ChatPresentationInterfaceState, presentController: @escaping (ViewController) -> Void) {
         self.theme = presentationInterfaceState.theme
         self.strings = presentationInterfaceState.strings
-        self.glass = glass
                  
         self.sendContainerNode = ASDisplayNode()
         self.sendContainerNode.layer.allowsGroupOpacity = true
         
         self.backgroundNode = ASDisplayNode()
-        self.backgroundNode.backgroundColor = self.theme.chat.inputPanel.actionControlFillColor
+        self.backgroundNode.backgroundColor = theme.chat.inputPanel.actionControlFillColor
         self.backgroundNode.clipsToBounds = true
-        
         self.sendButton = HighlightTrackingButtonNode(pointerStyle: nil)
                 
         self.textNode = ImmediateAnimatedCountLabelNode()
         self.textNode.isUserInteractionEnabled = false
-        
-        self.iconNode = ASImageNode()
-        self.iconNode.displaysAsynchronously = false
         
         super.init()
         
@@ -88,7 +81,6 @@ final class AttachmentTextInputActionButtonsNode: ASDisplayNode, ChatSendMessage
         self.sendContainerNode.addSubnode(self.backgroundNode)
         self.sendContainerNode.addSubnode(self.sendButton)
         self.sendContainerNode.addSubnode(self.textNode)
-        self.backgroundNode.addSubnode(self.iconNode)
     }
     
     override func didLoad() {
@@ -110,10 +102,6 @@ final class AttachmentTextInputActionButtonsNode: ASDisplayNode, ChatSendMessage
         self.sendButtonPointerInteraction = PointerInteraction(view: self.sendButton.view, customInteractionView: self.backgroundNode.view, style: .lift)
     }
     
-    func setImage(_ image: UIImage?) {
-        self.iconNode.image = image
-    }
-    
     func updateTheme(theme: PresentationTheme, wallpaper: TelegramWallpaper) {
         self.backgroundNode.backgroundColor = theme.chat.inputPanel.actionControlFillColor
     }
@@ -123,14 +111,8 @@ final class AttachmentTextInputActionButtonsNode: ASDisplayNode, ChatSendMessage
         self.absoluteRect = (rect, containerSize)
     }
     
-    public func animateIn(transition: ContainedViewLayoutTransition) {
-        transition.animatePositionAdditive(layer: self.iconNode.layer, offset: CGPoint(x: -22.0, y: 18.0))
-    }
-    
     func updateLayout(size: CGSize, transition: ContainedViewLayoutTransition, minimized: Bool, text: String, interfaceState: ChatPresentationInterfaceState) -> CGSize {
         self.validLayout = size
-        
-        let height: CGFloat = self.glass ? 34.0 : 33.0
         
         let width: CGFloat
         
@@ -152,16 +134,14 @@ final class AttachmentTextInputActionButtonsNode: ASDisplayNode, ChatSendMessage
             }
             titleOffset -= 2.0
             buttonInset = 14.0
-            self.iconNode.isHidden = true
         } else {
             segments.append(.text(0, NSAttributedString(string: text, font: Font.semibold(17.0), textColor: interfaceState.theme.chat.inputPanel.actionControlForegroundColor)))
-            self.iconNode.isHidden = false
         }
         self.textNode.segments = segments
         
         let textSize = self.textNode.updateLayout(size: CGSize(width: 100.0, height: 100.0), animated: transition.isAnimated)
         if minimized {
-            width = self.glass ? 51.0 : 53.0
+            width = 44.0
         } else {
             width = textSize.width + buttonInset * 2.0
         }
@@ -175,13 +155,9 @@ final class AttachmentTextInputActionButtonsNode: ASDisplayNode, ChatSendMessage
         transition.updateFrame(layer: self.sendButton.layer, frame: CGRect(origin: CGPoint(), size: buttonSize))
         transition.updateFrame(node: self.sendContainerNode, frame: CGRect(origin: CGPoint(), size: buttonSize))
         
-        let backgroundSize = CGSize(width: width - 11.0, height: height)
+        let backgroundSize = CGSize(width: width - 11.0, height: 33.0)
         transition.updateFrame(node: self.backgroundNode, frame: CGRect(origin: CGPoint(x: floorToScreenPixels((width - backgroundSize.width) / 2.0), y: floorToScreenPixels((size.height - backgroundSize.height) / 2.0)), size: backgroundSize))
         self.backgroundNode.cornerRadius = backgroundSize.height / 2.0
-        
-        if let iconSize = self.iconNode.image?.size {
-            transition.updateFrame(node: self.iconNode, frame: CGRect(origin: CGPoint(x: floorToScreenPixels((backgroundSize.width - iconSize.width) / 2.0), y: floorToScreenPixels((backgroundSize.height - iconSize.height) / 2.0)), size: iconSize))
-        }
         
         return buttonSize
     }

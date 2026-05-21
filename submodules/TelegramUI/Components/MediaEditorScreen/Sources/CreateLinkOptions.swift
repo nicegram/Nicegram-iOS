@@ -25,7 +25,7 @@ func presentLinkOptionsController(context: AccountContext, selfController: Creat
         return
     }
         
-    let contextController = makeContextController(
+    let contextController = ContextController(
         presentationData: context.sharedContext.currentPresentationData.with { $0 }.withUpdated(theme: defaultDarkColorPresentationTheme),
         configuration: ContextController.Configuration(
             sources: sources,
@@ -90,7 +90,7 @@ private func linkOptions(context: AccountContext, selfController: CreateLinkScre
     if let image = snapshotImage {
         let wallpaperResource = LocalFileMediaResource(fileId: Int64.random(in: Int64.min ... Int64.max))
         if let wallpaperData = image.jpegData(compressionQuality: 0.87) {
-            context.engine.resources.storeResourceData(id: EngineMediaResource.Id(wallpaperResource.id), data: wallpaperData, synchronous: true)
+            context.account.postbox.mediaBox.storeResourceData(wallpaperResource.id, data: wallpaperData, synchronous: true)
         }
         let wallpaperRepresentation = TelegramMediaImageRepresentation(dimensions: PixelDimensions(image.size), resource: wallpaperResource, progressiveSizes: [], immediateThumbnailData: nil)
         wallpaper = .image([wallpaperRepresentation], WallpaperSettings())

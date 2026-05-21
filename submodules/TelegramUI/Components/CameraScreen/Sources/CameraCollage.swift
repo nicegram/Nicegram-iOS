@@ -903,6 +903,7 @@ final class CameraCollageView: UIView, UIGestureRecognizerDelegate {
     
     private let context: AccountContext
     private let collage: CameraCollage
+    private weak var camera: Camera?
     private weak var cameraContainerView: UIView?
     
     private var cameraVideoSource: CameraVideoSource?
@@ -933,10 +934,9 @@ final class CameraCollageView: UIView, UIGestureRecognizerDelegate {
         return self.collage.result(itemViews: self.itemViews)
     }
     
-    init(context: AccountContext, collage: CameraCollage, cameraVideoSource: CameraVideoSource, cameraContainerView: UIView?) {
+    init(context: AccountContext, collage: CameraCollage, camera: Camera?, cameraContainerView: UIView?) {
         self.context = context
         self.collage = collage
-        self.cameraVideoSource = cameraVideoSource
         self.cameraContainerView = cameraContainerView
         
         self.cloneLayers = (0 ..< 6).map { _ in MetalEngineSubjectLayer() }
@@ -1009,12 +1009,15 @@ final class CameraCollageView: UIView, UIGestureRecognizerDelegate {
         self.tapRecognizer = tapRecognizer
         self.addGestureRecognizer(tapRecognizer)
         
-        self.cameraVideoLayer.video = cameraVideoSource.currentOutput
-        self.cameraVideoDisposable = cameraVideoSource.addOnUpdated { [weak self] in
-            guard let self, let videoSource = self.cameraVideoSource, self.isEnabled else {
-                return
-            }
-            Queue.mainQueue().async {
+        if let cameraVideoSource = CameraVideoSource() {
+            self.cameraVideoLayer.video = cameraVideoSource.currentOutput
+            camera?.setPreviewOutput(cameraVideoSource.cameraVideoOutput)
+            self.cameraVideoSource = cameraVideoSource
+            
+            self.cameraVideoDisposable = cameraVideoSource.addOnUpdated { [weak self] in
+                guard let self, let videoSource = self.cameraVideoSource, self.isEnabled else {
+                    return
+                }
                 self.cameraVideoLayer.video = videoSource.currentOutput
             }
         }
@@ -1032,6 +1035,7 @@ final class CameraCollageView: UIView, UIGestureRecognizerDelegate {
     deinit {
         self.disposable?.dispose()
         self.cameraVideoDisposable?.dispose()
+        self.camera?.setPreviewOutput(nil)
     }
     
     func getPreviewLayer() -> PreviewLayer {
@@ -1227,7 +1231,7 @@ final class CameraCollageView: UIView, UIGestureRecognizerDelegate {
         }
         
         let items = ContextController.Items(content: .list(itemList), tip: .collageReordering)
-        let controller = makeContextController(
+        let controller = ContextController(
             presentationData: presentationData.withUpdated(theme: defaultDarkColorPresentationTheme),
             source: .extracted(CollageContextExtractedContentSource(contentView: sourceView)),
             items: .single(items),

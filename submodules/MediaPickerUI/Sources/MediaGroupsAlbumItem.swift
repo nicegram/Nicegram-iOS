@@ -172,7 +172,7 @@ class MediaGroupsAlbumItemNode: ListViewItemNode {
         
         self.activateArea = AccessibilityAreaNode()
         
-        super.init(layerBacked: false)
+        super.init(layerBacked: false, dynamicBounce: false)
         
         self.addSubnode(self.iconNode)
         self.addSubnode(self.titleNode)

@@ -61,8 +61,7 @@ public func contentSettingsConfiguration(network: Network) -> Signal<ContentSett
     return network.request(Api.functions.account.getContentSettings())
     |> map { result -> ContentSettingsConfiguration in
         switch result {
-        case let .contentSettings(contentSettingsData):
-            let flags = contentSettingsData.flags
+        case let .contentSettings(flags):
             return ContentSettingsConfiguration(sensitiveContentEnabled: (flags & (1 << 0)) != 0, canAdjustSensitiveContent: (flags & (1 << 1)) != 0)
         }
     }

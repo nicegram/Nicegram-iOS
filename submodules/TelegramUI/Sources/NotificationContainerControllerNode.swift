@@ -95,7 +95,10 @@ final class NotificationContainerControllerNode: ASDisplayNode {
             })
         }
         
-        let useCompactLayout = "".isEmpty
+        var useCompactLayout = false
+        if let validLayout = self.validLayout {
+            useCompactLayout = min(validLayout.size.width, validLayout.size.height) < 375.0
+        }
         
         let itemNode = item.node(compact: useCompactLayout)
         let containerNode = NotificationItemContainerNode(theme: self.presentationData.theme, contentNode: itemNode)
@@ -162,7 +165,10 @@ final class NotificationContainerControllerNode: ASDisplayNode {
             }
             self.topItemAndNode = nil
             
-            let useCompactLayout = "".isEmpty
+            var useCompactLayout = false
+            if let validLayout = self.validLayout {
+                useCompactLayout = min(validLayout.size.width, validLayout.size.height) < 375.0
+            }
             
             let itemNode = item.node(compact: useCompactLayout)
             let containerNode = NotificationItemContainerNode(theme: self.presentationData.theme, contentNode: itemNode)

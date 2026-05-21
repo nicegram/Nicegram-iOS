@@ -6,6 +6,7 @@ import ListSectionComponent
 import TelegramPresentationData
 import AppBundle
 import AccountContext
+import Postbox
 import TelegramCore
 import TextNodeWithEntities
 import MultilineTextComponent
@@ -72,7 +73,6 @@ final class BusinessLinkListItemComponent: Component {
         private weak var componentState: EmptyComponentState?
         
         var customUpdateIsHighlighted: ((Bool) -> Void)?
-        var enumerateSiblings: (((UIView) -> Void) -> Void)?
         private(set) var separatorInset: CGFloat = 0.0
         
         private var isExtractedToContextMenu: Bool = false

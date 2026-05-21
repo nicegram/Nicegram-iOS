@@ -7,7 +7,7 @@ swift_library(
         "Sources/**/*.swift",
     ]),
     copts = [
-        "-warnings-as-errors",
+        #"-warnings-as-errors",
     ],
     deps = [
         "//submodules/AsyncDisplayKit",
@@ -21,7 +21,6 @@ swift_library(
         "//submodules/Components/MultilineTextComponent",
         "//submodules/Components/BalancedTextComponent",
         "//submodules/TelegramPresentationData",
-        "//submodules/TelegramNotices",
         "//submodules/AccountContext",
         "//submodules/AppBundle",
         "//submodules/ItemListUI",
@@ -44,11 +43,6 @@ swift_library(
         "//submodules/TelegramUI/Components/TabSelectorComponent",
         "//submodules/TelegramUI/Components/Gifts/GiftSetupScreen",
         "//submodules/TelegramUI/Components/Gifts/GiftViewScreen",
-        "//submodules/TelegramUI/Components/EdgeEffect",
-        "//submodules/TelegramUI/Components/GlassBarButtonComponent",
-        "//submodules/TelegramUI/Components/AlertComponent",
-        "//submodules/TelegramUI/Components/AlertComponent/AlertTransferHeaderComponent",
-        "//submodules/TelegramUI/Components/AvatarComponent",
     ],
     visibility = [
         "//visibility:public",

@@ -14,8 +14,7 @@ func _internal_chatOnlineMembers(postbox: Postbox, network: Network, peerId: Pee
         return network.request(Api.functions.messages.getOnlines(peer: inputPeer))
         |> map { value -> Int32 in
             switch value {
-                case let .chatOnlines(chatOnlinesData):
-                    let onlines = chatOnlinesData.onlines
+                case let .chatOnlines(onlines):
                     return onlines
             }
         }

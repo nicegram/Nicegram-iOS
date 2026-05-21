@@ -739,7 +739,11 @@
         
         bool processLive = false;
         if (asset.subtypes & TGMediaAssetSubtypePhotoLive) {
-            processLive = true;
+            if (iosMajorVersion() < 9 || (iosMajorVersion() == 9 && iosMinorVersion() < 1)) {
+                processLive = false;
+            } else {
+                processLive = true;
+            }
         }
         
         if (processLive)

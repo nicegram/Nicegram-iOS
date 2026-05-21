@@ -1,7 +1,6 @@
 import Foundation
 import TelegramCore
 import TelegramPresentationData
-import TextFormat
 
 public func stringForTimestamp(day: Int32, month: Int32, year: Int32, dateTimeFormat: PresentationDateTimeFormat) -> String {
     let separator = dateTimeFormat.dateSeparator
@@ -42,37 +41,6 @@ public func shortStringForDayOfWeek(strings: PresentationStrings, day: Int32) ->
         return strings.Weekday_ShortFriday
     case 6:
         return strings.Weekday_ShortSaturday
-    default:
-        return ""
-    }
-}
-
-public func stringForNominativeMonth(strings: PresentationStrings, month: Int32) -> String {
-    switch month {
-    case 0:
-        return strings.Month_NomJanuary
-    case 1:
-        return strings.Month_NomFebruary
-    case 2:
-        return strings.Month_NomMarch
-    case 3:
-        return strings.Month_NomApril
-    case 4:
-        return strings.Month_NomMay
-    case 5:
-        return strings.Month_NomJune
-    case 6:
-        return strings.Month_NomJuly
-    case 7:
-        return strings.Month_NomAugust
-    case 8:
-        return strings.Month_NomSeptember
-    case 9:
-        return strings.Month_NomOctober
-    case 10:
-        return strings.Month_NomNovember
-    case 11:
-        return strings.Month_NomDecember
     default:
         return ""
     }
@@ -702,15 +670,4 @@ public func stringForIntervalSinceUpdateAction(strings: PresentationStrings, val
     } else {
         return strings.Chat_NonContactUser_UpdatedDays(Int32(round(Float(value) / (24 * 60 * 60))))
     }
-}
-
-public func stringForGiftUpgradeTimestamp(strings: PresentationStrings, dateTimeFormat: PresentationDateTimeFormat, timestamp: Int32) -> String {
-    var t: time_t = time_t(timestamp)
-    var timeinfo: tm = tm()
-    localtime_r(&t, &timeinfo)
-
-    let time = stringForShortTimestamp(hours: timeinfo.tm_hour, minutes: timeinfo.tm_min, dateTimeFormat: dateTimeFormat)
-    let date = strings.Date_ChatDateHeader(monthAtIndex(Int(timeinfo.tm_mon), strings: strings), "\(timeinfo.tm_mday)").string
-    
-    return "\(time), \(date)"
 }

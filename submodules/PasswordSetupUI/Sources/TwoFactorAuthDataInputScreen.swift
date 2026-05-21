@@ -71,7 +71,7 @@ public final class TwoFactorDataInputScreen: ViewController {
         self.presentationData = self.sharedContext.currentPresentationData.with { $0 }
         
         let defaultTheme = NavigationBarTheme(rootControllerTheme: self.presentationData.theme)
-        let navigationBarTheme = NavigationBarTheme(overallDarkAppearance: defaultTheme.overallDarkAppearance, buttonColor: defaultTheme.buttonColor, disabledButtonColor: defaultTheme.disabledButtonColor, primaryTextColor: defaultTheme.primaryTextColor, backgroundColor: .clear, enableBackgroundBlur: false, separatorColor: .clear, badgeBackgroundColor: defaultTheme.badgeBackgroundColor, badgeStrokeColor: defaultTheme.badgeStrokeColor, badgeTextColor: defaultTheme.badgeTextColor, accentButtonColor: defaultTheme.accentButtonColor, accentDisabledButtonColor: defaultTheme.accentDisabledButtonColor, accentForegroundColor: defaultTheme.accentForegroundColor)
+        let navigationBarTheme = NavigationBarTheme(buttonColor: defaultTheme.buttonColor, disabledButtonColor: defaultTheme.disabledButtonColor, primaryTextColor: defaultTheme.primaryTextColor, backgroundColor: .clear, enableBackgroundBlur: false, separatorColor: .clear, badgeBackgroundColor: defaultTheme.badgeBackgroundColor, badgeStrokeColor: defaultTheme.badgeStrokeColor, badgeTextColor: defaultTheme.badgeTextColor)
         
         super.init(navigationBarPresentationData: NavigationBarPresentationData(theme: navigationBarTheme, strings: NavigationBarStrings(back: self.presentationData.strings.Common_Back, close: self.presentationData.strings.Common_Close)))
         
@@ -119,7 +119,7 @@ public final class TwoFactorDataInputScreen: ViewController {
                     return
                 }
                 if values[0] != values[1] {
-                    strongSelf.present(textAlertController(sharedContext: strongSelf.sharedContext, title: nil, text: strongSelf.presentationData.strings.TwoStepAuth_SetupPasswordConfirmFailed, actions: [
+                    strongSelf.present(standardTextAlertController(theme: AlertControllerTheme(presentationData: strongSelf.presentationData), title: nil, text: strongSelf.presentationData.strings.TwoStepAuth_SetupPasswordConfirmFailed, actions: [
                         TextAlertAction(type: .defaultAction, title: strongSelf.presentationData.strings.Common_OK, action: {})
                     ]), in: .window(.root))
                     return
@@ -167,7 +167,7 @@ public final class TwoFactorDataInputScreen: ViewController {
                         text = strongSelf.presentationData.strings.Login_UnknownError
                     }
 
-                    strongSelf.present(textAlertController(sharedContext: strongSelf.sharedContext, title: nil, text: text, actions: [TextAlertAction(type: .defaultAction, title: strongSelf.presentationData.strings.Common_OK, action: {})]), in: .window(.root))
+                    strongSelf.present(standardTextAlertController(theme: AlertControllerTheme(presentationData: strongSelf.presentationData), title: nil, text: text, actions: [TextAlertAction(type: .defaultAction, title: strongSelf.presentationData.strings.Common_OK, action: {})]), in: .window(.root))
                 }, completed: { [weak statusController] in
                     statusController?.dismiss()
 
@@ -196,7 +196,7 @@ public final class TwoFactorDataInputScreen: ViewController {
                     return
                 }
                 if values[0] != values[1] {
-                    strongSelf.present(textAlertController(sharedContext: strongSelf.sharedContext, title: nil, text: strongSelf.presentationData.strings.TwoStepAuth_SetupPasswordConfirmFailed, actions: [
+                    strongSelf.present(standardTextAlertController(theme: AlertControllerTheme(presentationData: strongSelf.presentationData), title: nil, text: strongSelf.presentationData.strings.TwoStepAuth_SetupPasswordConfirmFailed, actions: [
                         TextAlertAction(type: .defaultAction, title: strongSelf.presentationData.strings.Common_OK, action: {})
                     ]), in: .window(.root))
                     return
@@ -481,7 +481,7 @@ public final class TwoFactorDataInputScreen: ViewController {
             }
             switch strongSelf.mode {
             case let .emailAddress(password, hint, doneText):
-                strongSelf.present(textAlertController(sharedContext: strongSelf.sharedContext, title: strongSelf.presentationData.strings.TwoFactorSetup_Email_SkipConfirmationTitle, text: strongSelf.presentationData.strings.TwoFactorSetup_Email_SkipConfirmationText, actions: [
+                strongSelf.present(standardTextAlertController(theme: AlertControllerTheme(presentationData: strongSelf.presentationData), title: strongSelf.presentationData.strings.TwoFactorSetup_Email_SkipConfirmationTitle, text: strongSelf.presentationData.strings.TwoFactorSetup_Email_SkipConfirmationText, actions: [
                     TextAlertAction(type: .destructiveAction, title: strongSelf.presentationData.strings.TwoFactorSetup_Email_SkipConfirmationSkip, action: {
                         guard let strongSelf = self else {
                             return
@@ -534,7 +534,7 @@ public final class TwoFactorDataInputScreen: ViewController {
                             strongSelf.present(textAlertController(sharedContext: strongSelf.sharedContext, title: nil, text: alertText, actions: [TextAlertAction(type: .defaultAction, title: presentationData.strings.Common_OK, action: {})]), in: .window(.root))
                         })
                     }),
-                    TextAlertAction(type: .genericAction, title: strongSelf.presentationData.strings.Common_Cancel, action: {})
+                    TextAlertAction(type: .defaultAction, title: strongSelf.presentationData.strings.Common_Cancel, action: {})
                 ]), in: .window(.root))
             case let .passwordHint(recovery, password, doneText):
                 if let recovery = recovery {
@@ -543,14 +543,14 @@ public final class TwoFactorDataInputScreen: ViewController {
                     strongSelf.push(TwoFactorDataInputScreen(sharedContext: strongSelf.sharedContext, engine: strongSelf.engine, mode: .emailAddress(password: password, hint: "", doneText: doneText), stateUpdated: strongSelf.stateUpdated, presentation: strongSelf.navigationPresentation))
                 }
             case let .passwordRecovery(recovery, _):
-                strongSelf.present(textAlertController(sharedContext: strongSelf.sharedContext, title: strongSelf.presentationData.strings.TwoFactorSetup_PasswordRecovery_SkipAlertTitle, text: strongSelf.presentationData.strings.TwoFactorSetup_PasswordRecovery_SkipAlertText, actions: [
+                strongSelf.present(standardTextAlertController(theme: AlertControllerTheme(presentationData: strongSelf.presentationData), title: strongSelf.presentationData.strings.TwoFactorSetup_PasswordRecovery_SkipAlertTitle, text: strongSelf.presentationData.strings.TwoFactorSetup_PasswordRecovery_SkipAlertText, actions: [
                     TextAlertAction(type: .destructiveAction, title: strongSelf.presentationData.strings.TwoFactorSetup_PasswordRecovery_SkipAlertAction, action: {
                         guard let strongSelf = self else {
                             return
                         }
                         strongSelf.performRecovery(recovery: recovery, password: "", hint: "")
                     }),
-                    TextAlertAction(type: .genericAction, title: strongSelf.presentationData.strings.Common_Cancel, action: {})
+                    TextAlertAction(type: .defaultAction, title: strongSelf.presentationData.strings.Common_Cancel, action: {})
                 ]), in: .window(.root))
             case let .rememberPassword(doneText):
                 guard case let .authorized(engine) = strongSelf.engine else {
@@ -1562,7 +1562,7 @@ private final class TwoFactorDataInputScreenNode: ViewControllerTracingNode, ASS
         
         self.inputNodes = inputNodes
         
-        self.buttonNode = SolidRoundedButtonNode(title: buttonText, theme: SolidRoundedButtonTheme(backgroundColor: self.presentationData.theme.list.itemCheckColors.fillColor, foregroundColor: self.presentationData.theme.list.itemCheckColors.foregroundColor), height: 50.0, cornerRadius: 11.0, isShimmering: false)
+        self.buttonNode = SolidRoundedButtonNode(title: buttonText, theme: SolidRoundedButtonTheme(backgroundColor: self.presentationData.theme.list.itemCheckColors.fillColor, foregroundColor: self.presentationData.theme.list.itemCheckColors.foregroundColor), height: 50.0, cornerRadius: 11.0, gloss: false)
         
         super.init()
         

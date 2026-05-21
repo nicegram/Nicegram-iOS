@@ -22,7 +22,7 @@ public func ChangePhoneNumberController(context: AccountContext) -> ViewControll
     let requestDisposable = MetaDisposable()
     let changePhoneDisposable = MetaDisposable()
     
-    let controller = AuthorizationSequencePhoneEntryController(sharedContext: context.sharedContext, account: nil, countriesConfiguration: context.currentCountriesConfiguration.with { $0 }, apiId: 0, apiHash: "", isTestingEnvironment: false, otherAccountPhoneNumbers: (nil, []), network: context.account.network, presentationData: presentationData, openUrl: { _ in }, back: {
+    let controller = AuthorizationSequencePhoneEntryController(sharedContext: context.sharedContext, account: nil, countriesConfiguration: context.currentCountriesConfiguration.with { $0 }, isTestingEnvironment: false, otherAccountPhoneNumbers: (nil, []), network: context.account.network, presentationData: presentationData, openUrl: { _ in }, back: {
         dismissImpl?()
     })
     controller.loginWithNumber = { [weak controller] phoneNumber, _ in
@@ -48,7 +48,7 @@ public func ChangePhoneNumberController(context: AccountContext) -> ViewControll
             controller?.inProgress = false
             
             var dismissImpl: (() -> Void)?
-            let codeController = AuthorizationSequenceCodeEntryController(sharedContext: context.sharedContext, presentationData: presentationData, back: {
+            let codeController = AuthorizationSequenceCodeEntryController(presentationData: presentationData, back: {
                 dismissImpl?()
             })
             codeController.loginWithCode = { [weak codeController] code in
@@ -109,7 +109,7 @@ public func ChangePhoneNumberController(context: AccountContext) -> ViewControll
                 let mnc = carrier.mobileNetworkCode ?? "none"
                 let _ = context.engine.auth.reportMissingCode(phoneNumber: phoneNumber, phoneCodeHash: next.hash, mnc: mnc).start()
                 
-                AuthorizationSequenceController.presentDidNotGetCodeUI(sharedContext: context.sharedContext, controller: codeController, presentationData: context.sharedContext.currentPresentationData.with({ $0 }), phoneNumber: phoneNumber, mnc: mnc)
+                AuthorizationSequenceController.presentDidNotGetCodeUI(controller: codeController, presentationData: context.sharedContext.currentPresentationData.with({ $0 }), phoneNumber: phoneNumber, mnc: mnc)
             }
             codeController.openFragment = { url in
                 context.sharedContext.applicationBindings.openUrl(url)
@@ -154,15 +154,7 @@ public func ChangePhoneNumberController(context: AccountContext) -> ViewControll
                         
                         controller?.view.window?.rootViewController?.present(composeController, animated: true, completion: nil)
                     } else {
-                        let alertController = textAlertController(
-                            context: context,
-                            title: nil,
-                            text: presentationData.strings.Login_EmailNotConfiguredError,
-                            actions: [
-                                TextAlertAction(type: .defaultAction, title: presentationData.strings.Common_OK, action: {})
-                            ]
-                        )
-                        controller?.present(alertController, in: .window(.root))
+                        controller?.present(standardTextAlertController(theme: AlertControllerTheme(presentationData: presentationData), title: nil, text: presentationData.strings.Login_EmailNotConfiguredError, actions: [TextAlertAction(type: .defaultAction, title: presentationData.strings.Common_OK, action: {})]), in: .window(.root))
                     }
                 }))
             case .generic:
@@ -191,10 +183,10 @@ public func ChangePhoneNumberController(context: AccountContext) -> ViewControll
                 if let (_, countryCode) = lookupCountryIdByNumber(phone, configuration: context.currentCountriesConfiguration.with { $0 }), let codeValue = Int32(countryCode.code) {
                     initialCountryCode = codeValue
                 } else {
-                    initialCountryCode = AuthorizationSequenceCountrySelectionController.defaultCountryCode()
+                    initialCountryCode = AuthorizationSequenceController.defaultCountryCode()
                 }
             } else {
-                initialCountryCode = AuthorizationSequenceCountrySelectionController.defaultCountryCode()
+                initialCountryCode = AuthorizationSequenceController.defaultCountryCode()
             }
             controller.updateData(countryCode: initialCountryCode, countryName: nil, number: "")
             controller.updateCountryCode()

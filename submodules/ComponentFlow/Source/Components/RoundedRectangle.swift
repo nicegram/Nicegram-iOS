@@ -78,7 +78,6 @@ public final class RoundedRectangle: Component {
                             context.fillEllipse(in: CGRect(origin: CGPoint(), size: imageSize).insetBy(dx: stroke, dy: stroke))
                         }
                     }
-                    
                     self.image = UIGraphicsGetImageFromCurrentImageContext()?.stretchableImage(withLeftCapWidth: Int(cornerRadius), topCapHeight: Int(cornerRadius))
                     UIGraphicsEndImageContext()
                 } else if component.colors.count > 1 {
@@ -193,7 +192,7 @@ public final class FilledRoundedRectangleComponent: Component {
                 }
             } else {
                 if component.smoothCorners {
-                    let size = CGSize(width: cornerRadius * 2.0 + 8.0, height: cornerRadius * 2.0 + 8.0)
+                    let size = CGSize(width: cornerRadius * 2.0 + 10.0, height: cornerRadius * 2.0 + 10.0)
                     if let cornerImage = self.cornerImage, cornerImage.size == size {
                     } else {
                         self.cornerImage = generateImage(size, rotatedContext: { size, context in

@@ -110,7 +110,7 @@ class ThemeSettingsFontSizeItemNode: ListViewItemNode, ItemListItemNode {
         
         self.disabledOverlayNode = ASDisplayNode()
         
-        super.init(layerBacked: false)
+        super.init(layerBacked: false, dynamicBounce: false)
         
         self.addSubnode(self.leftIconNode)
         self.addSubnode(self.rightIconNode)

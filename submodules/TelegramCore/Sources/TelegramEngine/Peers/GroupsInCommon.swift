@@ -108,12 +108,10 @@ private final class GroupsInCommonContextImpl {
                     let count: Int?
                     if let result = result {
                         switch result {
-                        case let .chats(chatsData):
-                            let apiChats = chatsData.chats
+                        case let .chats(apiChats):
                             chats = apiChats
                             count = nil
-                        case let .chatsSlice(chatsSliceData):
-                            let (apiCount, apiChats) = (chatsSliceData.count, chatsSliceData.chats)
+                        case let .chatsSlice(apiCount, apiChats):
                             chats = apiChats
                             count = Int(apiCount)
                         }

@@ -85,39 +85,35 @@ public final class BlockedPeersContext {
             }
             return postbox.transaction { transaction -> (peers: [RenderedPeer], canLoadMore: Bool, totalCount: Int?) in
                 switch result {
-                    case let .blocked(blockedData):
-                        let (blocked, chats, users) = (blockedData.blocked, blockedData.chats, blockedData.users)
+                    case let .blocked(blocked, chats, users):
                         let parsedPeers = AccumulatedPeers(transaction: transaction, chats: chats, users: users)
                         updatePeers(transaction: transaction, accountPeerId: accountPeerId, peers: parsedPeers)
                             
                         var renderedPeers: [RenderedPeer] = []
                         for blockedPeer in blocked {
                             switch blockedPeer {
-                            case let .peerBlocked(peerBlockedData):
-                                let peerId = peerBlockedData.peerId
+                            case let .peerBlocked(peerId, _):
                                 if let peer = transaction.getPeer(peerId.peerId) {
                                     renderedPeers.append(RenderedPeer(peer: peer))
                                 }
                             }
                         }
-
+                        
                         return (renderedPeers, false, nil)
-                    case let .blockedSlice(blockedSliceData):
-                        let (count, blocked, chats, users) = (blockedSliceData.count, blockedSliceData.blocked, blockedSliceData.chats, blockedSliceData.users)
+                    case let .blockedSlice(count, blocked, chats, users):
                         let parsedPeers = AccumulatedPeers(transaction: transaction, chats: chats, users: users)
                         updatePeers(transaction: transaction, accountPeerId: accountPeerId, peers: parsedPeers)
                         
                         var renderedPeers: [RenderedPeer] = []
                         for blockedPeer in blocked {
                             switch blockedPeer {
-                            case let .peerBlocked(peerBlockedData):
-                                let peerId = peerBlockedData.peerId
+                            case let .peerBlocked(peerId, _):
                                 if let peer = transaction.getPeer(peerId.peerId) {
                                     renderedPeers.append(RenderedPeer(peer: peer))
                                 }
                             }
                         }
-
+                        
                         return (renderedPeers, true, Int(count))
                 }
             }

@@ -42,11 +42,6 @@ open class ViewControllerComponentContainer: ViewController {
         case custom(PresentationTheme)
     }
     
-    public enum Style {
-        case glass
-        case legacy
-    }
-    
     public final class Environment: Equatable {
         public let statusBarHeight: CGFloat
         public let navigationHeight: CGFloat
@@ -239,18 +234,12 @@ open class ViewControllerComponentContainer: ViewController {
         }
     }
     
-    public enum BaseNavigationColors {
-        case plain
-        case blocks
-    }
-    
     public var node: Node {
         return self.displayNode as! Node
     }
     
     private var presentationData: PresentationData
     private var theme: Theme
-    private let baseNavigationColors: BaseNavigationColors
     public private(set) var component: AnyComponent<ViewControllerComponentContainer.Environment>
     
     private var presentationDataDisposable: Disposable?
@@ -266,12 +255,10 @@ open class ViewControllerComponentContainer: ViewController {
         statusBarStyle: StatusBarStyle = .default,
         presentationMode: PresentationMode = .default,
         theme: Theme = .default,
-        updatedPresentationData: (initial: PresentationData, signal: Signal<PresentationData, NoError>)? = nil,
-        baseNavigationColors: BaseNavigationColors = .plain,
+        updatedPresentationData: (initial: PresentationData, signal: Signal<PresentationData, NoError>)? = nil
     ) where C.EnvironmentType == ViewControllerComponentContainer.Environment {
         self.component = AnyComponent(component)
         self.theme = theme
-        self.baseNavigationColors = baseNavigationColors
         
         var effectiveUpdatedPresentationData: (initial: PresentationData, signal: Signal<PresentationData, NoError>)
         if let updatedPresentationData {
@@ -288,13 +275,11 @@ open class ViewControllerComponentContainer: ViewController {
         case .none:
             navigationBarPresentationData = nil
         case .transparent:
-            navigationBarPresentationData = NavigationBarPresentationData(presentationData: presentationData, hideBackground: true, hideBadge: false, hideSeparator: true, style: .glass)
+            navigationBarPresentationData = NavigationBarPresentationData(presentationData: presentationData, hideBackground: true, hideBadge: false, hideSeparator: true)
         case .default:
-            navigationBarPresentationData = NavigationBarPresentationData(presentationData: presentationData, hideBackground: false, hideBadge: false, hideSeparator: true, style: .glass, edgeEffectColor: self.baseNavigationColors == .blocks ? self.presentationData.theme.list.itemBlocksBackgroundColor : nil)
+            navigationBarPresentationData = NavigationBarPresentationData(presentationData: presentationData)
         }
         super.init(navigationBarPresentationData: navigationBarPresentationData)
-        
-        self._hasGlassStyle = true
         
         self.setupPresentationData(effectiveUpdatedPresentationData, navigationBarAppearance: navigationBarAppearance, statusBarStyle: statusBarStyle, presentationMode: presentationMode)
     }
@@ -305,12 +290,10 @@ open class ViewControllerComponentContainer: ViewController {
         statusBarStyle: StatusBarStyle = .default,
         presentationMode: PresentationMode = .default,
         theme: Theme = .default,
-        updatedPresentationData: (initial: PresentationData, signal: Signal<PresentationData, NoError>),
-        baseNavigationColors: BaseNavigationColors = .plain
+        updatedPresentationData: (initial: PresentationData, signal: Signal<PresentationData, NoError>)
     ) where C.EnvironmentType == ViewControllerComponentContainer.Environment {
         self.component = AnyComponent(component)
         self.theme = theme
-        self.baseNavigationColors = baseNavigationColors
         
         let presentationData = updatedPresentationData.initial
         self.presentationData = presentationData
@@ -320,9 +303,9 @@ open class ViewControllerComponentContainer: ViewController {
         case .none:
             navigationBarPresentationData = nil
         case .transparent:
-            navigationBarPresentationData = NavigationBarPresentationData(presentationData: presentationData, hideBackground: true, hideBadge: false, hideSeparator: true, style: .glass)
+            navigationBarPresentationData = NavigationBarPresentationData(presentationData: presentationData, hideBackground: true, hideBadge: false, hideSeparator: true)
         case .default:
-            navigationBarPresentationData = NavigationBarPresentationData(presentationData: presentationData, hideBackground: false, hideBadge: false, hideSeparator: true, style: .glass, edgeEffectColor: self.baseNavigationColors == .blocks ? self.presentationData.theme.list.itemBlocksBackgroundColor : nil)
+            navigationBarPresentationData = NavigationBarPresentationData(presentationData: presentationData)
         }
         super.init(navigationBarPresentationData: navigationBarPresentationData)
         
@@ -368,12 +351,12 @@ open class ViewControllerComponentContainer: ViewController {
                 case .none:
                     navigationBarPresentationData = nil
                 case .transparent:
-                    navigationBarPresentationData = NavigationBarPresentationData(presentationData: presentationData, hideBackground: true, hideBadge: false, hideSeparator: true, style: .glass)
+                    navigationBarPresentationData = NavigationBarPresentationData(presentationData: presentationData, hideBackground: true, hideBadge: false, hideSeparator: true)
                 case .default:
-                    navigationBarPresentationData = NavigationBarPresentationData(presentationData: presentationData, hideBackground: false, hideBadge: false, hideSeparator: true, style: .glass, edgeEffectColor: strongSelf.baseNavigationColors == .blocks ? strongSelf.presentationData.theme.list.itemBlocksBackgroundColor : nil)
+                    navigationBarPresentationData = NavigationBarPresentationData(presentationData: presentationData)
                 }
                 if let navigationBarPresentationData {
-                    strongSelf.navigationBar?.updatePresentationData(navigationBarPresentationData, transition: .immediate)
+                    strongSelf.navigationBar?.updatePresentationData(navigationBarPresentationData)
                 }
                 
                 if let layout = strongSelf.validLayout {

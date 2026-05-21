@@ -6,31 +6,28 @@ import BlurredBackgroundComponent
 import BundleIconComponent
 import TelegramPresentationData
 import ContextReferenceButtonComponent
-import GlassBackgroundComponent
-import EdgeEffect
-
-enum BrowserToolbarMode: Equatable {
-    case webPage
-    case instantPage
-    case document
-    case markdown
-}
 
 final class BrowserToolbarComponent: CombinedComponent {
-    let theme: PresentationTheme
+    let backgroundColor: UIColor
+    let separatorColor: UIColor
+    let textColor: UIColor
     let bottomInset: CGFloat
     let sideInset: CGFloat
     let item: AnyComponentWithIdentity<Empty>?
     let collapseFraction: CGFloat
     
     init(
-        theme: PresentationTheme,
+        backgroundColor: UIColor,
+        separatorColor: UIColor,
+        textColor: UIColor,
         bottomInset: CGFloat,
         sideInset: CGFloat,
         item: AnyComponentWithIdentity<Empty>?,
         collapseFraction: CGFloat
     ) {
-        self.theme = theme
+        self.backgroundColor = backgroundColor
+        self.separatorColor = separatorColor
+        self.textColor = textColor
         self.bottomInset = bottomInset
         self.sideInset = sideInset
         self.item = item
@@ -38,7 +35,13 @@ final class BrowserToolbarComponent: CombinedComponent {
     }
     
     static func ==(lhs: BrowserToolbarComponent, rhs: BrowserToolbarComponent) -> Bool {
-        if lhs.theme !== rhs.theme {
+        if lhs.backgroundColor != rhs.backgroundColor {
+            return false
+        }
+        if lhs.separatorColor != rhs.separatorColor {
+            return false
+        }
+        if lhs.textColor != rhs.textColor {
             return false
         }
         if lhs.bottomInset != rhs.bottomInset {
@@ -57,70 +60,54 @@ final class BrowserToolbarComponent: CombinedComponent {
     }
     
     static var body: Body {
-        let edgeEffect = Child(EdgeEffectComponent.self)
-        let background = Child(GlassBackgroundComponent.self)
+        let background = Child(BlurredBackgroundComponent.self)
+        let separator = Child(Rectangle.self)
         let centerItems = ChildMap(environment: Empty.self, keyedBy: AnyHashable.self)
         
         return { context in
-            let contentHeight: CGFloat = 56.0
+            let contentHeight: CGFloat = 49.0
             let totalHeight = contentHeight + context.component.bottomInset
             let offset = context.component.collapseFraction * totalHeight
             let size = CGSize(width: context.availableSize.width, height: totalHeight)
             
-            let backgroundHeight: CGFloat = 48.0
-            let edgeEffectHeight = totalHeight
-            let edgeEffect = edgeEffect.update(
-                component: EdgeEffectComponent(
-                    color: .clear,
-                    blur: true,
-                    alpha: 1.0,
-                    size: CGSize(width: size.width, height: edgeEffectHeight),
-                    edge: .bottom,
-                    edgeSize: edgeEffectHeight
-                ),
-                availableSize: CGSize(width: size.width, height: edgeEffectHeight),
+            let background = background.update(
+                component: BlurredBackgroundComponent(color: context.component.backgroundColor),
+                availableSize: CGSize(width: size.width, height: size.height),
                 transition: context.transition
             )
-            context.add(edgeEffect
-                .position(CGPoint(x: size.width / 2.0, y: size.height / 2.0 + offset))
+            
+            let separator = separator.update(
+                component: Rectangle(color: context.component.separatorColor, height: UIScreenPixel),
+                availableSize: CGSize(width: size.width, height: size.height),
+                transition: context.transition
             )
-                        
+            
             let item = context.component.item.flatMap { item in
                 return centerItems[item.id].update(
                     component: item.component,
-                    availableSize: CGSize(width: context.availableSize.width - context.component.sideInset * 2.0, height: backgroundHeight),
+                    availableSize: CGSize(width: context.availableSize.width - context.component.sideInset * 2.0, height: contentHeight),
                     transition: context.transition
                 )
             }
 
-            let contentWidth = item?.size.width ?? 0.0
-            
-            let backgroundSize = CGSize(width: contentWidth, height: backgroundHeight)
-            let background = background.update(
-                component: GlassBackgroundComponent(
-                    size: backgroundSize,
-                    cornerRadius: backgroundHeight * 0.5,
-                    isDark: context.component.theme.overallDarkAppearance,
-                    tintColor: .init(kind: .panel),
-                    isInteractive: true
-                ),
-                availableSize: backgroundSize,
-                transition: context.transition
-            )
             context.add(background
-                .position(CGPoint(x: size.width / 2.0, y: backgroundSize.height / 2.0 + offset))
+                .position(CGPoint(x: size.width / 2.0, y: size.height / 2.0 + offset))
             )
             
+            context.add(separator
+                .position(CGPoint(x: size.width / 2.0, y: 0.0 + offset))
+            )
+
             if let centerItem = item {
                 context.add(centerItem
-                    .position(CGPoint(x: context.availableSize.width / 2.0, y: backgroundSize.height / 2.0 + offset))
+                    .position(CGPoint(x: context.availableSize.width / 2.0, y: contentHeight / 2.0 + offset))
                     .appear(ComponentTransition.Appear({ _, view, transition in
-                        transition.animateBlur(layer: view.layer, fromRadius: 10.0, toRadius: 0.0)
-                        transition.animateAlpha(view: view, from: 0.0, to: 1.0)
+                        transition.animatePosition(view: view, from: CGPoint(x: 0.0, y: size.height), to: .zero, additive: true)
                     }))
                     .disappear(ComponentTransition.Disappear({ view, transition, completion in
-                        transition.animateBlur(layer: view.layer, fromRadius: 0.0, toRadius: 10.0)
-                        transition.setAlpha(view: view, alpha: 0.0, completion: { _ in
+                        let from = view.center
+                        view.center = from.offsetBy(dx: 0.0, dy: size.height)
+                        transition.animatePosition(view: view, from: from, to: view.center, completion: { _ in
                             completion()
                         })
                     }))
@@ -133,37 +120,43 @@ final class BrowserToolbarComponent: CombinedComponent {
 }
 
 final class NavigationToolbarContentComponent: CombinedComponent {
-    let theme: PresentationTheme
+    let accentColor: UIColor
+    let textColor: UIColor
     let canGoBack: Bool
     let canGoForward: Bool
     let canOpenIn: Bool
     let canShare: Bool
-    let mode: BrowserToolbarMode
+    let isDocument: Bool
     let performAction: ActionSlot<BrowserScreen.Action>
     let performHoldAction: (UIView, ContextGesture?, BrowserScreen.Action) -> Void
     
     init(
-        theme: PresentationTheme,
+        accentColor: UIColor,
+        textColor: UIColor,
         canGoBack: Bool,
         canGoForward: Bool,
         canOpenIn: Bool,
         canShare: Bool,
-        mode: BrowserToolbarMode,
+        isDocument: Bool,
         performAction: ActionSlot<BrowserScreen.Action>,
         performHoldAction: @escaping (UIView, ContextGesture?, BrowserScreen.Action) -> Void
     ) {
-        self.theme = theme
+        self.accentColor = accentColor
+        self.textColor = textColor
         self.canGoBack = canGoBack
         self.canGoForward = canGoForward
         self.canOpenIn = canOpenIn
         self.canShare = canShare
-        self.mode = mode
+        self.isDocument = isDocument
         self.performAction = performAction
         self.performHoldAction = performHoldAction
     }
     
     static func ==(lhs: NavigationToolbarContentComponent, rhs: NavigationToolbarContentComponent) -> Bool {
-        if lhs.theme !== rhs.theme {
+        if lhs.accentColor != rhs.accentColor {
+            return false
+        }
+        if lhs.textColor != rhs.textColor {
             return false
         }
         if lhs.canGoBack != rhs.canGoBack {
@@ -178,7 +171,7 @@ final class NavigationToolbarContentComponent: CombinedComponent {
         if lhs.canShare != rhs.canShare {
             return false
         }
-        if lhs.mode != rhs.mode {
+        if lhs.isDocument != rhs.isDocument {
             return false
         }
         return true
@@ -198,20 +191,26 @@ final class NavigationToolbarContentComponent: CombinedComponent {
             let performAction = context.component.performAction
             let performHoldAction = context.component.performHoldAction
                         
-            var size = CGSize(width: 0.0, height: 48.0)
-            let buttonSize = CGSize(width: 50.0, height: size.height)
+            let sideInset: CGFloat = 5.0
+            let buttonSize = CGSize(width: 50.0, height: availableSize.height)
             
-            let sideInset: CGFloat = 34.0
-            let spacing: CGFloat = 66.0
-            let textColor = context.component.theme.rootController.navigationBar.primaryTextColor
+            var buttonCount = 3
+            if context.component.canShare {
+                buttonCount += 1
+            }
+            if context.component.canOpenIn {
+                buttonCount += 1
+            }
+            
+            let spacing = (availableSize.width - buttonSize.width * CGFloat(buttonCount) - sideInset * 2.0) / CGFloat(buttonCount - 1)
             
             let canShare = context.component.canShare
             let share = share.update(
                 component: Button(
                     content: AnyComponent(
                         BundleIconComponent(
-                            name: "Instant View/Share",
-                            tintColor: textColor
+                            name: "Chat List/NavigationShare",
+                            tintColor: context.component.accentColor
                         )
                     ),
                     action: {
@@ -224,16 +223,23 @@ final class NavigationToolbarContentComponent: CombinedComponent {
                 transition: .easeInOut(duration: 0.2)
             )
             
-            switch context.component.mode {
-            case .document:
-                var originX: CGFloat = sideInset
-                                
+            if context.component.isDocument {
+                if !context.component.canShare {
+                    context.add(share
+                        .position(CGPoint(x: availableSize.width / 2.0, y: 10000.0))
+                    )
+                } else {
+                    context.add(share
+                        .position(CGPoint(x: availableSize.width / 2.0, y: availableSize.height / 2.0))
+                    )
+                }
+                
                 let search = search.update(
                     component: Button(
                         content: AnyComponent(
                             BundleIconComponent(
-                                name: "Instant View/Search",
-                                tintColor: textColor
+                                name: "Chat List/SearchIcon",
+                                tintColor: context.component.accentColor
                             )
                         ),
                         action: {
@@ -244,27 +250,15 @@ final class NavigationToolbarContentComponent: CombinedComponent {
                     transition: .easeInOut(duration: 0.2)
                 )
                 context.add(search
-                    .position(CGPoint(x: originX, y: availableSize.height / 2.0))
+                    .position(CGPoint(x: sideInset + search.size.width / 2.0, y: availableSize.height / 2.0))
                 )
-                originX += spacing
-                
-                if !context.component.canShare {
-                    context.add(share
-                        .position(CGPoint(x: availableSize.width / 2.0, y: 10000.0))
-                    )
-                } else {
-                    context.add(share
-                        .position(CGPoint(x: originX, y: availableSize.height / 2.0))
-                    )
-                    originX += spacing
-                }
                 
                 let quickLook = quickLook.update(
                     component: Button(
                         content: AnyComponent(
                             BundleIconComponent(
                                 name: "Instant View/OpenDocument",
-                                tintColor: textColor
+                                tintColor: context.component.accentColor
                             )
                         ),
                         action: {
@@ -275,52 +269,16 @@ final class NavigationToolbarContentComponent: CombinedComponent {
                     transition: .easeInOut(duration: 0.2)
                 )
                 context.add(quickLook
-                    .position(CGPoint(x: originX, y: availableSize.height / 2.0))
+                    .position(CGPoint(x: context.availableSize.width - sideInset - quickLook.size.width / 2.0, y: availableSize.height / 2.0))
                 )
-                size.width = originX + sideInset
-            case .markdown:
-                var originX: CGFloat = sideInset
-
-                if !context.component.canShare {
-                    context.add(share
-                        .position(CGPoint(x: availableSize.width / 2.0, y: 10000.0))
-                    )
-                } else {
-                    context.add(share
-                        .position(CGPoint(x: originX, y: availableSize.height / 2.0))
-                    )
-                    originX += spacing
-                }
-
-                let quickLook = quickLook.update(
-                    component: Button(
-                        content: AnyComponent(
-                            BundleIconComponent(
-                                name: "Instant View/OpenDocument",
-                                tintColor: textColor
-                            )
-                        ),
-                        action: {
-                            performAction.invoke(.openIn)
-                        }
-                    ).minSize(buttonSize),
-                    availableSize: buttonSize,
-                    transition: .easeInOut(duration: 0.2)
-                )
-                context.add(quickLook
-                    .position(CGPoint(x: originX, y: availableSize.height / 2.0))
-                )
-                size.width = originX + sideInset
-            case .webPage, .instantPage:
-                var originX: CGFloat = sideInset
-                
+            } else {
                 let canGoBack = context.component.canGoBack
                 let back = back.update(
                     component: ContextReferenceButtonComponent(
                         content: AnyComponent(
                             BundleIconComponent(
                                 name: "Instant View/Back",
-                                tintColor: canGoBack ? textColor : textColor.withAlphaComponent(0.4)
+                                tintColor: canGoBack ? context.component.accentColor : context.component.accentColor.withAlphaComponent(0.4)
                             )
                         ),
                         minSize: buttonSize,
@@ -339,9 +297,8 @@ final class NavigationToolbarContentComponent: CombinedComponent {
                     transition: .easeInOut(duration: 0.2)
                 )
                 context.add(back
-                    .position(CGPoint(x: sideInset, y: availableSize.height / 2.0))
+                    .position(CGPoint(x: sideInset + back.size.width / 2.0, y: availableSize.height / 2.0))
                 )
-                originX += spacing
                 
                 let canGoForward = context.component.canGoForward
                 let forward = forward.update(
@@ -349,7 +306,7 @@ final class NavigationToolbarContentComponent: CombinedComponent {
                         content: AnyComponent(
                             BundleIconComponent(
                                 name: "Instant View/Forward",
-                                tintColor: canGoForward ? textColor : textColor.withAlphaComponent(0.4)
+                                tintColor: canGoForward ? context.component.accentColor : context.component.accentColor.withAlphaComponent(0.4)
                             )
                         ),
                         minSize: buttonSize,
@@ -368,21 +325,19 @@ final class NavigationToolbarContentComponent: CombinedComponent {
                     transition: .easeInOut(duration: 0.2)
                 )
                 context.add(forward
-                    .position(CGPoint(x: originX, y: availableSize.height / 2.0))
+                    .position(CGPoint(x: sideInset + back.size.width + spacing + forward.size.width / 2.0, y: availableSize.height / 2.0))
                 )
-                originX += spacing
                 
                 context.add(share
-                    .position(CGPoint(x: originX, y: availableSize.height / 2.0))
+                    .position(CGPoint(x: sideInset + back.size.width + spacing + forward.size.width + spacing + share.size.width / 2.0, y: availableSize.height / 2.0))
                 )
-                originX += spacing
                 
                 let bookmark = bookmark.update(
                     component: Button(
                         content: AnyComponent(
                             BundleIconComponent(
                                 name: "Instant View/Bookmark",
-                                tintColor: textColor
+                                tintColor: context.component.accentColor
                             )
                         ),
                         action: {
@@ -393,18 +348,16 @@ final class NavigationToolbarContentComponent: CombinedComponent {
                     transition: .easeInOut(duration: 0.2)
                 )
                 context.add(bookmark
-                    .position(CGPoint(x: originX, y: availableSize.height / 2.0))
+                    .position(CGPoint(x: sideInset + back.size.width + spacing + forward.size.width + spacing + share.size.width + spacing + bookmark.size.width / 2.0, y: availableSize.height / 2.0))
                 )
                 
                 if context.component.canOpenIn {
-                    originX += spacing
-                    
                     let openIn = openIn.update(
                         component: Button(
                             content: AnyComponent(
                                 BundleIconComponent(
                                     name: "Instant View/Browser",
-                                    tintColor: textColor
+                                    tintColor: context.component.accentColor
                                 )
                             ),
                             action: {
@@ -415,36 +368,34 @@ final class NavigationToolbarContentComponent: CombinedComponent {
                         transition: .easeInOut(duration: 0.2)
                     )
                     context.add(openIn
-                        .position(CGPoint(x: originX, y: availableSize.height / 2.0))
+                        .position(CGPoint(x: sideInset + back.size.width + spacing + forward.size.width + spacing + share.size.width + spacing + bookmark.size.width + spacing + openIn.size.width / 2.0, y: availableSize.height / 2.0))
                     )
                 }
-                
-                size.width = originX + sideInset
             }
             
-            return size
+            return availableSize
         }
     }
 }
 
 final class SearchToolbarContentComponent: CombinedComponent {
-    let theme: PresentationTheme
     let strings: PresentationStrings
+    let textColor: UIColor
     let index: Int
     let count: Int
     let isEmpty: Bool
     let performAction: ActionSlot<BrowserScreen.Action>
     
     init(
-        theme: PresentationTheme,
         strings: PresentationStrings,
+        textColor: UIColor,
         index: Int,
         count: Int,
         isEmpty: Bool,
         performAction: ActionSlot<BrowserScreen.Action>
     ) {
-        self.theme = theme
         self.strings = strings
+        self.textColor = textColor
         self.index = index
         self.count = count
         self.isEmpty = isEmpty
@@ -452,10 +403,10 @@ final class SearchToolbarContentComponent: CombinedComponent {
     }
     
     static func ==(lhs: SearchToolbarContentComponent, rhs: SearchToolbarContentComponent) -> Bool {
-        if lhs.theme !== rhs.theme {
+        if lhs.strings !== rhs.strings {
             return false
         }
-        if lhs.strings !== rhs.strings {
+        if lhs.textColor != rhs.textColor {
             return false
         }
         if lhs.index != rhs.index {
@@ -479,17 +430,15 @@ final class SearchToolbarContentComponent: CombinedComponent {
             let availableSize = context.availableSize
             let performAction = context.component.performAction
             
-            let sideInset: CGFloat = 60.0
+            let sideInset: CGFloat = 3.0
             let buttonSize = CGSize(width: 50.0, height: availableSize.height)
                         
-            let textColor = context.component.theme.rootController.navigationBar.primaryTextColor
-            
             let down = down.update(
                 component: Button(
                     content: AnyComponent(
                         BundleIconComponent(
                             name: "Chat/Input/Search/DownButton",
-                            tintColor: textColor
+                            tintColor: context.component.textColor
                         )
                     ),
                     isEnabled: context.component.count > 0,
@@ -509,7 +458,7 @@ final class SearchToolbarContentComponent: CombinedComponent {
                     content: AnyComponent(
                         BundleIconComponent(
                             name: "Chat/Input/Search/UpButton",
-                            tintColor: textColor
+                            tintColor: context.component.textColor
                         )
                     ),
                     isEnabled: context.component.count > 0,
@@ -537,7 +486,7 @@ final class SearchToolbarContentComponent: CombinedComponent {
                 component: Text(
                     text: currentText,
                     font: Font.regular(15.0),
-                    color: textColor
+                    color: context.component.textColor
                 ),
                 availableSize: availableSize,
                 transition: .easeInOut(duration: 0.2)
@@ -546,7 +495,7 @@ final class SearchToolbarContentComponent: CombinedComponent {
                 .position(CGPoint(x: availableSize.width - sideInset - down.size.width - up.size.width - text.size.width / 2.0, y: availableSize.height / 2.0))
             )
             
-            return CGSize(width: availableSize.width - 60.0, height: 48.0)
+            return availableSize
         }
     }
 }

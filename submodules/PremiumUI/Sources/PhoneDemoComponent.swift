@@ -354,15 +354,15 @@ protocol PhoneDemoDecorationView: UIView {
     func resetAnimation()
 }
 
-public final class PhoneDemoComponent: Component {
-    public typealias EnvironmentType = DemoPageEnvironment
+final class PhoneDemoComponent: Component {
+    typealias EnvironmentType = DemoPageEnvironment
     
-    public enum Position {
+    enum Position {
         case top
         case bottom
     }
     
-    public enum BackgroundDecoration {
+    enum BackgroundDecoration {
         case none
         case dataRain
         case swirlStars
@@ -375,7 +375,7 @@ public final class PhoneDemoComponent: Component {
         case todo
     }
     
-    public enum Model {
+    enum Model {
         case notch
         case island
     }
@@ -419,11 +419,11 @@ public final class PhoneDemoComponent: Component {
         return true
     }
     
-    public final class View: UIView, ComponentTaggedView {
-        public final class Tag {
+    final class View: UIView, ComponentTaggedView {
+        final class Tag {
         }
         
-        public func matches(tag: Any) -> Bool {
+        func matches(tag: Any) -> Bool {
             if let _ = tag as? Tag, self.isCentral {
                 return true
             }

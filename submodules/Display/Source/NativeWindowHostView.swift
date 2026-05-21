@@ -1,3 +1,6 @@
+// Nicegram ColorAlign
+import NGData
+//
 import Foundation
 import UIKit
 import SwiftSignalKit
@@ -87,7 +90,7 @@ private final class WindowRootViewControllerView: UIView {
     }
 }
 
-private final class WindowRootViewController: UIViewController, UIWindowSceneDelegate {
+private final class WindowRootViewController: UIViewController {
     private var voiceOverStatusObserver: AnyObject?
     private var registeredForPreviewing = false
     
@@ -180,7 +183,7 @@ private final class WindowRootViewController: UIViewController, UIWindowSceneDel
     
     init() {
         super.init(nibName: nil, bundle: nil)
-                
+        
         self.extendedLayoutIncludesOpaqueBars = true
         
         self.voiceOverStatusObserver = NotificationCenter.default.addObserver(forName: UIAccessibility.voiceOverStatusDidChangeNotification, object: nil, queue: OperationQueue.main, using: { _ in
@@ -190,10 +193,6 @@ private final class WindowRootViewController: UIViewController, UIWindowSceneDel
             self._systemUserInterfaceStyle.set(WindowUserInterfaceStyle(style: self.traitCollection.userInterfaceStyle))
         } else {
             self._systemUserInterfaceStyle.set(.light)
-        }
-        
-        if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene {
-            windowScene.delegate = self
         }
     }
     
@@ -205,11 +204,6 @@ private final class WindowRootViewController: UIViewController, UIWindowSceneDel
         if let voiceOverStatusObserver = self.voiceOverStatusObserver {
             NotificationCenter.default.removeObserver(voiceOverStatusObserver)
         }
-    }
-    
-    @available(iOS 26.0, *)
-    func preferredWindowingControlStyle(for windowScene: UIWindowScene) -> UIWindowScene.WindowingControlStyle {
-        return .minimal
     }
     
     override var preferredScreenEdgesDeferringSystemGestures: UIRectEdge {
@@ -298,6 +292,12 @@ private final class NativeWindow: UIWindow, WindowHost {
         }
     }
     
+    // Nicegram ColorAlign
+    private let grayscaleLayer = GrayscaleLayer(
+        enablePublisher: NicegramSettingsModule.shared.getGrayscaleSettingsUseCase().grayscaleAllPublisher()
+    )
+    //
+    
     override init(frame: CGRect) {
         super.init(frame: frame)
         
@@ -314,6 +314,13 @@ private final class NativeWindow: UIWindow, WindowHost {
     
     override func layoutSubviews() {
         super.layoutSubviews()
+        
+        // Nicegram ColorAlign
+        if grayscaleLayer.superlayer == nil {
+            self.layer.addSublayer(grayscaleLayer)
+        }
+        grayscaleLayer.frame = self.bounds
+        //
         
         self.layoutSubviewsEvent?()
     }

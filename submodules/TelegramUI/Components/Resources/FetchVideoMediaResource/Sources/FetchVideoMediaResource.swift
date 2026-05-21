@@ -888,7 +888,6 @@ private extension MediaEditorValues {
             cropOrientation: nil,
             gradientColors: nil,
             videoTrimRange: nil,
-            videoBounce: false,
             videoIsMuted: false,
             videoIsFullHd: true,
             videoIsMirrored: false,
@@ -925,7 +924,6 @@ private extension MediaEditorValues {
         if legacyAdjustments.trimStartValue > 0.0 || !legacyAdjustments.trimEndValue.isZero {
             videoTrimRange = legacyAdjustments.trimStartValue ..< legacyAdjustments.trimEndValue
         }
-        let videoBounce = legacyAdjustments.bounce
         
         var entities: [CodableDrawingEntity] = []
         var drawing: UIImage?
@@ -1062,7 +1060,6 @@ private extension MediaEditorValues {
             cropOrientation: legacyAdjustments.cropOrientation.cropOrientation,
             gradientColors: nil,
             videoTrimRange: videoTrimRange,
-            videoBounce: videoBounce,
             videoIsMuted: legacyAdjustments.sendAsGif,
             videoIsFullHd: true,
             videoIsMirrored: false,

@@ -2,6 +2,7 @@ import Foundation
 import UIKit
 import Display
 import AsyncDisplayKit
+import Postbox
 import TelegramCore
 import SwiftSignalKit
 import AccountContext
@@ -99,7 +100,7 @@ public struct InteractiveEmojiConfiguration {
     }
     
     public static func with(appConfiguration: AppConfiguration) -> InteractiveEmojiConfiguration {
-        if let data = appConfiguration.data, var emojis = data["emojies_send_dice"] as? [String] {
+        if let data = appConfiguration.data, let emojis = data["emojies_send_dice"] as? [String] {
             var successParameters: [String: InteractiveEmojiSuccessParameters] = [:]
             if let success = data["emojies_send_dice_success"] as? [String: [String: Double]] {
                 for (key, dict) in success {
@@ -108,11 +109,6 @@ public struct InteractiveEmojiConfiguration {
                     }
                 }
             }
-            #if DEBUG
-            if !emojis.contains("🎲") {
-                emojis.append("🎲")
-            }
-            #endif
             return InteractiveEmojiConfiguration(emojis: emojis, successParameters: successParameters)
         } else {
             return .defaultValue
@@ -130,19 +126,15 @@ public final class ManagedDiceAnimationNode: ManagedAnimationNode {
     private let configuration = Promise<InteractiveEmojiConfiguration?>()
     private let emojis = Promise<[TelegramMediaFile]>()
     
-    public var isRolling: Bool {
-        return self.diceState == .rolling
-    }
-    
     public var success: (() -> Void)?
     
     public init(context: AccountContext, emoji: String) {
         self.context = context
         self.emoji = emoji
         
-        self.configuration.set(self.context.engine.data.subscribe(TelegramEngine.EngineData.Item.Configuration.ApplicationSpecificPreference(key: PreferencesKeys.appConfiguration))
+        self.configuration.set(self.context.account.postbox.preferencesView(keys: [PreferencesKeys.appConfiguration])
         |> map { preferencesView -> InteractiveEmojiConfiguration? in
-            let appConfiguration: AppConfiguration = preferencesView?.get(AppConfiguration.self) ?? .defaultValue
+            let appConfiguration: AppConfiguration = preferencesView.values[PreferencesKeys.appConfiguration]?.get(AppConfiguration.self) ?? .defaultValue
             return InteractiveEmojiConfiguration.with(appConfiguration: appConfiguration)
         })
         self.emojis.set(context.engine.stickers.loadedStickerPack(reference: .dice(emoji), forceActualized: false)

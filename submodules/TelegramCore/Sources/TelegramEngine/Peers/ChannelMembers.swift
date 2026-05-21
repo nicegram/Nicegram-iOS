@@ -40,7 +40,7 @@ func _internal_channelMembers(postbox: Postbox, network: Network, accountPeerId:
                         case .all:
                             apiFilter = .channelParticipantsRecent
                         case let .search(query):
-                            apiFilter = .channelParticipantsSearch(Api.ChannelParticipantsFilter.Cons_channelParticipantsSearch(q: query))
+                            apiFilter = .channelParticipantsSearch(q: query)
                     }
                 case let .mentions(threadId, filter):
                     switch filter {
@@ -49,7 +49,7 @@ func _internal_channelMembers(postbox: Postbox, network: Network, accountPeerId:
                             if threadId != nil {
                                 flags |= 1 << 1
                             }
-                            apiFilter = .channelParticipantsMentions(Api.ChannelParticipantsFilter.Cons_channelParticipantsMentions(flags: flags, q: nil, topMsgId: threadId?.id))
+                            apiFilter = .channelParticipantsMentions(flags: flags, q: nil, topMsgId: threadId?.id)
                         case let .search(query):
                             var flags: Int32 = 0
                             if threadId != nil {
@@ -58,32 +58,32 @@ func _internal_channelMembers(postbox: Postbox, network: Network, accountPeerId:
                             if !query.isEmpty {
                                 flags |= 1 << 0
                             }
-                            apiFilter = .channelParticipantsMentions(Api.ChannelParticipantsFilter.Cons_channelParticipantsMentions(flags: flags, q: query.isEmpty ? nil : query, topMsgId: threadId?.id))
+                            apiFilter = .channelParticipantsMentions(flags: flags, q: query.isEmpty ? nil : query, topMsgId: threadId?.id)
                     }
                 case .admins:
                     apiFilter = .channelParticipantsAdmins
                 case let .contacts(filter):
                     switch filter {
                         case .all:
-                            apiFilter = .channelParticipantsContacts(Api.ChannelParticipantsFilter.Cons_channelParticipantsContacts(q: ""))
+                            apiFilter = .channelParticipantsContacts(q: "")
                         case let .search(query):
-                            apiFilter = .channelParticipantsContacts(Api.ChannelParticipantsFilter.Cons_channelParticipantsContacts(q: query))
+                            apiFilter = .channelParticipantsContacts(q: query)
                     }
                 case .bots:
                     apiFilter = .channelParticipantsBots
                 case let .restricted(filter):
                     switch filter {
                         case .all:
-                            apiFilter = .channelParticipantsBanned(Api.ChannelParticipantsFilter.Cons_channelParticipantsBanned(q: ""))
+                            apiFilter = .channelParticipantsBanned(q: "")
                         case let .search(query):
-                            apiFilter = .channelParticipantsBanned(Api.ChannelParticipantsFilter.Cons_channelParticipantsBanned(q: query))
+                            apiFilter = .channelParticipantsBanned(q: query)
                     }
                 case let .banned(filter):
                     switch filter {
                         case .all:
-                            apiFilter = .channelParticipantsKicked(Api.ChannelParticipantsFilter.Cons_channelParticipantsKicked(q: ""))
+                            apiFilter = .channelParticipantsKicked(q: "")
                         case let .search(query):
-                            apiFilter = .channelParticipantsKicked(Api.ChannelParticipantsFilter.Cons_channelParticipantsKicked(q: query))
+                            apiFilter = .channelParticipantsKicked(q: query)
                     }
             }
             return network.request(Api.functions.channels.getParticipants(channel: inputChannel, filter: apiFilter, offset: offset, limit: limit, hash: hash))
@@ -95,14 +95,13 @@ func _internal_channelMembers(postbox: Postbox, network: Network, accountPeerId:
                 return postbox.transaction { transaction -> [RenderedChannelParticipant]? in
                     var items: [RenderedChannelParticipant] = []
                     switch result {
-                        case let .channelParticipants(channelParticipantsData):
-                            let (participants, chats, users) = (channelParticipantsData.participants, channelParticipantsData.chats, channelParticipantsData.users)
+                        case let .channelParticipants(_, participants, chats, users):
                             let parsedPeers = AccumulatedPeers(transaction: transaction, chats: chats, users: users)
                             updatePeers(transaction: transaction, accountPeerId: accountPeerId, peers: parsedPeers)
-                            var peers: [EnginePeer.Id: EnginePeer] = [:]
+                            var peers: [PeerId: Peer] = [:]
                             for id in parsedPeers.allIds {
                                 if let peer = transaction.getPeer(id) {
-                                    peers[peer.id] = EnginePeer(peer)
+                                    peers[peer.id] = peer
                                 }
                             }
                             
@@ -112,7 +111,7 @@ func _internal_channelMembers(postbox: Postbox, network: Network, accountPeerId:
                                     if let presence = transaction.getPeerPresence(peerId: participant.peerId) {
                                         renderedPresences[participant.peerId] = presence
                                     }
-                                    items.append(RenderedChannelParticipant(participant: participant, peer: EnginePeer(peer), peers: peers, presences: renderedPresences))
+                                    items.append(RenderedChannelParticipant(participant: participant, peer: peer, peers: peers, presences: renderedPresences))
                                 }
                             }
                         case .channelParticipantsNotModified:

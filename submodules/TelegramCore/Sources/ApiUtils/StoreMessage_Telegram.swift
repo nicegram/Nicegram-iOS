@@ -39,8 +39,6 @@ public func tagsForStoreMessage(incoming: Bool, attributes: [MessageAttribute], 
         tags.insert(.pinned)
     }
     
-    var hasUnseenPollVotes: Bool = false
-    
     for attachment in media {
         if let _ = attachment as? TelegramMediaImage {
             if !isSecret {
@@ -110,11 +108,6 @@ public func tagsForStoreMessage(incoming: Bool, attributes: [MessageAttribute], 
             }
         } else if let location = attachment as? TelegramMediaMap, location.liveBroadcastingTimeout != nil {
             tags.insert(.liveLocation)
-        } else if let poll = attachment as? TelegramMediaPoll {
-            tags.insert(.polls)
-            if poll.results.hasUnseenVotes == true {
-                hasUnseenPollVotes = true
-            }
         }
     }
     if let textEntities = textEntities, !textEntities.isEmpty && !tags.contains(.webPage) {
@@ -130,39 +123,32 @@ public func tagsForStoreMessage(incoming: Bool, attributes: [MessageAttribute], 
         }
     }
     
-    if hasUnseenPollVotes {
-        tags.insert(.unseenPollVote)
-    }
-    
     return (tags, globalTags)
 }
 
 func apiMessagePeerId(_ messsage: Api.Message) -> PeerId? {
     switch messsage {
-        case let .message(messageData):
-            let chatPeerId = messageData.peerId
+        case let .message(_, _, _, _, _, messagePeerId, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _):
+            let chatPeerId = messagePeerId
             return chatPeerId.peerId
-        case let .messageEmpty(messageEmptyData):
-            let (_, _, peerId) = (messageEmptyData.flags, messageEmptyData.id, messageEmptyData.peerId)
+        case let .messageEmpty(_, _, peerId):
             if let peerId = peerId {
                 return peerId.peerId
             } else {
                 return nil
             }
-        case let .messageService(messageServiceData):
-            let chatPeerId = messageServiceData.peerId
+        case let .messageService(_, _, _, chatPeerId, _, _, _, _, _, _):
             return chatPeerId.peerId
     }
 }
 
 func apiMessagePeerIds(_ message: Api.Message) -> [PeerId] {
     switch message {
-        case let .message(messageData):
-            let (fromId, chatPeerId, savedPeerId, fwdHeader, viaBotId, viaBusinessBotId, replyTo, media, entities) = (messageData.fromId, messageData.peerId, messageData.savedPeerId, messageData.fwdFrom, messageData.viaBotId, messageData.viaBusinessBotId, messageData.replyTo, messageData.media, messageData.entities)
+        case let .message(_, _, _, fromId, _, chatPeerId, savedPeerId, fwdHeader, viaBotId, viaBusinessBotId, replyTo, _, _, media, _, entities, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _):
             let peerId: PeerId = chatPeerId.peerId
-
+            
             var result = [peerId]
-
+            
             let resolvedFromId = fromId?.peerId ?? chatPeerId.peerId
             
             if resolvedFromId != peerId {
@@ -171,8 +157,7 @@ func apiMessagePeerIds(_ message: Api.Message) -> [PeerId] {
         
             if let fwdHeader = fwdHeader {
                 switch fwdHeader {
-                    case let .messageFwdHeader(messageFwdHeaderData):
-                        let (fromId, savedFromPeer, savedFromId) = (messageFwdHeaderData.fromId, messageFwdHeaderData.savedFromPeer, messageFwdHeaderData.savedFromId)
+                    case let .messageFwdHeader(_, fromId, _, _, _, _, savedFromPeer, _, savedFromId, _, _, _):
                         if let fromId = fromId {
                             result.append(fromId.peerId)
                         }
@@ -198,8 +183,7 @@ func apiMessagePeerIds(_ message: Api.Message) -> [PeerId] {
             
             if let media = media {
                 switch media {
-                    case let .messageMediaContact(messageMediaContactData):
-                        let userId = messageMediaContactData.userId
+                    case let .messageMediaContact(_, _, _, _, userId):
                         if userId != 0 {
                             result.append(PeerId(namespace: Namespaces.Peer.CloudUser, id: PeerId.Id._internalFromInt64Value(userId)))
                         }
@@ -211,8 +195,7 @@ func apiMessagePeerIds(_ message: Api.Message) -> [PeerId] {
             if let entities = entities {
                 for entity in entities {
                     switch entity {
-                        case let .messageEntityMentionName(messageEntityMentionNameData):
-                            let userId = messageEntityMentionNameData.userId
+                        case let .messageEntityMentionName(_, _, userId):
                             result.append(PeerId(namespace: Namespaces.Peer.CloudUser, id: PeerId.Id._internalFromInt64Value(userId)))
                         default:
                             break
@@ -222,8 +205,7 @@ func apiMessagePeerIds(_ message: Api.Message) -> [PeerId] {
         
             if let replyTo = replyTo {
                 switch replyTo {
-                case let .messageReplyStoryHeader(messageReplyStoryHeaderData):
-                    let peer = messageReplyStoryHeaderData.peer
+                case let .messageReplyStoryHeader(peer, _):
                     let storyPeerId = peer.peerId
                     if !result.contains(storyPeerId) {
                         result.append(storyPeerId)
@@ -236,13 +218,12 @@ func apiMessagePeerIds(_ message: Api.Message) -> [PeerId] {
             return result
         case .messageEmpty:
             return []
-        case let .messageService(messageServiceData):
-            let (fromId, chatPeerId, savedPeerId, action) = (messageServiceData.fromId, messageServiceData.peerId, messageServiceData.savedPeerId, messageServiceData.action)
+        case let .messageService(_, _, fromId, chatPeerId, savedPeerId, _, _, action, _, _):
             let peerId: PeerId = chatPeerId.peerId
             var result = [peerId]
-
+            
             let resolvedFromId = fromId?.peerId ?? chatPeerId.peerId
-
+            
             if resolvedFromId != peerId {
                 result.append(resolvedFromId)
             }
@@ -251,65 +232,45 @@ func apiMessagePeerIds(_ message: Api.Message) -> [PeerId] {
             }
             
             switch action {
-            case .messageActionChannelCreate, .messageActionChatDeletePhoto, .messageActionChatEditPhoto, .messageActionChatEditTitle, .messageActionEmpty, .messageActionPinMessage, .messageActionHistoryClear, .messageActionGameScore, .messageActionPaymentSent, .messageActionPaymentSentMe, .messageActionPhoneCall, .messageActionScreenshotTaken, .messageActionCustomAction, .messageActionBotAllowed, .messageActionSecureValuesSent, .messageActionSecureValuesSentMe, .messageActionContactSignUp, .messageActionGroupCall, .messageActionSetMessagesTTL, .messageActionGroupCallScheduled, .messageActionSetChatTheme, .messageActionChatJoinedByRequest, .messageActionWebViewDataSent, .messageActionWebViewDataSentMe, .messageActionGiftPremium, .messageActionGiftStars, .messageActionTopicCreate, .messageActionTopicEdit, .messageActionSuggestProfilePhoto, .messageActionSetChatWallPaper, .messageActionGiveawayLaunch, .messageActionGiveawayResults, .messageActionBoostApply, .messageActionRequestedPeerSentMe, .messageActionStarGift, .messageActionStarGiftUnique, .messageActionPaidMessagesRefunded, .messageActionPaidMessagesPrice, .messageActionTodoCompletions, .messageActionTodoAppendTasks, .messageActionSuggestedPostApproval, .messageActionGiftTon, .messageActionSuggestedPostSuccess, .messageActionSuggestedPostRefund, .messageActionSuggestBirthday, .messageActionStarGiftPurchaseOffer, .messageActionStarGiftPurchaseOfferDeclined, .messageActionNoForwardsToggle, .messageActionNoForwardsRequest, .messageActionPollAppendAnswer, .messageActionPollDeleteAnswer:
+            case .messageActionChannelCreate, .messageActionChatDeletePhoto, .messageActionChatEditPhoto, .messageActionChatEditTitle, .messageActionEmpty, .messageActionPinMessage, .messageActionHistoryClear, .messageActionGameScore, .messageActionPaymentSent, .messageActionPaymentSentMe, .messageActionPhoneCall, .messageActionScreenshotTaken, .messageActionCustomAction, .messageActionBotAllowed, .messageActionSecureValuesSent, .messageActionSecureValuesSentMe, .messageActionContactSignUp, .messageActionGroupCall, .messageActionSetMessagesTTL, .messageActionGroupCallScheduled, .messageActionSetChatTheme, .messageActionChatJoinedByRequest, .messageActionWebViewDataSent, .messageActionWebViewDataSentMe, .messageActionGiftPremium, .messageActionGiftStars, .messageActionTopicCreate, .messageActionTopicEdit, .messageActionSuggestProfilePhoto, .messageActionSetChatWallPaper, .messageActionGiveawayLaunch, .messageActionGiveawayResults, .messageActionBoostApply, .messageActionRequestedPeerSentMe, .messageActionStarGift, .messageActionStarGiftUnique, .messageActionPaidMessagesRefunded, .messageActionPaidMessagesPrice, .messageActionTodoCompletions, .messageActionTodoAppendTasks, .messageActionSuggestedPostApproval, .messageActionGiftTon, .messageActionSuggestedPostSuccess, .messageActionSuggestedPostRefund:
                     break
-                case let .messageActionManagedBotCreated(messageActionManagedBotCreated):
-                    let botId = messageActionManagedBotCreated.botId
-                    result.append(PeerId(namespace: Namespaces.Peer.CloudUser, id: PeerId.Id._internalFromInt64Value(botId)))
-                case let .messageActionChannelMigrateFrom(messageActionChannelMigrateFromData):
-                    let chatId = messageActionChannelMigrateFromData.chatId
+                case let .messageActionChannelMigrateFrom(_, chatId):
                     result.append(PeerId(namespace: Namespaces.Peer.CloudGroup, id: PeerId.Id._internalFromInt64Value(chatId)))
-                case let .messageActionChatAddUser(messageActionChatAddUserData):
-                    let users = messageActionChatAddUserData.users
+                case let .messageActionChatAddUser(users):
                     for id in users {
                         result.append(PeerId(namespace: Namespaces.Peer.CloudUser, id: PeerId.Id._internalFromInt64Value(id)))
                     }
-                case let .messageActionChatCreate(messageActionChatCreateData):
-                    let users = messageActionChatCreateData.users
+                case let .messageActionChatCreate(_, users):
                     for id in users {
                         result.append(PeerId(namespace: Namespaces.Peer.CloudUser, id: PeerId.Id._internalFromInt64Value(id)))
                     }
-                case let .messageActionChatDeleteUser(messageActionChatDeleteUserData):
-                    let userId = messageActionChatDeleteUserData.userId
+                case let .messageActionChatDeleteUser(userId):
                     result.append(PeerId(namespace: Namespaces.Peer.CloudUser, id: PeerId.Id._internalFromInt64Value(userId)))
-                case let .messageActionChatJoinedByLink(messageActionChatJoinedByLinkData):
-                    let inviterId = messageActionChatJoinedByLinkData.inviterId
+                case let .messageActionChatJoinedByLink(inviterId):
                     result.append(PeerId(namespace: Namespaces.Peer.CloudUser, id: PeerId.Id._internalFromInt64Value(inviterId)))
-                case let .messageActionChatMigrateTo(messageActionChatMigrateToData):
-                    let channelId = messageActionChatMigrateToData.channelId
+                case let .messageActionChatMigrateTo(channelId):
                     result.append(PeerId(namespace: Namespaces.Peer.CloudChannel, id: PeerId.Id._internalFromInt64Value(channelId)))
-                case let .messageActionGeoProximityReached(messageActionGeoProximityReachedData):
-                    let (fromId, toId) = (messageActionGeoProximityReachedData.fromId, messageActionGeoProximityReachedData.toId)
+                case let .messageActionGeoProximityReached(fromId, toId, _):
                     result.append(fromId.peerId)
                     result.append(toId.peerId)
-                case let .messageActionInviteToGroupCall(messageActionInviteToGroupCallData):
-                    let userIds = messageActionInviteToGroupCallData.users
+                case let .messageActionInviteToGroupCall(_, userIds):
                     for id in userIds {
                         result.append(PeerId(namespace: Namespaces.Peer.CloudUser, id: PeerId.Id._internalFromInt64Value(id)))
                     }
-                case let .messageActionRequestedPeer(messageActionRequestedPeerData):
-                    let peers = messageActionRequestedPeerData.peers
+                case let .messageActionRequestedPeer(_, peers):
                     result.append(contentsOf: peers.map(\.peerId))
-                case let .messageActionGiftCode(messageActionGiftCodeData):
-                    let boostPeer = messageActionGiftCodeData.boostPeer
+                case let .messageActionGiftCode(_, boostPeer, _, _, _, _, _, _, _):
                     if let boostPeer = boostPeer {
                         result.append(boostPeer.peerId)
                     }
-                case let .messageActionPrizeStars(messageActionPrizeStarsData):
-                    let boostPeer = messageActionPrizeStarsData.boostPeer
+                case let .messageActionPrizeStars(_, _, _, boostPeer, _):
                     result.append(boostPeer.peerId)
-                case let .messageActionPaymentRefunded(messageActionPaymentRefundedData):
-                    let peer = messageActionPaymentRefundedData.peer
+                case let .messageActionPaymentRefunded(_, peer, _, _, _, _):
                     result.append(peer.peerId)
-                case let .messageActionConferenceCall(messageActionConferenceCallData):
-                    let otherParticipants = messageActionConferenceCallData.otherParticipants
+                case let .messageActionConferenceCall(_, _, _, otherParticipants):
                     if let otherParticipants {
                         result.append(contentsOf: otherParticipants.map(\.peerId))
                     }
-                case let .messageActionNewCreatorPending(messageActionNewCreatorPending):
-                    result.append(PeerId(namespace: Namespaces.Peer.CloudUser, id: PeerId.Id._internalFromInt64Value(messageActionNewCreatorPending.newCreatorId)))
-                case let .messageActionChangeCreator(messageActionChangeCreator):
-                    result.append(PeerId(namespace: Namespaces.Peer.CloudUser, id: PeerId.Id._internalFromInt64Value(messageActionChangeCreator.newCreatorId)))
             }
         
             return result
@@ -318,14 +279,12 @@ func apiMessagePeerIds(_ message: Api.Message) -> [PeerId] {
 
 func apiMessageAssociatedMessageIds(_ message: Api.Message) -> (replyIds: ReferencedReplyMessageIds, generalIds: [MessageId])? {
     switch message {
-        case let .message(messageData):
-            let (id, chatPeerId, replyTo) = (messageData.id, messageData.peerId, messageData.replyTo)
+        case let .message(_, _, id, _, _, chatPeerId, _, _, _, _, replyTo, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _):
             if let replyTo = replyTo {
                 let peerId: PeerId = chatPeerId.peerId
-
+                
                 switch replyTo {
-                case let .messageReplyHeader(messageReplyHeaderData):
-                    let (replyToMsgId, replyToPeerId, replyHeader, replyMedia, replyToTopId, quoteText, quoteEntities, quoteOffset, todoItemId) = (messageReplyHeaderData.replyToMsgId, messageReplyHeaderData.replyToPeerId, messageReplyHeaderData.replyFrom, messageReplyHeaderData.replyMedia, messageReplyHeaderData.replyToTopId, messageReplyHeaderData.quoteText, messageReplyHeaderData.quoteEntities, messageReplyHeaderData.quoteOffset, messageReplyHeaderData.todoItemId)
+                case let .messageReplyHeader(_, replyToMsgId, replyToPeerId, replyHeader, replyMedia, replyToTopId, quoteText, quoteEntities, quoteOffset, todoItemId):
                     let _ = replyHeader
                     let _ = replyMedia
                     let _ = replyToTopId
@@ -333,7 +292,7 @@ func apiMessageAssociatedMessageIds(_ message: Api.Message) -> (replyIds: Refere
                     let _ = quoteEntities
                     let _ = quoteOffset
                     let _ = todoItemId
-
+                    
                     if let replyToMsgId = replyToMsgId {
                         let targetId = MessageId(peerId: replyToPeerId?.peerId ?? peerId, namespace: Namespaces.Message.Cloud, id: replyToMsgId)
                         var replyIds = ReferencedReplyMessageIds()
@@ -346,12 +305,10 @@ func apiMessageAssociatedMessageIds(_ message: Api.Message) -> (replyIds: Refere
             }
         case .messageEmpty:
             break
-        case let .messageService(messageServiceData):
-            let (id, chatPeerId, replyHeader) = (messageServiceData.id, messageServiceData.peerId, messageServiceData.replyTo)
+        case let .messageService(_, id, _, chatPeerId, _, replyHeader, _, _, _, _):
             if let replyHeader = replyHeader {
                 switch replyHeader {
-                case let .messageReplyHeader(messageReplyHeaderData):
-                    let (replyToMsgId, replyToPeerId, replyHeader, replyMedia, replyToTopId, quoteText, quoteEntities, quoteOffset, todoItemId) = (messageReplyHeaderData.replyToMsgId, messageReplyHeaderData.replyToPeerId, messageReplyHeaderData.replyFrom, messageReplyHeaderData.replyMedia, messageReplyHeaderData.replyToTopId, messageReplyHeaderData.quoteText, messageReplyHeaderData.quoteEntities, messageReplyHeaderData.quoteOffset, messageReplyHeaderData.todoItemId)
+                case let .messageReplyHeader(_, replyToMsgId, replyToPeerId, replyHeader, replyMedia, replyToTopId, quoteText, quoteEntities, quoteOffset, todoItemId):
                     let _ = replyHeader
                     let _ = replyMedia
                     let _ = replyToTopId
@@ -359,7 +316,7 @@ func apiMessageAssociatedMessageIds(_ message: Api.Message) -> (replyIds: Refere
                     let _ = quoteEntities
                     let _ = quoteOffset
                     let _ = todoItemId
-
+                    
                     if let replyToMsgId = replyToMsgId {
                         let targetId = MessageId(peerId: replyToPeerId?.peerId ?? chatPeerId.peerId, namespace: Namespaces.Message.Cloud, id: replyToMsgId)
                         var replyIds = ReferencedReplyMessageIds()
@@ -383,34 +340,28 @@ struct ParsedMessageWebpageAttributes {
 func textMediaAndExpirationTimerFromApiMedia(_ media: Api.MessageMedia?, _ peerId: PeerId) -> (media: Media?, expirationTimer: Int32?, nonPremium: Bool?, hasSpoiler: Bool?, webpageAttributes: ParsedMessageWebpageAttributes?, videoTimestamp: Int32?) {
     if let media = media {
         switch media {
-        case let .messageMediaPhoto(messageMediaPhotoData):
-            let (flags, photo, ttlSeconds) = (messageMediaPhotoData.flags, messageMediaPhotoData.photo, messageMediaPhotoData.ttlSeconds)
+        case let .messageMediaPhoto(flags, photo, ttlSeconds):
             if let photo = photo {
-                if let mediaImage = telegramMediaImageFromApiPhoto(photo, video: messageMediaPhotoData.video) {
+                if let mediaImage = telegramMediaImageFromApiPhoto(photo) {
                     return (mediaImage, ttlSeconds, nil, (flags & (1 << 3)) != 0, nil, nil)
                 }
             } else {
                 return (TelegramMediaExpiredContent(data: .image), nil, nil, nil, nil, nil)
             }
-        case let .messageMediaContact(messageMediaContactData):
-            let (phoneNumber, firstName, lastName, vcard, userId) = (messageMediaContactData.phoneNumber, messageMediaContactData.firstName, messageMediaContactData.lastName, messageMediaContactData.vcard, messageMediaContactData.userId)
+        case let .messageMediaContact(phoneNumber, firstName, lastName, vcard, userId):
             let contactPeerId: PeerId? = userId == 0 ? nil : PeerId(namespace: Namespaces.Peer.CloudUser, id: PeerId.Id._internalFromInt64Value(userId))
             let mediaContact = TelegramMediaContact(firstName: firstName, lastName: lastName, phoneNumber: phoneNumber, peerId: contactPeerId, vCardData: vcard.isEmpty ? nil : vcard)
             return (mediaContact, nil, nil, nil, nil, nil)
-        case let .messageMediaGeo(messageMediaGeoData):
-            let geo = messageMediaGeoData.geo
+        case let .messageMediaGeo(geo):
             let mediaMap = telegramMediaMapFromApiGeoPoint(geo, title: nil, address: nil, provider: nil, venueId: nil, venueType: nil, liveBroadcastingTimeout: nil, liveProximityNotificationRadius: nil, heading: nil)
             return (mediaMap, nil, nil, nil, nil, nil)
-        case let .messageMediaVenue(messageMediaVenueData):
-            let (geo, title, address, provider, venueId, venueType) = (messageMediaVenueData.geo, messageMediaVenueData.title, messageMediaVenueData.address, messageMediaVenueData.provider, messageMediaVenueData.venueId, messageMediaVenueData.venueType)
+        case let .messageMediaVenue(geo, title, address, provider, venueId, venueType):
             let mediaMap = telegramMediaMapFromApiGeoPoint(geo, title: title, address: address, provider: provider, venueId: venueId, venueType: venueType, liveBroadcastingTimeout: nil, liveProximityNotificationRadius: nil, heading: nil)
             return (mediaMap, nil, nil, nil, nil, nil)
-        case let .messageMediaGeoLive(messageMediaGeoLiveData):
-            let (geo, heading, period, proximityNotificationRadius) = (messageMediaGeoLiveData.geo, messageMediaGeoLiveData.heading, messageMediaGeoLiveData.period, messageMediaGeoLiveData.proximityNotificationRadius)
+        case let .messageMediaGeoLive(_, geo, heading, period, proximityNotificationRadius):
             let mediaMap = telegramMediaMapFromApiGeoPoint(geo, title: nil, address: nil, provider: nil, venueId: nil, venueType: nil, liveBroadcastingTimeout: period, liveProximityNotificationRadius: proximityNotificationRadius, heading: heading)
             return (mediaMap, nil, nil, nil, nil, nil)
-        case let .messageMediaDocument(messageMediaDocumentData):
-            let (flags, document, altDocuments, coverPhoto, videoTimestamp, ttlSeconds) = (messageMediaDocumentData.flags, messageMediaDocumentData.document, messageMediaDocumentData.altDocuments, messageMediaDocumentData.videoCover, messageMediaDocumentData.videoTimestamp, messageMediaDocumentData.ttlSeconds)
+        case let .messageMediaDocument(flags, document, altDocuments, coverPhoto, videoTimestamp, ttlSeconds):
             if let document = document {
                 if let mediaFile = telegramMediaFileFromApiDocument(document, altDocuments: altDocuments, videoCover: coverPhoto) {
                     return (mediaFile, ttlSeconds, (flags & (1 << 3)) != 0, (flags & (1 << 4)) != 0, nil, videoTimestamp)
@@ -426,8 +377,7 @@ func textMediaAndExpirationTimerFromApiMedia(_ media: Api.MessageMedia?, _ peerI
                 }
                 return (TelegramMediaExpiredContent(data: data), nil, nil, nil, nil, nil)
             }
-        case let .messageMediaWebPage(messageMediaWebPageData):
-            let (flags, webpage) = (messageMediaWebPageData.flags, messageMediaWebPageData.webpage)
+        case let .messageMediaWebPage(flags, webpage):
             if let mediaWebpage = telegramMediaWebpageFromApiWebpage(webpage) {
                 var webpageForceLargeMedia: Bool?
                 if (flags & (1 << 0)) != 0 {
@@ -435,7 +385,7 @@ func textMediaAndExpirationTimerFromApiMedia(_ media: Api.MessageMedia?, _ peerI
                 } else if (flags & (1 << 1)) != 0 {
                     webpageForceLargeMedia = false
                 }
-
+                
                 return (mediaWebpage, nil, nil, nil, ParsedMessageWebpageAttributes(
                     forceLargeMedia: webpageForceLargeMedia,
                     isManuallyAdded: (flags & (1 << 3)) != 0,
@@ -446,11 +396,9 @@ func textMediaAndExpirationTimerFromApiMedia(_ media: Api.MessageMedia?, _ peerI
             return (TelegramMediaUnsupported(), nil, nil, nil, nil, nil)
         case .messageMediaEmpty:
             break
-        case let .messageMediaGame(messageMediaGameData):
-            let game = messageMediaGameData.game
+        case let .messageMediaGame(game):
             return (TelegramMediaGame(apiGame: game), nil, nil, nil, nil, nil)
-        case let .messageMediaInvoice(messageMediaInvoiceData):
-            let (flags, title, description, photo, receiptMsgId, currency, totalAmount, startParam, apiExtendedMedia) = (messageMediaInvoiceData.flags, messageMediaInvoiceData.title, messageMediaInvoiceData.description, messageMediaInvoiceData.photo, messageMediaInvoiceData.receiptMsgId, messageMediaInvoiceData.currency, messageMediaInvoiceData.totalAmount, messageMediaInvoiceData.startParam, messageMediaInvoiceData.extendedMedia)
+        case let .messageMediaInvoice(flags, title, description, photo, receiptMsgId, currency, totalAmount, startParam, apiExtendedMedia):
             var parsedFlags = TelegramMediaInvoiceFlags()
             if (flags & (1 << 3)) != 0 {
                 parsedFlags.insert(.isTest)
@@ -459,11 +407,9 @@ func textMediaAndExpirationTimerFromApiMedia(_ media: Api.MessageMedia?, _ peerI
                 parsedFlags.insert(.shippingAddressRequested)
             }
             return (TelegramMediaInvoice(title: title, description: description, photo: photo.flatMap(TelegramMediaWebFile.init), receiptMessageId: receiptMsgId.flatMap { MessageId(peerId: peerId, namespace: Namespaces.Message.Cloud, id: $0) }, currency: currency, totalAmount: totalAmount, startParam: startParam, extendedMedia: apiExtendedMedia.flatMap({ TelegramExtendedMedia(apiExtendedMedia: $0, peerId: peerId) }), subscriptionPeriod: nil, flags: parsedFlags, version: TelegramMediaInvoice.lastVersion), nil, nil, nil, nil, nil)
-        case let .messageMediaPoll(messageMediaPollData):
-            let (poll, results) = (messageMediaPollData.poll, messageMediaPollData.results)
+        case let .messageMediaPoll(poll, results):
             switch poll {
-            case let .poll(pollData):
-                let (id, flags, question, answers, closePeriod, closeDate, pollHash, countries) = (pollData.id, pollData.flags, pollData.question, pollData.answers, pollData.closePeriod, pollData.closeDate, pollData.hash, pollData.countriesIso2)
+            case let .poll(id, flags, question, answers, closePeriod, _):
                 let publicity: TelegramMediaPollPublicity
                 if (flags & (1 << 1)) != 0 {
                     publicity = .public
@@ -472,38 +418,24 @@ func textMediaAndExpirationTimerFromApiMedia(_ media: Api.MessageMedia?, _ peerI
                 }
                 let kind: TelegramMediaPollKind
                 if (flags & (1 << 3)) != 0 {
-                    kind = .quiz(multipleAnswers: (flags & (1 << 2)) != 0)
+                    kind = .quiz
                 } else {
                     kind = .poll(multipleAnswers: (flags & (1 << 2)) != 0)
                 }
-
-                let openAnswers = (flags & (1 << 6)) != 0
-                let revotingDisabled = (flags & (1 << 7)) != 0
-                let shuffleAnswers = (flags & (1 << 8)) != 0
-                let hideResultsUntilClose = (flags & (1 << 9)) != 0
-                let isCreator = (flags & (1 << 10)) != 0
-                let restrictToSubscribers = (flags & (1 << 11)) != 0
                 
                 let questionText: String
                 let questionEntities: [MessageTextEntity]
                 switch question {
-                case let .textWithEntities(textWithEntitiesData):
-                    let (text, entities) = (textWithEntitiesData.text, textWithEntitiesData.entities)
+                case let .textWithEntities(text, entities):
                     questionText = text
                     questionEntities = messageTextEntitiesFromApiEntities(entities)
                 }
-
-                var parsedAttachedMedia: Media?
-                if let apiAttachedMedia = messageMediaPollData.attachedMedia {
-                    parsedAttachedMedia = textMediaAndExpirationTimerFromApiMedia(apiAttachedMedia, peerId).media
-                }
-                return (TelegramMediaPoll(pollId: MediaId(namespace: Namespaces.Media.CloudPoll, id: id), publicity: publicity, kind: kind, text: questionText, textEntities: questionEntities, options: answers.map(TelegramMediaPollOption.init(apiOption:)), correctAnswers: nil, results: TelegramMediaPollResults(apiResults: results), isClosed: (flags & (1 << 0)) != 0, deadlineTimeout: closePeriod, deadlineDate: closeDate, pollHash: pollHash, openAnswers: openAnswers, revotingDisabled: revotingDisabled, shuffleAnswers: shuffleAnswers, hideResultsUntilClose: hideResultsUntilClose, isCreator: isCreator, attachedMedia: parsedAttachedMedia, restrictToSubscribers: restrictToSubscribers, countries: countries ?? []), nil, nil, nil, nil, nil)
+                
+                return (TelegramMediaPoll(pollId: MediaId(namespace: Namespaces.Media.CloudPoll, id: id), publicity: publicity, kind: kind, text: questionText, textEntities: questionEntities, options: answers.map(TelegramMediaPollOption.init(apiOption:)), correctAnswers: nil, results: TelegramMediaPollResults(apiResults: results), isClosed: (flags & (1 << 0)) != 0, deadlineTimeout: closePeriod), nil, nil, nil, nil, nil)
             }
-        case let .messageMediaToDo(messageMediaToDoData):
-            let (todo, completions) = (messageMediaToDoData.todo, messageMediaToDoData.completions)
+        case let .messageMediaToDo(_, todo, completions):
             switch todo {
-            case let .todoList(todoListData):
-                let (apiFlags, title, list) = (todoListData.flags, todoListData.title, todoListData.list)
+            case let .todoList(apiFlags, title, list):
                 var flags: TelegramMediaTodo.Flags = []
                 if (apiFlags & (1 << 0)) != 0 {
                     flags.insert(.othersCanAppend)
@@ -511,12 +443,11 @@ func textMediaAndExpirationTimerFromApiMedia(_ media: Api.MessageMedia?, _ peerI
                 if (apiFlags & (1 << 1)) != 0 {
                     flags.insert(.othersCanComplete)
                 }
-
+                
                 let todoText: String
                 let todoEntities: [MessageTextEntity]
                 switch title {
-                case let .textWithEntities(textWithEntitiesData):
-                    let (text, entities) = (textWithEntitiesData.text, textWithEntitiesData.entities)
+                case let .textWithEntities(text, entities):
                     todoText = text
                     todoEntities = messageTextEntitiesFromApiEntities(entities)
                 }
@@ -526,25 +457,12 @@ func textMediaAndExpirationTimerFromApiMedia(_ media: Api.MessageMedia?, _ peerI
                 }
                 return (TelegramMediaTodo(flags: flags, text: todoText, textEntities: todoEntities, items: list.map(TelegramMediaTodo.Item.init(apiItem:)), completions: todoCompletions), nil, nil, nil, nil, nil)
             }
-        case let .messageMediaDice(messageMediaDiceData):
-            let (value, emoticon, apiGameOutcome) = (messageMediaDiceData.value, messageMediaDiceData.emoticon, messageMediaDiceData.gameOutcome)
-            var gameOutcome: TelegramMediaDice.GameOutcome?
-            var tonAmount: Int64?
-            switch apiGameOutcome {
-            case let .emojiGameOutcome(emojiGameOutcomeData):
-                let (seed, stakeTonAmount, outcomeTonAmount) = (emojiGameOutcomeData.seed, emojiGameOutcomeData.stakeTonAmount, emojiGameOutcomeData.tonAmount)
-                gameOutcome = TelegramMediaDice.GameOutcome(seed: seed.makeData(), tonAmount: outcomeTonAmount)
-                tonAmount = stakeTonAmount
-            default:
-                break
-            }
-            return (TelegramMediaDice(emoji: emoticon, tonAmount: tonAmount, value: value, gameOutcome: gameOutcome), nil, nil, nil, nil, nil)
-        case let .messageMediaStory(messageMediaStoryData):
-            let (flags, peerId, id) = (messageMediaStoryData.flags, messageMediaStoryData.peer, messageMediaStoryData.id)
+        case let .messageMediaDice(value, emoticon):
+            return (TelegramMediaDice(emoji: emoticon, value: value), nil, nil, nil, nil, nil)
+        case let .messageMediaStory(flags, peerId, id, _):
             let isMention = (flags & (1 << 1)) != 0
             return (TelegramMediaStory(storyId: StoryId(peerId: peerId.peerId, id: id), isMention: isMention), nil, nil, nil, nil, nil)
-        case let .messageMediaGiveaway(messageMediaGiveawayData):
-            let (apiFlags, channels, countries, prizeDescription, quantity, months, stars, untilDate) = (messageMediaGiveawayData.flags, messageMediaGiveawayData.channels, messageMediaGiveawayData.countriesIso2, messageMediaGiveawayData.prizeDescription, messageMediaGiveawayData.quantity, messageMediaGiveawayData.months, messageMediaGiveawayData.stars, messageMediaGiveawayData.untilDate)
+        case let .messageMediaGiveaway(apiFlags, channels, countries, prizeDescription, quantity, months, stars, untilDate):
             var flags: TelegramMediaGiveaway.Flags = []
             if (apiFlags & (1 << 0)) != 0 {
                 flags.insert(.onlyNewSubscribers)
@@ -558,8 +476,7 @@ func textMediaAndExpirationTimerFromApiMedia(_ media: Api.MessageMedia?, _ peerI
                 return (nil, nil, nil, nil, nil, nil)
             }
             return (TelegramMediaGiveaway(flags: flags, channelPeerIds: channels.map { PeerId(namespace: Namespaces.Peer.CloudChannel, id: PeerId.Id._internalFromInt64Value($0)) }, countries: countries ?? [], quantity: quantity, prize: prize, untilDate: untilDate, prizeDescription: prizeDescription), nil, nil, nil, nil, nil)
-        case let .messageMediaGiveawayResults(messageMediaGiveawayResultsData):
-            let (apiFlags, channelId, additionalPeersCount, launchMsgId, winnersCount, unclaimedCount, winners, months, stars, prizeDescription, untilDate) = (messageMediaGiveawayResultsData.flags, messageMediaGiveawayResultsData.channelId, messageMediaGiveawayResultsData.additionalPeersCount, messageMediaGiveawayResultsData.launchMsgId, messageMediaGiveawayResultsData.winnersCount, messageMediaGiveawayResultsData.unclaimedCount, messageMediaGiveawayResultsData.winners, messageMediaGiveawayResultsData.months, messageMediaGiveawayResultsData.stars, messageMediaGiveawayResultsData.prizeDescription, messageMediaGiveawayResultsData.untilDate)
+        case let .messageMediaGiveawayResults(apiFlags, channelId, additionalPeersCount, launchMsgId, winnersCount, unclaimedCount, winners, months, stars, prizeDescription, untilDate):
             var flags: TelegramMediaGiveawayResults.Flags = []
             if (apiFlags & (1 << 0)) != 0 {
                 flags.insert(.onlyNewSubscribers)
@@ -576,20 +493,8 @@ func textMediaAndExpirationTimerFromApiMedia(_ media: Api.MessageMedia?, _ peerI
                 return (nil, nil, nil, nil, nil, nil)
             }
             return (TelegramMediaGiveawayResults(flags: flags, launchMessageId: MessageId(peerId: PeerId(namespace: Namespaces.Peer.CloudChannel, id: PeerId.Id._internalFromInt64Value(channelId)), namespace: Namespaces.Message.Cloud, id: launchMsgId), additionalChannelsCount: additionalPeersCount ?? 0, winnersPeerIds: winners.map { PeerId(namespace: Namespaces.Peer.CloudUser, id: PeerId.Id._internalFromInt64Value($0)) }, winnersCount: winnersCount, unclaimedCount: unclaimedCount, prize: prize, untilDate: untilDate, prizeDescription: prizeDescription), nil, nil, nil, nil, nil)
-        case let .messageMediaPaidMedia(messageMediaPaidMediaData):
-            let (starsAmount, apiExtendedMedia) = (messageMediaPaidMediaData.starsAmount, messageMediaPaidMediaData.extendedMedia)
+        case let .messageMediaPaidMedia(starsAmount, apiExtendedMedia):
             return (TelegramMediaPaidContent(amount: starsAmount, extendedMedia: apiExtendedMedia.compactMap({ TelegramExtendedMedia(apiExtendedMedia: $0, peerId: peerId) })), nil, nil, nil, nil, nil)
-        case let .messageMediaVideoStream(messageMediaVideoStreamData):
-            let (flags, call) = (messageMediaVideoStreamData.flags, messageMediaVideoStreamData.call)
-            if let call = GroupCallReference(call) {
-                let kind: TelegramMediaLiveStream.Kind
-                if (flags & (1 << 0)) != 0 {
-                    kind = .rtmp
-                } else {
-                    kind = .rtc
-                }
-                return (TelegramMediaLiveStream(call: call, kind: kind), nil, nil, nil, nil, nil)
-            }
         }
     }
     
@@ -608,8 +513,7 @@ public func mediaFromApiMedia(_ media: Api.MessageMedia?) -> Media? {
 func mediaAreaFromApiMediaArea(_ mediaArea: Api.MediaArea) -> MediaArea? {
     func coodinatesFromApiMediaAreaCoordinates(_ coordinates: Api.MediaAreaCoordinates) -> MediaArea.Coordinates {
         switch coordinates {
-        case let .mediaAreaCoordinates(mediaAreaCoordinatesData):
-            let (_, x, y, width, height, rotation, radius) = (mediaAreaCoordinatesData.flags, mediaAreaCoordinatesData.x, mediaAreaCoordinatesData.y, mediaAreaCoordinatesData.w, mediaAreaCoordinatesData.h, mediaAreaCoordinatesData.rotation, mediaAreaCoordinatesData.radius)
+        case let .mediaAreaCoordinates(_, x, y, width, height, rotation, radius):
             return MediaArea.Coordinates(x: x, y: y, width: width, height: height, rotation: rotation, cornerRadius: radius)
         }
     }
@@ -618,25 +522,22 @@ func mediaAreaFromApiMediaArea(_ mediaArea: Api.MediaArea) -> MediaArea? {
         return nil
     case .inputMediaAreaVenue:
         return nil
-    case let .mediaAreaGeoPoint(mediaAreaGeoPointData):
-        let (_, coordinates, geo, address) = (mediaAreaGeoPointData.flags, mediaAreaGeoPointData.coordinates, mediaAreaGeoPointData.geo, mediaAreaGeoPointData.address)
+    case let .mediaAreaGeoPoint(_, coordinates, geo, address):
         let latitude: Double
         let longitude: Double
         switch geo {
-        case let .geoPoint(geoPointData):
-            let (_, long, lat, _, _) = (geoPointData.flags, geoPointData.long, geoPointData.lat, geoPointData.accessHash, geoPointData.accuracyRadius)
+        case let .geoPoint(_, long, lat, _, _):
             latitude = lat
             longitude = long
         case .geoPointEmpty:
             latitude = 0.0
             longitude = 0.0
         }
-
+        
         var mappedAddress: MapGeoAddress?
         if let address {
             switch address {
-            case let .geoPointAddress(geoPointAddressData):
-                let (_, countryIso2, state, city, street) = (geoPointAddressData.flags, geoPointAddressData.countryIso2, geoPointAddressData.state, geoPointAddressData.city, geoPointAddressData.street)
+            case let .geoPointAddress(_, countryIso2, state, city, street):
                 mappedAddress = MapGeoAddress(
                     country: countryIso2,
                     state: state,
@@ -645,7 +546,7 @@ func mediaAreaFromApiMediaArea(_ mediaArea: Api.MediaArea) -> MediaArea? {
                 )
             }
         }
-
+        
         return .venue(coordinates: coodinatesFromApiMediaAreaCoordinates(coordinates), venue: MediaArea.Venue(
             latitude: latitude,
             longitude: longitude,
@@ -654,13 +555,11 @@ func mediaAreaFromApiMediaArea(_ mediaArea: Api.MediaArea) -> MediaArea? {
             queryId: nil,
             resultId: nil
         ))
-    case let .mediaAreaVenue(mediaAreaVenueData):
-        let (coordinates, geo, title, address, provider, venueId, venueType) = (mediaAreaVenueData.coordinates, mediaAreaVenueData.geo, mediaAreaVenueData.title, mediaAreaVenueData.address, mediaAreaVenueData.provider, mediaAreaVenueData.venueId, mediaAreaVenueData.venueType)
+    case let .mediaAreaVenue(coordinates, geo, title, address, provider, venueId, venueType):
         let latitude: Double
         let longitude: Double
         switch geo {
-        case let .geoPoint(geoPointData):
-            let (_, long, lat, _, _) = (geoPointData.flags, geoPointData.long, geoPointData.lat, geoPointData.accessHash, geoPointData.accuracyRadius)
+        case let .geoPoint(_, long, lat, _, _):
             latitude = lat
             longitude = long
         case .geoPointEmpty:
@@ -668,8 +567,7 @@ func mediaAreaFromApiMediaArea(_ mediaArea: Api.MediaArea) -> MediaArea? {
             longitude = 0.0
         }
         return .venue(coordinates: coodinatesFromApiMediaAreaCoordinates(coordinates), venue: MediaArea.Venue(latitude: latitude, longitude: longitude, venue: MapVenue(title: title, address: address, provider: provider, id: venueId, type: venueType), address: nil, queryId: nil, resultId: nil))
-    case let .mediaAreaSuggestedReaction(mediaAreaSuggestedReactionData):
-        let (flags, coordinates, reaction) = (mediaAreaSuggestedReactionData.flags, mediaAreaSuggestedReactionData.coordinates, mediaAreaSuggestedReactionData.reaction)
+    case let .mediaAreaSuggestedReaction(flags, coordinates, reaction):
         if let reaction = MessageReaction.Reaction(apiReaction: reaction) {
             var parsedFlags = MediaArea.ReactionFlags()
             if (flags & (1 << 0)) != 0 {
@@ -682,17 +580,13 @@ func mediaAreaFromApiMediaArea(_ mediaArea: Api.MediaArea) -> MediaArea? {
         } else {
             return nil
         }
-    case let .mediaAreaUrl(mediaAreaUrlData):
-        let (coordinates, url) = (mediaAreaUrlData.coordinates, mediaAreaUrlData.url)
+    case let .mediaAreaUrl(coordinates, url):
         return .link(coordinates: coodinatesFromApiMediaAreaCoordinates(coordinates), url: url)
-    case let .mediaAreaChannelPost(mediaAreaChannelPostData):
-        let (coordinates, channelId, messageId) = (mediaAreaChannelPostData.coordinates, mediaAreaChannelPostData.channelId, mediaAreaChannelPostData.msgId)
+    case let .mediaAreaChannelPost(coordinates, channelId, messageId):
         return .channelMessage(coordinates: coodinatesFromApiMediaAreaCoordinates(coordinates), messageId: EngineMessage.Id(peerId: PeerId(namespace: Namespaces.Peer.CloudChannel, id: PeerId.Id._internalFromInt64Value(channelId)), namespace: Namespaces.Message.Cloud, id: messageId))
-    case let .mediaAreaWeather(mediaAreaWeatherData):
-        let (coordinates, emoji, temperatureC, color) = (mediaAreaWeatherData.coordinates, mediaAreaWeatherData.emoji, mediaAreaWeatherData.temperatureC, mediaAreaWeatherData.color)
+    case let .mediaAreaWeather(coordinates, emoji, temperatureC, color):
         return .weather(coordinates: coodinatesFromApiMediaAreaCoordinates(coordinates), emoji: emoji, temperature: temperatureC, color: color)
-    case let .mediaAreaStarGift(mediaAreaStarGiftData):
-        let (coordinates, slug) = (mediaAreaStarGiftData.coordinates, mediaAreaStarGiftData.slug)
+    case let .mediaAreaStarGift(coordinates, slug):
         return .starGift(coordinates: coodinatesFromApiMediaAreaCoordinates(coordinates), slug: slug)
     }
 }
@@ -705,13 +599,13 @@ func apiMediaAreasFromMediaAreas(_ mediaAreas: [MediaArea], transaction: Transac
         if let _ = coordinates.cornerRadius {
             flags |= (1 << 0)
         }
-        let inputCoordinates = Api.MediaAreaCoordinates.mediaAreaCoordinates(.init(flags: flags, x: coordinates.x, y: coordinates.y, w: coordinates.width, h: coordinates.height, rotation: coordinates.rotation, radius: coordinates.cornerRadius))
+        let inputCoordinates = Api.MediaAreaCoordinates.mediaAreaCoordinates(flags: flags, x: coordinates.x, y: coordinates.y, w: coordinates.width, h: coordinates.height, rotation: coordinates.rotation, radius: coordinates.cornerRadius)
         switch area {
         case let .venue(_, venue):
             if let queryId = venue.queryId, let resultId = venue.resultId {
-                apiMediaAreas.append(.inputMediaAreaVenue(.init(coordinates: inputCoordinates, queryId: queryId, resultId: resultId)))
+                apiMediaAreas.append(.inputMediaAreaVenue(coordinates: inputCoordinates, queryId: queryId, resultId: resultId))
             } else if let venueInfo = venue.venue {
-                apiMediaAreas.append(.mediaAreaVenue(.init(coordinates: inputCoordinates, geo: .geoPoint(.init(flags: 0, long: venue.longitude, lat: venue.latitude, accessHash: 0, accuracyRadius: nil)), title: venueInfo.title, address: venueInfo.address ?? "", provider: venueInfo.provider ?? "", venueId: venueInfo.id ?? "", venueType: venueInfo.type ?? "")))
+                apiMediaAreas.append(.mediaAreaVenue(coordinates: inputCoordinates, geo: .geoPoint(flags: 0, long: venue.longitude, lat: venue.latitude, accessHash: 0, accuracyRadius: nil), title: venueInfo.title, address: venueInfo.address ?? "", provider: venueInfo.provider ?? "", venueId: venueInfo.id ?? "", venueType: venueInfo.type ?? ""))
             } else {
                 var flags: Int32 = 0
                 var inputAddress: Api.GeoPointAddress?
@@ -726,10 +620,10 @@ func apiMediaAreasFromMediaAreas(_ mediaAreas: [MediaArea], transaction: Transac
                     if let _ = address.street {
                         addressFlags |= (1 << 2)
                     }
-                    inputAddress = .geoPointAddress(.init(flags: addressFlags, countryIso2: address.country, state: address.state, city: address.city, street: address.street))
+                    inputAddress = .geoPointAddress(flags: addressFlags, countryIso2: address.country, state: address.state, city: address.city, street: address.street)
                     flags |= (1 << 0)
                 }
-                apiMediaAreas.append(.mediaAreaGeoPoint(.init(flags: flags, coordinates: inputCoordinates, geo: .geoPoint(.init(flags: 0, long: venue.longitude, lat: venue.latitude, accessHash: 0, accuracyRadius: nil)), address: inputAddress)))
+                apiMediaAreas.append(.mediaAreaGeoPoint(flags: flags, coordinates: inputCoordinates, geo: .geoPoint(flags: 0, long: venue.longitude, lat: venue.latitude, accessHash: 0, accuracyRadius: nil), address: inputAddress))
             }
         case let .reaction(_, reaction, flags):
             var apiFlags: Int32 = 0
@@ -739,17 +633,17 @@ func apiMediaAreasFromMediaAreas(_ mediaAreas: [MediaArea], transaction: Transac
             if flags.contains(.isFlipped) {
                 apiFlags |= (1 << 1)
             }
-            apiMediaAreas.append(.mediaAreaSuggestedReaction(.init(flags: apiFlags, coordinates: inputCoordinates, reaction: reaction.apiReaction)))
+            apiMediaAreas.append(.mediaAreaSuggestedReaction(flags: apiFlags, coordinates: inputCoordinates, reaction: reaction.apiReaction))
         case let .channelMessage(_, messageId):
             if let transaction, let peer = transaction.getPeer(messageId.peerId), let inputChannel = apiInputChannel(peer) {
-                apiMediaAreas.append(.inputMediaAreaChannelPost(.init(coordinates: inputCoordinates, channel: inputChannel, msgId: messageId.id)))
+                apiMediaAreas.append(.inputMediaAreaChannelPost(coordinates: inputCoordinates, channel: inputChannel, msgId: messageId.id))
             }
         case let .link(_, url):
-            apiMediaAreas.append(.mediaAreaUrl(.init(coordinates: inputCoordinates, url: url)))
+            apiMediaAreas.append(.mediaAreaUrl(coordinates: inputCoordinates, url: url))
         case let .weather(_, emoji, temperature, color):
-            apiMediaAreas.append(.mediaAreaWeather(.init(coordinates: inputCoordinates, emoji: emoji, temperatureC: temperature, color: color)))
+            apiMediaAreas.append(.mediaAreaWeather(coordinates: inputCoordinates, emoji: emoji, temperatureC: temperature, color: color))
         case let .starGift(_, slug):
-            apiMediaAreas.append(.mediaAreaStarGift(.init(coordinates: inputCoordinates, slug: slug)))
+            apiMediaAreas.append(.mediaAreaStarGift(coordinates: inputCoordinates, slug: slug))
         }
     }
     return apiMediaAreas
@@ -762,92 +656,44 @@ func messageTextEntitiesFromApiEntities(_ entities: [Api.MessageEntity]) -> [Mes
         switch entity {
         case .messageEntityUnknown, .inputMessageEntityMentionName:
             break
-        case let .messageEntityMention(messageEntityMentionData):
-            let (offset, length) = (messageEntityMentionData.offset, messageEntityMentionData.length)
+        case let .messageEntityMention(offset, length):
             result.append(MessageTextEntity(range: Int(offset) ..< Int(offset + length), type: .Mention))
-        case let .messageEntityHashtag(messageEntityHashtagData):
-            let (offset, length) = (messageEntityHashtagData.offset, messageEntityHashtagData.length)
+        case let .messageEntityHashtag(offset, length):
             result.append(MessageTextEntity(range: Int(offset) ..< Int(offset + length), type: .Hashtag))
-        case let .messageEntityBotCommand(messageEntityBotCommandData):
-            let (offset, length) = (messageEntityBotCommandData.offset, messageEntityBotCommandData.length)
+        case let .messageEntityBotCommand(offset, length):
             result.append(MessageTextEntity(range: Int(offset) ..< Int(offset + length), type: .BotCommand))
-        case let .messageEntityUrl(messageEntityUrlData):
-            let (offset, length) = (messageEntityUrlData.offset, messageEntityUrlData.length)
+        case let .messageEntityUrl(offset, length):
             result.append(MessageTextEntity(range: Int(offset) ..< Int(offset + length), type: .Url))
-        case let .messageEntityEmail(messageEntityEmailData):
-            let (offset, length) = (messageEntityEmailData.offset, messageEntityEmailData.length)
+        case let .messageEntityEmail(offset, length):
             result.append(MessageTextEntity(range: Int(offset) ..< Int(offset + length), type: .Email))
-        case let .messageEntityBold(messageEntityBoldData):
-            let (offset, length) = (messageEntityBoldData.offset, messageEntityBoldData.length)
+        case let .messageEntityBold(offset, length):
             result.append(MessageTextEntity(range: Int(offset) ..< Int(offset + length), type: .Bold))
-        case let .messageEntityItalic(messageEntityItalicData):
-            let (offset, length) = (messageEntityItalicData.offset, messageEntityItalicData.length)
+        case let .messageEntityItalic(offset, length):
             result.append(MessageTextEntity(range: Int(offset) ..< Int(offset + length), type: .Italic))
-        case let .messageEntityCode(messageEntityCodeData):
-            let (offset, length) = (messageEntityCodeData.offset, messageEntityCodeData.length)
+        case let .messageEntityCode(offset, length):
             result.append(MessageTextEntity(range: Int(offset) ..< Int(offset + length), type: .Code))
-        case let .messageEntityPre(messageEntityPreData):
-            let (offset, length, language) = (messageEntityPreData.offset, messageEntityPreData.length, messageEntityPreData.language)
+        case let .messageEntityPre(offset, length, language):
             result.append(MessageTextEntity(range: Int(offset) ..< Int(offset + length), type: .Pre(language: language)))
-        case let .messageEntityTextUrl(messageEntityTextUrlData):
-            let (offset, length, url) = (messageEntityTextUrlData.offset, messageEntityTextUrlData.length, messageEntityTextUrlData.url)
+        case let .messageEntityTextUrl(offset, length, url):
             result.append(MessageTextEntity(range: Int(offset) ..< Int(offset + length), type: .TextUrl(url: url)))
-        case let .messageEntityMentionName(messageEntityMentionNameData):
-            let (offset, length, userId) = (messageEntityMentionNameData.offset, messageEntityMentionNameData.length, messageEntityMentionNameData.userId)
+        case let .messageEntityMentionName(offset, length, userId):
             result.append(MessageTextEntity(range: Int(offset) ..< Int(offset + length), type: .TextMention(peerId: PeerId(namespace: Namespaces.Peer.CloudUser, id: PeerId.Id._internalFromInt64Value(userId)))))
-        case let .messageEntityPhone(messageEntityPhoneData):
-            let (offset, length) = (messageEntityPhoneData.offset, messageEntityPhoneData.length)
+        case let .messageEntityPhone(offset, length):
             result.append(MessageTextEntity(range: Int(offset) ..< Int(offset + length), type: .PhoneNumber))
-        case let .messageEntityCashtag(messageEntityCashtagData):
-            let (offset, length) = (messageEntityCashtagData.offset, messageEntityCashtagData.length)
+        case let .messageEntityCashtag(offset, length):
             result.append(MessageTextEntity(range: Int(offset) ..< Int(offset + length), type: .Hashtag))
-        case let .messageEntityUnderline(messageEntityUnderlineData):
-            let (offset, length) = (messageEntityUnderlineData.offset, messageEntityUnderlineData.length)
+        case let .messageEntityUnderline(offset, length):
             result.append(MessageTextEntity(range: Int(offset) ..< Int(offset + length), type: .Underline))
-        case let .messageEntityStrike(messageEntityStrikeData):
-            let (offset, length) = (messageEntityStrikeData.offset, messageEntityStrikeData.length)
+        case let .messageEntityStrike(offset, length):
             result.append(MessageTextEntity(range: Int(offset) ..< Int(offset + length), type: .Strikethrough))
-        case let .messageEntityBlockquote(messageEntityBlockquoteData):
-            let (flags, offset, length) = (messageEntityBlockquoteData.flags, messageEntityBlockquoteData.offset, messageEntityBlockquoteData.length)
+        case let .messageEntityBlockquote(flags, offset, length):
             result.append(MessageTextEntity(range: Int(offset) ..< Int(offset + length), type: .BlockQuote(isCollapsed: (flags & (1 << 0)) != 0)))
-        case let .messageEntityBankCard(messageEntityBankCardData):
-            let (offset, length) = (messageEntityBankCardData.offset, messageEntityBankCardData.length)
+        case let .messageEntityBankCard(offset, length):
             result.append(MessageTextEntity(range: Int(offset) ..< Int(offset + length), type: .BankCard))
-        case let .messageEntitySpoiler(messageEntitySpoilerData):
-            let (offset, length) = (messageEntitySpoilerData.offset, messageEntitySpoilerData.length)
+        case let .messageEntitySpoiler(offset, length):
             result.append(MessageTextEntity(range: Int(offset) ..< Int(offset + length), type: .Spoiler))
-        case let .messageEntityCustomEmoji(messageEntityCustomEmojiData):
-            let (offset, length, documentId) = (messageEntityCustomEmojiData.offset, messageEntityCustomEmojiData.length, messageEntityCustomEmojiData.documentId)
+        case let .messageEntityCustomEmoji(offset, length, documentId):
             result.append(MessageTextEntity(range: Int(offset) ..< Int(offset + length), type: .CustomEmoji(stickerPack: nil, fileId: documentId)))
-        case let .messageEntityFormattedDate(messageEntityFormattedDateData):
-            let (flags, offset, length, date) = (messageEntityFormattedDateData.flags, messageEntityFormattedDateData.offset, messageEntityFormattedDateData.length, messageEntityFormattedDateData.date)
-            let format: MessageTextEntityType.DateTimeFormat?
-            if flags == 0 {
-                format = nil
-            } else if (flags & (1 << 0)) != 0 {
-                format = .relative
-            } else {
-                let timeFormat: MessageTextEntityType.DateTimeFormat.TimeFormat?
-                if (flags & (1 << 1)) != 0 {
-                    timeFormat = .short
-                } else if (flags & (1 << 2)) != 0 {
-                    timeFormat = .long
-                } else {
-                    timeFormat = nil
-                }
-                let dateFormat: MessageTextEntityType.DateTimeFormat.DateFormat?
-                if (flags & (1 << 3)) != 0 {
-                    dateFormat = .short
-                } else if (flags & (1 << 4)) != 0 {
-                    dateFormat = .long
-                } else {
-                    dateFormat = nil
-                }
-                format = .full(timeFormat: timeFormat, dateFormat: dateFormat, dayOfWeek: (flags & (1 << 5)) != 0)
-            }
-            result.append(MessageTextEntity(range: Int(offset) ..< Int(offset + length), type: .FormattedDate(format: format, date: date)))
-        case .messageEntityDiffDelete, .messageEntityDiffInsert, .messageEntityDiffReplace:
-            break
         }
     }
     return result
@@ -856,14 +702,13 @@ func messageTextEntitiesFromApiEntities(_ entities: [Api.MessageEntity]) -> [Mes
 extension StoreMessage {
     convenience init?(apiMessage: Api.Message, accountPeerId: PeerId, peerIsForum: Bool, namespace: MessageId.Namespace = Namespaces.Message.Cloud) {
         switch apiMessage {
-            case let .message(messageData):
-            let (flags, flags2, id, fromId, boosts, rank, chatPeerId, savedPeerId, fwdFrom, viaBotId, viaBusinessBotId, guestChatViaFrom, replyTo, date, message, media, replyMarkup, entities, views, forwards, replies, editDate, postAuthor, groupingId, reactions, restrictionReason, ttlPeriod, quickReplyShortcutId, messageEffectId, factCheck, reportDeliveryUntilDate, paidMessageStars, suggestedPost, scheduledRepeatPeriod, summaryFromLanguage) = (messageData.flags, messageData.flags2, messageData.id, messageData.fromId, messageData.fromBoostsApplied, messageData.fromRank, messageData.peerId, messageData.savedPeerId, messageData.fwdFrom, messageData.viaBotId, messageData.viaBusinessBotId, messageData.guestchatViaFrom, messageData.replyTo, messageData.date, messageData.message, messageData.media, messageData.replyMarkup, messageData.entities, messageData.views, messageData.forwards, messageData.replies, messageData.editDate, messageData.postAuthor, messageData.groupedId, messageData.reactions, messageData.restrictionReason, messageData.ttlPeriod, messageData.quickReplyShortcutId, messageData.effect, messageData.factcheck, messageData.reportDeliveryUntilDate, messageData.paidMessageStars, messageData.suggestedPost, messageData.scheduleRepeatPeriod, messageData.summaryFromLanguage)
+            case let .message(flags, flags2, id, fromId, boosts, chatPeerId, savedPeerId, fwdFrom, viaBotId, viaBusinessBotId, replyTo, date, message, media, replyMarkup, entities, views, forwards, replies, editDate, postAuthor, groupingId, reactions, restrictionReason, ttlPeriod, quickReplyShortcutId, messageEffectId, factCheck, reportDeliveryUntilDate, paidMessageStars, suggestedPost):
                 var attributes: [MessageAttribute] = []
-
+            
                 if (flags2 & (1 << 4)) != 0 {
                     attributes.append(PendingProcessingMessageAttribute(approximateCompletionTime: date))
                 }
-
+            
                 let resolvedFromId = fromId?.peerId ?? chatPeerId.peerId
             
                 var namespace = namespace
@@ -877,12 +722,10 @@ extension StoreMessage {
                     case .peerUser:
                         peerId = chatPeerId.peerId
                         authorId = resolvedFromId
-                    case let .peerChat(peerChatData):
-                        let chatId = peerChatData.chatId
+                    case let .peerChat(chatId):
                         peerId = PeerId(namespace: Namespaces.Peer.CloudGroup, id: PeerId.Id._internalFromInt64Value(chatId))
                         authorId = resolvedFromId
-                    case let .peerChannel(peerChannelData):
-                        let channelId = peerChannelData.channelId
+                    case let .peerChannel(channelId):
                         peerId = PeerId(namespace: Namespaces.Peer.CloudChannel, id: PeerId.Id._internalFromInt64Value(channelId))
                         authorId = resolvedFromId
                 }
@@ -891,8 +734,7 @@ extension StoreMessage {
                 if let replyTo = replyTo {
                     var threadMessageId: MessageId?
                     switch replyTo {
-                    case let .messageReplyHeader(messageReplyHeaderData):
-                        let (innerFlags, replyToMsgId, replyToPeerId, replyHeader, replyMedia, replyToTopId, quoteText, quoteEntities, quoteOffset, todoItemId, pollOption) = (messageReplyHeaderData.flags, messageReplyHeaderData.replyToMsgId, messageReplyHeaderData.replyToPeerId, messageReplyHeaderData.replyFrom, messageReplyHeaderData.replyMedia, messageReplyHeaderData.replyToTopId, messageReplyHeaderData.quoteText, messageReplyHeaderData.quoteEntities, messageReplyHeaderData.quoteOffset, messageReplyHeaderData.todoItemId, messageReplyHeaderData.pollOption)
+                    case let .messageReplyHeader(innerFlags, replyToMsgId, replyToPeerId, replyHeader, replyMedia, replyToTopId, quoteText, quoteEntities, quoteOffset, todoItemId):
                         let isForumTopic = (innerFlags & (1 << 3)) != 0
                         
                         var quote: EngineMessageReplyQuote?
@@ -904,7 +746,7 @@ extension StoreMessage {
                         
                         if let replyToMsgId = replyToMsgId {
                             let replyPeerId = replyToPeerId?.peerId ?? peerId
-                            if let replyToTopId {
+                            if let replyToTopId = replyToTopId {
                                 if peerIsForum {
                                     if isForumTopic {
                                         let threadIdValue = MessageId(peerId: peerId, namespace: Namespaces.Message.Cloud, id: replyToTopId)
@@ -934,57 +776,41 @@ extension StoreMessage {
                                     threadMessageId = threadIdValue
                                     threadId = Int64(threadIdValue.id)
                                 }
-                            } else if peerId.namespace == Namespaces.Peer.CloudUser, peerIsForum {
-                                //TODO:release
-                                if isForumTopic {
-                                    let threadIdValue = MessageId(peerId: peerId, namespace: Namespaces.Message.Cloud, id: replyToMsgId)
-                                    
-                                    threadMessageId = threadIdValue
-                                    threadId = Int64(threadIdValue.id)
-                                }
                             }
-                            var innerSubject: EngineMessageReplyInnerSubject?
-                            if let todoItemId {
-                                innerSubject = .todoItem(todoItemId)
-                            } else if let pollOption {
-                                innerSubject = .pollOption(pollOption.makeData())
-                            }
-                            attributes.append(ReplyMessageAttribute(messageId: MessageId(peerId: replyPeerId, namespace: Namespaces.Message.Cloud, id: replyToMsgId), threadMessageId: threadMessageId, quote: quote, isQuote: isQuote, innerSubject: innerSubject))
+                            attributes.append(ReplyMessageAttribute(messageId: MessageId(peerId: replyPeerId, namespace: Namespaces.Message.Cloud, id: replyToMsgId), threadMessageId: threadMessageId, quote: quote, isQuote: isQuote, todoItemId: todoItemId))
                         }
                         if let replyHeader = replyHeader {
                             attributes.append(QuotedReplyMessageAttribute(apiHeader: replyHeader, quote: quote, isQuote: isQuote))
                         }
-                    case let .messageReplyStoryHeader(messageReplyStoryHeaderData):
-                        let (peer, storyId) = (messageReplyStoryHeaderData.peer, messageReplyStoryHeaderData.storyId)
+                    case let .messageReplyStoryHeader(peer, storyId):
                         attributes.append(ReplyStoryAttribute(storyId: StoryId(peerId: peer.peerId, id: storyId)))
                     }
                 }
-
+            
                 if threadId == nil && peerId.namespace == Namespaces.Peer.CloudChannel {
                     threadId = 1
                 }
-
+                
                 var forwardInfo: StoreMessageForwardInfo?
                 if let fwdFrom = fwdFrom {
                     switch fwdFrom {
-                        case let .messageFwdHeader(messageFwdHeaderData):
-                            let (flags, fromId, fromName, date, channelPost, postAuthor, savedFromPeer, savedFromMsgId, savedFromId, savedFromName, savedDate, psaType) = (messageFwdHeaderData.flags, messageFwdHeaderData.fromId, messageFwdHeaderData.fromName, messageFwdHeaderData.date, messageFwdHeaderData.channelPost, messageFwdHeaderData.postAuthor, messageFwdHeaderData.savedFromPeer, messageFwdHeaderData.savedFromMsgId, messageFwdHeaderData.savedFromId, messageFwdHeaderData.savedFromName, messageFwdHeaderData.savedDate, messageFwdHeaderData.psaType)
+                        case let .messageFwdHeader(flags, fromId, fromName, date, channelPost, postAuthor, savedFromPeer, savedFromMsgId, savedFromId, savedFromName, savedDate, psaType):
                             var forwardInfoFlags: MessageForwardInfo.Flags = []
                             let isImported = (flags & (1 << 7)) != 0
                             if isImported {
                                 forwardInfoFlags.insert(.isImported)
                             }
-
+                            
                             var authorId: PeerId?
                             var sourceId: PeerId?
                             var sourceMessageId: MessageId?
-
+                            
                             if let fromId = fromId {
                                 switch fromId {
                                 case .peerChannel:
                                     let peerId = fromId.peerId
                                     sourceId = peerId
-
+                                    
                                     if let channelPost = channelPost {
                                         sourceMessageId = MessageId(peerId: peerId, namespace: Namespaces.Message.Cloud, id: channelPost)
                                     }
@@ -992,9 +818,9 @@ extension StoreMessage {
                                     authorId = fromId.peerId
                                 }
                             }
-
+                        
                             let originalOutgoing = (flags & (1 << 11)) != 0
-
+                            
                             if let savedFromPeer = savedFromPeer, let savedFromMsgId = savedFromMsgId {
                                 let peerId: PeerId = savedFromPeer.peerId
                                 let messageId: MessageId = MessageId(peerId: peerId, namespace: Namespaces.Message.Cloud, id: savedFromMsgId)
@@ -1003,7 +829,7 @@ extension StoreMessage {
                             if savedFromId != nil || savedFromName != nil || savedDate != nil || originalOutgoing {
                                 attributes.append(SourceAuthorInfoMessageAttribute(originalAuthor: savedFromId?.peerId, originalAuthorName: savedFromName, orignalDate: savedDate, originalOutgoing: originalOutgoing))
                             }
-
+                        
                             if let authorId = authorId {
                                 forwardInfo = StoreMessageForwardInfo(authorId: authorId, sourceId: sourceId, sourceMessageId: sourceMessageId, date: date, authorSignature: postAuthor,  psaType: psaType, flags: forwardInfoFlags)
                             } else if let sourceId = sourceId {
@@ -1096,10 +922,6 @@ extension StoreMessage {
                 if let viaBusinessBotId {
                     attributes.append(InlineBusinessBotMessageAttribute(peerId: PeerId(namespace: Namespaces.Peer.CloudUser, id: PeerId.Id._internalFromInt64Value(viaBusinessBotId)), title: nil))
                 }
-            
-                if let guestChatViaFrom {
-                    attributes.append(GuestChatMessageAttribute(peerId: guestChatViaFrom.peerId))
-                }
                 
                 if !Namespaces.Message.allNonRegular.contains(namespace) {
                     if let views = views {
@@ -1117,10 +939,6 @@ extension StoreMessage {
                     }
                 }
                 
-                if let rank {
-                    attributes.append(ParticipantRankMessageAttribute(rank: rank))
-                }
-            
                 if let editDate = editDate {
                     attributes.append(EditedMessageAttribute(date: editDate, isHidden: (flags & (1 << 21)) != 0))
                 }
@@ -1131,14 +949,6 @@ extension StoreMessage {
             
                 if let paidMessageStars {
                     attributes.append(PaidStarsMessageAttribute(stars: StarsAmount(value: paidMessageStars, nanos: 0), postponeSending: false))
-                }
-            
-                if let scheduledRepeatPeriod {
-                    attributes.append(ScheduledRepeatAttribute(repeatPeriod: scheduledRepeatPeriod))
-                }
-            
-                if let summaryFromLanguage {
-                    attributes.append(SummarizationMessageAttribute(fromLang: summaryFromLanguage))
                 }
             
                 var entitiesAttribute: TextEntitiesMessageAttribute?
@@ -1165,7 +975,7 @@ extension StoreMessage {
                     }
                 }
                 
-                if (flags & (1 << 19)) != 0 {
+                if (flags & (1 << 17)) != 0 {
                     attributes.append(ContentRequiresValidationMessageAttribute())
                 }
             
@@ -1176,8 +986,7 @@ extension StoreMessage {
                 if let replies = replies {
                     let recentRepliersPeerIds: [PeerId]?
                     switch replies {
-                    case let .messageReplies(messageRepliesData):
-                        let (repliesCount, recentRepliers, channelId, maxId, readMaxId) = (messageRepliesData.replies, messageRepliesData.recentRepliers, messageRepliesData.channelId, messageRepliesData.maxId, messageRepliesData.readMaxId)
+                    case let .messageReplies(_, repliesCount, _, recentRepliers, channelId, maxId, readMaxId):
                         if let recentRepliers = recentRepliers {
                             recentRepliersPeerIds = recentRepliers.map { $0.peerId }
                         } else {
@@ -1200,13 +1009,11 @@ extension StoreMessage {
             
                 if let factCheck {
                     switch factCheck {
-                    case let .factCheck(factCheckData):
-                        let (_, country, text, hash) = (factCheckData.flags, factCheckData.country, factCheckData.text, factCheckData.hash)
+                    case let .factCheck(_, country, text, hash):
                         let content: FactCheckMessageAttribute.Content
                         if let text, let country {
                             switch text {
-                            case let .textWithEntities(textWithEntitiesData):
-                                let (text, entities) = (textWithEntitiesData.text, textWithEntitiesData.entities)
+                            case let .textWithEntities(text, entities):
                                 content = .Loaded(text: text, entities: messageTextEntitiesFromApiEntities(entities), country: country)
                             }
                         } else {
@@ -1276,51 +1083,39 @@ extension StoreMessage {
                 self.init(id: MessageId(peerId: peerId, namespace: namespace, id: id), customStableId: nil, globallyUniqueId: nil, groupingKey: groupingId, threadId: threadId, timestamp: date, flags: storeFlags, tags: tags, globalTags: globalTags, localTags: [], forwardInfo: forwardInfo, authorId: authorId, text: messageText, attributes: attributes, media: medias)
             case .messageEmpty:
                 return nil
-            case let .messageService(messageServiceData):
-                let (flags, id, fromId, chatPeerId, savedPeerId, replyTo, date, action, reactions, ttlPeriod) = (messageServiceData.flags, messageServiceData.id, messageServiceData.fromId, messageServiceData.peerId, messageServiceData.savedPeerId, messageServiceData.replyTo, messageServiceData.date, messageServiceData.action, messageServiceData.reactions, messageServiceData.ttlPeriod)
+            case let .messageService(flags, id, fromId, chatPeerId, savedPeerId, replyTo, date, action, reactions, ttlPeriod):
                 let peerId: PeerId = chatPeerId.peerId
                 let authorId: PeerId? = fromId?.peerId ?? chatPeerId.peerId
-
+                
                 var attributes: [MessageAttribute] = []
-
+                
                 var threadId: Int64?
                 if let savedPeerId {
                     threadId = savedPeerId.peerId.toInt64()
                     
                     if chatPeerId.peerId.namespace == Namespaces.Peer.CloudChannel, let replyTo {
                         switch replyTo {
-                        case let .messageReplyHeader(messageReplyHeaderData):
-                            let (innerFlags, replyToMsgId, replyToPeerId, replyHeader, replyMedia, quoteText, quoteEntities, quoteOffset, todoItemId, pollOption) = (messageReplyHeaderData.flags, messageReplyHeaderData.replyToMsgId, messageReplyHeaderData.replyToPeerId, messageReplyHeaderData.replyFrom, messageReplyHeaderData.replyMedia, messageReplyHeaderData.quoteText, messageReplyHeaderData.quoteEntities, messageReplyHeaderData.quoteOffset, messageReplyHeaderData.todoItemId, messageReplyHeaderData.pollOption)
+                        case let .messageReplyHeader(innerFlags, replyToMsgId, replyToPeerId, replyHeader, replyMedia, _, quoteText, quoteEntities, quoteOffset, todoItemId):
                             var quote: EngineMessageReplyQuote?
                             let isQuote = (innerFlags & (1 << 9)) != 0
                             if quoteText != nil || replyMedia != nil {
                                 quote = EngineMessageReplyQuote(text: quoteText ?? "", offset: quoteOffset.flatMap(Int.init), entities: messageTextEntitiesFromApiEntities(quoteEntities ?? []), media: textMediaAndExpirationTimerFromApiMedia(replyMedia, peerId).media)
                             }
-
+                            
                             if let replyToMsgId = replyToMsgId {
                                 let replyPeerId = replyToPeerId?.peerId ?? peerId
-                                
-                                var innerSubject: EngineMessageReplyInnerSubject?
-                                if let todoItemId {
-                                    innerSubject = .todoItem(todoItemId)
-                                } else if let pollOption {
-                                    innerSubject = .pollOption(pollOption.makeData())
-                                }
-                                
-                                attributes.append(ReplyMessageAttribute(messageId: MessageId(peerId: replyPeerId, namespace: Namespaces.Message.Cloud, id: replyToMsgId), threadMessageId: nil, quote: quote, isQuote: isQuote, innerSubject: innerSubject))
+                                attributes.append(ReplyMessageAttribute(messageId: MessageId(peerId: replyPeerId, namespace: Namespaces.Message.Cloud, id: replyToMsgId), threadMessageId: nil, quote: quote, isQuote: isQuote, todoItemId: todoItemId))
                             } else if let replyHeader = replyHeader {
                                 attributes.append(QuotedReplyMessageAttribute(apiHeader: replyHeader, quote: quote, isQuote: isQuote))
                             }
-                        case let .messageReplyStoryHeader(messageReplyStoryHeaderData):
-                            let (peer, storyId) = (messageReplyStoryHeaderData.peer, messageReplyStoryHeaderData.storyId)
+                        case let .messageReplyStoryHeader(peer, storyId):
                             attributes.append(ReplyStoryAttribute(storyId: StoryId(peerId: peer.peerId, id: storyId)))
                         }
                     }
                 } else if let replyTo = replyTo {
                     var threadMessageId: MessageId?
                     switch replyTo {
-                    case let .messageReplyHeader(messageReplyHeaderData):
-                        let (innerFlags, replyToMsgId, replyToPeerId, replyHeader, replyMedia, replyToTopId, quoteText, quoteEntities, quoteOffset, todoItemId, pollOption) = (messageReplyHeaderData.flags, messageReplyHeaderData.replyToMsgId, messageReplyHeaderData.replyToPeerId, messageReplyHeaderData.replyFrom, messageReplyHeaderData.replyMedia, messageReplyHeaderData.replyToTopId, messageReplyHeaderData.quoteText, messageReplyHeaderData.quoteEntities, messageReplyHeaderData.quoteOffset, messageReplyHeaderData.todoItemId, messageReplyHeaderData.pollOption)
+                    case let .messageReplyHeader(innerFlags, replyToMsgId, replyToPeerId, replyHeader, replyMedia, replyToTopId, quoteText, quoteEntities, quoteOffset, todoItemId):
                         var quote: EngineMessageReplyQuote?
                         let isQuote = (innerFlags & (1 << 9)) != 0
                         if quoteText != nil || replyMedia != nil {
@@ -1346,20 +1141,11 @@ extension StoreMessage {
                             default:
                                 break
                             }
-                            var innerSubject: EngineMessageReplyInnerSubject?
-                            if let todoItemId {
-                                innerSubject = .todoItem(todoItemId)
-                            } else if let pollOption {
-                                innerSubject = .pollOption(pollOption.makeData())
-                            }
-                            attributes.append(ReplyMessageAttribute(messageId: MessageId(peerId: replyPeerId, namespace: Namespaces.Message.Cloud, id: replyToMsgId), threadMessageId: threadMessageId, quote: quote, isQuote: isQuote, innerSubject: innerSubject))
+                            attributes.append(ReplyMessageAttribute(messageId: MessageId(peerId: replyPeerId, namespace: Namespaces.Message.Cloud, id: replyToMsgId), threadMessageId: threadMessageId, quote: quote, isQuote: isQuote, todoItemId: todoItemId))
                         } else if let replyHeader = replyHeader {
                             attributes.append(QuotedReplyMessageAttribute(apiHeader: replyHeader, quote: quote, isQuote: isQuote))
-                        } else if let replyToTopId, peerIsForum {
-                            threadId = Int64(replyToTopId)
                         }
-                    case let .messageReplyStoryHeader(messageReplyStoryHeaderData):
-                        let (peer, storyId) = (messageReplyStoryHeaderData.peer, messageReplyStoryHeaderData.storyId)
+                    case let .messageReplyStoryHeader(peer, storyId):
                         attributes.append(ReplyStoryAttribute(storyId: StoryId(peerId: peer.peerId, id: storyId)))
                     }
                 } else {
@@ -1375,7 +1161,7 @@ extension StoreMessage {
                     threadId = 1
                 }
                 
-                if (flags & (1 << 19)) != 0 {
+                if (flags & (1 << 17)) != 0 {
                     attributes.append(ContentRequiresValidationMessageAttribute())
                 }
             

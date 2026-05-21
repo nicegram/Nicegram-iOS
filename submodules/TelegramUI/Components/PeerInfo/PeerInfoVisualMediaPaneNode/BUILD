@@ -7,7 +7,7 @@ swift_library(
         "Sources/**/*.swift",
     ]),
     copts = [
-        "-warnings-as-errors",
+        #"-warnings-as-errors",
     ],
     deps = [
         "//submodules/SSignalKit/SwiftSignalKit",
@@ -51,7 +51,6 @@ swift_library(
         "//submodules/TelegramUI/Components/Settings/LanguageSelectionScreen",
         "//submodules/TelegramUI/Components/Gifts/GiftItemComponent",
         "//submodules/TelegramUI/Components/Gifts/GiftViewScreen",
-        "//submodules/TelegramUI/Components/Gifts/GiftUnpinScreen",
         "//submodules/TelegramUI/Components/ButtonComponent",
         "//submodules/Components/BalancedTextComponent",
         "//submodules/TelegramUI/Components/CheckComponent",
@@ -59,8 +58,6 @@ swift_library(
         "//submodules/TelegramUI/Components/BottomButtonPanelComponent",
         "//submodules/PromptUI",
         "//submodules/TelegramUI/Components/EmojiTextAttachmentView",
-        "//submodules/TelegramUI/Components/PeerInfo/CollectionTabItemComponent",
-        "//submodules/TelegramUI/Components/EdgeEffect",
     ],
     visibility = [
         "//visibility:public",

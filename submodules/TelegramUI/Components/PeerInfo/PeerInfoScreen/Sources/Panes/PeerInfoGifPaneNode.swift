@@ -500,7 +500,6 @@ private func tagMaskForType(_ type: PeerInfoGifPaneNode.ContentType) -> MessageT
 private enum ItemsLayout {
     final class Grid {
         let containerWidth: CGFloat
-        let topInset: CGFloat
         let itemCount: Int
         let itemSpacing: CGFloat
         let itemsInRow: Int
@@ -508,9 +507,8 @@ private enum ItemsLayout {
         let rowCount: Int
         let contentHeight: CGFloat
         
-        init(containerWidth: CGFloat, itemCount: Int, topInset: CGFloat, bottomInset: CGFloat) {
+        init(containerWidth: CGFloat, itemCount: Int, bottomInset: CGFloat) {
             self.containerWidth = containerWidth
-            self.topInset = topInset
             self.itemCount = itemCount
             self.itemSpacing = 1.0
             self.itemsInRow = max(3, min(6, Int(containerWidth / 140.0)))
@@ -518,13 +516,13 @@ private enum ItemsLayout {
             
             self.rowCount = itemCount / self.itemsInRow + (itemCount % self.itemsInRow == 0 ? 0 : 1)
             
-            self.contentHeight = topInset + CGFloat(self.rowCount + 1) * self.itemSpacing + CGFloat(rowCount) * itemSize + bottomInset
+            self.contentHeight = CGFloat(self.rowCount + 1) * self.itemSpacing + CGFloat(rowCount) * itemSize + bottomInset
         }
         
         func visibleRange(rect: CGRect) -> (Int, Int) {
-            var minVisibleRow = Int(floor((rect.minY - self.topInset - self.itemSpacing) / (self.itemSize + self.itemSpacing)))
+            var minVisibleRow = Int(floor((rect.minY - self.itemSpacing) / (self.itemSize + self.itemSpacing)))
             minVisibleRow = max(0, minVisibleRow)
-            var maxVisibleRow = Int(ceil((rect.maxY - self.topInset - self.itemSpacing) / (self.itemSize + itemSpacing)))
+            var maxVisibleRow = Int(ceil((rect.maxY - self.itemSpacing) / (self.itemSize + itemSpacing)))
             maxVisibleRow = min(self.rowCount - 1, maxVisibleRow)
             
             let minVisibleIndex = minVisibleRow * itemsInRow
@@ -536,7 +534,7 @@ private enum ItemsLayout {
         func frame(forItemAt index: Int, sideInset: CGFloat) -> CGRect {
             let rowIndex = index / Int(self.itemsInRow)
             let columnIndex = index % Int(self.itemsInRow)
-            let itemOrigin = CGPoint(x: sideInset + CGFloat(columnIndex) * (self.itemSize + self.itemSpacing), y: self.topInset + self.itemSpacing + CGFloat(rowIndex) * (self.itemSize + self.itemSpacing))
+            let itemOrigin = CGPoint(x: sideInset + CGFloat(columnIndex) * (self.itemSize + self.itemSpacing), y: self.itemSpacing + CGFloat(rowIndex) * (self.itemSize + self.itemSpacing))
             return CGRect(origin: itemOrigin, size: CGSize(width: columnIndex == self.itemsInRow ? (self.containerWidth - itemOrigin.x) : self.itemSize, height: self.itemSize))
         }
     }
@@ -908,7 +906,7 @@ final class PeerInfoGifPaneNode: ASDisplayNode, PeerInfoPaneNode, ASScrollViewDe
         let previousParams = self.currentParams
         self.currentParams = (size, topInset, sideInset, bottomInset, deviceMetrics, visibleHeight, isScrollingLockedAtTop, expandProgress, navigationHeight, presentationData)
         
-        transition.updateFrame(node: self.scrollNode, frame: CGRect(origin: CGPoint(x: 0.0, y: 0.0), size: CGSize(width: size.width, height: size.height)))
+        transition.updateFrame(node: self.scrollNode, frame: CGRect(origin: CGPoint(x: 0.0, y: topInset), size: CGSize(width: size.width, height: size.height - topInset)))
         
         let availableWidth = size.width - sideInset * 2.0
         
@@ -918,7 +916,7 @@ final class PeerInfoGifPaneNode: ASDisplayNode, PeerInfoPaneNode, ASScrollViewDe
         } else {
             switch self.contentType {
             case .photoOrVideo, .gifs:
-                itemsLayout = .grid(ItemsLayout.Grid(containerWidth: availableWidth, itemCount: self.mediaItems.count, topInset: topInset, bottomInset: bottomInset))
+                itemsLayout = .grid(ItemsLayout.Grid(containerWidth: availableWidth, itemCount: self.mediaItems.count, bottomInset: bottomInset))
             }
             self.itemsLayout = itemsLayout
         }

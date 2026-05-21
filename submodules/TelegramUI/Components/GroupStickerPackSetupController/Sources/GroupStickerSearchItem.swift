@@ -54,7 +54,7 @@ final class GroupStickerSearchItem: ItemListControllerSearch {
         }
     }
     
-    func titleContentNode(current: (NavigationBarContentNode & ItemListControllerSearchNavigationContentNode)?) -> (NavigationBarContentNode & ItemListControllerSearchNavigationContentNode)? {
+    func titleContentNode(current: (NavigationBarContentNode & ItemListControllerSearchNavigationContentNode)?) -> NavigationBarContentNode & ItemListControllerSearchNavigationContentNode {
         let presentationData = self.context.sharedContext.currentPresentationData.with { $0 }
         if let current = current as? GroupStickerSearchNavigationContentNode {
             current.updateTheme(presentationData.theme)
@@ -105,8 +105,8 @@ private final class GroupStickerSearchItemNode: ItemListControllerSearchNode {
     }
     
     override func updateLayout(layout: ContainerViewLayout, navigationBarHeight: CGFloat, transition: ContainedViewLayoutTransition) {
-        transition.updateFrame(node: self.containerNode, frame: CGRect(origin: CGPoint(x: 0.0, y: 0.0), size: CGSize(width: layout.size.width, height: layout.size.height)))
-        self.containerNode.containerLayoutUpdated(layout.withUpdatedSize(CGSize(width: layout.size.width, height: layout.size.height)), navigationBarHeight: navigationBarHeight, transition: transition)
+        transition.updateFrame(node: self.containerNode, frame: CGRect(origin: CGPoint(x: 0.0, y: navigationBarHeight), size: CGSize(width: layout.size.width, height: layout.size.height - navigationBarHeight)))
+        self.containerNode.containerLayoutUpdated(layout.withUpdatedSize(CGSize(width: layout.size.width, height: layout.size.height - navigationBarHeight)), navigationBarHeight: 0.0, transition: transition)
     }
     
     override func hitTest(_ point: CGPoint, with event: UIEvent?) -> UIView? {

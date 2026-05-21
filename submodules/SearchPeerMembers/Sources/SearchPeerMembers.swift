@@ -27,13 +27,13 @@ public func searchPeerMembers(context: AccountContext, peerId: EnginePeer.Id, ch
                                     return nil
                                 }
                                 if normalizedQuery.isEmpty {
-                                    return participant.peer
+                                    return EnginePeer(participant.peer)
                                 } else {
                                     if participant.peer.indexName.matchesByTokens(normalizedQuery) || participant.peer.indexName.matchesByTokens(transformedQuery) {
-                                        return participant.peer
+                                        return EnginePeer(participant.peer)
                                     }
                                     if let addressName = participant.peer.addressName, addressName.lowercased().hasPrefix(normalizedQuery) || addressName.lowercased().hasPrefix(transformedQuery) {
-                                        return participant.peer
+                                        return EnginePeer(participant.peer)
                                     }
                                     
                                     return nil
@@ -58,7 +58,7 @@ public func searchPeerMembers(context: AccountContext, peerId: EnginePeer.Id, ch
                                 if participant.peer.isDeleted {
                                     return nil
                                 }
-                                return participant.peer
+                                return EnginePeer(participant.peer)
                             }, true))
                         }
                     })
@@ -73,7 +73,7 @@ public func searchPeerMembers(context: AccountContext, peerId: EnginePeer.Id, ch
                                 if participant.peer.isDeleted {
                                     return nil
                                 }
-                                return participant.peer
+                                return EnginePeer(participant.peer)
                             }, true))
                         }
                     })

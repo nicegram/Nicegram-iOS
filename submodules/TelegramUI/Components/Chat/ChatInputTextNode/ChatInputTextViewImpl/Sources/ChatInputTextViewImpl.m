@@ -136,22 +136,15 @@
 }
 
 - (NSArray *)keyCommands {
-    UIKeyCommand *plainReturn = [UIKeyCommand keyCommandWithInput:@"\r" modifierFlags:kNilOptions action:@selector(handleReturn:)];
-    UIKeyCommand *cmdReturn = [UIKeyCommand keyCommandWithInput:@"\r" modifierFlags:UIKeyModifierCommand action:@selector(handleReturn:)];
+    UIKeyCommand *plainReturn = [UIKeyCommand keyCommandWithInput:@"\r" modifierFlags:kNilOptions action:@selector(handlePlainReturn:)];
     return @[
-        plainReturn,
-        cmdReturn
+        plainReturn
     ];
 }
 
-- (void)handleReturn:(UIKeyCommand *)__unused sender {
-    UIKeyModifierFlags modifierFlags = 0;
-    if ([sender isKindOfClass:[UIKeyCommand class]]) {
-        modifierFlags = sender.modifierFlags;
-    }
-    
+- (void)handlePlainReturn:(id)__unused sender {
     if (_shouldReturn) {
-        _shouldReturn(modifierFlags);
+        _shouldReturn();
     }
 }
 

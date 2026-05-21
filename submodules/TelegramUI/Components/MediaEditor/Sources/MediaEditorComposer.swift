@@ -58,8 +58,8 @@ private func rectangleMaskImage(size: CGSize) -> CIImage {
     return CIImage(cgImage: image!)
 }
 
-public final class MediaEditorComposer {
-    public enum Input {
+final class MediaEditorComposer {
+    enum Input {
         case texture(MTLTexture, CMTime, Bool, CGRect?, CGFloat, CGPoint)
         case videoBuffer(VideoPixelBuffer, CGRect?, CGFloat, CGPoint)
         case ciImage(CIImage, CMTime)
@@ -92,18 +92,10 @@ public final class MediaEditorComposer {
     let ciContext: CIContext?
     private var textureCache: CVMetalTextureCache?
     
-    public var values: MediaEditorValues {
-        didSet {
-            self.renderChain.update(values: self.values)
-            self.renderer.videoFinishPass.update(values: self.values, videoDuration: nil, additionalVideoDuration: nil)
-        }
-    }
+    private let values: MediaEditorValues
     private let dimensions: CGSize
     private let outputDimensions: CGSize
     private let textScale: CGFloat
-    
-    private let outputsYuvBuffers: Bool
-    private let yuvPixelFormat: OSType = kCVPixelFormatType_420YpCbCr8BiPlanarVideoRange
     
     private let renderer = MediaEditorRenderer()
     private let renderChain = MediaEditorRenderChain()
@@ -113,21 +105,19 @@ public final class MediaEditorComposer {
     
     private var maskImage: CIImage?
     
-    public init(
-        postbox: Postbox?,
+    init(
+        postbox: Postbox,
         values: MediaEditorValues,
         dimensions: CGSize,
         outputDimensions: CGSize,
         textScale: CGFloat,
         videoDuration: Double?,
-        additionalVideoDuration: Double?,
-        outputsYuvBuffers: Bool = false
+        additionalVideoDuration: Double?
     ) {
         self.values = values
         self.dimensions = dimensions
         self.outputDimensions = outputDimensions
         self.textScale = textScale
-        self.outputsYuvBuffers = outputsYuvBuffers
         
         let colorSpace = CGColorSpaceCreateDeviceRGB()
         self.colorSpace = colorSpace
@@ -147,10 +137,8 @@ public final class MediaEditorComposer {
         }
                 
         var entities: [MediaEditorComposerEntity] = []
-        if let postbox {
-            for entity in values.entities {
-                entities.append(contentsOf: composerEntitiesForDrawingEntity(postbox: postbox, textScale: textScale, entity: entity.entity, colorSpace: colorSpace))
-            }
+        for entity in values.entities {
+            entities.append(contentsOf: composerEntitiesForDrawingEntity(postbox: postbox, textScale: textScale, entity: entity.entity, colorSpace: colorSpace))
         }
         self.entities = entities
         
@@ -171,9 +159,9 @@ public final class MediaEditorComposer {
         self.renderChain.update(values: self.values)
         self.renderer.videoFinishPass.update(values: self.values, videoDuration: videoDuration, additionalVideoDuration: additionalVideoDuration)
     }
-    
+        
     var previousAdditionalInput: [Int: Input] = [:]
-    public func process(main: Input, additional: [Input?], timestamp: CMTime, pool: CVPixelBufferPool?, completion: @escaping (CVPixelBuffer?) -> Void) {
+    func process(main: Input, additional: [Input?], timestamp: CMTime, pool: CVPixelBufferPool?, completion: @escaping (CVPixelBuffer?) -> Void) {
         guard let pool, let ciContext = self.ciContext else {
             completion(nil)
             return
@@ -195,35 +183,26 @@ public final class MediaEditorComposer {
         
         if let resultTexture = self.renderer.resultTexture, var ciImage = CIImage(mtlTexture: resultTexture, options: [.colorSpace: self.colorSpace]) {
             ciImage = ciImage.transformed(by: CGAffineTransformMakeScale(1.0, -1.0).translatedBy(x: 0.0, y: -ciImage.extent.height))
-                        
+            
             var pixelBuffer: CVPixelBuffer?
             CVPixelBufferPoolCreatePixelBuffer(kCFAllocatorDefault, pool, &pixelBuffer)
             
-            guard let pixelBuffer else {
-                completion(nil)
-                return
-            }
-            
-            if self.outputsYuvBuffers {
-                let scale = self.outputDimensions.width / ciImage.extent.width
-                ciImage = ciImage.samplingLinear().transformed(by: CGAffineTransform(scaleX: scale, y: scale))
-                
-                ciContext.render(ciImage, to: pixelBuffer)
-                completion(pixelBuffer)
-            } else {
+            if let pixelBuffer {                
                 makeEditorImageFrameComposition(context: ciContext, inputImage: ciImage, drawingImage: self.drawingImage, maskImage: self.maskImage, dimensions: self.dimensions, values: self.values, entities: self.entities, time: timestamp, completion: { compositedImage in
                     if var compositedImage {
                         let scale = self.outputDimensions.width / compositedImage.extent.width
                         compositedImage = compositedImage.samplingLinear().transformed(by: CGAffineTransform(scaleX: scale, y: scale))
                         
-                        ciContext.render(compositedImage, to: pixelBuffer)
+                        self.ciContext?.render(compositedImage, to: pixelBuffer)
                         completion(pixelBuffer)
                     } else {
                         completion(nil)
                     }
                 })
+                return
             }
         }
+        completion(nil)
     }
     
     private var cachedTextures: [Int: MTLTexture] = [:]
@@ -275,9 +254,7 @@ public func makeEditorImageComposition(context: CIContext, postbox: Postbox, inp
                 return
             }
         }
-        Queue.mainQueue().async {
-            completion(nil)
-        }
+        completion(nil)
     })
 }
 

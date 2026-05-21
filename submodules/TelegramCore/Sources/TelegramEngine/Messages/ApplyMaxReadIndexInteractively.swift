@@ -13,9 +13,9 @@ func _internal_applyMaxReadIndexInteractively(postbox: Postbox, stateManager: Ac
 func _internal_applyMaxReadIndexInteractively(transaction: Transaction, stateManager: AccountStateManager, index: MessageIndex) {
     let messageIds = transaction.applyInteractiveReadMaxIndex(index)
     
-    if let peer = transaction.getPeer(index.id.peerId), peer.isForumOrMonoForum {
-        if let combinedPeerReadState = transaction.getCombinedPeerReadState(peer.id), combinedPeerReadState.count == 0 {
-            for item in transaction.getMessageHistoryThreadIndex(peerId: peer.id, limit: 100) {
+    if let channel = transaction.getPeer(index.id.peerId) as? TelegramChannel, channel.isForumOrMonoForum {
+        if let combinedPeerReadState = transaction.getCombinedPeerReadState(channel.id), combinedPeerReadState.count == 0 {
+            for item in transaction.getMessageHistoryThreadIndex(peerId: channel.id, limit: 100) {
                 guard var data = transaction.getMessageHistoryThreadInfo(peerId: index.id.peerId, threadId: item.threadId)?.data.get(MessageHistoryThreadData.self) else {
                     continue
                 }
@@ -143,7 +143,7 @@ func _internal_toggleForumThreadUnreadMarkInteractively(transaction: Transaction
     guard let peer = transaction.getPeer(peerId) else {
         return
     }
-    guard peer.isForumOrMonoForum else {
+    guard let channel = peer as? TelegramChannel, channel.isForumOrMonoForum else {
         return
     }
     guard var data = transaction.getMessageHistoryThreadInfo(peerId: peerId, threadId: threadId)?.data.get(MessageHistoryThreadData.self) else {
@@ -161,10 +161,10 @@ func _internal_toggleForumThreadUnreadMarkInteractively(transaction: Transaction
             transaction.setMessageHistoryThreadInfo(peerId: peerId, threadId: threadId, info: entry)
         }
         
-        if peer.isForum {
-        } else if peer.isMonoForum {
-            if let inputPeer = apiInputPeer(peer), let subPeer = transaction.getPeer(PeerId(threadId)).flatMap(apiInputPeer) {
-                let _ = network.request(Api.functions.messages.markDialogUnread(flags: 1 << 0, parentPeer: inputPeer, peer: .inputDialogPeer(.init(peer: subPeer)))).start()
+        if channel.flags.contains(.isForum) {
+        } else if channel.flags.contains(.isMonoforum) {
+            if let inputPeer = apiInputPeer(channel), let subPeer = transaction.getPeer(PeerId(threadId)).flatMap(apiInputPeer) {
+                let _ = network.request(Api.functions.messages.markDialogUnread(flags: 1 << 0, parentPeer: inputPeer, peer: .inputDialogPeer(peer: subPeer))).start()
             }
         }
     } else {
@@ -178,12 +178,12 @@ func _internal_toggleForumThreadUnreadMarkInteractively(transaction: Transaction
                 transaction.setMessageHistoryThreadInfo(peerId: peerId, threadId: threadId, info: entry)
             }
             
-            if peer.isForum {
-                if let inputPeer = apiInputPeer(peer) {
+            if channel.flags.contains(.isForum) {
+                if let inputPeer = apiInputPeer(channel) {
                     let _ = network.request(Api.functions.messages.readDiscussion(peer: inputPeer, msgId: Int32(clamping: threadId), readMaxId: messageIndex.id.id)).start()
                 }
-            } else if peer.isMonoForum {
-                if let inputPeer = apiInputPeer(peer), let subPeer = transaction.getPeer(PeerId(threadId)).flatMap(apiInputPeer) {
+            } else if channel.flags.contains(.isMonoforum) {
+                if let inputPeer = apiInputPeer(channel), let subPeer = transaction.getPeer(PeerId(threadId)).flatMap(apiInputPeer) {
                     let _ = network.request(Api.functions.messages.readSavedHistory(parentPeer: inputPeer, peer: subPeer, maxId: messageIndex.id.id)).start()
                 }
             }
@@ -195,7 +195,7 @@ func _internal_markForumThreadAsReadInteractively(transaction: Transaction, netw
     guard let peer = transaction.getPeer(peerId) else {
         return
     }
-    guard peer.isForumOrMonoForum else {
+    guard let channel = peer as? TelegramChannel, channel.isForumOrMonoForum else {
         return
     }
     guard var data = transaction.getMessageHistoryThreadInfo(peerId: peerId, threadId: threadId)?.data.get(MessageHistoryThreadData.self) else {
@@ -214,12 +214,12 @@ func _internal_markForumThreadAsReadInteractively(transaction: Transaction, netw
             transaction.setMessageHistoryThreadInfo(peerId: peerId, threadId: threadId, info: entry)
         }
         
-        if peer.isForum {
-            if let inputPeer = apiInputPeer(peer) {
+        if channel.flags.contains(.isForum) {
+            if let inputPeer = apiInputPeer(channel) {
                 let _ = network.request(Api.functions.messages.readDiscussion(peer: inputPeer, msgId: Int32(clamping: threadId), readMaxId: messageIndex.id.id)).start()
             }
-        } else if peer.isMonoForum {
-            if let inputPeer = apiInputPeer(peer), let subPeer = transaction.getPeer(PeerId(threadId)).flatMap(apiInputPeer) {
+        } else if channel.flags.contains(.isMonoforum) {
+            if let inputPeer = apiInputPeer(channel), let subPeer = transaction.getPeer(PeerId(threadId)).flatMap(apiInputPeer) {
                 let _ = network.request(Api.functions.messages.readSavedHistory(parentPeer: inputPeer, peer: subPeer, maxId: messageIndex.id.id)).start()
             }
         }
@@ -238,7 +238,7 @@ func _internal_togglePeerUnreadMarkInteractively(transaction: Transaction, netwo
         displayAsRegularChat = cachedData.viewForumAsMessages.knownValue ?? false
     }
     
-    if peer.isForumOrMonoForum, !displayAsRegularChat {
+    if let channel = peer as? TelegramChannel, channel.isForumOrMonoForum, !displayAsRegularChat {
         for item in transaction.getMessageHistoryThreadIndex(peerId: peerId, limit: 20) {
             guard var data = transaction.getMessageHistoryThreadInfo(peerId: peerId, threadId: item.threadId)?.data.get(MessageHistoryThreadData.self) else {
                 continue
@@ -256,12 +256,12 @@ func _internal_togglePeerUnreadMarkInteractively(transaction: Transaction, netwo
                     transaction.setMessageHistoryThreadInfo(peerId: peerId, threadId: item.threadId, info: entry)
                 }
                 
-                if peer.isForum {
-                    if let inputPeer = apiInputPeer(peer) {
+                if channel.flags.contains(.isForum) {
+                    if let inputPeer = apiInputPeer(channel) {
                         let _ = network.request(Api.functions.messages.readDiscussion(peer: inputPeer, msgId: Int32(clamping: item.threadId), readMaxId: messageIndex.id.id)).start()
                     }
-                } else if peer.isMonoForum {
-                    if let inputPeer = apiInputPeer(peer), let subPeer = transaction.getPeer(PeerId(item.threadId)).flatMap(apiInputPeer) {
+                } else if channel.flags.contains(.isMonoforum) {
+                    if let inputPeer = apiInputPeer(channel), let subPeer = transaction.getPeer(PeerId(item.threadId)).flatMap(apiInputPeer) {
                         let _ = network.request(Api.functions.messages.readSavedHistory(parentPeer: inputPeer, peer: subPeer, maxId: messageIndex.id.id)).start()
                     }
                 }
@@ -307,6 +307,12 @@ func _internal_togglePeerUnreadMarkInteractively(transaction: Transaction, netwo
             }
         }
     }
+    
+    if let user = peer as? TelegramUser, let botInfo = user.botInfo, botInfo.flags.contains(.hasForum) {
+        if let cachedData = transaction.getPeerCachedData(peerId: user.id) as? CachedUserData, case let .known(linkedBotChannelId) = cachedData.linkedBotChannelId, let linkedBotChannelId {
+            _internal_togglePeerUnreadMarkInteractively(transaction: transaction, network: network, viewTracker: viewTracker, peerId: linkedBotChannelId, setToValue: false)
+        }
+    }
 }
 
 public func clearPeerUnseenPersonalMessagesInteractively(account: Account, peerId: PeerId, threadId: Int64?) -> Signal<Never, NoError> {
@@ -319,12 +325,12 @@ public func clearPeerUnseenPersonalMessagesInteractively(account: Account, peerI
     |> ignoreValues
 }
 
-public func clearPeerUnseenReactionsAndPollVotesInteractively(account: Account, peerId: PeerId, threadId: Int64?) -> Signal<Never, NoError> {
+public func clearPeerUnseenReactionsInteractively(account: Account, peerId: PeerId, threadId: Int64?) -> Signal<Never, NoError> {
     return account.postbox.transaction { transaction -> Void in
         if peerId.namespace == Namespaces.Peer.SecretChat {
             return
         }
-        account.viewTracker.updateMarkAllReactionsAndPollVotesSeen(peerId: peerId, threadId: threadId)
+        account.viewTracker.updateMarkAllReactionsSeen(peerId: peerId, threadId: threadId)
     }
     |> ignoreValues
 }

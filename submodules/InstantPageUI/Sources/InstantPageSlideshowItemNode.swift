@@ -61,12 +61,6 @@ private final class InstantPageSlideshowItemNode: ASDisplayNode {
         }
         return nil
     }
-    
-    func updateExternalMediaDimensions(_ update: ((EngineMedia.Id, PixelDimensions) -> Void)?) {
-        if let node = self.contentNode as? InstantPageImageNode {
-            node.updateExternalMediaDimensions = update
-        }
-    }
 }
 
 private final class InstantPageSlideshowPagerNode: ASDisplayNode, ASScrollViewDelegate {
@@ -94,13 +88,6 @@ private final class InstantPageSlideshowPagerNode: ASDisplayNode, ASScrollViewDe
     }
     
     private var containerLayout: ContainerViewLayout?
-    var updateExternalMediaDimensions: ((EngineMedia.Id, PixelDimensions) -> Void)? {
-        didSet {
-            for node in self.itemNodes {
-                node.updateExternalMediaDimensions(self.updateExternalMediaDimensions)
-            }
-        }
-    }
     
     var centralItemIndexUpdated: (Int?) -> Void = { _ in }
     
@@ -208,7 +195,6 @@ private final class InstantPageSlideshowPagerNode: ASDisplayNode, ASScrollViewDe
         }
         
         let node = InstantPageSlideshowItemNode(contentNode: contentNode)
-        node.updateExternalMediaDimensions(self.updateExternalMediaDimensions)
         
         node.index = index
         return node
@@ -394,13 +380,8 @@ private final class InstantPageSlideshowPagerNode: ASDisplayNode, ASScrollViewDe
     }
 }
 
-final class InstantPageSlideshowNode: ASDisplayNode, InstantPageNode, InstantPageExternalMediaDimensionsNode {
+final class InstantPageSlideshowNode: ASDisplayNode, InstantPageNode {
     var medias: [InstantPageMedia] = []
-    var updateExternalMediaDimensions: ((EngineMedia.Id, PixelDimensions) -> Void)? {
-        didSet {
-            self.pagerNode.updateExternalMediaDimensions = self.updateExternalMediaDimensions
-        }
-    }
     
     private let pagerNode: InstantPageSlideshowPagerNode
     private let pageControlNode: PageControlNode

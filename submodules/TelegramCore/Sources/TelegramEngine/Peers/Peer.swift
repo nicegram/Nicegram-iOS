@@ -531,7 +531,7 @@ public extension EnginePeer {
         return false
     }
     
-    var nameColor: PeerColor? {
+    var nameColor: PeerNameColor? {
         return self._asPeer().nameColor
     }
     
@@ -541,10 +541,6 @@ public extension EnginePeer {
     
     var profileColor: PeerNameColor? {
         return self._asPeer().profileColor
-    }
-    
-    var effectiveProfileColor: PeerNameColor? {
-        return self._asPeer().effectiveProfileColor
     }
     
     var emojiStatus: PeerEmojiStatus? {
@@ -557,26 +553,6 @@ public extension EnginePeer {
     
     var profileBackgroundEmojiId: Int64? {
         return self._asPeer().profileBackgroundEmojiId
-    }
-
-    var isCopyProtectionEnabled: Bool {
-        return self._asPeer().isCopyProtectionEnabled
-    }
-
-    var isMonoForum: Bool {
-        return self._asPeer().isMonoForum
-    }
-
-    var associatedPeerId: Id? {
-        return self._asPeer().associatedPeerId
-    }
-
-    var hasCustomNameColor: Bool {
-        return self._asPeer().hasCustomNameColor
-    }
-
-    func hasSensitiveContent(platform: String) -> Bool {
-        return self._asPeer().hasSensitiveContent(platform: platform)
     }
 }
 

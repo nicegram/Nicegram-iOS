@@ -2,6 +2,7 @@ import Foundation
 import UIKit
 import TelegramCore
 import TelegramUIPreferences
+import Postbox
 
 private let defaultDarkTintedAccentColor = UIColor(rgb: 0x2ea6ff)
 public let defaultDarkTintedPresentationTheme = makeDefaultDarkTintedPresentationTheme(preview: false)
@@ -138,13 +139,13 @@ public func customizeDefaultDarkTintedPresentationTheme(theme: PresentationTheme
                 opaqueBackgroundColor: mainBackgroundColor,
                 separatorColor: mainSeparatorColor,
                 segmentedBackgroundColor: mainInputColor,
-                segmentedForegroundColor: mainSecondaryTextColor?.withAlphaComponent(0.4),
+                segmentedForegroundColor: mainBackgroundColor,
                 segmentedDividerColor: mainSecondaryTextColor?.withAlphaComponent(0.5)
             ),
             navigationSearchBar: rootController.navigationSearchBar.withUpdated(
                 backgroundColor: mainBackgroundColor,
                 accentColor: accentColor,
-                inputFillColor: UIColor(white: 1.0, alpha: 0.1),
+                inputFillColor: mainInputColor,
                 inputPlaceholderTextColor: mainSecondaryColor,
                 inputIconColor: mainSecondaryColor,
                 inputClearButtonColor: mainSecondaryColor,
@@ -428,7 +429,7 @@ public func customizeDefaultDarkTintedPresentationTheme(theme: PresentationTheme
             panelBackgroundColor: mainBackgroundColor?.withAlphaComponent(0.9),
             panelSeparatorColor: mainSeparatorColor,
             panelControlAccentColor: accentColor,
-            panelControlColor: UIColor(rgb: 0xffffff),
+            panelControlColor: mainSecondaryTextColor?.withAlphaComponent(0.5),
             inputBackgroundColor: inputBackgroundColor,
             inputStrokeColor: accentColor?.withMultiplied(hue: 1.038, saturation: 0.463, brightness: 0.26),
             inputPlaceholderColor: mainSecondaryTextColor?.withAlphaComponent(0.4),
@@ -570,7 +571,7 @@ public func makeDefaultDarkTintedPresentationTheme(extendingThemeReference: Pres
         badgeStrokeColor: UIColor(rgb: 0xef5b5b),
         badgeTextColor: UIColor(rgb: 0xffffff),
         segmentedBackgroundColor: mainInputColor,
-        segmentedForegroundColor: mainSecondaryTextColor.withAlphaComponent(0.4),
+        segmentedForegroundColor: mainBackgroundColor,
         segmentedTextColor: UIColor(rgb: 0xffffff),
         segmentedDividerColor: mainSecondaryTextColor.withAlphaComponent(0.5),
         clearButtonBackgroundColor: UIColor(rgb: 0xffffff, alpha: 0.1),
@@ -580,7 +581,7 @@ public func makeDefaultDarkTintedPresentationTheme(extendingThemeReference: Pres
     let navigationSearchBar = PresentationThemeNavigationSearchBar(
         backgroundColor: mainBackgroundColor,
         accentColor: accentColor,
-        inputFillColor: UIColor(white: 1.0, alpha: 0.1),
+        inputFillColor: mainInputColor,
         inputTextColor: UIColor(rgb: 0xffffff),
         inputPlaceholderTextColor: mainSecondaryColor,
         inputIconColor: mainSecondaryColor,
@@ -713,7 +714,7 @@ public func makeDefaultDarkTintedPresentationTheme(extendingThemeReference: Pres
         pinnedBadgeColor: mainSecondaryTextColor.withAlphaComponent(0.5),
         pinnedSearchBarColor: accentColor.withMultiplied(hue: 1.029, saturation: 0.609, brightness: 0.12),
         regularSearchBarColor: accentColor.withMultiplied(hue: 1.029, saturation: 0.609, brightness: 0.12),
-        sectionHeaderFillColor: .black,
+        sectionHeaderFillColor: mainBackgroundColor,
         sectionHeaderTextColor: mainSecondaryTextColor.withAlphaComponent(0.5),
         verifiedIconFillColor: accentColor,
         verifiedIconForegroundColor: .white,
@@ -873,7 +874,7 @@ public func makeDefaultDarkTintedPresentationTheme(extendingThemeReference: Pres
         panelBackgroundColorNoWallpaper: accentColor.withMultiplied(hue: 1.024, saturation: 0.573, brightness: 0.18),
         panelSeparatorColor: mainSeparatorColor,
         panelControlAccentColor: accentColor,
-        panelControlColor: UIColor(rgb: 0xffffff),
+        panelControlColor: mainSecondaryTextColor.withAlphaComponent(0.5),
         panelControlDisabledColor: UIColor(rgb: 0x90979F, alpha: 0.5),
         panelControlDestructiveColor: UIColor(rgb: 0xff6767),
         inputBackgroundColor: inputBackgroundColor,

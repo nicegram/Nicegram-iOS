@@ -118,7 +118,7 @@ public final class GroupStickerSearchContainerNode: SearchDisplayControllerConte
         }
         self.presentationDataPromise = Promise(self.presentationData)
         
-        self.listNode = ListViewImpl()
+        self.listNode = ListView()
         self.listNode.accessibilityPageScrolledString = { row, count in
             return presentationData.strings.VoiceOver_ScrollStatus(row, count).string
         }

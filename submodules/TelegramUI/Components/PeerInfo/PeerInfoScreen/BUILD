@@ -7,15 +7,13 @@ NGDEPS = [
     "//Nicegram/NGStrings:NGStrings",
     "//Nicegram/NGUI:NGUI",
     "//Nicegram/NGUtils:NGUtils",
-    "@swiftpkg_nicegram_assistant_ios//:CoreRemoteConfig",
-    "@swiftpkg_nicegram_assistant_ios//:FeatAiShortcuts",
-    "@swiftpkg_nicegram_assistant_ios//:FeatCalls",
-    "@swiftpkg_nicegram_assistant_ios//:FeatGodsEye",
-    "@swiftpkg_nicegram_assistant_ios//:FeatNftSticker",
+    "//Nicegram/NGWebUtils:NGWebUtils",
     "@swiftpkg_nicegram_assistant_ios//:FeatPremiumUI",
-    "@swiftpkg_nicegram_assistant_ios//:FeatSpyOnFriends",
     "@swiftpkg_nicegram_assistant_ios//:FeatTgUserNotes",
     "@swiftpkg_nicegram_assistant_ios//:NGAiChatUI",
+    "@swiftpkg_nicegram_assistant_ios//:FeatSpyOnFriends",
+    "@swiftpkg_nicegram_assistant_ios//:FeatAiShortcuts",
+    "@swiftpkg_nicegram_assistant_ios//:FeatGodsEye"
 ]
 
 swift_library(
@@ -25,7 +23,7 @@ swift_library(
         "Sources/**/*.swift",
     ]),
     copts = [
-        "-warnings-as-errors",
+        #"-warnings-as-errors",
     ],
     deps = NGDEPS + [
         "//submodules/AccountContext",
@@ -168,7 +166,6 @@ swift_library(
         "//submodules/TelegramUI/Components/PeerManagement/OldChannelsController",
         "//submodules/TelegramUI/Components/TextNodeWithEntities",
         "//submodules/UrlHandling",
-        "//submodules/Pasteboard",
         "//submodules/TelegramUI/Components/EmojiTextAttachmentView",
         "//submodules/TelegramUI/Components/MediaEditor",
         "//submodules/TelegramUI/Components/MediaEditorScreen",
@@ -184,14 +181,6 @@ swift_library(
         "//submodules/TelegramUI/Components/BottomButtonPanelComponent",
         "//submodules/TelegramUI/Components/MarqueeComponent",
         "//submodules/TelegramUI/Components/MediaManager/PeerMessagesMediaPlaylist",
-        "//submodules/TelegramUI/Components/TextFieldComponent",
-        "//submodules/TelegramUI/Components/EdgeEffect",
-        "//submodules/TelegramUI/Components/GlassBackgroundComponent",
-        "//submodules/TelegramUI/Components/AlertComponent",
-        "//submodules/TelegramUI/Components/AvatarComponent",
-        "//submodules/TelegramUI/Components/AlertComponent/AlertTransferHeaderComponent",
-        "//submodules/TelegramUI/Components/HorizontalTabsComponent",
-        "//submodules/TelegramUI/Components/PeerInfo/AccountPeerContextItem",
     ],
     visibility = [
         "//visibility:public",

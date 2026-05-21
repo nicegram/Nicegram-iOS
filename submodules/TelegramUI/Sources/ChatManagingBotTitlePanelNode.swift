@@ -14,7 +14,6 @@ import TelegramCore
 import BundleIconComponent
 import ContextUI
 import SwiftSignalKit
-import LegacyChatHeaderPanelComponent
 
 private final class ChatManagingBotTitlePanelComponent: Component {
     let context: AccountContext
@@ -353,7 +352,7 @@ final class ChatManagingBotTitlePanelNode: ChatTitleAccessoryPanelNode {
                                     guard let navigationController = chatController.navigationController as? NavigationController else {
                                         return
                                     }
-                                    if let controller = self.context.sharedContext.makePeerInfoController(context: self.context, updatedPresentationData: nil, peer: peer, mode: .generic, avatarInitiallyExpanded: false, fromChat: false, requestsContext: nil) {
+                                    if let controller = self.context.sharedContext.makePeerInfoController(context: self.context, updatedPresentationData: nil, peer: peer._asPeer(), mode: .generic, avatarInitiallyExpanded: false, fromChat: false, requestsContext: nil) {
                                         navigationController.pushViewController(controller)
                                     }
                                 })
@@ -380,7 +379,7 @@ final class ChatManagingBotTitlePanelNode: ChatTitleAccessoryPanelNode {
         }
         
         let presentationData = self.context.sharedContext.currentPresentationData.with { $0 }
-        let contextController = makeContextController(presentationData: presentationData, source: .reference(HeaderContextReferenceContentSource(controller: chatController, sourceView: sourceView)), items: .single(ContextController.Items(content: .list(items))), gesture: nil)
+        let contextController = ContextController(presentationData: presentationData, source: .reference(HeaderContextReferenceContentSource(controller: chatController, sourceView: sourceView)), items: .single(ContextController.Items(content: .list(items))), gesture: nil)
         interfaceInteraction.presentController(contextController, nil)
     }
     

@@ -1,7 +1,6 @@
-// Nicegram
+// Nicegram Wallet
 import NGCore
 import NicegramWallet
-import TelegramBridge
 //
 import Foundation
 import UIKit
@@ -32,6 +31,7 @@ import InstantPageUI
 import InstantPageCache
 import LocalAuth
 import OpenInExternalAppUI
+import ShareController
 import UndoUI
 import AvatarNode
 import OverlayStatusController
@@ -43,11 +43,6 @@ import LegacyMediaPickerUI
 import GenerateStickerPlaceholderImage
 import PassKit
 import Photos
-import GlassBarButtonComponent
-import BundleIconComponent
-import LottieComponent
-import CryptoKit
-import AlertComponent
 
 private let durgerKingBotIds: [Int64] = [5104055776, 2200339955]
 
@@ -124,60 +119,27 @@ public struct WebAppParameters {
     }
 }
 
-// Nicegram, generateWebAppThemeParams moved to submodules/TelegramPresentationData/Sources/GenerateWebAppThemeParams.swift
-
-#if DEBUG
-private let registeredProtocols: Void = {
-    class AppURLProtocol: URLProtocol {
-        var urlTask: URLSessionDataTask?
-        
-        override class func canInit(with request: URLRequest) -> Bool {
-            if request.url?.scheme == "https" {
-                return false
-            }
-            return false
-        }
-        
-        override class func canonicalRequest(for request: URLRequest) -> URLRequest {
-            return request
-        }
-        
-        override func startLoading() {
-            super.startLoading()
-            
-            /*if self.urlTask != nil {
-                return
-            }
-            self.urlTask = URLSession.shared.dataTask(with: self.request, completionHandler: { [weak self] _, response, error in
-                guard let self else {
-                    return
-                }
-                if let error {
-                    self.client?.urlProtocol(self, didFailWithError: error)
-                } else {
-                    if let response = response as? HTTPURLResponse {
-                        self.client?.urlProtocol(self, didReceive: response, cacheStoragePolicy: .notAllowed)
-                    } else {
-                    }
-                    self.client?.urlProtocolDidFinishLoading(self)
-                }
-            })
-            self.urlTask?.resume()*/
-        }
-        
-        override func stopLoading() {
-            self.urlTask?.cancel()
-        }
-    }
-    URLProtocol.registerClass(AppURLProtocol.self)
-}()
-#endif
+public func generateWebAppThemeParams(_ theme: PresentationTheme) -> [String: Any] {
+    return [
+        "bg_color": Int32(bitPattern: theme.list.plainBackgroundColor.rgb),
+        "secondary_bg_color": Int32(bitPattern: theme.list.blocksBackgroundColor.rgb),
+        "text_color": Int32(bitPattern: theme.list.itemPrimaryTextColor.rgb),
+        "hint_color": Int32(bitPattern: theme.list.itemSecondaryTextColor.rgb),
+        "link_color": Int32(bitPattern: theme.list.itemAccentColor.rgb),
+        "button_color": Int32(bitPattern: theme.list.itemCheckColors.fillColor.rgb),
+        "button_text_color": Int32(bitPattern: theme.list.itemCheckColors.foregroundColor.rgb),
+        "header_bg_color": Int32(bitPattern: theme.rootController.navigationBar.opaqueBackgroundColor.rgb),
+        "bottom_bar_bg_color": Int32(bitPattern: theme.rootController.tabBar.backgroundColor.rgb),
+        "accent_text_color": Int32(bitPattern: theme.list.itemAccentColor.rgb),
+        "section_bg_color": Int32(bitPattern: theme.list.itemBlocksBackgroundColor.rgb),
+        "section_header_text_color": Int32(bitPattern: theme.list.freeTextColor.rgb),
+        "subtitle_text_color": Int32(bitPattern: theme.list.itemSecondaryTextColor.rgb),
+        "destructive_text_color": Int32(bitPattern: theme.list.itemDestructiveColor.rgb),
+        "section_separator_color": Int32(bitPattern: theme.list.itemBlocksSeparatorColor.rgb)
+    ]
+}
 
 public final class WebAppController: ViewController, AttachmentContainable {
-    // Nicegram
-    let customization: TelegramWebAppCustomization?
-    //
-    
     public var requestAttachmentMenuExpansion: () -> Void = { }
     public var updateNavigationStack: (@escaping ([AttachmentContainable]) -> ([AttachmentContainable], AttachmentMediaPickerContext?)) -> Void = { _ in }
     public var parentController: () -> ViewController? = {
@@ -192,12 +154,6 @@ public final class WebAppController: ViewController, AttachmentContainable {
     static var activeDownloads: [FileDownload] = []
     
     fileprivate class Node: ViewControllerTracingNode, WKNavigationDelegate, WKUIDelegate, WKDownloadDelegate, ASScrollViewDelegate {
-        // Nicegram
-        var customization: TelegramWebAppCustomization? {
-            controller?.customization
-        }
-        //
-        
         private weak var controller: WebAppController?
         
         private let backgroundNode: ASDisplayNode
@@ -230,7 +186,7 @@ public final class WebAppController: ViewController, AttachmentContainable {
         private var queryId: Int64?
         fileprivate let canMinimize = true
         
-        fileprivate var hasBackButton = false
+        private var hasBackButton = false
         
         private var placeholderDisposable = MetaDisposable()
         private var keepAliveDisposable: Disposable?
@@ -251,10 +207,6 @@ public final class WebAppController: ViewController, AttachmentContainable {
         //
         
         init(context: AccountContext, controller: WebAppController) {
-            #if DEBUG
-            let _ = registeredProtocols
-            #endif
-            
             self.context = context
             self.controller = controller
             self.presentationData = controller.presentationData
@@ -290,17 +242,13 @@ public final class WebAppController: ViewController, AttachmentContainable {
                     }
                 }
             }
-            
-            if self.presentationData.theme.overallDarkAppearance {
-                webView.overrideUserInterfaceStyle = .dark
-            } else {
-                webView.overrideUserInterfaceStyle = .unspecified
+            if #available(iOS 13.0, *) {
+                if self.presentationData.theme.overallDarkAppearance {
+                    webView.overrideUserInterfaceStyle = .dark
+                } else {
+                    webView.overrideUserInterfaceStyle = .unspecified
+                }
             }
-
-            // Nicegram
-            customization?.configureWebView(webView)
-            //
-
             self.webView = webView
             
             self.addSubnode(self.backgroundNode)
@@ -349,7 +297,7 @@ public final class WebAppController: ViewController, AttachmentContainable {
                     return .single(nil)
                 }
                 |> mapToSignal { bot -> Signal<(FileMediaReference, Bool)?, NoError> in
-                    if let bot = bot, let peerReference = PeerReference(bot.peer) {
+                    if let bot = bot, let peerReference = PeerReference(bot.peer._asPeer()) {
                         var imageFile: TelegramMediaFile?
                         var isPlaceholder = false
                         if let file = bot.icons[.placeholder] {
@@ -491,53 +439,6 @@ public final class WebAppController: ViewController, AttachmentContainable {
             webView.scrollView.insertSubview(self.topOverscrollNode.view, at: 0)
         }
         
-        private func load(url: URL) {
-            /*#if DEBUG
-            if "".isEmpty {
-                if #available(iOS 16.0, *) {
-                    let documentsPath = URL.documentsDirectory.path(percentEncoded: false)
-                    
-                    var hasher = SHA256()
-                    var urlString = url.absoluteString
-                    if let range = urlString.firstRange(of: "#") {
-                        urlString.removeSubrange(range.lowerBound...)
-                    }
-                    hasher.update(data: urlString.data(using: .utf8)!)
-                    let digest = Data(hasher.finalize())
-                    let urlHash = hexString(digest)
-                    
-                    let cachedFilePath = documentsPath.appending("\(urlHash).bin")
-                    
-                    Task {
-                        do {
-                            let data: Data
-                            if let cachedData = try? Data(contentsOf: URL(fileURLWithPath: cachedFilePath)) {
-                                data = cachedData
-                                print("Loaded from cache at \(cachedFilePath)")
-                            } else {
-                                let (loadedData, _) = try await URLSession.shared.data(from: url)
-                                data = loadedData
-                                try loadedData.write(to: URL(fileURLWithPath: cachedFilePath), options: .atomic)
-                            }
-                            self.webView?.load(data, mimeType: "text/html", characterEncodingName: "utf-8", baseURL: url)
-                        } catch let e {
-                            print("\(e)")
-                        }
-                    }
-                }
-                
-                return
-            }
-            #endif*/
-
-            if !"".isEmpty {
-                self.webView?.bindTrustedOrigin(from: url)
-            } else {
-                self.webView?.setupEventProxySource()
-            }
-            self.webView?.load(URLRequest(url: url))
-        }
-        
         func setupWebView() {
             guard let controller = self.controller else {
                 return
@@ -546,7 +447,7 @@ public final class WebAppController: ViewController, AttachmentContainable {
             if let url = controller.url, controller.source != .menu {
                 self.queryId = controller.queryId
                 if let parsedUrl = URL(string: url) {
-                    self.load(url: parsedUrl)
+                    self.webView?.load(URLRequest(url: parsedUrl))
                 }
                 if let keepAliveSignal = controller.keepAliveSignal {
                     self.keepAliveDisposable = (keepAliveSignal
@@ -569,7 +470,7 @@ public final class WebAppController: ViewController, AttachmentContainable {
                         }
                         if let parsedUrl = URL(string: result.url) {
                             strongSelf.queryId = result.queryId
-                            strongSelf.load(url: parsedUrl)
+                            strongSelf.webView?.load(URLRequest(url: parsedUrl))
                         }
                     })
                 } else {
@@ -589,7 +490,7 @@ public final class WebAppController: ViewController, AttachmentContainable {
                                     return
                                 }
                                 self.controller?.titleView?.title = WebAppTitle(title: botApp.title, counter: self.presentationData.strings.WebApp_Miniapp, isVerified: controller.botVerified)
-                                self.load(url: parsedUrl)
+                                self.webView?.load(URLRequest(url: parsedUrl))
                             })
                         })
                     } else {
@@ -599,7 +500,7 @@ public final class WebAppController: ViewController, AttachmentContainable {
                                 return
                             }
                             strongSelf.queryId = result.queryId
-                            strongSelf.load(url: parsedUrl)
+                            strongSelf.webView?.load(URLRequest(url: parsedUrl))
                                                         
                             if let keepAliveSignal = result.keepAliveSignal {
                                 strongSelf.keepAliveDisposable = (keepAliveSignal
@@ -704,14 +605,7 @@ public final class WebAppController: ViewController, AttachmentContainable {
                     if let data = try? Data(contentsOf: url), let pass = try? PKPass(data: data) {
                         let passLibrary = PKPassLibrary()
                         if passLibrary.containsPass(pass) {
-                            let alertController = AlertScreen(
-                                context: self.context,
-                                title: nil,
-                                text: self.presentationData.strings.WebBrowser_PassExistsError,
-                                actions: [
-                                    .init(title: self.presentationData.strings.Common_OK, type: .default)
-                                ]
-                            )
+                            let alertController = textAlertController(context: self.context, updatedPresentationData: nil, title: nil, text: self.presentationData.strings.WebBrowser_PassExistsError, actions: [TextAlertAction(type: .genericAction, title: self.presentationData.strings.Common_OK, action: {})])
                             self.controller?.present(alertController, in: .window(.root))
                         } else if let controller = PKAddPassesViewController(pass: pass) {
                             self.controller?.view.window?.rootViewController?.present(controller, animated: true)
@@ -805,19 +699,12 @@ public final class WebAppController: ViewController, AttachmentContainable {
                 
         func webView(_ webView: WKWebView, runJavaScriptAlertPanelWithMessage message: String, initiatedByFrame frame: WKFrameInfo, completionHandler: @escaping () -> Void) {
             var completed = false
-            let alertController = AlertScreen(
-                context: self.context,
-                title: nil,
-                text: message,
-                actions: [
-                    .init(title: self.presentationData.strings.Common_OK, action: {
-                        if !completed {
-                            completed = true
-                            completionHandler()
-                        }
-                    })
-                ]
-            )
+            let alertController = textAlertController(context: self.context, updatedPresentationData: self.controller?.updatedPresentationData, title: nil, text: message, actions: [TextAlertAction(type: .defaultAction, title: self.presentationData.strings.Common_OK, action: {
+                if !completed {
+                    completed = true
+                    completionHandler()
+                }
+            })])
             alertController.dismissed = { byOutsideTap in
                 if byOutsideTap {
                     if !completed {
@@ -831,25 +718,17 @@ public final class WebAppController: ViewController, AttachmentContainable {
 
         func webView(_ webView: WKWebView, runJavaScriptConfirmPanelWithMessage message: String, initiatedByFrame frame: WKFrameInfo, completionHandler: @escaping (Bool) -> Void) {
             var completed = false
-            let alertController = AlertScreen(
-                context: self.context,
-                title: nil,
-                text: message,
-                actions: [
-                    .init(title: self.presentationData.strings.Common_Cancel, action: {
-                        if !completed {
-                            completed = true
-                            completionHandler(false)
-                        }
-                    }),
-                    .init(title: self.presentationData.strings.Common_OK, type: .default, action: {
-                        if !completed {
-                            completed = true
-                            completionHandler(true)
-                        }
-                    })
-                ]
-            )
+            let alertController = textAlertController(context: self.context, updatedPresentationData: self.controller?.updatedPresentationData, title: nil, text: message, actions: [TextAlertAction(type: .genericAction, title: self.presentationData.strings.Common_Cancel, action: {
+                if !completed {
+                    completed = true
+                    completionHandler(false)
+                }
+            }), TextAlertAction(type: .defaultAction, title: self.presentationData.strings.Common_OK, action: {
+                if !completed {
+                    completed = true
+                    completionHandler(true)
+                }
+            })])
             alertController.dismissed = { byOutsideTap in
                 if byOutsideTap {
                     if !completed {
@@ -863,28 +742,24 @@ public final class WebAppController: ViewController, AttachmentContainable {
 
         func webView(_ webView: WKWebView, runJavaScriptTextInputPanelWithPrompt prompt: String, defaultText: String?, initiatedByFrame frame: WKFrameInfo, completionHandler: @escaping (String?) -> Void) {
             var completed = false
-            let promptController = promptController(
-                context: self.context,
-                updatedPresentationData: self.controller?.updatedPresentationData,
-                text: prompt,
-                value: defaultText,
-                apply: { value in
-                    if !completed {
-                        completed = true
-                        if let value = value {
-                            completionHandler(value)
-                        } else {
-                            completionHandler(nil)
-                        }
+            let promptController = promptController(sharedContext: self.context.sharedContext, updatedPresentationData: self.controller?.updatedPresentationData, text: prompt, value: defaultText, apply: { value in
+                if !completed {
+                    completed = true
+                    if let value = value {
+                        completionHandler(value)
+                    } else {
+                        completionHandler(nil)
                     }
-                },
-                dismissed: {
+                }
+            })
+            promptController.dismissed = { byOutsideTap in
+                if byOutsideTap {
                     if !completed {
                         completed = true
                         completionHandler(nil)
                     }
                 }
-            )
+            }
             self.controller?.present(promptController, in: .window(.root))
         }
         
@@ -951,9 +826,6 @@ public final class WebAppController: ViewController, AttachmentContainable {
                             insets: UIEdgeInsets(top: 0.0, left: layout.safeInsets.left, bottom: 0.0, right: layout.safeInsets.right),
                             statusBarStyle: self.fullScreenStatusBarStyle,
                             hasBack: self.hasBackButton,
-                            // Nicegram
-                            hideControls: customization?.shouldHideControls() ?? false,
-                            //
                             backPressed: { [weak self] in
                                 guard let self else {
                                     return
@@ -970,7 +842,7 @@ public final class WebAppController: ViewController, AttachmentContainable {
                                 guard let self else {
                                     return
                                 }
-                                self.controller?.morePressed(view: node.view, gesture: gesture)
+                                self.controller?.morePressed(node: node, gesture: gesture)
                             }
                         )
                     ),
@@ -1132,9 +1004,6 @@ public final class WebAppController: ViewController, AttachmentContainable {
             guard let controller = self.controller else {
                 return
             }
-            guard self.webView?.isTrustedMainFrameMessage(message) == true else {
-                return
-            }
             guard let body = message.body as? [String: Any] else {
                 return
             }
@@ -1196,23 +1065,7 @@ public final class WebAppController: ViewController, AttachmentContainable {
                         let isLoading = json["is_progress_visible"] as? Bool
                         let isEnabled = json["is_active"] as? Bool
                         let hasShimmer = json["has_shine_effect"] as? Bool
-                        
-                        var iconCustomEmojiId: Int64?
-                        if let stringValue = json["icon_custom_emoji_id"] as? String, let intValue = Int64(stringValue) {
-                            iconCustomEmojiId = intValue
-                        }
-                        
-                        let state = AttachmentMainButtonState(
-                            text: text,
-                            font: .bold,
-                            background: .color(backgroundColor),
-                            textColor: textColor,
-                            isVisible: isVisible,
-                            progress: (isLoading ?? false) ? .center : .none,
-                            isEnabled: isEnabled ?? true,
-                            hasShimmer: hasShimmer ?? false,
-                            iconCustomEmojiId: iconCustomEmojiId
-                        )
+                        let state = AttachmentMainButtonState(text: text, font: .bold, background: .color(backgroundColor), textColor: textColor, isVisible: isVisible, progress: (isLoading ?? false) ? .center : .none, isEnabled: isEnabled ?? true, hasShimmer: hasShimmer ?? false)
                         self.mainButtonState = state
                     }
                 }
@@ -1236,23 +1089,7 @@ public final class WebAppController: ViewController, AttachmentContainable {
                         let hasShimmer = json["has_shine_effect"] as? Bool
                         let position = json["position"] as? String
                         
-                        var iconCustomEmojiId: Int64?
-                        if let stringValue = json["icon_custom_emoji_id"] as? String, let intValue = Int64(stringValue) {
-                            iconCustomEmojiId = intValue
-                        }
-                        
-                        let state = AttachmentMainButtonState(
-                            text: text,
-                            font: .bold,
-                            background: .color(backgroundColor),
-                            textColor: textColor,
-                            isVisible: isVisible,
-                            progress: (isLoading ?? false) ? .center : .none,
-                            isEnabled: isEnabled ?? true,
-                            hasShimmer: hasShimmer ?? false,
-                            iconCustomEmojiId: iconCustomEmojiId,
-                            position: position.flatMap { AttachmentMainButtonState.Position(rawValue: $0) }
-                        )
+                        let state = AttachmentMainButtonState(text: text, font: .bold, background: .color(backgroundColor), textColor: textColor, isVisible: isVisible, progress: (isLoading ?? false) ? .center : .none, isEnabled: isEnabled ?? true, hasShimmer: hasShimmer ?? false, position: position.flatMap { AttachmentMainButtonState.Position(rawValue: $0) })
                         self.secondaryButtonState = state
                     }
                 }
@@ -1415,7 +1252,7 @@ public final class WebAppController: ViewController, AttachmentContainable {
             case "web_app_setup_back_button":
                 if let json = json, let isVisible = json["is_visible"] as? Bool {
                     self.hasBackButton = isVisible
-                    self.controller?.updateNavigationButtons()
+                    self.controller?.cancelButtonNode.setState(isVisible ? .back : .cancel, animated: true)
                     if controller.isFullscreen {
                         self.requestLayout(transition: .immediate)
                     }
@@ -1486,7 +1323,7 @@ public final class WebAppController: ViewController, AttachmentContainable {
                     let presentationData = self.presentationData
                     
                     let title = json["title"] as? String
-                    var actions: [AlertScreen.Action] = []
+                    var alertButtons: [TextAlertAction] = []
                     
                     for buttonJson in buttons.reversed() {
                         if let button = buttonJson as? [String: Any], let id = button["id"] as? String, let type = button["type"] as? String {
@@ -1496,27 +1333,27 @@ public final class WebAppController: ViewController, AttachmentContainable {
                             let text = button["text"] as? String
                             switch type {
                                 case "default":
-                                    if let text {
-                                        actions.append(AlertScreen.Action(title: text, action: {
+                                    if let text = text {
+                                        alertButtons.append(TextAlertAction(type: .genericAction, title: text, action: {
                                             buttonAction()
                                         }))
                                     }
                                 case "destructive":
-                                    if let text {
-                                        actions.append(AlertScreen.Action(title: text, type: .destructive, action: {
+                                    if let text = text {
+                                        alertButtons.append(TextAlertAction(type: .destructiveAction, title: text, action: {
                                             buttonAction()
                                         }))
                                     }
                                 case "ok":
-                                    actions.append(AlertScreen.Action(title: presentationData.strings.Common_OK, type: .default, action: {
+                                    alertButtons.append(TextAlertAction(type: .defaultAction, title: presentationData.strings.Common_OK, action: {
                                         buttonAction()
                                     }))
                                 case "cancel":
-                                    actions.append(AlertScreen.Action(title: presentationData.strings.Common_Cancel, action: {
+                                    alertButtons.append(TextAlertAction(type: .genericAction, title: presentationData.strings.Common_Cancel, action: {
                                         buttonAction()
                                     }))
                                 case "close":
-                                    actions.append(AlertScreen.Action(title: presentationData.strings.Common_Close, action: {
+                                    alertButtons.append(TextAlertAction(type: .genericAction, title: presentationData.strings.Common_Close, action: {
                                         buttonAction()
                                     }))
                                 default:
@@ -1525,18 +1362,12 @@ public final class WebAppController: ViewController, AttachmentContainable {
                         }
                     }
                     
-                    var actionLayout: AlertScreen.ActionAligmnent = .default
-                    if actions.count > 2 {
+                    var actionLayout: TextAlertContentActionLayout = .horizontal
+                    if alertButtons.count > 2 {
                         actionLayout = .vertical
-                        actions = Array(actions.reversed())
+                        alertButtons = Array(alertButtons.reversed())
                     }
-                    let alertController = AlertScreen(
-                        context: self.context,
-                        configuration: AlertScreen.Configuration(actionAlignment: actionLayout, dismissOnOutsideTap: true, allowInputInset: false),
-                        title: title,
-                        text: message,
-                        actions: actions
-                    )
+                    let alertController = textAlertController(context: self.context, updatedPresentationData: self.controller?.updatedPresentationData, title: title, text: message, actions: alertButtons, actionLayout: actionLayout)
                     alertController.dismissed = { byOutsideTap in
                         if byOutsideTap {
                             self.sendAlertButtonEvent(id: nil)
@@ -1578,14 +1409,14 @@ public final class WebAppController: ViewController, AttachmentContainable {
                     let _ = (self.context.engine.messages.attachMenuBots()
                     |> take(1)
                     |> deliverOnMainQueue).startStandalone(next: { [weak self] attachMenuBots in
-                        guard let self, let controller = self.controller else {
+                        guard let self else {
                             return
                         }
                         let currentTimestamp = CACurrentMediaTime()
                         var fillData = false
                         
                         let attachMenuBot = attachMenuBots.first(where: { $0.peer.id == botId && !$0.flags.contains(.notActivated) })
-                        if isAttachMenu || attachMenuBot != nil || controller.isWhiteListedBot {
+                        if isAttachMenu || attachMenuBot != nil {
                             if let lastTouchTimestamp = self.webView?.lastTouchTimestamp, currentTimestamp < lastTouchTimestamp + 10.0 {
                                 self.webView?.lastTouchTimestamp = nil
                                 fillData = true
@@ -1640,7 +1471,7 @@ public final class WebAppController: ViewController, AttachmentContainable {
                     self.controller?._isPanGestureEnabled = isPanGestureEnabled
                 }
             case "web_app_share_to_story":
-                if let json, let mediaUrl = json["media_url"] as? String, isAllowedBotMediaUrl(mediaUrl) {
+                if let json, let mediaUrl = json["media_url"] as? String {
                     let text = json["text"] as? String
                     let link = json["widget_link"] as? [String: Any]
                     
@@ -1969,10 +1800,6 @@ public final class WebAppController: ViewController, AttachmentContainable {
                         self.controller?.verifyAgeCompletion?(Int(ageValue))
                     }
                 }
-            case "web_app_request_chat":
-                if let json, let requestId = json["req_id"] as? String {
-                    self.requestChat(requestId: requestId)
-                }
             default:
                 break
             }
@@ -2106,10 +1933,12 @@ public final class WebAppController: ViewController, AttachmentContainable {
             self.updateHeaderBackgroundColor(transition: .immediate)
             self.sendThemeChangedEvent()
             
-            if self.presentationData.theme.overallDarkAppearance {
-                self.webView?.overrideUserInterfaceStyle = .dark
-            } else {
-                self.webView?.overrideUserInterfaceStyle = .unspecified
+            if #available(iOS 13.0, *) {
+                if self.presentationData.theme.overallDarkAppearance {
+                    self.webView?.overrideUserInterfaceStyle = .dark
+                } else {
+                    self.webView?.overrideUserInterfaceStyle = .unspecified
+                }
             }
         }
         
@@ -2222,26 +2051,18 @@ public final class WebAppController: ViewController, AttachmentContainable {
                 if result {
                     sendEvent(true)
                 } else {
-                    let alertController = AlertScreen(
-                        context: self.context,
-                        title: self.presentationData.strings.WebApp_AllowWriteTitle,
-                        text: self.presentationData.strings.WebApp_AllowWriteConfirmation(controller.botName).string,
-                        actions: [
-                            .init(title: self.presentationData.strings.Common_Cancel, action: {
-                                sendEvent(false)
-                            }),
-                            .init(title: self.presentationData.strings.Common_OK, type: .default, action: { [weak self] in
-                                guard let self else {
-                                    return
-                                }
-                                
-                                let _ = (self.context.engine.messages.allowBotSendMessages(botId: controller.botId)
-                                |> deliverOnMainQueue).start(completed: {
-                                    sendEvent(true)
-                                })
-                            })
-                        ]
-                    )
+                    let alertController = textAlertController(context: self.context, updatedPresentationData: controller.updatedPresentationData, title: self.presentationData.strings.WebApp_AllowWriteTitle, text: self.presentationData.strings.WebApp_AllowWriteConfirmation(controller.botName).string, actions: [TextAlertAction(type: .genericAction, title: self.presentationData.strings.Common_Cancel, action: {
+                        sendEvent(false)
+                    }), TextAlertAction(type: .defaultAction, title: self.presentationData.strings.Common_OK, action: { [weak self] in
+                        guard let self else {
+                            return
+                        }
+                        
+                        let _ = (self.context.engine.messages.allowBotSendMessages(botId: controller.botId)
+                        |> deliverOnMainQueue).start(completed: {
+                            sendEvent(true)
+                        })
+                    })], parseMarkdown: true)
                     alertController.dismissed = { byOutsideTap in
                         if byOutsideTap {
                             sendEvent(false)
@@ -2283,126 +2104,54 @@ public final class WebAppController: ViewController, AttachmentContainable {
                     text = self.presentationData.strings.WebApp_SharePhoneConfirmation(botName).string
                 }
                 
-                let alertController = AlertScreen(
-                    context: self.context,
-                    title: self.presentationData.strings.WebApp_SharePhoneTitle,
-                    text: text,
-                    actions: [
-                        .init(title: self.presentationData.strings.Common_Cancel, action: {
-                            sendEvent(false)
-                        }),
-                        .init(title: self.presentationData.strings.Common_OK, type: .default, action: { [weak self] in
-                            guard let self, case let .user(user) = accountPeer, let phone = user.phone, !phone.isEmpty else {
-                                return
-                            }
-                            
-                            let sendMessageSignal = enqueueMessages(account: self.context.account, peerId: botId, messages: [
-                                .message(text: "", attributes: [], inlineStickers: [:], mediaReference: .standalone(media: TelegramMediaContact(firstName: user.firstName ?? "", lastName: user.lastName ?? "", phoneNumber: phone, peerId: user.id, vCardData: nil)), threadId: nil, replyToMessageId: nil, replyToStoryId: nil, localGroupingKey: nil, correlationId: nil, bubbleUpEmojiOrStickersets: [])
-                            ])
-                            |> mapToSignal { messageIds in
-                                if let maybeMessageId = messageIds.first, let messageId = maybeMessageId {
-                                    return context.account.pendingMessageManager.pendingMessageStatus(messageId)
-                                    |> mapToSignal { status, _ -> Signal<Bool, NoError> in
-                                        if status != nil {
-                                            return .never()
-                                        } else {
-                                            return .single(true)
-                                        }
-                                    }
-                                    |> take(1)
+                let alertController = textAlertController(context: self.context, updatedPresentationData: controller.updatedPresentationData, title: self.presentationData.strings.WebApp_SharePhoneTitle, text: text, actions: [TextAlertAction(type: .genericAction, title: self.presentationData.strings.Common_Cancel, action: {
+                    sendEvent(false)
+                }), TextAlertAction(type: .defaultAction, title: self.presentationData.strings.Common_OK, action: { [weak self] in
+                    guard let self, case let .user(user) = accountPeer, let phone = user.phone, !phone.isEmpty else {
+                        return
+                    }
+                    
+                    let sendMessageSignal = enqueueMessages(account: self.context.account, peerId: botId, messages: [
+                        .message(text: "", attributes: [], inlineStickers: [:], mediaReference: .standalone(media: TelegramMediaContact(firstName: user.firstName ?? "", lastName: user.lastName ?? "", phoneNumber: phone, peerId: user.id, vCardData: nil)), threadId: nil, replyToMessageId: nil, replyToStoryId: nil, localGroupingKey: nil, correlationId: nil, bubbleUpEmojiOrStickersets: [])
+                    ])
+                    |> mapToSignal { messageIds in
+                        if let maybeMessageId = messageIds.first, let messageId = maybeMessageId {
+                            return context.account.pendingMessageManager.pendingMessageStatus(messageId)
+                            |> mapToSignal { status, _ -> Signal<Bool, NoError> in
+                                if status != nil {
+                                    return .never()
                                 } else {
-                                    return .complete()
+                                    return .single(true)
                                 }
                             }
-                            
-                            let sendMessage = {
-                                let _ = (sendMessageSignal
-                                |> deliverOnMainQueue).start(completed: {
-                                    sendEvent(true)
-                                })
-                            }
-                            
-                            if requiresUnblock {
-                                let _ = (context.engine.privacy.requestUpdatePeerIsBlocked(peerId: botId, isBlocked: false)
-                                |> deliverOnMainQueue).start(completed: {
-                                    sendMessage()
-                                })
-                            } else {
-                                sendMessage()
-                            }
+                            |> take(1)
+                        } else {
+                            return .complete()
+                        }
+                    }
+                    
+                    let sendMessage = {
+                        let _ = (sendMessageSignal
+                        |> deliverOnMainQueue).start(completed: {
+                            sendEvent(true)
                         })
-                    ]
-                )
+                    }
+                    
+                    if requiresUnblock {
+                        let _ = (context.engine.privacy.requestUpdatePeerIsBlocked(peerId: botId, isBlocked: false)
+                        |> deliverOnMainQueue).start(completed: {
+                            sendMessage()
+                        })
+                    } else {
+                        sendMessage()
+                    }
+                })], parseMarkdown: true)
                 alertController.dismissed = { byOutsideTap in
                     if byOutsideTap {
                         sendEvent(false)
                     }
                 }
                 controller.present(alertController, in: .window(.root))
-            })
-        }
-        
-        fileprivate func requestChat(requestId: String) {
-            guard let controller = self.controller, !self.dismissed else {
-                return
-            }
-            let _ = (self.context.engine.messages.requestMiniAppButton(peerId: controller.botId, requestId: requestId)
-            |> deliverOnMainQueue).startStandalone(next: { [weak self] button in
-                guard let self, let button else {
-                    return
-                }
-                switch button.action {
-                case let .requestPeer(peerType, buttonId, maxQuantity):
-                    let _ = maxQuantity
-                    
-                    switch peerType {
-                    case let .createBot(createBot):
-                        Task { @MainActor [weak self] in
-                            guard let self, let controller = self.controller else {
-                                return
-                            }
-                            let createBotScreen = await self.context.sharedContext.makeCreateBotScreen(
-                                context: self.context,
-                                parentBot: controller.botId,
-                                initialUsername: createBot.suggestedUsername,
-                                initialTitle: createBot.suggestedName,
-                                openAutomatically: false,
-                                completion: { [weak self] resultId in
-                                    guard let self, let controller = self.controller else {
-                                        return
-                                    }
-                                    if let resultId {
-                                        let _ = self.context.engine.peers.sendBotRequestedPeer(peerId: controller.botId, requestId: requestId, buttonId: buttonId, requestedPeerIds: [resultId]
-                                        ).startStandalone(error: { [weak self] _ in
-                                            guard let self else {
-                                                return
-                                            }
-                                            self.webView?.sendEvent(name: "requested_chat_failed", data: nil)
-                                        }, completed: { [weak self] in
-                                            guard let self else {
-                                                return
-                                            }
-                                            self.webView?.sendEvent(name: "requested_chat_sent", data: nil)
-                                        })
-                                    } else {
-                                        self.webView?.sendEvent(name: "requested_chat_failed", data: nil)
-                                    }
-                                }
-                            )
-                            if let createBotScreen, let navigationController = controller.getNavigationController() {
-                                navigationController.pushViewController(createBotScreen)
-                            }
-                        }
-                    case let .channel(channel):
-                        if channel.isCreator {
-                            
-                        }
-                    default:
-                        break
-                    }
-                default:
-                    break
-                }
             })
         }
         
@@ -2415,19 +2164,8 @@ public final class WebAppController: ViewController, AttachmentContainable {
                 guard let self else {
                     return
                 }
-                var payload: [String: Any] = ["req_id": requestId]
-                if let data = result.data(using: .utf8), let json = try? JSONSerialization.jsonObject(with: data, options: [.fragmentsAllowed]) {
-                    payload["result"] = json
-                } else {
-                    payload["result"] = [:]
-                }
-                guard let jsonData = try? JSONSerialization.data(withJSONObject: payload) else {
-                    return
-                }
-                guard let jsonDataString = String(data: jsonData, encoding: .utf8) else {
-                    return
-                }
-                self.webView?.sendEvent(name: "custom_method_invoked", data: jsonDataString)
+                let paramsString = "{req_id: \"\(requestId)\", result: \(result)}"
+                self.webView?.sendEvent(name: "custom_method_invoked", data: paramsString)
             })
         }
         
@@ -2528,21 +2266,14 @@ public final class WebAppController: ViewController, AttachmentContainable {
                         alertText = self.presentationData.strings.WebApp_AlertBiometryAccessText(botPeer.compactDisplayTitle).string
                     }
                 }
-                
-                let alertController = AlertScreen(
-                    context: self.context,
-                    title: alertTitle,
-                    text: alertText,
-                    actions: [
-                        .init(title: self.presentationData.strings.Common_No, action: {
-                            updateAccessGranted(false)
-                        }),
-                        .init(title: self.presentationData.strings.Common_Yes, type: .default, action: {
-                            updateAccessGranted(true)
-                        })
-                    ]
-                )
-                controller.present(alertController, in: .window(.root))
+                controller.present(standardTextAlertController(theme: AlertControllerTheme(presentationData: self.presentationData), title: alertTitle, text: alertText, actions: [
+                    TextAlertAction(type: .genericAction, title: self.presentationData.strings.Common_No, action: {
+                        updateAccessGranted(false)
+                    }),
+                    TextAlertAction(type: .defaultAction, title: self.presentationData.strings.Common_Yes, action: {
+                        updateAccessGranted(true)
+                    })
+                ], parseMarkdown: false), in: .window(.root))
             })
         }
         
@@ -2981,23 +2712,17 @@ public final class WebAppController: ViewController, AttachmentContainable {
                 }
                 
                 let text: String = self.presentationData.strings.WebApp_Download_Text(controller.botName, fileName, fileSizeString).string
-                
-                let alertController = AlertScreen(
-                    context: self.context,
-                    title: title,
-                    text: text,
-                    actions: [
-                        .init(title: self.presentationData.strings.Common_Cancel, action: { [weak self] in
-                            let data: JSON = [
-                                "status": "cancelled"
-                            ]
-                            self?.webView?.sendEvent(name: "file_download_requested", data: data.string)
-                        }),
-                        .init(title: self.presentationData.strings.WebApp_Download_Download, type: .default, action: { [weak self] in
-                            self?.startDownload(url: url, fileName: fileName, fileSize: fileSize, isMedia: isMedia)
-                        })
-                    ]
-                )
+                let alertController = standardTextAlertController(theme: AlertControllerTheme(presentationData: self.presentationData), title: title, text: text, actions: [
+                    TextAlertAction(type: .genericAction, title: self.presentationData.strings.Common_Cancel, action: { [weak self] in
+                        let data: JSON = [
+                            "status": "cancelled"
+                        ]
+                        self?.webView?.sendEvent(name: "file_download_requested", data: data.string)
+                    }),
+                    TextAlertAction(type: .defaultAction, title: self.presentationData.strings.WebApp_Download_Download, action: { [weak self] in
+                        self?.startDownload(url: url, fileName: fileName, fileSize: fileSize, isMedia: isMedia)
+                    })
+                ], parseMarkdown: true)
                 alertController.dismissed = { [weak self] byOutsideTap in
                     let data: JSON = [
                         "status": "cancelled"
@@ -3175,7 +2900,7 @@ public final class WebAppController: ViewController, AttachmentContainable {
                     accountPeer: accountPeer,
                     botName: controller.botName,
                     icons: iconStatusEmoji,
-                    completion: { [weak self] result, byOutsideTap in
+                    completion: { [weak self] result in
                         guard let self, let controller = self.controller else {
                             return
                         }
@@ -3230,13 +2955,17 @@ public final class WebAppController: ViewController, AttachmentContainable {
                             self.webView?.sendEvent(name: "emoji_status_access_requested", data: data.string)
                         }
                         
-                        if !byOutsideTap {
-                            let _ = updateWebAppPermissionsStateInteractively(context: context, peerId: botId) { current in
-                                return WebAppPermissionsState(location: current?.location, emojiStatus: WebAppPermissionsState.EmojiStatus(isRequested: true))
-                            }.startStandalone()
-                        }
+                        let _ = updateWebAppPermissionsStateInteractively(context: context, peerId: botId) { current in
+                            return WebAppPermissionsState(location: current?.location, emojiStatus: WebAppPermissionsState.EmojiStatus(isRequested: true))
+                        }.startStandalone()
                     }
                 )
+                alertController.dismissed = { [weak self] byOutsideTap in
+                    let data: JSON = [
+                        "status": "cancelled"
+                    ]
+                    self?.webView?.sendEvent(name: "emoji_status_access_requested", data: data.string)
+                }
                 controller.present(alertController, in: .window(.root))
             })
         }
@@ -3412,7 +3141,7 @@ public final class WebAppController: ViewController, AttachmentContainable {
                 guard let self, let controller = self.controller, let peer else {
                     return
                 }
-                if let infoController = self.context.sharedContext.makePeerInfoController(context: self.context, updatedPresentationData: nil, peer: peer, mode: .generic, avatarInitiallyExpanded: false, fromChat: false, requestsContext: nil) {
+                if let infoController = self.context.sharedContext.makePeerInfoController(context: self.context, updatedPresentationData: nil, peer: peer._asPeer(), mode: .generic, avatarInitiallyExpanded: false, fromChat: false, requestsContext: nil) {
                     controller.parentController()?.push(infoController)
                 }
             })
@@ -3565,9 +3294,6 @@ public final class WebAppController: ViewController, AttachmentContainable {
     private var titleView: WebAppTitleView?
     fileprivate let cancelButtonNode: WebAppCancelButtonNode
     fileprivate let moreButtonNode: MoreButtonNode
-    private var cancelBarButtonNode: BarComponentHostNode?
-    private var moreBarButtonNode: BarComponentHostNode?
-    private let moreButtonPlayOnce = ActionSlot<Void>()
     
     private let context: AccountContext
     public let source: WebAppParameters.Source
@@ -3601,11 +3327,7 @@ public final class WebAppController: ViewController, AttachmentContainable {
     
     public var verifyAgeCompletion: ((Int) -> Void)?
     
-    // Nicegram, add customization
-    public init(context: AccountContext, updatedPresentationData: (initial: PresentationData, signal: Signal<PresentationData, NoError>)? = nil, params: WebAppParameters, replyToMessageId: MessageId?, threadId: Int64?, customization: TelegramWebAppCustomization? = nil) {
-        // Nicegram
-        self.customization = customization
-        //
+    public init(context: AccountContext, updatedPresentationData: (initial: PresentationData, signal: Signal<PresentationData, NoError>)? = nil, params: WebAppParameters, replyToMessageId: MessageId?, threadId: Int64?) {
         self.context = context
         self.source = params.source
         self.peerId = params.peerId
@@ -3643,24 +3365,20 @@ public final class WebAppController: ViewController, AttachmentContainable {
         self.statusBar.statusBarStyle = self.presentationData.theme.rootController.statusBarStyle.style
         self.automaticallyControlPresentationContextLayout = false
         
-        if case .attachMenu = self.source {
-            
-        } else {
-            self.navigationItem.leftBarButtonItem = UIBarButtonItem(customDisplayNode: self.cancelButtonNode)
-            self.navigationItem.leftBarButtonItem?.action = #selector(self.cancelPressed)
-            self.navigationItem.leftBarButtonItem?.target = self
-            
-            if !self.isVerifyAgeBot {
-                self.navigationItem.rightBarButtonItem = UIBarButtonItem(customDisplayNode: self.moreButtonNode)
-                self.navigationItem.rightBarButtonItem?.action = #selector(self.moreButtonPressed)
-                self.navigationItem.rightBarButtonItem?.target = self
-            }
+        self.navigationItem.leftBarButtonItem = UIBarButtonItem(customDisplayNode: self.cancelButtonNode)
+        self.navigationItem.leftBarButtonItem?.action = #selector(self.cancelPressed)
+        self.navigationItem.leftBarButtonItem?.target = self
+        
+        if !self.isVerifyAgeBot {
+            self.navigationItem.rightBarButtonItem = UIBarButtonItem(customDisplayNode: self.moreButtonNode)
+            self.navigationItem.rightBarButtonItem?.action = #selector(self.moreButtonPressed)
+            self.navigationItem.rightBarButtonItem?.target = self
         }
         
         self.navigationItem.backBarButtonItem = UIBarButtonItem(title: self.presentationData.strings.Common_Back, style: .plain, target: nil, action: nil)
         
         if !self.isVerifyAgeBot {
-            let titleView = WebAppTitleView(context: self.context, theme: self.presentationData.theme, isAttachMenu: self.source == .attachMenu)
+            let titleView = WebAppTitleView(context: self.context, theme: self.presentationData.theme)
             titleView.title = WebAppTitle(title: params.botName, counter: self.presentationData.strings.WebApp_Miniapp, isVerified: params.botVerified)
             self.navigationItem.titleView = titleView
             self.titleView = titleView
@@ -3668,7 +3386,7 @@ public final class WebAppController: ViewController, AttachmentContainable {
         
         self.moreButtonNode.action = { [weak self] _, gesture in
             if let strongSelf = self {
-                strongSelf.morePressed(view: strongSelf.moreButtonNode.contextSourceNode.view, gesture: gesture)
+                strongSelf.morePressed(node: strongSelf.moreButtonNode.contextSourceNode, gesture: gesture)
             }
         }
         
@@ -3708,8 +3426,6 @@ public final class WebAppController: ViewController, AttachmentContainable {
                 }
             })
         }
-        
-        self.updateNavigationButtons()
     }
     
     required public init(coder aDecoder: NSCoder) {
@@ -3721,91 +3437,9 @@ public final class WebAppController: ViewController, AttachmentContainable {
         self.presentationDataDisposable?.dispose()
     }
     
-    private func updateNavigationButtons() {
-        if case .attachMenu = self.source {
-            let barButtonSize = CGSize(width: 44.0, height: 44.0)
-            let closeComponent: AnyComponentWithIdentity<Empty> = AnyComponentWithIdentity(
-                id: "close",
-                component: AnyComponent(GlassBarButtonComponent(
-                    size: barButtonSize,
-                    backgroundColor: self.presentationData.theme.rootController.navigationBar.glassBarButtonBackgroundColor,
-                    isDark: self.presentationData.theme.overallDarkAppearance,
-                    state: .generic,
-                    component: AnyComponentWithIdentity(id: self.controllerNode.hasBackButton ? "back" : "close", component: AnyComponent(
-                        BundleIconComponent(
-                            name: self.controllerNode.hasBackButton ? "Navigation/Back" : "Navigation/Close",
-                            tintColor: self.presentationData.theme.chat.inputPanel.panelControlColor
-                        )
-                    )),
-                    action: { [weak self] _ in
-                        self?.cancelPressed()
-                    }
-                ))
-            )
-            
-            let moreComponent: AnyComponentWithIdentity<Empty> = AnyComponentWithIdentity(
-                id: "more",
-                component: AnyComponent(GlassBarButtonComponent(
-                    size: barButtonSize,
-                    backgroundColor: self.presentationData.theme.rootController.navigationBar.glassBarButtonBackgroundColor,
-                    isDark: self.presentationData.theme.overallDarkAppearance,
-                    state: .generic,
-                    component: AnyComponentWithIdentity(id: "more", component: AnyComponent(
-                        LottieComponent(
-                            content: LottieComponent.AppBundleContent(
-                                name: "anim_morewide"
-                            ),
-                            color: self.presentationData.theme.chat.inputPanel.panelControlColor,
-                            size: CGSize(width: 34.0, height: 34.0),
-                            playOnce: self.moreButtonPlayOnce
-                        )
-                    )),
-                    action: { [weak self] view in
-                        self?.morePressed(view: view, gesture: nil)
-                        self?.moreButtonPlayOnce.invoke(Void())
-                    }
-                ))
-            )
-            
-            let cancelButtonNode: BarComponentHostNode
-            if let current = self.cancelBarButtonNode {
-                cancelButtonNode = current
-                cancelButtonNode.component = closeComponent
-            } else {
-                cancelButtonNode = BarComponentHostNode(component: closeComponent, size: barButtonSize)
-                self.cancelBarButtonNode = cancelButtonNode
-                self.navigationItem.leftBarButtonItem = UIBarButtonItem(customDisplayNode: cancelButtonNode)
-            }
-            
-            let moreButtonNode: BarComponentHostNode
-            if let current = self.moreBarButtonNode {
-                moreButtonNode = current
-                moreButtonNode.component = moreComponent
-            } else {
-                moreButtonNode = BarComponentHostNode(component: moreComponent, size: barButtonSize)
-                self.moreBarButtonNode = moreButtonNode
-                self.navigationItem.rightBarButtonItem = UIBarButtonItem(customDisplayNode: moreButtonNode)
-            }
-        }
-            
-        self.cancelButtonNode.setState(self.controllerNode.hasBackButton ? .back : .cancel, animated: true)
-    }
-    
     private var isVerifyAgeBot: Bool {
         if let ageBotUsername = self.context.currentAppConfiguration.with({ $0 }).data?["verify_age_bot_username"] as? String {
             return self.botAddress == ageBotUsername
-        }
-        return false
-    }
-    
-    private var isWhiteListedBot: Bool {
-        if let whiteListedBots = self.context.currentAppConfiguration.with({ $0 }).data?["whitelisted_bots"] as? [Double] {
-            let botId = self.botId.id._internalGetInt64Value()
-            for bot in whiteListedBots {
-                if Int64(bot) == botId {
-                    return true
-                }
-            }
         }
         return false
     }
@@ -3834,7 +3468,6 @@ public final class WebAppController: ViewController, AttachmentContainable {
         if let backgroundColor = self.controllerNode.headerColor, let textColor = self.controllerNode.headerPrimaryTextColor {
             navigationBarPresentationData = NavigationBarPresentationData(
                 theme: NavigationBarTheme(
-                    overallDarkAppearance: false,
                     buttonColor: textColor,
                     disabledButtonColor: textColor,
                     primaryTextColor: textColor,
@@ -3843,10 +3476,7 @@ public final class WebAppController: ViewController, AttachmentContainable {
                     separatorColor: UIColor(rgb: 0x000000, alpha: 0.25),
                     badgeBackgroundColor: .clear,
                     badgeStrokeColor: .clear,
-                    badgeTextColor: .clear,
-                    accentButtonColor: self.presentationData.theme.list.itemCheckColors.fillColor,
-                    accentDisabledButtonColor: self.presentationData.theme.chat.inputPanel.panelControlDisabledColor,
-                    accentForegroundColor: self.presentationData.theme.list.itemCheckColors.foregroundColor
+                    badgeTextColor: .clear
                 ),
                 strings: NavigationBarStrings(back: "", close: "")
             )
@@ -3856,7 +3486,7 @@ public final class WebAppController: ViewController, AttachmentContainable {
                 strings: NavigationBarStrings(back: "", close: "")
             )
         }
-        self.navigationBar?.updatePresentationData(navigationBarPresentationData, transition: .immediate)
+        self.navigationBar?.updatePresentationData(navigationBarPresentationData)
     }
     
     @objc fileprivate func cancelPressed() {
@@ -3873,7 +3503,10 @@ public final class WebAppController: ViewController, AttachmentContainable {
         self.moreButtonNode.buttonPressed()
     }
     
-    @objc fileprivate func morePressed(view: UIView, gesture: ContextGesture?) {
+    @objc fileprivate func morePressed(node: ASDisplayNode, gesture: ContextGesture?) {
+        guard let node = node as? ContextReferenceContentNode else {
+            return
+        }
         let context = self.context
         var presentationData = self.presentationData
         if !presentationData.theme.overallDarkAppearance, let headerColor = self.controllerNode.headerColor {
@@ -3984,10 +3617,11 @@ public final class WebAppController: ViewController, AttachmentContainable {
                     guard let self else {
                         return
                     }
-                    let shareController = context.sharedContext.makeShareController(context: context, params: ShareControllerParams(subject: .url("https://t.me/\(addressName)?profile"), actionCompleted: { [weak self] in
+                    let shareController = ShareController(context: context, subject: .url("https://t.me/\(addressName)?profile"))
+                    shareController.actionCompleted = { [weak self] in
                         let presentationData = context.sharedContext.currentPresentationData.with { $0 }
                         self?.present(UndoOverlayController(presentationData: presentationData, content: .linkCopied(title: nil, text: presentationData.strings.Conversation_LinkCopied), elevatedLayout: false, animateInAsReplacement: false, action: { _ in return false }), in: .window(.root))
-                    }))
+                    }
                     self.present(shareController, in: .window(.root))
                 })))
             }
@@ -4067,28 +3701,19 @@ public final class WebAppController: ViewController, AttachmentContainable {
             return ContextController.Items(content: .list(items))
         }
         
-        let contextController = makeContextController(presentationData: presentationData, source: .reference(WebAppContextReferenceContentSource(controller: self, sourceView: view)), items: items, gesture: gesture)
+        let contextController = ContextController(presentationData: presentationData, source: .reference(WebAppContextReferenceContentSource(controller: self, sourceNode: node)), items: items, gesture: gesture)
         self.presentInGlobalOverlay(contextController)
     }
     
     private func removeAttachBot() {
         let presentationData = self.context.sharedContext.currentPresentationData.with { $0 }
-        let alertController = AlertScreen(
-            context: self.context,
-            title: presentationData.strings.WebApp_RemoveConfirmationTitle,
-            text: presentationData.strings.WebApp_RemoveAllConfirmationText(self.botName).string,
-            actions: [
-                .init(title: presentationData.strings.Common_Cancel),
-                .init(title: presentationData.strings.Common_OK, type: .default, action: { [weak self] in
-                    guard let self else {
-                        return
-                    }
-                    let _ = self.context.engine.messages.removeBotFromAttachMenu(botId: self.botId).start()
-                    self.dismiss()
-                })
-            ]
-        )
-        self.present(alertController, in: .window(.root))
+        self.present(textAlertController(context: context, title: presentationData.strings.WebApp_RemoveConfirmationTitle, text: presentationData.strings.WebApp_RemoveAllConfirmationText(self.botName).string, actions: [TextAlertAction(type: .genericAction, title: presentationData.strings.Common_Cancel, action: {}), TextAlertAction(type: .defaultAction, title: presentationData.strings.Common_OK, action: { [weak self] in
+            guard let self else {
+                return
+            }
+            let _ = self.context.engine.messages.removeBotFromAttachMenu(botId: self.botId).start()
+            self.dismiss()
+        })], parseMarkdown: true), in: .window(.root))
     }
     
     override public func loadDisplayNode() {
@@ -4107,17 +3732,15 @@ public final class WebAppController: ViewController, AttachmentContainable {
         self.validLayout = layout
         super.containerLayoutUpdated(layout, transition: transition)
         
-        let navigationBarHeight = self.navigationLayout(layout: layout).navigationFrame.maxY
-        
         var presentationLayout = layout
         if self.isFullscreen {
             presentationLayout.intrinsicInsets.top = (presentationLayout.statusBarHeight ?? 0.0) + 36.0
         } else {
-            presentationLayout.intrinsicInsets.top = navigationBarHeight
+            presentationLayout.intrinsicInsets.top = 56.0
         }
         self.presentationContext.containerLayoutUpdated(presentationLayout, transition: transition)
         
-        self.controllerNode.containerLayoutUpdated(layout, navigationBarHeight: navigationBarHeight, transition: transition)
+        self.controllerNode.containerLayoutUpdated(layout, navigationBarHeight: self.navigationLayout(layout: layout).navigationFrame.maxY, transition: transition)
     }
     
     override public var presentationController: UIPresentationController? {
@@ -4203,24 +3826,9 @@ public final class WebAppController: ViewController, AttachmentContainable {
             guard let self else {
                 return true
             }
-            // Nicegram
-            if let customization, !customization.canCloseWebApp() {
-                return false
-            }
-            //
             return self._isPanGestureEnabled
         }
     }
-
-    // Nicegram
-    public var isPanGestureEnabled: (() -> Bool)? {
-        if let customization {
-            return customization.canCloseWebApp
-        } else {
-            return nil
-        }
-    }
-    //
     
     fileprivate var canMinimize: Bool {
         return self.controllerNode.canMinimize
@@ -4282,15 +3890,15 @@ final class WebAppPickerContext: AttachmentMediaPickerContext {
 
 private final class WebAppContextReferenceContentSource: ContextReferenceContentSource {
     private let controller: ViewController
-    private let sourceView: UIView
+    private let sourceNode: ContextReferenceContentNode
     
-    init(controller: ViewController, sourceView: UIView) {
+    init(controller: ViewController, sourceNode: ContextReferenceContentNode) {
         self.controller = controller
-        self.sourceView = sourceView
+        self.sourceNode = sourceNode
     }
     
     func transitionInfo() -> ContextControllerReferenceViewInfo? {
-        return ContextControllerReferenceViewInfo(referenceView: self.sourceView, contentAreaInScreenSpace: UIScreen.main.bounds)
+        return ContextControllerReferenceViewInfo(referenceView: self.sourceNode.view, contentAreaInScreenSpace: UIScreen.main.bounds)
     }
 }
 
@@ -4299,9 +3907,6 @@ public func standaloneWebAppController(
     updatedPresentationData: (initial: PresentationData, signal: Signal<PresentationData, NoError>)? = nil,
     params: WebAppParameters,
     threadId: Int64?,
-    // Nicegram
-    customization: TelegramWebAppCustomization? = nil,
-    //
     openUrl: @escaping (String, Bool, Bool, @escaping () -> Void) -> Void,
     requestSwitchInline: @escaping (String, [ReplyMarkupButtonRequestPeerType]?, @escaping () -> Void) -> Void = { _, _, _ in },
     getInputContainerNode: @escaping () -> (CGFloat, ASDisplayNode, () -> AttachmentController.InputPanelTransition?)? = { return nil },
@@ -4312,28 +3917,17 @@ public func standaloneWebAppController(
     getSourceRect: (() -> CGRect?)? = nil,
     verifyAgeCompletion: ((Int) -> Void)? = nil
 ) -> ViewController {
-    let controller = AttachmentController(
-        context: context,
-        updatedPresentationData: updatedPresentationData,
-        chatLocation: .peer(id: params.peerId),
-        buttons: [.standalone],
-        initialButton: .standalone,
-        fromMenu: params.source == .menu,
-        hasTextInput: false,
-        isFullSize: params.fullSize,
-        makeEntityInputView: {
+    let controller = AttachmentController(context: context, updatedPresentationData: updatedPresentationData, chatLocation: .peer(id: params.peerId), buttons: [.standalone], initialButton: .standalone, fromMenu: params.source == .menu, hasTextInput: false, isFullSize: params.fullSize, makeEntityInputView: {
         return nil
     })
     controller.requestController = { _, present in
-        // Nicegram, add customization
-        let webAppController = WebAppController(context: context, updatedPresentationData: updatedPresentationData, params: params, replyToMessageId: nil, threadId: threadId, customization: customization)
+        let webAppController = WebAppController(context: context, updatedPresentationData: updatedPresentationData, params: params, replyToMessageId: nil, threadId: threadId)
         webAppController.openUrl = openUrl
         webAppController.completion = completion
         webAppController.getNavigationController = getNavigationController
         webAppController.requestSwitchInline = requestSwitchInline
         webAppController.verifyAgeCompletion = verifyAgeCompletion
         present(webAppController, webAppController.mediaPickerContext)
-        return true
     }
     controller.willDismiss = willDismiss
     controller.didDismiss = didDismiss
@@ -4370,117 +3964,4 @@ private struct WebAppConfiguration {
             return .defaultValue
         }
     }
-}
-
-private func isAllowedBotMediaUrl(_ urlString: String) -> Bool {
-    guard let escaped = urlString.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed),
-          let url = URL(string: escaped) else {
-        return false
-    }
-    guard url.scheme?.lowercased() == "https" else {
-        return false
-    }
-    if url.user != nil || url.password != nil {
-        return false
-    }
-    guard var host = url.host?.lowercased(), !host.isEmpty else {
-        return false
-    }
-    if host.hasPrefix("[") && host.hasSuffix("]") {
-        host = String(host.dropFirst().dropLast())
-    }
-
-    // Strict canonical dotted-decimal IPv4 (4 octets, no leading zeros, each 0-255).
-    // Do NOT use inet_pton here: Darwin's inet_pton accepts "0177.0.0.1" as
-    // decimal 177.0.0.1, but getaddrinfo (used by URLSession) interprets the
-    // same string as octal 127.0.0.1 — the divergence is a loopback bypass.
-    if let v4Bytes = parseCanonicalIPv4(host) {
-        return isPublicIPv4(v4Bytes)
-    }
-
-    // IPv6 only — host must contain ":" so we don't accidentally hand a
-    // numeric-looking hostname to inet_pton.
-    if host.contains(":") {
-        var v6 = in6_addr()
-        if host.withCString({ inet_pton(AF_INET6, $0, &v6) }) == 1 {
-            let bytes = withUnsafeBytes(of: &v6) { ptr -> [UInt8] in
-                return Array(ptr)
-            }
-            return isPublicIPv6(bytes)
-        }
-        return false
-    }
-
-    // Strict DNS-name validation. Anything that doesn't look like a real
-    // FQDN is rejected — this catches non-canonical numeric IP forms
-    // (decimal-32 like "2130706433", octal like "0177.0.0.1", hex like
-    // "0x7f.0.0.1", short forms like "127.1") that the OS resolver may
-    // still treat as 127.0.0.1 even when inet_pton would accept them as
-    // a different value or reject outright.
-    let labels = host.split(separator: ".", omittingEmptySubsequences: false)
-    guard labels.count >= 2 else { return false }
-    for label in labels {
-        guard !label.isEmpty, label.count <= 63 else { return false }
-        if label.first == "-" || label.last == "-" { return false }
-        for ch in label {
-            guard ch.isASCII else { return false }
-            if !(ch.isLetter || ch.isNumber || ch == "-") { return false }
-        }
-    }
-    guard let tld = labels.last, tld.count >= 2, tld.contains(where: { $0.isLetter }) else {
-        return false
-    }
-
-    if host == "localhost" || host.hasSuffix(".localhost") || host.hasSuffix(".local") {
-        return false
-    }
-    return true
-}
-
-private func parseCanonicalIPv4(_ host: String) -> [UInt8]? {
-    let parts = host.split(separator: ".", omittingEmptySubsequences: false)
-    guard parts.count == 4 else { return nil }
-    var bytes: [UInt8] = []
-    bytes.reserveCapacity(4)
-    for part in parts {
-        guard !part.isEmpty, part.count <= 3 else { return nil }
-        if part.count > 1 && part.first == "0" { return nil }      // no leading zeros (octal-spoof)
-        guard part.allSatisfy({ $0.isASCII && $0.isNumber }) else { return nil }
-        guard let value = UInt8(part) else { return nil }          // also caps at 255
-        bytes.append(value)
-    }
-    return bytes
-}
-
-private func isPublicIPv4(_ bytes: [UInt8]) -> Bool {
-    guard bytes.count == 4 else { return false }
-    let a = bytes[0]
-    let b = bytes[1]
-    if a == 0 { return false }                          // 0.0.0.0/8
-    if a == 10 { return false }                         // 10.0.0.0/8
-    if a == 127 { return false }                        // 127.0.0.0/8 loopback
-    if a == 169 && b == 254 { return false }            // 169.254.0.0/16 link-local
-    if a == 172 && (b & 0xf0) == 16 { return false }    // 172.16.0.0/12
-    if a == 192 && b == 168 { return false }            // 192.168.0.0/16
-    if a == 100 && (b & 0xc0) == 64 { return false }    // 100.64.0.0/10 CGNAT
-    if a >= 224 { return false }                        // multicast + reserved + 255.255.255.255
-    return true
-}
-
-private func isPublicIPv6(_ bytes: [UInt8]) -> Bool {
-    guard bytes.count == 16 else { return false }
-    if bytes.allSatisfy({ $0 == 0 }) { return false }                       // ::
-    let loopback: [UInt8] = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1]
-    if bytes == loopback { return false }                                   // ::1
-    if bytes[0] == 0xff { return false }                                    // ff00::/8 multicast
-    if bytes[0] == 0xfe && (bytes[1] & 0xc0) == 0x80 { return false }       // fe80::/10 link-local
-    if (bytes[0] & 0xfe) == 0xfc { return false }                           // fc00::/7 unique-local
-    let v4MappedPrefix: [UInt8] = [0,0,0,0,0,0,0,0,0,0,0xff,0xff]
-    if Array(bytes.prefix(12)) == v4MappedPrefix {                          // ::ffff:a.b.c.d
-        return isPublicIPv4(Array(bytes.suffix(4)))
-    }
-    if Array(bytes.prefix(12)).allSatisfy({ $0 == 0 }) {                    // ::a.b.c.d (deprecated)
-        return isPublicIPv4(Array(bytes.suffix(4)))
-    }
-    return true
 }

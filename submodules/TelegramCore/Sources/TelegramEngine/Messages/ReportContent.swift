@@ -21,13 +21,13 @@ public enum ReportContentError {
 }
 
 public enum ReportContentSubject: Equatable {
-    case peer(EnginePeer.Id, sourceMessageId: EngineMessage.Id? = nil)
+    case peer(EnginePeer.Id)
     case messages([EngineMessage.Id])
     case stories(EnginePeer.Id, [Int32])
     
     public var peerId: EnginePeer.Id {
         switch self {
-        case let .peer(peerId, _):
+        case let .peer(peerId):
             return peerId
         case let .messages(messageIds):
             return messageIds.first!.peerId
@@ -39,13 +39,7 @@ public enum ReportContentSubject: Equatable {
 
 func _internal_reportContent(account: Account, subject: ReportContentSubject, option: Data?, message: String?) -> Signal<ReportContentResult, ReportContentError> {
     return account.postbox.transaction { transaction -> Signal<ReportContentResult, ReportContentError> in
-        let sourceMessageId: MessageId?
-        if case let .peer(_, messageId) = subject {
-            sourceMessageId = messageId
-        } else {
-            sourceMessageId = nil
-        }
-        guard let peer = transaction.getPeer(subject.peerId), let inputPeer = apiInputPeer(peer, sourceMessageId: sourceMessageId, transaction: transaction) else {
+        guard let peer = transaction.getPeer(subject.peerId), let inputPeer = apiInputPeer(peer) else {
             return .fail(.generic)
         }
         
@@ -69,17 +63,14 @@ func _internal_reportContent(account: Account, subject: ReportContentSubject, op
         }
         |> map { result -> ReportContentResult in
             switch result {
-            case let .reportResultChooseOption(reportResultChooseOptionData):
-                let (title, options) = (reportResultChooseOptionData.title, reportResultChooseOptionData.options)
+            case let .reportResultChooseOption(title, options):
                 return .options(title: title, options: options.map {
                     switch $0 {
-                    case let .messageReportOption(messageReportOptionData):
-                        let (text, option) = (messageReportOptionData.text, messageReportOptionData.option)
+                    case let .messageReportOption(text, option):
                         return ReportContentResult.Option(text: text, option: option.makeData())
                     }
                 })
-            case let .reportResultAddComment(reportResultAddCommentData):
-                let (flags, option) = (reportResultAddCommentData.flags, reportResultAddCommentData.option)
+            case let .reportResultAddComment(flags, option):
                 return .addComment(optional: (flags & (1 << 0)) != 0, option: option.makeData())
             case .reportResultReported:
                 return .reported

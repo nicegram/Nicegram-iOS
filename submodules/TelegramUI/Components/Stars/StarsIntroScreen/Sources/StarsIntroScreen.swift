@@ -194,14 +194,16 @@ private final class SheetContent: CombinedComponent {
             contentSize.height += list.size.height
             contentSize.height += spacing
             
-            let buttonHeight: CGFloat = 52.0
-            let buttonInsets = ContainerViewLayout.concentricInsets(bottomInset: environment.safeInsets.bottom, innerDiameter: 52.0, sideInset: 30.0)
-                        
+            let buttonHeight: CGFloat = 50.0
+            let bottomPanelPadding: CGFloat = 12.0
+            let bottomInset: CGFloat = environment.safeInsets.bottom > 0.0 ? environment.safeInsets.bottom + 5.0 : bottomPanelPadding
+            
+            contentSize.height += bottomPanelPadding
+            
             let controller = environment.controller() as? StarsIntroScreen
             let actionButton = actionButton.update(
                 component: ButtonComponent(
                     background: ButtonComponent.Background(
-                        style: .glass,
                         color: environment.theme.list.itemCheckColors.fillColor,
                         foreground: environment.theme.list.itemCheckColors.foregroundColor,
                         pressedColor: environment.theme.list.itemCheckColors.fillColor.withMultipliedAlpha(0.8)
@@ -215,14 +217,14 @@ private final class SheetContent: CombinedComponent {
                         controller?.dismissAnimated()
                     }
                 ),
-                availableSize: CGSize(width: context.availableSize.width - buttonInsets.left - buttonInsets.right, height: buttonHeight),
+                availableSize: CGSize(width: context.availableSize.width - sideInset * 2.0, height: buttonHeight),
                 transition: context.transition
             )
             context.add(actionButton
                 .position(CGPoint(x: context.availableSize.width / 2.0, y: contentSize.height + actionButton.size.height / 2.0))
+                .cornerRadius(10.0)
             )
-            contentSize.height += actionButton.size.height
-            contentSize.height += buttonInsets.bottom
+            contentSize.height += actionButton.size.height + bottomInset
       
             return contentSize
         }
@@ -277,7 +279,6 @@ private final class ContainerComponent: CombinedComponent {
                             controller()?.dismiss()
                         }
                     )),
-                    style: .glass,
                     backgroundColor: .color(environment.theme.actionSheet.opaqueItemBackgroundColor),
                     followContentSizeChanges: true,
                     clipsContent: true,
@@ -286,8 +287,6 @@ private final class ContainerComponent: CombinedComponent {
                 environment: {
                     environment
                     SheetComponentEnvironment(
-                        metrics: environment.metrics,
-                        deviceMetrics: environment.deviceMetrics,
                         isDisplaying: environment.value.isVisible,
                         isCentered: environment.metrics.widthClass == .regular,
                         hasInputHeight: !environment.inputHeight.isZero,

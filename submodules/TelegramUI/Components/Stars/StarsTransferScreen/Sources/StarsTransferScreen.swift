@@ -21,9 +21,6 @@ import StarsImageComponent
 import ConfettiEffect
 import PremiumPeerShortcutComponent
 import StarsBalanceOverlayComponent
-import PlainButtonComponent
-import GlassBarButtonComponent
-import TelegramStringFormatting
 
 private final class SheetContent: CombinedComponent {
     typealias EnvironmentType = ViewControllerComponentContainer.Environment
@@ -34,7 +31,7 @@ private final class SheetContent: CombinedComponent {
     let source: BotPaymentInvoiceSource
     let extendedMedia: [TelegramExtendedMedia]
     let inputData: Signal<(StarsContext.State, BotPaymentForm, EnginePeer?, EnginePeer?)?, NoError>
-    let navigateToPeer: ((EnginePeer) -> Void)?
+    let navigateToPeer: (EnginePeer) -> Void
     let dismiss: () -> Void
     
     init(
@@ -44,7 +41,7 @@ private final class SheetContent: CombinedComponent {
         source: BotPaymentInvoiceSource,
         extendedMedia: [TelegramExtendedMedia],
         inputData: Signal<(StarsContext.State, BotPaymentForm, EnginePeer?, EnginePeer?)?, NoError>,
-        navigateToPeer: ((EnginePeer) -> Void)?,
+        navigateToPeer: @escaping (EnginePeer) -> Void,
         dismiss: @escaping () -> Void
     ) {
         self.context = context
@@ -71,6 +68,7 @@ private final class SheetContent: CombinedComponent {
     }
     
     final class State: ComponentState {
+        var cachedCloseImage: (UIImage, PresentationTheme)?
         var cachedStarImage: (UIImage, PresentationTheme)?
         
         private let context: AccountContext
@@ -85,7 +83,7 @@ private final class SheetContent: CombinedComponent {
         private var peerDisposable: Disposable?
         private(set) var balance: StarsAmount?
         private(set) var form: BotPaymentForm?
-        private(set) var navigateToPeer: ((EnginePeer) -> Void)?
+        private(set) var navigateToPeer: (EnginePeer) -> Void
         
         private var stateDisposable: Disposable?
         
@@ -106,7 +104,7 @@ private final class SheetContent: CombinedComponent {
             extendedMedia: [TelegramExtendedMedia],
             invoice: TelegramMediaInvoice,
             inputData: Signal<(StarsContext.State, BotPaymentForm, EnginePeer?, EnginePeer?)?, NoError>,
-            navigateToPeer: ((EnginePeer) -> Void)?
+            navigateToPeer: @escaping (EnginePeer) -> Void
         ) {
             self.context = context
             self.starsContext = starsContext
@@ -189,7 +187,7 @@ private final class SheetContent: CombinedComponent {
                         let _ = (self.context.engine.peers.joinLinkInformation(link)
                         |> deliverOnMainQueue).startStandalone(next: { result in
                             if case let .alreadyJoined(peer) = result {
-                                navigateToPeer?(peer)
+                                navigateToPeer(peer)
                             }
                         })
                     }
@@ -265,9 +263,9 @@ private final class SheetContent: CombinedComponent {
     static var body: Body {
         let background = Child(RoundedRectangle.self)
         let star = Child(StarsImageComponent.self)
-        let closeButton = Child(GlassBarButtonComponent.self)
+        let closeButton = Child(Button.self)
         let title = Child(Text.self)
-        let peerShortcut = Child(PlainButtonComponent.self)
+        let peerShortcut = Child(PremiumPeerShortcutComponent.self)
         
         let text = Child(BalancedTextComponent.self)
         let button = Child(ButtonComponent.self)
@@ -339,30 +337,26 @@ private final class SheetContent: CombinedComponent {
                 .position(CGPoint(x: context.availableSize.width / 2.0, y: star.size.height / 2.0 - 27.0))
             )
             
-            
+            let closeImage: UIImage
+            if let (image, cacheTheme) = state.cachedCloseImage, theme === cacheTheme {
+                closeImage = image
+            } else {
+                closeImage = generateCloseButtonImage(backgroundColor: UIColor(rgb: 0x808084, alpha: 0.1), foregroundColor: theme.actionSheet.inputClearButtonColor)!
+                state.cachedCloseImage = (closeImage, theme)
+            }
             let closeButton = closeButton.update(
-                component: GlassBarButtonComponent(
-                    size: CGSize(width: 44.0, height: 44.0),
-                    backgroundColor: nil,
-                    isDark: theme.overallDarkAppearance,
-                    state: .glass,
-                    component: AnyComponentWithIdentity(id: "close", component: AnyComponent(
-                        BundleIconComponent(
-                            name: "Navigation/Close",
-                            tintColor: theme.chat.inputPanel.panelControlColor
-                        )
-                    )),
-                    action: { _ in
+                component: Button(
+                    content: AnyComponent(Image(image: closeImage)),
+                    action: {
                         component.dismiss()
                     }
                 ),
-                availableSize: CGSize(width: 44.0, height: 44.0),
+                availableSize: CGSize(width: 30.0, height: 30.0),
                 transition: .immediate
             )
             context.add(closeButton
-                .position(CGPoint(x: 16.0 + closeButton.size.width / 2.0, y: 16.0 + closeButton.size.height / 2.0))
+                .position(CGPoint(x: context.availableSize.width - closeButton.size.width, y: 28.0))
             )
-
             
             let constrainedTitleWidth = context.availableSize.width - 16.0 * 2.0
             
@@ -393,19 +387,10 @@ private final class SheetContent: CombinedComponent {
             if isBot && !isExtendedMedia, let peer = state.botPeer {
                 contentSize.height -= 3.0
                 let peerShortcut = peerShortcut.update(
-                    component: PlainButtonComponent(
-                        content: AnyComponent(
-                            PremiumPeerShortcutComponent(
-                                context: component.context,
-                                theme: theme,
-                                peer: peer
-                            )
-                        ),
-                        action: {
-                            component.navigateToPeer?(peer)
-                        },
-                        animateAlpha: component.navigateToPeer != nil,
-                        animateScale: false
+                    component: PremiumPeerShortcutComponent(
+                        context: component.context,
+                        theme: theme,
+                        peer: peer
                     ),
                     availableSize: CGSize(width: context.availableSize.width - 32.0, height: context.availableSize.height),
                     transition: .immediate
@@ -516,15 +501,13 @@ private final class SheetContent: CombinedComponent {
                 availableSize: context.availableSize,
                 transition: .immediate
             )
-            
-            let smallLabelFont = Font.regular(11.0)
-            let labelFont = Font.semibold(14.0)
-            let formattedBalance = formatStarsAmountText(state.balance ?? StarsAmount.zero, dateTimeFormat: environment.dateTimeFormat)
-            let balanceText = tonAmountAttributedString(formattedBalance, integralFont: labelFont, fractionalFont: smallLabelFont, color: textColor, decimalSeparator: environment.dateTimeFormat.decimalSeparator)
-            
             let balanceValue = balanceValue.update(
                 component: MultilineTextComponent(
-                    text: .plain(balanceText),
+                    text: .plain(NSAttributedString(
+                        string: presentationStringsFormattedNumber(state.balance ?? StarsAmount.zero, environment.dateTimeFormat.groupingSeparator),
+                        font: Font.semibold(16.0),
+                        textColor: textColor
+                    )),
                     maximumNumberOfLines: 1
                 ),
                 availableSize: context.availableSize,
@@ -536,15 +519,15 @@ private final class SheetContent: CombinedComponent {
                 transition: .immediate
             )
             
-            let topBalanceOriginY = 19.0
+            let topBalanceOriginY = 11.0
             context.add(balanceTitle
-                .position(CGPoint(x: context.availableSize.width - 16.0 - environment.safeInsets.left - balanceTitle.size.width / 2.0, y: topBalanceOriginY + balanceTitle.size.height / 2.0))
+                .position(CGPoint(x: 16.0 + environment.safeInsets.left + balanceTitle.size.width / 2.0, y: topBalanceOriginY + balanceTitle.size.height / 2.0))
             )
             context.add(balanceIcon
-                .position(CGPoint(x: context.availableSize.width - 16.0 - environment.safeInsets.left - balanceIcon.size.width / 2.0 - balanceValue.size.width - 3.0, y: topBalanceOriginY + balanceTitle.size.height + balanceValue.size.height / 2.0 + 1.0 + UIScreenPixel))
+                .position(CGPoint(x: 16.0 + environment.safeInsets.left + balanceIcon.size.width / 2.0, y: topBalanceOriginY + balanceTitle.size.height + balanceValue.size.height / 2.0 + 1.0 + UIScreenPixel))
             )
             context.add(balanceValue
-                .position(CGPoint(x: context.availableSize.width - 16.0 - environment.safeInsets.left - balanceValue.size.width / 2.0, y: topBalanceOriginY + balanceTitle.size.height + balanceValue.size.height / 2.0))
+                .position(CGPoint(x: 16.0 + environment.safeInsets.left + balanceIcon.size.width + 3.0 + balanceValue.size.width / 2.0, y: topBalanceOriginY + balanceTitle.size.height + balanceValue.size.height / 2.0 + 2.0 - UIScreenPixel))
             )
            
             if state.cachedStarImage == nil || state.cachedStarImage?.1 !== theme {
@@ -574,15 +557,13 @@ private final class SheetContent: CombinedComponent {
             let botTitle = state.botPeer?.compactDisplayTitle ?? ""
             let invoice = component.invoice
             let isMedia = !component.extendedMedia.isEmpty
-            
-            let buttonSideInset: CGFloat = 30.0
             let button = button.update(
                 component: ButtonComponent(
                     background: ButtonComponent.Background(
-                        style: .glass,
                         color: theme.list.itemCheckColors.fillColor,
                         foreground: theme.list.itemCheckColors.foregroundColor,
-                        pressedColor: theme.list.itemCheckColors.fillColor.withMultipliedAlpha(0.9)
+                        pressedColor: theme.list.itemCheckColors.fillColor.withMultipliedAlpha(0.9),
+                        cornerRadius: 10.0
                     ),
                     content: AnyComponentWithIdentity(
                         id: AnyHashable(0),
@@ -607,8 +588,6 @@ private final class SheetContent: CombinedComponent {
                                     starsContext: starsContext,
                                     options: state?.options ?? [],
                                     purpose: purpose,
-                                    targetPeerId: nil,
-                                    customTheme: nil,
                                     completion: { [weak starsContext] stars in
                                         guard let starsContext else {
                                             return
@@ -665,16 +644,16 @@ private final class SheetContent: CombinedComponent {
                             controller?.complete(paid: success)
                             controller?.dismissAnimated()
                             
-                            Queue.mainQueue().after(2.5) {
-                                starsContext.load(force: true)
-                            }
+                            starsContext.load(force: true)
                         })
                     }
                 ),
-                availableSize: CGSize(width: context.availableSize.width - buttonSideInset * 2.0, height: 52),
+                availableSize: CGSize(width: context.availableSize.width - 16.0 * 2.0, height: 50),
                 transition: .immediate
             )
             context.add(button
+                .clipsToBounds(true)
+                .cornerRadius(10.0)
                 .position(CGPoint(x: context.availableSize.width / 2.0, y: contentSize.height + button.size.height / 2.0))
             )
             contentSize.height += button.size.height
@@ -722,11 +701,7 @@ private final class SheetContent: CombinedComponent {
             )
             contentSize.height += info.size.height
             
-            var bottomInset: CGFloat = environment.safeInsets.bottom
-            if bottomInset < 5.0 {
-                bottomInset = 8.0
-            }
-            contentSize.height += 4.0 + bottomInset
+            contentSize.height += 48.0
             
             return contentSize
         }
@@ -742,7 +717,7 @@ private final class StarsTransferSheetComponent: CombinedComponent {
     private let source: BotPaymentInvoiceSource
     private let extendedMedia: [TelegramExtendedMedia]
     private let inputData: Signal<(StarsContext.State, BotPaymentForm, EnginePeer?, EnginePeer?)?, NoError>
-    private let navigateToPeer: ((EnginePeer) -> Void)?
+    private let navigateToPeer: (EnginePeer) -> Void
     
     init(
         context: AccountContext,
@@ -751,7 +726,7 @@ private final class StarsTransferSheetComponent: CombinedComponent {
         source: BotPaymentInvoiceSource,
         extendedMedia: [TelegramExtendedMedia],
         inputData: Signal<(StarsContext.State, BotPaymentForm, EnginePeer?, EnginePeer?)?, NoError>,
-        navigateToPeer: ((EnginePeer) -> Void)?
+        navigateToPeer: @escaping (EnginePeer) -> Void
     ) {
         self.context = context
         self.starsContext = starsContext
@@ -802,18 +777,14 @@ private final class StarsTransferSheetComponent: CombinedComponent {
                             })
                         }
                     )),
-                    style: .glass,
                     backgroundColor: .color(environment.theme.list.modalBlocksBackgroundColor),
                     followContentSizeChanges: true,
                     clipsContent: true,
-                    autoAnimateOut: false,
                     animateOut: animateOut
                 ),
                 environment: {
                     environment
                     SheetComponentEnvironment(
-                        metrics: environment.metrics,
-                        deviceMetrics: environment.deviceMetrics,
                         isDisplaying: environment.value.isVisible,
                         isCentered: environment.metrics.widthClass == .regular,
                         hasInputHeight: !environment.inputHeight.isZero,
@@ -858,7 +829,7 @@ public final class StarsTransferScreen: ViewControllerComponentContainer {
         source: BotPaymentInvoiceSource,
         extendedMedia: [TelegramExtendedMedia] = [],
         inputData: Signal<(StarsContext.State, BotPaymentForm, EnginePeer?, EnginePeer?)?, NoError>,
-        navigateToPeer: ((EnginePeer) -> Void)? = nil,
+        navigateToPeer: @escaping (EnginePeer) -> Void = { _ in },
         completion: @escaping (Bool) -> Void
     ) {
         self.context = context
@@ -912,4 +883,25 @@ public final class StarsTransferScreen: ViewControllerComponentContainer {
             view.dismissAnimated()
         }
     }
+}
+
+private func generateCloseButtonImage(backgroundColor: UIColor, foregroundColor: UIColor) -> UIImage? {
+    return generateImage(CGSize(width: 30.0, height: 30.0), contextGenerator: { size, context in
+        context.clear(CGRect(origin: CGPoint(), size: size))
+        
+        context.setFillColor(backgroundColor.cgColor)
+        context.fillEllipse(in: CGRect(origin: CGPoint(), size: size))
+        
+        context.setLineWidth(2.0)
+        context.setLineCap(.round)
+        context.setStrokeColor(foregroundColor.cgColor)
+        
+        context.move(to: CGPoint(x: 10.0, y: 10.0))
+        context.addLine(to: CGPoint(x: 20.0, y: 20.0))
+        context.strokePath()
+        
+        context.move(to: CGPoint(x: 20.0, y: 10.0))
+        context.addLine(to: CGPoint(x: 10.0, y: 20.0))
+        context.strokePath()
+    })
 }

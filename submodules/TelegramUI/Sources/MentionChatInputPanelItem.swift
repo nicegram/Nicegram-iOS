@@ -16,14 +16,14 @@ final class MentionChatInputPanelItem: ListViewItem {
     fileprivate let presentationData: ItemListPresentationData
     fileprivate let revealed: Bool
     fileprivate let inverted: Bool
-    fileprivate let peer: EnginePeer
-    private let peerSelected: (EnginePeer) -> Void
+    fileprivate let peer: Peer?
+    private let peerSelected: (EnginePeer?) -> Void
     fileprivate let setPeerIdRevealed: (EnginePeer.Id?) -> Void
     fileprivate let removeRequested: (EnginePeer.Id) -> Void
-
+    
     let selectable: Bool = true
-
-    public init(context: AccountContext, presentationData: ItemListPresentationData, inverted: Bool, peer: EnginePeer, revealed: Bool, setPeerIdRevealed: @escaping (PeerId?) -> Void, peerSelected: @escaping (EnginePeer) -> Void, removeRequested: @escaping (PeerId) -> Void) {
+    
+    public init(context: AccountContext, presentationData: ItemListPresentationData, inverted: Bool, peer: Peer?, revealed: Bool, setPeerIdRevealed: @escaping (PeerId?) -> Void, peerSelected: @escaping (EnginePeer?) -> Void, removeRequested: @escaping (PeerId) -> Void) {
         self.context = context
         self.presentationData = presentationData
         self.inverted = inverted
@@ -85,7 +85,12 @@ final class MentionChatInputPanelItem: ListViewItem {
         if self.revealed {
             self.setPeerIdRevealed(nil)
         } else {
-            self.peerSelected(self.peer)
+            // Nicegram changes
+            if let peer = peer {
+                self.peerSelected(EnginePeer(peer))
+            } else {
+                self.peerSelected(nil)
+            }
         }
     }
 }
@@ -97,6 +102,7 @@ final class MentionChatInputPanelItemNode: ListViewItemNode {
         
     private let avatarNode: AvatarNode
     private let textNode: TextNode
+    private let topSeparatorNode: ASDisplayNode
     private let separatorNode: ASDisplayNode
     private let highlightedBackgroundNode: ASDisplayNode
     
@@ -117,6 +123,9 @@ final class MentionChatInputPanelItemNode: ListViewItemNode {
         self.avatarNode = AvatarNode(font: avatarFont)
         self.textNode = TextNode()
         
+        self.topSeparatorNode = ASDisplayNode()
+        self.topSeparatorNode.isLayerBacked = true
+        
         self.separatorNode = ASDisplayNode()
         self.separatorNode.isLayerBacked = true
         
@@ -126,8 +135,9 @@ final class MentionChatInputPanelItemNode: ListViewItemNode {
         self.activateAreaNode = AccessibilityAreaNode()
         self.activateAreaNode.accessibilityTraits = [.button]
         
-        super.init(layerBacked: false)
+        super.init(layerBacked: false, dynamicBounce: false)
         
+        self.addSubnode(self.topSeparatorNode)
         self.addSubnode(self.separatorNode)
         
         self.addSubnode(self.avatarNode)
@@ -173,12 +183,17 @@ final class MentionChatInputPanelItemNode: ListViewItemNode {
                 updatedInverted = item.inverted
             }
             
-            
-            let title = item.peer.displayTitle(strings: item.presentationData.strings, displayOrder: item.presentationData.nameDisplayOrder)
+            // Nicegram MentionAll, title for MentionAll (item.peer == nil)
+            let title: String
+            if let peer = item.peer {
+                title = EnginePeer(peer).displayTitle(strings: item.presentationData.strings, displayOrder: item.presentationData.nameDisplayOrder)
+            } else {
+                title = "Mention all users"
+            }
             var username: String?
             let string = NSMutableAttributedString()
             string.append(NSAttributedString(string: title, font: primaryFont, textColor: item.presentationData.theme.list.itemPrimaryTextColor))
-            if let addressName = item.peer.addressName, !addressName.isEmpty {
+            if let addressName = item.peer?.addressName, !addressName.isEmpty {
                 string.append(NSAttributedString(string: " @\(addressName)", font: secondaryFont, textColor: item.presentationData.theme.list.itemSecondaryTextColor))
                 username = "@\(addressName)"
             }
@@ -202,17 +217,29 @@ final class MentionChatInputPanelItemNode: ListViewItemNode {
                     }
                     
                     strongSelf.separatorNode.backgroundColor = item.presentationData.theme.list.itemPlainSeparatorColor
+                    strongSelf.topSeparatorNode.backgroundColor = item.presentationData.theme.list.itemPlainSeparatorColor
+                    strongSelf.backgroundColor = item.presentationData.theme.list.plainBackgroundColor
                     strongSelf.highlightedBackgroundNode.backgroundColor = item.presentationData.theme.list.itemHighlightedBackgroundColor
-                    
-                    strongSelf.avatarNode.setPeer(context: item.context, theme: item.presentationData.theme, peer: item.peer, emptyColor: item.presentationData.theme.list.mediaPlaceholderColor)
+                    // Nicegram changes
+                    if let peer = item.peer {
+                        strongSelf.avatarNode.setPeer(context: item.context, theme: item.presentationData.theme, peer: EnginePeer(peer), emptyColor: item.presentationData.theme.list.mediaPlaceholderColor)
+                    } else {
+                        let mentionAllImage = generateTintedImage(
+                            image: UIImage(bundleImageName: "logo-nicegram"),
+                            color: item.presentationData.theme.list.itemPrimaryTextColor
+                        )
+                        strongSelf.avatarNode.setPeer(context: item.context, theme: item.presentationData.theme, peer: nil, nicegramImage: mentionAllImage)
+                    }
                     
                     let _ = textApply()
                     
                     strongSelf.avatarNode.frame = CGRect(origin: CGPoint(x: params.leftInset + 12.0, y: floor((nodeLayout.contentSize.height - 30.0) / 2.0)), size: CGSize(width: 30.0, height: 30.0))
                     strongSelf.textNode.frame = CGRect(origin: CGPoint(x: leftInset, y: floor((nodeLayout.contentSize.height - textLayout.size.height) / 2.0)), size: textLayout.size)
                     
+                    strongSelf.topSeparatorNode.isHidden = mergedTop
                     strongSelf.separatorNode.isHidden = !mergedBottom
                     
+                    strongSelf.topSeparatorNode.frame = CGRect(origin: CGPoint(x: 0.0, y: item.inverted ? (nodeLayout.contentSize.height - UIScreenPixel) : 0.0), size: CGSize(width: params.width, height: UIScreenPixel))
                     strongSelf.separatorNode.frame = CGRect(origin: CGPoint(x: leftInset, y: !item.inverted ? (nodeLayout.contentSize.height - UIScreenPixel) : 0.0), size: CGSize(width: params.width - leftInset, height: UIScreenPixel))
                     
                     strongSelf.highlightedBackgroundNode.frame = CGRect(origin: CGPoint(x: 0.0, y: 0.0), size: CGSize(width: params.width, height: nodeLayout.size.height + UIScreenPixel))
@@ -221,7 +248,7 @@ final class MentionChatInputPanelItemNode: ListViewItemNode {
                     strongSelf.activateAreaNode.accessibilityValue = username
                     strongSelf.activateAreaNode.frame = CGRect(origin: .zero, size: nodeLayout.size)
                     
-                    if case let .user(peer) = item.peer, let _ = peer.botInfo {
+                    if let peer = item.peer as? TelegramUser, let _ = peer.botInfo {
                         strongSelf.setRevealOptions([ItemListRevealOption(key: 0, title: item.presentationData.strings.Common_Delete, icon: .none, color: item.presentationData.theme.list.itemDisclosureActions.destructive.fillColor, textColor: item.presentationData.theme.list.itemDisclosureActions.destructive.foregroundColor)])
                         strongSelf.setRevealOptionsOpened(item.revealed, animated: animation.isAnimated)
                     } else {
@@ -250,7 +277,7 @@ final class MentionChatInputPanelItemNode: ListViewItemNode {
         if highlighted {
             self.highlightedBackgroundNode.alpha = 1.0
             if self.highlightedBackgroundNode.supernode == nil {
-                //self.insertSubnode(self.highlightedBackgroundNode, aboveSubnode: self.separatorNode)
+                self.insertSubnode(self.highlightedBackgroundNode, aboveSubnode: self.separatorNode)
             }
         } else {
             if self.highlightedBackgroundNode.supernode != nil {
@@ -392,10 +419,11 @@ final class MentionChatInputPanelItemNode: ListViewItemNode {
     }
     
     private func revealOptionSelected(_ option: ItemListRevealOption, animated: Bool) {
-        guard let item = self.item else {
+        // Nicegram changes
+        guard let item = self.item, let peer = item.peer else {
             return
         }
-        item.removeRequested(item.peer.id)
+        item.removeRequested(peer.id)
     }
     
     private func setupAndAddRevealNode() {
@@ -446,8 +474,9 @@ final class MentionChatInputPanelItemNode: ListViewItemNode {
     }
     
     func revealOptionsInteractivelyOpened() {
-        if let item = self.item {
-            item.setPeerIdRevealed(item.peer.id)
+        // Nicegram changes
+        if let item = self.item, let peer = item.peer {
+            item.setPeerIdRevealed(peer.id)
         }
     }
     

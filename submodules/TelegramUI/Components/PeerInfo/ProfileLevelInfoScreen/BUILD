@@ -30,9 +30,6 @@ swift_library(
         "//submodules/TelegramUI/Components/Utils/RoundedRectWithTailPath",
         "//submodules/Components/HierarchyTrackingLayer",
         "//submodules/TelegramUI/Components/AnimatedTextComponent",
-        "//submodules/TelegramUI/Components/PeerInfo/ProfileLevelRatingBarComponent",
-        "//submodules/Components/ResizableSheetComponent",
-        "//submodules/TelegramUI/Components/GlassBarButtonComponent",
     ],
     visibility = [
         "//visibility:public",

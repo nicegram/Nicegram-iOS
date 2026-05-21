@@ -2,8 +2,6 @@ import Foundation
 import SwiftSignalKit
 import Postbox
 
-public typealias EnginePreferencesEntry = PreferencesEntry
-
 public extension TelegramEngine {
     final class Preferences {
         private let account: Account

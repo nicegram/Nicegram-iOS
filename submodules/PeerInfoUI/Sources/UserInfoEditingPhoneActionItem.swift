@@ -100,7 +100,7 @@ class UserInfoEditingPhoneActionItemNode: ListViewItemNode {
         self.highlightedBackgroundNode = ASDisplayNode()
         self.highlightedBackgroundNode.isLayerBacked = true
         
-        super.init(layerBacked: false)
+        super.init(layerBacked: false, dynamicBounce: false)
         
         self.addSubnode(self.iconNode)
         self.addSubnode(self.titleNode)

@@ -1,5 +1,4 @@
 import Postbox
-import TelegramApi
 
 public enum ReplyMarkupButtonRequestPeerType: Codable, Equatable {
     enum CodingKeys: String, CodingKey {
@@ -7,14 +6,12 @@ public enum ReplyMarkupButtonRequestPeerType: Codable, Equatable {
         case user = "u"
         case group = "g"
         case channel = "c"
-        case createBot = "cb"
     }
-
+    
     enum Discriminator: Int32 {
         case user = 0
         case group = 1
         case channel = 2
-        case createBot = 3
     }
     
     public struct User: Codable, Equatable {
@@ -146,26 +143,10 @@ public enum ReplyMarkupButtonRequestPeerType: Codable, Equatable {
         }
     }
     
-    public struct CreateBot: Codable, Equatable {
-        enum CodingKeys: String, CodingKey {
-            case suggestedName = "sn"
-            case suggestedUsername = "su"
-        }
-
-        public var suggestedName: String?
-        public var suggestedUsername: String?
-
-        public init(suggestedName: String?, suggestedUsername: String?) {
-            self.suggestedName = suggestedName
-            self.suggestedUsername = suggestedUsername
-        }
-    }
-
     case user(User)
     case group(Group)
     case channel(Channel)
-    case createBot(CreateBot)
-
+    
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         
@@ -176,8 +157,6 @@ public enum ReplyMarkupButtonRequestPeerType: Codable, Equatable {
             self = .group(try container.decode(Group.self, forKey: .group))
         case Discriminator.channel.rawValue:
             self = .channel(try container.decode(Channel.self, forKey: .channel))
-        case Discriminator.createBot.rawValue:
-            self = .createBot(try container.decode(CreateBot.self, forKey: .createBot))
         default:
             assertionFailure()
             self = .user(User(isBot: nil, isPremium: nil))
@@ -197,9 +176,6 @@ public enum ReplyMarkupButtonRequestPeerType: Codable, Equatable {
         case let .channel(channel):
             try container.encode(Discriminator.channel.rawValue, forKey: .discriminator)
             try container.encode(channel, forKey: .channel)
-        case let .createBot(createBot):
-            try container.encode(Discriminator.createBot.rawValue, forKey: .discriminator)
-            try container.encode(createBot, forKey: .createBot)
         }
     }
 }
@@ -347,79 +323,21 @@ public enum ReplyMarkupButtonAction: PostboxCoding, Equatable {
     }
 }
 
-extension ReplyMarkupButton.Style {
-    init(apiStyle: Api.KeyboardButtonStyle) {
-        switch apiStyle {
-        case let .keyboardButtonStyle(keyboardButtonStyle):
-            var color: Color?
-            
-            if keyboardButtonStyle.flags & (1 << 0) != 0 {
-                color = .primary
-            } else if keyboardButtonStyle.flags & (1 << 1) != 0 {
-                color = .danger
-            } else if keyboardButtonStyle.flags & (1 << 2) != 0 {
-                color = .success
-            }
-            
-            self.init(color: color, iconFileId: keyboardButtonStyle.icon)
-        }
-    }
-}
-
 public struct ReplyMarkupButton: PostboxCoding, Equatable {
-    public struct Style: PostboxCoding, Equatable {
-        public enum Color: Int32 {
-            case primary = 0
-            case danger = 1
-            case success = 2
-        }
-        
-        public let color: Color?
-        public let iconFileId: Int64?
-        
-        public init(color: Color?, iconFileId: Int64?) {
-            self.color = color
-            self.iconFileId = iconFileId
-        }
-        
-        public init(decoder: PostboxDecoder) {
-            let rawColor = decoder.decodeInt32ForKey("c", orElse: -1)
-            if rawColor != -1 {
-                self.color = Color(rawValue: rawColor)
-            } else {
-                self.color = nil
-            }
-            
-            self.iconFileId = decoder.decodeOptionalInt64ForKey("i")
-        }
-        
-        public func encode(_ encoder: PostboxEncoder) {
-            encoder.encodeInt32(self.color?.rawValue ?? -1, forKey: "c")
-            if let iconFileId = self.iconFileId {
-                encoder.encodeInt64(iconFileId, forKey: "i")
-            } else {
-                encoder.encodeNil(forKey: "i")
-            }
-        }
-    }
-    
     public let title: String
     public let titleWhenForwarded: String?
     public let action: ReplyMarkupButtonAction
-    public let style: Style?
     
-    public init(title: String, titleWhenForwarded: String?, action: ReplyMarkupButtonAction, style: Style?) {
+    public init(title: String, titleWhenForwarded: String?, action: ReplyMarkupButtonAction) {
         self.title = title
         self.titleWhenForwarded = titleWhenForwarded
         self.action = action
-        self.style = style
     }
     
     public init(decoder: PostboxDecoder) {
         self.title = decoder.decodeStringForKey(".t", orElse: "")
         self.titleWhenForwarded = decoder.decodeOptionalStringForKey(".tf")
         self.action = ReplyMarkupButtonAction(decoder: decoder)
-        self.style = (decoder.decodeObjectForKey(".stl", decoder: { Style(decoder: $0) }) as? Style)
     }
     
     public func encode(_ encoder: PostboxEncoder) {
@@ -430,15 +348,10 @@ public struct ReplyMarkupButton: PostboxCoding, Equatable {
             encoder.encodeNil(forKey: ".tf")
         }
         self.action.encode(encoder)
-        if let style = self.style {
-            encoder.encodeObject(style, forKey: ".stl")
-        } else {
-            encoder.encodeNil(forKey: ".stl")
-        }
     }
     
     public static func ==(lhs: ReplyMarkupButton, rhs: ReplyMarkupButton) -> Bool {
-        return lhs.title == rhs.title && lhs.action == rhs.action && lhs.style == rhs.style
+        return lhs.title == rhs.title && lhs.action == rhs.action
     }
 }
 
@@ -485,21 +398,6 @@ public class ReplyMarkupMessageAttribute: MessageAttribute, Equatable {
     public let rows: [ReplyMarkupRow]
     public let flags: ReplyMarkupMessageFlags
     public let placeholder: String?
-    
-    public var associatedMediaIds: [MediaId] {
-        var result: [MediaId] = []
-        for row in rows {
-            for button in row.buttons {
-                if let iconFileId = button.style?.iconFileId {
-                    let mediaId = MediaId(namespace: Namespaces.Media.CloudFile, id: iconFileId)
-                    if !result.contains(mediaId) {
-                        result.append(mediaId)
-                    }
-                }
-            }
-        }
-        return result
-    }
     
     public init(rows: [ReplyMarkupRow], flags: ReplyMarkupMessageFlags, placeholder: String?) {
         self.rows = rows

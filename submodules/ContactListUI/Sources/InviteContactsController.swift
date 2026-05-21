@@ -36,9 +36,8 @@ public class InviteContactsController: ViewController, MFMessageComposeViewContr
         
         self.presentationData = context.sharedContext.currentPresentationData.with { $0 }
         
-        super.init(navigationBarPresentationData: NavigationBarPresentationData(presentationData: self.presentationData, style: .glass))
+        super.init(navigationBarPresentationData: NavigationBarPresentationData(presentationData: self.presentationData))
         
-        self._hasGlassStyle = true
         self.navigationPresentation = .modal
         
         self.statusBar.statusBarStyle = self.presentationData.theme.rootController.statusBarStyle.style
@@ -87,7 +86,7 @@ public class InviteContactsController: ViewController, MFMessageComposeViewContr
     
     private func updateThemeAndStrings() {
         self.statusBar.statusBarStyle = self.presentationData.theme.rootController.statusBarStyle.style
-        self.navigationBar?.updatePresentationData(NavigationBarPresentationData(presentationData: self.presentationData, style: .glass), transition: .immediate)
+        self.navigationBar?.updatePresentationData(NavigationBarPresentationData(presentationData: self.presentationData))
         self.searchContentNode?.updateThemeAndPlaceholder(theme: self.presentationData.theme, placeholder: self.presentationData.strings.Common_Search)
         self.title = self.presentationData.strings.Contacts_InviteFriends
         self.navigationItem.backBarButtonItem = UIBarButtonItem(title: self.presentationData.strings.Common_Back, style: .plain, target: nil, action: nil)
@@ -172,7 +171,7 @@ public class InviteContactsController: ViewController, MFMessageComposeViewContr
             self?.updateRightBarButtonItem()
         }
         
-        self.contactsNode.listNode.visibleContentOffsetChanged = { [weak self] offset, _ in
+        self.contactsNode.listNode.visibleContentOffsetChanged = { [weak self] offset in
             if let strongSelf = self, let searchContentNode = strongSelf.searchContentNode {
                 searchContentNode.updateListVisibleContentOffset(offset)
             }

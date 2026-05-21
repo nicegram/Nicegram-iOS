@@ -1,6 +1,3 @@
-// Nicegram
-import TelegramBridge
-//
 import Foundation
 import UIKit
 import Display
@@ -43,16 +40,6 @@ func openWebAppImpl(
         presentationData = parentController.presentationData
     } else {
         presentationData = context.sharedContext.currentPresentationData.with({ $0 })
-    }
-    
-    var skipTermsOfService = skipTermsOfService
-    if let whiteListedBots = context.currentAppConfiguration.with({ $0 }).data?["whitelisted_bots"] as? [Double] {
-        let botId = botPeer.id.id._internalGetInt64Value()
-        for bot in whiteListedBots {
-            if Int64(bot) == botId {
-                skipTermsOfService = true
-            }
-        }
     }
     
     let botName: String
@@ -177,18 +164,7 @@ func openWebAppImpl(
                 }, getInputContainerNode: { [weak parentController] in
                     if let parentController = parentController as? ChatControllerImpl, let layout = parentController.validLayout, case .compact = layout.metrics.widthClass {
                         return (parentController.chatDisplayNode.getWindowInputAccessoryHeight(), parentController.chatDisplayNode.inputPanelContainerNode, {
-                            guard let menuTransition = parentController.chatDisplayNode.textInputPanelNode?.makeAttachmentMenuTransition(accessoryPanelNode: nil) else {
-                                return nil
-                            }
-                            return AttachmentController.InputPanelTransition(
-                                inputNode: menuTransition.inputNode,
-                                accessoryPanelNode: menuTransition.accessoryPanelNode,
-                                menuButtonNode: menuTransition.menuButtonNode,
-                                menuButtonBackgroundView: menuTransition.menuButtonBackgroundView,
-                                menuIconNode: menuTransition.menuIconNode,
-                                menuTextNode: menuTransition.menuTextNode,
-                                prepareForDismiss: menuTransition.prepareForDismiss
-                            )
+                            return parentController.chatDisplayNode.textInputPanelNode?.makeAttachmentMenuTransition(accessoryPanelNode: nil)
                         })
                     } else {
                         return nil
@@ -485,7 +461,7 @@ public extension ChatControllerImpl {
                 context.sharedContext.navigateToChatController(NavigateToChatControllerParams(navigationController: navigationController, context: context, chatLocation: .peer(peer), subject: subject, keepStack: .always, peekData: peekData))
             case .info:
                 if peer.restrictionText(platform: "ios", contentSettings: context.currentContentSettings.with { $0 }) == nil {
-                    if let infoController = context.sharedContext.makePeerInfoController(context: context, updatedPresentationData: nil, peer: peer, mode: .generic, avatarInitiallyExpanded: false, fromChat: false, requestsContext: nil) {
+                    if let infoController = context.sharedContext.makePeerInfoController(context: context, updatedPresentationData: nil, peer: peer._asPeer(), mode: .generic, avatarInitiallyExpanded: false, fromChat: false, requestsContext: nil) {
                         navigationController.pushViewController(infoController)
                     }
                 }
@@ -533,8 +509,7 @@ public extension ChatControllerImpl {
         ChatControllerImpl.presentBotApp(context: self.context, parentController: self, botApp: botApp, botPeer: botPeer, payload: payload, mode: mode, concealed: concealed, commit: commit)
     }
     
-    // Nicegram, remove fileprivate, add customization
-    static func presentBotApp(context: AccountContext, parentController: ViewController, botApp: BotApp?, botPeer: EnginePeer, payload: String?, mode: ResolvedStartAppMode, concealed: Bool = false, customization: TelegramWebAppCustomization? = nil, commit: @escaping () -> Void = {}) {
+    fileprivate static func presentBotApp(context: AccountContext, parentController: ViewController, botApp: BotApp?, botPeer: EnginePeer, payload: String?, mode: ResolvedStartAppMode, concealed: Bool = false, commit: @escaping () -> Void = {}) {
         let chatController = parentController as? ChatControllerImpl
         let peerId: EnginePeer.Id
         let threadId = chatController?.chatLocation.threadId
@@ -543,21 +518,6 @@ public extension ChatControllerImpl {
         } else {
             peerId = botPeer.id
         }
-        
-        var skipTermsOfService = false
-        if let whiteListedBots = context.currentAppConfiguration.with({ $0 }).data?["whitelisted_bots"] as? [Double] {
-            let botId = botPeer.id.id._internalGetInt64Value()
-            for bot in whiteListedBots {
-                if Int64(bot) == botId {
-                    skipTermsOfService = true
-                }
-            }
-        }
-        // Nicegram
-        if let customization, customization.shouldSkipTermsOfService() {
-            skipTermsOfService = true
-        }
-        //
 
         chatController?.attachmentController?.dismiss(animated: true, completion: nil)
         
@@ -618,8 +578,7 @@ public extension ChatControllerImpl {
                 |> deliverOnMainQueue).startStandalone(next: { [weak parentController, weak chatController] result in
                     let params = WebAppParameters(source: .generic, peerId: peerId, botId: botPeer.id, botName: botApp.title, botVerified: botPeer.isVerified, botAddress: botPeer.addressName ?? "", appName: botApp.shortName, url: result.url, queryId: 0, payload: payload, buttonText: "", keepAliveSignal: nil, forceHasSettings: botApp.flags.contains(.hasSettings), fullSize: result.flags.contains(.fullSize), isFullscreen: result.flags.contains(.fullScreen), appSettings: appSettings)
                     var presentImpl: ((ViewController, Any?) -> Void)?
-                    // Nicegram, remove fileprivate, add customization
-                    let controller = standaloneWebAppController(context: context, updatedPresentationData: updatedPresentationData, params: params, threadId: threadId, customization: customization, openUrl: { url, concealed, forceUpdate, commit in
+                    let controller = standaloneWebAppController(context: context, updatedPresentationData: updatedPresentationData, params: params, threadId: threadId, openUrl: { url, concealed, forceUpdate, commit in
                         ChatControllerImpl.botOpenUrl(context: context, peerId: peerId, controller: chatController, url: url, concealed: concealed, forceUpdate: forceUpdate, present: { c, a in
                             presentImpl?(c, a)
                         }, commit: commit)
@@ -662,8 +621,6 @@ public extension ChatControllerImpl {
                 },
                 context.engine.data.get(TelegramEngine.EngineData.Item.Peer.BotAppSettings(id: botPeer.id))
             ).startStandalone(next: { [weak parentController, weak chatController] noticed, attachMenuBots, attachMenuBot, appSettings in
-                chatController?.chatDisplayNode.dismissInput()
-                
                 var isAttachMenuBotInstalled: Bool?
                 if let _ = attachMenuBot {
                     if let _ = attachMenuBots.first(where: { $0.peer.id == botPeer.id && !$0.flags.contains(.notActivated) }) {
@@ -689,21 +646,17 @@ public extension ChatControllerImpl {
                             openBotApp(false, false, appSettings)
                         }
                     } else {
-                        if skipTermsOfService {
-                            openBotApp(true, false, appSettings)
-                        } else {
-                            let controller = webAppLaunchConfirmationController(context: context, updatedPresentationData: updatedPresentationData, peer: botPeer, requestWriteAccess: botApp.flags.contains(.notActivated) && botApp.flags.contains(.requiresWriteAccess), completion: { allowWrite in
-                                let _ = ApplicationSpecificNotice.setBotGameNotice(accountManager: context.sharedContext.accountManager, peerId: botPeer.id).startStandalone()
-                                openBotApp(allowWrite, false, appSettings)
-                            }, showMore: chatController == nil ? nil : { [weak chatController] in
-                                if let chatController {
-                                    chatController.openResolved(result: .peer(botPeer._asPeer(), .info(nil)), sourceMessageId: nil)
-                                }
-                            }, openTerms: {
-                                context.sharedContext.openExternalUrl(context: context, urlContext: .generic, url: presentationData.strings.WebApp_LaunchTermsConfirmation_URL, forceExternal: false, presentationData: presentationData, navigationController: parentController?.navigationController as? NavigationController, dismissInput: {})
-                            })
-                            parentController?.present(controller, in: .window(.root))
-                        }
+                        let controller = webAppLaunchConfirmationController(context: context, updatedPresentationData: updatedPresentationData, peer: botPeer, requestWriteAccess: botApp.flags.contains(.notActivated) && botApp.flags.contains(.requiresWriteAccess), completion: { allowWrite in
+                            let _ = ApplicationSpecificNotice.setBotGameNotice(accountManager: context.sharedContext.accountManager, peerId: botPeer.id).startStandalone()
+                            openBotApp(allowWrite, false, appSettings)
+                        }, showMore: chatController == nil ? nil : { [weak chatController] in
+                            if let chatController {
+                                chatController.openResolved(result: .peer(botPeer._asPeer(), .info(nil)), sourceMessageId: nil)
+                            }
+                        }, openTerms: {
+                            context.sharedContext.openExternalUrl(context: context, urlContext: .generic, url: presentationData.strings.WebApp_LaunchTermsConfirmation_URL, forceExternal: false, presentationData: presentationData, navigationController: parentController?.navigationController as? NavigationController, dismissInput: {})
+                        })
+                        parentController?.present(controller, in: .window(.root))
                     }
                 } else {
                     openBotApp(false, false, appSettings)

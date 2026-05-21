@@ -212,8 +212,9 @@ private final class PeerInfoScreenDisclosureItemNode: PeerInfoScreenItemNode {
         }
         let labelSize = self.labelNode.updateLayout(CGSize(width: labelConstrainWidth, height: .greatestFiniteMagnitude))
         
-        let height = textSize.height + 32.0
-        let textFrame = CGRect(origin: CGPoint(x: leftInset, y: floorToScreenPixels((height - textSize.height) / 2.0)), size: textSize)        
+        let textFrame = CGRect(origin: CGPoint(x: leftInset, y: 12.0), size: textSize)
+        
+        let height = textSize.height + 24.0
         
         if item.icon != nil || item.iconSignal != nil {
             if self.iconNode.supernode == nil {
@@ -233,9 +234,9 @@ private final class PeerInfoScreenDisclosureItemNode: PeerInfoScreenItemNode {
                         }
                     }))
                 }
-                iconSize = CGSize(width: 30.0, height: 30.0)
+                iconSize = CGSize(width: 29.0, height: 29.0)
             } else {
-                iconSize = CGSize(width: 30.0, height: 30.0)
+                iconSize = CGSize(width: 29.0, height: 29.0)
             }
             let iconFrame = CGRect(origin: CGPoint(x: sideInset, y: floorToScreenPixels((height - iconSize.height) / 2.0)), size: iconSize)
             transition.updateFrame(node: self.iconNode, frame: iconFrame)
@@ -338,7 +339,7 @@ private final class PeerInfoScreenDisclosureItemNode: PeerInfoScreenItemNode {
         } else if case .labelBadge = item.label {
             labelFrame = CGRect(origin: CGPoint(x: width - rightInset - badgeWidth + (badgeWidth - labelSize.width) / 2.0, y: floor((height - labelSize.height) / 2.0)), size: labelSize)
         } else {
-            labelFrame = CGRect(origin: CGPoint(x: width - rightInset - labelSize.width, y: floorToScreenPixels((height - labelSize.height) / 2.0)), size: labelSize)
+            labelFrame = CGRect(origin: CGPoint(x: width - rightInset - labelSize.width, y: 12.0), size: labelSize)
         }
         
         if let additionalBadgeLabel = item.additionalBadgeLabel {
@@ -397,7 +398,7 @@ private final class PeerInfoScreenDisclosureItemNode: PeerInfoScreenItemNode {
         let hasTopCorners = hasCorners && topItem == nil
         let hasBottomCorners = hasCorners && bottomItem == nil
         
-        self.maskNode.image = hasCorners ? PresentationResourcesItemList.cornersImage(presentationData.theme, top: hasTopCorners, bottom: hasBottomCorners, glass: true) : nil
+        self.maskNode.image = hasCorners ? PresentationResourcesItemList.cornersImage(presentationData.theme, top: hasTopCorners, bottom: hasBottomCorners) : nil
         self.maskNode.frame = CGRect(origin: CGPoint(x: safeInsets.left, y: 0.0), size: CGSize(width: width - safeInsets.left - safeInsets.right, height: height))
         self.bottomSeparatorNode.isHidden = hasBottomCorners
         
@@ -405,9 +406,7 @@ private final class PeerInfoScreenDisclosureItemNode: PeerInfoScreenItemNode {
         self.selectionNode.update(size: CGSize(width: width, height: height + highlightNodeOffset), theme: presentationData.theme, transition: transition)
         transition.updateFrame(node: self.selectionNode, frame: CGRect(origin: CGPoint(x: 0.0, y: -highlightNodeOffset), size: CGSize(width: width, height: height + highlightNodeOffset)))
         
-        let separatorRightInset: CGFloat = 16.0
-        
-        transition.updateFrame(node: self.bottomSeparatorNode, frame: CGRect(origin: CGPoint(x: separatorInset, y: height - UIScreenPixel), size: CGSize(width: width - separatorInset - separatorRightInset, height: UIScreenPixel)))
+        transition.updateFrame(node: self.bottomSeparatorNode, frame: CGRect(origin: CGPoint(x: separatorInset, y: height - UIScreenPixel), size: CGSize(width: width - separatorInset, height: UIScreenPixel)))
         transition.updateAlpha(node: self.bottomSeparatorNode, alpha: bottomItem == nil ? 0.0 : 1.0)
         
         self.activateArea.frame = CGRect(origin: CGPoint(x: safeInsets.left, y: 0.0), size: CGSize(width: width - safeInsets.left - safeInsets.right, height: height))

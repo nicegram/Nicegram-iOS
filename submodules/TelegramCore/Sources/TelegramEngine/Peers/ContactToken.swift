@@ -26,8 +26,7 @@ func _internal_exportContactToken(account: Account) -> Signal<ExportedContactTok
         return .single(nil)
     }
     |> map { result -> ExportedContactToken? in
-        if let result = result, case let .exportedContactToken(exportedContactTokenData) = result {
-            let (url, expires) = (exportedContactTokenData.url, exportedContactTokenData.expires)
+        if let result = result, case let .exportedContactToken(url, expires) = result {
             return ExportedContactToken(url: url, expires: expires)
         } else {
             return nil

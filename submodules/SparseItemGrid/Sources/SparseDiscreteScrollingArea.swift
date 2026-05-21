@@ -125,7 +125,7 @@ public final class SparseDiscreteScrollingArea: ASDisplayNode {
     private struct State {
         var containerSize: CGSize
         var containerInsets: UIEdgeInsets
-        var scrollingState: ListViewImpl.ScrollingIndicatorState?
+        var scrollingState: ListView.ScrollingIndicatorState?
         var isScrolling: Bool
         var isDragging: Bool
         var theme: PresentationTheme
@@ -288,7 +288,7 @@ public final class SparseDiscreteScrollingArea: ASDisplayNode {
     public func update(
         containerSize: CGSize,
         containerInsets: UIEdgeInsets,
-        scrollingState: ListViewImpl.ScrollingIndicatorState?,
+        scrollingState: ListView.ScrollingIndicatorState?,
         isScrolling: Bool,
         theme: PresentationTheme,
         transition: ContainedViewLayoutTransition
@@ -351,8 +351,6 @@ public final class SparseDiscreteScrollingArea: ASDisplayNode {
         let indicatorSize = self.dateIndicator.update(
             transition: .immediate,
             component: AnyComponent(SparseItemGridScrollingIndicatorComponent(
-                isDark: theme.overallDarkAppearance,
-                isVisible: true,
                 backgroundColor: theme.list.itemBlocksBackgroundColor,
                 shadowColor: .black,
                 foregroundColor: theme.list.itemPrimaryTextColor,

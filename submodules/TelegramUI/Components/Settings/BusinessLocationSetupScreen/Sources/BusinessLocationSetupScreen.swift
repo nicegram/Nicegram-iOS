@@ -3,6 +3,7 @@ import UIKit
 import Display
 import AsyncDisplayKit
 import SwiftSignalKit
+import Postbox
 import TelegramCore
 import TelegramPresentationData
 import TelegramUIPreferences
@@ -126,7 +127,8 @@ final class BusinessLocationSetupScreenComponent: Component {
             let businessLocation = self.currentBusinessLocation()
             
             if businessLocation != component.initialValue {
-                self.environment?.controller()?.present(textAlertController(context: component.context, title: nil, text: environment.strings.BusinessLocationSetup_AlertUnsavedChanges_Text, actions: [
+                let presentationData = component.context.sharedContext.currentPresentationData.with { $0 }
+                self.environment?.controller()?.present(standardTextAlertController(theme: AlertControllerTheme(presentationData: presentationData), title: nil, text: environment.strings.BusinessLocationSetup_AlertUnsavedChanges_Text, actions: [
                     TextAlertAction(type: .genericAction, title: environment.strings.Common_Cancel, action: {
                     }),
                     TextAlertAction(type: .destructiveAction, title: environment.strings.BusinessLocationSetup_AlertUnsavedChanges_ResetAction, action: {
@@ -248,7 +250,8 @@ final class BusinessLocationSetupScreenComponent: Component {
             let businessLocation = self.currentBusinessLocation()
             
             if businessLocation != nil && address.isEmpty {
-                self.environment?.controller()?.present(textAlertController(context: component.context, title: nil, text: environment.strings.BusinessLocationSetup_ErrorAddressEmpty_Text, actions: [
+                let presentationData = component.context.sharedContext.currentPresentationData.with { $0 }
+                self.environment?.controller()?.present(standardTextAlertController(theme: AlertControllerTheme(presentationData: presentationData), title: nil, text: environment.strings.BusinessLocationSetup_ErrorAddressEmpty_Text, actions: [
                     TextAlertAction(type: .genericAction, title: environment.strings.Common_OK, action: {
                     })
                 ]), in: .window(.root))
@@ -392,7 +395,6 @@ final class BusinessLocationSetupScreenComponent: Component {
             var addressSectionItems: [AnyComponentWithIdentity<Empty>] = []
             addressSectionItems.append(AnyComponentWithIdentity(id: 0, component: AnyComponent(ListMultilineTextFieldItemComponent(
                 externalState: self.addressTextInputState,
-                style: .glass,
                 context: component.context,
                 theme: environment.theme,
                 strings: environment.strings,
@@ -416,7 +418,6 @@ final class BusinessLocationSetupScreenComponent: Component {
                 transition: transition,
                 component: AnyComponent(ListSectionComponent(
                     theme: environment.theme,
-                    style: .glass,
                     header: nil,
                     footer: nil,
                     items: addressSectionItems
@@ -446,7 +447,6 @@ final class BusinessLocationSetupScreenComponent: Component {
             
             mapSectionItems.append(AnyComponentWithIdentity(id: 0, component: AnyComponent(ListActionItemComponent(
                 theme: environment.theme,
-                style: .glass,
                 title: AnyComponent(VStack([
                     AnyComponentWithIdentity(id: AnyHashable(0), component: AnyComponent(MultilineTextComponent(
                         text: .plain(NSAttributedString(
@@ -491,7 +491,6 @@ final class BusinessLocationSetupScreenComponent: Component {
                 transition: transition,
                 component: AnyComponent(ListSectionComponent(
                     theme: environment.theme,
-                    style: .glass,
                     header: nil,
                     footer: nil,
                     items: mapSectionItems,
@@ -515,7 +514,6 @@ final class BusinessLocationSetupScreenComponent: Component {
                 transition: transition,
                 component: AnyComponent(ListSectionComponent(
                     theme: environment.theme,
-                    style: .glass,
                     header: nil,
                     footer: nil,
                     items: [

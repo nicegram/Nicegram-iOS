@@ -166,8 +166,7 @@ public final class ServerSuggestionInfo: Codable, Equatable {
 extension ServerSuggestionInfo.Item.Text {
     convenience init(_ apiText: Api.TextWithEntities) {
         switch apiText {
-        case let .textWithEntities(textWithEntitiesData):
-            let (text, entities) = (textWithEntitiesData.text, textWithEntitiesData.entities)
+        case let .textWithEntities(text, entities):
             self.init(string: text, entities: messageTextEntitiesFromApiEntities(entities))
         }
     }
@@ -176,72 +175,13 @@ extension ServerSuggestionInfo.Item.Text {
 extension ServerSuggestionInfo.Item {
     convenience init(_ apiItem: Api.PendingSuggestion) {
         switch apiItem {
-        case let .pendingSuggestion(pendingSuggestionData):
-            let (suggestion, title, description, url) = (pendingSuggestionData.suggestion, pendingSuggestionData.title, pendingSuggestionData.description, pendingSuggestionData.url)
+        case let .pendingSuggestion(suggestion, title, description, url):
             self.init(
                 id: suggestion,
                 title: ServerSuggestionInfo.Item.Text(title),
                 text: ServerSuggestionInfo.Item.Text(description),
                 action: .link(url: url)
             )
-        }
-    }
-}
-
-func _internal_fetchPromoInfo(accountPeerId: EnginePeer.Id, postbox: Postbox, network: Network) -> Signal<Void, NoError> {
-    return network.request(Api.functions.help.getPromoData())
-    |> `catch` { _ -> Signal<Api.help.PromoData, NoError> in
-        return .single(.promoDataEmpty(.init(expires: 10 * 60)))
-    }
-    |> mapToSignal { data -> Signal<Void, NoError> in
-        return postbox.transaction { transaction -> Void in
-            switch data {
-            case .promoDataEmpty(_):
-                transaction.replaceAdditionalChatListItems([])
-                
-                let suggestionInfo = ServerSuggestionInfo(
-                    legacyItems: [],
-                    items: [],
-                    dismissedIds: []
-                )
-                
-                transaction.updatePreferencesEntry(key: PreferencesKeys.serverSuggestionInfo(), { _ in
-                    return PreferencesEntry(suggestionInfo)
-                })
-            case let .promoData(promoDataData):
-                let (flags, expires, peer, psaType, psaMessage, pendingSuggestions, dismissedSuggestions, customPendingSuggestion, chats, users) = (promoDataData.flags, promoDataData.expires, promoDataData.peer, promoDataData.psaType, promoDataData.psaMessage, promoDataData.pendingSuggestions, promoDataData.dismissedSuggestions, promoDataData.customPendingSuggestion, promoDataData.chats, promoDataData.users)
-                let _ = expires
-                
-                let parsedPeers = AccumulatedPeers(transaction: transaction, chats: chats, users: users)
-                updatePeers(transaction: transaction, accountPeerId: accountPeerId, peers: parsedPeers)
-                
-                var kind: PromoChatListItem.Kind?
-                if let psaType {
-                    kind = .psa(type: psaType, message: psaMessage)
-                } else if ((flags & 1) << 0) != 0 {
-                    kind = .proxy
-                }
-                
-                var additionalChatListItems: [AdditionalChatListItem] = []
-                if let kind, let peer, let parsedPeer = transaction.getPeer(peer.peerId) {
-                    additionalChatListItems.append(PromoChatListItem(peerId: parsedPeer.id, kind: kind))
-                }
-                transaction.replaceAdditionalChatListItems(additionalChatListItems)
-                
-                var customItems: [ServerSuggestionInfo.Item] = []
-                if let customPendingSuggestion {
-                    customItems.append(ServerSuggestionInfo.Item(customPendingSuggestion))
-                }
-                let suggestionInfo = ServerSuggestionInfo(
-                    legacyItems: pendingSuggestions,
-                    items: customItems,
-                    dismissedIds: dismissedSuggestions
-                )
-                
-                transaction.updatePreferencesEntry(key: PreferencesKeys.serverSuggestionInfo(), { _ in
-                    return PreferencesEntry(suggestionInfo)
-                })
-            }
         }
     }
 }
@@ -253,7 +193,62 @@ func managedPromoInfoUpdates(accountPeerId: PeerId, postbox: Postbox, network: N
         |> distinctUntilChanged
         |> deliverOn(queue)
         |> mapToSignal { _ -> Signal<Void, NoError> in
-            return (_internal_fetchPromoInfo(accountPeerId: accountPeerId, postbox: postbox, network: network)
+            let appliedOnce: Signal<Void, NoError> = network.request(Api.functions.help.getPromoData())
+            |> `catch` { _ -> Signal<Api.help.PromoData, NoError> in
+                return .single(.promoDataEmpty(expires: 10 * 60))
+            }
+            |> mapToSignal { data -> Signal<Void, NoError> in
+                return postbox.transaction { transaction -> Void in
+                    switch data {
+                    case .promoDataEmpty:
+                        transaction.replaceAdditionalChatListItems([])
+                        
+                        let suggestionInfo = ServerSuggestionInfo(
+                            legacyItems: [],
+                            items: [],
+                            dismissedIds: []
+                        )
+                        
+                        transaction.updatePreferencesEntry(key: PreferencesKeys.serverSuggestionInfo(), { _ in
+                            return PreferencesEntry(suggestionInfo)
+                        })
+                    case let .promoData(flags, expires, peer, psaType, psaMessage, pendingSuggestions, dismissedSuggestions, customPendingSuggestion, chats, users):
+                        let _ = expires
+                        
+                        let parsedPeers = AccumulatedPeers(transaction: transaction, chats: chats, users: users)
+                        updatePeers(transaction: transaction, accountPeerId: accountPeerId, peers: parsedPeers)
+                        
+                        var kind: PromoChatListItem.Kind?
+                        if let psaType {
+                            kind = .psa(type: psaType, message: psaMessage)
+                        } else if ((flags & 1) << 0) != 0 {
+                            kind = .proxy
+                        }
+                        
+                        var additionalChatListItems: [AdditionalChatListItem] = []
+                        if let kind, let peer, let parsedPeer = transaction.getPeer(peer.peerId) {
+                            additionalChatListItems.append(PromoChatListItem(peerId: parsedPeer.id, kind: kind))
+                        }
+                        transaction.replaceAdditionalChatListItems(additionalChatListItems)
+                        
+                        var customItems: [ServerSuggestionInfo.Item] = []
+                        if let customPendingSuggestion {
+                            customItems.append(ServerSuggestionInfo.Item(customPendingSuggestion))
+                        }
+                        let suggestionInfo = ServerSuggestionInfo(
+                            legacyItems: pendingSuggestions,
+                            items: customItems,
+                            dismissedIds: dismissedSuggestions
+                        )
+                        
+                        transaction.updatePreferencesEntry(key: PreferencesKeys.serverSuggestionInfo(), { _ in
+                            return PreferencesEntry(suggestionInfo)
+                        })
+                    }
+                }
+            }
+            
+            return (appliedOnce
             |> then(
                 Signal<Void, NoError>.complete()
                 |> delay(10.0 * 60.0, queue: Queue.concurrentDefaultQueue()))

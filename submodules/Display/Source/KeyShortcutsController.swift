@@ -9,7 +9,11 @@ public class KeyShortcutsController: UIResponder {
     private var viewControllerEnumerator: (@escaping (ContainableController) -> Bool) -> Void
     
     public static var isAvailable: Bool {
-        return true
+        if #available(iOSApplicationExtension 8.0, iOS 8.0, *), UIDevice.current.userInterfaceIdiom == .pad {
+            return true
+        } else {
+            return false
+        }
     }
     
     public init(enumerator: @escaping (@escaping (ContainableController) -> Bool) -> Void) {

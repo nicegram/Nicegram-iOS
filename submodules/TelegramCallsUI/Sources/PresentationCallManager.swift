@@ -327,10 +327,7 @@ public final class PresentationCallManagerImpl: PresentationCallManager {
         if let firstState = ringingStates.first {
             if self.currentCall == nil && self.currentGroupCall == nil {
                 self.currentCallDisposable.set((combineLatest(
-                    firstState.0.engine.data.subscribe(
-                        TelegramEngine.EngineData.Item.Configuration.ApplicationSpecificPreference(key: PreferencesKeys.voipConfiguration),
-                        TelegramEngine.EngineData.Item.Configuration.ApplicationSpecificPreference(key: PreferencesKeys.appConfiguration)
-                    ) |> take(1),
+                    firstState.0.account.postbox.preferencesView(keys: [PreferencesKeys.voipConfiguration, PreferencesKeys.appConfiguration]) |> take(1),
                     accountManager.sharedData(keys: [SharedDataKeys.autodownloadSettings, ApplicationSpecificSharedDataKeys.experimentalUISettings]) |> take(1)
                 )
                 |> deliverOnMainQueue).start(next: { [weak self] preferences, sharedData in
@@ -340,12 +337,11 @@ public final class PresentationCallManagerImpl: PresentationCallManager {
                     if strongSelf.currentUpgradedToConferenceCallId == firstState.2.id {
                         return
                     }
-
-                    let configuration = preferences.0?.get(VoipConfiguration.self) ?? .defaultValue
+                    
+                    let configuration = preferences.values[PreferencesKeys.voipConfiguration]?.get(VoipConfiguration.self) ?? .defaultValue
                     let autodownloadSettings = sharedData.entries[SharedDataKeys.autodownloadSettings]?.get(AutodownloadSettings.self) ?? .defaultSettings
                     let experimentalSettings = sharedData.entries[ApplicationSpecificSharedDataKeys.experimentalUISettings]?.get(ExperimentalUISettings.self) ?? .defaultSettings
-                    let appConfiguration = preferences.1?.get(AppConfiguration.self) ?? AppConfiguration.defaultValue
- 
+                    let appConfiguration = preferences.values[PreferencesKeys.appConfiguration]?.get(AppConfiguration.self) ?? AppConfiguration.defaultValue
                     let call = PresentationCallImpl(
                         // Nicegram NCG-5828 call recording
                         callRecorder: CallRecorder(),
@@ -383,10 +379,7 @@ public final class PresentationCallManagerImpl: PresentationCallManager {
                 let _ = currentCall.hangUp().startStandalone()
                 
                 self.currentCallDisposable.set((combineLatest(
-                    firstState.0.engine.data.subscribe(
-                        TelegramEngine.EngineData.Item.Configuration.ApplicationSpecificPreference(key: PreferencesKeys.voipConfiguration),
-                        TelegramEngine.EngineData.Item.Configuration.ApplicationSpecificPreference(key: PreferencesKeys.appConfiguration)
-                    ) |> take(1),
+                    firstState.0.account.postbox.preferencesView(keys: [PreferencesKeys.voipConfiguration, PreferencesKeys.appConfiguration]) |> take(1),
                     accountManager.sharedData(keys: [SharedDataKeys.autodownloadSettings, ApplicationSpecificSharedDataKeys.experimentalUISettings]) |> take(1)
                 )
                 |> deliverOnMainQueue).start(next: { [weak self] preferences, sharedData in
@@ -396,11 +389,11 @@ public final class PresentationCallManagerImpl: PresentationCallManager {
                     if strongSelf.currentUpgradedToConferenceCallId == firstState.2.id {
                         return
                     }
-
-                    let configuration = preferences.0?.get(VoipConfiguration.self) ?? .defaultValue
+                    
+                    let configuration = preferences.values[PreferencesKeys.voipConfiguration]?.get(VoipConfiguration.self) ?? .defaultValue
                     let autodownloadSettings = sharedData.entries[SharedDataKeys.autodownloadSettings]?.get(AutodownloadSettings.self) ?? .defaultSettings
                     let experimentalSettings = sharedData.entries[ApplicationSpecificSharedDataKeys.experimentalUISettings]?.get(ExperimentalUISettings.self) ?? .defaultSettings
-                    let appConfiguration = preferences.1?.get(AppConfiguration.self) ?? AppConfiguration.defaultValue
+                    let appConfiguration = preferences.values[PreferencesKeys.appConfiguration]?.get(AppConfiguration.self) ?? AppConfiguration.defaultValue
                     
                     let call = PresentationCallImpl(
                         // Nicegram NCG-5828 call recording
@@ -654,10 +647,7 @@ public final class PresentationCallManagerImpl: PresentationCallManager {
                     return peerView.peerIsContact
                 }
                 |> take(1),
-                context.engine.data.subscribe(
-                    TelegramEngine.EngineData.Item.Configuration.ApplicationSpecificPreference(key: PreferencesKeys.voipConfiguration),
-                    TelegramEngine.EngineData.Item.Configuration.ApplicationSpecificPreference(key: PreferencesKeys.appConfiguration)
-                ) |> take(1),
+                context.account.postbox.preferencesView(keys: [PreferencesKeys.voipConfiguration, PreferencesKeys.appConfiguration]) |> take(1),
                 accountManager.sharedData(keys: [SharedDataKeys.autodownloadSettings, ApplicationSpecificSharedDataKeys.experimentalUISettings]) |> take(1),
                 areVideoCallsAvailable
             )
@@ -667,10 +657,10 @@ public final class PresentationCallManagerImpl: PresentationCallManager {
                     if let currentCall = strongSelf.currentCall {
                         currentCall.rejectBusy()
                     }
-
-                    let configuration = preferences.0?.get(VoipConfiguration.self) ?? .defaultValue
+                    
+                    let configuration = preferences.values[PreferencesKeys.voipConfiguration]?.get(VoipConfiguration.self) ?? .defaultValue
                     let autodownloadSettings = sharedData.entries[SharedDataKeys.autodownloadSettings]?.get(AutodownloadSettings.self) ?? .defaultSettings
-                    let appConfiguration = preferences.1?.get(AppConfiguration.self) ?? AppConfiguration.defaultValue
+                    let appConfiguration = preferences.values[PreferencesKeys.appConfiguration]?.get(AppConfiguration.self) ?? AppConfiguration.defaultValue
                     
                     let isVideoPossible: Bool = areVideoCallsAvailable
                     
@@ -932,7 +922,6 @@ public final class PresentationCallManagerImpl: PresentationCallManager {
                             invite: nil,
                             joinAsPeerId: nil,
                             isStream: false,
-                            streamPeerId: nil,
                             keyPair: nil,
                             conferenceSourceId: nil,
                             isConference: false,
@@ -1162,7 +1151,6 @@ public final class PresentationCallManagerImpl: PresentationCallManager {
             invite: invite,
             joinAsPeerId: joinAsPeerId,
             isStream: initialCall.isStream ?? false,
-            streamPeerId: nil,
             keyPair: nil,
             conferenceSourceId: nil,
             isConference: false,
@@ -1210,7 +1198,6 @@ public final class PresentationCallManagerImpl: PresentationCallManager {
                 invite: nil,
                 joinAsPeerId: nil,
                 isStream: false,
-                streamPeerId: nil,
                 keyPair: keyPair,
                 conferenceSourceId: nil,
                 isConference: true,

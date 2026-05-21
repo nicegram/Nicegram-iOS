@@ -381,7 +381,7 @@ private enum StatsEntry: ItemListNodeEntry {
                  let .topInvitersTitle(_, text, dates):
                 return ItemListSectionHeaderItem(presentationData: presentationData, text: text, accessoryText: ItemListSectionHeaderAccessoryText(value: dates, color: .generic), sectionId: self.section)
             case let .overview(_, stats):
-                return StatsOverviewItem(context: arguments.context, presentationData: presentationData, systemStyle: .glass, isGroup: true, stats: stats, sectionId: self.section, style: .blocks)
+                return StatsOverviewItem(context: arguments.context, presentationData: presentationData, isGroup: true, stats: stats, sectionId: self.section, style: .blocks)
             case let .growthGraph(_, _, _, graph, type),
                  let .membersGraph(_, _, _, graph, type),
                  let .newMembersBySourceGraph(_, _, _, graph, type),
@@ -390,7 +390,7 @@ private enum StatsEntry: ItemListNodeEntry {
                  let .actionsGraph(_, _, _, graph, type),
                  let .topHoursGraph(_, _, _, graph, type),
                  let .topWeekdaysGraph(_, _, _, graph, type):
-                return StatsGraphItem(presentationData: presentationData, systemStyle: .glass, graph: graph, type: type, sectionId: self.section, style: .blocks)
+                return StatsGraphItem(presentationData: presentationData, graph: graph, type: type, sectionId: self.section, style: .blocks)
             case let .topPoster(_, _, strings, dateTimeFormat, peer, topPoster, revealed, canPromote):
                 var textComponents: [String] = []
                 if topPoster.messageCount > 0 {
@@ -410,13 +410,13 @@ private enum StatsEntry: ItemListNodeEntry {
                         }))
                     }
                 }
-                return ItemListPeerItem(presentationData: presentationData, systemStyle: .glass, dateTimeFormat: dateTimeFormat, nameDisplayOrder: .firstLast, context: arguments.context, peer: peer, height: .generic, aliasHandling: .standard, nameColor: .primary, nameStyle: .plain, presence: nil, text: .text(textComponents.joined(separator: ", "), .secondary), label: .none, editing: ItemListPeerItemEditing(editable: true, editing: false, revealed: revealed), revealOptions: ItemListPeerItemRevealOptions(options: options), switchValue: nil, enabled: true, highlighted: false, selectable: arguments.context.account.peerId != peer.id, sectionId: self.section, action: {
+                return ItemListPeerItem(presentationData: presentationData, dateTimeFormat: dateTimeFormat, nameDisplayOrder: .firstLast, context: arguments.context, peer: peer, height: .generic, aliasHandling: .standard, nameColor: .primary, nameStyle: .plain, presence: nil, text: .text(textComponents.joined(separator: ", "), .secondary), label: .none, editing: ItemListPeerItemEditing(editable: true, editing: false, revealed: revealed), revealOptions: ItemListPeerItemRevealOptions(options: options), switchValue: nil, enabled: true, highlighted: false, selectable: arguments.context.account.peerId != peer.id, sectionId: self.section, action: {
                     arguments.openPeer(peer)
                 }, setPeerIdWithRevealedOptions: { peerId, fromPeerId in
                     arguments.setPostersPeerIdWithRevealedOptions(peerId, fromPeerId)
                 }, removePeer: { _ in })
             case let .topPostersExpand(theme, title):
-                return ItemListPeerActionItem(presentationData: presentationData, systemStyle: .glass, icon: PresentationResourcesItemList.downArrowImage(theme), title: title, sectionId: self.section, editing: false, action: {
+                return ItemListPeerActionItem(presentationData: presentationData, icon: PresentationResourcesItemList.downArrowImage(theme), title: title, sectionId: self.section, editing: false, action: {
                     arguments.expandTopPosters()
                 })
             case let .topAdmin(_, _, strings, dateTimeFormat, peer, topAdmin, revealed, canPromote):
@@ -441,13 +441,13 @@ private enum StatsEntry: ItemListNodeEntry {
                         }))
                     }
                 }
-                return ItemListPeerItem(presentationData: presentationData, systemStyle: .glass, dateTimeFormat: dateTimeFormat, nameDisplayOrder: .firstLast, context: arguments.context, peer: peer, height: .generic, aliasHandling: .standard, nameColor: .primary, nameStyle: .plain, presence: nil, text: .text(textComponents.joined(separator: ", "), .secondary), label: .none, editing: ItemListPeerItemEditing(editable: true, editing: false, revealed: revealed), revealOptions: ItemListPeerItemRevealOptions(options: options), switchValue: nil, enabled: true, highlighted: false, selectable: arguments.context.account.peerId != peer.id, sectionId: self.section, action: {
+                return ItemListPeerItem(presentationData: presentationData, dateTimeFormat: dateTimeFormat, nameDisplayOrder: .firstLast, context: arguments.context, peer: peer, height: .generic, aliasHandling: .standard, nameColor: .primary, nameStyle: .plain, presence: nil, text: .text(textComponents.joined(separator: ", "), .secondary), label: .none, editing: ItemListPeerItemEditing(editable: true, editing: false, revealed: revealed), revealOptions: ItemListPeerItemRevealOptions(options: options), switchValue: nil, enabled: true, highlighted: false, selectable: arguments.context.account.peerId != peer.id, sectionId: self.section, action: {
                     arguments.openPeer(peer)
                 }, setPeerIdWithRevealedOptions: { peerId, fromPeerId in
                     arguments.setAdminsPeerIdWithRevealedOptions(peerId, fromPeerId)
                 }, removePeer: { _ in })
             case let .topAdminsExpand(theme, title):
-                return ItemListPeerActionItem(presentationData: presentationData, systemStyle: .glass, icon: PresentationResourcesItemList.downArrowImage(theme), title: title, sectionId: self.section, editing: false, action: {
+                return ItemListPeerActionItem(presentationData: presentationData, icon: PresentationResourcesItemList.downArrowImage(theme), title: title, sectionId: self.section, editing: false, action: {
                     arguments.expandTopAdmins()
                 })
             case let .topInviter(_, _, strings, dateTimeFormat, peer, topInviter, revealed, canPromote):
@@ -464,13 +464,13 @@ private enum StatsEntry: ItemListNodeEntry {
                         }))
                     }
                 }
-                return ItemListPeerItem(presentationData: presentationData, systemStyle: .glass, dateTimeFormat: dateTimeFormat, nameDisplayOrder: .firstLast, context: arguments.context, peer: peer, height: .generic, aliasHandling: .standard, nameColor: .primary, nameStyle: .plain, presence: nil, text: .text(textComponents.joined(separator: ", "), .secondary), label: .none, editing: ItemListPeerItemEditing(editable: true, editing: false, revealed: revealed), revealOptions: ItemListPeerItemRevealOptions(options: options), switchValue: nil, enabled: true, highlighted: false, selectable: arguments.context.account.peerId != peer.id, sectionId: self.section, action: {
+                return ItemListPeerItem(presentationData: presentationData, dateTimeFormat: dateTimeFormat, nameDisplayOrder: .firstLast, context: arguments.context, peer: peer, height: .generic, aliasHandling: .standard, nameColor: .primary, nameStyle: .plain, presence: nil, text: .text(textComponents.joined(separator: ", "), .secondary), label: .none, editing: ItemListPeerItemEditing(editable: true, editing: false, revealed: revealed), revealOptions: ItemListPeerItemRevealOptions(options: options), switchValue: nil, enabled: true, highlighted: false, selectable: arguments.context.account.peerId != peer.id, sectionId: self.section, action: {
                     arguments.openPeer(peer)
                 }, setPeerIdWithRevealedOptions: { peerId, fromPeerId in
                     arguments.setInvitersPeerIdWithRevealedOptions(peerId, fromPeerId)
                 }, removePeer: { _ in })
             case let .topInvitersExpand(theme, title):
-                return ItemListPeerActionItem(presentationData: presentationData, systemStyle: .glass, icon: PresentationResourcesItemList.downArrowImage(theme), title: title, sectionId: self.section, editing: false, action: {
+                return ItemListPeerActionItem(presentationData: presentationData, icon: PresentationResourcesItemList.downArrowImage(theme), title: title, sectionId: self.section, editing: false, action: {
                     arguments.expandTopInviters()
                 })
         }
@@ -826,15 +826,7 @@ public func groupStatsController(context: AccountContext, updatedPresentationDat
     let previousData = Atomic<GroupStats?>(value: nil)
     
     let presentationData = updatedPresentationData?.signal ?? context.sharedContext.presentationData
-    let loadedChannelPeer = context.engine.data.get(TelegramEngine.EngineData.Item.Peer.Peer(id: peerId))
-    |> mapToSignal { peer -> Signal<EnginePeer, NoError> in
-        if let peer {
-            return .single(peer)
-        } else {
-            return .never()
-        }
-    }
-    let signal = combineLatest(statePromise.get(), presentationData, dataPromise.get(), loadedChannelPeer, peersPromise.get(), longLoadingSignal)
+    let signal = combineLatest(statePromise.get(), presentationData, dataPromise.get(), context.account.postbox.loadedPeerWithId(peerId), peersPromise.get(), longLoadingSignal)
     |> deliverOnMainQueue
     |> map { state, presentationData, data, channelPeer, peers, longLoading -> (ItemListControllerState, (ItemListNodeState, Any)) in
         let previous = previousData.swap(data)
@@ -846,9 +838,9 @@ public func groupStatsController(context: AccountContext, updatedPresentationDat
                 emptyStateItem = ItemListLoadingIndicatorEmptyStateItem(theme: presentationData.theme)
             }
         }
-
+        
         let controllerState = ItemListControllerState(presentationData: ItemListPresentationData(presentationData), title: .text(presentationData.strings.ChannelInfo_Stats), leftNavigationButton: nil, rightNavigationButton: nil, backNavigationButton: ItemListBackButton(title: presentationData.strings.Common_Back), animateChanges: true)
-        let listState = ItemListNodeState(presentationData: ItemListPresentationData(presentationData), entries: groupStatsControllerEntries(accountPeerId: context.account.peerId, state: state, data: data, channelPeer: channelPeer, peers: peers, presentationData: presentationData), style: .blocks, emptyStateItem: emptyStateItem, crossfadeState: previous == nil, animateChanges: false)
+        let listState = ItemListNodeState(presentationData: ItemListPresentationData(presentationData), entries: groupStatsControllerEntries(accountPeerId: context.account.peerId, state: state, data: data, channelPeer: EnginePeer(channelPeer), peers: peers, presentationData: presentationData), style: .blocks, emptyStateItem: emptyStateItem, crossfadeState: previous == nil, animateChanges: false)
         
         return (controllerState, (listState, arguments))
     }
@@ -870,14 +862,7 @@ public func groupStatsController(context: AccountContext, updatedPresentationDat
     }
     openPeerImpl = { [weak controller] peer in
         if let navigationController = controller?.navigationController as? NavigationController {
-            let _ = (context.engine.data.get(TelegramEngine.EngineData.Item.Peer.Peer(id: peer.id))
-            |> mapToSignal { peer -> Signal<EnginePeer, NoError> in
-                if let peer {
-                    return .single(peer)
-                } else {
-                    return .never()
-                }
-            }
+            let _ = (context.account.postbox.loadedPeerWithId(peer.id)
             |> take(1)
             |> deliverOnMainQueue).start(next: { peer in
                 if let controller = context.sharedContext.makePeerInfoController(context: context, updatedPresentationData: nil, peer: peer, mode: .generic, avatarInitiallyExpanded: false, fromChat: false, requestsContext: nil) {
@@ -902,14 +887,7 @@ public func groupStatsController(context: AccountContext, updatedPresentationDat
     }
     openPeerAdminActionsImpl = { [weak controller] participantPeerId in
         if let navigationController = controller?.navigationController as? NavigationController {
-            let _ = (context.engine.data.get(TelegramEngine.EngineData.Item.Peer.Peer(id: peerId))
-            |> mapToSignal { peer -> Signal<EnginePeer, NoError> in
-                if let peer {
-                    return .single(peer)
-                } else {
-                    return .never()
-                }
-            }
+            let _ = (context.account.postbox.loadedPeerWithId(peerId)
             |> take(1)
             |> deliverOnMainQueue).start(next: { peer in
                 let controller = context.sharedContext.makeChatRecentActionsController(context: context, peer: peer, adminPeerId: participantPeerId, starsState: nil)

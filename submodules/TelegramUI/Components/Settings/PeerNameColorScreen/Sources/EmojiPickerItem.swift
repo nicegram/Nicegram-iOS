@@ -99,7 +99,7 @@ final class EmojiPickerItemNode: ListViewItemNode {
         self.maskNode = ASImageNode()
         self.maskNode.isUserInteractionEnabled = false
         
-        super.init(layerBacked: false)
+        super.init(layerBacked: false, dynamicBounce: false)
         
         self.clipsToBounds = true
     }
@@ -335,7 +335,6 @@ private final class EmojiSelectionComponent: Component {
                     defaultToEmojiTab: true,
                     externalTopPanelContainer: self.panelHostView,
                     externalBottomPanelContainer: nil,
-                    externalTintMaskContainer: nil,
                     displayTopPanelBackground: .blur,
                     topPanelExtensionUpdated: { _, _ in },
                     topPanelScrollingOffset: { _, _ in },

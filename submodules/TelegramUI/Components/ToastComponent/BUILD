@@ -7,13 +7,12 @@ swift_library(
         "Sources/**/*.swift",
     ]),
     copts = [
-        "-warnings-as-errors",
+        #"-warnings-as-errors",
     ],
     deps = [
         "//submodules/Display",
         "//submodules/ComponentFlow",
         "//submodules/Components/ComponentDisplayAdapters",
-        "//submodules/TelegramUI/Components/GlassBackgroundComponent",
     ],
     visibility = [
         "//visibility:public",

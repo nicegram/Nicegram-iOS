@@ -8,7 +8,6 @@ import ItemListUI
 
 public class ChatListFilterPresetListSuggestedItem: ListViewItem, ItemListItem {
     let presentationData: ItemListPresentationData
-    let systemStyle: ItemListSystemStyle
     let title: String
     let label: String
     public let sectionId: ItemListSectionId
@@ -18,7 +17,6 @@ public class ChatListFilterPresetListSuggestedItem: ListViewItem, ItemListItem {
     
     public init(
         presentationData: ItemListPresentationData,
-        systemStyle: ItemListSystemStyle,
         title: String,
         label: String,
         sectionId: ItemListSectionId,
@@ -27,7 +25,6 @@ public class ChatListFilterPresetListSuggestedItem: ListViewItem, ItemListItem {
         tag: ItemListItemTag? = nil
     ) {
         self.presentationData = presentationData
-        self.systemStyle = systemStyle
         self.title = title
         self.label = label
         self.sectionId = sectionId
@@ -132,7 +129,7 @@ public class ChatListFilterPresetListSuggestedItemNode: ListViewItemNode, ItemLi
         
         self.activateArea = AccessibilityAreaNode()
         
-        super.init(layerBacked: false)
+        super.init(layerBacked: false, dynamicBounce: false)
         
         self.addSubnode(self.titleNode)
         self.addSubnode(self.labelNode)
@@ -183,8 +180,6 @@ public class ChatListFilterPresetListSuggestedItemNode: ListViewItemNode, ItemLi
             let contentSize: CGSize
             let insets: UIEdgeInsets
             let separatorHeight = UIScreenPixel
-            let separatorRightInset: CGFloat = item.systemStyle == .glass ? 16.0 : 0.0
-            
             let itemBackgroundColor: UIColor
             let itemSeparatorColor: UIColor
             
@@ -215,13 +210,7 @@ public class ChatListFilterPresetListSuggestedItemNode: ListViewItemNode, ItemLi
             
             let (labelLayout, labelApply) = makeLabelLayout(TextNodeLayoutArguments(attributedString: NSAttributedString(string: item.label, font: labelFont, textColor:labelBadgeColor), backgroundColor: nil, maximumNumberOfLines: multilineLabel ? 0 : 1, truncationType: .end, constrainedSize: CGSize(width: labelConstrain, height: CGFloat.greatestFiniteMagnitude), alignment: .natural, cutout: nil, insets: UIEdgeInsets()))
             
-            let verticalInset: CGFloat
-            switch item.systemStyle {
-            case .glass:
-                verticalInset = 15.0
-            case .legacy:
-                verticalInset = 11.0
-            }
+            let verticalInset: CGFloat = 11.0
             let titleSpacing: CGFloat = 3.0
             
             let height: CGFloat
@@ -312,15 +301,15 @@ public class ChatListFilterPresetListSuggestedItemNode: ListViewItemNode, ItemLi
                                 strongSelf.bottomStripeNode.isHidden = hasCorners
                         }
                         
-                        strongSelf.maskNode.image = hasCorners ? PresentationResourcesItemList.cornersImage(item.presentationData.theme, top: hasTopCorners, bottom: hasBottomCorners, glass: item.systemStyle == .glass) : nil
+                        strongSelf.maskNode.image = hasCorners ? PresentationResourcesItemList.cornersImage(item.presentationData.theme, top: hasTopCorners, bottom: hasBottomCorners) : nil
                         
                         strongSelf.backgroundNode.frame = CGRect(origin: CGPoint(x: 0.0, y: -min(insets.top, separatorHeight)), size: CGSize(width: params.width, height: contentSize.height + min(insets.top, separatorHeight) + min(insets.bottom, separatorHeight)))
                         strongSelf.maskNode.frame = strongSelf.backgroundNode.frame.insetBy(dx: params.leftInset, dy: 0.0)
                         strongSelf.topStripeNode.frame = CGRect(origin: CGPoint(x: 0.0, y: -min(insets.top, separatorHeight)), size: CGSize(width: params.width, height: separatorHeight))
-                        strongSelf.bottomStripeNode.frame = CGRect(origin: CGPoint(x: bottomStripeInset, y: contentSize.height - separatorHeight), size: CGSize(width: params.width - bottomStripeInset - params.rightInset - separatorRightInset, height: separatorHeight))
+                        strongSelf.bottomStripeNode.frame = CGRect(origin: CGPoint(x: bottomStripeInset, y: contentSize.height - separatorHeight), size: CGSize(width: params.width - bottomStripeInset, height: separatorHeight))
                     }
                     
-                    let titleFrame = CGRect(origin: CGPoint(x: leftInset, y: verticalInset), size: titleLayout.size)
+                    let titleFrame = CGRect(origin: CGPoint(x: leftInset, y: 11.0), size: titleLayout.size)
                     strongSelf.titleNode.frame = titleFrame
                     
                     let labelFrame = CGRect(origin: CGPoint(x: leftInset, y: titleFrame.maxY + titleSpacing), size: labelLayout.size)

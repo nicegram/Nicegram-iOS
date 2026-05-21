@@ -36,18 +36,6 @@ private enum QuickReactionSetupControllerSection: Int32 {
     case items
 }
 
-public enum QuickReactionSetupEntryTag: ItemListItemTag, Equatable {
-    case choose
-    
-    public func isEqual(to other: ItemListItemTag) -> Bool {
-        if let other = other as? QuickReactionSetupEntryTag, self == other {
-            return true
-        } else {
-            return false
-        }
-    }
-}
-
 private enum QuickReactionSetupControllerEntry: ItemListNodeEntry {
     enum StableId: Hashable {
         case demoHeader
@@ -151,7 +139,6 @@ private enum QuickReactionSetupControllerEntry: ItemListNodeEntry {
                 context: arguments.context,
                 theme: presentationData.theme,
                 strings: presentationData.strings,
-                systemStyle: .glass,
                 sectionId: self.section,
                 fontSize: fontSize,
                 chatBubbleCorners: chatBubbleCorners,
@@ -168,7 +155,7 @@ private enum QuickReactionSetupControllerEntry: ItemListNodeEntry {
         case let .demoDescription(text):
             return ItemListTextItem(presentationData: presentationData, text: .plain(text), sectionId: self.section)
         case let .quickReaction(title, reaction, availableReactions):
-            return ItemListReactionItem(context: arguments.context, presentationData: presentationData, systemStyle: .glass, title: title, reaction: reaction, availableReactions: availableReactions, sectionId: self.section, style: .blocks, action: {
+            return ItemListReactionItem(context: arguments.context, presentationData: presentationData, title: title, reaction: reaction, availableReactions: availableReactions, sectionId: self.section, style: .blocks, action: {
                 arguments.openQuickReaction()
             })
         case let .quickReactionDescription(text):
@@ -215,8 +202,7 @@ private func quickReactionSetupControllerEntries(
 
 public func quickReactionSetupController(
     context: AccountContext,
-    updatedPresentationData: (initial: PresentationData, signal: Signal<PresentationData, NoError>)? = nil,
-    focusOnItemTag: QuickReactionSetupEntryTag? = nil
+    updatedPresentationData: (initial: PresentationData, signal: Signal<PresentationData, NoError>)? = nil
 ) -> ViewController {
     let statePromise = ValuePromise(QuickReactionSetupControllerState(), ignoreRepeated: true)
     let stateValue = Atomic(value: QuickReactionSetupControllerState())
@@ -245,10 +231,10 @@ public func quickReactionSetupController(
         }
     )
     
-    let settings = context.engine.data.subscribe(TelegramEngine.EngineData.Item.Configuration.ApplicationSpecificPreference(key: PreferencesKeys.reactionSettings))
+    let settings = context.account.postbox.preferencesView(keys: [PreferencesKeys.reactionSettings])
     |> map { preferencesView -> ReactionSettings in
         let reactionSettings: ReactionSettings
-        if let entry = preferencesView, let value = entry.get(ReactionSettings.self) {
+        if let entry = preferencesView.values[PreferencesKeys.reactionSettings], let value = entry.get(ReactionSettings.self) {
             reactionSettings = value
         } else {
             reactionSettings = .default
@@ -383,12 +369,6 @@ public func quickReactionSetupController(
             return
         }
         controller.dismiss()
-    }
-    
-    if focusOnItemTag == .choose {
-        Queue.mainQueue().after(0.1) {
-            arguments.openQuickReaction()
-        }
     }
     
     return controller

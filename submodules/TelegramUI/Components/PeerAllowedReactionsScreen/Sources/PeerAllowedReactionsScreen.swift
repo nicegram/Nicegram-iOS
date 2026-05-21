@@ -24,7 +24,6 @@ import PremiumLockButtonSubtitleComponent
 import ListSectionComponent
 import ListItemSliderSelectorComponent
 import ListSwitchItemComponent
-import PresentationDataUtils
 
 final class PeerAllowedReactionsScreenComponent: Component {
     typealias EnvironmentType = ViewControllerComponentContainer.Environment
@@ -59,7 +58,6 @@ final class PeerAllowedReactionsScreenComponent: Component {
         var id: AnyHashable
         var version: Int
         var isPreset: Bool
-        var canLoadMore: Bool
     }
     
     private struct EmojiSearchState {
@@ -112,7 +110,6 @@ final class PeerAllowedReactionsScreenComponent: Component {
                 self.emojiSearchState.set(.single(self.emojiSearchStateValue))
             }
         }
-        private var emojiSearchContext: EmojiSearchContext?
         
         private var emptyResultEmojis: [TelegramMediaFile] = []
         private var stableEmptyResultEmoji: TelegramMediaFile?
@@ -205,7 +202,7 @@ final class PeerAllowedReactionsScreenComponent: Component {
                     self.applySettings(standalone: true)
                 } else {
                     let presentationData = component.context.sharedContext.currentPresentationData.with { $0 }
-                    self.environment?.controller()?.present(textAlertController(context: component.context, title: presentationData.strings.ChannelReactions_UnsavedChangesAlertTitle, text: presentationData.strings.ChannelReactions_UnsavedChangesAlertText, actions: [
+                    self.environment?.controller()?.present(standardTextAlertController(theme: AlertControllerTheme(presentationData: presentationData), title: presentationData.strings.ChannelReactions_UnsavedChangesAlertTitle, text: presentationData.strings.ChannelReactions_UnsavedChangesAlertText, actions: [
                         TextAlertAction(type: .genericAction, title: presentationData.strings.ChannelReactions_UnsavedChangesAlertDiscard, action: { [weak self] in
                             guard let self else {
                                 return
@@ -309,7 +306,7 @@ final class PeerAllowedReactionsScreenComponent: Component {
                         self.displayPremiumScreen(reactionCount: customReactions.count)
                     case .generic:
                         let presentationData = component.context.sharedContext.currentPresentationData.with { $0 }
-                        self.environment?.controller()?.present(textAlertController(context: component.context, title: nil, text: presentationData.strings.Login_UnknownError, actions: [TextAlertAction(type: .defaultAction, title: presentationData.strings.Common_OK, action: {})]), in: .window(.root))
+                        self.environment?.controller()?.present(standardTextAlertController(theme: AlertControllerTheme(presentationData: presentationData), title: nil, text: presentationData.strings.Login_UnknownError, actions: [TextAlertAction(type: .defaultAction, title: presentationData.strings.Common_OK, action: {})]), in: .window(.root))
                     }
                 }
             }, completed: { [weak self] in
@@ -473,7 +470,7 @@ final class PeerAllowedReactionsScreenComponent: Component {
                         } else {
                             self.stableEmptyResultEmoji = nil
                         }
-                        emojiContent = emojiContent.withUpdatedItemGroups(panelItemGroups: emojiContent.panelItemGroups, contentItemGroups: emojiSearchResult.groups, itemContentUniqueId: EmojiPagerContentComponent.ContentId(id: emojiSearchResult.id, version: emojiSearchResult.version), emptySearchResults: emptySearchResults, searchState: emojiSearchState.isSearching ? .searching : .active, canLoadMore: emojiSearchResult.canLoadMore)
+                        emojiContent = emojiContent.withUpdatedItemGroups(panelItemGroups: emojiContent.panelItemGroups, contentItemGroups: emojiSearchResult.groups, itemContentUniqueId: EmojiPagerContentComponent.ContentId(id: emojiSearchResult.id, version: emojiSearchResult.version), emptySearchResults: emptySearchResults, searchState: emojiSearchState.isSearching ? .searching : .active)
                     } else {
                         self.stableEmptyResultEmoji = nil
                         
@@ -600,20 +597,17 @@ final class PeerAllowedReactionsScreenComponent: Component {
                             
                             switch query {
                             case .none:
-                                self.emojiSearchContext = nil
                                 self.emojiSearchDisposable.set(nil)
-                                self.emojiSearchStateValue = EmojiSearchState(result: nil, isSearching: false)
+                                self.emojiSearchState.set(.single(EmojiSearchState(result: nil, isSearching: false)))
                             case let .text(rawQuery, languageCode):
                                 let query = rawQuery.trimmingCharacters(in: .whitespacesAndNewlines)
                                 
                                 if query.isEmpty {
-                                    self.emojiSearchContext = nil
                                     self.emojiSearchDisposable.set(nil)
-                                    self.emojiSearchStateValue = EmojiSearchState(result: nil, isSearching: false)
+                                    self.emojiSearchState.set(.single(EmojiSearchState(result: nil, isSearching: false)))
                                 } else {
                                     let context = component.context
                                     let isEmojiOnly = !"".isEmpty
-                                    self.emojiSearchContext = nil
                                     
                                     var signal = context.engine.stickers.searchEmojiKeywords(inputLanguageCode: languageCode, query: query, completeMatch: false)
                                     if !languageCode.lowercased().hasPrefix("en") {
@@ -638,7 +632,7 @@ final class PeerAllowedReactionsScreenComponent: Component {
                                     }
                                     |> distinctUntilChanged
                                     
-                                    let resultSignal: Signal<(groups: [EmojiPagerContentComponent.ItemGroup], canLoadMore: Bool, isSearching: Bool, searchContext: EmojiSearchContext?), NoError>
+                                    let resultSignal: Signal<[EmojiPagerContentComponent.ItemGroup], NoError>
                                     do {
                                         let remotePacksSignal: Signal<(sets: FoundStickerSets, isFinalResult: Bool), NoError> = .single((FoundStickerSets(), false))
                                         |> then(
@@ -649,7 +643,7 @@ final class PeerAllowedReactionsScreenComponent: Component {
                                         let localPacksSignal: Signal<FoundStickerSets, NoError> = context.engine.stickers.searchEmojiSets(query: query)
                                         
                                         resultSignal = signal
-                                        |> mapToSignal { keywords -> Signal<(groups: [EmojiPagerContentComponent.ItemGroup], canLoadMore: Bool, isSearching: Bool, searchContext: EmojiSearchContext?), NoError> in
+                                        |> mapToSignal { keywords -> Signal<[EmojiPagerContentComponent.ItemGroup], NoError> in
                                             var allEmoticons: [String: String] = [:]
                                             for keyword in keywords {
                                                 for emoticon in keyword.emoticons {
@@ -692,10 +686,9 @@ final class PeerAllowedReactionsScreenComponent: Component {
                                                     fillWithLoadingPlaceholders: false,
                                                     items: items
                                                 ))
-                                                return .single((resultGroups, false, false, nil))
+                                                return .single(resultGroups)
                                             } else {
-                                                let emojiSearchContext = context.engine.stickers.emojiSearchContext(query: query, emoticon: Array(allEmoticons.keys), inputLanguageCode: languageCode)
-                                                let remoteSignal = emojiSearchContext.state
+                                                let remoteSignal = context.engine.stickers.searchEmoji(query: query, emoticon: Array(allEmoticons.keys), inputLanguageCode: languageCode)
                                                 
                                                 return combineLatest(
                                                     context.account.postbox.itemCollectionsView(orderedItemListCollectionIds: [], namespaces: [Namespaces.ItemCollection.CloudEmojiPacks], aroundIndex: nil, count: 10000000) |> take(1),
@@ -705,7 +698,7 @@ final class PeerAllowedReactionsScreenComponent: Component {
                                                     remoteSignal,
                                                     localPacksSignal
                                                 )
-                                                |> map { view, availableReactions, hasPremium, foundPacks, foundEmoji, foundLocalPacks -> (groups: [EmojiPagerContentComponent.ItemGroup], canLoadMore: Bool, isSearching: Bool, searchContext: EmojiSearchContext?) in
+                                                |> map { view, availableReactions, hasPremium, foundPacks, foundEmoji, foundLocalPacks -> [EmojiPagerContentComponent.ItemGroup] in
                                                     var result: [(String, TelegramMediaFile.Accessor?, String)] = []
                                                     
                                                     var allEmoticons: [String: String] = [:]
@@ -848,7 +841,7 @@ final class PeerAllowedReactionsScreenComponent: Component {
                                                             ))
                                                         }
                                                     }
-                                                    return (resultGroups, foundEmoji.canLoadMore, foundEmoji.items.isEmpty && foundEmoji.isLoadingMore, emojiSearchContext)
+                                                    return resultGroups
                                                 }
                                             }
                                         }
@@ -863,13 +856,11 @@ final class PeerAllowedReactionsScreenComponent: Component {
                                             return
                                         }
                                         
-                                        self.emojiSearchContext = result.searchContext
-                                        self.emojiSearchStateValue = EmojiSearchState(result: EmojiSearchResult(groups: result.groups, id: AnyHashable(query), version: version, isPreset: false, canLoadMore: result.canLoadMore), isSearching: result.isSearching)
+                                        self.emojiSearchStateValue = EmojiSearchState(result: EmojiSearchResult(groups: result, id: AnyHashable(query), version: version, isPreset: false), isSearching: false)
                                         version += 1
                                     }))
                                 }
                             case let .category(value):
-                                self.emojiSearchContext = nil
                                 let resultSignal: Signal<(items: [EmojiPagerContentComponent.ItemGroup], isFinalResult: Bool), NoError>
                                 do {
                                     resultSignal = component.context.engine.stickers.searchEmoji(category: value)
@@ -946,11 +937,11 @@ final class PeerAllowedReactionsScreenComponent: Component {
                                                 fillWithLoadingPlaceholders: true,
                                                 items: []
                                             )
-                                        ], id: AnyHashable(value.id), version: version, isPreset: true, canLoadMore: false), isSearching: false)
+                                        ], id: AnyHashable(value.id), version: version, isPreset: true), isSearching: false)
                                         return
                                     }
                                     
-                                    self.emojiSearchStateValue = EmojiSearchState(result: EmojiSearchResult(groups: result.items, id: AnyHashable(value.id), version: version, isPreset: true, canLoadMore: false), isSearching: false)
+                                    self.emojiSearchStateValue = EmojiSearchState(result: EmojiSearchResult(groups: result.items, id: AnyHashable(value.id), version: version, isPreset: true), isSearching: false)
                                     version += 1
                                 }))
                             }
@@ -958,9 +949,6 @@ final class PeerAllowedReactionsScreenComponent: Component {
                         updateScrollingToItemGroup: {
                         },
                         onScroll: {},
-                        loadMore: { [weak self] in
-                            self?.emojiSearchContext?.loadMore()
-                        },
                         chatPeerId: nil,
                         peekBehavior: nil,
                         customLayout: nil,
@@ -1271,7 +1259,6 @@ final class PeerAllowedReactionsScreenComponent: Component {
                     transition: transition,
                     component: AnyComponent(ListSectionComponent(
                         theme: environment.theme,
-                        style: .glass,
                         header: AnyComponent(MultilineTextComponent(
                             text: .plain(NSAttributedString(
                                 string: environment.strings.PeerInfo_AllowedReactions_MaxCountSectionTitle,
@@ -1306,8 +1293,7 @@ final class PeerAllowedReactionsScreenComponent: Component {
                                         self.allowedReactionCount = index
                                         self.state?.updated(transition: .immediate)
                                     }
-                                )),
-                                preferNative: true
+                                ))
                             )))
                         ],
                         displaySeparators: false
@@ -1363,7 +1349,6 @@ final class PeerAllowedReactionsScreenComponent: Component {
                         transition: transition,
                         component: AnyComponent(ListSectionComponent(
                             theme: environment.theme,
-                            style: .glass,
                             header: nil,
                             footer: AnyComponent(MultilineTextComponent(
                                 text: .plain(paidReactionsFooterText),
@@ -1548,12 +1533,10 @@ final class PeerAllowedReactionsScreenComponent: Component {
                 ))))
             }
             
-            let buttonInsets = ContainerViewLayout.concentricInsets(bottomInset: environment.safeInsets.bottom, innerDiameter: 52.0, sideInset: 30.0)
             let buttonSize = self.actionButton.update(
                 transition: transition,
                 component: AnyComponent(ButtonComponent(
                     background: ButtonComponent.Background(
-                        style: .glass,
                         color: environment.theme.list.itemCheckColors.fillColor,
                         foreground: environment.theme.list.itemCheckColors.foregroundColor,
                         pressedColor: environment.theme.list.itemCheckColors.fillColor.withMultipliedAlpha(0.8)
@@ -1572,7 +1555,7 @@ final class PeerAllowedReactionsScreenComponent: Component {
                     }
                 )),
                 environment: {},
-                containerSize: CGSize(width: availableSize.width - buttonInsets.left - buttonInsets.right, height: 52.0)
+                containerSize: CGSize(width: availableSize.width - sideInset * 2.0, height: 50.0)
             )
             contentHeight += buttonSize.height
             
@@ -1666,7 +1649,7 @@ final class PeerAllowedReactionsScreenComponent: Component {
                 buttonY = availableSize.height - bottomInset - environment.safeInsets.bottom - buttonSize.height
             }
             
-            let buttonFrame = CGRect(origin: CGPoint(x: buttonInsets.left, y: buttonY), size: buttonSize)
+            let buttonFrame = CGRect(origin: CGPoint(x: sideInset, y: buttonY), size: buttonSize)
             if let buttonView = self.actionButton.view {
                 if buttonView.superview == nil {
                     self.addSubview(buttonView)

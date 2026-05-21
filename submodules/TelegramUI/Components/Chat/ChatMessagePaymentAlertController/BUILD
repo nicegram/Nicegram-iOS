@@ -7,7 +7,7 @@ swift_library(
         "Sources/**/*.swift",
     ]),
     copts = [
-        "-warnings-as-errors",
+        #"-warnings-as-errors",
     ],
     deps = [
         "//submodules/SSignalKit/SwiftSignalKit:SwiftSignalKit",
@@ -25,8 +25,6 @@ swift_library(
         "//submodules/CheckNode",
         "//submodules/TelegramUIPreferences",
         "//submodules/TelegramUI/Components/Stars/StarsBalanceOverlayComponent",
-        "//submodules/TelegramUI/Components/AlertComponent",
-        "//submodules/TelegramUI/Components/AlertComponent/AlertCheckComponent",
         "//submodules/Markdown",
     ],
     visibility = [

@@ -17,10 +17,10 @@ import TinyThumbnail
 import ImageTransparency
 import AppBundle
 import MusicAlbumArtResources
+import Svg
 import RangeSet
 import Accelerate
 import ImageCompression
-import LegacyImpl
 
 private enum ResourceFileData {
     case data(Data)
@@ -2076,7 +2076,7 @@ public func chatMessagePhotoStatus(context: AccountContext, messageId: MessageId
         if let range = representationFetchRangeForDisplayAtSize(representation: largestRepresentation, dimension: displayAtSize) {
             return combineLatest(
                 context.fetchManager.fetchStatus(category: .image, location: .chat(messageId.peerId), locationKey: .messageId(messageId), resource: largestRepresentation.resource),
-                context.engine.resources.resourceRangesStatus(resource: EngineMediaResource(largestRepresentation.resource))
+                context.account.postbox.mediaBox.resourceRangesStatus(largestRepresentation.resource)
             )
             |> map { status, rangeStatus -> MediaResourceStatus in
                 if rangeStatus.isSuperset(of: RangeSet<Int64>(range)) {
@@ -3162,6 +3162,7 @@ private func albumArtFullSizeDatas(engine: TelegramEngine, file: FileMediaRefere
                     return .single(Tuple(nil, nil, false))
                 }
             }
+
         }
     }
     |> distinctUntilChanged(isEqual: { lhs, rhs in
@@ -3228,32 +3229,25 @@ public func playerAlbumArt(postbox: Postbox, engine: TelegramEngine, fileReferen
             }
         )
     }
-
-    func previewArtworkData(fileReference: FileMediaReference) -> Signal<Data?, NoError> {
-        guard let smallestRepresentation = smallestImageRepresentation(fileReference.media.previewRepresentations) else {
-            return .single(nil)
-        }
-
+    
+    var immediateArtworkData: Signal<Tuple3<Data?, Data?, Bool>, NoError> = .single(Tuple(nil, nil, false))
+    
+    if let fileReference = fileReference, let smallestRepresentation = smallestImageRepresentation(fileReference.media.previewRepresentations) {
         let thumbnailResource = smallestRepresentation.resource
+        
         let fetchedThumbnail = fetchedMediaResource(mediaBox: postbox.mediaBox, userLocation: .other, userContentType: .image, reference: fileReference.resourceReference(thumbnailResource))
-
-        return Signal<Data?, NoError> { subscriber in
+        
+        let thumbnail = Signal<Data?, NoError> { subscriber in
             let fetchedDisposable = fetchedThumbnail.start()
             let thumbnailDisposable = postbox.mediaBox.resourceData(thumbnailResource, attemptSynchronously: attemptSynchronously).start(next: { next in
                 subscriber.putNext(next.size == 0 ? nil : try? Data(contentsOf: URL(fileURLWithPath: next.path), options: []))
             }, error: subscriber.putError, completed: subscriber.putCompletion)
-
+            
             return ActionDisposable {
                 fetchedDisposable.dispose()
                 thumbnailDisposable.dispose()
             }
         }
-    }
-
-    var immediateArtworkData: Signal<Tuple3<Data?, Data?, Bool>, NoError> = .single(Tuple(nil, nil, false))
-
-    if let fileReference = fileReference, thumbnail, smallestImageRepresentation(fileReference.media.previewRepresentations) != nil {
-        let thumbnail = previewArtworkData(fileReference: fileReference)
         immediateArtworkData = thumbnail
         |> map { thumbnailData in
             return Tuple(thumbnailData, nil, false)
@@ -3265,36 +3259,7 @@ public func playerAlbumArt(postbox: Postbox, engine: TelegramEngine, fileReferen
                 return Tuple(thumbnailData, nil, false)
             }
         } else {
-            let previewData: Signal<Data?, NoError>
-            if let fileReference = fileReference {
-                previewData = previewArtworkData(fileReference: fileReference)
-            } else {
-                previewData = .single(nil)
-            }
-
-            immediateArtworkData = combineLatest(
-                albumArtFullSizeDatas(engine: engine, file: fileReference, thumbnail: albumArt.thumbnailResource, fullSize: albumArt.fullSizeResource),
-                previewData
-            )
-            |> map { remoteArtworkData, previewData in
-                let remoteFullSizeData = remoteArtworkData._1
-                let shouldUsePreviewFallback: Bool
-                if remoteArtworkData._2 {
-                    if let remoteFullSizeData = remoteFullSizeData {
-                        shouldUsePreviewFallback = remoteFullSizeData.isEmpty
-                    } else {
-                        shouldUsePreviewFallback = true
-                    }
-                } else {
-                    shouldUsePreviewFallback = false
-                }
-
-                if shouldUsePreviewFallback {
-                    return Tuple(previewData, nil, false)
-                } else {
-                    return remoteArtworkData
-                }
-            }
+            immediateArtworkData = albumArtFullSizeDatas(engine: engine, file: fileReference, thumbnail: albumArt.thumbnailResource, fullSize: albumArt.fullSizeResource)
         }
     } else {
         immediateArtworkData = .single(Tuple(nil, nil, false))

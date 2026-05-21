@@ -246,7 +246,7 @@ private func initialHandshakeAccept(postbox: Postbox, network: Network, peerId: 
             memcpy(&keyFingerprint, bytes.advanced(by: keyHash.count - 8), 8)
         }
         
-        let result = network.request(Api.functions.messages.acceptEncryption(peer: .inputEncryptedChat(.init(chatId: Int32(peerId.id._internalGetInt64Value()), accessHash: accessHash)), gB: Buffer(data: gb), keyFingerprint: keyFingerprint))
+        let result = network.request(Api.functions.messages.acceptEncryption(peer: .inputEncryptedChat(chatId: Int32(peerId.id._internalGetInt64Value()), accessHash: accessHash), gB: Buffer(data: gb), keyFingerprint: keyFingerprint))
         
         let response = result
         |> map { result -> Api.EncryptedChat? in
@@ -822,8 +822,6 @@ private func decryptedEntities73(_ entities: [MessageTextEntity]?) -> [SecretApi
                 break
             case .CustomEmoji:
                 break
-            case .FormattedDate:
-                break
             case .Custom:
                 break
         }
@@ -876,8 +874,6 @@ private func decryptedEntities101(_ entities: [MessageTextEntity]?) -> [SecretAp
             case .Spoiler:
                 break
             case .CustomEmoji:
-                break
-            case .FormattedDate:
                 break
             case .Custom:
                 break
@@ -932,8 +928,6 @@ private func decryptedEntities144(_ entities: [MessageTextEntity]?) -> [SecretAp
                 result.append(.messageEntitySpoiler(offset: Int32(entity.range.lowerBound), length: Int32(entity.range.count)))
             case let .CustomEmoji(_, fileId):
                 result.append(.messageEntityCustomEmoji(offset: Int32(entity.range.lowerBound), length: Int32(entity.range.count), documentId: fileId))
-            case .FormattedDate:
-                break
             case .Custom:
                 break
         }
@@ -1789,11 +1783,9 @@ private func sendMessage(auxiliaryMethods: AccountAuxiliaryMethods, postbox: Pos
                             var encryptedFile: SecretChatFileReference?
                             if case let .message(result) = result {
                                 switch result {
-                                    case let .sentEncryptedMessage(sentEncryptedMessageData):
-                                        let date = sentEncryptedMessageData.date
+                                    case let .sentEncryptedMessage(date):
                                         timestamp = date
-                                    case let .sentEncryptedFile(sentEncryptedFileData):
-                                        let (date, file) = (sentEncryptedFileData.date, sentEncryptedFileData.file)
+                                    case let .sentEncryptedFile(date, file):
                                         timestamp = date
                                         encryptedFile = SecretChatFileReference(file)
                                 }
@@ -1889,7 +1881,7 @@ private func sendStandaloneMessage(auxiliaryMethods: AccountAuxiliaryMethods, po
             
             var attributes = contents.attributes
             if !attributes.contains(where: { $0 is AutoremoveTimeoutMessageAttribute }), let messageAutoremoveTimeout = state.messageAutoremoveTimeout {
-                attributes.append(AutoremoveTimeoutMessageAttribute(timeout: messageAutoremoveTimeout, countdownBeginTime: nil))
+                attributes.append(AutoclearTimeoutMessageAttribute(timeout: messageAutoremoveTimeout, countdownBeginTime: nil))
             }
             
             let message = Message(
@@ -1936,11 +1928,9 @@ private func sendStandaloneMessage(auxiliaryMethods: AccountAuxiliaryMethods, po
                     var encryptedFile: SecretChatFileReference?
                     if case let .message(result) = result {
                         switch result {
-                        case let .sentEncryptedMessage(sentEncryptedMessageData):
-                            let date = sentEncryptedMessageData.date
+                        case let .sentEncryptedMessage(date):
                             timestamp = date
-                        case let .sentEncryptedFile(sentEncryptedFileData):
-                            let (date, file) = (sentEncryptedFileData.date, sentEncryptedFileData.file)
+                        case let .sentEncryptedFile(date, file):
                             timestamp = date
                             encryptedFile = SecretChatFileReference(file)
                         }
@@ -2058,11 +2048,9 @@ private func sendServiceActionMessage(postbox: Postbox, network: Network, peerId
                             var timestamp = currentMessage.timestamp
                             if case let .message(result) = result {
                                 switch result {
-                                    case let .sentEncryptedMessage(sentEncryptedMessageData):
-                                        let date = sentEncryptedMessageData.date
+                                    case let .sentEncryptedMessage(date):
                                         timestamp = date
-                                    case let .sentEncryptedFile(sentEncryptedFileData):
-                                        let date = sentEncryptedFileData.date
+                                    case let .sentEncryptedFile(date, _):
                                         timestamp = date
                                 }
                                 flags.remove(.Unsent)
@@ -2144,7 +2132,7 @@ private func sendBoxedDecryptedMessage(postbox: Postbox, network: Network, peer:
     decryptedMessage.serialize(payload, role: state.role, sequenceInfo: sequenceInfo)
     let encryptedPayload = encryptedMessageContents(parameters: parameters, data: MemoryBuffer(payload))
     let sendMessage: Signal<Api.messages.SentEncryptedMessage, MTRpcError>
-    let inputPeer = Api.InputEncryptedChat.inputEncryptedChat(.init(chatId: Int32(peer.id.id._internalGetInt64Value()), accessHash: peer.accessHash))
+    let inputPeer = Api.InputEncryptedChat.inputEncryptedChat(chatId: Int32(peer.id.id._internalGetInt64Value()), accessHash: peer.accessHash)
     
     var flags: Int32 = 0
     if silent {
@@ -2200,7 +2188,7 @@ private func requestTerminateSecretChat(postbox: Postbox, network: Network, peer
             }
             |> mapToSignal { peer -> Signal<Void, NoError> in
                 if let peer = peer {
-                    return network.request(Api.functions.messages.reportEncryptedSpam(peer: Api.InputEncryptedChat.inputEncryptedChat(.init(chatId: Int32(peer.id.id._internalGetInt64Value()), accessHash: peer.accessHash))))
+                    return network.request(Api.functions.messages.reportEncryptedSpam(peer: Api.InputEncryptedChat.inputEncryptedChat(chatId: Int32(peer.id.id._internalGetInt64Value()), accessHash: peer.accessHash)))
                     |> map(Optional.init)
                     |> `catch` { _ -> Signal<Api.Bool?, NoError> in
                         return .single(nil)

@@ -37,8 +37,7 @@ func _internal_messageReadStats(account: Account, id: MessageId) -> Signal<Messa
                     return MessageReadStats(reactionCount: 0, peers: [], readTimestamps: [:])
                 }
                 switch result {
-                case let .outboxReadDate(outboxReadDateData):
-                    let date = outboxReadDateData.date
+                case let .outboxReadDate(date):
                     return MessageReadStats(reactionCount: 0, peers: [EnginePeer(peer)], readTimestamps: [peer.id: date])
                 }
             }
@@ -48,8 +47,7 @@ func _internal_messageReadStats(account: Account, id: MessageId) -> Signal<Messa
                 var items: [(Int64, Int32)] = []
                 for item in result {
                     switch item {
-                    case let .readParticipantDate(readParticipantDateData):
-                        let (userId, date) = (readParticipantDateData.userId, readParticipantDateData.date)
+                    case let .readParticipantDate(userId, date):
                         items.append((userId, date))
                     }
                 }
@@ -62,8 +60,7 @@ func _internal_messageReadStats(account: Account, id: MessageId) -> Signal<Messa
             let reactionCount: Signal<Int, NoError> = account.network.request(Api.functions.messages.getMessageReactionsList(flags: 0, peer: inputPeer, id: id.id, reaction: nil, offset: nil, limit: 1))
             |> map { result -> Int in
                 switch result {
-                case let .messageReactionsList(messageReactionsListData):
-                    let count = messageReactionsListData.count
+                case let .messageReactionsList(_, count, _, _, _, _):
                     return Int(count)
                 }
             }

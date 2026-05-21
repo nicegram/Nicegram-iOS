@@ -18,18 +18,15 @@ final class DataButtonComponent: Component {
     let theme: PresentationTheme
     let title: String
     let action: () -> Void
-    let tag: AnyObject?
     
     init(
         theme: PresentationTheme,
         title: String,
-        action: @escaping () -> Void,
-        tag: AnyObject? = nil
+        action: @escaping () -> Void
     ) {
         self.theme = theme
         self.title = title
         self.action = action
-        self.tag = tag
     }
     
     static func ==(lhs: DataButtonComponent, rhs: DataButtonComponent) -> Bool {
@@ -39,23 +36,10 @@ final class DataButtonComponent: Component {
         if lhs.title != rhs.title {
             return false
         }
-        if lhs.tag !== rhs.tag {
-            return false
-        }
         return true
     }
     
-    class View: HighlightTrackingButton, ComponentTaggedView {
-        public func matches(tag: Any) -> Bool {
-            if let component = self.component, let componentTag = component.tag {
-                let tag = tag as AnyObject
-                if componentTag === tag {
-                    return true
-                }
-            }
-            return false
-        }
-        
+    class View: HighlightTrackingButton {
         private let title = ComponentView<Empty>()
         
         private var component: DataButtonComponent?
@@ -67,7 +51,7 @@ final class DataButtonComponent: Component {
             super.init(frame: frame)
 
             self.clipsToBounds = true
-            self.layer.cornerRadius = 26.0
+            self.layer.cornerRadius = 10.0
             
             self.highligthedChanged = { [weak self] isHighlighted in
                 guard let self, let component = self.component, let highlightBackgroundFrame = self.highlightBackgroundFrame else {
@@ -111,10 +95,6 @@ final class DataButtonComponent: Component {
             component.action()
         }
         
-        func displayHighlight() {
-            
-        }
-        
         func update(component: DataButtonComponent, availableSize: CGSize, state: EmptyComponentState, environment: Environment<Empty>, transition: ComponentTransition) -> CGSize {
             let themeUpdated = self.component?.theme !== component.theme
             
@@ -131,7 +111,7 @@ final class DataButtonComponent: Component {
                 containerSize: CGSize(width: availableSize.width, height: 100.0)
             )
             
-            let height: CGFloat = 52.0
+            let height: CGFloat = 44.0
             
             let titleFrame = CGRect(origin: CGPoint(x: floor((availableSize.width - titleSize.width) / 2.0), y: floor((height - titleSize.height) / 2.0)), size: titleSize)
             

@@ -77,12 +77,9 @@ private enum NotificationsPeerCategorySection: Int32 {
 }
 
 public enum NotificationsPeerCategoryEntryTag: ItemListItemTag {
-    case edit
     case enable
     case previews
     case sound
-    case important
-    case deleteExceptions
     
     public func isEqual(to other: ItemListItemTag) -> Bool {
         if let other = other as? NotificationsPeerCategoryEntryTag, self == other {
@@ -281,33 +278,33 @@ private enum NotificationsPeerCategoryEntry: ItemListNodeEntry {
             case let .enableHeader(text):
                 return ItemListSectionHeaderItem(presentationData: presentationData, text: text, sectionId: self.section)
             case let .enable(_, text, value):
-                return ItemListSwitchItem(presentationData: presentationData, systemStyle: .glass, title: text, value: value, sectionId: self.section, style: .blocks, updated: { updatedValue in
+                return ItemListSwitchItem(presentationData: presentationData, title: text, value: value, sectionId: self.section, style: .blocks, updated: { updatedValue in
                     arguments.updateEnabled(updatedValue)
                 }, tag: self.tag)
             case let .enableImportant(_, text, value):
-                return ItemListSwitchItem(presentationData: presentationData, systemStyle: .glass, title: text, value: value, sectionId: self.section, style: .blocks, updated: { updatedValue in
+                return ItemListSwitchItem(presentationData: presentationData, title: text, value: value, sectionId: self.section, style: .blocks, updated: { updatedValue in
                     arguments.updateEnabledImportant(updatedValue)
-                }, tag: NotificationsPeerCategoryEntryTag.important)
+                }, tag: self.tag)
             case let .importantInfo(_, text):
                 return ItemListTextItem(presentationData: presentationData, text: .plain(text), sectionId: self.section)
             case let .optionsHeader(_, text):
                 return ItemListSectionHeaderItem(presentationData: presentationData, text: text, sectionId: self.section)
             case let .previews(_, text, value):
-                return ItemListSwitchItem(presentationData: presentationData, systemStyle: .glass, title: text, value: value, sectionId: self.section, style: .blocks, updated: { value in
+                return ItemListSwitchItem(presentationData: presentationData, title: text, value: value, sectionId: self.section, style: .blocks, updated: { value in
                     arguments.updatePreviews(value)
-                }, tag: self.tag)
+                })
             case let .sound(_, text, value, sound):
-                return ItemListDisclosureItem(presentationData: presentationData, systemStyle: .glass, title: text, label: value, labelStyle: .text, sectionId: self.section, style: .blocks, disclosureStyle: .arrow, action: {
+                return ItemListDisclosureItem(presentationData: presentationData, title: text, label: value, labelStyle: .text, sectionId: self.section, style: .blocks, disclosureStyle: .arrow, action: {
                     arguments.openSound(sound)
                 }, tag: self.tag)
             case let .exceptionsHeader(_, text):
                 return ItemListSectionHeaderItem(presentationData: presentationData, text: text, sectionId: self.section)
             case let .addException(theme, text):
-                return ItemListPeerActionItem(presentationData: presentationData, systemStyle: .glass, icon: PresentationResourcesItemList.plusIconImage(theme), title: text, sectionId: self.section, height: .peerList, color: .accent, editing: false, action: {
+                return ItemListPeerActionItem(presentationData: presentationData, icon: PresentationResourcesItemList.plusIconImage(theme), title: text, sectionId: self.section, height: .peerList, color: .accent, editing: false, action: {
                     arguments.addException()
                 })
             case let .exception(_, _, _, dateTimeFormat, nameDisplayOrder, peer, description, _, editing, revealed, canRemove):
-                return ItemListPeerItem(presentationData: presentationData, systemStyle: .glass, dateTimeFormat: dateTimeFormat, nameDisplayOrder: nameDisplayOrder, context: arguments.context, peer: peer, presence: nil, text: .text(description, .secondary), label: .none, editing: ItemListPeerItemEditing(editable: canRemove, editing: canRemove && editing, revealed: canRemove && revealed), switchValue: nil, enabled: true, selectable: true, sectionId: self.section, action: {
+                return ItemListPeerItem(presentationData: presentationData, dateTimeFormat: dateTimeFormat, nameDisplayOrder: nameDisplayOrder, context: arguments.context, peer: peer, presence: nil, text: .text(description, .secondary), label: .none, editing: ItemListPeerItemEditing(editable: canRemove, editing: canRemove && editing, revealed: canRemove && revealed), switchValue: nil, enabled: true, selectable: true, sectionId: self.section, action: {
                     arguments.openException(peer)
                 }, setPeerIdWithRevealedOptions: { peerId, fromPeerId in
                     arguments.updateRevealedPeerId(peerId)
@@ -315,9 +312,9 @@ private enum NotificationsPeerCategoryEntry: ItemListNodeEntry {
                     arguments.removePeer(peer)
                 }, hasTopStripe: false, hasTopGroupInset: false, noInsets: false)
             case let .removeAllExceptions(theme, text):
-                return ItemListPeerActionItem(presentationData: presentationData, systemStyle: .glass, icon: PresentationResourcesItemList.deleteIconImage(theme), title: text, sectionId: self.section, height: .generic, color: .destructive, editing: false, action: {
+                return ItemListPeerActionItem(presentationData: presentationData, icon: PresentationResourcesItemList.deleteIconImage(theme), title: text, sectionId: self.section, height: .generic, color: .destructive, editing: false, action: {
                     arguments.removeAllExceptions()
-                }, tag: NotificationsPeerCategoryEntryTag.deleteExceptions)
+                })
         }
     }
 }
@@ -618,12 +615,6 @@ public func notificationsPeerCategoryController(context: AccountContext, categor
         let result = stateValue.modify { f($0) }
         statePromise.set(result)
         updatedMode(result.mode)
-    }
-    
-    if focusOnItemTag == .edit {
-        updateState {
-            $0.withUpdatedEditing(true)
-        }
     }
     
     let updatePeerSound: (EnginePeer.Id, PeerMessageSound) -> Signal<Void, NoError> = { peerId, sound in
@@ -1007,7 +998,7 @@ public func notificationsPeerCategoryController(context: AccountContext, categor
     })
     
     let sharedData = context.sharedContext.accountManager.sharedData(keys: [ApplicationSpecificSharedDataKeys.inAppNotificationSettings])
-    let preferences = context.engine.data.subscribe(TelegramEngine.EngineData.Item.Configuration.ApplicationSpecificPreference(key: PreferencesKeys.globalNotifications))
+    let preferences = context.account.postbox.preferencesView(keys: [PreferencesKeys.globalNotifications])
     
     var automaticData: Signal<([EnginePeer], [EnginePeer.Id: EnginePeer.NotificationSettings]), NoError> = .single(([], [:]))
     if case .stories = category {
@@ -1039,7 +1030,7 @@ public func notificationsPeerCategoryController(context: AccountContext, categor
     let signal = combineLatest(context.sharedContext.presentationData, context.engine.peers.notificationSoundList(), sharedData, preferences, statePromise.get(), automaticData)
     |> map { presentationData, notificationSoundList, sharedData, view, state, automaticData -> (ItemListControllerState, (ItemListNodeState, Any)) in
         let viewSettings: GlobalNotificationSettingsSet
-        if let settings = view?.get(GlobalNotificationSettings.self) {
+        if let settings = view.values[PreferencesKeys.globalNotifications]?.get(GlobalNotificationSettings.self) {
             viewSettings = settings.effective
         } else {
             viewSettings = GlobalNotificationSettingsSet.defaultSettings
@@ -1105,20 +1096,5 @@ public func notificationsPeerCategoryController(context: AccountContext, categor
     pushControllerImpl = { [weak controller] c in
         (controller?.navigationController as? NavigationController)?.pushViewController(c)
     }
-    
-    if let focusOnItemTag {
-        var didFocusOnItem = false
-        controller.afterTransactionCompleted = { [weak controller] in
-            if !didFocusOnItem, let controller {
-                controller.forEachItemNode { itemNode in
-                    if let itemNode = itemNode as? ItemListItemNode, let tag = itemNode.tag, tag.isEqual(to: focusOnItemTag) {
-                        didFocusOnItem = true
-                        itemNode.displayHighlight()
-                    }
-                }
-            }
-        }
-    }
-    
     return controller
 }

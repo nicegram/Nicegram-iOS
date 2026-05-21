@@ -11,7 +11,6 @@ import CoreLocation
 import PresentationDataUtils
 import DeviceAccess
 import AttachmentUI
-import CounterControllerTitleView
 
 public enum LocationPickerMode {
     case share(peer: EnginePeer?, selfPeer: EnginePeer?, hasLiveLocation: Bool)
@@ -53,16 +52,9 @@ class LocationPickerInteraction {
 }
 
 public final class LocationPickerController: ViewController, AttachmentContainable {
-    public enum Source: Equatable {
-        public enum PollMode: Equatable {
-            case description
-            case quizAnswer
-            case option
-        }
-        
+    public enum Source {
         case generic
         case story
-        case poll(PollMode)
     }
     
     private var controllerNode: LocationPickerControllerNode {
@@ -71,7 +63,7 @@ public final class LocationPickerController: ViewController, AttachmentContainab
     
     private let context: AccountContext
     private let mode: LocationPickerMode
-    let source: Source
+    private let source: Source
     let initialLocation: CLLocationCoordinate2D?
     private let completion: (TelegramMediaMap, Int64?, String?, String?, String?) -> Void
     private var presentationData: PresentationData
@@ -98,15 +90,8 @@ public final class LocationPickerController: ViewController, AttachmentContainab
     public var isContainerExpanded: () -> Bool = { return false }
     public var isMinimized: Bool = false
     
-    private let style: Style
-    public enum Style {
-        case glass
-        case legacy
-    }
-    
-    public init(context: AccountContext, style: Style = .legacy, updatedPresentationData: (initial: PresentationData, signal: Signal<PresentationData, NoError>)? = nil, mode: LocationPickerMode, source: Source = .generic, initialLocation: CLLocationCoordinate2D? = nil, completion: @escaping (TelegramMediaMap, Int64?, String?, String?, String?) -> Void) {
+    public init(context: AccountContext, updatedPresentationData: (initial: PresentationData, signal: Signal<PresentationData, NoError>)? = nil, mode: LocationPickerMode, source: Source = .generic, initialLocation: CLLocationCoordinate2D? = nil, completion: @escaping (TelegramMediaMap, Int64?, String?, String?, String?) -> Void) {
         self.context = context
-        self.style = style
         self.mode = mode
         self.source = source
         self.initialLocation = initialLocation
@@ -114,17 +99,12 @@ public final class LocationPickerController: ViewController, AttachmentContainab
         self.presentationData = updatedPresentationData?.initial ?? context.sharedContext.currentPresentationData.with { $0 }
         self.updatedPresentationData = updatedPresentationData
         
-        let navigationBarPresentationData = NavigationBarPresentationData(theme: NavigationBarTheme(rootControllerTheme: self.presentationData.theme, hideBackground: style == .glass, hideSeparator: true), strings: NavigationBarStrings(presentationStrings: self.presentationData.strings))
-        
-        super.init(navigationBarPresentationData: navigationBarPresentationData)
+        super.init(navigationBarPresentationData: NavigationBarPresentationData(theme: NavigationBarTheme(rootControllerTheme: self.presentationData.theme).withUpdatedSeparatorColor(.clear), strings: NavigationBarStrings(presentationStrings: self.presentationData.strings)))
         
         self.navigationPresentation = .modal
         
-        if case .glass = style {
-            self.navigationItem.leftBarButtonItem = UIBarButtonItem(customView: UIView())
-        } else {
-            self.navigationItem.leftBarButtonItem = UIBarButtonItem(title: self.presentationData.strings.Common_Cancel, style: .plain, target: self, action: #selector(self.cancelPressed))
-        }
+        self.title = self.presentationData.strings.Map_ChooseLocationTitle
+        self.navigationItem.leftBarButtonItem = UIBarButtonItem(title: self.presentationData.strings.Common_Cancel, style: .plain, target: self, action: #selector(self.cancelPressed))
         self.updateBarButtons()
         
         self.presentationDataDisposable = ((updatedPresentationData?.signal ?? context.sharedContext.presentationData)
@@ -134,9 +114,7 @@ public final class LocationPickerController: ViewController, AttachmentContainab
             }
             strongSelf.presentationData = presentationData
             
-            let navigationBarPresentationData = NavigationBarPresentationData(theme: NavigationBarTheme(rootControllerTheme: strongSelf.presentationData.theme, hideBackground: style == .glass, hideSeparator: true), strings: NavigationBarStrings(presentationStrings: strongSelf.presentationData.strings))
-            
-            strongSelf.navigationBar?.updatePresentationData(navigationBarPresentationData, transition: .immediate)
+            strongSelf.navigationBar?.updatePresentationData(NavigationBarPresentationData(theme: NavigationBarTheme(rootControllerTheme: strongSelf.presentationData.theme).withUpdatedSeparatorColor(.clear), strings: NavigationBarStrings(presentationStrings: strongSelf.presentationData.strings)))
             strongSelf.searchNavigationContentNode?.updatePresentationData(strongSelf.presentationData)
             
             strongSelf.updateBarButtons()
@@ -265,57 +243,45 @@ public final class LocationPickerController: ViewController, AttachmentContainab
                 return state
             }
         }, openSearch: { [weak self] in
-            guard let self, let interaction = self.interaction, let navigationBar = self.navigationBar else {
+            guard let strongSelf = self, let interaction = strongSelf.interaction, let navigationBar = strongSelf.navigationBar else {
                 return
             }
-            self.controllerNode.updateState { state in
+            strongSelf.controllerNode.updateState { state in
                 var state = state
                 state.displayingMapModeOptions = false
                 return state
             }
-            
-            switch style {
-            case .glass:
-                let _ = self.controllerNode.activateSearch(navigationBar: navigationBar)
-                self.updateTabBarVisibility(false, .animated(duration: 0.4, curve: .spring))
-            case .legacy:
-                let contentNode = LocationSearchNavigationContentNode(presentationData: self.presentationData, interaction: interaction)
-                self.searchNavigationContentNode = contentNode
-                navigationBar.setContentNode(contentNode, animated: true)
-                let isSearching = self.controllerNode.activateSearch(navigationBar: navigationBar)
-                contentNode.activate()
+            let contentNode = LocationSearchNavigationContentNode(presentationData: strongSelf.presentationData, interaction: interaction)
+            strongSelf.searchNavigationContentNode = contentNode
+            navigationBar.setContentNode(contentNode, animated: true)
+            let isSearching = strongSelf.controllerNode.activateSearch(navigationBar: navigationBar)
+            contentNode.activate()
 
-                self.isSearchingDisposable.set((isSearching
-                |> deliverOnMainQueue).start(next: { [weak self] value in
-                    if let strongSelf = self, let searchNavigationContentNode = strongSelf.searchNavigationContentNode {
-                        searchNavigationContentNode.updateActivity(value)
-                    }
-                }))
-            }
+            strongSelf.isSearchingDisposable.set((isSearching
+            |> deliverOnMainQueue).start(next: { [weak self] value in
+                if let strongSelf = self, let searchNavigationContentNode = strongSelf.searchNavigationContentNode {
+                    searchNavigationContentNode.updateActivity(value)
+                }
+            }))
         }, updateSearchQuery: { [weak self] query in
             guard let strongSelf = self else {
                 return
             }
             strongSelf.controllerNode.searchContainerNode?.searchTextUpdated(text: query)
         }, dismissSearch: { [weak self] in
-            guard let self, let navigationBar = self.navigationBar else {
+            guard let strongSelf = self, let navigationBar = strongSelf.navigationBar else {
                 return
             }
-            self.isSearchingDisposable.set(nil)
-            self.searchNavigationContentNode?.deactivate()
-            self.searchNavigationContentNode = nil
+            strongSelf.isSearchingDisposable.set(nil)
+            strongSelf.searchNavigationContentNode?.deactivate()
+            strongSelf.searchNavigationContentNode = nil
             navigationBar.setContentNode(nil, animated: true)
-            self.controllerNode.deactivateSearch()
-            
-            if !self.controllerNode.isPickingLocation {
-                self.updateTabBarVisibility(true, .animated(duration: 0.4, curve: .spring))
-            }
+            strongSelf.controllerNode.deactivateSearch()
         }, dismissInput: { [weak self] in
-            guard let self else {
+            guard let strongSelf = self else {
                 return
             }
-            self.searchNavigationContentNode?.deactivate()
-            self.controllerNode.deactivateInput()
+            strongSelf.searchNavigationContentNode?.deactivate()
         }, updateSendActionHighlight: { [weak self] highlighted in
             guard let strongSelf = self else {
                 return
@@ -356,12 +322,8 @@ public final class LocationPickerController: ViewController, AttachmentContainab
         if self.locationAccessDenied {
             self.navigationItem.rightBarButtonItem = nil
         } else {
-            if case .glass = self.style {
-                
-            } else {
-                self.navigationItem.rightBarButtonItem = UIBarButtonItem(image: PresentationResourcesRootController.navigationCompactSearchIcon(self.presentationData.theme), style: .plain, target: self, action: #selector(self.searchPressed))
-                self.navigationItem.rightBarButtonItem?.accessibilityLabel = self.presentationData.strings.Common_Search
-            }
+            self.navigationItem.rightBarButtonItem = UIBarButtonItem(image: PresentationResourcesRootController.navigationCompactSearchIcon(self.presentationData.theme), style: .plain, target: self, action: #selector(self.searchPressed))
+            self.navigationItem.rightBarButtonItem?.accessibilityLabel = self.presentationData.strings.Common_Search
         }
     }
     
@@ -417,18 +379,10 @@ public final class LocationPickerController: ViewController, AttachmentContainab
         self.dismiss()
     }
     
-    @objc func searchPressed() {
+    @objc private func searchPressed() {
         self.requestAttachmentMenuExpansion()
         
         self.interaction?.openSearch()
-    }
-    
-    func dismissSearchPressed() {
-        self.interaction?.dismissSearch()
-    }
-    
-    func updateSearchQuery(_ query: String) {
-        self.interaction?.updateSearchQuery(query)
     }
     
     public func resetForReuse() {
@@ -453,13 +407,14 @@ public func storyLocationPickerController(
 ) -> ViewController {
     let presentationData = context.sharedContext.currentPresentationData.with({ $0 }).withUpdated(theme: defaultDarkColorPresentationTheme)
     let updatedPresentationData: (PresentationData, Signal<PresentationData, NoError>) = (presentationData, .single(presentationData))
-    let controller = AttachmentController(context: context, updatedPresentationData: updatedPresentationData, style: .glass, chatLocation: nil, buttons: [.standalone], initialButton: .standalone, fromMenu: false, hasTextInput: false)
+    let controller = AttachmentController(context: context, updatedPresentationData: updatedPresentationData, chatLocation: nil, buttons: [.standalone], initialButton: .standalone, fromMenu: false, hasTextInput: false, makeEntityInputView: {
+        return nil
+    })
     controller.requestController = { _, present in
-        let locationPickerController = LocationPickerController(context: context, style: .glass, updatedPresentationData: updatedPresentationData, mode: .share(peer: nil, selfPeer: nil, hasLiveLocation: false), source: .story, initialLocation: location, completion: { location, queryId, resultId, address, countryCode in
+        let locationPickerController = LocationPickerController(context: context, updatedPresentationData: updatedPresentationData, mode: .share(peer: nil, selfPeer: nil, hasLiveLocation: false), source: .story, initialLocation: location, completion: { location, queryId, resultId, address, countryCode in
             completion(location, queryId, resultId, address, countryCode)
         })
         present(locationPickerController, locationPickerController.mediaPickerContext)
-        return true
     }
     controller.navigationPresentation = .flatModal
     controller.supportedOrientations = ViewControllerSupportedOrientations(regularSize: .all, compactSize: .portrait)

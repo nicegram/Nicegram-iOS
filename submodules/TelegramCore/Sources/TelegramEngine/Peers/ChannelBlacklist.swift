@@ -32,7 +32,7 @@ func _internal_updateChannelMemberBannedRights(account: Account, peerId: PeerId,
                 if let rights = rights, !rights.flags.isEmpty {
                     apiRights = rights.apiBannedRights
                 } else {
-                    apiRights = .chatBannedRights(.init(flags: 0, untilDate: 0))
+                    apiRights = .chatBannedRights(flags: 0, untilDate: 0)
                 }
                 
                 return account.network.request(Api.functions.channels.editBanned(channel: inputChannel, participant: inputPeer, bannedRights: apiRights))
@@ -125,19 +125,19 @@ func _internal_updateChannelMemberBannedRights(account: Account, peerId: PeerId,
                                 return cachedData
                             }
                         })
-                        var peers: [EnginePeer.Id: EnginePeer] = [:]
+                        var peers: [PeerId: Peer] = [:]
                         var presences: [PeerId: PeerPresence] = [:]
-                        peers[memberPeer.id] = EnginePeer(memberPeer)
+                        peers[memberPeer.id] = memberPeer
                         if let presence = transaction.getPeerPresence(peerId: memberPeer.id) {
                             presences[memberPeer.id] = presence
                         }
                         if case let .member(_, _, _, maybeBanInfo, _, _) = updatedParticipant, let banInfo = maybeBanInfo {
                             if let peer = transaction.getPeer(banInfo.restrictedBy) {
-                                peers[peer.id] = EnginePeer(peer)
+                                peers[peer.id] = peer
                             }
                         }
                         
-                        return (currentParticipant, RenderedChannelParticipant(participant: updatedParticipant, peer: EnginePeer(memberPeer), peers: peers, presences: presences), isMember)
+                        return (currentParticipant, RenderedChannelParticipant(participant: updatedParticipant, peer: memberPeer, peers: peers, presences: presences), isMember)
                     }
                 }
             } else {

@@ -5,20 +5,17 @@ public final class StoryItemsTableEntry: Equatable {
     public let id: Int32
     public let expirationTimestamp: Int32?
     public let isCloseFriends: Bool
-    public let isLiveStream: Bool
     
     public init(
         value: CodableEntry,
         id: Int32,
         expirationTimestamp: Int32?,
-        isCloseFriends: Bool,
-        isLiveStream: Bool
+        isCloseFriends: Bool
     ) {
         self.value = value
         self.id = id
         self.expirationTimestamp = expirationTimestamp
         self.isCloseFriends = isCloseFriends
-        self.isLiveStream = isLiveStream
     }
     
     public static func ==(lhs: StoryItemsTableEntry, rhs: StoryItemsTableEntry) -> Bool {
@@ -37,9 +34,6 @@ public final class StoryItemsTableEntry: Equatable {
         if lhs.isCloseFriends != rhs.isCloseFriends {
             return false
         }
-        if lhs.isLiveStream != rhs.isLiveStream {
-            return false
-        }
         return true
     }
 }
@@ -48,7 +42,6 @@ final class StoryTopItemsTable: Table {
     struct Entry {
         var id: Int32
         var isExact: Bool
-        var hasLiveItems: Bool
     }
     
     enum Event {
@@ -79,12 +72,10 @@ final class StoryTopItemsTable: Table {
             }
             var maxId: Int32 = 0
             buffer.read(&maxId, offset: 0, length: 4)
-            var flags: Int8 = 0
-            buffer.read(&flags, offset: 0, length: 1)
-            let isExact = (flags & (1 << 0)) != 0
-            let hasLiveItems = (flags & (1 << 1)) != 0
+            var isExact: Int8 = 0
+            buffer.read(&isExact, offset: 0, length: 1)
             
-            return Entry(id: maxId, isExact: isExact, hasLiveItems: hasLiveItems)
+            return Entry(id: maxId, isExact: isExact != 0)
         } else {
             return nil
         }
@@ -98,14 +89,8 @@ final class StoryTopItemsTable: Table {
             buffer.write(&version, length: 1)
             var maxId = entry.id
             buffer.write(&maxId, length: 4)
-            var flags: Int8 = 0
-            if entry.isExact {
-                flags |= 1 << 0
-            }
-            if entry.hasLiveItems {
-                flags |= 1 << 1
-            }
-            buffer.write(&flags, length: 1)
+            var isExact: Int8 = entry.isExact ? 1 : 0
+            buffer.write(&isExact, length: 1)
             
             self.valueBox.set(self.table, key: self.key(Key(peerId: peerId)), value: buffer.readBufferNoCopy())
         } else {
@@ -154,11 +139,10 @@ final class StoryItemsTable: Table {
         return key.successor
     }
     
-    public func getStats(peerId: PeerId, maxSeenId: Int32) -> (total: Int, unseen: Int, hasUnseenCloseFriends: Bool, hasLiveItems: Bool) {
+    public func getStats(peerId: PeerId, maxSeenId: Int32) -> (total: Int, unseen: Int, hasUnseenCloseFriends: Bool) {
         var total = 0
         var unseen = 0
         var hasUnseenCloseFriends = false
-        var hasLiveItems = false
         
         self.valueBox.range(self.table, start: self.lowerBound(peerId: peerId), end: self.upperBound(peerId: peerId), values: { key, value in
             let id = key.getInt32(8)
@@ -166,49 +150,42 @@ final class StoryItemsTable: Table {
             total += 1
             if id > maxSeenId {
                 unseen += 1
-            }
                 
-            var isCloseFriends = false
-            var isLiveStream = false
-            let readBuffer = ReadBuffer(data: value.makeData())
-            var magic: UInt32 = 0
-            readBuffer.read(&magic, offset: 0, length: 4)
-            if magic == 0xabcd1234 {
-            } else if magic == 0xabcd1235 {
-                var length: Int32 = 0
-                readBuffer.read(&length, offset: 0, length: 4)
-                if length > 0 && readBuffer.offset + Int(length) <= readBuffer.length {
-                    readBuffer.skip(Int(length))
-                    if readBuffer.offset + 4 <= readBuffer.length {
-                        readBuffer.skip(4)
-                        
-                        if readBuffer.offset + 1 <= readBuffer.length {
-                            var flags: UInt8 = 0
-                            readBuffer.read(&flags, offset: 0, length: 1)
-                            isCloseFriends = (flags & (1 << 0)) != 0
-                            isLiveStream = (flags & (1 << 1)) != 0
+                var isCloseFriends = false
+                let readBuffer = ReadBuffer(data: value.makeData())
+                var magic: UInt32 = 0
+                readBuffer.read(&magic, offset: 0, length: 4)
+                if magic == 0xabcd1234 {
+                } else if magic == 0xabcd1235 {
+                    var length: Int32 = 0
+                    readBuffer.read(&length, offset: 0, length: 4)
+                    if length > 0 && readBuffer.offset + Int(length) <= readBuffer.length {
+                        readBuffer.skip(Int(length))
+                        if readBuffer.offset + 4 <= readBuffer.length {
+                            readBuffer.skip(4)
+                            
+                            if readBuffer.offset + 1 <= readBuffer.length {
+                                var flags: UInt8 = 0
+                                readBuffer.read(&flags, offset: 0, length: 1)
+                                isCloseFriends = (flags & (1 << 0)) != 0
+                            }
                         }
+                    } else {
+                        assertionFailure()
                     }
                 } else {
                     assertionFailure()
                 }
-            } else {
-                assertionFailure()
-            }
-            
-            if id > maxSeenId {
+                
                 if isCloseFriends {
                     hasUnseenCloseFriends = true
                 }
-            }
-            if isLiveStream {
-                hasLiveItems = true
             }
             
             return true
         }, limit: 10000)
         
-        return (total, unseen, hasUnseenCloseFriends, hasLiveItems)
+        return (total, unseen, hasUnseenCloseFriends)
     }
     
     public func get(peerId: PeerId) -> [StoryItemsTableEntry] {
@@ -222,7 +199,6 @@ final class StoryItemsTable: Table {
             let entry: CodableEntry
             var expirationTimestamp: Int32?
             var isCloseFriends = false
-            var isLiveStream = false
             
             let readBuffer = ReadBuffer(data: value.makeData())
             var magic: UInt32 = 0
@@ -258,7 +234,6 @@ final class StoryItemsTable: Table {
                             var flags: UInt8 = 0
                             readBuffer.read(&flags, offset: 0, length: 1)
                             isCloseFriends = (flags & (1 << 0)) != 0
-                            isLiveStream = (flags & (1 << 1)) != 0
                         }
                     }
                 } else {
@@ -270,7 +245,7 @@ final class StoryItemsTable: Table {
                 entry = CodableEntry(data: value.makeData())
             }
             
-            result.append(StoryItemsTableEntry(value: entry, id: id, expirationTimestamp: expirationTimestamp, isCloseFriends: isCloseFriends, isLiveStream: isLiveStream))
+            result.append(StoryItemsTableEntry(value: entry, id: id, expirationTimestamp: expirationTimestamp, isCloseFriends: isCloseFriends))
             
             return true
         }, limit: 10000)
@@ -393,8 +368,6 @@ final class StoryItemsTable: Table {
             self.valueBox.remove(self.table, key: key, secure: true)
         }
         
-        var hasLiveItems = false
-        
         let buffer = WriteBuffer()
         for entry in entries {
             buffer.reset()
@@ -413,10 +386,6 @@ final class StoryItemsTable: Table {
             if entry.isCloseFriends {
                 flags |= (1 << 0)
             }
-            if entry.isLiveStream {
-                hasLiveItems = true
-                flags |= (1 << 1)
-            }
             buffer.write(&flags, length: 1)
             
             self.valueBox.set(self.table, key: self.key(Key(peerId: peerId, id: entry.id)), value: buffer.readBufferNoCopy())
@@ -424,7 +393,7 @@ final class StoryItemsTable: Table {
         
         events.append(.replace(peerId: peerId))
         
-        topItemTable.set(peerId: peerId, entry: StoryTopItemsTable.Entry(id: entries.last?.id ?? 0, isExact: true, hasLiveItems: hasLiveItems), events: &topItemEvents)
+        topItemTable.set(peerId: peerId, entry: StoryTopItemsTable.Entry(id: entries.last?.id ?? 0, isExact: true), events: &topItemEvents)
     }
     
     override func clearMemoryCache() {

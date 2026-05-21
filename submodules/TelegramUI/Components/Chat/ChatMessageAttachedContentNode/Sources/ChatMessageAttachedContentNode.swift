@@ -31,14 +31,12 @@ import ChatMessageAttachedContentButtonNode
 import MessageInlineBlockBackgroundView
 import ComponentFlow
 import PlainButtonComponent
-import BundleIconComponent
 import AvatarNode
 import EmojiTextAttachmentView
 
 public enum ChatMessageAttachedContentActionIcon {
     case instant
     case link
-    case bid
 }
 
 public struct ChatMessageAttachedContentNodeMediaFlags: OptionSet {
@@ -100,11 +98,13 @@ public final class ChatMessageAttachedContentNode: ASDisplayNode {
     public var statusNode: ChatMessageDateAndStatusNode?
     
     private var closeButton: ComponentView<Empty>?
+    private var closeButtonImage: UIImage?
     
     private var inlineStickerLayers: [InlineStickerItemLayer] = []
     
     private var inlineMediaValue: InlineMedia?
     
+    //private var additionalImageBadgeNode: ChatMessageInteractiveMediaBadge?
     private var linkHighlightingNode: LinkHighlightingNode?
     
     private var context: AccountContext?
@@ -240,15 +240,7 @@ public final class ChatMessageAttachedContentNode: ASDisplayNode {
                 }
             }
             
-            let nameColors: PeerNameColors.Colors?
-            switch author?.nameColor {
-            case let .preset(nameColor):
-                nameColors = context.peerNameColors.get(nameColor, dark: presentationData.theme.theme.overallDarkAppearance)
-            case let .collectible(collectibleColor):
-                nameColors = collectibleColor.peerNameColors(dark: presentationData.theme.theme.overallDarkAppearance)
-            default:
-                nameColors = nil
-            }
+            let nameColors = author?.nameColor.flatMap { context.peerNameColors.get($0, dark: presentationData.theme.theme.overallDarkAppearance) }
             
             let mainColor: UIColor
             var secondaryColor: UIColor?
@@ -323,7 +315,7 @@ public final class ChatMessageAttachedContentNode: ASDisplayNode {
             
             var mediaAndFlags = mediaAndFlags
             if let mediaAndFlagsValue = mediaAndFlags {
-                if mediaAndFlagsValue.0.first is TelegramMediaStory || mediaAndFlagsValue.0.first is WallpaperPreviewMedia || mediaAndFlagsValue.0.first is UniqueGiftPreviewMedia || mediaAndFlagsValue.0.first is GiftAuctionPreviewMedia {
+                if mediaAndFlagsValue.0.first is TelegramMediaStory || mediaAndFlagsValue.0.first is WallpaperPreviewMedia || mediaAndFlagsValue.0.first is UniqueGiftPreviewMedia {
                     var flags = mediaAndFlagsValue.1
                     flags.remove(.preferMediaInline)
                     mediaAndFlags = (mediaAndFlagsValue.0, flags)
@@ -356,7 +348,7 @@ public final class ChatMessageAttachedContentNode: ASDisplayNode {
                             contentMediaValue = file
                         } else if file.isVideo {
                             contentMediaValue = file
-                        } else if file.isSticker || file.isAnimatedSticker || file.isCustomEmoji {
+                        } else if file.isSticker || file.isAnimatedSticker {
                             contentMediaValue = file
                         } else {
                             contentFileValue = file
@@ -377,7 +369,7 @@ public final class ChatMessageAttachedContentNode: ASDisplayNode {
                             if case .full = contentMediaAutomaticDownload {
                                 willDownloadOrLocal = true
                             } else {
-                                willDownloadOrLocal = context.engine.resources.completedResourcePath(id: EngineMediaResource.Id(file.resource.id)) != nil
+                                willDownloadOrLocal = context.account.postbox.mediaBox.completedResourcePath(file.resource) != nil
                             }
                             if willDownloadOrLocal {
                                 contentMediaAutomaticPlayback = true
@@ -393,8 +385,6 @@ public final class ChatMessageAttachedContentNode: ASDisplayNode {
                     } else if media is TelegramMediaStory {
                         contentMediaValue = media
                     } else if media is UniqueGiftPreviewMedia {
-                        contentMediaValue = media
-                    } else if media is GiftAuctionPreviewMedia {
                         contentMediaValue = media
                     }
                 }
@@ -626,8 +616,6 @@ public final class ChatMessageAttachedContentNode: ASDisplayNode {
                             case .link:
                                 buttonIconImage = PresentationResourcesChat.chatMessageAttachedContentButtonIconLinkIncoming(presentationData.theme.theme)!
                                 cornerIcon = true
-                            case .bid:
-                                buttonIconImage = PresentationResourcesChat.chatMessageAttachedContentButtonIconBidIncoming(presentationData.theme.theme)!
                             }
                         }
                     } else {
@@ -638,8 +626,6 @@ public final class ChatMessageAttachedContentNode: ASDisplayNode {
                             case .link:
                                 buttonIconImage = PresentationResourcesChat.chatMessageAttachedContentButtonIconLinkOutgoing(presentationData.theme.theme)!
                                 cornerIcon = true
-                            case .bid:
-                                buttonIconImage = PresentationResourcesChat.chatMessageAttachedContentButtonIconBidOutgoing(presentationData.theme.theme)!
                             }
                         }
                     }
@@ -1115,7 +1101,7 @@ public final class ChatMessageAttachedContentNode: ASDisplayNode {
                                         inlineMedia.setSignal(updateInlineImageSignal)
                                     }
                                 case let .peerAvatar(peer):
-                                    if let peerReference = PeerReference(peer) {
+                                    if let peerReference = PeerReference(peer._asPeer()) {
                                         if let signal = peerAvatarImage(account: context.account, peerReference: peerReference, authorOfMessage: nil, representation: peer.largeProfileImage, displayDimensions: inlineMediaSize, clipStyle: .none, blurred: false, inset: 0.0, emptyColor: mainColor.withMultipliedAlpha(0.1), synchronousLoad: synchronousLoads, provideUnrounded: false) {
                                             let updateInlineImageSignal = signal |> map { images -> (TransformImageArguments) -> DrawingContext? in
                                                 let image = images?.0
@@ -1237,41 +1223,6 @@ public final class ChatMessageAttachedContentNode: ASDisplayNode {
                                 } else {
                                     titleBadgeLabel.bounds = CGRect(origin: CGPoint(), size: titleBadgeFrame.size)
                                     animation.animator.updatePosition(layer: titleBadgeLabel.layer, position: titleBadgeFrame.origin, completion: nil)
-                                }
-                            }
-                            
-                            if let _ = message.media.first(where: { $0 is TelegramMediaPoll }) {
-                                let closeButton: ComponentView<Empty>
-                                if let current = self.closeButton {
-                                    closeButton = current
-                                } else {
-                                    closeButton = ComponentView<Empty>()
-                                    self.closeButton = closeButton
-                                }
-                                let closeButtonSize = closeButton.update(
-                                    transition: .immediate,
-                                    component: AnyComponent(
-                                        PlainButtonComponent(
-                                            content: AnyComponent(
-                                                Image(image: PresentationResourcesChat.chatAttachedContentCloseIcon(presentationData.theme.theme), tintColor: mainColor, size: CGSize(width: 12.0, height: 12.0))
-                                            ),
-                                            minSize: CGSize(width: 44.0, height: 44.0),
-                                            action: { [weak controllerInteraction] in
-                                                controllerInteraction?.displayPollSolution(nil, nil)
-                                            },
-                                            animateAlpha: true,
-                                            animateScale: false
-                                        )
-                                    ),
-                                    environment: {},
-                                    containerSize: CGSize(width: 44.0, height: 44.0)
-                                )
-                                let closeButtonFrame = CGRect(origin: CGPoint(x: backgroundFrame.maxX - closeButtonSize.width + 11.0, y: floorToScreenPixels(titleFrame.midY - closeButtonSize.height / 2.0)), size: closeButtonSize)
-                                if let closeButtonView = closeButton.view {
-                                    if closeButtonView.superview == nil {
-                                        self.transformContainer.view.addSubview(closeButtonView)
-                                    }
-                                    closeButtonView.frame = closeButtonFrame
                                 }
                             }
                         } else {
@@ -1557,9 +1508,7 @@ public final class ChatMessageAttachedContentNode: ASDisplayNode {
                         
                         if displayLine {
                             var pattern: MessageInlineBlockBackgroundView.Pattern?
-                            if let _ = message.media.first(where: { $0 is TelegramMediaPoll }) {
-                                
-                            } else if let backgroundEmojiId = author?.backgroundEmojiId {
+                            if let backgroundEmojiId = author?.backgroundEmojiId {
                                 pattern = MessageInlineBlockBackgroundView.Pattern(
                                     context: context,
                                     fileId: backgroundEmojiId,
@@ -1708,8 +1657,7 @@ public final class ChatMessageAttachedContentNode: ASDisplayNode {
                         TelegramTextAttributes.PeerTextMention,
                         TelegramTextAttributes.BotCommand,
                         TelegramTextAttributes.Hashtag,
-                        TelegramTextAttributes.BankCard,
-                        TelegramTextAttributes.Date
+                        TelegramTextAttributes.BankCard
                     ]
                     for name in possibleNames {
                         if let _ = attributes[NSAttributedString.Key(rawValue: name)] {

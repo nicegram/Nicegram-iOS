@@ -20,28 +20,6 @@ public enum AvatarGalleryEntryId: Hashable {
     case resource(String)
 }
 
-private func avatarGalleryEntryMatchesImage(_ entry: AvatarGalleryEntry, _ image: TelegramMediaImage) -> Bool {
-    guard
-        let entryRepresentation = largestImageRepresentation(entry.representations.map({ $0.representation })),
-        let imageRepresentation = largestImageRepresentation(image.representations)
-    else {
-        return false
-    }
-    guard let entryResource = entryRepresentation.resource as? CloudPeerPhotoSizeMediaResource, let imageResource = imageRepresentation.resource as? CloudPhotoSizeMediaResource else {
-        return false
-    }
-    return entryResource.photoId == imageResource.photoId
-}
-
-private func avatarGalleryEntryWithVideoRepresentations(_ entry: AvatarGalleryEntry, videoRepresentations: [VideoRepresentationWithReference], immediateThumbnailData: Data?) -> AvatarGalleryEntry {
-    switch entry {
-    case let .topImage(representations, _, peer, indexData, _, category):
-        return .topImage(representations, videoRepresentations, peer, indexData, immediateThumbnailData, category)
-    default:
-        return entry
-    }
-}
-
 public func peerInfoProfilePhotos(context: AccountContext, peerId: EnginePeer.Id) -> Signal<Any, NoError> {
     return context.engine.data.subscribe(TelegramEngine.EngineData.Item.Peer.Peer(id: peerId))
     |> mapToSignal { peer -> Signal<[AvatarGalleryEntry]?, NoError> in
@@ -70,12 +48,6 @@ public func peerInfoProfilePhotos(context: AccountContext, peerId: EnginePeer.Id
                             }
                             if case let .known(photo) = cachedData.fallbackPhoto {
                                 lastEntry = photo
-                                if let photo, firstEntry.videoRepresentations.isEmpty, !photo.videoRepresentations.isEmpty, avatarGalleryEntryMatchesImage(firstEntry, photo), let peerReference = PeerReference(peer) {
-                                    let videoRepresentations = photo.videoRepresentations.map {
-                                        VideoRepresentationWithReference(representation: $0, reference: MediaResourceReference.avatar(peer: peerReference, resource: $0.resource))
-                                    }
-                                    firstEntry = avatarGalleryEntryWithVideoRepresentations(firstEntry, videoRepresentations: videoRepresentations, immediateThumbnailData: firstEntry.immediateThumbnailData ?? photo.immediateThumbnailData)
-                                }
                             }
                         }
                         return fetchedAvatarGalleryEntries(engine: context.engine, account: context.account, peer: EnginePeer(peer), firstEntry: firstEntry, secondEntry: secondEntry, lastEntry: lastEntry)
@@ -233,11 +205,11 @@ public func normalizeEntries(_ entries: [AvatarGalleryEntry]) -> [AvatarGalleryE
 
 public func initialAvatarGalleryEntries(account: Account, engine: TelegramEngine, peer: EnginePeer) -> Signal<[AvatarGalleryEntry]?, NoError> {
     var initialEntries: [AvatarGalleryEntry] = []
-    if !peer.profileImageRepresentations.isEmpty, let peerReference = PeerReference(peer) {
+    if !peer.profileImageRepresentations.isEmpty, let peerReference = PeerReference(peer._asPeer()) {
         initialEntries.append(.topImage(peer.profileImageRepresentations.map({ ImageRepresentationWithReference(representation: $0, reference: MediaResourceReference.avatar(peer: peerReference, resource: $0.resource)) }), [], peer, nil, nil, nil))
     }
     
-    guard let peerReference = PeerReference(peer) else {
+    guard let peerReference = PeerReference(peer._asPeer()) else {
         return .single(initialEntries)
     }
     switch peer {
@@ -283,7 +255,7 @@ public func fetchedAvatarGalleryEntries(engine: TelegramEngine, account: Account
                 var result: [AvatarGalleryEntry] = []
                 if photos.isEmpty {
                     result = initialEntries
-                } else if let peerReference = PeerReference(peer) {
+                } else if let peerReference = PeerReference(peer._asPeer()) {
                     var index: Int32 = 0
                     if [Namespaces.Peer.CloudGroup, Namespaces.Peer.CloudChannel].contains(peer.id.namespace) {
                         var initialMediaIds = Set<EngineMedia.Id>()
@@ -339,13 +311,7 @@ public func fetchedAvatarGalleryEntries(engine: TelegramEngine, account: Account
             let initialEntries = [firstEntry]
             if photos.isEmpty {
                 result = initialEntries
-                if let lastEntry, let firstEntry = result.first, firstEntry.videoRepresentations.isEmpty, !lastEntry.videoRepresentations.isEmpty, avatarGalleryEntryMatchesImage(firstEntry, lastEntry), let peerReference = PeerReference(peer) {
-                    let videoRepresentations = lastEntry.videoRepresentations.map {
-                        VideoRepresentationWithReference(representation: $0, reference: MediaResourceReference.avatar(peer: peerReference, resource: $0.resource))
-                    }
-                    result[0] = avatarGalleryEntryWithVideoRepresentations(firstEntry, videoRepresentations: videoRepresentations, immediateThumbnailData: firstEntry.immediateThumbnailData ?? lastEntry.immediateThumbnailData)
-                }
-            } else if let peerReference = PeerReference(peer) {
+            } else if let peerReference = PeerReference(peer._asPeer()) {
                 var index: Int32 = 0
                 
                 if [Namespaces.Peer.CloudGroup, Namespaces.Peer.CloudChannel].contains(peer.id.namespace) {
@@ -446,7 +412,7 @@ public class AvatarGalleryController: ViewController, StandalonePresentableContr
     private var centralEntryIndex: Int?
     
     private let centralItemTitle = Promise<String>()
-    private let centralItemTitleContent = Promise<GalleryTitleView.Content?>()
+    private let centralItemTitleView = Promise<UIView?>()
     private let centralItemRightBarButtonItems = Promise<[UIBarButtonItem]?>(nil)
     private let centralItemNavigationStyle = Promise<GalleryItemNodeNavigationStyle>()
     private let centralItemFooterContentNode = Promise<(GalleryFooterContentNode?, GalleryOverlayContentNode?)>()
@@ -460,8 +426,6 @@ public class AvatarGalleryController: ViewController, StandalonePresentableContr
     public var hiddenMedia: Signal<AvatarGalleryEntry?, NoError> {
         return self._hiddenMedia.get()
     }
-    
-    private let titleView: GalleryTitleView
     
     private let replaceRootController: (ViewController, Promise<Bool>?) -> Void
     
@@ -477,14 +441,10 @@ public class AvatarGalleryController: ViewController, StandalonePresentableContr
         
         self.centralEntryIndex = centralEntryIndex
         
-        self.titleView = GalleryTitleView(context: context, presentationData: self.presentationData)
-        
         super.init(navigationBarPresentationData: NavigationBarPresentationData(theme: GalleryController.darkNavigationTheme, strings: NavigationBarStrings(presentationStrings: self.presentationData.strings)))
         
         let backItem = UIBarButtonItem(backButtonAppearanceWithTitle: self.presentationData.strings.Common_Back, target: self, action: #selector(self.donePressed))
         self.navigationItem.leftBarButtonItem = backItem
-        
-        self.navigationItem.titleView = self.titleView
         
         self.statusBar.statusBarStyle = .White
         
@@ -586,8 +546,8 @@ public class AvatarGalleryController: ViewController, StandalonePresentableContr
             }
         }))
         
-        self.centralItemAttributesDisposable.add(self.centralItemTitleContent.get().start(next: { [weak self] titleContent in
-            self?.titleView.setContent(content: titleContent)
+        self.centralItemAttributesDisposable.add(self.centralItemTitleView.get().start(next: { [weak self] titleView in
+            self?.navigationItem.titleView = titleView
         }))
         
         self.centralItemAttributesDisposable.add(self.centralItemRightBarButtonItems.get().start(next: { [weak self] rightBarButtonItems in
@@ -670,10 +630,8 @@ public class AvatarGalleryController: ViewController, StandalonePresentableContr
         }, editMedia: { _ in
         }, controller: { [weak self] in
             return self
-        }, currentItemNode: { [weak self] in
-            return self?.galleryNode.pager.centralItemNode()
         })
-        self.displayNode = GalleryControllerNode(context: self.context, controllerInteraction: controllerInteraction, titleView: self.titleView)
+        self.displayNode = GalleryControllerNode(context: self.context, controllerInteraction: controllerInteraction)
         self.displayNodeDidLoad()
         
         self.galleryNode.pager.updateOnReplacement = true
@@ -720,7 +678,7 @@ public class AvatarGalleryController: ViewController, StandalonePresentableContr
                     
                     if let node = strongSelf.galleryNode.pager.centralItemNode() {
                         strongSelf.centralItemTitle.set(node.title())
-                        strongSelf.centralItemTitleContent.set(node.titleContent())
+                        strongSelf.centralItemTitleView.set(node.titleView())
                         strongSelf.centralItemRightBarButtonItems.set(node.rightBarButtonItems())
                         strongSelf.centralItemNavigationStyle.set(node.navigationStyle())
                         strongSelf.centralItemFooterContentNode.set(node.footerContent())
@@ -749,7 +707,7 @@ public class AvatarGalleryController: ViewController, StandalonePresentableContr
         
         if let centralItemNode = self.galleryNode.pager.centralItemNode(), let presentationArguments = self.presentationArguments as? AvatarGalleryControllerPresentationArguments {
             self.centralItemTitle.set(centralItemNode.title())
-            self.centralItemTitleContent.set(centralItemNode.titleContent())
+            self.centralItemTitleView.set(centralItemNode.titleView())
             self.centralItemRightBarButtonItems.set(centralItemNode.rightBarButtonItems())
             self.centralItemNavigationStyle.set(centralItemNode.navigationStyle())
             self.centralItemFooterContentNode.set(centralItemNode.footerContent())
@@ -796,7 +754,7 @@ public class AvatarGalleryController: ViewController, StandalonePresentableContr
             self.galleryNode.setControlsHidden(true, animated: false)
             if let centralItemNode = self.galleryNode.pager.centralItemNode(), let itemSize = centralItemNode.contentSize() {
                 self.preferredContentSize = itemSize.aspectFitted(self.view.bounds.size)
-                self.containerLayoutUpdated(ContainerViewLayout(size: self.preferredContentSize, metrics: LayoutMetrics(), deviceMetrics: layout.deviceMetrics, intrinsicInsets: UIEdgeInsets(), safeInsets: UIEdgeInsets(), additionalInsets: UIEdgeInsets(),  statusBarHeight: nil, inputHeight: nil, inputHeightIsInteractivellyChanging: false, inVoiceOver: false), transition: .immediate)
+                self.containerLayoutUpdated(ContainerViewLayout(size: self.preferredContentSize, metrics: LayoutMetrics(), deviceMetrics: layout.deviceMetrics, intrinsicInsets: UIEdgeInsets(), safeInsets: UIEdgeInsets(), additionalInsets: UIEdgeInsets(), statusBarHeight: nil, inputHeight: nil, inputHeightIsInteractivellyChanging: false, inVoiceOver: false), transition: .immediate)
                 centralItemNode.activateAsInitial()
             }
         }
@@ -846,7 +804,7 @@ public class AvatarGalleryController: ViewController, StandalonePresentableContr
                 } else {
                 }
             case let .image(_, reference, _, _, _, _, _, _, _, _, _, _):
-            if self.peer.id == self.context.account.peerId, let peerReference = PeerReference(self.peer) {
+            if self.peer.id == self.context.account.peerId, let peerReference = PeerReference(self.peer._asPeer()) {
                     if let reference = reference {
                         let _ = (self.context.engine.accountData.updatePeerPhotoExisting(reference: reference)
                         |> deliverOnMainQueue).start(next: { [weak self] photo in
@@ -855,12 +813,12 @@ public class AvatarGalleryController: ViewController, StandalonePresentableContr
                                 
                                 for (lhs, rhs) in zip(firstEntry.representations, updatedEntry.representations) {
                                     if lhs.representation.dimensions == rhs.representation.dimensions {
-                                        strongSelf.context.engine.resources.copyResourceData(from: EngineMediaResource.Id(lhs.representation.resource.id), to: EngineMediaResource.Id(rhs.representation.resource.id), synchronous: true)
+                                        strongSelf.context.account.postbox.mediaBox.copyResourceData(from: lhs.representation.resource.id, to: rhs.representation.resource.id, synchronous: true)
                                     }
                                 }
                                 for (lhs, rhs) in zip(firstEntry.videoRepresentations, updatedEntry.videoRepresentations) {
                                     if lhs.representation.dimensions == rhs.representation.dimensions {
-                                        strongSelf.context.engine.resources.copyResourceData(from: EngineMediaResource.Id(lhs.representation.resource.id), to: EngineMediaResource.Id(rhs.representation.resource.id), synchronous: true)
+                                        strongSelf.context.account.postbox.mediaBox.copyResourceData(from: lhs.representation.resource.id, to: rhs.representation.resource.id, synchronous: true)
                                     }
                                 }
                                 

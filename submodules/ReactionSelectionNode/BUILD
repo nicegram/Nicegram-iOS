@@ -7,7 +7,7 @@ swift_library(
 		"Sources/**/*.swift",
     ]),
     copts = [
-        "-warnings-as-errors",
+        #"-warnings-as-errors",
     ],
     deps = [
         "//submodules/Postbox:Postbox",
@@ -30,7 +30,6 @@ swift_library(
         "//submodules/TelegramUI/Components/EntityKeyboard:EntityKeyboard",
         "//submodules/TelegramUI/Components/AnimationCache:AnimationCache",
         "//submodules/TelegramUI/Components/MultiAnimationRenderer:MultiAnimationRenderer",
-        "//submodules/TelegramUI/Components/DCTMultiAnimationRendererImpl:DCTMultiAnimationRendererImpl",
         "//submodules/TelegramUI/Components/EmojiTextAttachmentView:EmojiTextAttachmentView",
         "//submodules/Components/ComponentDisplayAdapters:ComponentDisplayAdapters",
         "//submodules/TextFormat:TextFormat",
@@ -40,7 +39,6 @@ swift_library(
         "//submodules/Components/BalancedTextComponent",
         "//submodules/Markdown",
         "//submodules/TelegramUI/Components/Premium/PremiumStarComponent",
-        "//submodules/TelegramUI/Components/GlassBackgroundComponent",
     ],
     visibility = [
         "//visibility:public",

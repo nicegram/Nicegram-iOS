@@ -12,10 +12,10 @@ import AccountContext
 import AppBundle
 import PromptUI
 import SafariServices
+import ShareController
 import UndoUI
 import UrlEscaping
 import PDFKit
-import GlassBackgroundComponent
 
 final class BrowserPdfContent: UIView, BrowserContent, UIScrollViewDelegate, PDFDocumentDelegate {
     private let context: AccountContext
@@ -25,7 +25,7 @@ final class BrowserPdfContent: UIView, BrowserContent, UIScrollViewDelegate, PDF
     private let pdfView: PDFView
     private let scrollView: UIScrollView!
     
-    private let pageIndicatorBackground = GlassBackgroundView()
+    private let pageIndicatorBackgorund: UIVisualEffectView
     private let pageIndicator = ComponentView<Empty>()
     private var pageNumber: (Int, Int)?
     private var pageTimer: SwiftSignalKit.Timer?
@@ -61,7 +61,11 @@ final class BrowserPdfContent: UIView, BrowserContent, UIScrollViewDelegate, PDF
         
         self.pdfView = PDFView()
         self.pdfView.clipsToBounds = false
-                
+        
+        self.pageIndicatorBackgorund = UIVisualEffectView(effect: UIBlurEffect(style: .light))
+        self.pageIndicatorBackgorund.clipsToBounds = true
+        self.pageIndicatorBackgorund.layer.cornerRadius = 10.0
+        
         var scrollView: UIScrollView?
         for view in self.pdfView.subviews {
             if let view = view as? UIScrollView {
@@ -82,7 +86,7 @@ final class BrowserPdfContent: UIView, BrowserContent, UIScrollViewDelegate, PDF
         
         var title = "file"
         var url = ""
-        if let path = self.context.engine.resources.completedResourcePath(id: EngineMediaResource.Id(file.media.resource.id)) {
+        if let path = self.context.account.postbox.mediaBox.completedResourcePath(file.media.resource) {
             var updatedPath = path
             if let fileName = file.media.fileName {
                 let tempFile = TempBox.shared.file(path: path, fileName: fileName)
@@ -166,7 +170,7 @@ final class BrowserPdfContent: UIView, BrowserContent, UIScrollViewDelegate, PDF
                 return
             }
             let transition = ComponentTransition.easeInOut(duration: 0.25)
-            transition.setAlpha(view: self.pageIndicatorBackground, alpha: 0.0)
+            transition.setAlpha(view: self.pageIndicatorBackgorund, alpha: 0.0)
         }, queue: Queue.mainQueue())
         self.pageTimer?.start()
     }
@@ -350,7 +354,7 @@ final class BrowserPdfContent: UIView, BrowserContent, UIScrollViewDelegate, PDF
         self.validLayout = (size, insets, fullInsets)
         
         self.previousScrollingOffset = ScrollingOffsetState(value: self.scrollView.contentOffset.y, isDraggingOrDecelerating: self.scrollView.isDragging || self.scrollView.isDecelerating)
-                
+        
         let currentBounds = self.scrollView.bounds
         let offsetToBottomEdge = max(0.0, self.scrollView.contentSize.height - currentBounds.maxY)
         var bottomInset = insets.bottom
@@ -364,24 +368,23 @@ final class BrowserPdfContent: UIView, BrowserContent, UIScrollViewDelegate, PDF
         let pageIndicatorSize = self.pageIndicator.update(
             transition: .immediate,
             component: AnyComponent(
-                Text(text: self.presentationData.strings.Items_NOfM("\(self.pageNumber?.0 ?? 1)", "\(self.pageNumber?.1 ?? 1)").string, font: Font.with(size: 15.0, weight: .regular, traits: .monospacedNumbers), color: self.presentationData.theme.list.itemPrimaryTextColor)
+                Text(text: "\(self.pageNumber?.0 ?? 1) of \(self.pageNumber?.1 ?? 1)", font: Font.with(size: 15.0, weight: .semibold, traits: .monospacedNumbers), color: self.presentationData.theme.list.itemSecondaryTextColor)
             ),
             environment: {},
             containerSize: size
         )
         if let view = self.pageIndicator.view {
             if view.superview == nil {
-                self.addSubview(self.pageIndicatorBackground)
-                self.pageIndicatorBackground.contentView.addSubview(view)
+                self.addSubview(self.pageIndicatorBackgorund)
+                self.pageIndicatorBackgorund.contentView.addSubview(view)
             }
-                        
+            
             let horizontalPadding: CGFloat = 10.0
             let verticalPadding: CGFloat = 8.0
-            let pageBackgroundFrame = CGRect(origin: CGPoint(x: insets.left + 16.0, y: insets.top + 16.0), size: CGSize(width: horizontalPadding * 2.0 + pageIndicatorSize.width, height: verticalPadding * 2.0 + pageIndicatorSize.height))
+            let pageBackgroundFrame = CGRect(origin: CGPoint(x: insets.left + 20.0, y: insets.top + 16.0), size: CGSize(width: horizontalPadding * 2.0 + pageIndicatorSize.width, height: verticalPadding * 2.0 + pageIndicatorSize.height))
             
-            self.pageIndicatorBackground.update(size: pageBackgroundFrame.size, cornerRadius: pageBackgroundFrame.size.height * 0.5, isDark: self.presentationData.theme.overallDarkAppearance, tintColor: .init(kind: .panel), transition: transition)
-            self.pageIndicatorBackground.bounds = CGRect(origin: .zero, size: pageBackgroundFrame.size)
-            transition.setPosition(view: self.pageIndicatorBackground, position: pageBackgroundFrame.center)
+            self.pageIndicatorBackgorund.bounds = CGRect(origin: .zero, size: pageBackgroundFrame.size)
+            transition.setPosition(view: self.pageIndicatorBackgorund, position: pageBackgroundFrame.center)
             view.frame = CGRect(origin: CGPoint(x: horizontalPadding, y: verticalPadding), size: pageIndicatorSize)
         }
                 
@@ -456,7 +459,7 @@ final class BrowserPdfContent: UIView, BrowserContent, UIScrollViewDelegate, PDF
         }
         
         let transition = ComponentTransition.easeInOut(duration: 0.1)
-        transition.setAlpha(view: self.pageIndicatorBackground, alpha: 1.0)
+        transition.setAlpha(view: self.pageIndicatorBackgorund, alpha: 1.0)
         
         self.pageTimer?.invalidate()
         self.pageTimer = nil
@@ -548,9 +551,10 @@ final class BrowserPdfContent: UIView, BrowserContent, UIScrollViewDelegate, PDF
     
     private func share(url: String) {
         let presentationData = self.context.sharedContext.currentPresentationData.with { $0 }
-        let shareController = self.context.sharedContext.makeShareController(context: self.context, params: ShareControllerParams(subject: .url(url), actionCompleted: { [weak self] in
+        let shareController = ShareController(context: self.context, subject: .url(url))
+        shareController.actionCompleted = { [weak self] in
             self?.present(UndoOverlayController(presentationData: presentationData, content: .linkCopied(title: nil, text: presentationData.strings.Conversation_LinkCopied), elevatedLayout: false, animateInAsReplacement: false, action: { _ in return false }), nil)
-        }))
+        }
         self.present(shareController, nil)
     }
     

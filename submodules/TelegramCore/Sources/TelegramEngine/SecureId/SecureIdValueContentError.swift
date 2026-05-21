@@ -71,11 +71,9 @@ func parseSecureIdValueContentErrors(dataHash: Data?, fileHashes: Set<Data>, sel
     var result: [SecureIdValueContentErrorKey: SecureIdValueContentError] = [:]
     for error in errors {
         switch error {
-            case let .secureValueError(secureValueErrorData):
-                let (type, _, text) = (secureValueErrorData.type, secureValueErrorData.hash, secureValueErrorData.text)
+            case let .secureValueError(type, _, text):
                 result[.value(SecureIdValueKey(apiType: type))] = text
-            case let .secureValueErrorData(secureValueErrorDataData):
-                let (type, errorDataHash, field, text) = (secureValueErrorDataData.type, secureValueErrorDataData.dataHash, secureValueErrorDataData.field, secureValueErrorDataData.text)
+            case let .secureValueErrorData(type, errorDataHash, field, text):
                 if errorDataHash.makeData() == dataHash {
                     switch type {
                         case .secureValueTypePersonalDetails:
@@ -106,13 +104,11 @@ func parseSecureIdValueContentErrors(dataHash: Data?, fileHashes: Set<Data>, sel
                             break
                     }
                 }
-            case let .secureValueErrorFile(secureValueErrorFileData):
-                let (_, fileHash, text) = (secureValueErrorFileData.type, secureValueErrorFileData.fileHash, secureValueErrorFileData.text)
+            case let .secureValueErrorFile(_, fileHash, text):
                 if fileHashes.contains(fileHash.makeData()) {
                     result[.file(hash: fileHash.makeData())] = text
                 }
-            case let .secureValueErrorFiles(secureValueErrorFilesData):
-                let (_, fileHash, text) = (secureValueErrorFilesData.type, secureValueErrorFilesData.fileHash, secureValueErrorFilesData.text)
+            case let .secureValueErrorFiles(_, fileHash, text):
                 var containsAll = true
                 loop: for hash in fileHash {
                     if !fileHashes.contains(hash.makeData()) {
@@ -123,13 +119,11 @@ func parseSecureIdValueContentErrors(dataHash: Data?, fileHashes: Set<Data>, sel
                 if containsAll {
                     result[.files(hashes: Set(fileHash.map { $0.makeData() }))] = text
                 }
-            case let .secureValueErrorTranslationFile(secureValueErrorTranslationFileData):
-                let (_, fileHash, text) = (secureValueErrorTranslationFileData.type, secureValueErrorTranslationFileData.fileHash, secureValueErrorTranslationFileData.text)
+            case let .secureValueErrorTranslationFile(_, fileHash, text):
                 if fileHashes.contains(fileHash.makeData()) {
                     result[.translationFile(hash: fileHash.makeData())] = text
                 }
-            case let .secureValueErrorTranslationFiles(secureValueErrorTranslationFilesData):
-                let (_, fileHash, text) = (secureValueErrorTranslationFilesData.type, secureValueErrorTranslationFilesData.fileHash, secureValueErrorTranslationFilesData.text)
+            case let .secureValueErrorTranslationFiles(_, fileHash, text):
                 var containsAll = true
                 loop: for hash in fileHash {
                     if !fileHashes.contains(hash.makeData()) {
@@ -140,18 +134,15 @@ func parseSecureIdValueContentErrors(dataHash: Data?, fileHashes: Set<Data>, sel
                 if containsAll {
                     result[.translationFiles(hashes: Set(fileHash.map { $0.makeData() }))] = text
                 }
-            case let .secureValueErrorSelfie(secureValueErrorSelfieData):
-                let (_, fileHash, text) = (secureValueErrorSelfieData.type, secureValueErrorSelfieData.fileHash, secureValueErrorSelfieData.text)
+            case let .secureValueErrorSelfie(_, fileHash, text):
                 if selfieHash == fileHash.makeData() {
                     result[.selfie(hash: fileHash.makeData())] = text
                 }
-            case let .secureValueErrorFrontSide(secureValueErrorFrontSideData):
-                let (_, fileHash, text) = (secureValueErrorFrontSideData.type, secureValueErrorFrontSideData.fileHash, secureValueErrorFrontSideData.text)
+            case let .secureValueErrorFrontSide(_, fileHash, text):
                 if frontSideHash == fileHash.makeData() {
                     result[.frontSide(hash: fileHash.makeData())] = text
                 }
-            case let .secureValueErrorReverseSide(secureValueErrorReverseSideData):
-                let (_, fileHash, text) = (secureValueErrorReverseSideData.type, secureValueErrorReverseSideData.fileHash, secureValueErrorReverseSideData.text)
+            case let .secureValueErrorReverseSide(_, fileHash, text):
                 if backSideHash == fileHash.makeData() {
                     result[.backSide(hash: fileHash.makeData())] = text
                 }

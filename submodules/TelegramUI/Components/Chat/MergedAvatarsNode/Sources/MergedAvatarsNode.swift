@@ -10,7 +10,7 @@ import AvatarNode
 import AccountContext
 
 private enum PeerAvatarReference: Equatable {
-    case letters(PeerId, PeerColor?, [String])
+    case letters(PeerId, PeerNameColor?, [String])
     case image(PeerReference, TelegramMediaImageRepresentation)
     
     var peerId: PeerId {
@@ -24,7 +24,7 @@ private enum PeerAvatarReference: Equatable {
 }
 
 private extension PeerAvatarReference {
-    init(peer: EnginePeer) {
+    init(peer: Peer) {
         if let photo = peer.smallProfileImage, let peerReference = PeerReference(peer) {
             self = .image(peerReference, photo)
         } else {
@@ -97,7 +97,7 @@ public final class MergedAvatarsNode: ASDisplayNode {
         self.buttonNode.frame = CGRect(origin: CGPoint(), size: size)
     }
     
-    public func update(context: AccountContext, peers: [EnginePeer], synchronousLoad: Bool, imageSize: CGFloat, imageSpacing: CGFloat, borderWidth: CGFloat, avatarFontSize: CGFloat = 8.0) {
+    public func update(context: AccountContext, peers: [Peer], synchronousLoad: Bool, imageSize: CGFloat, imageSpacing: CGFloat, borderWidth: CGFloat, avatarFontSize: CGFloat = 8.0) {
         self.imageSize = imageSize
         self.imageSpacing = imageSpacing
         self.borderWidthValue = borderWidth

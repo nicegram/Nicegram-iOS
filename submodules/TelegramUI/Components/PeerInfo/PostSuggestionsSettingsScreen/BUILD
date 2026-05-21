@@ -7,7 +7,7 @@ swift_library(
         "Sources/**/*.swift",
     ]),
     copts = [
-        "-warnings-as-errors",
+        #"-warnings-as-errors",
     ],
     deps = [
         "//submodules/Display",
@@ -24,7 +24,6 @@ swift_library(
         "//submodules/Components/MultilineTextComponent",
         "//submodules/Markdown",
         "//submodules/TelegramUI/Components/ButtonComponent",
-        "//submodules/TelegramUI/Components/PlainButtonComponent",
         "//submodules/Components/BundleIconComponent",
         "//submodules/TextFormat",
         "//submodules/TelegramUI/Components/ListSectionComponent",
@@ -33,8 +32,6 @@ swift_library(
         "//submodules/TelegramStringFormatting",
         "//submodules/TelegramUI/Components/ListItemComponentAdaptor",
         "//submodules/TelegramUI/Components/PeerInfo/MessagePriceItem",
-        "//submodules/UndoUI",
-        "//submodules/ShareController",
     ],
     visibility = [
         "//visibility:public",

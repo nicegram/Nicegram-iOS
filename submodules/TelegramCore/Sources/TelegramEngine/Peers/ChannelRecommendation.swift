@@ -104,12 +104,10 @@ func _internal_requestRecommendedChannels(account: Account, peerId: EnginePeer.I
                 let parsedPeers: AccumulatedPeers
                 var count: Int32
                 switch result {
-                case let .chats(chatsData):
-                    let apiChats = chatsData.chats
+                case let .chats(apiChats):
                     chats = apiChats
                     count = Int32(apiChats.count)
-                case let .chatsSlice(chatsSliceData):
-                    let (apiCount, apiChats) = (chatsSliceData.count, chatsSliceData.chats)
+                case let .chatsSlice(apiCount, apiChats):
                     chats = apiChats
                     count = apiCount
                 }
@@ -119,7 +117,7 @@ func _internal_requestRecommendedChannels(account: Account, peerId: EnginePeer.I
                 for chat in chats {
                     if let peer = transaction.getPeer(chat.peerId) {
                         peers.append(EnginePeer(peer))
-                        if case let .channel(channelData) = chat, let participantsCount = channelData.participantsCount {
+                        if case let .channel(_, _, _, _, _, _, _, _, _, _, _, _, participantsCount, _, _, _, _, _, _, _, _, _, _) = chat, let participantsCount = participantsCount {
                             transaction.updatePeerCachedData(peerIds: Set([peer.id]), update: { _, current in
                                 var current = current as? CachedChannelData ?? CachedChannelData()
                                 var participantsSummary = current.participantsSummary
@@ -169,8 +167,7 @@ func _internal_requestRecommendedApps(account: Account, forceUpdate: Bool) -> Si
                 let users: [Api.User]
                 let parsedPeers: AccumulatedPeers
                 switch result {
-                case let .popularAppBots(popularAppBotsData):
-                    let (nextOffset, apiUsers) = (popularAppBotsData.nextOffset, popularAppBotsData.users)
+                case let .popularAppBots(_, nextOffset, apiUsers):
                     let _ = nextOffset
                     users = apiUsers
                 }

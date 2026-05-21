@@ -24,46 +24,6 @@ public final class AccountGroupCallContextImpl: AccountGroupCallContext {
     var disposable: Disposable?
     public var participantsContext: GroupCallParticipantsContext?
     
-    public final class GroupCallPanelData {
-        public let peerId: EnginePeer.Id
-        public let isChannel: Bool
-        public let info: GroupCallInfo
-        public let topParticipants: [GroupCallParticipantsContext.Participant]
-        public let participantCount: Int
-        public let activeSpeakers: Set<EnginePeer.Id>
-        public let groupCall: PresentationGroupCall?
-        
-        public init(
-            peerId: EnginePeer.Id,
-            isChannel: Bool,
-            info: GroupCallInfo,
-            topParticipants: [GroupCallParticipantsContext.Participant],
-            participantCount: Int,
-            activeSpeakers: Set<EnginePeer.Id>,
-            groupCall: PresentationGroupCall?
-        ) {
-            self.peerId = peerId
-            self.isChannel = isChannel
-            self.info = info
-            self.topParticipants = topParticipants
-            self.participantCount = participantCount
-            self.activeSpeakers = activeSpeakers
-            self.groupCall = groupCall
-        }
-        
-        public func withInfo(_ info: GroupCallInfo) -> GroupCallPanelData {
-            return GroupCallPanelData(
-                peerId: self.peerId,
-                isChannel: self.isChannel,
-                info: info,
-                topParticipants: self.topParticipants,
-                participantCount: self.participantCount,
-                activeSpeakers: self.activeSpeakers,
-                groupCall: self.groupCall
-            )
-        }
-    }
-    
     private let panelDataPromise = Promise<GroupCallPanelData?>()
     public var panelData: Signal<GroupCallPanelData?, NoError> {
         return self.panelDataPromise.get()
@@ -136,12 +96,10 @@ public final class AccountGroupCallContextImpl: AccountGroupCallContext {
                             recordingStartTimestamp: nil,
                             sortAscending: state.sortAscending,
                             defaultParticipantsAreMuted: state.defaultParticipantsAreMuted,
-                            messagesAreEnabled: state.messagesAreEnabled,
                             isVideoEnabled: state.isVideoEnabled,
                             unmutedVideoLimit: state.unmutedVideoLimit,
                             isStream: state.isStream,
-                            isCreator: state.isCreator,
-                            defaultSendAs: state.defaultSendAs
+                            isCreator: state.isCreator
                         ),
                         topParticipants: topParticipants,
                         participantCount: state.totalCount,

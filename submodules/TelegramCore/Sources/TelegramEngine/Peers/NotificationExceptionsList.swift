@@ -5,14 +5,14 @@ import TelegramApi
 
 
 public final class NotificationExceptionsList: Equatable {
-    public let peers: [PeerId: EnginePeer]
+    public let peers: [PeerId: Peer]
     public let settings: [PeerId: TelegramPeerNotificationSettings]
-
-    public init(peers: [PeerId: EnginePeer], settings: [PeerId: TelegramPeerNotificationSettings]) {
+    
+    public init(peers: [PeerId: Peer], settings: [PeerId: TelegramPeerNotificationSettings]) {
         self.peers = peers
         self.settings = settings
     }
-
+    
     public static func ==(lhs: NotificationExceptionsList, rhs: NotificationExceptionsList) -> Bool {
         return lhs === rhs
     }
@@ -34,37 +34,31 @@ func _internal_notificationExceptionsList(accountPeerId: PeerId, postbox: Postbo
         }
         return postbox.transaction { transaction -> NotificationExceptionsList in
             switch result {
-            case let .updates(updatesData):
-                let (updates, users, chats) = (updatesData.updates, updatesData.users, updatesData.chats)
+            case let .updates(updates, users, chats, _, _):
                 var settings: [PeerId: TelegramPeerNotificationSettings] = [:]
-
+                
                 let parsedPeers = AccumulatedPeers(transaction: transaction, chats: chats, users: users)
                 updatePeers(transaction: transaction,  accountPeerId: accountPeerId,peers: parsedPeers)
-
-                var peers: [PeerId: EnginePeer] = [:]
+                
+                var peers: [PeerId: Peer] = [:]
                 for id in parsedPeers.allIds {
                     if let peer = transaction.getPeer(id) {
-                        peers[peer.id] = EnginePeer(peer)
+                        peers[peer.id] = peer
                     }
                 }
-
+                
                 for update in updates {
                     switch update {
-                    case let .updateNotifySettings(updateNotifySettingsData):
-                        let (apiPeer, notifySettings) = (updateNotifySettingsData.peer, updateNotifySettingsData.notifySettings)
+                    case let .updateNotifySettings(apiPeer, notifySettings):
                         switch apiPeer {
-                        case let .notifyPeer(notifyPeerData):
-                            let notifyPeer = notifyPeerData.peer
+                        case let .notifyPeer(notifyPeer):
                             let peerId: PeerId
                             switch notifyPeer {
-                            case let .peerUser(peerUserData):
-                                let userId = peerUserData.userId
+                            case let .peerUser(userId):
                                 peerId = PeerId(namespace: Namespaces.Peer.CloudUser, id: PeerId.Id._internalFromInt64Value(userId))
-                            case let .peerChat(peerChatData):
-                                let chatId = peerChatData.chatId
+                            case let .peerChat(chatId):
                                 peerId = PeerId(namespace: Namespaces.Peer.CloudGroup, id: PeerId.Id._internalFromInt64Value(chatId))
-                            case let .peerChannel(peerChannelData):
-                                let channelId = peerChannelData.channelId
+                            case let .peerChannel(channelId):
                                 peerId = PeerId(namespace: Namespaces.Peer.CloudChannel, id: PeerId.Id._internalFromInt64Value(channelId))
                             }
                             settings[peerId] = TelegramPeerNotificationSettings(apiSettings: notifySettings)

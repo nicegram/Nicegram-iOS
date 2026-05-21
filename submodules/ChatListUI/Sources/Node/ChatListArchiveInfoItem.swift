@@ -172,7 +172,7 @@ class ChatListArchiveInfoItemNode: ListViewItemNode, ASScrollViewDelegate {
         self.infoPageNodes = (0 ..< 3).map({ _ in InfoPageNode() })
         self.pageControlNode.pagesCount = self.infoPageNodes.count
         
-        super.init(layerBacked: false)
+        super.init(layerBacked: false, dynamicBounce: false)
         
         self.addSubnode(self.scrollNode)
         self.infoPageNodes.forEach(self.scrollNode.addSubnode)

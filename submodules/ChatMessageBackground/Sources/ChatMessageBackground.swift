@@ -344,8 +344,6 @@ public class ChatMessageBackground: ASDisplayNode {
         if transition.isAnimated {
             self.imageView?.layer.animateAlpha(from: 0.0, to: 1.0, duration: 0.1)
             self.outlineImageNode.layer.animateAlpha(from: 0.0, to: 1.0, duration: 0.1)
-            
-            let sourceViewFrame = sourceView.frame
 
             self.view.addSubview(sourceView)
 
@@ -353,11 +351,11 @@ public class ChatMessageBackground: ASDisplayNode {
                 sourceView?.removeFromSuperview()
             })
 
-            if let imageView = self.imageView {
+            if let imageView = imageView {
                 transition.animateFrame(layer: imageView.layer, from: sourceView.frame)
                 transition.updateFrame(layer: sourceView.layer, frame: CGRect(origin: imageView.frame.origin, size: CGSize(width: imageView.frame.width - 7.0, height: imageView.frame.height)))
             }
-            transition.animateFrame(layer: self.outlineImageNode.layer, from: sourceViewFrame)
+            transition.animateFrame(layer: self.outlineImageNode.layer, from: sourceView.frame)
         }
     }
 }

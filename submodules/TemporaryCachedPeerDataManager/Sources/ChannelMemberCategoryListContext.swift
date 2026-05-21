@@ -87,12 +87,16 @@ private extension CachedChannelAdminRank {
     init(participant: ChannelParticipant) {
         switch participant {
             case let .creator(_, _, rank):
-                self = .creator(rank)
-            case let .member(_, _, adminInfo, _, rank, _):
-                if let _ = adminInfo {
-                    self = .admin(rank)
+                if let rank = rank {
+                    self = .custom(rank)
                 } else {
-                    self = .member(rank)
+                    self = .owner
+                }
+            case let .member(_, _, _, _, rank, _):
+                if let rank = rank {
+                    self = .custom(rank)
+                } else {
+                    self = .admin
                 }
         }
     }

@@ -12,7 +12,7 @@ swift_library(
         "Sources/**/*.swift",
     ]),
     copts = [
-        "-warnings-as-errors",
+        #"-warnings-as-errors",
     ],
     deps = NGDEPS + [
         "//submodules/SSignalKit/SwiftSignalKit",
@@ -36,7 +36,6 @@ swift_library(
         "//submodules/TelegramUI/Components/MinimizedContainer",
         "//submodules/Pasteboard",
         "//submodules/SaveToCameraRoll",
-        "//submodules/TextFormat:TextFormat",
         "//submodules/TelegramUI/Components/NavigationStackComponent",
         "//submodules/LocationUI",
         "//submodules/OpenInExternalAppUI",
@@ -56,15 +55,6 @@ swift_library(
         "//submodules/TelegramUI/Components/ListActionItemComponent",
         "//submodules/Utils/DeviceModel",
         "//submodules/LegacyMediaPickerUI",
-        "//submodules/TelegramUI/Components/AlertComponent",
-        "//submodules/TelegramUI/Components/GlassBackgroundComponent",
-        "//submodules/TelegramUI/Components/EdgeEffect",
-        "//submodules/TelegramUI/Components/ButtonComponent",
-        "//submodules/TelegramUI/Components/GlassBarButtonComponent",
-        "//submodules/TelegramUI/Components/SearchInputPanelComponent",
-        "//submodules/TelegramUI/Components/GlassControls",
-        "//submodules/UIKitRuntimeUtils",
-        "//submodules/TelegramUI/Components/AuthConfirmationScreen",
     ],
     visibility = [
         "//visibility:public",

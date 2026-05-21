@@ -7,13 +7,12 @@ swift_library(
 		"Sources/**/*.swift",
     ]),
     copts = [
-        "-warnings-as-errors",
+        #"-warnings-as-errors",
     ],
     deps = [
-        "//submodules/AsyncDisplayKit",
-        "//submodules/Display",
-        "//submodules/TelegramPresentationData",
-        "//submodules/ImageBlur",
+        "//submodules/AsyncDisplayKit:AsyncDisplayKit",
+        "//submodules/Display:Display",
+        "//submodules/TelegramPresentationData:TelegramPresentationData",
     ],
     visibility = [
         "//visibility:public",

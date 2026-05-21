@@ -10,15 +10,15 @@ import PhotoResources
 import StickerResources
 
 final class VerticalListContextResultsChatInputPanelItem: ListViewItem {
-    fileprivate let engine: TelegramEngine
+    fileprivate let account: Account
     fileprivate let theme: PresentationTheme
     fileprivate let result: ChatContextResult
     fileprivate let resultSelected: (ChatContextResult, ASDisplayNode, CGRect) -> Bool
-
+    
     let selectable: Bool = true
-
-    public init(engine: TelegramEngine, theme: PresentationTheme, result: ChatContextResult, resultSelected: @escaping (ChatContextResult, ASDisplayNode, CGRect) -> Bool) {
-        self.engine = engine
+    
+    public init(account: Account, theme: PresentationTheme, result: ChatContextResult, resultSelected: @escaping (ChatContextResult, ASDisplayNode, CGRect) -> Bool) {
+        self.account = account
         self.theme = theme
         self.result = result
         self.resultSelected = resultSelected
@@ -85,6 +85,7 @@ final class VerticalListContextResultsChatInputPanelItemNode: ListViewItemNode {
     private let iconImageNode: TransformImageNode
     private let titleNode: TextNode
     private let textNode: TextNode
+    private let topSeparatorNode: ASDisplayNode
     private let separatorNode: ASDisplayNode
     private let highlightedBackgroundNode: ASDisplayNode
     private var statusDisposable = MetaDisposable()
@@ -98,6 +99,9 @@ final class VerticalListContextResultsChatInputPanelItemNode: ListViewItemNode {
     init() {
         self.titleNode = TextNode()
         self.textNode = TextNode()
+        
+        self.topSeparatorNode = ASDisplayNode()
+        self.topSeparatorNode.isLayerBacked = true
         
         self.separatorNode = ASDisplayNode()
         self.separatorNode.isLayerBacked = true
@@ -118,8 +122,9 @@ final class VerticalListContextResultsChatInputPanelItemNode: ListViewItemNode {
         self.iconImageNode.isLayerBacked = !smartInvertColorsEnabled()
         self.iconImageNode.displaysAsynchronously = false
         
-        super.init(layerBacked: false)
+        super.init(layerBacked: false, dynamicBounce: false)
         
+        self.addSubnode(self.topSeparatorNode)
         self.addSubnode(self.separatorNode)
         
         self.addSubnode(self.iconImageNode)
@@ -226,7 +231,8 @@ final class VerticalListContextResultsChatInputPanelItemNode: ListViewItemNode {
                 let arguments = TransformImageArguments(corners: imageCorners, imageSize: iconSize, boundingSize: boundingSize, intrinsicInsets: UIEdgeInsets())
                 iconImageApply = iconImageLayout(arguments)
                 
-                updatedStatusSignal = item.engine.resources.status(resource: EngineMediaResource(imageResource))
+                updatedStatusSignal = item.account.postbox.mediaBox.resourceStatus(imageResource)
+                |> map(EngineMediaResource.FetchStatus.init)
             }
             
             var updatedIconImageResource = false
@@ -241,11 +247,11 @@ final class VerticalListContextResultsChatInputPanelItemNode: ListViewItemNode {
             if updatedIconImageResource {
                 if let imageResource = imageResource {
                     if let stickerFile = stickerFile {
-                        updateIconImageSignal = chatMessageSticker(account: item.engine.account, userLocation: .other, file: stickerFile, small: false, fetched: true)
+                        updateIconImageSignal = chatMessageSticker(account: item.account, userLocation: .other, file: stickerFile, small: false, fetched: true)
                     } else {
                         let tmpRepresentation = TelegramMediaImageRepresentation(dimensions: PixelDimensions(width: 55, height: 55), resource: imageResource, progressiveSizes: [], immediateThumbnailData: nil, hasVideo: false, isPersonal: false)
                         let tmpImage = TelegramMediaImage(imageId: EngineMedia.Id(namespace: 0, id: 0), representations: [tmpRepresentation], immediateThumbnailData: nil, reference: nil, partialReference: nil, flags: [])
-                        updateIconImageSignal = chatWebpageSnippetPhoto(account: item.engine.account, userLocation: .other, photoReference: .standalone(media: tmpImage))
+                        updateIconImageSignal = chatWebpageSnippetPhoto(account: item.account, userLocation: .other, photoReference: .standalone(media: tmpImage))
                     }
                 } else {
                     updateIconImageSignal = .complete()
@@ -274,11 +280,13 @@ final class VerticalListContextResultsChatInputPanelItemNode: ListViewItemNode {
             
             let nodeLayout = ListViewItemNodeLayout(contentSize: CGSize(width: params.width, height: VerticalListContextResultsChatInputPanelItemNode.itemHeight), insets: UIEdgeInsets())
             
-            return (nodeLayout, { animation in
+            return (nodeLayout, { _ in
                 if let strongSelf = self {
                     strongSelf.item = item
                     
                     strongSelf.separatorNode.backgroundColor = item.theme.list.itemPlainSeparatorColor
+                    strongSelf.topSeparatorNode.backgroundColor = item.theme.list.itemPlainSeparatorColor
+                    strongSelf.backgroundColor = item.theme.list.plainBackgroundColor
                     strongSelf.highlightedBackgroundNode.backgroundColor = item.theme.list.itemHighlightedBackgroundColor
                     
                     let _ = titleApply()
@@ -330,9 +338,11 @@ final class VerticalListContextResultsChatInputPanelItemNode: ListViewItemNode {
                         }
                     }
                     
+                    strongSelf.topSeparatorNode.isHidden = mergedTop
                     strongSelf.separatorNode.isHidden = !mergedBottom
                     
-                    animation.animator.updateFrame(layer: strongSelf.separatorNode.layer, frame: CGRect(origin: CGPoint(x: leftInset, y: nodeLayout.contentSize.height - UIScreenPixel), size: CGSize(width: params.width - leftInset, height: UIScreenPixel)), completion: nil)
+                    strongSelf.topSeparatorNode.frame = CGRect(origin: CGPoint(x: 0.0, y: 0.0), size: CGSize(width: params.width, height: UIScreenPixel))
+                    strongSelf.separatorNode.frame = CGRect(origin: CGPoint(x: leftInset, y: nodeLayout.contentSize.height - UIScreenPixel), size: CGSize(width: params.width - leftInset, height: UIScreenPixel))
                     
                     strongSelf.highlightedBackgroundNode.frame = CGRect(origin: CGPoint(x: 0.0, y: 0.0), size: CGSize(width: params.width, height: nodeLayout.size.height + UIScreenPixel))
                     
@@ -378,7 +388,7 @@ final class VerticalListContextResultsChatInputPanelItemNode: ListViewItemNode {
         if highlighted {
             self.highlightedBackgroundNode.alpha = 1.0
             if self.highlightedBackgroundNode.supernode == nil {
-                //self.insertSubnode(self.highlightedBackgroundNode, aboveSubnode: self.separatorNode)
+                self.insertSubnode(self.highlightedBackgroundNode, aboveSubnode: self.separatorNode)
             }
         } else {
             if self.highlightedBackgroundNode.supernode != nil {

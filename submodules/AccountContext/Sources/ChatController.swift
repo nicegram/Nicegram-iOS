@@ -65,10 +65,6 @@ public final class ChatMessageItemAssociatedData: Equatable {
     public let isInline: Bool
     public let showSensitiveContent: Bool
     public let isSuspiciousPeer: Bool
-    public let showTextAsPlaceholder: Bool
-    public let accountCountry: String?
-    public let isParticipant: Bool
-    public let invitedOn: Int32?
     
     public init(
         automaticDownloadPeerType: MediaAutoDownloadPeerType,
@@ -104,11 +100,7 @@ public final class ChatMessageItemAssociatedData: Equatable {
         isStandalone: Bool = false,
         isInline: Bool = false,
         showSensitiveContent: Bool = false,
-        isSuspiciousPeer: Bool = false,
-        showTextAsPlaceholder: Bool = false,
-        accountCountry: String? = nil,
-        isParticipant: Bool = false,
-        invitedOn: Int32? = nil
+        isSuspiciousPeer: Bool = false
     ) {
         self.automaticDownloadPeerType = automaticDownloadPeerType
         self.automaticDownloadPeerId = automaticDownloadPeerId
@@ -144,10 +136,6 @@ public final class ChatMessageItemAssociatedData: Equatable {
         self.isInline = isInline
         self.showSensitiveContent = showSensitiveContent
         self.isSuspiciousPeer = isSuspiciousPeer
-        self.showTextAsPlaceholder = showTextAsPlaceholder
-        self.accountCountry = accountCountry
-        self.isParticipant = isParticipant
-        self.invitedOn = invitedOn
     }
     
     public static func == (lhs: ChatMessageItemAssociatedData, rhs: ChatMessageItemAssociatedData) -> Bool {
@@ -244,15 +232,6 @@ public final class ChatMessageItemAssociatedData: Equatable {
         if lhs.isSuspiciousPeer != rhs.isSuspiciousPeer {
             return false
         }
-        if lhs.accountCountry != rhs.accountCountry {
-            return false
-        }
-        if lhs.isParticipant != rhs.isParticipant {
-            return false
-        }
-        if lhs.invitedOn != rhs.invitedOn {
-            return false
-        }
         return true
     }
 }
@@ -276,12 +255,11 @@ public enum ChatControllerInteractionLongTapAction {
     case hashtag(String)
     case timecode(Double, String)
     case bankCard(String)
-    case date(Int32)
 }
 
 public enum ChatHistoryMessageSelection: Equatable {
     case none
-    case selectable(selected: Bool, num: Int?)
+    case selectable(selected: Bool)
     
     public static func ==(lhs: ChatHistoryMessageSelection, rhs: ChatHistoryMessageSelection) -> Bool {
         switch lhs {
@@ -291,8 +269,8 @@ public enum ChatHistoryMessageSelection: Equatable {
                 } else {
                     return false
                 }
-            case let .selectable(selected, num):
-                if case .selectable(selected, num) = rhs {
+            case let .selectable(selected):
+                if case .selectable(selected) = rhs {
                     return true
                 } else {
                     return false
@@ -809,29 +787,23 @@ public enum ChatControllerSubject: Equatable {
         }
         
         public var quote: Quote?
-        public var subject: EngineMessageReplyInnerSubject?
+        public var todoTaskId: Int32?
         
-        public init(quote: Quote? = nil, subject: EngineMessageReplyInnerSubject? = nil) {
+        public init(quote: Quote? = nil, todoTaskId: Int32? = nil) {
             self.quote = quote
-            self.subject = subject
+            self.todoTaskId = todoTaskId
         }
     }
     
-    case tag(MessageTags)
     case message(id: MessageSubject, highlight: MessageHighlight?, timecode: Double?, setupReply: Bool)
     case scheduledMessages
     case pinnedMessages(id: EngineMessage.Id?)
     case messageOptions(peerIds: [EnginePeer.Id], ids: [EngineMessage.Id], info: MessageOptionsInfo)
     case customChatContents(contents: ChatCustomContentsProtocol)
+    case botForumThread(forumId: EnginePeer.Id, threadId: Int64)
     
     public static func ==(lhs: ChatControllerSubject, rhs: ChatControllerSubject) -> Bool {
         switch lhs {
-        case let .tag(lhsTag):
-            if case let .tag(rhsTag) = rhs, lhsTag == rhsTag {
-                return true
-            } else {
-                return false
-            }
         case let .message(lhsId, lhsHighlight, lhsTimecode, lhsSetupReply):
             if case let .message(rhsId, rhsHighlight, rhsTimecode, rhsSetupReply) = rhs, lhsId == rhsId && lhsHighlight == rhsHighlight && lhsTimecode == rhsTimecode && lhsSetupReply == rhsSetupReply {
                 return true
@@ -858,6 +830,12 @@ public enum ChatControllerSubject: Equatable {
             }
         case let .customChatContents(lhsValue):
             if case let .customChatContents(rhsValue) = rhs, lhsValue === rhsValue {
+                return true
+            } else {
+                return false
+            }
+        case let .botForumThread(forumId, threadId):
+            if case .botForumThread(forumId, threadId) = rhs {
                 return true
             } else {
                 return false
@@ -1016,20 +994,13 @@ public enum PeerInfoAvatarUploadStatus {
 public protocol PeerInfoScreen: ViewController {
     var peerId: PeerId { get }
     var privacySettings: Promise<AccountPrivacySettings?> { get }
-    var twoStepAuthData: Promise<TwoStepAuthData?> { get }
-    var notificationExceptions: Promise<NotificationExceptionsList?> { get }
     
-    func activateEdit()
-    func openEmojiStatusSetup()
     func openBirthdaySetup()
     func toggleStorySelection(ids: [Int32], isSelected: Bool)
     func togglePaneIsReordering(isReordering: Bool)
     func cancelItemSelection()
     func openAvatarSetup(completedWithUploadingImage: @escaping (UIImage, Signal<PeerInfoAvatarUploadStatus, NoError>) -> UIView?)
     func openAvatars()
-    
-    func updateProfilePhoto(_ image: UIImage)
-    func updateProfileVideo(_ image: UIImage, video: Any?, values: Any?, markup: UploadPeerPhotoMarkup?)
 }
 
 public extension Peer {
@@ -1128,7 +1099,6 @@ public protocol ChatController: ViewController {
     func activateSearch(domain: ChatSearchDomain, query: String)
     func activateInput(type: ChatControllerActivateInput)
     func beginClearHistory(type: InteractiveHistoryClearingType)
-    func presentReactionDeletionOptions(author: Peer, messageId: MessageId)
     
     func performScrollToTop() -> Bool
     func transferScrollingVelocity(_ velocity: CGFloat)
@@ -1137,8 +1107,6 @@ public protocol ChatController: ViewController {
     func playShakeAnimation()
     
     func removeAd(opaqueId: Data)
-    
-    func restrictedSendingContentsText() -> String
 }
 
 public protocol ChatMessagePreviewItemNode: AnyObject {
@@ -1173,7 +1141,6 @@ public protocol ChatMessageItemNodeProtocol: ListViewItemNode {
     func matchesMessage(id: MessageId) -> Bool
     func cancelInsertionAnimations()
     func messages() -> [Message]
-    func updateHiddenMedia()
 }
 
 public final class ChatControllerNavigationData: CustomViewControllerNavigationData {
@@ -1265,7 +1232,7 @@ public enum ChatHistoryListDisplayHeaders {
 
 public enum ChatHistoryListMode: Equatable {
     case bubbles
-    case list(reversed: Bool, reverseGroups: Bool, displayHeaders: ChatHistoryListDisplayHeaders, hintLinks: Bool, isGlobalSearch: Bool, isMusicPlaylist: Bool)
+    case list(search: Bool, reversed: Bool, reverseGroups: Bool, displayHeaders: ChatHistoryListDisplayHeaders, hintLinks: Bool, isGlobalSearch: Bool)
 }
 
 public protocol ChatControllerInteractionProtocol: AnyObject {

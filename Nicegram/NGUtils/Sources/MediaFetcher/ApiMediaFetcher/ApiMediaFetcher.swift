@@ -21,12 +21,10 @@ public extension ApiMediaFetcher {
         case let .photo(photo):
             datacenterId = photo.datacenterId
             inputFileLocation = .inputPhotoFileLocation(
-                .init(
-                    id: photo.id,
-                    accessHash: photo.acessHash,
-                    fileReference: Buffer(data: photo.fileReference),
-                    thumbSize: photo.thumb_size
-                )
+                id: photo.id,
+                accessHash: photo.acessHash,
+                fileReference: Buffer(data: photo.fileReference),
+                thumbSize: photo.thumb_size
             )
         }
         
@@ -74,8 +72,8 @@ public extension ApiMediaFetcher {
 
             let data: Data
             switch file {
-            case let .file(file):
-                data = file.bytes.makeData()
+            case let .file(_, _, bytes):
+                data = bytes.makeData()
             case .fileCdnRedirect:
                 throw UnexpectedError()
             }

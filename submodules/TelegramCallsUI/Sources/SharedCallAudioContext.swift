@@ -28,9 +28,7 @@ public final class SharedCallAudioContext {
     private var audioOutputStateValue: ([AudioSessionOutput], AudioSessionOutput?) = ([], nil)
     public private(set) var currentAudioOutputValue: AudioSessionOutput = .builtin
     private var didSetCurrentAudioOutputValue: Bool = false
-    
-    // Nicegram Calls, added 'public'
-    public var audioOutputState: Signal<([AudioSessionOutput], AudioSessionOutput?), NoError> {
+    var audioOutputState: Signal<([AudioSessionOutput], AudioSessionOutput?), NoError> {
         return self.audioOutputStatePromise.get()
     }
     
@@ -39,19 +37,18 @@ public final class SharedCallAudioContext {
     
     private var proximityManagerIndex: Int?
 
-    // Nicegram Calls, added 'public'
-    public static func get(audioSession: ManagedAudioSession, callKitIntegration: CallKitIntegration?, defaultToSpeaker: Bool = false, reuseCurrent: Bool = false, enableMicrophone: Bool = true) -> SharedCallAudioContext {
+    static func get(audioSession: ManagedAudioSession, callKitIntegration: CallKitIntegration?, defaultToSpeaker: Bool = false, reuseCurrent: Bool = false) -> SharedCallAudioContext {
         if let current = self.current, reuseCurrent {
             return current
         }
-        let context = SharedCallAudioContext(audioSession: audioSession, callKitIntegration: callKitIntegration, defaultToSpeaker: defaultToSpeaker, enableMicrophone: enableMicrophone)
+        let context = SharedCallAudioContext(audioSession: audioSession, callKitIntegration: callKitIntegration, defaultToSpeaker: defaultToSpeaker)
         self.current = context
         return context
     }
     
-    private init(audioSession: ManagedAudioSession, callKitIntegration: CallKitIntegration?, defaultToSpeaker: Bool = false, enableMicrophone: Bool = true) {
+    private init(audioSession: ManagedAudioSession, callKitIntegration: CallKitIntegration?, defaultToSpeaker: Bool = false) {
         self.callKitIntegration = callKitIntegration
-        self.audioDevice = OngoingCallContext.AudioDevice.create(enableSystemMute: false, enableMicrophone: enableMicrophone)
+        self.audioDevice = OngoingCallContext.AudioDevice.create(enableSystemMute: false)
         
         var defaultToSpeaker = defaultToSpeaker
         if audioSession.getIsHeadsetPluggedIn() {
@@ -66,7 +63,7 @@ public final class SharedCallAudioContext {
         }
         
         var didReceiveAudioOutputs = false
-        self.audioSessionDisposable = audioSession.push(audioSessionType: enableMicrophone ? .voiceCall : .play(mixWithOthers: true), manualActivate: { [weak self] control in
+        self.audioSessionDisposable = audioSession.push(audioSessionType: .voiceCall, manualActivate: { [weak self] control in
             Queue.mainQueue().async {
                 guard let self else {
                     return
@@ -208,15 +205,11 @@ public final class SharedCallAudioContext {
         self.initialSetupTimer?.invalidate()
         
         if let proximityManagerIndex = self.proximityManagerIndex {
-            // Nicegram Calls, perform in main queue
-            Queue.mainQueue().async {
-                DeviceProximityManager.shared().remove(proximityManagerIndex)
-            }
+            DeviceProximityManager.shared().remove(proximityManagerIndex)
         }
     }
     
-    // Nicegram Calls, added 'public'
-    public func setCurrentAudioOutput(_ output: AudioSessionOutput) {
+    func setCurrentAudioOutput(_ output: AudioSessionOutput) {
         self.initialSetupTimer?.invalidate()
         self.initialSetupTimer = nil
         

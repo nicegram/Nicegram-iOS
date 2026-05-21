@@ -15,8 +15,6 @@ public class SubscribeButtonClaimApplier {
     
     private let claimView = AttClaimAnimationView()
     
-    @Published public var showClaim = false
-    
     @Published private var apply = true
     @Published private var chatId: PeerId? = nil
     @Published private var inviteHash: String? = nil
@@ -48,14 +46,7 @@ public class SubscribeButtonClaimApplier {
                 }
                 return hasOngoingAction
             }
-            .removeDuplicates()
             .receive(on: DispatchQueue.main)
-            .sink { [weak self] hasOngoingAction in
-                self?.showClaim = hasOngoingAction
-            }
-            .store(in: &cancellables)
-        
-        $showClaim
             .sink { [weak self] showClaim in
                 self?.claimView.isHidden = !showClaim
             }
@@ -65,21 +56,21 @@ public class SubscribeButtonClaimApplier {
 
 public extension SubscribeButtonClaimApplier {
     func update(
-        buttonView: UIView,
-        titleView: UIView,
+        buttonNode: ASDisplayNode,
+        titleNode: ASDisplayNode,
         apply: Bool,
         chatId: PeerId?,
         inviteHash: String?
     ) {
         if claimView.superview == nil {
-            buttonView.addSubview(claimView)
+            buttonNode.view.addSubview(claimView)
         }
         
         let size = CGSize(width: 20, height: 20)
-        buttonView.layoutIfNeeded()
+        buttonNode.layoutIfNeeded()
         claimView.frame = CGRect(
-            x: titleView.frame.maxX + 5,
-            y: titleView.frame.midY - size.height / 2,
+            x: titleNode.frame.maxX + 5,
+            y: titleNode.frame.midY - size.height / 2,
             width: size.width,
             height: size.height
         )
@@ -95,21 +86,5 @@ public extension SubscribeButtonClaimApplier {
         if self.inviteHash != inviteHash {
             self.inviteHash = inviteHash
         }
-    }
-    
-    func update(
-        buttonNode: ASDisplayNode,
-        titleNode: ASDisplayNode,
-        apply: Bool,
-        chatId: PeerId?,
-        inviteHash: String?
-    ) {
-        update(
-            buttonView: buttonNode.view,
-            titleView: titleNode.view,
-            apply: apply,
-            chatId: chatId,
-            inviteHash: inviteHash
-        )
     }
 }

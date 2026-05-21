@@ -42,10 +42,8 @@ swift_library(
         "//submodules/ChatPresentationInterfaceState",
         "//submodules/TelegramUI/Components/EmojiSuggestionsComponent",
         "//submodules/TelegramUI/Components/ListComposePollOptionComponent",
-        "//submodules/TelegramUI/Components/ComposePollScreen",
+        "//submodules/ComposePollUI",
         "//submodules/Markdown",
-        "//submodules/TelegramUI/Components/GlassBarButtonComponent",
-        "//submodules/TelegramUI/Components/EdgeEffect",
     ],
     visibility = [
         "//visibility:public",

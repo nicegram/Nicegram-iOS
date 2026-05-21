@@ -108,7 +108,6 @@ final class AdminUserActionsPeerComponent: Component {
         private weak var state: EmptyComponentState?
         
         public var customUpdateIsHighlighted: ((Bool) -> Void)?
-        public var enumerateSiblings: (((UIView) -> Void) -> Void)?
         public var separatorInset: CGFloat = 0.0
         
         override init(frame: CGRect) {
@@ -160,7 +159,7 @@ final class AdminUserActionsPeerComponent: Component {
             
             let contextInset: CGFloat = 0.0
             
-            let height: CGFloat = 52.0
+            let height: CGFloat = 44.0
             let verticalInset: CGFloat = 1.0
             let leftInset: CGFloat = 30.0 + component.sideInset
             var rightInset: CGFloat = contextInset * 2.0 + 8.0 + component.sideInset
@@ -227,7 +226,7 @@ final class AdminUserActionsPeerComponent: Component {
             let titleSize = self.title.update(
                 transition: .immediate,
                 component: AnyComponent(MultilineTextComponent(
-                    text: .plain(NSAttributedString(string: component.title, font: Font.medium(component.baseFontSize), textColor: component.theme.list.itemPrimaryTextColor))
+                    text: .plain(NSAttributedString(string: component.title, font: Font.semibold(component.baseFontSize), textColor: component.theme.list.itemPrimaryTextColor))
                 )),
                 environment: {},
                 containerSize: CGSize(width: maxTextSize, height: 100.0)

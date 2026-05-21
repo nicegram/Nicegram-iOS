@@ -85,37 +85,10 @@ public final class EngineStoryItem: Equatable {
     public let isMy: Bool
     public let myReaction: MessageReaction.Reaction?
     public let forwardInfo: ForwardInfo?
-    public let music: EngineMedia?
     public let author: EnginePeer?
     public let folderIds: [Int64]?
     
-    public init(
-        id: Int32,
-        timestamp: Int32,
-        expirationTimestamp: Int32,
-        media: EngineMedia,
-        alternativeMediaList: [EngineMedia],
-        mediaAreas: [MediaArea],
-        text: String,
-        entities: [MessageTextEntity],
-        views: Views?,
-        privacy: EngineStoryPrivacy?,
-        isPinned: Bool,
-        isExpired: Bool,
-        isPublic: Bool,
-        isPending: Bool,
-        isCloseFriends: Bool,
-        isContacts: Bool,
-        isSelectedContacts: Bool,
-        isForwardingDisabled: Bool,
-        isEdited: Bool,
-        isMy: Bool,
-        myReaction: MessageReaction.Reaction?,
-        forwardInfo: ForwardInfo?,
-        music: EngineMedia?,
-        author: EnginePeer?,
-        folderIds: [Int64]?
-    ) {
+    public init(id: Int32, timestamp: Int32, expirationTimestamp: Int32, media: EngineMedia, alternativeMediaList: [EngineMedia], mediaAreas: [MediaArea], text: String, entities: [MessageTextEntity], views: Views?, privacy: EngineStoryPrivacy?, isPinned: Bool, isExpired: Bool, isPublic: Bool, isPending: Bool, isCloseFriends: Bool, isContacts: Bool, isSelectedContacts: Bool, isForwardingDisabled: Bool, isEdited: Bool, isMy: Bool, myReaction: MessageReaction.Reaction?, forwardInfo: ForwardInfo?, author: EnginePeer?, folderIds: [Int64]?) {
         self.id = id
         self.timestamp = timestamp
         self.expirationTimestamp = expirationTimestamp
@@ -138,7 +111,6 @@ public final class EngineStoryItem: Equatable {
         self.isMy = isMy
         self.myReaction = myReaction
         self.forwardInfo = forwardInfo
-        self.music = music
         self.author = author
         self.folderIds = folderIds
     }
@@ -210,9 +182,6 @@ public final class EngineStoryItem: Equatable {
         if lhs.forwardInfo != rhs.forwardInfo {
             return false
         }
-        if lhs.music != rhs.music {
-            return false
-        }
         if lhs.author != rhs.author {
             return false
         }
@@ -270,9 +239,9 @@ public extension EngineStoryItem {
             isForwardingDisabled: self.isForwardingDisabled,
             isEdited: self.isEdited,
             isMy: self.isMy,
+            
             myReaction: self.myReaction,
             forwardInfo: self.forwardInfo?.storedForwardInfo,
-            music: self.music?._asMedia() as? TelegramMediaFile,
             authorId: self.author?.id,
             folderIds: self.folderIds
         )
@@ -433,8 +402,7 @@ public final class StorySubscriptionsContext {
                 let _ = (self.postbox.transaction { transaction -> Void in
                     var updatedStealthMode: Api.StoriesStealthMode?
                     switch result {
-                    case let .allStoriesNotModified(allStoriesNotModifiedData):
-                        let (state, stealthMode) = (allStoriesNotModifiedData.state, allStoriesNotModifiedData.stealthMode)
+                    case let .allStoriesNotModified(_, state, stealthMode):
                         self.loadedStateMark = .value(state)
                         let (currentStateValue, _) = transaction.getAllStorySubscriptions(key: subscriptionsKey)
                         let currentState = currentStateValue.flatMap { $0.get(Stories.SubscriptionsState.self) }
@@ -453,8 +421,7 @@ public final class StorySubscriptionsContext {
                         if isRefresh && !isHidden {
                             updatedStealthMode = stealthMode
                         }
-                    case let .allStories(allStoriesData):
-                        let (flags, state, peerStories, chats, users, stealthMode) = (allStoriesData.flags, allStoriesData.state, allStoriesData.peerStories, allStoriesData.chats, allStoriesData.users, allStoriesData.stealthMode)
+                    case let .allStories(flags, _, state, peerStories, chats, users, stealthMode):
                         let parsedPeers = AccumulatedPeers(transaction: transaction, chats: chats, users: users)
                         
                         let hasMore: Bool = (flags & (1 << 0)) != 0
@@ -464,12 +431,11 @@ public final class StorySubscriptionsContext {
                         
                         for peerStorySet in peerStories {
                             switch peerStorySet {
-                            case let .peerStories(peerStoriesData):
-                                let (_, peerIdValue, maxReadId, stories) = (peerStoriesData.flags, peerStoriesData.peer, peerStoriesData.maxReadId, peerStoriesData.stories)
+                            case let .peerStories(_, peerIdValue, maxReadId, stories):
                                 let peerId = peerIdValue.peerId
-
+                                
                                 let previousPeerEntries: [StoryItemsTableEntry] = transaction.getStoryItems(peerId: peerId)
-
+                                
                                 var updatedPeerEntries: [StoryItemsTableEntry] = []
                                 for story in stories {
                                     if let storedItem = Stories.StoredItem(apiStoryItem: story, peerId: peerId, transaction: transaction) {
@@ -477,7 +443,7 @@ public final class StorySubscriptionsContext {
                                             updatedPeerEntries.append(previousEntry)
                                         } else {
                                             if let codedEntry = CodableEntry(storedItem) {
-                                                updatedPeerEntries.append(StoryItemsTableEntry(value: codedEntry, id: storedItem.id, expirationTimestamp: storedItem.expirationTimestamp, isCloseFriends: storedItem.isCloseFriends, isLiveStream: storedItem.isLiveStream))
+                                                updatedPeerEntries.append(StoryItemsTableEntry(value: codedEntry, id: storedItem.id, expirationTimestamp: storedItem.expirationTimestamp, isCloseFriends: storedItem.isCloseFriends))
                                             }
                                         }
                                     }
@@ -775,7 +741,6 @@ public final class PeerStoryListContext: StoryListContext {
                             isMy: item.isMy,
                             myReaction: item.myReaction,
                             forwardInfo: item.forwardInfo.flatMap { EngineStoryItem.ForwardInfo($0, transaction: transaction) },
-                            music: item.music.flatMap(EngineMedia.init),
                             author: item.authorId.flatMap { transaction.getPeer($0).flatMap(EnginePeer.init) },
                             folderIds: item.folderIds
                         )
@@ -924,12 +889,10 @@ public final class PeerStoryListContext: StoryListContext {
                         
                         if let updatedFolders {
                             switch updatedFolders {
-                            case let .albums(albumsData):
-                                let albums = albumsData.albums
+                            case let .albums(_, albums):
                                 for album in albums {
                                     switch album {
-                                    case let .storyAlbum(storyAlbumData):
-                                        let (albumId, title, iconPhoto, iconVideo) = (storyAlbumData.albumId, storyAlbumData.title, storyAlbumData.iconPhoto, storyAlbumData.iconVideo)
+                                    case let .storyAlbum(_, albumId, title, iconPhoto, iconVideo):
                                         let _ = iconPhoto
                                         let _ = iconVideo
                                         folderItems.append(State.Folder(
@@ -952,8 +915,7 @@ public final class PeerStoryListContext: StoryListContext {
                         }
                         
                         switch result {
-                        case let .stories(storiesData):
-                            let (count, stories, pinnedStories, chats, users) = (storiesData.count, storiesData.stories, storiesData.pinnedToTop, storiesData.chats, storiesData.users)
+                        case let .stories(_, count, stories, pinnedStories, chats, users):
                             totalCount = Int(count)
                             hasMore = stories.count >= limit
                             
@@ -998,7 +960,6 @@ public final class PeerStoryListContext: StoryListContext {
                                             isMy: item.isMy,
                                             myReaction: item.myReaction,
                                             forwardInfo: item.forwardInfo.flatMap { EngineStoryItem.ForwardInfo($0, transaction: transaction) },
-                                            music: item.music.flatMap(EngineMedia.init),
                                             author: item.authorId.flatMap { transaction.getPeer($0).flatMap(EnginePeer.init) },
                                             folderIds: item.folderIds
                                         )
@@ -1194,7 +1155,6 @@ public final class PeerStoryListContext: StoryListContext {
                                                                 isMy: item.isMy,
                                                                 myReaction: item.myReaction,
                                                                 forwardInfo: item.forwardInfo.flatMap { EngineStoryItem.ForwardInfo($0, peers: peers) },
-                                                                music: item.music.flatMap(EngineMedia.init),
                                                                 author: item.authorId.flatMap { peers[$0].flatMap(EnginePeer.init) },
                                                                 folderIds: item.folderIds
                                                             ), peer: nil)
@@ -1245,7 +1205,6 @@ public final class PeerStoryListContext: StoryListContext {
                                                             isMy: item.isMy,
                                                             myReaction: item.myReaction,
                                                             forwardInfo: item.forwardInfo.flatMap { EngineStoryItem.ForwardInfo($0, peers: peers) },
-                                                            music: item.music.flatMap(EngineMedia.init),
                                                             author: item.authorId.flatMap { peers[$0].flatMap(EnginePeer.init) },
                                                             folderIds: item.folderIds
                                                         ), peer: nil)
@@ -1298,7 +1257,6 @@ public final class PeerStoryListContext: StoryListContext {
                                                                 isMy: item.isMy,
                                                                 myReaction: item.myReaction,
                                                                 forwardInfo: item.forwardInfo.flatMap { EngineStoryItem.ForwardInfo($0, peers: peers) },
-                                                                music: item.music.flatMap(EngineMedia.init),
                                                                 author: item.authorId.flatMap { peers[$0].flatMap(EnginePeer.init) },
                                                                 folderIds: item.folderIds
                                                             ), peer: nil))
@@ -1357,7 +1315,6 @@ public final class PeerStoryListContext: StoryListContext {
                                                             isMy: item.isMy,
                                                             myReaction: item.myReaction,
                                                             forwardInfo: item.forwardInfo.flatMap { EngineStoryItem.ForwardInfo($0, peers: peers) },
-                                                            music: item.music.flatMap(EngineMedia.init),
                                                             author: item.authorId.flatMap { peers[$0].flatMap(EnginePeer.init) },
                                                             folderIds: item.folderIds
                                                         ), peer: nil))
@@ -1453,8 +1410,7 @@ public final class PeerStoryListContext: StoryListContext {
                 }
                 if let result {
                     switch result {
-                    case let .storyAlbum(storyAlbumData):
-                        let albumId = storyAlbumData.albumId
+                    case let .storyAlbum(_, albumId, _, _, _):
                         var state = self.stateValue
                         state.availableFolders.append(StoryListContextState.Folder(id: Int64(albumId), title: title))
                         self.stateValue = state
@@ -1693,7 +1649,6 @@ public final class PeerStoryListContext: StoryListContext {
                                 return .unknown(name: name, isModified: isModified)
                             }
                         },
-                        music: item.music?._asMedia() as? TelegramMediaFile,
                         authorId: item.author?.id,
                         folderIds: item.folderIds
                     )
@@ -1959,8 +1914,7 @@ public final class PeerStoryListContext: StoryListContext {
         }).start(next: { result in
             if let result {
                 switch result {
-                case let .storyAlbum(storyAlbumData):
-                    let albumId = storyAlbumData.albumId
+                case let .storyAlbum(_, albumId, _, _, _):
                     let _ = (account.postbox.transaction { transaction -> Void in
                         let key = ValueBoxKey(length: 8 + 1)
                         key.setInt64(0, value: peerId.toInt64())
@@ -2039,7 +1993,6 @@ public final class PeerStoryListContext: StoryListContext {
                             isMy: item.isMy,
                             myReaction: item.myReaction,
                             forwardInfo: item.forwardInfo.flatMap { EngineStoryItem.ForwardInfo($0, transaction: transaction) },
-                            music: item.music.flatMap(EngineMedia.init),
                             author: item.authorId.flatMap { transaction.getPeer($0).flatMap(EnginePeer.init) },
                             folderIds: item.folderIds
                         )
@@ -2193,8 +2146,7 @@ public final class SearchStoryListContext: StoryListContext {
                     var nextOffsetValue: String?
                     
                     switch result {
-                    case let .foundStories(foundStoriesData):
-                        let (count, stories, nextOffset, chats, users) = (foundStoriesData.count, foundStoriesData.stories, foundStoriesData.nextOffset, foundStoriesData.chats, foundStoriesData.users)
+                    case let .foundStories(_, count, stories, nextOffset, chats, users):
                         updatePeers(transaction: transaction, accountPeerId: accountPeerId, peers: AccumulatedPeers(transaction: transaction, chats: chats, users: users))
                         
                         totalCount = Int(count)
@@ -2202,8 +2154,7 @@ public final class SearchStoryListContext: StoryListContext {
                         
                         for story in stories {
                             switch story {
-                            case let .foundStory(foundStoryData):
-                                let (peer, story) = (foundStoryData.peer, foundStoryData.story)
+                            case let .foundStory(peer, story):
                                 if let storedItem = Stories.StoredItem(apiStoryItem: story, peerId: peer.peerId, transaction: transaction) {
                                     if case let .item(item) = storedItem, let media = item.media {
                                         let mappedItem = EngineStoryItem(
@@ -2240,7 +2191,6 @@ public final class SearchStoryListContext: StoryListContext {
                                             isMy: item.isMy,
                                             myReaction: item.myReaction,
                                             forwardInfo: item.forwardInfo.flatMap { EngineStoryItem.ForwardInfo($0, transaction: transaction) },
-                                            music: item.music.flatMap(EngineMedia.init),
                                             author: item.authorId.flatMap { transaction.getPeer($0).flatMap(EnginePeer.init) },
                                             folderIds: item.folderIds
                                         )
@@ -2391,7 +2341,6 @@ public final class SearchStoryListContext: StoryListContext {
                                                     isMy: item.isMy,
                                                     myReaction: item.myReaction,
                                                     forwardInfo: item.forwardInfo.flatMap { EngineStoryItem.ForwardInfo($0, peers: peers) },
-                                                    music: item.music.flatMap(EngineMedia.init),
                                                     author: item.authorId.flatMap { peers[$0].flatMap(EnginePeer.init) },
                                                     folderIds: item.folderIds
                                                 ),
@@ -2454,7 +2403,6 @@ public final class SearchStoryListContext: StoryListContext {
                                                 isMy: item.storyItem.isMy,
                                                 myReaction: reaction,
                                                 forwardInfo: item.storyItem.forwardInfo,
-                                                music: item.storyItem.music,
                                                 author: item.storyItem.author,
                                                 folderIds: item.storyItem.folderIds
                                             ),
@@ -2585,7 +2533,6 @@ public final class PeerExpiringStoryListContext {
                                         isMy: item.isMy,
                                         myReaction: item.myReaction,
                                         forwardInfo: item.forwardInfo.flatMap { EngineStoryItem.ForwardInfo($0, transaction: transaction) },
-                                        music: item.music.flatMap(EngineMedia.init),
                                         author: item.authorId.flatMap { transaction.getPeer($0).flatMap(EnginePeer.init) },
                                         folderIds: item.folderIds
                                     )
@@ -2646,37 +2593,35 @@ public final class PeerExpiringStoryListContext {
                         var updatedPeerEntries: [StoryItemsTableEntry] = []
                         updatedPeerEntries.removeAll()
                         
-                        if let result = result, case let .peerStories(peerStoriesData) = result {
-                            let (stories, chats, users) = (peerStoriesData.stories, peerStoriesData.chats, peerStoriesData.users)
+                        if let result = result, case let .peerStories(stories, chats, users) = result {
                             let parsedPeers = AccumulatedPeers(transaction: transaction, chats: chats, users: users)
-
+                            
                             switch stories {
-                            case let .peerStories(peerStoriesData):
-                                let (_, peerIdValue, maxReadId, stories) = (peerStoriesData.flags, peerStoriesData.peer, peerStoriesData.maxReadId, peerStoriesData.stories)
+                            case let .peerStories(_, peerIdValue, maxReadId, stories):
                                 let peerId = peerIdValue.peerId
-
+                                
                                 let previousPeerEntries: [StoryItemsTableEntry] = transaction.getStoryItems(peerId: peerId)
-
+                                
                                 for story in stories {
                                     if let storedItem = Stories.StoredItem(apiStoryItem: story, peerId: peerId, transaction: transaction) {
                                         if case .placeholder = storedItem, let previousEntry = previousPeerEntries.first(where: { $0.id == storedItem.id }) {
                                             updatedPeerEntries.append(previousEntry)
                                         } else {
                                             if let codedEntry = CodableEntry(storedItem) {
-                                                updatedPeerEntries.append(StoryItemsTableEntry(value: codedEntry, id: storedItem.id, expirationTimestamp: storedItem.expirationTimestamp, isCloseFriends: storedItem.isCloseFriends, isLiveStream: storedItem.isLiveStream))
+                                                updatedPeerEntries.append(StoryItemsTableEntry(value: codedEntry, id: storedItem.id, expirationTimestamp: storedItem.expirationTimestamp, isCloseFriends: storedItem.isCloseFriends))
                                             }
                                         }
                                     }
                                 }
-
+                                
                                 transaction.setPeerStoryState(peerId: peerId, state: Stories.PeerState(
                                     maxReadId: maxReadId ?? 0
                                 ).postboxRepresentation)
                             }
-
+                            
                             updatePeers(transaction: transaction, accountPeerId: accountPeerId, peers: parsedPeers)
                         }
-
+                        
                         transaction.setStoryItems(peerId: peerId, items: updatedPeerEntries)
                     }
                     |> ignoreValues
@@ -2754,20 +2699,6 @@ public final class PeerExpiringStoryListContext {
             return self.items.contains(where: { $0.id > self.maxReadId && $0.isCloseFriends })
         }
         
-        public var hasLiveItems: Bool {
-            return self.items.contains(where: { item in
-                switch item {
-                case let .item(item):
-                    if case .liveStream = item.media {
-                        return true
-                    }
-                default:
-                    break
-                }
-                return false
-            })
-        }
-        
         public init(items: [Item], isCached: Bool, maxReadId: Int32, isLoading: Bool) {
             self.items = items
             self.isCached = isCached
@@ -2829,39 +2760,37 @@ public func _internal_pollPeerStories(postbox: Postbox, network: Network, accoun
                 var updatedPeerEntries: [StoryItemsTableEntry] = []
                 updatedPeerEntries.removeAll()
                 
-                if let result = result, case let .peerStories(peerStoriesData) = result {
-                    let (stories, chats, users) = (peerStoriesData.stories, peerStoriesData.chats, peerStoriesData.users)
+                if let result = result, case let .peerStories(stories, chats, users) = result {
                     let parsedPeers = AccumulatedPeers(transaction: transaction, chats: chats, users: users)
-
+                    
                     switch stories {
-                    case let .peerStories(peerStoriesData):
-                        let (_, peerIdValue, maxReadId, stories) = (peerStoriesData.flags, peerStoriesData.peer, peerStoriesData.maxReadId, peerStoriesData.stories)
+                    case let .peerStories(_, peerIdValue, maxReadId, stories):
                         let peerId = peerIdValue.peerId
-
+                        
                         let previousPeerEntries: [StoryItemsTableEntry] = transaction.getStoryItems(peerId: peerId)
-
+                        
                         for story in stories {
                             if let storedItem = Stories.StoredItem(apiStoryItem: story, peerId: peerId, transaction: transaction) {
                                 if case .placeholder = storedItem, let previousEntry = previousPeerEntries.first(where: { $0.id == storedItem.id }) {
                                     updatedPeerEntries.append(previousEntry)
                                 } else {
                                     if let codedEntry = CodableEntry(storedItem) {
-                                        updatedPeerEntries.append(StoryItemsTableEntry(value: codedEntry, id: storedItem.id, expirationTimestamp: storedItem.expirationTimestamp, isCloseFriends: storedItem.isCloseFriends, isLiveStream: storedItem.isLiveStream))
+                                        updatedPeerEntries.append(StoryItemsTableEntry(value: codedEntry, id: storedItem.id, expirationTimestamp: storedItem.expirationTimestamp, isCloseFriends: storedItem.isCloseFriends))
                                     }
                                 }
                             }
                         }
-
+                        
                         transaction.setPeerStoryState(peerId: peerId, state: Stories.PeerState(
                             maxReadId: maxReadId ?? 0
                         ).postboxRepresentation)
                     }
-
+                    
                     updatePeers(transaction: transaction, accountPeerId: accountPeerId, peers: parsedPeers)
                 }
-
+                
                 transaction.setStoryItems(peerId: peerId, items: updatedPeerEntries)
-
+                
                 var isContactOrMember = false
                 if transaction.isPeerContact(peerId: peerId) {
                     isContactOrMember = true
@@ -3051,7 +2980,6 @@ public final class BotPreviewStoryListContext: StoryListContext {
                                         isMy: false,
                                         myReaction: nil,
                                         forwardInfo: nil,
-                                        music: nil,
                                         author: nil,
                                         folderIds: nil
                                     ),
@@ -3102,7 +3030,6 @@ public final class BotPreviewStoryListContext: StoryListContext {
                                     isMy: false,
                                     myReaction: nil,
                                     forwardInfo: nil,
-                                    music: nil,
                                     author: nil,
                                     folderIds: nil
                                 ),
@@ -3216,7 +3143,6 @@ public final class BotPreviewStoryListContext: StoryListContext {
                                 isMy: false,
                                 myReaction: nil,
                                 forwardInfo: nil,
-                                music: nil,
                                 author: nil,
                                 folderIds: nil
                             ),
@@ -3295,7 +3221,6 @@ public final class BotPreviewStoryListContext: StoryListContext {
                                     isMy: false,
                                     myReaction: nil,
                                     forwardInfo: nil,
-                                    music: nil,
                                     author: nil,
                                     folderIds: nil
                                 ),
@@ -3360,7 +3285,6 @@ public final class BotPreviewStoryListContext: StoryListContext {
                                     isMy: false,
                                     myReaction: nil,
                                     forwardInfo: nil,
-                                    music: nil,
                                     author: nil,
                                     folderIds: nil
                                 ),
@@ -3435,10 +3359,10 @@ public final class BotPreviewStoryListContext: StoryListContext {
                 var inputMedia: [Api.InputMedia] = []
                 for item in media {
                     if let image = item as? TelegramMediaImage, let resource = image.representations.last?.resource as? CloudPhotoSizeMediaResource {
-                        inputMedia.append(.inputMediaPhoto(.init(flags: 0, id: .inputPhoto(.init(id: resource.photoId, accessHash: resource.accessHash, fileReference: Buffer(data: resource.fileReference))), ttlSeconds: nil, video: nil)))
-                        inputMedia.append(Api.InputMedia.inputMediaPhoto(.init(flags: 0, id: Api.InputPhoto.inputPhoto(.init(id: resource.photoId, accessHash: resource.accessHash, fileReference: Buffer(data: resource.fileReference))), ttlSeconds: nil, video: nil)))
+                        inputMedia.append(.inputMediaPhoto(flags: 0, id: .inputPhoto(id: resource.photoId, accessHash: resource.accessHash, fileReference: Buffer(data: resource.fileReference)), ttlSeconds: nil))
+                        inputMedia.append(Api.InputMedia.inputMediaPhoto(flags: 0, id: Api.InputPhoto.inputPhoto(id: resource.photoId, accessHash: resource.accessHash, fileReference: Buffer(data: resource.fileReference)), ttlSeconds: nil))
                     } else if let file = item as? TelegramMediaFile, let resource = file.resource as? CloudDocumentMediaResource {
-                        inputMedia.append(.inputMediaDocument(.init(flags: 0, id: .inputDocument(.init(id: resource.fileId, accessHash: resource.accessHash, fileReference: Buffer(data: resource.fileReference ?? Data()))), videoCover: nil, videoTimestamp: nil, ttlSeconds: nil, query: nil)))
+                        inputMedia.append(.inputMediaDocument(flags: 0, id: .inputDocument(id: resource.fileId, accessHash: resource.accessHash, fileReference: Buffer(data: resource.fileReference ?? Data())), videoCover: nil, videoTimestamp: nil, ttlSeconds: nil, query: nil))
                     }
                 }
                 

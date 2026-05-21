@@ -4,8 +4,6 @@ import AsyncDisplayKit
 import Display
 import TelegramPresentationData
 import AccountContext
-import ComponentFlow
-import GlassBackgroundComponent
 
 private func generateBackgroundImage(foreground: UIColor, diameter: CGFloat, sideInset: CGFloat) -> UIImage? {
     return generateImage(CGSize(width: diameter + sideInset * 2.0, height: diameter + sideInset * 2.0), rotatedContext: { size, context in
@@ -39,22 +37,10 @@ private func generateBubbleShadowImage(shadow: UIColor, diameter: CGFloat, shado
 
 
 final class ReactionContextBackgroundNode: ASDisplayNode {
-    struct GlassParams {
-        var isDark: Bool
-        var isTinted: Bool
-        
-        init(isDark: Bool, isTinted: Bool) {
-            self.isDark = isDark
-            self.isTinted = isTinted
-        }
-    }
-    
     private let largeCircleSize: CGFloat
     private let smallCircleSize: CGFloat
     
     private let backgroundView: BlurredBackgroundView
-    private let glassBackgroundView: (container: GlassBackgroundContainerView, view: GlassBackgroundView)?
-    
     private let backgroundTintView: UIView
     private let backgroundTintMaskOuterContainer: UIView
     let backgroundTintMaskContainer: UIView
@@ -69,20 +55,13 @@ final class ReactionContextBackgroundNode: ASDisplayNode {
     private let smallCircleLayer: SimpleLayer
     private let smallCircleShadowLayer: SimpleLayer
     
-    private let glass: GlassParams?
     private var theme: PresentationTheme?
     
-    init(glass: GlassParams?, largeCircleSize: CGFloat, smallCircleSize: CGFloat, maskNode: ASDisplayNode) {
-        self.glass = glass
+    init(largeCircleSize: CGFloat, smallCircleSize: CGFloat, maskNode: ASDisplayNode) {
         self.largeCircleSize = largeCircleSize
         self.smallCircleSize = smallCircleSize
         
         self.backgroundView = BlurredBackgroundView(color: nil, enableBlur: true)
-        if glass != nil {
-            self.glassBackgroundView = (GlassBackgroundContainerView(), GlassBackgroundView())
-        } else {
-            self.glassBackgroundView = nil
-        }
         
         self.backgroundTintView = UIView()
         self.backgroundTintMaskContainer = UIView()
@@ -129,23 +108,16 @@ final class ReactionContextBackgroundNode: ASDisplayNode {
         
         self.backgroundTintMaskOuterContainer.backgroundColor = .white
         
-        
-        if let glassBackgroundView = self.glassBackgroundView {
-            glassBackgroundView.container.contentView.addSubview(glassBackgroundView.view)
-            self.view.addSubview(glassBackgroundView.container)
-            //glassBackgroundView.addSubview(self.backgroundTintView)
-            //glassBackgroundView.maskContentView.layer.addSublayer(self.maskLayer)
-        } else {
-            self.backgroundView.layer.mask = self.maskLayer
-            self.view.addSubview(self.backgroundView)
-            self.backgroundView.addSubview(self.backgroundTintView)
-        }
+        self.view.addSubview(self.backgroundView)
+        self.backgroundView.addSubview(self.backgroundTintView)
         
         self.maskLayer.addSublayer(self.smallCircleLayer)
         self.maskLayer.addSublayer(self.largeCircleLayer)
         self.maskLayer.addSublayer(self.backgroundClippingLayer)
         
         self.backgroundClippingLayer.addSublayer(self.backgroundMaskNode.layer)
+        
+        self.backgroundView.layer.mask = self.maskLayer
     }
     
     func updateIsIntersectingContent(isIntersectingContent: Bool, transition: ContainedViewLayoutTransition) {
@@ -246,24 +218,7 @@ final class ReactionContextBackgroundNode: ASDisplayNode {
         transition.updateFrame(view: self.backgroundView, frame: contentBounds, beginWithCurrentState: true)
         self.backgroundView.update(size: contentBounds.size, transition: transition)
         
-        if let glass = self.glass, let glassBackgroundView = self.glassBackgroundView {
-            var glassBackgroundFrame = contentBounds.insetBy(dx: 10.0, dy: 10.0)
-            glassBackgroundFrame.size.height -= 8.0
-            transition.updateFrame(view: glassBackgroundView.container, frame: glassBackgroundFrame, beginWithCurrentState: true)
-            transition.updateFrame(view: glassBackgroundView.view, frame: CGRect(origin: CGPoint(), size: glassBackgroundFrame.size), beginWithCurrentState: true)
-            let glassTintColor: GlassBackgroundView.TintColor
-            if let glass = self.glass, glass.isTinted {
-                glassTintColor = .init(kind: .custom(style: .default, color: UIColor(rgb: 0x25272e, alpha: 0.72)))
-            } else {
-                glassTintColor = .init(kind: .panel)
-            }
-            glassBackgroundView.container.update(size: glassBackgroundFrame.size, isDark: glass.isDark, transition: ComponentTransition(transition))
-            glassBackgroundView.view.update(size: glassBackgroundFrame.size, cornerRadius: 23.0, isDark: true, tintColor: glassTintColor, transition: ComponentTransition(transition))
-            
-            transition.updateFrame(view: self.backgroundTintView, frame: CGRect(origin: CGPoint(x: 0.0, y: 0.0), size: CGSize(width: contentBounds.width, height: contentBounds.height)).insetBy(dx: -10.0, dy: -10.0))
-        } else {
-            transition.updateFrame(view: self.backgroundTintView, frame: CGRect(origin: CGPoint(x: 0.0, y: 0.0), size: CGSize(width: contentBounds.width, height: contentBounds.height)))
-        }
+        transition.updateFrame(view: self.backgroundTintView, frame: CGRect(origin: CGPoint(x: 0.0, y: 0.0), size: CGSize(width: contentBounds.width, height: contentBounds.height)))
         transition.updateFrame(view: self.backgroundTintMaskOuterContainer, frame: CGRect(origin: CGPoint(x: 0.0, y: 0.0), size: contentBounds.size))
         transition.updateFrame(view: self.backgroundTintMaskContainer, frame: CGRect(origin: CGPoint(x: 10.0, y: 10.0), size: contentBounds.size))
         transition.updateFrame(view: self.vibrantExpandedContentContainer, frame: CGRect(origin: CGPoint(x: 10.0, y: 10.0), size: contentBounds.size))
@@ -285,13 +240,6 @@ final class ReactionContextBackgroundNode: ASDisplayNode {
         self.backgroundClippingLayer.animateAlpha(from: 0.0, to: 1.0, duration: 0.01, delay: mainCircleDelay)
         self.backgroundClippingLayer.animateSpring(from: 0.01 as NSNumber, to: 1.0 as NSNumber, keyPath: "transform.scale", duration: mainCircleDuration, delay: mainCircleDelay)
         self.backgroundShadowLayer.animateSpring(from: 0.01 as NSNumber, to: 1.0 as NSNumber, keyPath: "transform.scale", duration: mainCircleDuration, delay: mainCircleDelay)
-        
-        if let glassBackgroundView = self.glassBackgroundView {
-            glassBackgroundView.container.alpha = 0.0
-            
-            let transition: ComponentTransition = .easeInOut(duration: 0.2)
-            transition.setAlpha(view: glassBackgroundView.container, alpha: 1.0)
-        }
     }
     
     func animateInFromAnchorRect(size: CGSize, sourceBackgroundFrame: CGRect) {
@@ -313,13 +261,6 @@ final class ReactionContextBackgroundNode: ASDisplayNode {
         self.backgroundClippingLayer.animateSpring(from: NSValue(cgRect: CGRect(origin: CGPoint(), size: visualSourceBackgroundFrame.size)), to: NSValue(cgRect: self.backgroundClippingLayer.bounds), keyPath: "bounds", duration: springDuration, delay: springDelay, initialVelocity: 0.0, damping: springDamping)
         self.backgroundShadowLayer.animateSpring(from: NSValue(cgPoint: CGPoint(x: sourceShadowFrame.midX - size.width / 2.0, y: 0.0)), to: NSValue(cgPoint: CGPoint()), keyPath: "position", duration: springDuration, delay: springDelay, initialVelocity: 0.0, damping: springDamping, additive: true)
         self.backgroundShadowLayer.animateSpring(from: NSValue(cgRect: CGRect(origin: CGPoint(), size: sourceShadowFrame.size)), to: NSValue(cgRect: self.backgroundShadowLayer.bounds), keyPath: "bounds", duration: springDuration, delay: springDelay, initialVelocity: 0.0, damping: springDamping)
-        
-        if let glassBackgroundView = self.glassBackgroundView {
-            glassBackgroundView.container.alpha = 0.0
-            
-            let transition: ComponentTransition = .easeInOut(duration: 0.2)
-            transition.setAlpha(view: glassBackgroundView.container, alpha: 1.0)
-        }
     }
     
     func animateOut() {
@@ -330,10 +271,5 @@ final class ReactionContextBackgroundNode: ASDisplayNode {
         self.largeCircleShadowLayer.animateAlpha(from: CGFloat(self.largeCircleShadowLayer.opacity), to: 0.0, duration: 0.1, removeOnCompletion: false)
         //self.smallCircleLayer.animateAlpha(from: CGFloat(self.smallCircleLayer.opacity), to: 0.0, duration: 0.2, removeOnCompletion: false)
         self.smallCircleShadowLayer.animateAlpha(from: CGFloat(self.smallCircleShadowLayer.opacity), to: 0.0, duration: 0.1, removeOnCompletion: false)
-        
-        if let glassBackgroundView = self.glassBackgroundView {
-            let transition: ComponentTransition = .easeInOut(duration: 0.2)
-            transition.setAlpha(view: glassBackgroundView.container, alpha: 0.0)
-        }
     }
 }

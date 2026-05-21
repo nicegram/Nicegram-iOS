@@ -7,7 +7,7 @@ swift_library(
         "Sources/**/*.swift",
     ]),
     copts = [
-        "-warnings-as-errors",
+        #"-warnings-as-errors",
     ],
     deps = [
         "//submodules/AsyncDisplayKit",
@@ -39,7 +39,6 @@ swift_library(
         "//submodules/TelegramUI/Components/ListActionItemComponent",
         "//submodules/TelegramUI/Components/Settings/ThemeCarouselItem",
         "//submodules/Components/MultilineTextComponent",
-        "//submodules/Components/BalancedTextComponent",
         "//submodules/TelegramUI/Components/EmojiStatusSelectionComponent",
         "//submodules/TelegramUI/Components/DynamicCornerRadiusView",
         "//submodules/Components/ComponentDisplayAdapters",
@@ -55,14 +54,6 @@ swift_library(
         "//submodules/TelegramUI/Components/EmojiActionIconComponent",
         "//submodules/TelegramUI/Components/TabSelectorComponent",
         "//submodules/TelegramUI/Components/PlainButtonComponent",
-        "//submodules/TextFormat",
-        "//submodules/TelegramUI/Components/PeerInfo/CollectionTabItemComponent",
-        "//submodules/TelegramUI/Components/LottieComponent",
-        "//submodules/TelegramUI/Components/Gifts/GiftItemComponent",
-        "//submodules/TelegramUI/Components/Gifts/GiftLoadingShimmerView",
-        "//submodules/TelegramUI/Components/Gifts/GiftViewScreen",
-        "//submodules/TelegramUI/Components/Stars/BalanceNeededScreen",
-        "//submodules/TelegramUI/Components/EdgeEffect",
     ],
     visibility = [
         "//visibility:public",

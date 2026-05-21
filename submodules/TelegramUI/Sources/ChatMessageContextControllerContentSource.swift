@@ -236,9 +236,7 @@ final class ChatViewOnceMessageContextExtractedContentSource: ContextExtractedCo
                     accountPeer: nil,
                     isCentered: false,
                     isPreview: false,
-                    isStandalone: true,
-                    rank: nil,
-                    rankRole: nil
+                    isStandalone: true
                 )
                 
                 let width = chatNode.historyNode.frame.width

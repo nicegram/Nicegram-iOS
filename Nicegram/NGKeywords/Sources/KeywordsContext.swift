@@ -9,7 +9,7 @@ import NGUtils
 import NGCore
 import NGLogging
 import Postbox
-import FeatKeywords
+import TelegramBridge
 
 public final class KeywordsContext {
     private let queue = Queue(name: "keywords_context")
@@ -74,21 +74,21 @@ public final class KeywordsContext {
                                 if let self {
                                     let convertedMessages = messages.compactMap {
                                         switch $0 {
-                                        case let .message(message):
+                                        case let .message(_, _, id, _, _, peerId, _, _, _, _, _, date, message, _, _, _, _, _, _, _, postAuthor, _, _, _, _, _, _, _, _, _, _):
                                             
-                                            let peerId: Int64 = switch message.peerId {
-                                            case let .peerChannel(peerChannel): peerChannel.channelId
-                                            case let .peerChat(peerChat): peerChat.chatId
-                                            case let .peerUser(peerUser): peerUser.userId
-                                            }
+                                            let peerId: Int64 = switch peerId {
+                                            case let .peerChannel(channelId): channelId
+                                            case let .peerChat(chatId): chatId
+                                            case let .peerUser(userId): userId
+                                            }                            
                                             
                                             if peerId != accountContext.account.peerId.toInt64() {
                                                 return TelegramMessage(
                                                     peerId: peerId,
-                                                    messageId: message.id,
-                                                    timestamp: message.date,
-                                                    author: message.postAuthor,
-                                                    text: message.message,
+                                                    messageId: id,
+                                                    timestamp: date,
+                                                    author: postAuthor,
+                                                    text: message,
                                                     keywordId: ""
                                                 )
                                             } else {
@@ -168,11 +168,9 @@ private final class SearchContext {
     func start(with id: String, keyword: String, minDate: Int32? = nil) {
         let location: SearchMessagesLocation = .general(
             scope: .everywhere,
-            groupId: nil,
             tags: nil,
             minDate: minDate,
-            maxDate: nil,
-            folderId: nil
+            maxDate: nil
         )
 
         let context = self.context
@@ -267,29 +265,29 @@ private class UpdateMessageService: NSObject, MTMessageService {
     
     func addUpdates(_ updates: Api.Updates) {
         switch updates {
-        case let .updates(updates):
-            let messages = updates.updates.compactMap { update in
+        case let .updates(updates, _, _, _, _):
+            let messages = updates.compactMap { update in
                 switch update {
-                case let .updateNewChannelMessage(updateNewChannelMessage):
-                    return updateNewChannelMessage.message
+                case let .updateNewChannelMessage(message, _, _):
+                    return message
                 default: return nil
                 }
             }
             if messages.count > 0 {
                 pipe.putNext(messages)
             }
-        case let .updateShort(update):
-            switch update.update {
-            case let .updateNewChannelMessage(updateNewChannelMessage):
-                pipe.putNext([updateNewChannelMessage.message])
+        case let .updateShort(update, _):
+            switch update {
+            case let .updateNewChannelMessage(message, _, _):
+                pipe.putNext([message])
             default: break
             }
 
-        case let .updatesCombined(updatesCombined):
-            let messages = updatesCombined.updates.compactMap { update in
+        case let .updatesCombined(updates, _, _, _, _, _):
+            let messages = updates.compactMap { update in
                 switch update {
-                case let .updateNewChannelMessage(updateNewChannelMessage):
-                    return updateNewChannelMessage.message
+                case let .updateNewChannelMessage(message, _, _):
+                    return message
                 default: return nil
                 }
             }

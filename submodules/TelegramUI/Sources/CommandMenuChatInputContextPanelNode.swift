@@ -13,10 +13,6 @@ import ChatPresentationInterfaceState
 import ChatControllerInteraction
 import ChatContextQuery
 import ChatInputContextPanelNode
-import ComponentFlow
-import ComponentDisplayAdapters
-import GlassBackgroundComponent
-import EdgeEffect
 
 private struct CommandMenuChatInputContextPanelEntryStableId: Hashable {
     let command: PeerCommand
@@ -65,9 +61,7 @@ private func preparedTransition(from fromEntries: [CommandMenuChatInputContextPa
 }
 
 final class CommandMenuChatInputContextPanelNode: ChatInputContextPanelNode {
-    private let backgroundView: GlassBackgroundView
     private let listView: ListView
-    private let listMaskView: UIImageView
     private var currentEntries: [CommandMenuChatInputContextPanelEntry]?
     
     private var enqueuedTransitions: [(CommandMenuChatInputContextPanelTransition, Bool)] = []
@@ -76,48 +70,23 @@ final class CommandMenuChatInputContextPanelNode: ChatInputContextPanelNode {
     private let disposable = MetaDisposable()
     
     init(context: AccountContext, theme: PresentationTheme, strings: PresentationStrings, fontSize: PresentationFontSize, peerId: PeerId, chatPresentationContext: ChatPresentationContext) {
-        self.backgroundView = GlassBackgroundView()
-        self.backgroundView.layer.anchorPoint = CGPoint()
-        
-        self.listView = ListViewImpl()
+        self.listView = ListView()
         self.listView.clipsToBounds = false
         self.listView.isOpaque = false
         self.listView.stackFromBottom = true
+        self.listView.keepBottomItemOverscrollBackground = theme.list.plainBackgroundColor
         self.listView.limitHitTestToNodes = true
         self.listView.view.disablesInteractiveTransitionGestureRecognizer = true
         self.listView.accessibilityPageScrolledString = { row, count in
             return strings.VoiceOver_ScrollStatus(row, count).string
         }
         
-        self.listMaskView = UIImageView()
-        
         super.init(context: context, theme: theme, strings: strings, fontSize: fontSize, chatPresentationContext: chatPresentationContext)
         
         self.isOpaque = false
         self.clipsToBounds = true
         
-        self.view.addSubview(self.backgroundView)
         self.addSubnode(self.listView)
-        self.listView.view.mask = self.listMaskView
-        
-        self.backgroundView.isHidden = true
-        self.listView.visibleContentOffsetChanged = { [weak self] offset, _ in
-            guard let self else {
-                return
-            }
-            var topOffset: CGFloat = 0.0
-            switch offset {
-            case let .known(offset):
-                topOffset = max(0.0, -offset + self.listView.insets.top)
-            case .unknown:
-                break
-            case .none:
-                break
-            }
-            
-            self.backgroundView.isHidden = false
-            self.backgroundView.layer.position = CGPoint(x: 0.0, y: topOffset)
-        }
         
         self.disposable.set((context.engine.peers.peerCommands(id: peerId)
         |> deliverOnMainQueue).startStrict(next: { [weak self] results in
@@ -209,10 +178,9 @@ final class CommandMenuChatInputContextPanelNode: ChatInputContextPanelNode {
             }
             
             var insets = UIEdgeInsets()
-            insets.top = topInsetForLayout(size: validLayout.0, bottomInset: validLayout.3)
+            insets.top = topInsetForLayout(size: validLayout.0)
             insets.left = validLayout.1
             insets.right = validLayout.2
-            insets.bottom = validLayout.3
             
             let updateSizeAndInsets = ListViewUpdateSizeAndInsets(size: self.listView.bounds.size, insets: insets, duration: 0.0, curve: .Default(duration: nil))
             
@@ -225,73 +193,33 @@ final class CommandMenuChatInputContextPanelNode: ChatInputContextPanelNode {
                         }
                     }
                     
-                    if let topItemOffset {
-                        let offset = strongSelf.listView.bounds.size.height - topItemOffset
-                        let transition = ContainedViewLayoutTransition.animated(duration: 0.3, curve: .spring)
-                        transition.animatePositionAdditive(layer: strongSelf.listView.layer, offset: CGPoint(x: 0.0, y: offset))
-                        transition.animatePositionAdditive(layer: strongSelf.backgroundView.layer, offset: CGPoint(x: 0.0, y: offset))
+                    if let topItemOffset = topItemOffset {
+                        let position = strongSelf.listView.layer.position
+                        strongSelf.listView.position = CGPoint(x: position.x, y: position.y + (strongSelf.listView.bounds.size.height - topItemOffset))
+                        ContainedViewLayoutTransition.animated(duration: 0.3, curve: .spring).animateView {
+                            strongSelf.listView.position = position
+                        }
                     }
                 }
             })
         }
     }
     
-    private func topInsetForLayout(size: CGSize, bottomInset: CGFloat) -> CGFloat {
+    private func topInsetForLayout(size: CGSize) -> CGFloat {
         let minimumItemHeights: CGFloat = floor(MentionChatInputPanelItemNode.itemHeight * 4.7)
-        return max(size.height - bottomInset - minimumItemHeights, 0.0)
+        return max(size.height - minimumItemHeights, 0.0)
     }
     
     override func updateLayout(size: CGSize, leftInset: CGFloat, rightInset: CGFloat, bottomInset: CGFloat, transition: ContainedViewLayoutTransition, interfaceState: ChatPresentationInterfaceState) {
         let hadValidLayout = self.validLayout != nil
         self.validLayout = (size, leftInset, rightInset, bottomInset)
         
-        self.backgroundView.bounds = CGRect(origin: CGPoint(), size: CGSize(width: size.width, height: size.height + 32.0))
-        self.backgroundView.update(
-            size: self.backgroundView.bounds.size,
-            cornerRadius: 20.0,
-            isDark: interfaceState.theme.overallDarkAppearance,
-            tintColor: .init(kind: .panel),
-            transition: ComponentTransition(transition)
-        )
-        
         var insets = UIEdgeInsets()
-        insets.top = self.topInsetForLayout(size: size, bottomInset: bottomInset)
+        insets.top = self.topInsetForLayout(size: size)
         insets.left = leftInset
         insets.right = rightInset
-        insets.bottom = bottomInset
         
         transition.updateFrame(node: self.listView, frame: CGRect(x: 0.0, y: 0.0, width: size.width, height: size.height))
-        let listMaskHeight: CGFloat = bottomInset + 1.0
-        if self.listMaskView.image?.size.height != listMaskHeight {
-            let baseGradientAlpha: CGFloat = 0.65
-            let numSteps = 8
-            let firstStep = 1
-            let firstLocation = 0.0
-            let colors: [UIColor] = (0 ..< numSteps).map { i in
-                if i < firstStep {
-                    return UIColor(white: 0.0, alpha: 0.0)
-                } else {
-                    let step: CGFloat = CGFloat(i - firstStep) / CGFloat(numSteps - firstStep - 1)
-                    let value: CGFloat = bezierPoint(0.42, 0.0, 0.58, 1.0, step)
-                    return UIColor(white: 0.0, alpha: 1.0 - baseGradientAlpha * value)
-                }
-            }
-            let locations: [CGFloat] = (0 ..< numSteps).map { i in
-                if i < firstStep {
-                    return 0.0
-                } else {
-                    let step: CGFloat = CGFloat(i - firstStep) / CGFloat(numSteps - firstStep - 1)
-                    return (firstLocation + (1.0 - firstLocation) * step)
-                }
-            }
-            
-            self.listMaskView.image = generateGradientImage(
-                size: CGSize(width: 8.0, height: listMaskHeight),
-                colors: colors,
-                locations: locations
-            )?.stretchableImage(withLeftCapWidth: 0, topCapHeight: 1)
-        }
-        transition.updateFrame(view: self.listMaskView, frame: CGRect(x: 0.0, y: 0.0, width: size.width, height: size.height))
         
         let (duration, curve) = listViewAnimationDurationAndCurve(transition: transition)
         let updateSizeAndInsets = ListViewUpdateSizeAndInsets(size: size, insets: insets, duration: duration, curve: curve)
@@ -306,6 +234,7 @@ final class CommandMenuChatInputContextPanelNode: ChatInputContextPanelNode {
         
         if self.theme !== interfaceState.theme {
             self.theme = interfaceState.theme
+            self.listView.keepBottomItemOverscrollBackground = self.theme.list.plainBackgroundColor
             
             let new = self.currentEntries?.map({$0.withUpdatedTheme(interfaceState.theme)}) ?? []
             self.prepareTransition(from: self.currentEntries, to: new)
@@ -320,14 +249,11 @@ final class CommandMenuChatInputContextPanelNode: ChatInputContextPanelNode {
             }
         }
         
-        if let topItemOffset {
-            let offset = (self.listView.bounds.size.height - topItemOffset)
-            
+        if let topItemOffset = topItemOffset {
             let position = self.listView.layer.position
-            self.listView.layer.animatePosition(from: position, to: CGPoint(x: position.x, y: position.y + offset), duration: 0.3, timingFunction: kCAMediaTimingFunctionSpring, removeOnCompletion: false, completion: { _ in
+            self.listView.layer.animatePosition(from: position, to: CGPoint(x: position.x, y: position.y + (self.listView.bounds.size.height - topItemOffset)), duration: 0.3, timingFunction: kCAMediaTimingFunctionSpring, removeOnCompletion: false, completion: { _ in
                 completion()
             })
-            self.backgroundView.layer.animatePosition(from: self.backgroundView.layer.position, to: CGPoint(x: self.backgroundView.layer.position.x, y: self.backgroundView.layer.position.y + offset), duration: 0.3, timingFunction: kCAMediaTimingFunctionSpring, removeOnCompletion: false)
         } else {
             completion()
         }

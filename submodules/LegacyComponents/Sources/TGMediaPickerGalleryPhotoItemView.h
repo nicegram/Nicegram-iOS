@@ -8,8 +8,6 @@
 
 @property (nonatomic, strong) TGModernGalleryImageItemImageView *imageView;
 
-- (void)setLivePhotoMode:(TGMediaLivePhotoMode)mode;
-- (void)returnFromEditing;
 - (void)toggleSendAsGif;
 
 @end

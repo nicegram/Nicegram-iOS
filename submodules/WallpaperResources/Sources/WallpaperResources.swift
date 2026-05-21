@@ -14,7 +14,7 @@ import LocalMediaResources
 import TelegramPresentationData
 import TelegramUIPreferences
 import AppBundle
-import LegacyImpl
+import Svg
 import GradientBackground
 import GZip
 
@@ -954,11 +954,11 @@ public func photoWallpaper(postbox: Postbox, photoLibraryResource: PhotoLibraryM
 }
 
 public func telegramThemeData(account: Account, accountManager: AccountManager<TelegramAccountManagerTypes>, reference: MediaResourceReference, synchronousLoad: Bool = false) -> Signal<Data?, NoError> {
-    let maybeFetched = accountManager.resources.data(resource: EngineMediaResource(reference.resource), attemptSynchronously: synchronousLoad)
+    let maybeFetched = accountManager.mediaBox.resourceData(reference.resource, option: .complete(waitUntilFetchStatus: false), attemptSynchronously: synchronousLoad)
     return maybeFetched
     |> take(1)
     |> mapToSignal { maybeData in
-        if maybeData.isComplete {
+        if maybeData.complete {
             let loadedData: Data? = try? Data(contentsOf: URL(fileURLWithPath: maybeData.path), options: [])
             return .single(loadedData)
         } else {
@@ -970,7 +970,7 @@ public func telegramThemeData(account: Account, accountManager: AccountManager<T
                     return data.complete ? try? Data(contentsOf: URL(fileURLWithPath: data.path)) : nil
                 }).start(next: { next in
                     if let data = next {
-                        accountManager.resources.storeResourceData(id: EngineMediaResource.Id(reference.resource.id), data: data)
+                        accountManager.mediaBox.storeResourceData(reference.resource.id, data: data)
                     }
                     subscriber.putNext(next)
                 }, error: { _ in
@@ -1161,11 +1161,11 @@ public func themeImage(account: Account, accountManager: AccountManager<Telegram
     switch source {
         case let .file(fileReference):
             let isSupportedTheme = fileReference.media.mimeType == "application/x-tgtheme-ios"
-            let maybeFetched = accountManager.resources.data(resource: EngineMediaResource(fileReference.media.resource), attemptSynchronously: synchronousLoad)
+            let maybeFetched = accountManager.mediaBox.resourceData(fileReference.media.resource, option: .complete(waitUntilFetchStatus: false), attemptSynchronously: synchronousLoad)
             theme = maybeFetched
             |> take(1)
             |> mapToSignal { maybeData -> Signal<(PresentationTheme?, Data?), NoError> in
-                if maybeData.isComplete && isSupportedTheme {
+                if maybeData.complete && isSupportedTheme {
                     let loadedData: Data? = try? Data(contentsOf: URL(fileURLWithPath: maybeData.path), options: [])
                     return .single((loadedData.flatMap { makePresentationTheme(data: $0) }, nil))
                 } else {
@@ -1211,7 +1211,7 @@ public func themeImage(account: Account, accountManager: AccountManager<Telegram
                                     return data.complete ? try? Data(contentsOf: URL(fileURLWithPath: data.path)) : nil
                                 }).start(next: { next in
                                     if let data = next {
-                                        accountManager.resources.storeResourceData(id: EngineMediaResource.Id(reference.resource.id), data: data)
+                                        accountManager.mediaBox.storeResourceData(reference.resource.id, data: data)
                                     }
                                     subscriber.putNext(next)
                                 }, error: { _ in
@@ -1257,13 +1257,13 @@ public func themeImage(account: Account, accountManager: AccountManager<Telegram
                             guard complete, let fullSizeData = fullSizeData else {
                                 return .complete()
                             }
-                            accountManager.resources.storeResourceData(id: EngineMediaResource.Id(file.file.resource.id), data: fullSizeData)
+                            accountManager.mediaBox.storeResourceData(file.file.resource.id, data: fullSizeData)
                             let _ = accountManager.mediaBox.cachedResourceRepresentation(file.file.resource, representation: CachedScaledImageRepresentation(size: CGSize(width: 720.0, height: 720.0), mode: .aspectFit), complete: true, fetch: true).start()
                             
                             if wallpaper.wallpaper.isPattern, !file.settings.colors.isEmpty, let intensity = file.settings.intensity {
-                                return accountManager.resources.data(resource: EngineMediaResource(file.file.resource))
+                                return accountManager.mediaBox.resourceData(file.file.resource)
                                 |> mapToSignal { data in
-                                    if data.isComplete, let imageData = try? Data(contentsOf: URL(fileURLWithPath: data.path)) {
+                                    if data.complete, let imageData = try? Data(contentsOf: URL(fileURLWithPath: data.path)) {
                                         return .single((theme, .pattern(data: imageData, colors: file.settings.colors, intensity: intensity), thumbnailData))
                                     } else {
                                         return .complete()
@@ -1360,7 +1360,7 @@ public func themeImage(account: Account, accountManager: AccountManager<Telegram
                     case let .pattern(data, colors, intensity):
                         let wallpaperImage = generateImage(arguments.drawingSize, rotatedContext: { size, context in
                             drawWallpaperGradientImage(colors.map(UIColor.init(rgb:)), context: context, size: size)
-                            if let unpackedData = TGGUnzipData(data, 2 * 1024 * 1024), let image = drawSvgImageImpl(unpackedData, arguments.drawingSize, .clear, .black, 1.0, true) {
+                            if let unpackedData = TGGUnzipData(data, 2 * 1024 * 1024), let image = drawSvgImage(unpackedData, arguments.drawingSize, .clear, .black, 1.0, true) {
                                 context.setBlendMode(.softLight)
                                 context.setAlpha(abs(CGFloat(intensity)) / 100.0)
                                 context.draw(image.cgImage!, in: CGRect(origin: CGPoint(), size: arguments.drawingSize))
@@ -1520,7 +1520,7 @@ public func themeIconImage(account: Account, accountManager: AccountManager<Tele
                                 guard complete, let fullSizeData = fullSizeData else {
                                     return .complete()
                                 }
-                                accountManager.resources.storeResourceData(id: EngineMediaResource.Id(file.file.resource.id), data: fullSizeData)
+                                accountManager.mediaBox.storeResourceData(file.file.resource.id, data: fullSizeData)
                                 let _ = accountManager.mediaBox.cachedResourceRepresentation(file.file.resource, representation: CachedScaledImageRepresentation(size: CGSize(width: 720.0, height: 720.0), mode: .aspectFit), complete: true, fetch: true).start()
                                 
                                 if wallpaper.wallpaper.isPattern {

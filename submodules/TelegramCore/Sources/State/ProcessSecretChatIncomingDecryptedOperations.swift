@@ -448,7 +448,7 @@ extension SecretChatServiceAction {
                         self = .rekeyAction(.pfsCommitKey(rekeySessionId: exchangeId, keyFingerprint: keyFingerprint))
                     case let .decryptedMessageActionAbortKey(exchangeId):
                         self = .rekeyAction(.pfsAbortSession(rekeySessionId: exchangeId))
-                    case .decryptedMessageActionNoop, .decryptedMessageActionTyping:
+                    case .decryptedMessageActionNoop:
                         return nil
                 }
         }
@@ -484,7 +484,7 @@ extension SecretChatServiceAction {
                     self = .rekeyAction(.pfsCommitKey(rekeySessionId: exchangeId, keyFingerprint: keyFingerprint))
                 case let .decryptedMessageActionAbortKey(exchangeId):
                     self = .rekeyAction(.pfsAbortSession(rekeySessionId: exchangeId))
-                case .decryptedMessageActionNoop, .decryptedMessageActionTyping:
+                case .decryptedMessageActionNoop:
                     return nil
             }
         }
@@ -520,7 +520,7 @@ extension SecretChatServiceAction {
                     self = .rekeyAction(.pfsCommitKey(rekeySessionId: exchangeId, keyFingerprint: keyFingerprint))
                 case let .decryptedMessageActionAbortKey(exchangeId):
                     self = .rekeyAction(.pfsAbortSession(rekeySessionId: exchangeId))
-                case .decryptedMessageActionNoop, .decryptedMessageActionTyping:
+                case .decryptedMessageActionNoop:
                     return nil
             }
         }
@@ -556,7 +556,7 @@ extension SecretChatServiceAction {
                     self = .rekeyAction(.pfsCommitKey(rekeySessionId: exchangeId, keyFingerprint: keyFingerprint))
                 case let .decryptedMessageActionAbortKey(exchangeId):
                     self = .rekeyAction(.pfsAbortSession(rekeySessionId: exchangeId))
-                case .decryptedMessageActionNoop, .decryptedMessageActionTyping:
+                case .decryptedMessageActionNoop:
                     return nil
             }
         }
@@ -881,7 +881,7 @@ private func parseMessage(peerId: PeerId, authorId: PeerId, tagLocalIndex: Int32
             }
             
             if let replyToRandomId = replyToRandomId, let replyMessageId = messageIdForGloballyUniqueMessageId(replyToRandomId) {
-                attributes.append(ReplyMessageAttribute(messageId: replyMessageId, threadMessageId: nil, quote: nil, isQuote: false, innerSubject: nil))
+                attributes.append(ReplyMessageAttribute(messageId: replyMessageId, threadMessageId: nil, quote: nil, isQuote: false, todoItemId: nil))
             }
 
             var entitiesAttribute: TextEntitiesMessageAttribute?
@@ -919,7 +919,7 @@ private func parseMessage(peerId: PeerId, authorId: PeerId, tagLocalIndex: Int32
                     return nil
                 case .decryptedMessageActionAbortKey:
                     return nil
-                case .decryptedMessageActionNoop, .decryptedMessageActionTyping:
+                case .decryptedMessageActionNoop:
                     return nil
             }
     }
@@ -1113,7 +1113,7 @@ private func parseMessage(peerId: PeerId, authorId: PeerId, tagLocalIndex: Int32
             }
             
             if let replyToRandomId = replyToRandomId, let replyMessageId = messageIdForGloballyUniqueMessageId(replyToRandomId) {
-                attributes.append(ReplyMessageAttribute(messageId: replyMessageId, threadMessageId: nil, quote: nil, isQuote: false, innerSubject: nil))
+                attributes.append(ReplyMessageAttribute(messageId: replyMessageId, threadMessageId: nil, quote: nil, isQuote: false, todoItemId: nil))
             }
             
             var entitiesAttribute: TextEntitiesMessageAttribute?
@@ -1151,7 +1151,7 @@ private func parseMessage(peerId: PeerId, authorId: PeerId, tagLocalIndex: Int32
                     return nil
                 case .decryptedMessageActionAbortKey:
                     return nil
-                case .decryptedMessageActionNoop, .decryptedMessageActionTyping:
+                case .decryptedMessageActionNoop:
                     return nil
             }
     }
@@ -1392,7 +1392,7 @@ private func parseMessage(peerId: PeerId, authorId: PeerId, tagLocalIndex: Int32
             }
             
             if let replyToRandomId = replyToRandomId, let replyMessageId = messageIdForGloballyUniqueMessageId(replyToRandomId) {
-                attributes.append(ReplyMessageAttribute(messageId: replyMessageId, threadMessageId: nil, quote: nil, isQuote: false, innerSubject: nil))
+                attributes.append(ReplyMessageAttribute(messageId: replyMessageId, threadMessageId: nil, quote: nil, isQuote: false, todoItemId: nil))
             }
             
             var entitiesAttribute: TextEntitiesMessageAttribute?
@@ -1430,7 +1430,7 @@ private func parseMessage(peerId: PeerId, authorId: PeerId, tagLocalIndex: Int32
                     return nil
                 case .decryptedMessageActionAbortKey:
                     return nil
-                case .decryptedMessageActionNoop, .decryptedMessageActionTyping:
+                case .decryptedMessageActionNoop:
                     return nil
         }
     }
@@ -1593,7 +1593,7 @@ private func parseMessage(peerId: PeerId, authorId: PeerId, tagLocalIndex: Int32
             }
             
             if let replyToRandomId = replyToRandomId, let replyMessageId = messageIdForGloballyUniqueMessageId(replyToRandomId) {
-                attributes.append(ReplyMessageAttribute(messageId: replyMessageId, threadMessageId: nil, quote: nil, isQuote: false, innerSubject: nil))
+                attributes.append(ReplyMessageAttribute(messageId: replyMessageId, threadMessageId: nil, quote: nil, isQuote: false, todoItemId: nil))
             }
             
             var entitiesAttribute: TextEntitiesMessageAttribute?
@@ -1631,7 +1631,7 @@ private func parseMessage(peerId: PeerId, authorId: PeerId, tagLocalIndex: Int32
                     return nil
                 case .decryptedMessageActionAbortKey:
                     return nil
-                case .decryptedMessageActionNoop, .decryptedMessageActionTyping:
+                case .decryptedMessageActionNoop:
                     return nil
         }
     }

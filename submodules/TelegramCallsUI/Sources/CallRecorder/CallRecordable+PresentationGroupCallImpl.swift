@@ -3,7 +3,7 @@ import NGCallRecorder
 import SwiftSignalKit
 import TelegramCore
 
-public extension CallRecordable {
+extension CallRecordable {
     convenience init(_ call: PresentationGroupCallImpl) {
         let context = call.accountContext
         let peerId = call.peerId
@@ -12,7 +12,6 @@ public extension CallRecordable {
         self.init(
             accountContext: context,
             audioDevice: call.sharedAudioContext?.audioDevice,
-            peerId: peerId,
             callActive: call.state
             |> map { state in
                 if case .connected = state.networkState {

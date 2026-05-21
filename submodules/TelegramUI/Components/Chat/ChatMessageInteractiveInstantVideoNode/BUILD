@@ -7,7 +7,7 @@ swift_library(
         "Sources/**/*.swift",
     ]),
     copts = [
-        "-warnings-as-errors",
+        #"-warnings-as-errors",
         #"-Xfrontend", "-debug-time-function-bodies"
     ],
     deps = [

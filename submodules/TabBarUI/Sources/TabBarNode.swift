@@ -6,7 +6,6 @@ import Display
 import UIKitRuntimeUtils
 import AnimatedStickerNode
 import TelegramAnimatedStickerNode
-import TelegramPresentationData
 
 private extension CGRect {
     var center: CGPoint {
@@ -344,27 +343,40 @@ class TabBarNode: ASDisplayNode, ASGestureRecognizerDelegate {
     private let contextAction: (Int, ContextExtractedContentContainingNode, ContextGesture) -> Void
     private let swipeAction: (Int, TabBarItemSwipeDirection) -> Void
     
-    private var theme: PresentationTheme
+    private var theme: TabBarControllerTheme
     private var validLayout: (CGSize, CGFloat, CGFloat, UIEdgeInsets, CGFloat)?
     private var horizontal: Bool = false
+    // Nicegram
+    public var showTabNames: Bool
+    //
     private var centered: Bool = false
     
     private var badgeImage: UIImage
 
     let backgroundNode: NavigationBackgroundNode
+    let separatorNode: ASDisplayNode
     private var tabBarNodeContainers: [TabBarNodeContainer] = []
     
     private var tapRecognizer: TapLongTapOrDoubleTapGestureRecognizer?
     
-    init(theme: PresentationTheme, itemSelected: @escaping (Int, Bool, [ASDisplayNode]) -> Void, contextAction: @escaping (Int, ContextExtractedContentContainingNode, ContextGesture) -> Void, swipeAction: @escaping (Int, TabBarItemSwipeDirection) -> Void) {
+    // Nicegram (showTabNames)
+    init(theme: TabBarControllerTheme, itemSelected: @escaping (Int, Bool, [ASDisplayNode]) -> Void, contextAction: @escaping (Int, ContextExtractedContentContainingNode, ContextGesture) -> Void, swipeAction: @escaping (Int, TabBarItemSwipeDirection) -> Void, showTabNames: Bool = true) {
         self.itemSelected = itemSelected
         self.contextAction = contextAction
         self.swipeAction = swipeAction
         self.theme = theme
+        // Nicegram
+        self.showTabNames = showTabNames
+        //
 
-        self.backgroundNode = NavigationBackgroundNode(color: theme.rootController.tabBar.backgroundColor)
+        self.backgroundNode = NavigationBackgroundNode(color: theme.tabBarBackgroundColor)
         
-        self.badgeImage = generateStretchableFilledCircleImage(diameter: 18.0, color: theme.rootController.tabBar.badgeBackgroundColor, strokeColor: theme.rootController.tabBar.badgeStrokeColor, strokeWidth: 1.0, backgroundColor: nil)!
+        self.separatorNode = ASDisplayNode()
+        self.separatorNode.backgroundColor = theme.tabBarSeparatorColor
+        self.separatorNode.isOpaque = true
+        self.separatorNode.isLayerBacked = true
+        
+        self.badgeImage = generateStretchableFilledCircleImage(diameter: 18.0, color: theme.tabBarBadgeBackgroundColor, strokeColor: theme.tabBarBadgeStrokeColor, strokeWidth: 1.0, backgroundColor: nil)!
         
         super.init()
         
@@ -377,6 +389,7 @@ class TabBarNode: ASDisplayNode, ASGestureRecognizerDelegate {
         self.isExclusiveTouch = true
 
         self.addSubnode(self.backgroundNode)
+        self.addSubnode(self.separatorNode)
     }
     
     override func didLoad() {
@@ -411,16 +424,17 @@ class TabBarNode: ASDisplayNode, ASGestureRecognizerDelegate {
         }
     }
     
-    func updateTheme(_ theme: PresentationTheme) {
+    func updateTheme(_ theme: TabBarControllerTheme) {
         if self.theme !== theme {
             self.theme = theme
             
-            self.backgroundNode.updateColor(color: theme.rootController.tabBar.backgroundColor, transition: .immediate)
+            self.separatorNode.backgroundColor = theme.tabBarSeparatorColor
+            self.backgroundNode.updateColor(color: theme.tabBarBackgroundColor, transition: .immediate)
             
-            self.badgeImage = generateStretchableFilledCircleImage(diameter: 18.0, color: theme.rootController.tabBar.badgeBackgroundColor, strokeColor: theme.rootController.tabBar.badgeStrokeColor, strokeWidth: 1.0, backgroundColor: nil)!
+            self.badgeImage = generateStretchableFilledCircleImage(diameter: 18.0, color: theme.tabBarBadgeBackgroundColor, strokeColor: theme.tabBarBadgeStrokeColor, strokeWidth: 1.0, backgroundColor: nil)!
             for container in self.tabBarNodeContainers {
                 if let attributedText = container.badgeTextNode.attributedText, !attributedText.string.isEmpty {
-                    container.badgeTextNode.attributedText = NSAttributedString(string: attributedText.string, font: badgeFont, textColor: theme.rootController.tabBar.badgeTextColor)
+                    container.badgeTextNode.attributedText = NSAttributedString(string: attributedText.string, font: badgeFont, textColor: self.theme.tabBarBadgeTextColor)
                 }
             }
             
@@ -434,6 +448,11 @@ class TabBarNode: ASDisplayNode, ASGestureRecognizerDelegate {
                 self.updateLayout(size: validLayout.0, leftInset: validLayout.1, rightInset: validLayout.2, additionalSideInsets: validLayout.3, bottomInset: validLayout.4, transition: .immediate)
             }
         }
+    }
+    
+    func sourceNodesForController(at index: Int) -> [ASDisplayNode]? {
+        let container = self.tabBarNodeContainers[index]
+        return [container.imageNode.imageNode, container.imageNode.textImageNode, container.badgeContainerNode]
     }
     
     func frameForControllerTab(at index: Int) -> CGRect? {
@@ -451,7 +470,7 @@ class TabBarNode: ASDisplayNode, ASGestureRecognizerDelegate {
             node.imageNode.removeFromSupernode()
         }
         
-        self.centered = self.theme.rootController.tabBar.textColor == .clear
+        self.centered = self.theme.tabBarTextColor == .clear
         
         var tabBarNodeContainers: [TabBarNodeContainer] = []
         for i in 0 ..< self.tabBarItems.count {
@@ -472,13 +491,13 @@ class TabBarNode: ASDisplayNode, ASGestureRecognizerDelegate {
                 self?.swipeAction(i, direction)
             })
             if item.item.ringSelection {
-                node.ringColor = self.theme.rootController.tabBar.selectedIconColor
+                node.ringColor = self.theme.tabBarSelectedIconColor
             } else {
                 node.ringColor = nil
             }
             
             if let selectedIndex = self.selectedIndex, selectedIndex == i {
-                let (textImage, contentWidth) = tabBarItemImage(item.item.selectedImage, title: item.item.title ?? "", backgroundColor: .clear, tintColor: self.theme.rootController.tabBar.selectedTextColor, horizontal: self.horizontal, imageMode: false, centered: self.centered)
+                let (textImage, contentWidth) = tabBarItemImage(item.item.selectedImage, title: item.item.title ?? "", backgroundColor: .clear, tintColor: self.theme.tabBarSelectedTextColor, horizontal: self.horizontal, imageMode: false, centered: self.centered)
                 let (image, imageContentWidth): (UIImage, CGFloat)
                 
                 if let _ = item.item.animationName {
@@ -490,17 +509,17 @@ class TabBarNode: ASDisplayNode, ASGestureRecognizerDelegate {
                     if !node.isSelected {
                         node.animationNode.setup(source: AnimatedStickerNodeLocalFileSource(name: item.item.animationName ?? ""), width: animationSize, height: animationSize, playbackMode: .once, mode: .direct(cachePathPrefix: nil))
                     }
-                    node.animationNode.setOverlayColor(self.theme.rootController.tabBar.selectedIconColor, replace: true, animated: false)
+                    node.animationNode.setOverlayColor(self.theme.tabBarSelectedIconColor, replace: true, animated: false)
                     node.animationNode.updateLayout(size: CGSize(width: 51.0, height: 51.0))
                 } else {
-                    (image, imageContentWidth) = tabBarItemImage(item.item.selectedImage, title: item.item.title ?? "", backgroundColor: .clear, tintColor: self.theme.rootController.tabBar.selectedIconColor, horizontal: self.horizontal, imageMode: true, centered: self.centered)
+                    (image, imageContentWidth) = tabBarItemImage(item.item.selectedImage, title: item.item.title ?? "", backgroundColor: .clear, tintColor: self.theme.tabBarSelectedIconColor, horizontal: self.horizontal, imageMode: true, centered: self.centered)
                     
                     node.animationNode.isHidden = true
                     node.animationNode.visibility = false
                 }
               
-                let (contextTextImage, _) = tabBarItemImage(item.item.image, title: item.item.title ?? "", backgroundColor: .clear, tintColor: self.theme.contextMenu.extractedContentTintColor, horizontal: self.horizontal, imageMode: false, centered: self.centered)
-                let (contextImage, _) = tabBarItemImage(item.item.image, title: item.item.title ?? "", backgroundColor: .clear, tintColor: self.theme.contextMenu.extractedContentTintColor, horizontal: self.horizontal, imageMode: true, centered: self.centered)
+                let (contextTextImage, _) = tabBarItemImage(item.item.image, title: item.item.title ?? "", backgroundColor: .clear, tintColor: self.theme.tabBarExtractedTextColor, horizontal: self.horizontal, imageMode: false, centered: self.centered)
+                let (contextImage, _) = tabBarItemImage(item.item.image, title: item.item.title ?? "", backgroundColor: .clear, tintColor: self.theme.tabBarExtractedIconColor, horizontal: self.horizontal, imageMode: true, centered: self.centered)
                 node.textImageNode.image = textImage
                 node.imageNode.image = image
                 node.contextTextImageNode.image = contextTextImage
@@ -510,10 +529,10 @@ class TabBarNode: ASDisplayNode, ASGestureRecognizerDelegate {
                 node.contentWidth = max(contentWidth, imageContentWidth)
                 node.isSelected = true
             } else {
-                let (textImage, contentWidth) = tabBarItemImage(item.item.image, title: item.item.title ?? "", backgroundColor: .clear, tintColor: self.theme.rootController.tabBar.textColor, horizontal: self.horizontal, imageMode: false, centered: self.centered)
-                let (image, imageContentWidth) = tabBarItemImage(item.item.image, title: item.item.title ?? "", backgroundColor: .clear, tintColor: self.theme.rootController.tabBar.iconColor, horizontal: self.horizontal, imageMode: true, centered: self.centered)
-                let (contextTextImage, _) = tabBarItemImage(item.item.image, title: item.item.title ?? "", backgroundColor: .clear, tintColor: self.theme.contextMenu.extractedContentTintColor, horizontal: self.horizontal, imageMode: false, centered: self.centered)
-                let (contextImage, _) = tabBarItemImage(item.item.image, title: item.item.title ?? "", backgroundColor: .clear, tintColor: self.theme.contextMenu.extractedContentTintColor, horizontal: self.horizontal, imageMode: true, centered: self.centered)
+                let (textImage, contentWidth) = tabBarItemImage(item.item.image, title: item.item.title ?? "", backgroundColor: .clear, tintColor: self.theme.tabBarTextColor, horizontal: self.horizontal, imageMode: false, centered: self.centered)
+                let (image, imageContentWidth) = tabBarItemImage(item.item.image, title: item.item.title ?? "", backgroundColor: .clear, tintColor: self.theme.tabBarIconColor, horizontal: self.horizontal, imageMode: true, centered: self.centered)
+                let (contextTextImage, _) = tabBarItemImage(item.item.image, title: item.item.title ?? "", backgroundColor: .clear, tintColor: self.theme.tabBarExtractedTextColor, horizontal: self.horizontal, imageMode: false, centered: self.centered)
+                let (contextImage, _) = tabBarItemImage(item.item.image, title: item.item.title ?? "", backgroundColor: .clear, tintColor: self.theme.tabBarExtractedIconColor, horizontal: self.horizontal, imageMode: true, centered: self.centered)
                 
                 node.animationNode.isHidden = true
                 node.animationNode.visibility = false
@@ -543,10 +562,10 @@ class TabBarNode: ASDisplayNode, ASGestureRecognizerDelegate {
             let node = self.tabBarNodeContainers[index].imageNode
             let item = self.tabBarItems[index]
             
-            self.centered = self.theme.rootController.tabBar.textColor == .clear
+            self.centered = self.theme.tabBarTextColor == .clear
             
             if item.item.ringSelection {
-                node.ringColor = self.theme.rootController.tabBar.selectedIconColor
+                node.ringColor = self.theme.tabBarSelectedIconColor
             } else {
                 node.ringColor = nil
             }
@@ -554,7 +573,7 @@ class TabBarNode: ASDisplayNode, ASGestureRecognizerDelegate {
             let previousImageSize = node.imageNode.image?.size ?? CGSize()
             let previousTextImageSize = node.textImageNode.image?.size ?? CGSize()
             if let selectedIndex = self.selectedIndex, selectedIndex == index {
-                let (textImage, contentWidth) = tabBarItemImage(item.item.selectedImage, title: item.item.title ?? "", backgroundColor: .clear, tintColor: self.theme.rootController.tabBar.selectedTextColor, horizontal: self.horizontal, imageMode: false, centered: self.centered)
+                let (textImage, contentWidth) = tabBarItemImage(item.item.selectedImage, title: item.item.title ?? "", backgroundColor: .clear, tintColor: self.theme.tabBarSelectedTextColor, horizontal: self.horizontal, imageMode: false, centered: self.centered)
                 let (image, imageContentWidth): (UIImage, CGFloat)
                 if let _ = item.item.animationName {
                     (image, imageContentWidth) = (UIImage(), 0.0)
@@ -565,21 +584,21 @@ class TabBarNode: ASDisplayNode, ASGestureRecognizerDelegate {
                     if !node.isSelected {
                         node.animationNode.setup(source: AnimatedStickerNodeLocalFileSource(name: item.item.animationName ?? ""), width: animationSize, height: animationSize, playbackMode: .once, mode: .direct(cachePathPrefix: nil))
                     }
-                    node.animationNode.setOverlayColor(self.theme.rootController.tabBar.selectedIconColor, replace: true, animated: false)
+                    node.animationNode.setOverlayColor(self.theme.tabBarSelectedIconColor, replace: true, animated: false)
                     node.animationNode.updateLayout(size: CGSize(width: 51.0, height: 51.0))
                 } else {
                     if item.item.ringSelection {
                         (image, imageContentWidth) = (item.item.selectedImage ?? UIImage(), item.item.selectedImage?.size.width ?? 0.0)
                     } else {
-                        (image, imageContentWidth) = tabBarItemImage(item.item.selectedImage, title: item.item.title ?? "", backgroundColor: .clear, tintColor: self.theme.rootController.tabBar.selectedIconColor, horizontal: self.horizontal, imageMode: true, centered: self.centered)
+                        (image, imageContentWidth) = tabBarItemImage(item.item.selectedImage, title: item.item.title ?? "", backgroundColor: .clear, tintColor: self.theme.tabBarSelectedIconColor, horizontal: self.horizontal, imageMode: true, centered: self.centered)
                     }
                     
                     node.animationNode.isHidden = true
                     node.animationNode.visibility = false
                 }
                 
-                let (contextTextImage, _) = tabBarItemImage(item.item.image, title: item.item.title ?? "", backgroundColor: .clear, tintColor: self.theme.contextMenu.extractedContentTintColor, horizontal: self.horizontal, imageMode: false, centered: self.centered)
-                let (contextImage, _) = tabBarItemImage(item.item.image, title: item.item.title ?? "", backgroundColor: .clear, tintColor: self.theme.contextMenu.extractedContentTintColor, horizontal: self.horizontal, imageMode: true, centered: self.centered)
+                let (contextTextImage, _) = tabBarItemImage(item.item.image, title: item.item.title ?? "", backgroundColor: .clear, tintColor: self.theme.tabBarExtractedTextColor, horizontal: self.horizontal, imageMode: false, centered: self.centered)
+                let (contextImage, _) = tabBarItemImage(item.item.image, title: item.item.title ?? "", backgroundColor: .clear, tintColor: self.theme.tabBarExtractedIconColor, horizontal: self.horizontal, imageMode: true, centered: self.centered)
                 node.textImageNode.image = textImage
                 node.accessibilityLabel = item.item.title
                 node.accessibilityTraits = [.button, .selected]
@@ -598,16 +617,16 @@ class TabBarNode: ASDisplayNode, ASGestureRecognizerDelegate {
                     })
                 }
             } else {
-                let (textImage, contentWidth) = tabBarItemImage(item.item.image, title: item.item.title ?? "", backgroundColor: .clear, tintColor: self.theme.rootController.tabBar.textColor, horizontal: self.horizontal, imageMode: false, centered: self.centered)
+                let (textImage, contentWidth) = tabBarItemImage(item.item.image, title: item.item.title ?? "", backgroundColor: .clear, tintColor: self.theme.tabBarTextColor, horizontal: self.horizontal, imageMode: false, centered: self.centered)
                 
                 let (image, imageContentWidth): (UIImage, CGFloat)
                 if item.item.ringSelection {
                     (image, imageContentWidth) = (item.item.image ?? UIImage(), item.item.image?.size.width ?? 0.0)
                 } else {
-                    (image, imageContentWidth) = tabBarItemImage(item.item.image, title: item.item.title ?? "", backgroundColor: .clear, tintColor: self.theme.rootController.tabBar.iconColor, horizontal: self.horizontal, imageMode: true, centered: self.centered)
+                    (image, imageContentWidth) = tabBarItemImage(item.item.image, title: item.item.title ?? "", backgroundColor: .clear, tintColor: self.theme.tabBarIconColor, horizontal: self.horizontal, imageMode: true, centered: self.centered)
                 }
-                let (contextTextImage, _) = tabBarItemImage(item.item.image, title: item.item.title ?? "", backgroundColor: .clear, tintColor: self.theme.contextMenu.extractedContentTintColor, horizontal: self.horizontal, imageMode: false, centered: self.centered)
-                let (contextImage, _) = tabBarItemImage(item.item.image, title: item.item.title ?? "", backgroundColor: .clear, tintColor: self.theme.contextMenu.extractedContentTintColor, horizontal: self.horizontal, imageMode: true, centered: self.centered)
+                let (contextTextImage, _) = tabBarItemImage(item.item.image, title: item.item.title ?? "", backgroundColor: .clear, tintColor: self.theme.tabBarExtractedTextColor, horizontal: self.horizontal, imageMode: false, centered: self.centered)
+                let (contextImage, _) = tabBarItemImage(item.item.image, title: item.item.title ?? "", backgroundColor: .clear, tintColor: self.theme.tabBarExtractedIconColor, horizontal: self.horizontal, imageMode: true, centered: self.centered)
                 
                 node.animationNode.stop()
                 node.animationNode.isHidden = true
@@ -659,6 +678,8 @@ class TabBarNode: ASDisplayNode, ASGestureRecognizerDelegate {
 
         transition.updateFrame(node: self.backgroundNode, frame: CGRect(origin: CGPoint(), size: size))
         self.backgroundNode.update(size: size, transition: transition)
+        
+        transition.updateFrame(node: self.separatorNode, frame: CGRect(origin: CGPoint(x: 0.0, y: 0.0), size: CGSize(width: size.width, height: separatorHeight)))
         
         let horizontal = !leftInset.isZero
         if self.horizontal != horizontal {
@@ -719,6 +740,15 @@ class TabBarNode: ASDisplayNode, ASGestureRecognizerDelegate {
                 node.textImageNode.frame = CGRect(origin: CGPoint(), size: nodeFrame.size)
                 node.contextImageNode.frame = CGRect(origin: CGPoint(), size: nodeFrame.size)
                 node.contextTextImageNode.frame = CGRect(origin: CGPoint(), size: nodeFrame.size)
+                // Nicegram
+                if self.showTabNames {
+                    node.imageNode.frame = CGRect(origin: CGPoint(), size: nodeFrame.size)
+                    node.textImageNode.frame = CGRect(origin: CGPoint(), size: nodeFrame.size)
+                } else {
+                    node.imageNode.frame = CGRect(origin: CGPoint(x: 0.0, y: 6.0), size: nodeFrame.size)
+                    node.textImageNode.frame = CGRect(origin: CGPoint(), size: CGSize())
+                }
+                //
                                 
                 let scaleFactor: CGFloat = horizontal ? 0.8 : 1.0
                 node.animationContainerNode.subnodeTransform = CATransform3DMakeScale(scaleFactor, scaleFactor, 1.0)
@@ -745,7 +775,7 @@ class TabBarNode: ASDisplayNode, ASGestureRecognizerDelegate {
                 if container.badgeValue != container.appliedBadgeValue {
                     container.appliedBadgeValue = container.badgeValue
                     if let badgeValue = container.badgeValue, !badgeValue.isEmpty {
-                        container.badgeTextNode.attributedText = NSAttributedString(string: badgeValue, font: badgeFont, textColor: self.theme.rootController.tabBar.badgeTextColor)
+                        container.badgeTextNode.attributedText = NSAttributedString(string: badgeValue, font: badgeFont, textColor: self.theme.tabBarBadgeTextColor)
                         container.badgeContainerNode.isHidden = false
                     } else {
                         container.badgeContainerNode.isHidden = true
@@ -783,6 +813,7 @@ class TabBarNode: ASDisplayNode, ASGestureRecognizerDelegate {
                 return
             }
             var closestNode: (Int, CGFloat)?
+            
             for i in 0 ..< self.tabBarNodeContainers.count {
                 let node = self.tabBarNodeContainers[i].imageNode
                 if !node.isUserInteractionEnabled {

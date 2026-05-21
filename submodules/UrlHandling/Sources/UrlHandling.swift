@@ -1,6 +1,3 @@
-// Nicegram
-import NGCore
-//
 import Foundation
 import UIKit
 import SwiftSignalKit
@@ -57,9 +54,6 @@ extension ResolvedBotAdminRights {
         if components.contains("manage_chat") {
             rawValue |= ResolvedBotAdminRights.manageChat.rawValue
         }
-        if components.contains("manage_topics") {
-            rawValue |= ResolvedBotAdminRights.manageTopics.rawValue
-        }
         if components.contains("anonymous") {
             rawValue |= ResolvedBotAdminRights.canBeAnonymous.rawValue
         }
@@ -73,11 +67,6 @@ extension ResolvedBotAdminRights {
 }
 
 public enum ParsedInternalPeerUrlParameter {
-    public enum Story {
-        case live
-        case id(Int32)
-    }
-    
     case botStart(String)
     case groupBotStart(String, ResolvedBotAdminRights?)
     case channelBotStart(String, ResolvedBotAdminRights?)
@@ -87,11 +76,10 @@ public enum ParsedInternalPeerUrlParameter {
     case replyThread(Int32, Int32)
     case voiceChat(String?)
     case appStart(String, String?, ResolvedStartAppMode)
-    case story(Story)
+    case story(Int32)
     case boost
     case text(String)
     case profile
-    case direct
     case referrer(String)
     case storyFolder(Int64)
     case giftCollection(Int64)
@@ -103,15 +91,9 @@ public enum ParsedInternalUrl {
         case id(PeerId)
     }
     
-    public enum UrlMessageSubject {
-        case timecode(Double)
-        case todoItem(Int32)
-        case pollOption(String)
-    }
-    
     case peer(UrlPeerReference, ParsedInternalPeerUrlParameter?)
     case peerId(PeerId)
-    case privateMessage(messageId: MessageId, threadId: Int32?, subject: UrlMessageSubject?)
+    case privateMessage(messageId: MessageId, threadId: Int32?, timecode: Double?, taskId: Int32?)
     case stickerPack(name: String, type: StickerPackUrlType)
     case invoice(String)
     case join(String)
@@ -131,10 +113,6 @@ public enum ParsedInternalUrl {
     case premiumGiftCode(slug: String)
     case messageLink(slug: String)
     case collectible(slug: String)
-    case auction(slug: String)
-    case oauth(url: String)
-    case createBot(parentBot: String, username: String?, title: String?)
-    case textStyle(slug: String)
     case externalUrl(url: String)
 }
 
@@ -271,7 +249,7 @@ public func parseInternalUrl(sharedContext: SharedAccountContext, context: Accou
                                 if queryItem.name == "url" {
                                     url = value
                                 } else if queryItem.name == "text" {
-                                    text = value.replacingOccurrences(of: "+", with: " ")
+                                    text = value
                                 } else if queryItem.name == "to" && peerName != "share" {
                                     to = value
                                 }
@@ -284,18 +262,6 @@ public func parseInternalUrl(sharedContext: SharedAccountContext, context: Accou
                                 let peerId = PeerId(namespace: Namespaces.Peer.CloudChannel, id: PeerId.Id._internalFromInt64Value(channelId))
                                 return .peer(.id(peerId), .boost)
                             }
-                        }
-                    } else if peerName == "oauth" {
-                        var token: String?
-                        for queryItem in queryItems {
-                            if let value = queryItem.value {
-                                if queryItem.name == "startapp" {
-                                    token = value
-                                }
-                            }
-                        }
-                        if let _ = token {
-                            return .oauth(url: "https://t.me/\(query)")
                         }
                     } else {
                         for queryItem in queryItems {
@@ -376,10 +342,8 @@ public func parseInternalUrl(sharedContext: SharedAccountContext, context: Accou
                                      }
                                      return .peer(.name(peerName), .appStart("", queryItem.value, mode))
                                  } else if queryItem.name == "story" {
-                                    if value == "live" {
-                                        return .peer(.name(peerName), .story(.live))
-                                    } else if let id = Int32(value) {
-                                        return .peer(.name(peerName), .story(.id(id)))
+                                    if let id = Int32(value) {
+                                        return .peer(.name(peerName), .story(id))
                                     }
                                  } else if queryItem.name == "album" {
                                     if let id = Int64(value) {
@@ -421,8 +385,6 @@ public func parseInternalUrl(sharedContext: SharedAccountContext, context: Accou
                                 return .peer(.name(peerName), .boost)
                             } else if queryItem.name == "profile" {
                                 return .peer(.name(peerName), .profile)
-                            } else if queryItem.name == "direct" {
-                                return .peer(.name(peerName), .direct)
                             } else if queryItem.name == "startapp" {
                                 var mode: ResolvedStartAppMode = .generic
                                 if let queryItems = components.queryItems {
@@ -599,37 +561,19 @@ public func parseInternalUrl(sharedContext: SharedAccountContext, context: Accou
                     return .theme(pathComponents[1])
                 } else if pathComponents[0] == "nft" {
                     return .collectible(slug: pathComponents[1])
-                } else if pathComponents[0] == "auction" {
-                    return .auction(slug: pathComponents[1])
                 } else if pathComponents[0] == "addlist" || pathComponents[0] == "folder" || pathComponents[0] == "list" {
                     return .chatFolder(slug: pathComponents[1])
                 } else if pathComponents[0] == "boost", pathComponents.count == 2 {
                     return .peer(.name(pathComponents[1]), .boost)
                 } else if pathComponents[0] == "giftcode", pathComponents.count == 2 {
                     return .premiumGiftCode(slug: pathComponents[1])
-                } else if pathComponents.count >= 2 && pathComponents[0] == "newbot" {
-                    let parentBot = pathComponents[1]
-                    var username: String?
-                    if pathComponents.count >= 3 {
-                        username = pathComponents[2]
-                    }
-                    var title: String?
-                    for queryItem in components.queryItems ?? [] {
-                        if let value = queryItem.value {
-                            if queryItem.name == "name" {
-                                title = value.replacingOccurrences(of: "+", with: " ")
-                            }
-                        }
-                    }
-                    return .createBot(parentBot: parentBot, username: username, title: title)
-                } else if pathComponents.count >= 2 && pathComponents[0] == "addstyle" {
-                    return .textStyle(slug: pathComponents[1])
                 } else if pathComponents[0] == "m" {
                     return .messageLink(slug: pathComponents[1])
                 } else if pathComponents.count == 3 && pathComponents[0] == "c" {
                     if let channelId = Int64(pathComponents[1]), let messageId = Int32(pathComponents[2]), channelId > 0 {
                         var threadId: Int32?
-                        var subject: ParsedInternalUrl.UrlMessageSubject?
+                        var timecode: Double?
+                        var taskId: Int32?
                         if let queryItems = components.queryItems {
                             for queryItem in queryItems {
                                 if let value = queryItem.value {
@@ -640,27 +584,23 @@ public func parseInternalUrl(sharedContext: SharedAccountContext, context: Accou
                                     } else if queryItem.name == "t" {
                                         let timestampValue = hTmeParseDuration(value)
                                         if timestampValue != 0 {
-                                            subject = .timecode(Double(timestampValue))
+                                            timecode = Double(timestampValue)
                                         }
                                     } else if queryItem.name == "task" {
                                         if let intValue = Int32(value) {
-                                            subject = .todoItem(intValue)
+                                            taskId = intValue
                                         }
-                                    } else if queryItem.name == "option" {
-                                        subject = .pollOption(value)
                                     }
                                 }
                             }
                         }
-                        return .privateMessage(messageId: MessageId(peerId: PeerId(namespace: Namespaces.Peer.CloudChannel, id: PeerId.Id._internalFromInt64Value(channelId)), namespace: Namespaces.Message.Cloud, id: messageId), threadId: threadId, subject: subject)
+                        return .privateMessage(messageId: MessageId(peerId: PeerId(namespace: Namespaces.Peer.CloudChannel, id: PeerId.Id._internalFromInt64Value(channelId)), namespace: Namespaces.Message.Cloud, id: messageId), threadId: threadId, timecode: timecode, taskId: taskId)
                     } else {
                         return nil
                     }
                 } else if pathComponents.count >= 3 && pathComponents[1] == "s" {
-                    if pathComponents[2] == "live" {
-                        return .peer(.name(pathComponents[0]), .story(.live))
-                    } else if let storyId = Int32(pathComponents[2]) {
-                        return .peer(.name(pathComponents[0]), .story(.id(storyId)))
+                    if let storyId = Int32(pathComponents[2]) {
+                        return .peer(.name(pathComponents[0]), .story(storyId))
                     } else {
                         return nil
                     }
@@ -672,26 +612,25 @@ public func parseInternalUrl(sharedContext: SharedAccountContext, context: Accou
                     }
                 } else if pathComponents.count == 4 && pathComponents[0] == "c" {
                     if let channelId = Int64(pathComponents[1]),  let threadId = Int32(pathComponents[2]), let messageId = Int32(pathComponents[3]), channelId > 0 {
-                        var subject: ParsedInternalUrl.UrlMessageSubject?
+                        var timecode: Double?
+                        var taskId: Int32?
                         if let queryItems = components.queryItems {
                             for queryItem in queryItems {
                                 if let value = queryItem.value {
                                     if queryItem.name == "t" {
                                         let timestampValue = hTmeParseDuration(value)
                                         if timestampValue != 0 {
-                                            subject = .timecode(Double(timestampValue))
+                                            timecode = Double(timestampValue)
                                         }
                                     } else if queryItem.name == "task" {
                                         if let intValue = Int32(value) {
-                                            subject = .todoItem(intValue)
+                                            taskId = intValue
                                         }
-                                    } else if queryItem.name == "option" {
-                                        subject = .pollOption(value)
                                     }
                                 }
                             }
                         }
-                        return .privateMessage(messageId: MessageId(peerId: PeerId(namespace: Namespaces.Peer.CloudChannel, id: PeerId.Id._internalFromInt64Value(channelId)), namespace: Namespaces.Message.Cloud, id: messageId), threadId: threadId, subject: subject)
+                        return .privateMessage(messageId: MessageId(peerId: PeerId(namespace: Namespaces.Peer.CloudChannel, id: PeerId.Id._internalFromInt64Value(channelId)), namespace: Namespaces.Message.Cloud, id: messageId), threadId: threadId, timecode: timecode, taskId: taskId)
                     } else {
                         return nil
                     }
@@ -885,33 +824,6 @@ private func resolveInternalUrl(context: AccountContext, url: ParsedInternalUrl)
                         switch parameter {
                             case .profile:
                                 return .single(.result(.peer(peer._asPeer(), .info(nil))))
-                            case .direct:
-                                if case let .channel(channel) = peer, let monoforumId = channel.linkedMonoforumId {
-                                    return context.engine.data.get(TelegramEngine.EngineData.Item.Peer.Peer(id: monoforumId))
-                                    |> mapToSignal { peer -> Signal<EnginePeer?, NoError> in
-                                        if let peer {
-                                            return .single(peer)
-                                        } else {
-                                            return context.engine.peers.fetchAndUpdateCachedPeerData(peerId: channel.id)
-                                            |> mapToSignal { result -> Signal<EnginePeer?, NoError> in
-                                                if result {
-                                                    return context.engine.data.get(TelegramEngine.EngineData.Item.Peer.Peer(id: monoforumId))
-                                                } else {
-                                                    return .single(nil)
-                                                }
-                                            }
-                                        }
-                                    }
-                                    |> map { peer -> ResolveInternalUrlResult in
-                                        if let peer {
-                                            return .result(.peer(peer._asPeer(), .chat(textInputState: nil, subject: nil, peekData: nil)))
-                                        } else {
-                                            return .result(.peer(nil, .info(nil)))
-                                        }
-                                    }
-                                } else {
-                                    return .single(.result(.peer(nil, .info(nil))))
-                                }
                             case let .text(text):
                                 var textInputState: ChatTextInputState?
                                 if !text.isEmpty {
@@ -1027,25 +939,11 @@ private func resolveInternalUrl(context: AccountContext, url: ParsedInternalUrl)
                                 }
                             case let .voiceChat(invite):
                                 return .single(.result(.joinVoiceChat(peer.id, invite)))
-                            case let .story(story):
-                                switch story {
-                                case .live:
-                                    return .single(.progress)
-                                    |> then(context.engine.messages.pollAndGetLiveStory(peerId: peer.id)
-                                    |> map { id -> ResolveInternalUrlResult in
-                                        if let id {
-                                            return .result(.story(peerId: peer.id, id: id))
-                                        } else {
-                                            return .result(nil)
-                                        }
-                                    })
-                                case let .id(id):
-                                    return .single(.progress)
-                                    |> then(context.engine.messages.refreshStories(peerId: peer.id, ids: [id])
-                                    |> map { _ -> ResolveInternalUrlResult in
-                                    }
-                                    |> then(.single(.result(.story(peerId: peer.id, id: id)))))
+                            case let .story(id):
+                                return .single(.progress) |> then(context.engine.messages.refreshStories(peerId: peer.id, ids: [id])
+                                |> map { _ -> ResolveInternalUrlResult in
                                 }
+                                |> then(.single(.result(.story(peerId: peer.id, id: id)))))
                             case .boost:
                                 return .single(.progress) 
                                 |> then(
@@ -1093,7 +991,7 @@ private func resolveInternalUrl(context: AccountContext, url: ParsedInternalUrl)
                     return .single(.result(.peer(nil, .info(nil))))
                 }
             })
-        case let .privateMessage(messageId, threadId, subject):
+        case let .privateMessage(messageId, threadId, timecode, taskId):
             return context.engine.data.get(TelegramEngine.EngineData.Item.Peer.Peer(id: messageId.peerId))
             |> mapToSignal { peer -> Signal<ResolveInternalUrlResult, NoError> in
                 let foundPeer: Signal<EnginePeer?, NoError>
@@ -1171,39 +1069,12 @@ private func resolveInternalUrl(context: AccountContext, url: ParsedInternalUrl)
                             }
                             |> map { result -> ResolveInternalUrlResult in
                                 guard let result = result else {
-                                    var timecode: Double?
-                                    if case let .timecode(timecodeValue) = subject {
-                                        timecode = timecodeValue
-                                    }
                                     return .result(.channelMessage(peer: foundPeer._asPeer(), messageId: replyThreadMessageId, timecode: timecode))
                                 }
                                 return .result(.replyThreadMessage(replyThreadMessage: result, messageId: messageId))
                             })
                         } else {
-                            var timecode: Double?
-                            if case let .timecode(timecodeValue) = subject {
-                                timecode = timecodeValue
-                            }
-                            var highlightSubject: EngineMessageReplyInnerSubject?
-                            switch subject {
-                            case let .todoItem(todoItemId):
-                                highlightSubject = .todoItem(todoItemId)
-                            case let .pollOption(pollOption):
-                                let decodeBase64: (String) -> Data? = { string in
-                                    var string = string.replacingOccurrences(of: "-", with: "+")
-                                        .replacingOccurrences(of: "_", with: "/")
-                                    while string.count % 4 != 0 {
-                                        string.append("=")
-                                    }
-                                    return Data(base64Encoded: string)
-                                }
-                                if let opaqueIdentifier = decodeBase64(pollOption) {
-                                    highlightSubject = .pollOption(opaqueIdentifier)
-                                }
-                            default:
-                                break
-                            }
-                            return .single(.result(.peer(foundPeer._asPeer(), .chat(textInputState: nil, subject: .message(id: .id(messageId), highlight: ChatControllerSubject.MessageHighlight(quote: nil, subject: highlightSubject), timecode: timecode, setupReply: false), peekData: nil))))
+                            return .single(.result(.peer(foundPeer._asPeer(), .chat(textInputState: nil, subject: .message(id: .id(messageId), highlight: ChatControllerSubject.MessageHighlight(quote: nil, todoTaskId: taskId), timecode: timecode, setupReply: false), peekData: nil))))
                         }
                     } else {
                         return .single(.result(.inaccessiblePeer))
@@ -1289,25 +1160,8 @@ private func resolveInternalUrl(context: AccountContext, url: ParsedInternalUrl)
         case let .collectible(slug):
             return .single(.progress) |> then(context.engine.payments.getUniqueStarGift(slug: slug)
             |> map { gift -> ResolveInternalUrlResult in
-                return .result(.collectible(.gift(gift)))
+                return .result(.collectible(gift: gift))
             })
-            |> `catch` { error -> Signal<ResolveInternalUrlResult, NoError> in
-                switch error {
-                case .alreadyBurned:
-                    return .single(.result(.collectible(.alreadyBurned)))
-                default:
-                    return .single(.result(.collectible(.invalidSlug)))
-                }
-            }
-        case let .auction(slug):
-            if let giftAuctionsManager = context.giftAuctionsManager {
-                return .single(.progress) |> then(giftAuctionsManager.auctionContext(for: .slug(slug))
-                |> map { auction -> ResolveInternalUrlResult in
-                    return .result(.auction(auction: auction))
-                })
-            } else {
-                return .single(.result(nil))
-            }
         case let .messageLink(slug):
             return .single(.progress)
             |> then(context.engine.peers.resolveMessageLink(slug: slug)
@@ -1331,35 +1185,6 @@ private func resolveInternalUrl(context: AccountContext, url: ParsedInternalUrl)
             })
         case let .externalUrl(url):
             return .single(.result(.externalUrl(url)))
-        case let .oauth(url):
-            return .single(.result(.oauth(url: url)))
-        case let .createBot(parentBotName, username, title):
-            return context.engine.peers.resolvePeerByName(name: parentBotName, referrer: nil)
-            |> mapToSignal { result -> Signal<ResolveInternalUrlResult, NoError> in
-                switch result {
-                case .progress:
-                    return .single(.progress)
-                case let .result(peer):
-                    if let peer {
-                        return .single(.result(.createBot(parentBot: peer.id, username: username, title: title)))
-                    } else {
-                        return .single(.result(.inaccessiblePeer))
-                    }
-                }
-            }
-        case let .textStyle(slug):
-            let signal: Signal<ResolveInternalUrlResult, NoError> = context.engine.messages.requestAIMessageStyle(slug: slug)
-            |> map { result -> ResolveInternalUrlResult in
-                guard let result else {
-                    return .result(nil)
-                }
-                guard case let .custom(style) = result.style.content else {
-                    return .result(nil)
-                }
-                return .result(.textStyle(style: style, initialPreview: result.initialPreview))
-            }
-            return .single(.progress)
-            |> then(signal)
     }
 }
 
@@ -1378,9 +1203,9 @@ public func isTelegramMeLink(_ url: String) -> Bool {
 
 public func isTelegraPhLink(_ url: String) -> Bool {
     let schemes = ["http://", "https://", ""]
-    for basePath in baseTelegraPhPaths {
+    for basePath in baseTelegramMePaths {
         for scheme in schemes {
-            let basePrefix = scheme + basePath
+            let basePrefix = scheme + basePath + "/"
             if url.lowercased().hasPrefix(basePrefix) {
                 return true
             }
@@ -1596,25 +1421,6 @@ public func resolveUrlImpl(context: AccountContext, peerId: PeerId?, url: String
             return .single(.result(.externalUrl(url)))
         }
     }
-    // Nicegram, parse Nicegram url
-    |> map { result in
-        guard case let .result(resolvedUrl) = result else {
-            return result
-        }
-        
-        let url = URL(string: url)
-        
-        let autoJoin = url?.queryItems["autoJoin"] == "true"
-        if autoJoin {
-            let nicegramUrl = ResolvedUrl.Nicegram.AutoJoin(
-                underlyingUrl: resolvedUrl
-            )
-            return .result(.nicegram(.autoJoin(nicegramUrl)))
-        }
-        
-        return result
-    }
-    //
 }
 
 public func resolveInstantViewUrl(account: Account, url: String) -> Signal<ResolveUrlResult, NoError> {

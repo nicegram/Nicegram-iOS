@@ -1,7 +1,3 @@
-// Nicegram
-import class Combine.CurrentValueSubject
-import protocol Combine.Publisher
-//
 import Foundation
 import UIKit
 import AsyncDisplayKit
@@ -167,7 +163,6 @@ public protocol CustomViewControllerNavigationDataSummary: AnyObject {
     
     open var navigationPresentation: ViewControllerNavigationPresentation = .default
     open var _presentedInModal: Bool = false
-    open var _hasGlassStyle: Bool = false
     open var flatReceivesModalTransition: Bool = false
     
     public var presentedOverCoveringView: Bool = false
@@ -221,23 +216,6 @@ public protocol CustomViewControllerNavigationDataSummary: AnyObject {
     open var navigationBarRequiresEntireLayoutUpdate: Bool {
         return true
     }
-
-    public struct TabBarSearchState: Equatable {
-        public var isActive: Bool
-
-        public init(isActive: Bool) {
-            self.isActive = isActive
-        }
-    }
-
-    public private(set) var tabBarSearchState: TabBarSearchState?
-    public var tabBarSearchStateUpdated: ((ContainedViewLayoutTransition) -> Void)?
-    public var currentTabBarSearchNode: (() -> ASDisplayNode?)?
-    
-    // Nicegram, NCG-11054: assistant tab search handling
-    public var onTabBarSearchActivated: (() -> Void)?
-    public var onTabBarSearchDeactivated: (() -> Void)?
-    //
     
     private weak var activeInputViewCandidate: UIResponder?
     private weak var activeInputView: UIResponder?
@@ -258,24 +236,14 @@ public protocol CustomViewControllerNavigationDataSummary: AnyObject {
     open var interactiveNavivationGestureEdgeWidth: InteractiveTransitionGestureRecognizerEdgeWidth? {
         return nil
     }
-    
-    open var navigationEdgeEffectExtension: CGFloat {
-        return 0.0
-    }
-    
-    public func updateNavigationEdgeEffectExtension(transition: ContainedViewLayoutTransition) {
-        if let navigationBar = self.navigationBar {
-            navigationBar.updateEdgeEffectExtension(value: max(0.0, self.navigationEdgeEffectExtension - navigationBar.frame.maxY), transition: transition)
-        }
-    }
 
     open func navigationLayout(layout: ContainerViewLayout) -> NavigationLayout {
         let statusBarHeight: CGFloat = layout.statusBarHeight ?? 0.0
         var defaultNavigationBarHeight: CGFloat
-        if self._presentedInModal && self._hasGlassStyle {
-            defaultNavigationBarHeight = 68.0
+        if self._presentedInModal && layout.orientation == .portrait {
+            defaultNavigationBarHeight = 56.0
         } else {
-            defaultNavigationBarHeight = 60.0
+            defaultNavigationBarHeight = 44.0
         }
         let navigationBarHeight: CGFloat = statusBarHeight + (self.navigationBar?.contentHeight(defaultHeight: defaultNavigationBarHeight) ?? defaultNavigationBarHeight)
 
@@ -315,7 +283,14 @@ public protocol CustomViewControllerNavigationDataSummary: AnyObject {
         return self._ready
     }
     
-    public var scrollToTop: (() -> Void)?
+    private var scrollToTopView: ScrollToTopView?
+    public var scrollToTop: (() -> Void)? {
+        didSet {
+            if self.isViewLoaded {
+                self.updateScrollToTopView()
+            }
+        }
+    }
     public var scrollToTopWithTabBar: (() -> Void)?
     public var longTapWithTabBar: (() -> Void)?
     
@@ -338,33 +313,10 @@ public protocol CustomViewControllerNavigationDataSummary: AnyObject {
     }
     open var customNavigationDataSummary: CustomViewControllerNavigationDataSummary?
     
-    // Nicegram
-    private var isOnScreen = false {
-        didSet {
-            updateIsVisible()
-        }
-    }
-    
-    private let isVisibleSubject = CurrentValueSubject<Bool, Never>(false)
-    public var isVisiblePublisher: some Publisher<Bool, Never> { isVisibleSubject }
-    
-    private func updateIsVisible() {
-        let isVisible = isInFocus && isOnScreen
-        if isVisibleSubject.value != isVisible {
-            isVisibleSubject.value = isVisible
-        }
-    }
-    //
-    
-    // Nicegram, removed 'internal(set)'
-    public var isInFocus: Bool = false {
+    public internal(set) var isInFocus: Bool = false {
         didSet {
             if self.isInFocus != oldValue {
                 self.inFocusUpdated(isInFocus: self.isInFocus)
-                
-                // Nicegram
-                updateIsVisible()
-                //
             }
         }
     }
@@ -380,6 +332,24 @@ public protocol CustomViewControllerNavigationDataSummary: AnyObject {
     }
     
     open func didAppearInContextPreview() {
+    }
+    
+    private func updateScrollToTopView() {
+        /*if self.scrollToTop != nil {
+            if let displayNode = self._displayNode , self.scrollToTopView == nil {
+                let scrollToTopView = ScrollToTopView(frame: CGRect(x: 0.0, y: -1.0, width: displayNode.bounds.size.width, height: 1.0))
+                scrollToTopView.action = { [weak self] in
+                    if let scrollToTop = self?.scrollToTop {
+                        scrollToTop()
+                    }
+                }
+                self.scrollToTopView = scrollToTopView
+                self.view.addSubview(scrollToTopView)
+            }
+        } else*/ if let scrollToTopView = self.scrollToTopView {
+            scrollToTopView.removeFromSuperview()
+            self.scrollToTopView = nil
+        }
     }
     
     public var titleSignal: Signal<String?, NoError> {
@@ -402,7 +372,7 @@ public protocol CustomViewControllerNavigationDataSummary: AnyObject {
     public init(navigationBarPresentationData: NavigationBarPresentationData?) {
         self.statusBar = StatusBar()
         if let navigationBarPresentationData = navigationBarPresentationData {
-            self.navigationBar = defaultNavigationBarImpl!(navigationBarPresentationData)
+            self.navigationBar = NavigationBar(presentationData: navigationBarPresentationData)
         } else {
             self.navigationBar = nil
         }
@@ -474,29 +444,14 @@ public protocol CustomViewControllerNavigationDataSummary: AnyObject {
         }
         if let navigationBar = self.navigationBar {
             if let contentNode = navigationBar.contentNode, case .expansion = contentNode.mode, !self.displayNavigationBar {
-                navigationBarFrame.origin.y -= navigationLayout.defaultContentHeight + statusBarHeight
-                navigationBarFrame.size.height += contentNode.height + navigationLayout.defaultContentHeight + statusBarHeight * 2.0
-                if self._presentedInModal && self._hasGlassStyle {
-                    navigationBarFrame.size.height += 8.0
-                }
+                navigationBarFrame.origin.y -= navigationLayout.defaultContentHeight
+                navigationBarFrame.size.height += contentNode.height + navigationLayout.defaultContentHeight + statusBarHeight
             }
-            //navigationBar.backgroundColor = .blue
             if let _ = navigationBar.contentNode, let _ = navigationBar.secondaryContentNode, !self.displayNavigationBar {
                 navigationBarFrame.size.height += navigationBar.secondaryContentHeight
             }
             
-            var additionalTopHeight = statusBarHeight
-            if !self.displayNavigationBar {
-                additionalTopHeight -= statusBarHeight
-                if statusBarHeight != 0.0 {
-                    additionalTopHeight += 6.0
-                }
-            }
-            if self._presentedInModal && self._hasGlassStyle {
-                additionalTopHeight += 8.0
-            }
-            
-            navigationBar.updateLayout(size: navigationBarFrame.size, defaultHeight: navigationLayout.defaultContentHeight, additionalTopHeight: additionalTopHeight, additionalContentHeight: self.additionalNavigationBarHeight, additionalBackgroundHeight: additionalBackgroundHeight, additionalCutout: additionalCutout, leftInset: layout.safeInsets.left, rightInset: layout.safeInsets.right, appearsHidden: !self.displayNavigationBar, isLandscape: isLandscape, transition: transition)
+            navigationBar.updateLayout(size: navigationBarFrame.size, defaultHeight: navigationLayout.defaultContentHeight, additionalTopHeight: statusBarHeight, additionalContentHeight: self.additionalNavigationBarHeight, additionalBackgroundHeight: additionalBackgroundHeight, additionalCutout: additionalCutout, leftInset: layout.safeInsets.left, rightInset: layout.safeInsets.right, appearsHidden: !self.displayNavigationBar, isLandscape: isLandscape, transition: transition)
             if !transition.isAnimated {
                 navigationBar.layer.removeAnimation(forKey: "bounds")
                 navigationBar.layer.removeAnimation(forKey: "position")
@@ -521,6 +476,10 @@ public protocol CustomViewControllerNavigationDataSummary: AnyObject {
         if self.automaticallyControlPresentationContextLayout {
             self.presentationContext.containerLayoutUpdated(layout, transition: transition)
         }
+        
+        if let scrollToTopView = self.scrollToTopView {
+            scrollToTopView.frame = CGRect(x: 0.0, y: 0.0, width: layout.size.width, height: 10.0)
+        }
     }
     
     open func navigationStackConfigurationUpdated(next: [ViewController]) {
@@ -544,6 +503,7 @@ public protocol CustomViewControllerNavigationDataSummary: AnyObject {
     }
     
     open func displayNodeDidLoad() {
+        self.updateScrollToTopView()
         if let backgroundColor = self.displayNode.backgroundColor, backgroundColor.alpha.isEqual(to: 1.0) {
             self.blocksBackgroundWhenInOverlay = true
             self.isOpaqueWhenInOverlay = true
@@ -579,14 +539,14 @@ public protocol CustomViewControllerNavigationDataSummary: AnyObject {
             UIView.transition(with: navigationBar.view, duration: 0.3, options: [.transitionCrossDissolve], animations: {
             }, completion: nil)
         }
-        self.navigationBar?.updatePresentationData(presentationData, transition: .immediate)
+        self.navigationBar?.updatePresentationData(presentationData)
         if let parent = self.parent as? TabBarController {
             if parent.currentController === self {
                 if animated, let navigationBar = parent.navigationBar {
                     UIView.transition(with: navigationBar.view, duration: 0.3, options: [.transitionCrossDissolve], animations: {
                     }, completion: nil)
                 }
-                parent.navigationBar?.updatePresentationData(presentationData, transition: .immediate)
+                parent.navigationBar?.updatePresentationData(presentationData)
             }
         }
     }
@@ -690,10 +650,6 @@ public protocol CustomViewControllerNavigationDataSummary: AnyObject {
     open override func viewDidDisappear(_ animated: Bool) {
         self.activeInputView = self.activeInputViewCandidate
         
-        // Nicegram
-        self.isOnScreen = false
-        //
-        
         super.viewDidDisappear(animated)
     }
     
@@ -702,10 +658,6 @@ public protocol CustomViewControllerNavigationDataSummary: AnyObject {
     
     open override func viewDidAppear(_ animated: Bool) {
         self.activeInputView = nil
-        
-        // Nicegram
-        self.isOnScreen = true
-        //
         
         super.viewDidAppear(animated)
     }
@@ -716,7 +668,6 @@ public protocol CustomViewControllerNavigationDataSummary: AnyObject {
         } else {
             self.presentingViewController?.dismiss(animated: true, completion: nil)
         }
-        completion?()
     }
     
     public final func navigationNextSibling() -> UIViewController? {
@@ -753,39 +704,13 @@ public protocol CustomViewControllerNavigationDataSummary: AnyObject {
     
     open var tabBarItemContextActionType: TabBarItemContextActionType = .none
     
-    open func tabBarItemContextAction(sourceView: ContextExtractedContentContainingView, gesture: ContextGesture) {
-    }
-    
-    open func tabBarItemHasDoubleTapAction() -> Bool {
-        return false
-    }
-    
-    open func tabBarItemPerformDoubleTapAction() {
+    open func tabBarItemContextAction(sourceNode: ContextExtractedContentContainingNode, gesture: ContextGesture) {
     }
     
     open func tabBarDisabledAction() {
     }
-
-    open func tabBarActivateSearch() {
-        // Nicegram, NCG-11054: assistant tab search handling
-        onTabBarSearchActivated?()
-        //
-    }
-
-    open func tabBarDeactivateSearch() {
-        // Nicegram, NCG-11054: assistant tab search handling
-        onTabBarSearchDeactivated?()
-        //
-    }
     
     open func tabBarItemSwipeAction(direction: TabBarItemSwipeDirection) {
-    }
-
-    public func updateTabBarSearchState(_ tabBarSearchState: TabBarSearchState?, transition: ContainedViewLayoutTransition) {
-        if self.tabBarSearchState != tabBarSearchState {
-            self.tabBarSearchState = tabBarSearchState
-            self.tabBarSearchStateUpdated?(transition)
-        }
     }
     
     open func updatePossibleControllerDropContent(content: NavigationControllerDropContent?) {

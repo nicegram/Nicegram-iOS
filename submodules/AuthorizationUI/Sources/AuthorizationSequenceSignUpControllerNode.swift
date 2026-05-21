@@ -90,8 +90,7 @@ final class AuthorizationSequenceSignUpControllerNode: ASDisplayNode, UITextFiel
         self.titleNode.isUserInteractionEnabled = false
         self.titleNode.displaysAsynchronously = false
         self.titleNode.attributedText = NSAttributedString(string: self.strings.Login_InfoTitle, font: Font.semibold(28.0), textColor: theme.list.itemPrimaryTextColor)
-        self.titleNode.accessibilityIdentifier = "Auth.SetName.Title"
-
+        
         self.currentOptionNode = ASTextNode()
         self.currentOptionNode.isUserInteractionEnabled = false
         self.currentOptionNode.displaysAsynchronously = false
@@ -126,8 +125,7 @@ final class AuthorizationSequenceSignUpControllerNode: ASDisplayNode, UITextFiel
         }
         self.firstNameField.textField.keyboardAppearance = theme.rootController.keyboardColor.keyboardAppearance
         self.firstNameField.textField.tintColor = theme.list.itemAccentColor
-        self.firstNameField.textField.accessibilityIdentifier = "Auth.SetName.FirstNameField"
-
+        
         self.lastNameField = TextFieldNode()
         self.lastNameField.textField.font = Font.regular(20.0)
         self.lastNameField.textField.textColor = self.theme.list.itemPrimaryTextColor
@@ -141,8 +139,7 @@ final class AuthorizationSequenceSignUpControllerNode: ASDisplayNode, UITextFiel
         }
         self.lastNameField.textField.keyboardAppearance = theme.rootController.keyboardColor.keyboardAppearance
         self.lastNameField.textField.tintColor = theme.list.itemAccentColor
-        self.lastNameField.textField.accessibilityIdentifier = "Auth.SetName.LastNameField"
-
+        
         self.currentPhotoNode = ASImageNode()
         self.currentPhotoNode.isUserInteractionEnabled = false
         self.currentPhotoNode.displaysAsynchronously = false
@@ -155,9 +152,8 @@ final class AuthorizationSequenceSignUpControllerNode: ASDisplayNode, UITextFiel
         self.addPhotoButton.addSubnode(self.currentPhotoNode)
         self.addPhotoButton.allowsGroupOpacity = true
         
-        self.proceedNode = SolidRoundedButtonNode(title: self.strings.Login_Continue, theme: SolidRoundedButtonTheme(theme: self.theme), glass: false, height: 50.0, cornerRadius: 50.0 * 0.5)
+        self.proceedNode = SolidRoundedButtonNode(title: self.strings.Login_Continue, theme: SolidRoundedButtonTheme(theme: self.theme), height: 50.0, cornerRadius: 11.0, gloss: false)
         self.proceedNode.progressType = .embedded
-        self.proceedNode.accessibilityIdentifier = "Auth.SetName.ContinueButton"
         
         super.init()
         

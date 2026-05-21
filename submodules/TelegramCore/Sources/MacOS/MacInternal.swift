@@ -28,8 +28,7 @@ public func requestUpdatesXml(account: Account, source: String) -> Signal<Data, 
                     |> castError(InternalUpdaterError.self)
                     |> mapToSignal { result in
                         switch result {
-                        case let .channelMessages(channelMessagesData):
-                            let (apiMessages, apiChats, apiUsers) = (channelMessagesData.messages, channelMessagesData.chats, channelMessagesData.users)
+                        case let .channelMessages(_, _, _, _, apiMessages, _, apiChats, apiUsers):
                             if let apiMessage = apiMessages.first, let storeMessage = StoreMessage(apiMessage: apiMessage, accountPeerId: account.peerId, peerIsForum: peer.isForum) {
                                 
                                 var peers: [PeerId: Peer] = [:]
@@ -94,14 +93,13 @@ public func downloadAppUpdate(account: Account, source: String, messageId: Int32
         }
         |> mapToSignal { peer in
             if let peer = peer, let inputChannel = apiInputChannel(peer) {
-                return account.network.request(Api.functions.channels.getMessages(channel: inputChannel, id: [Api.InputMessage.inputMessageID(.init(id: messageId))]))
+                return account.network.request(Api.functions.channels.getMessages(channel: inputChannel, id: [Api.InputMessage.inputMessageID(id: messageId)]))
                     |> retryRequest
                     |> castError(InternalUpdaterError.self)
                     |> mapToSignal { messages in
                         switch messages {
-                        case let .channelMessages(channelMessagesData):
-                            let (apiMessages, apiChats, apiUsers) = (channelMessagesData.messages, channelMessagesData.chats, channelMessagesData.users)
-
+                        case let .channelMessages(_, _, _, _, apiMessages, _, apiChats, apiUsers):
+                            
                             var peers: [PeerId: Peer] = [:]
                             for chat in apiChats {
                                 if let groupOrChannel = parseTelegramGroupOrChannel(chat: chat) {
@@ -112,7 +110,7 @@ public func downloadAppUpdate(account: Account, source: String, messageId: Int32
                                 let telegramUser = TelegramUser(user: user)
                                 peers[telegramUser.id] = telegramUser
                             }
-
+                            
                             let messageAndFile:(Message, TelegramMediaFile)? = apiMessages.compactMap { value in
                                 return StoreMessage(apiMessage: value, accountPeerId: account.peerId, peerIsForum: peer.isForum)
                                 }.compactMap { value in
@@ -194,8 +192,7 @@ public func requestApplicationIcons(engine: TelegramEngine, source: String = "ma
                 |> mapToSignal { result in
                     
                     switch result {
-                    case let .channelMessages(channelMessagesData):
-                        let (apiMessages, apiChats, apiUsers) = (channelMessagesData.messages, channelMessagesData.chats, channelMessagesData.users)
+                    case let .channelMessages(_, _, _, _, apiMessages, _, apiChats, apiUsers):
                         var icons: [TelegramApplicationIcons.Icon] = []
                         for apiMessage in apiMessages.reversed() {
                             if let storeMessage = StoreMessage(apiMessage: apiMessage, accountPeerId: engine.account.peerId, peerIsForum: peer.isForum) {

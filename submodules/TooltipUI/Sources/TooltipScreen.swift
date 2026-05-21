@@ -930,7 +930,6 @@ private final class TooltipScreenNode: ViewControllerTracingNode {
                     component: AnyComponent(AvatarStoryIndicatorComponent(
                         hasUnseen: true,
                         hasUnseenCloseFriendsItems: false,
-                        hasLiveItems: false,
                         colors: AvatarStoryIndicatorComponent.Colors(theme: defaultDarkPresentationTheme),
                         activeLineWidth: 1.0 + UIScreenPixel,
                         inactiveLineWidth: 1.0 + UIScreenPixel,
@@ -1272,6 +1271,10 @@ public final class TooltipScreen: ViewController {
     private var dismissTimer: Foundation.Timer?
     
     public var alwaysVisible = false
+    // Nicegram NCG-7581 Folder for keywords
+    private let backgroundColor: UIColor?
+    //
+    // Nicegram NCG-7581 Folder for keywords, backgroundColor
     public init(
         context: AccountContext? = nil,
         account: Account,
@@ -1290,6 +1293,7 @@ public final class TooltipScreen: ViewController {
         isShimmering: Bool = false,
         inset: CGFloat = 12.0,
         cornerRadius: CGFloat? = nil,
+        backgroundColor: UIColor? = nil,
         shouldDismissOnTouch: @escaping (CGPoint, CGRect) -> TooltipScreen.DismissOnTouch,
         openActiveTextItem: ((TooltipActiveTextItem, TooltipActiveTextAction) -> Void)? = nil
     ) {
@@ -1312,6 +1316,9 @@ public final class TooltipScreen: ViewController {
         self.cornerRadius = cornerRadius
         self.shouldDismissOnTouch = shouldDismissOnTouch
         self.openActiveTextItem = openActiveTextItem
+        // Nicegram NCG-7581 Folder for keywords
+        self.backgroundColor = backgroundColor
+        //
         super.init(navigationBarPresentationData: nil)
         
         self.statusBar.statusBarStyle = .Ignore
@@ -1327,6 +1334,9 @@ public final class TooltipScreen: ViewController {
     
     override public func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
+        // Nicegram NCG-7581 Folder for keywords
+        self.view.backgroundColor = backgroundColor
+        //
         
         if self.ignoreAppearanceMethodInvocations() {
             return

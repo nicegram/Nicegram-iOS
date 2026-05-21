@@ -183,11 +183,9 @@ extension MessageReaction.Reaction {
         switch apiReaction {
         case .reactionEmpty:
             return nil
-        case let .reactionEmoji(reactionEmojiData):
-            let emoticon = reactionEmojiData.emoticon
+        case let .reactionEmoji(emoticon):
             self = .builtin(emoticon)
-        case let .reactionCustomEmoji(reactionCustomEmojiData):
-            let documentId = reactionCustomEmojiData.documentId
+        case let .reactionCustomEmoji(documentId):
             self = .custom(documentId)
         case .reactionPaid:
             self = .stars
@@ -197,9 +195,9 @@ extension MessageReaction.Reaction {
     var apiReaction: Api.Reaction {
         switch self {
         case let .builtin(value):
-            return .reactionEmoji(.init(emoticon: value))
+            return .reactionEmoji(emoticon: value)
         case let .custom(fileId):
-            return .reactionCustomEmoji(.init(documentId: fileId))
+            return .reactionCustomEmoji(documentId: fileId)
         case .stars:
             return .reactionPaid
         }

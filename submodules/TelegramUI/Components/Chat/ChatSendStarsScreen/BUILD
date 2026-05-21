@@ -7,7 +7,7 @@ swift_library(
         "Sources/**/*.swift",
     ]),
     copts = [
-        "-warnings-as-errors",
+        #"-warnings-as-errors",
     ],
     deps = [
         "//submodules/AsyncDisplayKit",
@@ -37,7 +37,6 @@ swift_library(
         "//submodules/TelegramUI/Components/Stars/StarsBalanceOverlayComponent",
         "//submodules/TelegramStringFormatting",
         "//submodules/TelegramUI/Components/ChatScheduleTimeController",
-        "//submodules/TelegramUI/Components/Stories/LiveChat/StoryLiveChatMessageComponent",
     ],
     visibility = [
         "//visibility:public",

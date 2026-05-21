@@ -9,19 +9,11 @@ import AnimationCache
 import MultiAnimationRenderer
 
 public final class MultilineTextWithEntitiesComponent: Component {
-    public final class External {
-        public fileprivate(set) var layout: TextNodeLayout?
-        
-        public init() {
-        }
-    }
-    
     public enum TextContent: Equatable {
         case plain(NSAttributedString)
         case markdown(text: String, attributes: MarkdownAttributes)
     }
     
-    public let external: External?
     public let context: AccountContext?
     public let animationCache: AnimationCache?
     public let animationRenderer: MultiAnimationRenderer?
@@ -35,7 +27,6 @@ public final class MultilineTextWithEntitiesComponent: Component {
     public let lineSpacing: CGFloat
     public let cutout: TextNodeCutout?
     public let insets: UIEdgeInsets
-    public let spoilerColor: UIColor
     public let textShadowColor: UIColor?
     public let textStroke: (UIColor, CGFloat)?
     public let highlightColor: UIColor?
@@ -43,15 +34,12 @@ public final class MultilineTextWithEntitiesComponent: Component {
     public let handleSpoilers: Bool
     public let manualVisibilityControl: Bool
     public let resetAnimationsOnVisibilityChange: Bool
-    public let enableLooping: Bool
     public let displaysAsynchronously: Bool
-    public let maxWidth: CGFloat?
     public let highlightAction: (([NSAttributedString.Key: Any]) -> NSAttributedString.Key?)?
     public let tapAction: (([NSAttributedString.Key: Any], Int) -> Void)?
     public let longTapAction: (([NSAttributedString.Key: Any], Int) -> Void)?
     
     public init(
-        external: External? = nil,
         context: AccountContext?,
         animationCache: AnimationCache?,
         animationRenderer: MultiAnimationRenderer?,
@@ -64,7 +52,6 @@ public final class MultilineTextWithEntitiesComponent: Component {
         lineSpacing: CGFloat = 0.0,
         cutout: TextNodeCutout? = nil,
         insets: UIEdgeInsets = UIEdgeInsets(),
-        spoilerColor: UIColor = .black,
         textShadowColor: UIColor? = nil,
         textStroke: (UIColor, CGFloat)? = nil,
         highlightColor: UIColor? = nil,
@@ -72,14 +59,11 @@ public final class MultilineTextWithEntitiesComponent: Component {
         handleSpoilers: Bool = false,
         manualVisibilityControl: Bool = false,
         resetAnimationsOnVisibilityChange: Bool = false,
-        enableLooping: Bool = true,
         displaysAsynchronously: Bool = true,
-        maxWidth: CGFloat? = nil,
         highlightAction: (([NSAttributedString.Key: Any]) -> NSAttributedString.Key?)? = nil,
         tapAction: (([NSAttributedString.Key: Any], Int) -> Void)? = nil,
         longTapAction: (([NSAttributedString.Key: Any], Int) -> Void)? = nil
     ) {
-        self.external = external
         self.context = context
         self.animationCache = animationCache
         self.animationRenderer = animationRenderer
@@ -92,7 +76,6 @@ public final class MultilineTextWithEntitiesComponent: Component {
         self.lineSpacing = lineSpacing
         self.cutout = cutout
         self.insets = insets
-        self.spoilerColor = spoilerColor
         self.textShadowColor = textShadowColor
         self.textStroke = textStroke
         self.highlightColor = highlightColor
@@ -101,17 +84,12 @@ public final class MultilineTextWithEntitiesComponent: Component {
         self.handleSpoilers = handleSpoilers
         self.manualVisibilityControl = manualVisibilityControl
         self.resetAnimationsOnVisibilityChange = resetAnimationsOnVisibilityChange
-        self.enableLooping = enableLooping
         self.displaysAsynchronously = displaysAsynchronously
-        self.maxWidth = maxWidth
         self.tapAction = tapAction
         self.longTapAction = longTapAction
     }
     
     public static func ==(lhs: MultilineTextWithEntitiesComponent, rhs: MultilineTextWithEntitiesComponent) -> Bool {
-        if lhs.external !== rhs.external {
-            return false
-        }
         if lhs.text != rhs.text {
             return false
         }
@@ -145,13 +123,7 @@ public final class MultilineTextWithEntitiesComponent: Component {
         if lhs.resetAnimationsOnVisibilityChange != rhs.resetAnimationsOnVisibilityChange {
             return false
         }
-        if lhs.enableLooping != rhs.enableLooping {
-            return false
-        }
         if lhs.displaysAsynchronously != rhs.displaysAsynchronously {
-            return false
-        }
-        if lhs.maxWidth != rhs.maxWidth {
             return false
         }
         if let lhsTextShadowColor = lhs.textShadowColor, let rhsTextShadowColor = rhs.textShadowColor {
@@ -190,7 +162,7 @@ public final class MultilineTextWithEntitiesComponent: Component {
     
     public final class View: UIView {
         var spoilerTextNode: ImmediateTextNodeWithEntities?
-        public let textNode: ImmediateTextNodeWithEntities
+        let textNode: ImmediateTextNodeWithEntities
         
         public override init(frame: CGRect) {
             self.textNode = ImmediateTextNodeWithEntities()
@@ -203,24 +175,6 @@ public final class MultilineTextWithEntitiesComponent: Component {
         
         required init?(coder: NSCoder) {
             fatalError("init(coder:) has not been implemented")
-        }
-        
-        public func attributes(at point: CGPoint) -> (Int, [NSAttributedString.Key: Any])? {
-            if let result = self.textNode.attributesAtPoint(CGPoint(x: point.x - self.textNode.frame.minX, y: point.y - self.textNode.frame.minY)) {
-                return result
-            }
-            return nil
-        }
-        
-        public var isSpoilerConcealed: Bool {
-            if let dustNode = self.textNode.dustNode, !dustNode.isRevealed {
-                return true
-            }
-            return false
-        }
-        
-        public var hasRTL: Bool {
-            return self.textNode.cachedLayout?.hasRTL ?? false
         }
         
         public func updateVisibility(_ isVisible: Bool) {
@@ -255,8 +209,6 @@ public final class MultilineTextWithEntitiesComponent: Component {
             self.textNode.highlightAttributeAction = component.highlightAction
             self.textNode.tapAttributeAction = component.tapAction
             self.textNode.longTapAttributeAction = component.longTapAction
-            self.textNode.spoilerColor = component.spoilerColor
-            self.textNode.enableLooping = component.enableLooping
             
             self.textNode.resetEmojiToFirstFrameAutomatically = component.resetAnimationsOnVisibilityChange
                                     
@@ -285,13 +237,8 @@ public final class MultilineTextWithEntitiesComponent: Component {
                 )
             }
             
-            var constrainedSize = availableSize
-            if let maxWidth = component.maxWidth {
-                constrainedSize.width = maxWidth
-            }
-            
-            let layoutInfo = self.textNode.updateLayoutFullInfo(constrainedSize)
-            self.textNode.frame = CGRect(origin: .zero, size: layoutInfo.size)
+            let size = self.textNode.updateLayout(availableSize)
+            self.textNode.frame = CGRect(origin: .zero, size: size)
             
             if component.handleSpoilers {
                 let spoilerTextNode: ImmediateTextNodeWithEntities
@@ -319,7 +266,7 @@ public final class MultilineTextWithEntitiesComponent: Component {
                 spoilerTextNode.textStroke = component.textStroke
                 spoilerTextNode.isUserInteractionEnabled = false
                 
-                let size = spoilerTextNode.updateLayout(constrainedSize)
+                let size = spoilerTextNode.updateLayout(availableSize)
                 spoilerTextNode.frame = CGRect(origin: .zero, size: size)
                 
                 if spoilerTextNode.view.superview == nil {
@@ -332,11 +279,7 @@ public final class MultilineTextWithEntitiesComponent: Component {
                 self.textNode.dustNode?.textNode = nil
             }
             
-            if let external = component.external {
-                external.layout = layoutInfo
-            }
-            
-            return layoutInfo.size
+            return size
         }
     }
     

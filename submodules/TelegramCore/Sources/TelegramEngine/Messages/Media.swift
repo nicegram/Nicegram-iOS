@@ -21,7 +21,6 @@ public enum EngineMedia: Equatable {
     case giveawayResults(TelegramMediaGiveawayResults)
     case paidContent(TelegramMediaPaidContent)
     case todo(TelegramMediaTodo)
-    case liveStream(TelegramMediaLiveStream)
 }
 
 public extension EngineMedia {
@@ -62,8 +61,6 @@ public extension EngineMedia {
         case let .paidContent(paidContent):
             return paidContent.id
         case .todo:
-            return nil
-        case .liveStream:
             return nil
         }
     }
@@ -108,8 +105,6 @@ public extension EngineMedia {
             self = .paidContent(paidContent)
         case let todo as TelegramMediaTodo:
             self = .todo(todo)
-        case let liveStream as TelegramMediaLiveStream:
-            self = .liveStream(liveStream)
         default:
             preconditionFailure()
         }
@@ -153,8 +148,6 @@ public extension EngineMedia {
             return paidContent
         case let .todo(todo):
             return todo
-        case let .liveStream(liveStream):
-            return liveStream
         }
     }
 }

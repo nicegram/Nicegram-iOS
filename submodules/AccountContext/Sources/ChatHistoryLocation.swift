@@ -1,7 +1,6 @@
 import Foundation
 import Postbox
 import Display
-import TelegramCore
 
 public enum ChatHistoryInitialSearchLocation: Equatable {
     case index(MessageIndex)
@@ -21,13 +20,13 @@ public struct MessageHistoryScrollToSubject: Equatable {
     
     public var index: MessageHistoryAnchorIndex
     public var quote: Quote?
-    public var subject: EngineMessageReplyInnerSubject?
+    public var todoTaskId: Int32?
     public var setupReply: Bool
     
-    public init(index: MessageHistoryAnchorIndex, quote: Quote? = nil, subject: EngineMessageReplyInnerSubject? = nil, setupReply: Bool = false) {
+    public init(index: MessageHistoryAnchorIndex, quote: Quote? = nil, todoTaskId: Int32? = nil, setupReply: Bool = false) {
         self.index = index
         self.quote = quote
-        self.subject = subject
+        self.todoTaskId = todoTaskId
         self.setupReply = setupReply
     }
 }
@@ -45,12 +44,12 @@ public struct MessageHistoryInitialSearchSubject: Equatable {
     
     public var location: ChatHistoryInitialSearchLocation
     public var quote: Quote?
-    public var subject: EngineMessageReplyInnerSubject?
+    public var todoTaskId: Int32?
     
-    public init(location: ChatHistoryInitialSearchLocation, quote: Quote? = nil, subject: EngineMessageReplyInnerSubject? = nil) {
+    public init(location: ChatHistoryInitialSearchLocation, quote: Quote? = nil, todoTaskId: Int32? = nil) {
         self.location = location
         self.quote = quote
-        self.subject = subject
+        self.todoTaskId = todoTaskId
     }
 }
 

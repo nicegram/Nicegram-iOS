@@ -69,7 +69,7 @@ public final class ListViewItemApply {
     }
 }
 
-public protocol ListViewItem: AnyObject {
+public protocol ListViewItem {
     func nodeConfiguredForParams(async: @escaping (@escaping () -> Void) -> Void, params: ListViewItemLayoutParams, synchronousLoads: Bool, previousItem: ListViewItem?, nextItem: ListViewItem?, completion: @escaping (ListViewItemNode, @escaping () -> (Signal<Void, NoError>?, (ListViewItemApply) -> Void)) -> Void)
     func updateNode(async: @escaping (@escaping () -> Void) -> Void, node: @escaping () -> ListViewItemNode, params: ListViewItemLayoutParams, previousItem: ListViewItem?, nextItem: ListViewItem?, animation: ListViewItemUpdateAnimation, completion: @escaping (ListViewItemNodeLayout, @escaping (ListViewItemApply) -> Void) -> Void)
     
@@ -77,7 +77,6 @@ public protocol ListViewItem: AnyObject {
     var headerAccessoryItem: ListViewAccessoryItem? { get }
     var selectable: Bool { get }
     var approximateHeight: CGFloat { get }
-    var pinToEdgeWithInset: Bool { get }
     
     func selected(listView: ListView)
 }
@@ -97,10 +96,6 @@ public extension ListViewItem {
     
     var approximateHeight: CGFloat {
         return 44.0
-    }
-    
-    var pinToEdgeWithInset: Bool {
-        return false
     }
     
     func selected(listView: ListView) {

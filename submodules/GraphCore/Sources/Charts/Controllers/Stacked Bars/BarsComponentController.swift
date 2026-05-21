@@ -161,7 +161,7 @@ class BarsComponentController: GeneralChartComponentController {
                 } else {
                     text = String(format: "%0.3f", convertedValue)
                 }
-                updatedLabels.append(LinesChartLabel(value: label.value, text: "~$\(text)"))
+                updatedLabels.append(LinesChartLabel(value: label.value, text: "≈$\(text)"))
             }
             labels = updatedLabels
         }

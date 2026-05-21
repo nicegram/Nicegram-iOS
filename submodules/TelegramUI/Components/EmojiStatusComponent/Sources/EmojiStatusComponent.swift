@@ -41,7 +41,6 @@ public final class EmojiStatusComponent: Component {
     public enum SizeType {
         case compact
         case large
-        case smaller
     }
     
     public enum Content: Equatable {
@@ -65,6 +64,9 @@ public final class EmojiStatusComponent: Component {
     public let roundMask: Bool
     public let isVisibleForAnimations: Bool
     public let useSharedAnimation: Bool
+    // Nicegram ColorAlign
+    public var ngDisableAnimations: Bool
+    //
     public let action: (() -> Void)?
     public let emojiFileUpdated: ((TelegramMediaFile?) -> Void)?
     public let tag: AnyObject?
@@ -79,6 +81,9 @@ public final class EmojiStatusComponent: Component {
         roundMask: Bool = false,
         isVisibleForAnimations: Bool,
         useSharedAnimation: Bool = false,
+        // Nicegram ColorAlign
+        ngDisableAnimations: Bool = false,
+        //
         action: (() -> Void)?,
         emojiFileUpdated: ((TelegramMediaFile?) -> Void)? = nil,
         tag: AnyObject? = nil
@@ -97,6 +102,9 @@ public final class EmojiStatusComponent: Component {
             roundMask: roundMask,
             isVisibleForAnimations: isVisibleForAnimations,
             useSharedAnimation: useSharedAnimation,
+            // Nicegram ColorAlign
+            ngDisableAnimations: ngDisableAnimations,
+            //
             action: action,
             emojiFileUpdated: emojiFileUpdated,
             tag: tag
@@ -115,6 +123,9 @@ public final class EmojiStatusComponent: Component {
         roundMask: Bool = false,
         isVisibleForAnimations: Bool,
         useSharedAnimation: Bool = false,
+        // Nicegram ColorAlign
+        ngDisableAnimations: Bool = false,
+        //
         action: (() -> Void)?,
         emojiFileUpdated: ((TelegramMediaFile?) -> Void)? = nil,
         tag: AnyObject? = nil
@@ -130,6 +141,9 @@ public final class EmojiStatusComponent: Component {
         self.roundMask = roundMask
         self.isVisibleForAnimations = isVisibleForAnimations
         self.useSharedAnimation = useSharedAnimation
+        // Nicegram ColorAlign
+        self.ngDisableAnimations = ngDisableAnimations
+        //
         self.action = action
         self.emojiFileUpdated = emojiFileUpdated
         self.tag = tag
@@ -148,6 +162,9 @@ public final class EmojiStatusComponent: Component {
             roundMask: self.roundMask,
             isVisibleForAnimations: isVisibleForAnimations,
             useSharedAnimation: self.useSharedAnimation,
+            // Nicegram ColorAlign
+            ngDisableAnimations: self.ngDisableAnimations,
+            //
             action: self.action,
             emojiFileUpdated: self.emojiFileUpdated,
             tag: self.tag
@@ -358,7 +375,7 @@ public final class EmojiStatusComponent: Component {
                 case let .verified(fillColor, foregroundColor, sizeType):
                     let imageNamePrefix: String
                     switch sizeType {
-                    case .compact, .smaller:
+                    case .compact:
                         imageNamePrefix = "Chat List/PeerVerifiedIcon"
                     case .large:
                         imageNamePrefix = "Peer Info/VerifiedIcon"
@@ -609,6 +626,11 @@ public final class EmojiStatusComponent: Component {
                     
                     animationLayer.frame = CGRect(origin: CGPoint(), size: size)
                     animationLayer.isVisibleForAnimations = component.isVisibleForAnimations
+                    // Nicegram ColorAlign
+                    if component.ngDisableAnimations {
+                        animationLayer.isVisibleForAnimations = false
+                    }
+                    //
                 } else {
                     if self.emojiFileDisposable == nil {
                         self.emojiFileDisposable = (component.resolveInlineStickers([emojiFileId])

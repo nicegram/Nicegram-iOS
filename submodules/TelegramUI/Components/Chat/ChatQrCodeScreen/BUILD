@@ -7,7 +7,7 @@ swift_library(
         "Sources/**/*.swift",
     ]),
     copts = [
-        "-warnings-as-errors",
+        #"-warnings-as-errors",
     ],
     deps = [
         "//submodules/Display",
@@ -45,9 +45,6 @@ swift_library(
         "//submodules/AnimatedCountLabelNode",
         "//submodules/HexColor",
         "//submodules/QrCodeUI",
-        "//submodules/TelegramUI/Components/GlassBarButtonComponent",
-        "//submodules/Components/BundleIconComponent",
-        "//submodules/Components/SheetComponent",
     ],
     visibility = [
         "//visibility:public",

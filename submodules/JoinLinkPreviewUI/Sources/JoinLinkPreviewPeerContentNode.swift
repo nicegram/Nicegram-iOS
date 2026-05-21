@@ -10,11 +10,11 @@ import TelegramPresentationData
 import AvatarNode
 import AccountContext
 import SelectablePeerNode
+import ShareController
 import SolidRoundedButtonNode
 import ActivityIndicator
 import ComponentFlow
 import EmojiStatusComponent
-import ShareController
 
 private let avatarFont = avatarPlaceholderFont(size: 42.0)
 
@@ -143,7 +143,7 @@ final class JoinLinkPreviewPeerContentNode: ASDisplayNode, ShareContentContainer
         self.peersScrollNode = ASScrollNode()
         self.peersScrollNode.view.showsHorizontalScrollIndicator = false
         
-        self.actionButtonNode = SolidRoundedButtonNode(theme: SolidRoundedButtonTheme(theme: theme), height: 52.0, cornerRadius: 11.0)
+        self.actionButtonNode = SolidRoundedButtonNode(theme: SolidRoundedButtonTheme(theme: theme), height: 52.0, cornerRadius: 11.0, gloss: false)
         
         let itemTheme = SelectablePeerNodeTheme(textColor: theme.actionSheet.primaryTextColor, secretTextColor: .green, selectedTextColor: theme.actionSheet.controlAccentColor, checkBackgroundColor: theme.actionSheet.opaqueItemBackgroundColor, checkFillColor: theme.actionSheet.controlAccentColor, checkColor: theme.actionSheet.opaqueItemBackgroundColor, avatarPlaceholderColor: theme.list.mediaPlaceholderColor)
         

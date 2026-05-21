@@ -53,7 +53,6 @@ public final class GiftOptionItem: ListViewItem, ItemListItem {
     }
     
     let presentationData: ItemListPresentationData
-    let systemStyle: ItemListSystemStyle
     let context: AccountContext
     let icon: Icon?
     let title: String
@@ -69,9 +68,8 @@ public final class GiftOptionItem: ListViewItem, ItemListItem {
     public let sectionId: ItemListSectionId
     let action: (() -> Void)?
     
-    public init(presentationData: ItemListPresentationData, systemStyle: ItemListSystemStyle = .legacy, context: AccountContext, icon: Icon? = nil, title: String, titleFont: Font = .regular, titleBadge: String? = nil, subtitle: String?, subtitleFont: SubtitleFont = .regular, subtitleActive: Bool = false, label: Label? = nil, badge: String? = nil, isSelected: Bool? = nil, stars: Int64? = nil, sectionId: ItemListSectionId, action: (() -> Void)?) {
+    public init(presentationData: ItemListPresentationData, context: AccountContext, icon: Icon? = nil, title: String, titleFont: Font = .regular, titleBadge: String? = nil, subtitle: String?, subtitleFont: SubtitleFont = .regular, subtitleActive: Bool = false, label: Label? = nil, badge: String? = nil, isSelected: Bool? = nil, stars: Int64? = nil, sectionId: ItemListSectionId, action: (() -> Void)?) {
         self.presentationData = presentationData
-        self.systemStyle = systemStyle
         self.icon = icon
         self.context = context
         self.title = title
@@ -214,7 +212,7 @@ class GiftOptionItemNode: ItemListRevealOptionsItemNode {
         
         self.activateArea = AccessibilityAreaNode()
         
-        super.init(layerBacked: false, rotated: false, seeThrough: false)
+        super.init(layerBacked: false, dynamicBounce: false, rotated: false, seeThrough: false)
         
         self.addSubnode(self.containerNode)
         
@@ -303,7 +301,7 @@ class GiftOptionItemNode: ItemListRevealOptionsItemNode {
             var editingOffset: CGFloat = 0.0
             
             if let isSelected = item.isSelected {
-                let sizeAndApply = selectableControlLayout(item.presentationData.theme.list.itemCheckColors.strokeColor, item.presentationData.theme.list.itemCheckColors.fillColor, item.presentationData.theme.list.itemCheckColors.foregroundColor, isSelected, .regular, nil)
+                let sizeAndApply = selectableControlLayout(item.presentationData.theme.list.itemCheckColors.strokeColor, item.presentationData.theme.list.itemCheckColors.fillColor, item.presentationData.theme.list.itemCheckColors.foregroundColor, isSelected, .regular)
                 selectableControlSizeAndApply = sizeAndApply
                 editingOffset = sizeAndApply.0
             }
@@ -520,7 +518,7 @@ class GiftOptionItemNode: ItemListRevealOptionsItemNode {
                             strongSelf.bottomStripeNode.isHidden = hasCorners
                     }
                     
-                    strongSelf.maskNode.image = hasCorners ? PresentationResourcesItemList.cornersImage(item.presentationData.theme, top: hasTopCorners, bottom: hasBottomCorners, glass: item.systemStyle == .glass) : nil
+                    strongSelf.maskNode.image = hasCorners ? PresentationResourcesItemList.cornersImage(item.presentationData.theme, top: hasTopCorners, bottom: hasBottomCorners) : nil
                     
                     strongSelf.backgroundNode.frame = CGRect(origin: CGPoint(x: 0.0, y: -min(insets.top, separatorHeight)), size: CGSize(width: params.width, height: contentSize.height + min(insets.top, separatorHeight) + min(insets.bottom, separatorHeight)))
                     strongSelf.containerNode.frame = CGRect(origin: CGPoint(), size: strongSelf.backgroundNode.frame.size)

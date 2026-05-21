@@ -1,10 +1,8 @@
 import Foundation
 import UIKit
 
-public protocol NavigationBarTitleView: UIView {
-    var requestUpdate: ((ContainedViewLayoutTransition) -> Void)? { get set }
-    
+public protocol NavigationBarTitleView {
     func animateLayoutTransition()
     
-    func updateLayout(availableSize: CGSize, transition: ContainedViewLayoutTransition) -> CGSize
+    func updateLayout(size: CGSize, clearBounds: CGRect, transition: ContainedViewLayoutTransition) -> CGRect
 }

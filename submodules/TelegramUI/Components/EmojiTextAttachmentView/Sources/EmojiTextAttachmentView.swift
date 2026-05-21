@@ -13,15 +13,12 @@ import AnimationCache
 import LottieAnimationCache
 import VideoAnimationCache
 import MultiAnimationRenderer
-import DCTMultiAnimationRendererImpl
 import ShimmerEffect
 import TextFormat
 import TelegramUIPreferences
 import GenerateStickerPlaceholderImage
 import UIKitRuntimeUtils
 import ComponentFlow
-import RLottieBinding
-import GZip
 
 public func generateTopicIcon(title: String, backgroundColors: [UIColor], strokeColors: [UIColor], size: CGSize) -> UIImage? {
     let realSize = size
@@ -500,10 +497,6 @@ public final class InlineStickerItemLayer: MultiAnimationRenderTarget {
             case .verification:
                 self.updateVerification()
                 self.updateTintColor()
-            case .dice:
-                if let file {
-                    self.updateDice(file: file, attemptSynchronousLoad: attemptSynchronousLoad)
-                }
             }
         } else if let file = file {
             self.updateFile(file: file, attemptSynchronousLoad: attemptSynchronousLoad)
@@ -727,44 +720,6 @@ public final class InlineStickerItemLayer: MultiAnimationRenderTarget {
         }
     }
     
-    private func updateDice(file: TelegramMediaFile, attemptSynchronousLoad: Bool) {
-        guard let arguments = self.arguments else {
-            return
-        }
-        let _ = (arguments.context.postbox.mediaBox.resourceData(file.resource)
-        |> filter { resource in
-            return resource.complete
-        }
-        |> map { resource -> UIImage? in
-            guard var data = try? Data(contentsOf: URL(fileURLWithPath: resource.path)) else {
-                return nil
-            }
-            if let unpackedData = TGGUnzipData(data, 5 * 1024 * 1024) {
-                data = unpackedData
-            }
-            guard let instance = LottieInstance(data: data, fitzModifier: .none, colorReplacements: nil, cacheKey: "") else {
-                return nil
-            }
-            let size = CGSize(width: 128.0, height: 128.0)
-            if let diceContext = DrawingContext(size: size, scale: 1.0, opaque: false, clear: true) {
-                instance.renderFrame(with: instance.frameCount - 1, into: diceContext.bytes.assumingMemoryBound(to: UInt8.self), width: Int32(diceContext.scaledSize.width), height: Int32(diceContext.scaledSize.height), bytesPerRow: Int32(diceContext.bytesPerRow))
-                if let diceImage = diceContext.generateImage() {
-                    let drawingContext = DrawingContext(size: size, scale: 1.0, opaque: false, clear: true)
-                    drawingContext?.withFlippedContext { context in
-                        if let cgImage = diceImage.cgImage {
-                            context.draw(cgImage, in: CGRect(origin: CGPoint(x: -30.0, y: 5.0), size: CGSize(width: 180.0, height: 180.0)))
-                        }
-                    }
-                    return drawingContext?.generateImage()
-                }
-            }
-            return nil
-        }
-        |> deliverOnMainQueue).start(next: { image in
-            self.contents = image?.cgImage
-        })
-    }
-    
     private func loadLocalAnimation() {
         guard let arguments = self.arguments else {
             return
@@ -818,7 +773,7 @@ public final class InlineStickerItemLayer: MultiAnimationRenderTarget {
             let isThumbnailCancelled = Atomic<Bool>(value: false)
             self.loadDisposable = arguments.renderer.loadFirstFrame(target: self, cache: arguments.cache, itemId: file.resource.id.stringRepresentation, size: arguments.pixelSize, fetch: animationCacheFetchFile(postbox: arguments.context.postbox, userLocation: arguments.userLocation, userContentType: .sticker, resource: .media(media: .standalone(media: file), resource: file.resource), type: AnimationCacheAnimationType(file: file), keyframeOnly: true, customColor: isTemplate ? .white : nil), completion: { [weak self] result, isFinal in
                 if !result {
-                    DCTMultiAnimationRendererImpl.firstFrameQueue.async {
+                    MultiAnimationRendererImpl.firstFrameQueue.async {
                         let image = generateStickerPlaceholderImage(data: file.immediateThumbnailData, size: pointSize, scale: min(2.0, UIScreenScale), imageSize: file.dimensions?.cgSize ?? CGSize(width: 512.0, height: 512.0), backgroundColor: nil, foregroundColor: placeholderColor)
                         
                         DispatchQueue.main.async {
@@ -1095,7 +1050,7 @@ private let tonImage: UIImage? = {
     generateImage(CGSize(width: 32.0, height: 32.0), contextGenerator: { size, context in
         context.clear(CGRect(origin: .zero, size: size))
         
-        if let image = generateTintedImage(image: UIImage(bundleImageName: "Ads/TonBig"), color: UIColor(rgb: 0x0088ff)), let cgImage = image.cgImage {
+        if let image = generateTintedImage(image: UIImage(bundleImageName: "Ads/TonBig"), color: UIColor(rgb: 0x007aff)), let cgImage = image.cgImage {
             context.draw(cgImage, in: CGRect(origin: .zero, size: size).insetBy(dx: 4.0, dy: 4.0), byTiling: false)
         }
     })?.withRenderingMode(.alwaysTemplate)

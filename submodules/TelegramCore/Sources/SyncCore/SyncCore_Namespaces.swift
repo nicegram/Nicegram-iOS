@@ -147,9 +147,6 @@ public struct Namespaces {
         public static let cachedProfileGiftsCollections: Int8 = 48
         public static let cachedProfileSavedMusic: Int8 = 49
         public static let cachedChatThemes: Int8 = 50
-        public static let cachedLiveStorySendAsPeers: Int8 = 51
-        public static let cachedGiftUpgradesAttributes: Int8 = 52
-        public static let cachedCloudAITextStyles: Int8 = 53
     }
     
     public struct UnorderedItemList {
@@ -180,10 +177,8 @@ public extension MessageTags {
     static let unseenReaction = MessageTags(rawValue: 1 << 11)
     static let voice = MessageTags(rawValue: 1 << 12)
     static let roundVideo = MessageTags(rawValue: 1 << 13)
-    static let polls = MessageTags(rawValue: 1 << 14)
-    static let unseenPollVote = MessageTags(rawValue: 1 << 15)
     
-    static let all: MessageTags = [.photoOrVideo, .file, .music, .webPage, .voiceOrInstantVideo, .unseenPersonalMessage, .liveLocation, .gif, .photo, .video, .pinned, .unseenReaction, .voice, .roundVideo, .polls, .unseenPollVote]
+    static let all: MessageTags = [.photoOrVideo, .file, .music, .webPage, .voiceOrInstantVideo, .unseenPersonalMessage, .liveLocation, .gif, .photo, .video, .pinned, .unseenReaction, .voice, .roundVideo]
 }
 
 public extension GlobalMessageTags {
@@ -202,7 +197,7 @@ public extension PendingMessageActionType {
     static let consumeUnseenPersonalMessage = PendingMessageActionType(rawValue: 0)
     static let updateReaction = PendingMessageActionType(rawValue: 1)
     static let sendScheduledMessageImmediately = PendingMessageActionType(rawValue: 2)
-    static let readReactionOrPollVote = PendingMessageActionType(rawValue: 3)
+    static let readReaction = PendingMessageActionType(rawValue: 3)
     static let sendStarsReaction = PendingMessageActionType(rawValue: 4)
     static let sendPostponedPaidMessage = PendingMessageActionType(rawValue: 5)
 }
@@ -237,7 +232,6 @@ public struct OperationLogTags {
     public static let SynchronizeViewStories = PeerOperationLogTag(value: 24)
     public static let SynchronizePeerStories = PeerOperationLogTag(value: 25)
     public static let SynchronizePinnedSavedChats = PeerOperationLogTag(value: 26)
-    public static let SynchronizeMarkAllUnseenPollVotes = PeerOperationLogTag(value: 27)
 }
 
 public struct LegacyPeerSummaryCounterTags: OptionSet, Sequence, Hashable {
@@ -327,7 +321,6 @@ private enum PreferencesKeyValues: Int32 {
     case persistentChatInterfaceData = 45
     case globalPostSearchState = 46
     case savedMusicIds = 47
-    case emojiGameInfo = 48
 }
 
 public func applicationSpecificPreferencesKey(_ value: Int32) -> ValueBoxKey {
@@ -594,12 +587,6 @@ public struct PreferencesKeys {
     public static func savedMusicIds() -> ValueBoxKey {
         let key = ValueBoxKey(length: 4)
         key.setInt32(0, value: PreferencesKeyValues.savedMusicIds.rawValue)
-        return key
-    }
-    
-    public static func emojiGameInfo() -> ValueBoxKey {
-        let key = ValueBoxKey(length: 4)
-        key.setInt32(0, value: PreferencesKeyValues.emojiGameInfo.rawValue)
         return key
     }
 }

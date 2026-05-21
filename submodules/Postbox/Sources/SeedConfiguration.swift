@@ -77,6 +77,7 @@ public final class SeedConfiguration {
     public let decodeMessageThreadInfo: (CodableEntry) -> Message.AssociatedThreadInfo?
     public let decodeAutoremoveTimeout: (CachedPeerData) -> Int32?
     public let decodeDisplayPeerAsRegularChat: (CachedPeerData) -> Bool
+    public let decodeAssociatedChatListPeerId: (CachedPeerData) -> PeerId?
     public let isPeerUpgradeMessage: (Message) -> Bool
     public let automaticThreadIndexInfo: (PeerId, Int64) -> StoredMessageHistoryThreadInfo?
     public let customTagsFromAttributes: ([MessageAttribute]) -> [MemoryBuffer]
@@ -108,6 +109,7 @@ public final class SeedConfiguration {
         decodeMessageThreadInfo: @escaping (CodableEntry) -> Message.AssociatedThreadInfo?,
         decodeAutoremoveTimeout: @escaping (CachedPeerData) -> Int32?,
         decodeDisplayPeerAsRegularChat: @escaping (CachedPeerData) -> Bool,
+        decodeAssociatedChatListPeerId: @escaping (CachedPeerData) -> PeerId?,
         isPeerUpgradeMessage: @escaping (Message) -> Bool,
         automaticThreadIndexInfo: @escaping (PeerId, Int64) -> StoredMessageHistoryThreadInfo?,
         customTagsFromAttributes: @escaping ([MessageAttribute]) -> [MemoryBuffer],
@@ -134,6 +136,7 @@ public final class SeedConfiguration {
         self.decodeMessageThreadInfo = decodeMessageThreadInfo
         self.decodeAutoremoveTimeout = decodeAutoremoveTimeout
         self.decodeDisplayPeerAsRegularChat = decodeDisplayPeerAsRegularChat
+        self.decodeAssociatedChatListPeerId = decodeAssociatedChatListPeerId
         self.isPeerUpgradeMessage = isPeerUpgradeMessage
         self.automaticThreadIndexInfo = automaticThreadIndexInfo
         self.customTagsFromAttributes = customTagsFromAttributes

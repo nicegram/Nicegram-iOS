@@ -6,18 +6,12 @@ swift_library(
     srcs = glob([
         "Sources/**/*.swift",
     ]),
-    copts = [
-        "-warnings-as-errors",
-    ],
     deps = [
-        "//submodules/AccountContext",
-        "//submodules/AccountUtils",
-        "//submodules/SSignalKit/SwiftSignalKit",
-        "//submodules/TelegramApi",
-        "//Nicegram/NGLogging",
-        "//Nicegram/NGUI",
-        "//Nicegram/NGUtils",
-        "@swiftpkg_nicegram_assistant_ios//:FeatKeywords",
+        "//submodules/TelegramApi:TelegramApi",
+        "//submodules/AccountContext:AccountContext",
+        "//submodules/SSignalKit/SwiftSignalKit:SwiftSignalKit",
+        "//Nicegram/NGUtils:NGUtils",
+        "//Nicegram/NGLogging:NGLogging"
     ],
     visibility = [
         "//visibility:public",

@@ -22,7 +22,7 @@
 - (void)playIfAvailable;
 
 - (void)setPlayButtonHidden:(bool)hidden animated:(bool)animated;
-- (void)toggleSendAsGif:(bool)showTooltip;
+- (void)toggleSendAsGif;
 
 - (void)setScrubbingPanelApperanceLocked:(bool)locked;
 - (void)setScrubbingPanelHidden:(bool)hidden animated:(bool)animated;

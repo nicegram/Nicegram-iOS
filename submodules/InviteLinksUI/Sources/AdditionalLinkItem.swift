@@ -10,7 +10,6 @@ import TelegramCore
 
 public class AdditionalLinkItem: ListViewItem, ItemListItem {
     let presentationData: ItemListPresentationData
-    let systemStyle: ItemListSystemStyle
     let username: TelegramPeerUsername?
     public let sectionId: ItemListSectionId
     let style: ItemListStyle
@@ -19,7 +18,6 @@ public class AdditionalLinkItem: ListViewItem, ItemListItem {
     
     public init(
         presentationData: ItemListPresentationData,
-        systemStyle: ItemListSystemStyle = .legacy,
         username: TelegramPeerUsername?,
         sectionId: ItemListSectionId,
         style: ItemListStyle,
@@ -27,7 +25,6 @@ public class AdditionalLinkItem: ListViewItem, ItemListItem {
         tag: ItemListItemTag? = nil
     ) {
         self.presentationData = presentationData
-        self.systemStyle = systemStyle
         self.username = username
         self.sectionId = sectionId
         self.style = style
@@ -170,7 +167,7 @@ public class AdditionalLinkItemNode: ListViewItemNode, ItemListItemNode {
         self.highlightedBackgroundNode = ASDisplayNode()
         self.highlightedBackgroundNode.isLayerBacked = true
         
-        super.init(layerBacked: false, rotated: false, seeThrough: false)
+        super.init(layerBacked: false, dynamicBounce: false, rotated: false, seeThrough: false)
         
         self.isAccessibilityElement = true
         
@@ -246,13 +243,7 @@ public class AdditionalLinkItemNode: ListViewItemNode, ItemListItemNode {
             
             let leftInset: CGFloat = 65.0 + params.leftInset
             let rightInset: CGFloat = 16.0 + params.rightInset
-            let verticalInset: CGFloat
-            switch item.systemStyle {
-            case .glass:
-                verticalInset = subtitleAttributedString.string.isEmpty ? 18.0 : 12.0
-            case .legacy:
-                verticalInset = subtitleAttributedString.string.isEmpty ? 14.0 : 8.0
-            }
+            let verticalInset: CGFloat = subtitleAttributedString.string.isEmpty ? 14.0 : 8.0
            
             let (titleLayout, titleApply) = makeTitleLayout(TextNodeLayoutArguments(attributedString: titleAttributedString, backgroundColor: nil, maximumNumberOfLines: 1, truncationType: .end, constrainedSize: CGSize(width: params.width - leftInset - rightInset - reorderInset, height: CGFloat.greatestFiniteMagnitude), alignment: .natural, cutout: nil, insets: UIEdgeInsets()))
             let (subtitleLayout, subtitleApply) = makeSubtitleLayout(TextNodeLayoutArguments(attributedString: subtitleAttributedString, backgroundColor: nil, maximumNumberOfLines: 1, truncationType: .end, constrainedSize: CGSize(width: params.width - leftInset - rightInset - reorderInset, height: CGFloat.greatestFiniteMagnitude), alignment: .natural, cutout: nil, insets: UIEdgeInsets()))
@@ -280,7 +271,6 @@ public class AdditionalLinkItemNode: ListViewItemNode, ItemListItemNode {
             
             let contentSize = CGSize(width: params.width, height: max(minHeight, rawHeight))
             let separatorHeight = UIScreenPixel
-            let separatorRightInset: CGFloat = item.systemStyle == .glass ? 16.0 : 0.0
             
             let layout = ListViewItemNodeLayout(contentSize: contentSize, insets: insets)
             
@@ -387,12 +377,12 @@ public class AdditionalLinkItemNode: ListViewItemNode, ItemListItemNode {
                                     strongSelf.bottomStripeNode.isHidden = hasCorners
                             }
                             
-                            strongSelf.maskNode.image = hasCorners ? PresentationResourcesItemList.cornersImage(item.presentationData.theme, top: hasTopCorners, bottom: hasBottomCorners, glass: item.systemStyle == .glass) : nil
+                            strongSelf.maskNode.image = hasCorners ? PresentationResourcesItemList.cornersImage(item.presentationData.theme, top: hasTopCorners, bottom: hasBottomCorners) : nil
                             
                             strongSelf.backgroundNode.frame = CGRect(origin: CGPoint(x: 0.0, y: -min(insets.top, separatorHeight)), size: CGSize(width: params.width, height: contentSize.height + min(insets.top, separatorHeight) + min(insets.bottom, separatorHeight)))
                             strongSelf.maskNode.frame = strongSelf.backgroundNode.frame.insetBy(dx: params.leftInset, dy: 0.0)
                             strongSelf.topStripeNode.frame = CGRect(origin: CGPoint(x: 0.0, y: -min(insets.top, separatorHeight)), size: CGSize(width: params.width, height: separatorHeight))
-                            strongSelf.bottomStripeNode.frame = CGRect(origin: CGPoint(x: bottomStripeInset, y: contentSize.height - separatorHeight), size: CGSize(width: params.width - bottomStripeInset - params.rightInset - separatorRightInset, height: separatorHeight))
+                            strongSelf.bottomStripeNode.frame = CGRect(origin: CGPoint(x: bottomStripeInset, y: contentSize.height - separatorHeight), size: CGSize(width: params.width - bottomStripeInset, height: separatorHeight))
                     }
                     
                     let iconSize: CGSize = CGSize(width: 40.0, height: 40.0)

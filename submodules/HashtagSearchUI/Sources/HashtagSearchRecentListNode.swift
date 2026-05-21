@@ -200,7 +200,7 @@ final class HashtagSearchRecentQueryItemNode: ItemListRevealOptionsItemNode {
         self.iconNode = ASImageNode()
         self.iconNode.displaysAsynchronously = false
         
-        super.init(layerBacked: false, rotated: false, seeThrough: false)
+        super.init(layerBacked: false, dynamicBounce: false, rotated: false, seeThrough: false)
         
         self.addSubnode(self.backgroundNode)
         self.addSubnode(self.separatorNode)
@@ -385,7 +385,7 @@ final class HashtagSearchRecentListNode: ASDisplayNode {
         let presentationData = context.sharedContext.currentPresentationData.with { $0 }
         self.presentationData = presentationData
         
-        self.listNode = ListViewImpl()
+        self.listNode = ListView()
         self.listNode.accessibilityPageScrolledString = { row, count in
             return presentationData.strings.VoiceOver_ScrollStatus(row, count).string
         }

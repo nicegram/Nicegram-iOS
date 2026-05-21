@@ -1,18 +1,10 @@
 import Foundation
 
-public final class ConstructorParameterDescription {
-    public let value: Optional<Any>
-    
-    init(_ value: Optional<Any>) {
-        self.value = value
-    }
-}
-
 public final class FunctionDescription {
     public let name: String
-    public let parameters: [(String, ConstructorParameterDescription)]
+    public let parameters: [(String, Any)]
     
-    init(name: String, parameters: [(String, ConstructorParameterDescription)]) {
+    init(name: String, parameters: [(String, Any)]) {
         self.name = name
         self.parameters = parameters
     }
@@ -31,5 +23,5 @@ public final class DeserializeFunctionResponse<T> {
 }
 
 public protocol TypeConstructorDescription {
-    func descriptionFields() -> (String, [(String, ConstructorParameterDescription)])
+    func descriptionFields() -> (String, [(String, Any)])
 }

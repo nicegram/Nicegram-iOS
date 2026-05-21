@@ -79,7 +79,7 @@ class ChatListRecentPeersListItemNode: ListViewItemNode {
         self.separatorNode = ASDisplayNode()
         self.separatorNode.isLayerBacked = true
         
-        super.init(layerBacked: false)
+        super.init(layerBacked: false, dynamicBounce: false)
         
         self.addSubnode(self.backgroundNode)
         self.addSubnode(self.separatorNode)
@@ -122,7 +122,8 @@ class ChatListRecentPeersListItemNode: ListViewItemNode {
                     } else {
                         peersNode = ChatListSearchRecentPeersNode(
                             accountPeerId: item.context.account.peerId,
-                            stateManager: item.context.account.stateManager,
+                            postbox: item.context.account.postbox,
+                            network: item.context.account.network,
                             energyUsageSettings: item.context.sharedContext.energyUsageSettings,
                             contentSettings: item.context.currentContentSettings.with { $0 },
                             animationCache: item.context.animationCache,

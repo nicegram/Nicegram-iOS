@@ -8,50 +8,35 @@ extension RichText {
         switch apiText {
             case .textEmpty:
                 self = .empty
-            case let .textPlain(textPlainData):
-                let text = textPlainData.text
+            case let .textPlain(text):
                 self = .plain(text)
-            case let .textBold(textBoldData):
-                let text = textBoldData.text
+            case let .textBold(text):
                 self = .bold(RichText(apiText: text))
-            case let .textItalic(textItalicData):
-                let text = textItalicData.text
+            case let .textItalic(text):
                 self = .italic(RichText(apiText: text))
-            case let .textUnderline(textUnderlineData):
-                let text = textUnderlineData.text
+            case let .textUnderline(text):
                 self = .underline(RichText(apiText: text))
-            case let .textStrike(textStrikeData):
-                let text = textStrikeData.text
+            case let .textStrike(text):
                 self = .strikethrough(RichText(apiText: text))
-            case let .textFixed(textFixedData):
-                let text = textFixedData.text
+            case let .textFixed(text):
                 self = .fixed(RichText(apiText: text))
-            case let .textUrl(textUrlData):
-                let (text, url, webpageId) = (textUrlData.text, textUrlData.url, textUrlData.webpageId)
+            case let .textUrl(text, url, webpageId):
                 self = .url(text: RichText(apiText: text), url: url, webpageId: webpageId == 0 ? nil : MediaId(namespace: Namespaces.Media.CloudWebpage, id: webpageId))
-            case let .textEmail(textEmailData):
-                let (text, email) = (textEmailData.text, textEmailData.email)
+            case let .textEmail(text, email):
                 self = .email(text: RichText(apiText: text), email: email)
-            case let .textConcat(textConcatData):
-                let texts = textConcatData.texts
+            case let .textConcat(texts):
                 self = .concat(texts.map({ RichText(apiText: $0) }))
-            case let .textSubscript(textSubscriptData):
-                let text = textSubscriptData.text
+            case let .textSubscript(text):
                 self = .subscript(RichText(apiText: text))
-            case let .textSuperscript(textSuperscriptData):
-                let text = textSuperscriptData.text
+            case let .textSuperscript(text):
                 self = .superscript(RichText(apiText: text))
-            case let .textMarked(textMarkedData):
-                let text = textMarkedData.text
+            case let .textMarked(text):
                 self = .marked(RichText(apiText: text))
-            case let .textPhone(textPhoneData):
-                let (text, phone) = (textPhoneData.text, textPhoneData.phone)
+            case let .textPhone(text, phone):
                 self = .phone(text: RichText(apiText: text), phone: phone)
-            case let .textImage(textImageData):
-                let (documentId, w, h) = (textImageData.documentId, textImageData.w, textImageData.h)
+            case let .textImage(documentId, w, h):
                 self = .image(id: MediaId(namespace: Namespaces.Media.CloudFile, id: documentId), dimensions: PixelDimensions(width: w, height: h))
-            case let .textAnchor(textAnchorData):
-                let (text, name) = (textAnchorData.text, textAnchorData.name)
+            case let .textAnchor(text, name):
                 self = .anchor(text: RichText(apiText: text), name: name)
         }
     }

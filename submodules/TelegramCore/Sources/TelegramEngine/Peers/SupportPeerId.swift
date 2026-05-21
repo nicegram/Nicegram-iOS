@@ -15,8 +15,7 @@ func _internal_supportPeerId(account: Account) -> Signal<PeerId?, NoError> {
     |> mapToSignal { support -> Signal<PeerId?, NoError> in
         if let support = support {
             switch support {
-            case let .support(supportData):
-                let user = supportData.user
+            case let .support(_, user):
                 return account.postbox.transaction { transaction -> PeerId in
                     let parsedPeers = AccumulatedPeers(transaction: transaction, chats: [], users: [user])
                     updatePeers(transaction: transaction, accountPeerId: accountPeerId, peers: parsedPeers)

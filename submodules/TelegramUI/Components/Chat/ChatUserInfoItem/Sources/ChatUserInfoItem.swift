@@ -114,7 +114,7 @@ public final class ChatUserInfoItemNode: ListViewItemNode, ASGestureRecognizerDe
     
     private var groupsInCommonContext: GroupsInCommonContext?
     private var groupsInCommonDisposable: Disposable?
-    private var groupsInCommon: [EnginePeer] = []
+    private var groupsInCommon: [Peer] = []
     
     private let disclaimerTextNode: TextNodeWithEntities
     
@@ -170,7 +170,7 @@ public final class ChatUserInfoItemNode: ListViewItemNode, ASGestureRecognizerDe
         self.disclaimerTextNode.textNode.isUserInteractionEnabled = false
         self.disclaimerTextNode.textNode.displaysAsynchronously = false
         
-        super.init(layerBacked: false, rotated: true)
+        super.init(layerBacked: false, dynamicBounce: true, rotated: true)
         
         self.transform = CATransform3DMakeRotation(CGFloat.pi, 0.0, 0.0, 1.0)
         
@@ -436,7 +436,7 @@ public final class ChatUserInfoItemNode: ListViewItemNode, ASGestureRecognizerDe
                                 guard let self, let item = self.item else {
                                     return
                                 }
-                                self.groupsInCommon = Array(state.peers.compactMap { $0.peer }.prefix(3)).map(EnginePeer.init)
+                                self.groupsInCommon = Array(state.peers.compactMap { $0.peer }.prefix(3))
                                 self.groupsAvatarsNode.update(context: item.context, peers: self.groupsInCommon, synchronousLoad: true, imageSize: avatarImageSize, imageSpacing: avatarSpacing, borderWidth: avatarBorder)
                             })
                         }

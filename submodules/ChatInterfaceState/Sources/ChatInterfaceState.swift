@@ -1,5 +1,6 @@
 import Foundation
 import UIKit
+import Postbox
 import TelegramCore
 import TextFormat
 import AccountContext
@@ -305,8 +306,8 @@ public enum ChatInterfaceMediaDraftState: Codable, Equatable {
         public init(from decoder: Decoder) throws {
             let container = try decoder.container(keyedBy: StringCodingKey.self)
 
-            let resourceData = try container.decode(EngineAdaptedPostboxDecoder.RawObjectData.self, forKey: "r")
-            self.resource = LocalFileMediaResource(decoder: EnginePostboxDecoder(buffer: EngineMemoryBuffer(data: resourceData.data)))
+            let resourceData = try container.decode(AdaptedPostboxDecoder.RawObjectData.self, forKey: "r")
+            self.resource = LocalFileMediaResource(decoder: PostboxDecoder(buffer: MemoryBuffer(data: resourceData.data)))
             
             self.fileSize = try container.decode(Int32.self, forKey: "s")
             
@@ -332,7 +333,7 @@ public enum ChatInterfaceMediaDraftState: Codable, Equatable {
         public func encode(to encoder: Encoder) throws {
             var container = encoder.container(keyedBy: StringCodingKey.self)
 
-            try container.encode(EnginePostboxEncoder().encodeObjectToRawData(self.resource), forKey: "r")
+            try container.encode(PostboxEncoder().encodeObjectToRawData(self.resource), forKey: "r")
             try container.encode(self.fileSize, forKey: "s")
             try container.encode(self.duration, forKey: "dd")
             try container.encode(self.waveform.samples, forKey: "wd")
@@ -480,29 +481,29 @@ public final class ChatInterfaceState: Codable, Equatable {
     public struct ReplyMessageSubject: Codable, Equatable {
         public var messageId: EngineMessage.Id
         public var quote: EngineMessageReplyQuote?
-        public var innerSubject: EngineMessageReplyInnerSubject?
+        public var todoItemId: Int32?
         
-        public init(messageId: EngineMessage.Id, quote: EngineMessageReplyQuote?, innerSubject: EngineMessageReplyInnerSubject?) {
+        public init(messageId: EngineMessage.Id, quote: EngineMessageReplyQuote?, todoItemId: Int32?) {
             self.messageId = messageId
             self.quote = quote
-            self.innerSubject = innerSubject
+            self.todoItemId = todoItemId
         }
         
         public var subjectModel: EngineMessageReplySubject {
             return EngineMessageReplySubject(
                 messageId: self.messageId,
                 quote: self.quote,
-                innerSubject: self.innerSubject
+                todoItemId: self.todoItemId
             )
         }
     }
     
     public struct PostSuggestionState: Codable, Equatable {
-        public var editingOriginalMessageId: EngineMessage.Id?
+        public var editingOriginalMessageId: MessageId?
         public var price: CurrencyAmount?
         public var timestamp: Int32?
         
-        public init(editingOriginalMessageId: EngineMessage.Id?, price: CurrencyAmount?, timestamp: Int32?) {
+        public init(editingOriginalMessageId: MessageId?, price: CurrencyAmount?, timestamp: Int32?) {
             self.editingOriginalMessageId = editingOriginalMessageId
             self.price = price
             self.timestamp = timestamp
@@ -548,7 +549,7 @@ public final class ChatInterfaceState: Codable, Equatable {
             return ReplyMessageSubject(
                 messageId: $0.messageId,
                 quote: $0.quote,
-                innerSubject: $0.innerSubject
+                todoItemId: $0.todoItemId
             )
         })
         if let timestamp = state?.timestamp {
@@ -632,7 +633,7 @@ public final class ChatInterfaceState: Codable, Equatable {
             let replyMessageIdNamespace: Int32? = try? container.decodeIfPresent(Int32.self, forKey: "r.n")
             let replyMessageIdId: Int32? = try? container.decodeIfPresent(Int32.self, forKey: "r.i")
             if let replyMessageIdPeerId = replyMessageIdPeerId, let replyMessageIdNamespace = replyMessageIdNamespace, let replyMessageIdId = replyMessageIdId {
-                self.replyMessageSubject = ReplyMessageSubject(messageId: EngineMessage.Id(peerId: EnginePeer.Id(replyMessageIdPeerId), namespace: replyMessageIdNamespace, id: replyMessageIdId), quote: nil, innerSubject: nil)
+                self.replyMessageSubject = ReplyMessageSubject(messageId: EngineMessage.Id(peerId: EnginePeer.Id(replyMessageIdPeerId), namespace: replyMessageIdNamespace, id: replyMessageIdId), quote: nil, todoItemId: nil)
             } else {
                 self.replyMessageSubject = nil
             }

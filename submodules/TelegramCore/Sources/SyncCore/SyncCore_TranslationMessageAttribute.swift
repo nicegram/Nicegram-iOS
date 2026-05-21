@@ -25,9 +25,10 @@ public class TranslationMessageAttribute: MessageAttribute, Equatable {
     public let entities: [MessageTextEntity]
     public let toLang: String
 
-    public let additional: [Additional]
+    public let additional:[Additional]
     public let pollSolution: Additional?
 
+    
     public var associatedPeerIds: [PeerId] {
         return []
     }

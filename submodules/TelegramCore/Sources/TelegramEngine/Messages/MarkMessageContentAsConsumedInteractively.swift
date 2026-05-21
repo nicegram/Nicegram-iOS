@@ -127,12 +127,11 @@ func _internal_markMessageContentAsConsumedInteractively(postbox: Postbox, messa
     }
 }
 
-func _internal_markReactionsOrPollVotesAsSeenInteractively(postbox: Postbox, messageId: MessageId) -> Signal<Void, NoError> {
+func _internal_markReactionsAsSeenInteractively(postbox: Postbox, messageId: MessageId) -> Signal<Void, NoError> {
     return postbox.transaction { transaction -> Void in
-        if let message = transaction.getMessage(messageId), (message.tags.contains(.unseenReaction) || message.tags.contains(.unseenPollVote)) {
+        if let message = transaction.getMessage(messageId), message.tags.contains(.unseenReaction) {
             var updateMessage = false
             var updatedAttributes = message.attributes
-            var updatedMedia = message.media
             
             for i in 0 ..< updatedAttributes.count {
                 if let attribute = updatedAttributes[i] as? ReactionsMessageAttribute, attribute.hasUnseen {
@@ -141,18 +140,7 @@ func _internal_markReactionsOrPollVotesAsSeenInteractively(postbox: Postbox, mes
                     
                     if message.id.peerId.namespace == Namespaces.Peer.SecretChat {
                     } else {
-                        transaction.setPendingMessageAction(type: .readReactionOrPollVote, id: messageId, action: ReadReactionAction())
-                    }
-                }
-            }
-            for i in 0 ..< updatedMedia.count {
-                if let poll = updatedMedia[i] as? TelegramMediaPoll {
-                    updatedMedia[i] = poll.withoutUnreadResults()
-                    updateMessage = true
-                    
-                    if message.id.peerId.namespace == Namespaces.Peer.SecretChat {
-                    } else {
-                        transaction.setPendingMessageAction(type: .readReactionOrPollVote, id: messageId, action: ReadReactionAction())
+                        transaction.setPendingMessageAction(type: .readReaction, id: messageId, action: ReadReactionAction())
                     }
                 }
             }
@@ -165,8 +153,7 @@ func _internal_markReactionsOrPollVotesAsSeenInteractively(postbox: Postbox, mes
                     }
                     var tags = currentMessage.tags
                     tags.remove(.unseenReaction)
-                    tags.remove(.unseenPollVote)
-                    return .update(StoreMessage(id: currentMessage.id, customStableId: nil, globallyUniqueId: currentMessage.globallyUniqueId, groupingKey: currentMessage.groupingKey, threadId: currentMessage.threadId, timestamp: currentMessage.timestamp, flags: StoreMessageFlags(currentMessage.flags), tags: tags, globalTags: currentMessage.globalTags, localTags: currentMessage.localTags, forwardInfo: storeForwardInfo, authorId: currentMessage.author?.id, text: currentMessage.text, attributes: updatedAttributes, media: updatedMedia))
+                    return .update(StoreMessage(id: currentMessage.id, customStableId: nil, globallyUniqueId: currentMessage.globallyUniqueId, groupingKey: currentMessage.groupingKey, threadId: currentMessage.threadId, timestamp: currentMessage.timestamp, flags: StoreMessageFlags(currentMessage.flags), tags: tags, globalTags: currentMessage.globalTags, localTags: currentMessage.localTags, forwardInfo: storeForwardInfo, authorId: currentMessage.author?.id, text: currentMessage.text, attributes: updatedAttributes, media: currentMessage.media))
                 })
             }
         }

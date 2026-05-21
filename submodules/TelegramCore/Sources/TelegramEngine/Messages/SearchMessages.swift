@@ -6,7 +6,8 @@ import MtProtoKit
 
 
 public enum SearchMessagesLocation: Equatable {
-    case general(scope: TelegramSearchPeersScope, groupId: PeerGroupId?, tags: MessageTags?, minDate: Int32?, maxDate: Int32?, folderId: Int32?)
+    case general(scope: TelegramSearchPeersScope, tags: MessageTags?, minDate: Int32?, maxDate: Int32?)
+    case group(groupId: PeerGroupId, tags: MessageTags?, minDate: Int32?, maxDate: Int32?)
     case peer(peerId: PeerId, fromId: PeerId?, tags: MessageTags?, reactions: [MessageReaction.Reaction]?, threadId: Int64?, minDate: Int32?, maxDate: Int32?)
     case sentMedia(tags: MessageTags?)
 }
@@ -87,30 +88,26 @@ private func mergedState(transaction: Transaction, seedConfiguration: SeedConfig
     let totalCount: Int32
     let nextRate: Int32?
     switch result {
-        case let .channelMessages(channelMessagesData):
-            let (_, _, count, _, apiMessages, apiTopics, apiChats, apiUsers) = (channelMessagesData.flags, channelMessagesData.pts, channelMessagesData.count, channelMessagesData.offsetIdOffset, channelMessagesData.messages, channelMessagesData.topics, channelMessagesData.chats, channelMessagesData.users)
+        case let .channelMessages(_, _, count, _, apiMessages, apiTopics, apiChats, apiUsers):
             messages = apiMessages
             let _ = apiTopics
             chats = apiChats
             users = apiUsers
             totalCount = count
             nextRate = nil
-        case let .messages(messagesData):
-            let (apiMessages, _, apiChats, apiUsers) = (messagesData.messages, messagesData.topics, messagesData.chats, messagesData.users)
+        case let .messages(apiMessages, apiChats, apiUsers):
             messages = apiMessages
             chats = apiChats
             users = apiUsers
             totalCount = Int32(messages.count)
             nextRate = nil
-        case let .messagesSlice(messagesSliceData):
-            let (_, count, apiNextRate, _, _, apiMessages, _, apiChats, apiUsers) = (messagesSliceData.flags, messagesSliceData.count, messagesSliceData.nextRate, messagesSliceData.offsetIdOffset, messagesSliceData.searchFlood, messagesSliceData.messages, messagesSliceData.topics, messagesSliceData.chats, messagesSliceData.users)
+        case let .messagesSlice(_, count, apiNextRate, _, _, apiMessages, apiChats, apiUsers):
             messages = apiMessages
             chats = apiChats
             users = apiUsers
             totalCount = count
             nextRate = apiNextRate
-        case let .messagesNotModified(messagesNotModifiedData):
-            let _ = messagesNotModifiedData.count
+        case .messagesNotModified:
             messages = []
             chats = []
             users = []
@@ -285,17 +282,13 @@ func _internal_getSearchMessageCount(account: Account, location: SearchMessagesL
         return account.network.request(Api.functions.messages.search(flags: flags, peer: inputPeer, q: query, fromId: fromPeer, savedPeerId: savedPeerId, savedReaction: nil, topMsgId: topMsgId, filter: .inputMessagesFilterEmpty, minDate: 0, maxDate: 0, offsetId: 0, addOffset: 0, limit: 1, maxId: 0, minId: 0, hash: 0))
         |> map { result -> Int? in
             switch result {
-            case let .channelMessages(channelMessagesData):
-                let count = channelMessagesData.count
+            case let .channelMessages(_, _, count, _, _, _, _, _):
                 return Int(count)
-            case let .messages(messagesData):
-                let messages = messagesData.messages
+            case let .messages(messages, _, _):
                 return messages.count
-            case let .messagesNotModified(messagesNotModifiedData):
-                let count = messagesNotModifiedData.count
+            case let .messagesNotModified(count):
                 return Int(count)
-            case let .messagesSlice(messagesSliceData):
-                let count = messagesSliceData.count
+            case let .messagesSlice(_, count, _, _, _, _, _, _):
                 return Int(count)
             }
         }
@@ -470,17 +463,17 @@ func _internal_searchMessages(account: Account, location: SearchMessagesLocation
                 }
                 return combineLatest(peerMessages, additionalPeerMessages)
             }
-        case let .general(_, groupId, tags, minDate, maxDate, _):
+        case let .general(_, tags, minDate, maxDate), let .group(_, tags, minDate, maxDate):
             var flags: Int32 = 0
             let folderId: Int32?
-            if let groupId {
+            if case let .group(groupId, _, _, _) = location {
                 folderId = groupId.rawValue
                 flags |= (1 << 0)
             } else {
                 folderId = nil
             }
         
-            if case let .general(scope, _, _, _, _, _) = location, case let .globalPosts(allowPaidStars) = scope {
+            if case let .general(scope, _, _, _) = location, case let .globalPosts(allowPaidStars) = scope {
                 remoteSearchResult = account.postbox.transaction { transaction -> (Int32, MessageIndex?, Api.InputPeer) in
                     var lowerBound: MessageIndex?
                     if let state = state, let message = state.main.messages.last {
@@ -507,7 +500,7 @@ func _internal_searchMessages(account: Account, location: SearchMessagesLocation
                     }
                 }
             } else {
-                if case let .general(scope, _, _, _, _, _) = location {
+                if case let .general(scope, _, _, _) = location {
                     switch scope {
                     case .everywhere:
                         break
@@ -566,9 +559,9 @@ func _internal_searchMessages(account: Account, location: SearchMessagesLocation
             
             if state?.additional == nil {
                 switch location {
-                    case let .general(_, _, tags, minDate, maxDate, _):
+                    case let .general(_, tags, minDate, maxDate), let .group(_, tags, minDate, maxDate):
                         let secretMessages: [Message]
-                        if case let .general(scope, _, _, _, _, _) = location, case .channels = scope {
+                        if case let .general(scope, _, _, _) = location, case .channels = scope {
                             secretMessages = []
                         } else {
                             secretMessages = transaction.searchMessages(peerId: nil, query: query, tags: tags)
@@ -576,7 +569,7 @@ func _internal_searchMessages(account: Account, location: SearchMessagesLocation
                         
                         var filteredMessages: [Message] = []
                         var readStates: [PeerId: CombinedPeerReadState] = [:]
-                        var threadInfo: [MessageId: MessageHistoryThreadData] = [:]
+                        var threadInfo:[MessageId : MessageHistoryThreadData] = [:]
                         for message in secretMessages {
                             var match = true
                             if let minDate = minDate, message.timestamp < minDate {
@@ -611,13 +604,11 @@ func _internal_searchMessages(account: Account, location: SearchMessagesLocation
             
             if let result {
                 switch result {
-                case let .messagesSlice(messagesSliceData):
-                    let searchFlood = messagesSliceData.searchFlood
+                case let .messagesSlice(_, _, _, _, searchFlood, _, _, _):
                     if let searchFlood {
                         transaction.updatePreferencesEntry(key: PreferencesKeys.globalPostSearchState(), { _ in
                             switch searchFlood {
-                            case let .searchPostsFlood(searchPostsFloodData):
-                                let (_, totalDaily, remains, waitTill, starsAmount) = (searchPostsFloodData.flags, searchPostsFloodData.totalDaily, searchPostsFloodData.remains, searchPostsFloodData.waitTill, searchPostsFloodData.starsAmount)
+                            case let .searchPostsFlood(_, totalDaily, remains, waitTill, starsAmount):
                                 return PreferencesEntry(TelegramGlobalPostSearchState(
                                     totalFreeSearches: totalDaily,
                                     remainingFreeSearches: remains,
@@ -682,12 +673,12 @@ func _internal_downloadMessage(accountPeerId: PeerId, postbox: Postbox, network:
                 let signal: Signal<Api.messages.Messages, MTRpcError>
                 if messageId.peerId.namespace == Namespaces.Peer.CloudChannel {
                     if let channel = apiInputChannel(peer) {
-                        signal = network.request(Api.functions.channels.getMessages(channel: channel, id: [Api.InputMessage.inputMessageID(.init(id: messageId.id))]))
+                        signal = network.request(Api.functions.channels.getMessages(channel: channel, id: [Api.InputMessage.inputMessageID(id: messageId.id)]))
                     } else {
                         signal = .complete()
                     }
                 } else {
-                    signal = network.request(Api.functions.messages.getMessages(id: [Api.InputMessage.inputMessageID(.init(id: messageId.id))]))
+                    signal = network.request(Api.functions.messages.getMessages(id: [Api.InputMessage.inputMessageID(id: messageId.id)]))
                 }
                 
                 return signal
@@ -703,29 +694,25 @@ func _internal_downloadMessage(accountPeerId: PeerId, postbox: Postbox, network:
                     let chats: [Api.Chat]
                     let users: [Api.User]
                     switch result {
-                        case let .channelMessages(channelMessagesData):
-                            let (_, _, _, _, apiMessages, apiTopics, apiChats, apiUsers) = (channelMessagesData.flags, channelMessagesData.pts, channelMessagesData.count, channelMessagesData.offsetIdOffset, channelMessagesData.messages, channelMessagesData.topics, channelMessagesData.chats, channelMessagesData.users)
+                        case let .channelMessages(_, _, _, _, apiMessages, apiTopics, apiChats, apiUsers):
                             messages = apiMessages
                             let _ = apiTopics
                             chats = apiChats
                             users = apiUsers
-                        case let .messages(messagesData):
-                            let (apiMessages, _, apiChats, apiUsers) = (messagesData.messages, messagesData.topics, messagesData.chats, messagesData.users)
+                        case let .messages(apiMessages, apiChats, apiUsers):
                             messages = apiMessages
                             chats = apiChats
                             users = apiUsers
-                        case let .messagesSlice(messagesSliceData):
-                            let (_, _, _, _, _, apiMessages, _, apiChats, apiUsers) = (messagesSliceData.flags, messagesSliceData.count, messagesSliceData.nextRate, messagesSliceData.offsetIdOffset, messagesSliceData.searchFlood, messagesSliceData.messages, messagesSliceData.topics, messagesSliceData.chats, messagesSliceData.users)
+                        case let .messagesSlice(_, _, _, _, _, apiMessages, apiChats, apiUsers):
                             messages = apiMessages
                             chats = apiChats
                             users = apiUsers
-                        case let .messagesNotModified(messagesNotModifiedData):
-                            let _ = messagesNotModifiedData.count
+                        case .messagesNotModified:
                             messages = []
                             chats = []
                             users = []
                     }
-
+                    
                     let postboxSignal = postbox.transaction { transaction -> Message? in
                         var peers: [PeerId: Peer] = [:]
                         
@@ -775,12 +762,12 @@ func fetchRemoteMessage(accountPeerId: PeerId, postbox: Postbox, source: FetchMe
         }
     } else if id.peerId.namespace == Namespaces.Peer.CloudChannel {
         if let channel = peer.inputChannel {
-            signal = source.request(Api.functions.channels.getMessages(channel: channel, id: [Api.InputMessage.inputMessageID(.init(id: id.id))]))
+            signal = source.request(Api.functions.channels.getMessages(channel: channel, id: [Api.InputMessage.inputMessageID(id: id.id)]))
         } else {
             signal = .fail(MTRpcError(errorCode: 400, errorDescription: "Peer Not Found"))
         }
     } else if id.peerId.namespace == Namespaces.Peer.CloudUser || id.peerId.namespace == Namespaces.Peer.CloudGroup {
-        signal = source.request(Api.functions.messages.getMessages(id: [Api.InputMessage.inputMessageID(.init(id: id.id))]))
+        signal = source.request(Api.functions.messages.getMessages(id: [Api.InputMessage.inputMessageID(id: id.id)]))
     } else {
         signal = .fail(MTRpcError(errorCode: 400, errorDescription: "Invalid Peer"))
     }
@@ -798,29 +785,25 @@ func fetchRemoteMessage(accountPeerId: PeerId, postbox: Postbox, source: FetchMe
         let chats: [Api.Chat]
         let users: [Api.User]
         switch result {
-            case let .channelMessages(channelMessagesData):
-                let (_, _, _, _, apiMessages, apiTopics, apiChats, apiUsers) = (channelMessagesData.flags, channelMessagesData.pts, channelMessagesData.count, channelMessagesData.offsetIdOffset, channelMessagesData.messages, channelMessagesData.topics, channelMessagesData.chats, channelMessagesData.users)
+            case let .channelMessages(_, _, _, _, apiMessages, apiTopics, apiChats, apiUsers):
                 messages = apiMessages
                 let _ = apiTopics
                 chats = apiChats
                 users = apiUsers
-            case let .messages(messagesData):
-                let (apiMessages, _, apiChats, apiUsers) = (messagesData.messages, messagesData.topics, messagesData.chats, messagesData.users)
+            case let .messages(apiMessages, apiChats, apiUsers):
                 messages = apiMessages
                 chats = apiChats
                 users = apiUsers
-            case let .messagesSlice(messagesSliceData):
-                let (_, _, _, _, _, apiMessages, _, apiChats, apiUsers) = (messagesSliceData.flags, messagesSliceData.count, messagesSliceData.nextRate, messagesSliceData.offsetIdOffset, messagesSliceData.searchFlood, messagesSliceData.messages, messagesSliceData.topics, messagesSliceData.chats, messagesSliceData.users)
+            case let .messagesSlice(_, _, _, _, _, apiMessages, apiChats, apiUsers):
                 messages = apiMessages
                 chats = apiChats
                 users = apiUsers
-            case let .messagesNotModified(messagesNotModifiedData):
-                let _ = messagesNotModifiedData.count
+            case .messagesNotModified:
                 messages = []
                 chats = []
                 users = []
         }
-
+        
         return postbox.transaction { transaction -> Message? in
             let parsedPeers = AccumulatedPeers(transaction: transaction, chats: chats, users: users)
             updatePeers(transaction: transaction, accountPeerId: accountPeerId, peers: parsedPeers)
@@ -873,17 +856,13 @@ func _internal_searchMessageIdByTimestamp(account: Account, peerId: PeerId, thre
                     |> map { result -> MessageIndex? in
                         let messages: [Api.Message]
                         switch result {
-                        case let .messages(messagesData):
-                            let apiMessages = messagesData.messages
+                        case let .messages(apiMessages, _, _):
                             messages = apiMessages
-                        case let .channelMessages(channelMessagesData):
-                            let apiMessages = channelMessagesData.messages
+                        case let .channelMessages(_, _, _, _, apiMessages, _, _, _):
                             messages = apiMessages
-                        case let .messagesSlice(messagesSliceData):
-                            let apiMessages = messagesSliceData.messages
+                        case let .messagesSlice(_, _, _, _, _, apiMessages, _, _):
                             messages = apiMessages
-                        case let .messagesNotModified(messagesNotModifiedData):
-                            let _ = messagesNotModifiedData.count
+                        case .messagesNotModified:
                             messages = []
                         }
                         for message in messages {
@@ -914,17 +893,13 @@ func _internal_searchMessageIdByTimestamp(account: Account, peerId: PeerId, thre
                     |> map { result -> MessageIndex? in
                         let messages: [Api.Message]
                         switch result {
-                        case let .messages(messagesData):
-                            let apiMessages = messagesData.messages
+                        case let .messages(apiMessages, _, _):
                             messages = apiMessages
-                        case let .channelMessages(channelMessagesData):
-                            let apiMessages = channelMessagesData.messages
+                        case let .channelMessages(_, _, _, _, apiMessages, _, _, _):
                             messages = apiMessages
-                        case let .messagesSlice(messagesSliceData):
-                            let apiMessages = messagesSliceData.messages
+                        case let .messagesSlice(_, _, _, _, _, apiMessages, _, _):
                             messages = apiMessages
-                        case let .messagesNotModified(messagesNotModifiedData):
-                            let _ = messagesNotModifiedData.count
+                        case .messagesNotModified:
                             messages = []
                         }
                         for message in messages {
@@ -951,17 +926,13 @@ func _internal_searchMessageIdByTimestamp(account: Account, peerId: PeerId, thre
                     |> map { result -> MessageIndex? in
                         let messages: [Api.Message]
                         switch result {
-                            case let .messages(messagesData):
-                                let apiMessages = messagesData.messages
+                            case let .messages(apiMessages, _, _):
                                 messages = apiMessages
-                            case let .channelMessages(channelMessagesData):
-                                let apiMessages = channelMessagesData.messages
+                            case let .channelMessages(_, _, _, _, apiMessages, _, _, _):
                                 messages = apiMessages
-                            case let .messagesSlice(messagesSliceData):
-                                let apiMessages = messagesSliceData.messages
+                            case let .messagesSlice(_, _, _, _, _, apiMessages, _, _):
                                 messages = apiMessages
-                            case let .messagesNotModified(messagesNotModifiedData):
-                                let _ = messagesNotModifiedData.count
+                            case .messagesNotModified:
                                 messages = []
                         }
                         for message in messages {
@@ -979,17 +950,13 @@ func _internal_searchMessageIdByTimestamp(account: Account, peerId: PeerId, thre
                 |> map { result -> MessageIndex? in
                     let messages: [Api.Message]
                     switch result {
-                        case let .messages(messagesData):
-                            let apiMessages = messagesData.messages
+                        case let .messages(apiMessages, _, _):
                             messages = apiMessages
-                        case let .channelMessages(channelMessagesData):
-                            let apiMessages = channelMessagesData.messages
+                        case let .channelMessages(_, _, _, _, apiMessages, _, _, _):
                             messages = apiMessages
-                        case let .messagesSlice(messagesSliceData):
-                            let apiMessages = messagesSliceData.messages
+                        case let .messagesSlice(_, _, _, _, _, apiMessages, _, _):
                             messages = apiMessages
-                        case let .messagesNotModified(messagesNotModifiedData):
-                            let _ = messagesNotModifiedData.count
+                        case .messagesNotModified:
                             messages = []
                     }
                     for message in messages {
@@ -1064,16 +1031,14 @@ func _internal_updatedRemotePeer(accountPeerId: PeerId, postbox: Postbox, networ
             return postbox.transaction { transaction -> Signal<Peer, UpdatedRemotePeerError> in
                 let chats: [Api.Chat]
                 switch result {
-                case let .chats(chatsData):
-                    let c = chatsData.chats
+                case let .chats(c):
                     chats = c
-                case let .chatsSlice(chatsSliceData):
-                    let c = chatsSliceData.chats
+                case let .chatsSlice(_, c):
                     chats = c
                 }
-
+                
                 let parsedPeers = AccumulatedPeers(transaction: transaction, chats: chats, users: [])
-
+                
                 if let firstId = chats.first?.peerId, let updatedPeer = parsedPeers.get(firstId), updatedPeer.id == peer.id {
                     return postbox.transaction { transaction -> Peer in
                         updatePeers(transaction: transaction, accountPeerId: accountPeerId, peers: parsedPeers)
@@ -1097,11 +1062,9 @@ func _internal_updatedRemotePeer(accountPeerId: PeerId, postbox: Postbox, networ
             return postbox.transaction { transaction -> Signal<Peer, UpdatedRemotePeerError> in
                 let chats: [Api.Chat]
                 switch result {
-                case let .chats(chatsData):
-                    let c = chatsData.chats
+                case let .chats(c):
                     chats = c
-                case let .chatsSlice(chatsSliceData):
-                    let c = chatsSliceData.chats
+                case let .chatsSlice(_, c):
                     chats = c
                 }
                 
@@ -1139,8 +1102,7 @@ func _internal_refreshGlobalPostSearchState(account: Account) -> Signal<Never, N
             }
             transaction.updatePreferencesEntry(key: PreferencesKeys.globalPostSearchState(), { _ in
                 switch result {
-                case let .searchPostsFlood(searchPostsFloodData):
-                    let (_, totalDaily, remains, waitTill, starsAmount) = (searchPostsFloodData.flags, searchPostsFloodData.totalDaily, searchPostsFloodData.remains, searchPostsFloodData.waitTill, searchPostsFloodData.starsAmount)
+                case let .searchPostsFlood(_, totalDaily, remains, waitTill, starsAmount):
                     return PreferencesEntry(TelegramGlobalPostSearchState(
                         totalFreeSearches: totalDaily,
                         remainingFreeSearches: remains,

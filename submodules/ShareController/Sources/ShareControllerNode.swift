@@ -547,7 +547,7 @@ final class ShareControllerNode: ViewControllerTracingNode, ASScrollViewDelegate
                                 if showNamesValue {
                                     return generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Check"), color: theme.contextMenu.primaryColor)
                                 } else {
-                                    return UIImage()
+                                    return nil
                                 }
                             }, action: { _, _ in
                                 self?.showNames.set(true)
@@ -556,7 +556,7 @@ final class ShareControllerNode: ViewControllerTracingNode, ASScrollViewDelegate
                                 if !showNamesValue {
                                     return generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Check"), color: theme.contextMenu.primaryColor)
                                 } else {
-                                    return UIImage()
+                                    return nil
                                 }
                             }, action: { _, _ in
                                 self?.showNames.set(false)
@@ -592,7 +592,7 @@ final class ShareControllerNode: ViewControllerTracingNode, ASScrollViewDelegate
                     ])
                     return ContextController.Items(content: .list(items), animationCache: nil)
                 }
-                let contextController = makeContextController(presentationData: presentationData, source: .reference(ShareContextReferenceContentSource(sourceNode: node, customPosition: CGPoint(x: 0.0, y: fromForeignApp ? -116.0 : 0.0))), items: items, gesture: gesture)
+                let contextController = ContextController(presentationData: presentationData, source: .reference(ShareContextReferenceContentSource(sourceNode: node, customPosition: CGPoint(x: 0.0, y: fromForeignApp ? -116.0 : 0.0))), items: items, gesture: gesture)
                 contextController.immediateItemsTransitionAnimation = true
                 strongSelf.present?(contextController)
             }
@@ -2034,7 +2034,6 @@ private func threadList(accountPeerId: EnginePeer.Id, postbox: Postbox, peerId: 
                     presence: nil,
                     hasUnseenMentions: false,
                     hasUnseenReactions: false,
-                    hasUnseenPollVotes: false,
                     forumTopicData: nil,
                     topForumTopicItems: [],
                     hasFailed: false,
@@ -2110,7 +2109,6 @@ private func threadList(accountPeerId: EnginePeer.Id, postbox: Postbox, peerId: 
                     presence: nil,
                     hasUnseenMentions: false,
                     hasUnseenReactions: false,
-                    hasUnseenPollVotes: false,
                     forumTopicData: nil,
                     topForumTopicItems: [],
                     hasFailed: false,

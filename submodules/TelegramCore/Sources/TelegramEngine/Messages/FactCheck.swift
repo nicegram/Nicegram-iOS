@@ -16,10 +16,10 @@ func _internal_editMessageFactCheck(account: Account, messageId: EngineMessage.I
         return account.network.request(Api.functions.messages.editFactCheck(
             peer: inputPeer,
             msgId: messageId.id,
-            text: .textWithEntities(.init(
+            text: .textWithEntities(
                 text: text,
                 entities: apiEntitiesFromMessageTextEntities(entities, associatedPeers: SimpleDictionary())
-            ))
+            )
         ))
         |> map(Optional.init)
         |> `catch` { _ -> Signal<Api.Updates?, NoError> in
@@ -96,13 +96,11 @@ func _internal_getMessagesFactCheckByPeerId(account: Account, peerId: EnginePeer
                 for result in results {
                     let messageId = messageIds[index]
                     switch result {
-                    case let .factCheck(factCheckData):
-                        let (_, country, text, hash) = (factCheckData.flags, factCheckData.country, factCheckData.text, factCheckData.hash)
+                    case let .factCheck(_, country, text, hash):
                         let content: FactCheckMessageAttribute.Content
                         if let text, let country {
                             switch text {
-                            case let .textWithEntities(textWithEntitiesData):
-                                let (text, entities) = (textWithEntitiesData.text, textWithEntitiesData.entities)
+                            case let .textWithEntities(text, entities):
                                 content = .Loaded(text: text, entities: messageTextEntitiesFromApiEntities(entities), country: country)
                             }
                         } else {

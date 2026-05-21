@@ -12,9 +12,6 @@ internal func _internal_updateIsPremiumRequiredToContact(account: Account, peerI
         var inputUsers: [Api.InputUser] = []
         var ids: [PeerId] = []
         for id in peerIds {
-            guard id != account.peerId else {
-                continue
-            }
             if let peer = transaction.getPeer(id), let inputUser = apiInputUser(peer) {
                 if peer.isPremium {
                     if let cachedData = transaction.getPeerCachedData(peerId: id) as? CachedUserData {
@@ -54,8 +51,7 @@ internal func _internal_updateIsPremiumRequiredToContact(account: Account, peerI
                                 flags.insert(.premiumRequired)
                                 sendPaidMessageStars = nil
                                 requirements[peerId] = .premium
-                            case let .requirementToContactPaidMessages(requirementToContactPaidMessagesData):
-                                let starsAmount = requirementToContactPaidMessagesData.starsAmount
+                            case let .requirementToContactPaidMessages(starsAmount):
                                 flags.remove(.premiumRequired)
                                 sendPaidMessageStars = StarsAmount(value: starsAmount, nanos: 0)
                                 requirements[peerId] = .stars(StarsAmount(value: starsAmount, nanos: 0))

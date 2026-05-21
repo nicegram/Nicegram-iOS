@@ -47,7 +47,7 @@ swift_library(
         "Sources/**/*.swift",
     ]),
     copts = [
-        "-warnings-as-errors",
+        #"-warnings-as-errors",
     ],
     data = [
         ":WallpaperBackgroundNodeBundle",
@@ -68,9 +68,6 @@ swift_library(
         "//submodules/AnimatedStickerNode:AnimatedStickerNode",
         "//submodules/TelegramAnimatedStickerNode:TelegramAnimatedStickerNode",
         "//submodules/Components/HierarchyTrackingLayer:HierarchyTrackingLayer",
-        "//submodules/TelegramUI/Components/EdgeEffect",
-        "//submodules/ComponentFlow",
-        "//submodules/Components/ComponentDisplayAdapters",
     ],
     visibility = [
         "//visibility:public",

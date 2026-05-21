@@ -45,12 +45,6 @@ public struct PresentationResourcesItemList {
         })
     }
     
-    public static func disclosureSwitchLockImage(_ theme: PresentationTheme) -> UIImage? {
-        return theme.image(PresentationResourceKey.itemListDisclosureSwitchLock.rawValue, { theme in
-            return generateTintedImage(image: UIImage(bundleImageName: "Item List/SwitchLockIcon"), color: theme.list.disclosureArrowColor)
-        })
-    }
-    
     public static func checkIconImage(_ theme: PresentationTheme) -> UIImage? {
         return theme.image(PresentationResourceKey.itemListCheckIcon.rawValue, { theme in
             return generateItemListCheckIcon(color: theme.list.itemAccentColor)
@@ -141,26 +135,12 @@ public struct PresentationResourcesItemList {
         return theme.image(PresentationResourceKey.itemListReorderIndicatorIcon.rawValue, { theme in
             return generateImage(CGSize(width: 17.0, height: 14.0), rotatedContext: { size, context in
                 context.clear(CGRect(origin: CGPoint(), size: size))
-                context.setFillColor(theme.list.itemPlaceholderTextColor.cgColor)
+                context.setFillColor(theme.list.itemBlocksSeparatorColor.cgColor)
 
                 let lineHeight = 1.0 + UIScreenPixel
                 context.addPath(CGPath(roundedRect: CGRect(x: 0.0, y: UIScreenPixel, width: 17.0, height: lineHeight), cornerWidth: lineHeight / 2.0, cornerHeight: lineHeight / 2.0, transform: nil))
                 context.addPath(CGPath(roundedRect: CGRect(x: 0.0, y: UIScreenPixel + 6.0, width: 17.0, height: lineHeight), cornerWidth: lineHeight / 2.0, cornerHeight: lineHeight / 2.0, transform: nil))
                 context.addPath(CGPath(roundedRect: CGRect(x: 0.0, y: UIScreenPixel + 12.0, width: 17.0, height: lineHeight), cornerWidth: lineHeight / 2.0, cornerHeight: lineHeight / 2.0, transform: nil))
-                context.fillPath()
-            })
-        })
-    }
-    
-    public static func itemListAddIndicatorIcon(_ theme: PresentationTheme) -> UIImage? {
-        return theme.image(PresentationResourceKey.itemListAddIndicatorIcon.rawValue, { theme in
-            return generateImage(CGSize(width: 17.0, height: 15.0), rotatedContext: { size, context in
-                context.clear(CGRect(origin: CGPoint(), size: size))
-                context.setFillColor(theme.list.itemPlaceholderTextColor.cgColor)
-
-                let lineHeight = 1.0 + UIScreenPixel
-                context.addPath(CGPath(roundedRect: CGRect(x: 1.0, y: 7.0, width: 15.0, height: lineHeight), cornerWidth: lineHeight / 2.0, cornerHeight: lineHeight / 2.0, transform: nil))
-                context.addPath(CGPath(roundedRect: CGRect(x: 8.0, y: 0.0, width: lineHeight, height: 15.0), cornerWidth: lineHeight / 2.0, cornerHeight: lineHeight / 2.0, transform: nil))
                 context.fillPath()
             })
         })
@@ -335,12 +315,6 @@ public struct PresentationResourcesItemList {
         })
     }
     
-    public static func scanIcon(_ theme: PresentationTheme) -> UIImage? {
-        return theme.image(PresentationResourceKey.itemListScanIcon.rawValue, { theme in
-            return generateTintedImage(image: UIImage(bundleImageName: "Media Editor/Scan"), color: theme.list.itemAccentColor)
-        })
-    }
-    
     public static func addBoostsIcon(_ theme: PresentationTheme) -> UIImage? {
         return theme.image(PresentationResourceKey.itemListAddBoostsIcon.rawValue, { theme in
             return generateTintedImage(image: UIImage(bundleImageName: "Premium/Gift"), color: theme.list.itemAccentColor)
@@ -371,20 +345,20 @@ public struct PresentationResourcesItemList {
         })
     }
     
-    public static func cornersImage(_ theme: PresentationTheme, top: Bool, bottom: Bool, glass: Bool = false) -> UIImage? {
+    public static func cornersImage(_ theme: PresentationTheme, top: Bool, bottom: Bool) -> UIImage? {
         if !top && !bottom {
             return nil
         }
         let key: PresentationResourceKey
         if top && bottom {
-            key = glass ? PresentationResourceKey.itemListCornersBothGlass : PresentationResourceKey.itemListCornersBoth
+            key = PresentationResourceKey.itemListCornersBoth
         } else if top {
-            key = glass ? PresentationResourceKey.itemListCornersTopGlass : PresentationResourceKey.itemListCornersTop
+            key = PresentationResourceKey.itemListCornersTop
         } else {
-            key = glass ? PresentationResourceKey.itemListCornersBottomGlass : PresentationResourceKey.itemListCornersBottom
+            key = PresentationResourceKey.itemListCornersBottom
         }
         return theme.image(key.rawValue, { theme in
-            return generateImage(CGSize(width: 56.0, height: 56.0), rotatedContext: { (size, context) in
+            return generateImage(CGSize(width: 50.0, height: 50.0), rotatedContext: { (size, context) in
                 let bounds = CGRect(origin: CGPoint(), size: size)
                 context.setFillColor(theme.list.blocksBackgroundColor.cgColor)
                 context.fill(bounds)
@@ -400,11 +374,10 @@ public struct PresentationResourcesItemList {
                     corners.insert(.bottomLeft)
                     corners.insert(.bottomRight)
                 }
-                let cornerRadius: CGFloat = glass ? 26.0 : 11.0
-                let path = UIBezierPath(roundedRect: bounds, byRoundingCorners: corners, cornerRadii: CGSize(width: cornerRadius, height: cornerRadius))
+                let path = UIBezierPath(roundedRect: bounds, byRoundingCorners: corners, cornerRadii: CGSize(width: 11.0, height: 11.0))
                 context.addPath(path.cgPath)
                 context.fillPath()
-            })?.stretchableImage(withLeftCapWidth: 28, topCapHeight: 28)
+            })?.stretchableImage(withLeftCapWidth: 25, topCapHeight: 25)
         })
     }
     

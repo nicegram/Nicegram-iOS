@@ -10,7 +10,7 @@ public class ListMessageNode: ListViewItemNode {
     var interaction: ListMessageItemInteraction?
     
     required init() {
-        super.init(layerBacked: false)
+        super.init(layerBacked: false, dynamicBounce: false)
     }
     
     func setupItem(_ item: ListMessageItem) {

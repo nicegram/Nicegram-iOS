@@ -1,4 +1,5 @@
 import Foundation
+import Postbox
 import TelegramCore
 import SwiftSignalKit
 
@@ -16,13 +17,15 @@ private final class DocumentContext {
 
 final class SecureIdVerificationDocumentsContext {
     private let context: SecureIdAccessContext
-    private let engine: TelegramEngine
+    private let postbox: Postbox
+    private let network: Network
     private let update: (Int64, SecureIdVerificationLocalDocumentState) -> Void
     private var contexts: [Int64: DocumentContext] = [:]
     private(set) var uploadedFiles: [Data: Data] = [:]
     
-    init(engine: TelegramEngine, context: SecureIdAccessContext, update: @escaping (Int64, SecureIdVerificationLocalDocumentState) -> Void) {
-        self.engine = engine
+    init(postbox: Postbox, network: Network, context: SecureIdAccessContext, update: @escaping (Int64, SecureIdVerificationLocalDocumentState) -> Void) {
+        self.postbox = postbox
+        self.network = network
         self.context = context
         self.update = update
     }
@@ -37,7 +40,7 @@ final class SecureIdVerificationDocumentsContext {
                     if self.contexts[info.id] == nil {
                         let disposable = MetaDisposable()
                         self.contexts[info.id] = DocumentContext(disposable: disposable)
-                        disposable.set((uploadSecureIdFile(context: self.context, engine: self.engine, resource: EngineMediaResource(info.resource))
+                        disposable.set((uploadSecureIdFile(context: self.context, postbox: self.postbox, network: self.network, resource: info.resource)
                         |> deliverOnMainQueue).start(next: { [weak self] result in
                             if let strongSelf = self {
                                 switch result {

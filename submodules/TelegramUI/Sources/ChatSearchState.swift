@@ -1,4 +1,5 @@
 import Foundation
+import Postbox
 import TelegramCore
 
 struct ChatSearchState: Equatable {

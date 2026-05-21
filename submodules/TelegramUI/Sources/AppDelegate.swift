@@ -1,9 +1,8 @@
 // Nicegram imports
-import CoreAnalytics
 import FeatAccountBackup
-import FeatCalls
 import FeatOnboarding
 import NGAiChat
+import NGAnalytics
 import NGAppCache
 import NGCore
 import NGData
@@ -11,6 +10,8 @@ import NGDataSharing
 import NGEntryPoint
 import NGEnv
 import NGLogging
+import NGLottie
+import NGRemoteConfig
 import NGRepoUser
 import NGStrings
 import NGUtils
@@ -60,15 +61,13 @@ import TelegramUIDeclareEncodables
 import ContextMenuScreen
 import MetalEngine
 import RecaptchaEnterprise
-import NavigationBarImpl
-import ContextUI
-import ContextControllerImpl
 
 #if canImport(AppCenter)
 import AppCenter
 import AppCenterCrashes
 #endif
 
+import FirebaseCore
 private let handleVoipNotifications = false
 
 private var testIsLaunched = false
@@ -283,7 +282,6 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
     private let authContext = Promise<UnauthorizedApplicationContext?>()
     private let authContextDisposable = MetaDisposable()
     
-    private let loginDisposable = MetaDisposable()
     private let logoutDisposable = MetaDisposable()
     
     private let openNotificationSettingsWhenReadyDisposable = MetaDisposable()
@@ -375,6 +373,10 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
         let _ = notificationTokenPromise.get().start(next: { token in
             self.regularDeviceToken.set(.single(token))
         })
+
+        if #available(iOS 12.0, *) {
+            FirebaseApp.configure()
+        }
         
         let appVersion = (Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String) ?? "unknown"
         
@@ -434,32 +436,24 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
                 apiKey: NGENV.ng_api_key,
                 enableLogging: ngEnableLogging,
                 isAppStoreBuild: buildConfig.isAppStoreBuild,
-                isProd: NGENV.is_prod,
                 premiumProductId: NGENV.premium_bundle,
                 privacyUrl: URL(string: "https://nicegram.app/privacy-policy")!,
                 referralBot: NGENV.referral_bot,
-                remoteConfigCacheDurationSeconds: NGENV.remote_config_cache_duration_seconds,
                 telegramAuthBot: NGENV.telegram_auth_bot,
                 termsUrl: URL(string: "https://nicegram.app/terms-of-use")!,
                 webSocketUrl: NGENV.websocket_url
             ),
-            accountBackupBridge: {
-                AccountBackupBridgeImpl(sharedContextProvider: sharedContextProvider)
-            },
-            callKitIntegrationImpl: {
-                nicegramCallKitIntegration
-            },
             chatListPeersProvider: {
                 ChatListPeersProviderImpl(contextProvider: contextProvider)
             },
-            idleTimerManager: {
-                IdleTimerManagerImpl(contextProvider: contextProvider)
+            firebaseAnalyticsSender: {
+                FirebaseAnalyticsSender()
             },
-            keywordsBridge: {
-                KeywordsBridgeImpl(contextProvider: contextProvider)
+            lottieView: {
+                LottieViewImpl()
             },
-            telegramChatHistoryProvider: {
-                TelegramChatHistoryProviderImpl(contextProvider: contextProvider)
+            remoteConfig: {
+                RemoteConfigServiceImpl.shared
             },
             telegramChatInviteChecker: {
                 TelegramChatInviteCheckerImpl(contextProvider: contextProvider)
@@ -479,43 +473,23 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
             telegramMessageSender: {
                 TelegramMessageSenderImpl(contextProvider: contextProvider)
             },
+            telegramMessagesProvider: {
+                TelegramMessagesProviderImpl(contextProvider: contextProvider)
+            },
             telegramNavigator: {
                 TelegramNavigatorImpl(contextProvider: contextProvider)
             },
             telegramPeerImageProvider: {
                 TelegramPeerImageProviderImpl(contextProvider: contextProvider)
             },
-            telegramPeerProvider: {
-                TelegramPeerProviderImpl(contextProvider: contextProvider)
-            },
-            telegramStoryPoster: {
-                TelegramStoryPosterImpl(contextProvider: contextProvider)
+            telegramPeerInfoProvider: {
+                TelegramPeerInfoProviderImpl(contextProvider: contextProvider)
             },
             telegramThemeProvider: {
                 TelegramThemeProviderImpl(sharedContextProvider: sharedContextProvider)
             },
-            telegramWebAppOpener: {
-                TelegramWebAppOpenerImpl(contextProvider: contextProvider)
-            },
-            userMessagesHistoryProvider: {
-                UserMessagesHistoryProviderImpl(contextProvider: contextProvider)
-            },
             urlOpener: {
                 UrlOpenerImpl(contextProvider: contextProvider)
-            },
-            webRtcBridge: {
-                WebRtcBridgeImpl(
-                    sharedCallAudioContext: {
-                        NicegramCallsAudioContextImpl(
-                            sharedContext:
-                                SharedCallAudioContext.get(
-                                    audioSession: sharedAudioSession,
-                                    callKitIntegration: .shared,
-                                    defaultToSpeaker: false
-                                )
-                        )
-                    }
-                )
             },
             walletData: .init(
                 env: {
@@ -534,13 +508,33 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
                         stonfiNicegramApiUrl: NGENV.wallet.stonfiNicegramApiUrl
                     )
                 },
-                telegramContactsProvider: {
-                    TelegramContactsProviderImpl(contextProvider: contextProvider)
+                contactImageProvider: {
+                    ContactImageProviderImpl(contextProvider: contextProvider)
+                },
+                contactsRetriever: {
+                    ContactsRetrieverImpl(contextProvider: contextProvider)
                 },
                 walletVerificationInterceptor: {
                     WalletVerificationInterceptorImpl(sharedContextProvider: sharedContextProvider)
                 }
             )
+        )
+        AccountBackupInitializer().initialize(
+            accountsImporter: {
+                AccountsImporterImpl(
+                    sharedContextProvider: sharedContextProvider
+                )
+            },
+            accountsRemover: {
+                AccountsRemoverImpl(
+                    sharedContextProvider: sharedContextProvider
+                )
+            },
+            activeAccountsProvider: {
+                ActiveAccountsProviderImpl(
+                    sharedContextProvider: sharedContextProvider
+                )
+            }
         )
         accountManagerCallbacks = AccountManagerCallbacks(
             onRemoteLogout: { id in
@@ -550,68 +544,21 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
                 }
             }
         )
+        AdsgramPinWebViewLoader(contextProvider: contextProvider).initialize()
+        
+        // Nicegram Unblock
+        let _ = (self.context.get()
+        |> take(1)
+        |> deliverOnMainQueue).start(next: { context in
+            if let context = context {
+                Queue().async {
+                    self.fetchNGUserSettings(context.context.account.peerId.id._internalGetInt64Value())
+                }
+            }
+        })
+        //
         
         let launchStartTime = CFAbsoluteTimeGetCurrent()
-        
-        defaultNavigationBarImpl = { presentationData in
-            return NavigationBarImpl(presentationData: presentationData)
-        }
-        makeContextControllerImpl = { context, presentationData, configuration, recognizer, gesture, workaroundUseLegacyImplementation, disableScreenshots, hideReactionPanelTail in
-            return ContextControllerImpl(
-                context: context,
-                presentationData: presentationData,
-                configuration: configuration,
-                recognizer: recognizer,
-                gesture: gesture,
-                workaroundUseLegacyImplementation: workaroundUseLegacyImplementation,
-                disableScreenshots: disableScreenshots,
-                hideReactionPanelTail: hideReactionPanelTail
-            )
-        }
-        makeContextControllerActionsStackNodeImpl = { context, getController, requestDismiss, requestUpdate in
-            return ContextControllerActionsStackNodeImpl(
-                context: context,
-                getController: getController,
-                requestDismiss: requestDismiss,
-                requestUpdate: requestUpdate
-            )
-        }
-        makeContextControllerActionsListStackItemImpl = { id, items, reactionItems, previewReaction, tip, tipSignal, dismissed in
-            return ContextControllerActionsListStackItem(
-                id: id,
-                items: items,
-                reactionItems: reactionItems,
-                previewReaction: previewReaction,
-                tip: tip,
-                tipSignal: tipSignal,
-                dismissed: dismissed
-            )
-        }
-        makeContextActionNodeImpl = { presentationData, action, getController, actionSelected, requestLayout, requestUpdateAction in
-            return ContextActionNode(
-                presentationData: presentationData,
-                action: action,
-                getController: getController,
-                actionSelected: actionSelected,
-                requestLayout: requestLayout,
-                requestUpdateAction: requestUpdateAction
-            )
-        }
-        makePeekControllerImpl = { presentationData, content, sourceView, activateImmediately in
-            return PeekControllerImpl(
-                presentationData: presentationData,
-                content: content,
-                sourceView: sourceView,
-                activateImmediately: activateImmediately
-            )
-        }
-        makePinchControllerImpl = { sourceNode, disableScreenshots, getContentAreaInScreenSpace in
-            return PinchControllerImpl(
-                sourceNode: sourceNode,
-                disableScreenshots: disableScreenshots,
-                getContentAreaInScreenSpace: getContentAreaInScreenSpace
-            )
-        }
         
         let (window, hostView) = nativeWindowHostView()
         let statusBarHost = ApplicationStatusBarHost(scene: window.windowScene)
@@ -761,94 +708,80 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
             }
         }
         
-        let networkArguments = NetworkInitializationArguments(
-            apiId: apiId,
-            apiHash: apiHash,
-            languagesCategory: languagesCategory,
-            appVersion: appVersion,
-            voipMaxLayer: PresentationCallManagerImpl.voipMaxLayer,
-            voipVersions: PresentationCallManagerImpl.voipVersions(includeExperimental: true, includeReference: false).map { version, supportsVideo -> CallSessionManagerImplementationVersion in
-                CallSessionManagerImplementationVersion(version: version, supportsVideo: supportsVideo)
-            },
-            appData: self.regularDeviceToken.get() |> map { token in
-                let tokenEnvironment: String
-                #if DEBUG
-                tokenEnvironment = "sandbox"
-                #else
-                tokenEnvironment = "production"
-                #endif
-                
-                let data = buildConfig.bundleData(withAppToken: token, tokenType: "apns", tokenEnvironment: tokenEnvironment, signatureDict: signatureDict)
-                if let data = data, let _ = String(data: data, encoding: .utf8) {
+        let networkArguments = NetworkInitializationArguments(apiId: apiId, apiHash: apiHash, languagesCategory: languagesCategory, appVersion: appVersion, voipMaxLayer: PresentationCallManagerImpl.voipMaxLayer, voipVersions: PresentationCallManagerImpl.voipVersions(includeExperimental: true, includeReference: false).map { version, supportsVideo -> CallSessionManagerImplementationVersion in
+            CallSessionManagerImplementationVersion(version: version, supportsVideo: supportsVideo)
+        }, appData: self.regularDeviceToken.get()
+        |> map { token in
+            let tokenEnvironment: String
+            #if DEBUG
+            tokenEnvironment = "sandbox"
+            #else
+            tokenEnvironment = "production"
+            #endif
+            
+            let data = buildConfig.bundleData(withAppToken: token, tokenType: "apns", tokenEnvironment: tokenEnvironment, signatureDict: signatureDict)
+            if let data = data, let _ = String(data: data, encoding: .utf8) {
+            } else {
+                Logger.shared.log("data", "can't deserialize")
+            }
+            return data
+        }, externalRequestVerificationStream: self.firebaseRequestVerificationSecretStream.get(), externalRecaptchaRequestVerification: { method, siteKey in
+            return Signal { subscriber in
+                let recaptchaClient: Promise<RecaptchaClient>
+                if let current = self.recaptchaClientsBySiteKey[siteKey] {
+                    recaptchaClient = current
                 } else {
-                    Logger.shared.log("data", "can't deserialize")
-                }
-                return data
-            },
-            externalRequestVerificationStream: self.firebaseRequestVerificationSecretStream.get(),
-            externalRecaptchaRequestVerification: { method, siteKey in
-                return Signal<String?, NoError> { subscriber in
-                    let recaptchaClient: Promise<RecaptchaClient>
-                    if let current = self.recaptchaClientsBySiteKey[siteKey] {
-                        recaptchaClient = current
-                    } else {
-                        recaptchaClient = Promise<RecaptchaClient>()
-                        self.recaptchaClientsBySiteKey[siteKey] = recaptchaClient
-                        
-                        Recaptcha.fetchClient(withSiteKey: siteKey) { client, error in
-                            Queue.mainQueue().async {
-                                guard let client else {
-                                    Logger.shared.log("App \(self.episodeId)", "RecaptchaClient creation error: \(String(describing: error)).")
-                                    return
-                                }
-                                recaptchaClient.set(.single(client))
+                    recaptchaClient = Promise<RecaptchaClient>()
+                    self.recaptchaClientsBySiteKey[siteKey] = recaptchaClient
+                    
+                    Recaptcha.fetchClient(withSiteKey: siteKey) { client, error in
+                        Queue.mainQueue().async {
+                            guard let client else {
+                                Logger.shared.log("App \(self.episodeId)", "RecaptchaClient creation error: \(String(describing: error)).")
+                                return
                             }
+                            recaptchaClient.set(.single(client))
                         }
                     }
-                    
-                    return (recaptchaClient.get()
-                    |> take(1)
-                    |> mapToSignal { recaptchaClient -> Signal<String?, NoError> in
-                        return Signal { subscriber in
-                            var recaptchaAction: RecaptchaAction?
-                            switch method {
-                            case "signup":
-                                recaptchaAction = RecaptchaAction.signup
-                            default:
-                                break
-                            }
-                            
-                            guard let recaptchaAction else {
-                                subscriber.putNext(nil)
-                                subscriber.putCompletion()
-                                
-                                return EmptyDisposable
-                            }
-                            recaptchaClient.execute(withAction: recaptchaAction) { token, error in
-                                if let token {
-                                    subscriber.putNext(token)
-                                    Logger.shared.log("App \(self.episodeId)", "RecaptchaClient executed successfully")
-                                } else {
-                                    subscriber.putNext(nil)
-                                    Logger.shared.log("App \(self.episodeId)", "RecaptchaClient execute error: \(String(describing: error))")
-                                }
-                                subscriber.putCompletion()
-                            }
-                            
-                            return ActionDisposable {
-                            }
-                        }
-                        |> runOn(Queue.mainQueue())
-                    }).startStandalone(next: subscriber.putNext, error: subscriber.putError, completed: subscriber.putCompletion)
                 }
-                |> runOn(Queue.mainQueue())
-            },
-            autolockDeadine: autolockDeadine,
-            encryptionProvider: OpenSSLEncryptionProvider(),
-            deviceModelName: nil,
-            useBetaFeatures: !buildConfig.isAppStoreBuild,
-            isICloudEnabled: buildConfig.isICloudEnabled
-        )
+                
+                return (recaptchaClient.get()
+                |> take(1)
+                |> mapToSignal { recaptchaClient -> Signal<String?, NoError> in
+                    return Signal { subscriber in
+                        var recaptchaAction: RecaptchaAction?
+                        switch method {
+                        case "signup":
+                            recaptchaAction = RecaptchaAction.signup
+                        default:
+                            break
+                        }
+                        
+                        guard let recaptchaAction else {
+                            subscriber.putNext(nil)
+                            subscriber.putCompletion()
+                            
+                            return EmptyDisposable
+                        }
+                        recaptchaClient.execute(withAction: recaptchaAction) { token, error in
+                            if let token {
+                                subscriber.putNext(token)
+                                Logger.shared.log("App \(self.episodeId)", "RecaptchaClient executed successfully")
+                            } else {
+                                subscriber.putNext(nil)
+                                Logger.shared.log("App \(self.episodeId)", "RecaptchaClient execute error: \(String(describing: error))")
+                            }
+                            subscriber.putCompletion()
+                        }
+                        
+                        return ActionDisposable {
+                        }
+                    }
+                    |> runOn(Queue.mainQueue())
+                }).startStandalone(next: subscriber.putNext, error: subscriber.putError, completed: subscriber.putCompletion)
+            }
+            |> runOn(Queue.mainQueue())
+        }, autolockDeadine: autolockDeadine, encryptionProvider: OpenSSLEncryptionProvider(), deviceModelName: nil, useBetaFeatures: !buildConfig.isAppStoreBuild, isICloudEnabled: buildConfig.isICloudEnabled)
         
         guard let appGroupUrl = maybeAppGroupUrl else {
             self.mainWindow?.presentNative(UIAlertController(title: nil, message: "Error 2", preferredStyle: .alert))
@@ -863,19 +796,8 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
             LoggingSettings.defaultSettings = LoggingSettings(logToFile: false, logToConsole: false, redactSensitiveData: true)
         }
         
-        let isUITest = CommandLine.arguments.contains("--ui-test")
-
-        let rootPath: String
-        if isUITest {
-            let testDataPath = appGroupUrl.path + "/telegram-ui-tests-data"
-            let _ = try? FileManager.default.removeItem(atPath: testDataPath)
-            rootPath = rootPathForBasePath(testDataPath)
-        } else {
-            rootPath = rootPathForBasePath(appGroupUrl.path)
-        }
-        if !isUITest {
-            performAppGroupUpgrades(appGroupPath: appGroupUrl.path, rootPath: rootPath)
-        }
+        let rootPath = rootPathForBasePath(appGroupUrl.path)
+        performAppGroupUpgrades(appGroupPath: appGroupUrl.path, rootPath: rootPath)
         
         let deviceSpecificEncryptionParameters = BuildConfig.deviceSpecificEncryptionParameters(rootPath, baseAppBundleId: baseAppBundleId)
         let encryptionParameters = ValueBoxEncryptionParameters(forceEncryptionIfNoSet: false, key: ValueBoxEncryptionParameters.Key(data: deviceSpecificEncryptionParameters.key)!, salt: ValueBoxEncryptionParameters.Salt(data: deviceSpecificEncryptionParameters.salt)!)
@@ -1152,8 +1074,7 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
             if #available(iOS 10.3, *) {
                 var icons = [
                     // Nicegram, default AppIcon changed
-                    PresentationAppIcon(name: "PaperPlane", imageName: "PaperPlane", isDefault: buildConfig.isAppStoreBuild),
-                    PresentationAppIcon(name: "NewBlack", imageName: "NewBlack"),
+                    PresentationAppIcon(name: "NewBlack", imageName: "NewBlack", isDefault: buildConfig.isAppStoreBuild),
                     PresentationAppIcon(name: "NewWhite", imageName: "NewWhite"),
                     PresentationAppIcon(name: "New3", imageName: "New3"),
                     PresentationAppIcon(name: "BlueIcon", imageName: "BlueIcon"),
@@ -1189,12 +1110,16 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
                 return nil
             }
         }, requestSetAlternateIconName: { name, completion in
-            application.setAlternateIconName(name, completionHandler: { error in
-                if let error = error {
-                   Logger.shared.log("App \(self.episodeId)", "failed to set alternate icon with error \(error.localizedDescription)")
-                }
-                completion(error == nil)
-            })
+            if #available(iOS 10.3, *) {
+                application.setAlternateIconName(name, completionHandler: { error in
+                    if let error = error {
+                       Logger.shared.log("App \(self.episodeId)", "failed to set alternate icon with error \(error.localizedDescription)")
+                    }
+                    completion(error == nil)
+                })
+            } else {
+                completion(false)
+            }
         }, forceOrientation: { orientation in
             let value = orientation.rawValue
             if #available(iOSApplicationExtension 16.0, iOS 16.0, *) {
@@ -1235,43 +1160,7 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
 
         telegramUIDeclareEncodables()
         initializeAccountManagement()
-
-        if isUITest,
-           let deleteIdx = CommandLine.arguments.firstIndex(of: "--delete-test-account"),
-           deleteIdx + 1 < CommandLine.arguments.count
-        {
-            let phone = CommandLine.arguments[deleteIdx + 1]
-            let digits = phone.hasPrefix("+") ? String(phone.dropFirst()) : phone
-            guard digits.count == 10, digits.hasPrefix("99966") else {
-                preconditionFailure("--delete-test-account phone must match 99966XYYYY")
-            }
-            let dcDigit = digits[digits.index(digits.startIndex, offsetBy: 5)]
-            let phoneCode = String(repeating: dcDigit, count: 5)
-
-            let window = self.window!
-            window.makeKeyAndVisible()
-
-            NSLog("[DeleteAccount] starting for +\(digits)")
-            let _ = test_loginAndDeleteAccount(
-                rootPath: rootPath,
-                accountManager: accountManager,
-                networkArguments: networkArguments,
-                encryptionParameters: encryptionParameters,
-                phoneNumber: "+\(digits)",
-                phoneCode: phoneCode
-            ).start(error: { error in
-                NSLog("[DeleteAccount] error: \(error)")
-                preconditionFailure("test_loginAndDeleteAccount failed")
-            }, completed: {
-                NSLog("[DeleteAccount] completed")
-                DispatchQueue.main.async {
-                    window.accessibilityIdentifier = "DeleteAccount.Success"
-                }
-            })
-
-            return true
-        }
-
+        
         let pushRegistry = PKPushRegistry(queue: .main)
         if #available(iOS 9.0, *) {
             pushRegistry.desiredPushTypes = Set([.voIP])
@@ -1341,7 +1230,7 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
                 // Nicegram DB Changes
             }, openDoubleBottomFlow: { [weak self] selectedAccount in
                 self?.openDoubleBottomFlow(selectedAccount: selectedAccount)
-            }, appDelegate: self, testingEnvironment: isUITest)
+            }, appDelegate: self)
             
             presentationDataPromise.set(sharedContext.presentationData)
             
@@ -1420,8 +1309,6 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
                 return applicationBindings.pushIdleTimerExtension()
             }, activeAccounts: sharedContext.activeAccountContexts |> map { ($0.0?.account, $0.1.map { ($0.0, $0.1.account) }) }, liveLocationPolling: liveLocationPolling, watchTasks: .single(nil), inForeground: applicationBindings.applicationInForeground, hasActiveAudioSession: self.hasActiveAudioSession.get(), notificationManager: notificationManager, mediaManager: sharedContext.mediaManager, callManager: sharedContext.callManager, accountUserInterfaceInUse: { id in
                 return sharedContext.accountUserInterfaceInUse(id)
-            }, presentationData: {
-                return sharedContext.currentPresentationData.with({ $0 })
             })
             let sharedApplicationContext = SharedApplicationContext(sharedContext: sharedContext, notificationManager: notificationManager, wakeupManager: wakeupManager)
             sharedApplicationContext.sharedContext.mediaManager.overlayMediaManager.attachOverlayMediaController(sharedApplicationContext.overlayMediaController)
@@ -1688,6 +1575,24 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
                             }
                         })
                     }
+                    self.mainWindow.forEachViewController({ controller in
+                        if let controller = controller as? TabBarAccountSwitchController {
+                            if let rootController = self.mainWindow.viewController as? TelegramRootController {
+                                if let tabsController = rootController.viewControllers.first as? TabBarController {
+                                    for i in 0 ..< tabsController.controllers.count {
+                                        if let _ = tabsController.controllers[i] as? (SettingsController & ViewController) {
+                                            let sourceNodes = tabsController.sourceNodesForController(at: i)
+                                            if let sourceNodes = sourceNodes {
+                                                controller.dismiss(sourceNodes: sourceNodes)
+                                            }
+                                            return false
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        return true
+                    })
                     self.mainWindow.topLevelOverlayControllers = [context.sharedApplicationContext.overlayMediaController, context.notificationController]
                     (context.context.sharedContext as? SharedAccountContextImpl)?.notificationController = context.notificationController
                     var authorizeNotifications = true
@@ -1773,7 +1678,8 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
         } else {
             if #available(iOS 15.0, *),
                let rootController = window.rootViewController {
-                let controller = OnboardingRoot().makeController(
+                let controller = LaunchOnboardingFactory().makeController(
+                    launchOnboardingBridge: LaunchOnboardingBridgeImpl(),
                     onFinish: { [weak rootController] in
                         AppCache.wasOnboardingShown = true
                         
@@ -1789,51 +1695,8 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
             }
         }
         //
-        
-        // Nicegram, new account privacy settings
-        let loginDataSignal: Signal<[any AccountContext], NoError> =
-            self.sharedContextPromise.get()
-            |> take(1)
-            |> mapToSignal { sharedContext in
-                var baseline: Set<AccountRecordId>? = nil
-                
-                return sharedContext.sharedContext.activeAccountContexts
-                |> map { _, accounts, _ in
-                    accounts.map { ($0.0, $0.1 as any AccountContext) }
-                }
-                |> reduceLeft(value: [(AccountRecordId, any AccountContext)]()) { current, updated, emit in
-                    let updatedIds = Set(updated.map { $0.0 })
-                    
-                    if baseline == nil {
-                        baseline = updatedIds
-                    } else {
-                        let currentIds = baseline!
-                        let newIds = updatedIds.subtracting(currentIds)
 
-                        if !newIds.isEmpty {
-                            emit(updated.filter { newIds.contains($0.0) })
-                            baseline = updatedIds
-                        }
-                    }
-                    
-                    return updated
-                }
-                |> map { contextsWithIds in
-                    contextsWithIds.map { $0.1 }
-                }
-            }
-        
-        loginDisposable.set(
-            loginDataSignal.start(next: { newAccountContexts in
-                for context in newAccountContexts {
-                    Task {
-                        try await NGDefaultPrivacySettingsApplyer.applyDefaultPrivacySettings(for: context)
-                    }
-                }
-            })
-        )
-        //
-        
+
         let logoutDataSignal: Signal<(AccountManager, Set<PeerId>), NoError> = self.sharedContextPromise.get()
         |> take(1)
         |> mapToSignal { sharedContext -> Signal<(AccountManager<TelegramAccountManagerTypes>, Set<PeerId>), NoError> in
@@ -1923,9 +1786,9 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
         
         if let url = launchOptions?[.url] {
             if let url = url as? URL, url.scheme == "tg" || url.scheme == buildConfig.appSpecificUrlScheme {
-                self.openUrlWhenReady(url: url, external: true)
+                self.openUrlWhenReady(url: url)
             } else if let urlString = url as? String, urlString.lowercased().hasPrefix("tg:") || urlString.lowercased().hasPrefix("\(buildConfig.appSpecificUrlScheme):"), let url = URL(string: urlString) {
-                self.openUrlWhenReady(url: url, external: true)
+                self.openUrlWhenReady(url: url)
             }
         }
         
@@ -1947,6 +1810,31 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
             }
         }
         
+        /*if UIApplication.shared.isStatusBarHidden {
+            UIApplication.shared.internalSetStatusBarHidden(false, animation: .none)
+        }*/
+        
+        /*if #available(iOS 13.0, *) {
+            BGTaskScheduler.shared.register(forTaskWithIdentifier: baseAppBundleId + ".refresh", using: nil, launchHandler: { task in
+                let _ = (self.sharedContextPromise.get()
+                |> take(1)
+                |> deliverOnMainQueue).start(next: { sharedApplicationContext in
+                    
+                    sharedApplicationContext.wakeupManager.replaceCurrentExtensionWithExternalTime(completion: {
+                        task.setTaskCompleted(success: true)
+                    }, timeout: 29.0)
+                    let _ = (self.context.get()
+                    |> take(1)
+                    |> deliverOnMainQueue).start(next: { context in
+                        guard let context = context else {
+                            return
+                        }
+                        sharedApplicationContext.notificationManager.beginPollingState(account: context.context.account)
+                    })
+                })
+            })
+        }*/
+        
         self.maybeCheckForUpdates()
 
         #if canImport(AppCenter)
@@ -1958,9 +1846,9 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
         #endif
         
         if #available(iOS 13.0, *) {
-            let cleanupTaskId = "\(baseAppBundleId).cleanup"
+            let taskId = "\(baseAppBundleId).cleanup"
             
-            BGTaskScheduler.shared.register(forTaskWithIdentifier: cleanupTaskId, using: DispatchQueue.main) { task in
+            BGTaskScheduler.shared.register(forTaskWithIdentifier: taskId, using: DispatchQueue.main) { task in
                 Logger.shared.log("App \(self.episodeId)", "Executing cleanup task")
                 
                 let disposable = self.runCacheReindexTasks(lowImpact: true, completion: {
@@ -1976,11 +1864,11 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
             }
             
             BGTaskScheduler.shared.getPendingTaskRequests(completionHandler: { tasks in
-                if tasks.contains(where: { $0.identifier == cleanupTaskId }) {
+                if tasks.contains(where: { $0.identifier == taskId }) {
                     Logger.shared.log("App \(self.episodeId)", "Already have a cleanup task pending")
                     return
                 }
-                let request = BGProcessingTaskRequest(identifier: cleanupTaskId)
+                let request = BGProcessingTaskRequest(identifier: taskId)
                 request.requiresExternalPower = true
                 request.requiresNetworkConnectivity = false
                 
@@ -2097,7 +1985,7 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
                 }))
             }
         })
-                
+        
         return true
     }
     
@@ -2447,6 +2335,20 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
         }
         
         //cancelWindowPanGestures(view: self.mainWindow.hostView.containerView)
+// Nicegram NCG-6326 Apple Speech2Text
+        let _ = (self.context.get()
+        |> take(1)
+        |> deliverOnMainQueue).start(next: { authorizedApplicationContext in
+            if let authorizedApplicationContext {
+                let setDefaultSpeech2TextSettingsUseCase = NicegramSettingsModule.shared.setDefaultSpeech2TextSettingsUseCase()
+
+                setDefaultSpeech2TextSettingsUseCase(
+                    with: authorizedApplicationContext.context.account.peerId.id._internalGetInt64Value(),
+                    isTelegramPremium: authorizedApplicationContext.context.isPremium
+                )
+            }
+        })
+//
     }
     
     func applicationWillTerminate(_ application: UIApplication) {
@@ -2536,10 +2438,6 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
     }
 
     public func pushRegistry(_ registry: PKPushRegistry, didUpdate credentials: PKPushCredentials, for type: PKPushType) {
-        // Nicegram Calls
-        CallsModule.shared.pushTokenUpdater().onUpdate(pushCredentials: credentials, for: type)
-        //
-        
         if #available(iOS 9.0, *) {
             if case PKPushType.voIP = type {
                 Logger.shared.log("App \(self.episodeId)", "pushRegistry credentials: \(credentials.token as NSData)")
@@ -2563,15 +2461,6 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
     
     private func pushRegistryImpl(_ registry: PKPushRegistry, didReceiveIncomingPushWith payload: PKPushPayload, for type: PKPushType, completion: @escaping () -> Void) {
         Logger.shared.log("App \(self.episodeId) PushRegistry", "pushRegistry processing push notification")
-        
-        // Nicegram Calls
-        let callsManager = CallsModule.shared.callsManager()
-        let handled = callsManager.handleVoipPush(payload: payload.dictionaryPayload)
-        if handled {
-            completion()
-            return
-        }
-        //
         
         var decryptedPayloadAndAccountId: ([AnyHashable: Any], AccountRecordId)?
         
@@ -2967,30 +2856,20 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
             if let authContext = authContext, let confirmationCode = parseConfirmationCodeUrl(sharedContext: sharedContext, url: url) {
                 authContext.rootController.applyConfirmationCode(confirmationCode)
             } else if let context = context {
-                context.openUrl(url, external: true)
+                context.openUrl(url)
             } else if let authContext = authContext {
                 if let proxyData = parseProxyUrl(sharedContext: sharedContext, url: url) {
                     authContext.rootController.view.endEditing(true)
                     let presentationData = authContext.sharedContext.currentPresentationData.with { $0 }
-                    let controller = ProxyServerActionSheetController(sharedContext: authContext.sharedContext, presentationData: presentationData, accountManager: authContext.sharedContext.accountManager, postbox: authContext.account.postbox, network: authContext.account.network, server: proxyData, updatedPresentationData: nil)
+                    let controller = ProxyServerActionSheetController(presentationData: presentationData, accountManager: authContext.sharedContext.accountManager, postbox: authContext.account.postbox, network: authContext.account.network, server: proxyData, updatedPresentationData: nil)
                     authContext.rootController.currentWindow?.present(controller, on: PresentationSurfaceLevel.root, blockInteraction: false, completion: {})
                 } else if let secureIdData = parseSecureIdUrl(url) {
                     let presentationData = authContext.sharedContext.currentPresentationData.with { $0 }
-                    
-                    let alertController = textAlertController(
-                        sharedContext: authContext.sharedContext,
-                        title: nil,
-                        text: presentationData.strings.Passport_NotLoggedInMessage,
-                        actions: [
-                            TextAlertAction(type: .genericAction, title: presentationData.strings.Calls_NotNow, action: {
-                                if let callbackUrl = URL(string: secureIdCallbackUrl(with: secureIdData.callbackUrl, peerId: secureIdData.peerId, result: .cancel, parameters: [:])) {
-                                    UIApplication.shared.open(callbackUrl, options: [:], completionHandler: nil)
-                                }
-                            }),
-                            TextAlertAction(type: .defaultAction, title: presentationData.strings.Common_OK, action: {})
-                        ]
-                    )
-                    authContext.rootController.currentWindow?.present(alertController, on: .root, blockInteraction: false, completion: {})
+                    authContext.rootController.currentWindow?.present(standardTextAlertController(theme: AlertControllerTheme(presentationData: presentationData), title: nil, text: presentationData.strings.Passport_NotLoggedInMessage, actions: [TextAlertAction(type: .genericAction, title: presentationData.strings.Calls_NotNow, action: {
+                        if let callbackUrl = URL(string: secureIdCallbackUrl(with: secureIdData.callbackUrl, peerId: secureIdData.peerId, result: .cancel, parameters: [:])) {
+                            UIApplication.shared.open(callbackUrl, options: [:], completionHandler: nil)
+                        }
+                    }), TextAlertAction(type: .defaultAction, title: presentationData.strings.Common_OK, action: {})]), on: .root, blockInteraction: false, completion: {})
                 }
             }
         })
@@ -3273,28 +3152,13 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
     }
     
     private var openUrlInProgress: URL?
-    private func openUrlWhenReady(accountId: AccountRecordId? = nil, url: URL, external: Bool = false) {
+    private func openUrlWhenReady(url: URL) {
         self.openUrlInProgress = url
         
-        let signal = self.sharedContextPromise.get()
+        self.openUrlWhenReadyDisposable.set((self.authorizedContext()
         |> take(1)
-        |> deliverOnMainQueue
-        |> mapToSignal { sharedApplicationContext -> Signal<AuthorizedApplicationContext, NoError> in
-            if let accountId = accountId {
-                sharedApplicationContext.sharedContext.switchToAccount(id: accountId)
-                return self.authorizedContext()
-                |> filter { context in
-                    context.context.account.id == accountId
-                }
-                |> take(1)
-            } else {
-                return self.authorizedContext()
-                |> take(1)
-            }
-        }
-        self.openUrlWhenReadyDisposable.set((signal
         |> deliverOnMainQueue).start(next: { [weak self] context in
-            context.openUrl(url, external: external)
+            context.openUrl(url)
             
             Queue.mainQueue().after(1.0, {
                 self?.openUrlInProgress = nil
@@ -3341,26 +3205,22 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
             
             let _ = combineLatest(queue: .mainQueue(), accountIdFromNotification(response.notification, sharedContext: self.sharedContextPromise.get()), hiddenIdsAndPasscodeSettings, self.sharedContextPromise.get(), primaryAccount).start(next: { accountId, hiddenIdsAndPasscodeSettings, context, primary in
             if response.actionIdentifier == UNNotificationDefaultActionIdentifier {
-                // Nicegram DB Changes
-                if let accountId = accountId, hiddenIdsAndPasscodeSettings.hiddenIds.contains(accountId) {
-                    if hiddenIdsAndPasscodeSettings.hasMasterPasscode {
-                        context.sharedContext.appLockContext.lock()
+                if let (peerId, threadId) = peerIdFromNotification(response.notification) {
+                    var messageId: MessageId? = nil
+                    if response.notification.request.content.categoryIdentifier == "c" || response.notification.request.content.categoryIdentifier == "t" {
+                        messageId = messageIdFromNotification(peerId: peerId, notification: response.notification)
                     }
-                } else if let primary = primary,
-                          primary.account.id != accountId,
-                          VarSystemNGSettings.isDoubleBottomOn,
-                          VarSystemNGSettings.inDoubleBottom {
-                    context.sharedContext.appLockContext.lock()
-                } else if let dataUrl = response.notification.request.content.userInfo["url"] as? String {
-                    if let url = URL(string: dataUrl) {
-                        self.openUrlWhenReady(accountId: accountId, url: url, external: true)
-                    }
-                } else {
-                    if let (peerId, threadId) = peerIdFromNotification(response.notification) {
-                        var messageId: MessageId? = nil
-                        if response.notification.request.content.categoryIdentifier == "c" || response.notification.request.content.categoryIdentifier == "t" {
-                            messageId = messageIdFromNotification(peerId: peerId, notification: response.notification)
+                    // Nicegram DB Changes
+                    if let accountId = accountId, hiddenIdsAndPasscodeSettings.hiddenIds.contains(accountId) {
+                        if hiddenIdsAndPasscodeSettings.hasMasterPasscode {
+                            context.sharedContext.appLockContext.lock()
                         }
+                    } else if let primary = primary,
+                              primary.account.id != accountId,
+                              VarSystemNGSettings.isDoubleBottomOn,
+                              VarSystemNGSettings.inDoubleBottom {
+                        context.sharedContext.appLockContext.lock()
+                    } else {
                         let storyId = storyIdFromNotification(peerId: peerId, notification: response.notification)
                         self.openChatWhenReady(accountId: accountId, peerId: peerId, threadId: threadId, messageId: messageId, storyId: storyId)
                     }
@@ -3396,7 +3256,7 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
                         if let threadId {
                             replyToMessageId = MessageId(peerId: peerId, namespace: Namespaces.Message.Cloud, id: Int32(clamping: threadId))
                         }
-                        return enqueueMessages(account: account, peerId: peerId, messages: [EnqueueMessage.message(text: text, attributes: [], inlineStickers: [:], mediaReference: nil, threadId: nil, replyToMessageId: replyToMessageId.flatMap { EngineMessageReplySubject(messageId: $0, quote: nil, innerSubject: nil) }, replyToStoryId: nil, localGroupingKey: nil, correlationId: nil, bubbleUpEmojiOrStickersets: [])])
+                        return enqueueMessages(account: account, peerId: peerId, messages: [EnqueueMessage.message(text: text, attributes: [], inlineStickers: [:], mediaReference: nil, threadId: nil, replyToMessageId: replyToMessageId.flatMap { EngineMessageReplySubject(messageId: $0, quote: nil, todoItemId: nil) }, replyToStoryId: nil, localGroupingKey: nil, correlationId: nil, bubbleUpEmojiOrStickersets: [])])
                         |> map { messageIds -> MessageId? in
                             if messageIds.isEmpty {
                                 return nil
@@ -3538,16 +3398,14 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
     func userNotificationCenter(_ center: UNUserNotificationCenter, willPresent notification: UNNotification, withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {
         let _ = (accountIdFromNotification(notification, sharedContext: self.sharedContextPromise.get())
         |> deliverOnMainQueue).start(next: { accountId in
-            if let context = self.contextValue {
-                if let accountId = accountId, context.context.account.id != accountId || notification.request.content.userInfo["url"] != nil {
-                    // Nicegram DB Changes
-                    let _ = context.context.sharedContext.accountManager.transaction { transaction in
-                        if let record = transaction.getRecords().first(where: { $0.id == accountId }),
-                           !record.attributes.contains(where: { $0.isHiddenAccountAttribute }) {
-                            completionHandler([.alert])
-                        }
-                    }.start()
-                }
+            // Nicegram DB Changes
+            if let context = self.contextValue, let accountId = accountId, context.context.account.id != accountId {
+                let _ = context.context.sharedContext.accountManager.transaction { transaction in
+                    if let record = transaction.getRecords().first(where: { $0.id == accountId }),
+                       !record.attributes.contains(where: { $0.isHiddenAccountAttribute }) {
+                        completionHandler([.alert])
+                    }
+                }.start()
             }
         })
     }
@@ -3565,6 +3423,10 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
     private var lastCheckForUpdatesTimestamp: Double?
     private let currentCheckForUpdatesDisposable = MetaDisposable()
     
+    private func fetchNGUserSettings(_ userId: Int64) {
+        updateNGInfo(userId: userId)
+    }
+    
     private func fetchGlobalNGSettings() {
         updateGlobalNGSettings()
     }
@@ -3572,30 +3434,19 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
     private func maybeCheckForUpdates() {
         #if targetEnvironment(simulator)
         #else
-        guard let buildConfig = self.buildConfig else {
+        guard let buildConfig = self.buildConfig, let appCenterId = buildConfig.appCenterId, !appCenterId.isEmpty else {
             return
         }
         let timestamp = CFAbsoluteTimeGetCurrent()
         if self.lastCheckForUpdatesTimestamp == nil || self.lastCheckForUpdatesTimestamp! < timestamp - 10.0 * 60.0 {
             self.lastCheckForUpdatesTimestamp = timestamp
             
-            let _ = (self.sharedContextPromise.get()
-            |> take(1)
-            |> mapToSignal { sharedContext in
-                return sharedContext.sharedContext.accountManager.sharedData(keys: [ApplicationSpecificSharedDataKeys.updateSettings])
-                |> map { sharedData in
-                    return (sharedContext, sharedData.entries[ApplicationSpecificSharedDataKeys.updateSettings]?.get(UpdateSettings.self)?.url)
-                }
-            }
-            |> deliverOnMainQueue).start(next: { sharedContext, urlString in
-                guard buildConfig.isInternalBuild || sharedContext.sharedContext.immediateExperimentalUISettings.enableUpdates else {
-                    return
-                }
-                guard let url = urlString.flatMap({ URL(string: $0) }) else {
-                    return
-                }
+            if let url = URL(string: "https://api.appcenter.ms/v0.1/public/sdk/apps/\(appCenterId)/releases/latest") {
                 self.currentCheckForUpdatesDisposable.set((downloadHTTPData(url: url)
-                |> deliverOnMainQueue).start(next: { data in
+                |> deliverOnMainQueue).start(next: { [weak self] data in
+                    guard let strongSelf = self else {
+                        return
+                    }
                     guard let json = try? JSONSerialization.jsonObject(with: data, options: []) else {
                         return
                     }
@@ -3605,29 +3456,27 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
                     guard let versionString = dict["version"] as? String, let version = Int(versionString) else {
                         return
                     }
-                    guard let releaseNotesUrl = dict["url"] as? String else {
+                    guard let releaseNotesUrl = dict["release_notes_url"] as? String else {
                         return
                     }
                     guard let currentVersionString = Bundle.main.infoDictionary?["CFBundleVersion"] as? String, let currentVersion = Int(currentVersionString) else {
                         return
                     }
                     if currentVersion < version {
-                        let presentationData = sharedContext.sharedContext.currentPresentationData.with { $0 }
-                        let alertController = textAlertController(
-                            sharedContext: sharedContext.sharedContext,
-                            title: "A new build is available",
-                            text: "",
-                            actions: [
+                        let _ = (strongSelf.sharedContextPromise.get()
+                        |> take(1)
+                        |> deliverOnMainQueue).start(next: { sharedContext in
+                            let presentationData = sharedContext.sharedContext.currentPresentationData.with { $0 }
+                            sharedContext.sharedContext.mainWindow?.present(standardTextAlertController(theme: AlertControllerTheme(presentationData: presentationData), title: nil, text: "A new build is available", actions: [
                                 TextAlertAction(type: .genericAction, title: presentationData.strings.Common_Cancel, action: {}),
                                 TextAlertAction(type: .defaultAction, title: "Show", action: {
                                     sharedContext.sharedContext.applicationBindings.openUrl(releaseNotesUrl)
                                 })
-                            ]
-                        )
-                        sharedContext.sharedContext.mainWindow?.present(alertController, on: .root, blockInteraction: false, completion: {})
+                            ]), on: .root, blockInteraction: false, completion: {})
+                        })
                     }
                 }))
-            })
+            }
         }
         #endif
     }
@@ -4057,16 +3906,4 @@ private func getMemoryConsumption() -> Int {
         return 0
     }
     return Int(info.phys_footprint)
-}
-
-final class UpdateSettings: Codable, Equatable {
-    let url: String?
-    
-    init(url: String?) {
-        self.url = url
-    }
-    
-    static func ==(lhs: UpdateSettings, rhs: UpdateSettings) -> Bool {
-        return lhs.url == rhs.url
-    }
 }

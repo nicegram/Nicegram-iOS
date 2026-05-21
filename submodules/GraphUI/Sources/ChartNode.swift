@@ -20,7 +20,6 @@ public enum ChartType {
     case twoAxis5MinStep
     case currency
     case stars
-    case lines5Min
 }
 
 public extension ChartTheme {    
@@ -142,11 +141,6 @@ public func createChartController(_ data: String, type: ChartType, rate: Double 
                     let stepController = TwoAxisStepBarsChartController(chartsCollection: collection)
                     stepController.min5 = true
                     controller = stepController
-                    controller.isZoomable = false
-                case .lines5Min:
-                    let linesController = GeneralLinesChartController(chartsCollection: collection)
-                    linesController.min5 = true
-                    controller = linesController
                     controller.isZoomable = false
             }
             controller.getDetailsData = { date, completion in

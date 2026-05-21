@@ -79,7 +79,7 @@ private func synchronizeGroupMessageStats(postbox: Postbox, network: Network, gr
             return .complete()
         }
     
-        return network.request(Api.functions.messages.getPeerDialogs(peers: [.inputDialogPeerFolder(.init(folderId: groupId.rawValue))]))
+        return network.request(Api.functions.messages.getPeerDialogs(peers: [.inputDialogPeerFolder(folderId: groupId.rawValue)]))
         |> map(Optional.init)
         |> `catch` { _ -> Signal<Api.messages.PeerDialogs?, NoError> in
             return .single(nil)
@@ -88,12 +88,10 @@ private func synchronizeGroupMessageStats(postbox: Postbox, network: Network, gr
             return postbox.transaction { transaction in
                 if let result = result {
                     switch result {
-                    case let .peerDialogs(peerDialogsData):
-                        let dialogs = peerDialogsData.dialogs
+                    case let .peerDialogs(dialogs, _, _, _, _):
                         for dialog in dialogs {
                             switch dialog {
-                                case let .dialogFolder(dialogFolderData):
-                                    let (unreadMutedPeersCount, unreadMutedMessagesCount) = (dialogFolderData.unreadMutedPeersCount, dialogFolderData.unreadMutedMessagesCount)
+                                case let .dialogFolder(_, _, _, _, unreadMutedPeersCount, _, unreadMutedMessagesCount, _):
                                     transaction.resetPeerGroupSummary(groupId: groupId, namespace: namespace, summary: PeerGroupUnreadCountersSummary(all: PeerGroupUnreadCounters(messageCount: unreadMutedMessagesCount, chatCount: unreadMutedPeersCount)))
                                 case .dialog:
                                     assertionFailure()

@@ -170,10 +170,10 @@ private enum StorageUsageExceptionsEntry: ItemListNodeEntry {
             if peer.peer.id == arguments.context.account.peerId {
                 title = presentationData.strings.DialogList_SavedMessages
             } else {
-                title = peer.peer.displayTitle(strings: presentationData.strings, displayOrder: .firstLast)
+                title = EnginePeer(peer.peer).displayTitle(strings: presentationData.strings, displayOrder: .firstLast)
             }
             
-            return ItemListDisclosureItem(presentationData: presentationData, icon: nil, context: arguments.context, iconPeer: peer.peer, title: title, enabled: true, titleFont: .bold, label: optionText, labelStyle: .text, additionalDetailLabel: additionalDetailLabel, sectionId: self.section, style: .blocks, disclosureStyle: .optionArrows, action: {
+            return ItemListDisclosureItem(presentationData: presentationData, icon: nil, context: arguments.context, iconPeer: EnginePeer(peer.peer), title: title, enabled: true, titleFont: .bold, label: optionText, labelStyle: .text, additionalDetailLabel: additionalDetailLabel, sectionId: self.section, style: .blocks, disclosureStyle: .optionArrows, action: {
                 arguments.openPeerMenu(peer.peer.id, value)
             }, tag: StorageUsageExceptionsEntryTag.peer(peer.peer.id))
         }
@@ -285,7 +285,7 @@ public func storageUsageExceptionsScreen(
                     continue
                 }
                 
-                result.append((peer: FoundPeer(peer: EnginePeer(peer), subscribers: subscriberCount), value: value))
+                result.append((peer: FoundPeer(peer: peer, subscribers: subscriberCount), value: value))
             }
             
             return result.sorted(by: { lhs, rhs in
@@ -401,7 +401,7 @@ public func storageUsageExceptionsScreen(
                     if currentValue == value {
                         return generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Check"), color: theme.contextMenu.primaryColor)
                     } else {
-                        return UIImage()
+                        return nil
                     }
                 }, action: { _, f in
                     applyValue(value)
@@ -422,7 +422,7 @@ public func storageUsageExceptionsScreen(
                 let items: Signal<ContextController.Items, NoError> = .single(ContextController.Items(content: .list(subItems)))
                 let source: ContextContentSource = .reference(StorageUsageExceptionsContextReferenceContentSource(sourceView: sourceNode.labelNode.view))
                 
-                let contextController = makeContextController(
+                let contextController = ContextController(
                     presentationData: presentationData,
                     source: source,
                     items: items,

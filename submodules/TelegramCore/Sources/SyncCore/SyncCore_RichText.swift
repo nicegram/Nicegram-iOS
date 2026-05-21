@@ -19,7 +19,6 @@ private enum RichTextTypes: Int32 {
     case phone = 13
     case image = 14
     case anchor = 15
-    case formula = 16
 }
 
 public indirect enum RichText: PostboxCoding, Equatable {
@@ -39,7 +38,6 @@ public indirect enum RichText: PostboxCoding, Equatable {
     case phone(text: RichText, phone: String)
     case image(id: MediaId, dimensions: PixelDimensions)
     case anchor(text: RichText, name: String)
-    case formula(latex: String)
     
     public init(decoder: PostboxDecoder) {
         switch decoder.decodeInt32ForKey("r", orElse: 0) {
@@ -81,8 +79,6 @@ public indirect enum RichText: PostboxCoding, Equatable {
                 self = .image(id: MediaId(namespace: decoder.decodeInt32ForKey("i.n", orElse: 0), id: decoder.decodeInt64ForKey("i.i", orElse: 0)), dimensions: PixelDimensions(width: decoder.decodeInt32ForKey("sw", orElse: 0), height: decoder.decodeInt32ForKey("sh", orElse: 0)))
             case RichTextTypes.anchor.rawValue:
                 self = .anchor(text: decoder.decodeObjectForKey("t", decoder: { RichText(decoder: $0) }) as! RichText, name: decoder.decodeStringForKey("n", orElse: ""))
-            case RichTextTypes.formula.rawValue:
-                self = .formula(latex: decoder.decodeStringForKey("l", orElse: ""))
             default:
                 self = .empty
         }
@@ -151,9 +147,6 @@ public indirect enum RichText: PostboxCoding, Equatable {
                 encoder.encodeInt32(RichTextTypes.anchor.rawValue, forKey: "r")
                 encoder.encodeObject(text, forKey: "t")
                 encoder.encodeString(name, forKey: "n")
-            case let .formula(latex):
-                encoder.encodeInt32(RichTextTypes.formula.rawValue, forKey: "r")
-                encoder.encodeString(latex, forKey: "l")
         }
     }
     
@@ -255,12 +248,6 @@ public indirect enum RichText: PostboxCoding, Equatable {
                 } else {
                     return false
                 }
-            case let .formula(lhsLatex):
-                if case let .formula(rhsLatex) = rhs, lhsLatex == rhsLatex {
-                    return true
-                } else {
-                    return false
-                }
         }
     }
 }
@@ -304,8 +291,6 @@ public extension RichText {
                 return ""
             case let .anchor(text, _):
                 return text.plainText
-            case let .formula(latex):
-                return latex
         }
     }
 }
@@ -393,11 +378,6 @@ extension RichText {
             }
             self = .anchor(text: try RichText(flatBuffersObject: value.text), 
                           name: value.name)
-        case .richtextFormula:
-            guard let value = flatBuffersObject.value(type: TelegramCore_RichText_Formula.self) else {
-                throw FlatBuffersError.missingRequiredField()
-            }
-            self = .formula(latex: value.latex)
         case .none_:
             self = .empty
         }
@@ -514,12 +494,6 @@ extension RichText {
             TelegramCore_RichText_Anchor.add(text: textOffset, &builder)
             TelegramCore_RichText_Anchor.add(name: nameOffset, &builder)
             offset = TelegramCore_RichText_Anchor.endRichText_Anchor(&builder, start: start)
-        case let .formula(latex):
-            valueType = .richtextFormula
-            let latexOffset = builder.create(string: latex)
-            let start = TelegramCore_RichText_Formula.startRichText_Formula(&builder)
-            TelegramCore_RichText_Formula.add(latex: latexOffset, &builder)
-            offset = TelegramCore_RichText_Formula.endRichText_Formula(&builder, start: start)
         }
         
         return TelegramCore_RichText.createRichText(&builder, valueType: valueType, valueOffset: offset)

@@ -5,7 +5,6 @@ import TelegramCore
 import Display
 import libprisma
 import SwiftSignalKit
-import TelegramPresentationData
 
 public func chatInputStateStringWithAppliedEntities(_ text: String, entities: [MessageTextEntity]) -> NSAttributedString {
     var nsString: NSString?
@@ -39,8 +38,6 @@ public func chatInputStateStringWithAppliedEntities(_ text: String, entities: [M
             string.addAttribute(ChatTextInputAttributes.textMention, value: ChatTextInputTextMentionAttribute(peerId: peerId), range: range)
         case let .TextUrl(url):
             string.addAttribute(ChatTextInputAttributes.textUrl, value: ChatTextInputTextUrlAttribute(url: url), range: range)
-        case let .FormattedDate(_, date):
-            string.addAttribute(ChatTextInputAttributes.date, value: ChatTextInputTextDateAttribute(date: date), range: range)
         case .Code:
             string.addAttribute(ChatTextInputAttributes.monospace, value: true as NSNumber, range: range)
         case .Strikethrough:
@@ -83,92 +80,15 @@ public func chatInputStateStringWithAppliedEntities(_ text: String, entities: [M
 
 private let syntaxHighlighter = Syntaxer()
 
-private func isValidMessageSyntaxHighlightRange(_ range: Range<Int>, expectedLength: Int) -> Bool {
-    return range.lowerBound >= 0 && range.upperBound <= expectedLength && range.lowerBound < range.upperBound
-}
-
-private func validatedCachedMessageSyntaxHighlight(_ highlight: MessageSyntaxHighlight, expectedLength: Int, language: String) -> MessageSyntaxHighlight? {
-    for entity in highlight.entities {
-        if !isValidMessageSyntaxHighlightRange(entity.range, expectedLength: expectedLength) {
-            return nil
-        }
-    }
-    return highlight
-}
-
-private func generateMessageSyntaxHighlight(spec: CachedMessageSyntaxHighlight.Spec, theme: SyntaxterTheme) -> MessageSyntaxHighlight {
-    let expectedLength = (spec.text as NSString).length
-    guard let syntaxHighlighter else {
-        return MessageSyntaxHighlight(entities: [])
-    }
-    guard let highlightedString = syntaxHighlighter.syntax(spec.text, language: spec.language, theme: theme) else {
-        return MessageSyntaxHighlight(entities: [])
-    }
-    guard highlightedString.length == expectedLength else {
-        return MessageSyntaxHighlight(entities: [])
-    }
-    
-    var entities: [MessageSyntaxHighlight.Entity] = []
-    var hasInvalidRange = false
-    highlightedString.enumerateAttribute(.foregroundColor, in: NSRange(location: 0, length: highlightedString.length), using: { value, subRange, stop in
-        let range = subRange.lowerBound ..< subRange.upperBound
-        if !isValidMessageSyntaxHighlightRange(range, expectedLength: expectedLength) {
-            hasInvalidRange = true
-            stop.pointee = true
-            return
-        }
-        if let value = value as? UIColor, value != .black {
-            entities.append(MessageSyntaxHighlight.Entity(color: Int32(bitPattern: value.rgb), range: range))
-        }
-    })
-    if hasInvalidRange {
-        return MessageSyntaxHighlight(entities: [])
-    }
-    return MessageSyntaxHighlight(entities: entities)
-}
-
-public func stringWithAppliedEntities(_ text: String, entities: [MessageTextEntity], strings: PresentationStrings? = nil, dateTimeFormat: PresentationDateTimeFormat? = nil, baseColor: UIColor, linkColor: UIColor, baseQuoteTintColor: UIColor? = nil, baseQuoteSecondaryTintColor: UIColor? = nil, baseQuoteTertiaryTintColor: UIColor? = nil, codeBlockTitleColor: UIColor? = nil, codeBlockAccentColor: UIColor? = nil, codeBlockBackgroundColor: UIColor? = nil, baseFont: UIFont, linkFont: UIFont, boldFont: UIFont, italicFont: UIFont, boldItalicFont: UIFont, fixedFont: UIFont, blockQuoteFont: UIFont, underlineLinks: Bool = true, external: Bool = false, message: Message?, entityFiles: [MediaId: TelegramMediaFile] = [:], adjustQuoteFontSize: Bool = false, cachedMessageSyntaxHighlight: CachedMessageSyntaxHighlight? = nil, paragraphAlignment: NSTextAlignment? = nil) -> NSAttributedString {
+public func stringWithAppliedEntities(_ text: String, entities: [MessageTextEntity], baseColor: UIColor, linkColor: UIColor, baseQuoteTintColor: UIColor? = nil, baseQuoteSecondaryTintColor: UIColor? = nil, baseQuoteTertiaryTintColor: UIColor? = nil, codeBlockTitleColor: UIColor? = nil, codeBlockAccentColor: UIColor? = nil, codeBlockBackgroundColor: UIColor? = nil, baseFont: UIFont, linkFont: UIFont, boldFont: UIFont, italicFont: UIFont, boldItalicFont: UIFont, fixedFont: UIFont, blockQuoteFont: UIFont, underlineLinks: Bool = true, external: Bool = false, message: Message?, entityFiles: [MediaId: TelegramMediaFile] = [:], adjustQuoteFontSize: Bool = false, cachedMessageSyntaxHighlight: CachedMessageSyntaxHighlight? = nil, paragraphAlignment: NSTextAlignment? = nil) -> NSAttributedString {
     let baseQuoteTintColor = baseQuoteTintColor ?? baseColor
     
     var nsString: NSString?
-    let baseAttributes: [NSAttributedString.Key: Any] = [NSAttributedString.Key.font: baseFont, NSAttributedString.Key.foregroundColor: baseColor]
-    let string = NSMutableAttributedString(string: text, attributes: baseAttributes)
+    let string = NSMutableAttributedString(string: text, attributes: [NSAttributedString.Key.font: baseFont, NSAttributedString.Key.foregroundColor: baseColor])
     var skipEntity = false
     var underlineAllLinks = false
     if linkColor.argb == baseColor.argb {
         underlineAllLinks = true
-    }
-    
-    var adjustedRanges: [NSRange?] = []
-    adjustedRanges.reserveCapacity(entities.count)
-    var rangeDelta = 0
-    for entity in entities {
-        let originalRange = NSRange(location: entity.range.lowerBound, length: entity.range.upperBound - entity.range.lowerBound)
-        var range = NSRange(location: originalRange.location + rangeDelta, length: originalRange.length)
-        let stringLength = string.length
-        if range.location > stringLength {
-            adjustedRanges.append(nil)
-            continue
-        } else if range.location + range.length > stringLength {
-            range.length = stringLength - range.location
-        }
-        
-        switch entity.type {
-        case let .FormattedDate(format, date):
-            if let format, let strings, let dateTimeFormat {
-                let replacement = stringForEntityFormattedDate(timestamp: date, format: format, strings: strings, dateTimeFormat: dateTimeFormat)
-                
-                let replacementString = NSAttributedString(string: replacement, attributes: baseAttributes)
-                string.replaceCharacters(in: range, with: replacementString)
-                let newRange = NSRange(location: range.location, length: (replacement as NSString).length)
-                adjustedRanges.append(newRange)
-                rangeDelta += newRange.length - range.length
-            } else {
-                adjustedRanges.append(range)
-            }
-        default:
-            adjustedRanges.append(range)
-        }
     }
     
     var fontAttributeMask: [ChatTextFontAttributes] = Array(repeating: [], count: string.length)
@@ -183,11 +103,12 @@ public func stringWithAppliedEntities(_ text: String, entities: [MessageTextEnti
             skipEntity = false
             continue
         }
-        let entity = entities[i]
-        guard var range = adjustedRanges[i] else {
-            continue
-        }
         let stringLength = string.length
+        let entity = entities[i]
+        var range = NSRange(location: entity.range.lowerBound, length: entity.range.upperBound - entity.range.lowerBound)
+        if nsString == nil {
+            nsString = text as NSString
+        }
         if range.location > stringLength {
             continue
         } else if range.location + range.length > stringLength {
@@ -200,13 +121,13 @@ public func stringWithAppliedEntities(_ text: String, entities: [MessageTextEnti
                     string.addAttribute(NSAttributedString.Key.underlineStyle, value: NSUnderlineStyle.single.rawValue as NSNumber, range: range)
                 }
                 if nsString == nil {
-                    nsString = string.string as NSString
+                    nsString = text as NSString
                 }
                 string.addAttribute(NSAttributedString.Key(rawValue: TelegramTextAttributes.URL), value: nsString!.substring(with: range), range: range)
             case .Email:
                 string.addAttribute(NSAttributedString.Key.foregroundColor, value: linkColor, range: range)
                 if nsString == nil {
-                    nsString = string.string as NSString
+                    nsString = text as NSString
                 }
                 if underlineLinks && underlineAllLinks {
                     string.addAttribute(NSAttributedString.Key.underlineStyle, value: NSUnderlineStyle.single.rawValue as NSNumber, range: range)
@@ -215,7 +136,7 @@ public func stringWithAppliedEntities(_ text: String, entities: [MessageTextEnti
             case .PhoneNumber:
                 string.addAttribute(NSAttributedString.Key.foregroundColor, value: linkColor, range: range)
                 if nsString == nil {
-                    nsString = string.string as NSString
+                    nsString = text as NSString
                 }
                 if underlineLinks && underlineAllLinks {
                     string.addAttribute(NSAttributedString.Key.underlineStyle, value: NSUnderlineStyle.single.rawValue as NSNumber, range: range)
@@ -224,7 +145,7 @@ public func stringWithAppliedEntities(_ text: String, entities: [MessageTextEnti
             case let .TextUrl(url):
                 string.addAttribute(NSAttributedString.Key.foregroundColor, value: linkColor, range: range)
                 if nsString == nil {
-                    nsString = string.string as NSString
+                    nsString = text as NSString
                 }
                 if underlineLinks && underlineAllLinks {
                     string.addAttribute(NSAttributedString.Key.underlineStyle, value: NSUnderlineStyle.single.rawValue as NSNumber, range: range)
@@ -247,7 +168,7 @@ public func stringWithAppliedEntities(_ text: String, entities: [MessageTextEnti
                     string.addAttribute(NSAttributedString.Key.font, value: linkFont, range: range)
                 }
                 if nsString == nil {
-                    nsString = string.string as NSString
+                    nsString = text as NSString
                 }
                 string.addAttribute(NSAttributedString.Key(rawValue: TelegramTextAttributes.PeerTextMention), value: nsString!.substring(with: range), range: range)
             case .Strikethrough:
@@ -262,21 +183,16 @@ public func stringWithAppliedEntities(_ text: String, entities: [MessageTextEnti
                 if linkFont !== baseFont {
                     string.addAttribute(NSAttributedString.Key.font, value: linkFont, range: range)
                 }
-                if nsString == nil {
-                    nsString = string.string as NSString
-                }
                 let mention = nsString!.substring(with: range)
                 string.addAttribute(NSAttributedString.Key(rawValue: TelegramTextAttributes.PeerMention), value: TelegramPeerMention(peerId: peerId, mention: mention), range: range)
             case .Hashtag:
                 if nsString == nil {
-                    nsString = string.string as NSString
+                    nsString = text as NSString
                 }
                 let hashtag = nsString!.substring(with: range)
                 if i + 1 != entities.count {
                     if case .Mention = entities[i + 1].type {
-                        guard let nextRange = adjustedRanges[i + 1] else {
-                            break
-                        }
+                        let nextRange = NSRange(location: entities[i + 1].range.lowerBound, length: entities[i + 1].range.upperBound - entities[i + 1].range.lowerBound)
                         if nextRange.location == range.location + range.length + 1 && nsString!.character(at: range.location + range.length) == 43 {
                             skipEntity = true
                             if nextRange.length > 0 {
@@ -315,20 +231,17 @@ public func stringWithAppliedEntities(_ text: String, entities: [MessageTextEnti
                     string.addAttribute(NSAttributedString.Key.underlineStyle, value: NSUnderlineStyle.single.rawValue as NSNumber, range: range)
                 }
                 if nsString == nil {
-                    nsString = string.string as NSString
+                    nsString = text as NSString
                 }
                 string.addAttribute(NSAttributedString.Key(rawValue: TelegramTextAttributes.BotCommand), value: nsString!.substring(with: range), range: range)
             case .Code:
                 addFontAttributes(range, .monospace)
-                if nsString == nil {
-                    nsString = string.string as NSString
-                }
                 string.addAttribute(NSAttributedString.Key(rawValue: TelegramTextAttributes.Code), value: nsString!.substring(with: range), range: range)
             case let .Pre(language):
                 addFontAttributes(range, .monospace)
                 addFontAttributes(range, .blockQuote)
                 if nsString == nil {
-                    nsString = string.string as NSString
+                    nsString = text as NSString
                 }
                 if let codeBlockTitleColor, let codeBlockAccentColor, let codeBlockBackgroundColor {
                     var title: NSAttributedString?
@@ -347,7 +260,7 @@ public func stringWithAppliedEntities(_ text: String, entities: [MessageTextEnti
                     string.addAttribute(NSAttributedString.Key.underlineStyle, value: NSUnderlineStyle.single.rawValue as NSNumber, range: range)
                 }
                 if nsString == nil {
-                    nsString = string.string as NSString
+                    nsString = text as NSString
                 }
                 string.addAttribute(NSAttributedString.Key(rawValue: TelegramTextAttributes.BankCard), value: nsString!.substring(with: range), range: range)
             case .Spoiler:
@@ -356,12 +269,6 @@ public func stringWithAppliedEntities(_ text: String, entities: [MessageTextEnti
                 } else {
                     string.addAttribute(NSAttributedString.Key(rawValue: TelegramTextAttributes.Spoiler), value: true as NSNumber, range: range)
                 }
-            case let .FormattedDate(_, date):
-                string.addAttribute(NSAttributedString.Key.foregroundColor, value: linkColor, range: range)
-                if underlineLinks && underlineAllLinks {
-                    string.addAttribute(NSAttributedString.Key.underlineStyle, value: NSUnderlineStyle.single.rawValue as NSNumber, range: range)
-                }
-                string.addAttribute(NSAttributedString.Key(rawValue: TelegramTextAttributes.Date), value: date, range: range)
             case let .Custom(type):
                 if type == ApplicationSpecificEntityType.Timecode {
                     string.addAttribute(NSAttributedString.Key.foregroundColor, value: linkColor, range: range)
@@ -369,7 +276,7 @@ public func stringWithAppliedEntities(_ text: String, entities: [MessageTextEnti
                         string.addAttribute(NSAttributedString.Key.underlineStyle, value: NSUnderlineStyle.single.rawValue as NSNumber, range: range)
                     }
                     if nsString == nil {
-                        nsString = string.string as NSString
+                        nsString = text as NSString
                     }
                     let text = nsString!.substring(with: range)
                     if let time = parseTimecodeString(text) {
@@ -443,10 +350,8 @@ public func stringWithAppliedEntities(_ text: String, entities: [MessageTextEnti
         
         let codeText = (string.string as NSString).substring(with: range)
         if let cachedMessageSyntaxHighlight, let entry = cachedMessageSyntaxHighlight.values[CachedMessageSyntaxHighlight.Spec(language: language, text: codeText)] {
-            if let validatedEntry = validatedCachedMessageSyntaxHighlight(entry, expectedLength: range.length, language: language) {
-                for entity in validatedEntry.entities {
-                    string.addAttribute(.foregroundColor, value: UIColor(rgb: UInt32(bitPattern: entity.color)), range: NSRange(location: range.location + entity.range.lowerBound, length: entity.range.upperBound - entity.range.lowerBound))
-                }
+            for entity in entry.entities {
+                string.addAttribute(.foregroundColor, value: UIColor(rgb: UInt32(bitPattern: entity.color)), range: NSRange(location: range.location + entity.range.lowerBound, length: entity.range.upperBound - entity.range.lowerBound))
             }
         }
     })
@@ -634,18 +539,8 @@ public func extractMessageSyntaxHighlightSpecs(text: String, entities: [MessageT
 private let internalFixedCodeFont = Font.regular(17.0)
 
 public func asyncUpdateMessageSyntaxHighlight(engine: TelegramEngine, messageId: EngineMessage.Id, current: CachedMessageSyntaxHighlight?, specs: [CachedMessageSyntaxHighlight.Spec]) -> Signal<Never, NoError> {
-    if let current {
-        var hasMissingOrInvalidSpec = false
-        for spec in specs {
-            let expectedLength = (spec.text as NSString).length
-            guard let value = current.values[spec], validatedCachedMessageSyntaxHighlight(value, expectedLength: expectedLength, language: spec.language) != nil else {
-                hasMissingOrInvalidSpec = true
-                break
-            }
-        }
-        if !hasMissingOrInvalidSpec {
-            return .complete()
-        }
+    if let current, !specs.contains(where: { current.values[$0] == nil }) {
+        return .complete()
     }
     
     return Signal { subscriber in
@@ -654,11 +549,22 @@ public func asyncUpdateMessageSyntaxHighlight(engine: TelegramEngine, messageId:
         let theme = SyntaxterTheme(dark: false, textColor: .black, textFont: internalFixedCodeFont, italicFont: internalFixedCodeFont, mediumFont: internalFixedCodeFont)
         
         for spec in specs {
-            let expectedLength = (spec.text as NSString).length
             if let value = current?.values[spec] {
-                updated[spec] = validatedCachedMessageSyntaxHighlight(value, expectedLength: expectedLength, language: spec.language) ?? MessageSyntaxHighlight(entities: [])
-            } else if let theme {
-                updated[spec] = generateMessageSyntaxHighlight(spec: spec, theme: theme)
+                updated[spec] = value
+            } else {
+                var entities: [MessageSyntaxHighlight.Entity] = []
+                
+                if let syntaxHighlighter {
+                    if let highlightedString = syntaxHighlighter.syntax(spec.text, language: spec.language, theme: theme) {
+                        highlightedString.enumerateAttribute(.foregroundColor, in: NSRange(location: 0, length: highlightedString.length), using: { value, subRange, _ in
+                            if let value = value as? UIColor, value != .black {
+                                entities.append(MessageSyntaxHighlight.Entity(color: Int32(bitPattern: value.rgb), range: subRange.lowerBound ..< subRange.upperBound))
+                            }
+                        })
+                    }
+                }
+                
+                updated[spec] = MessageSyntaxHighlight(entities: entities)
             }
         }
         
@@ -674,18 +580,8 @@ public func asyncUpdateMessageSyntaxHighlight(engine: TelegramEngine, messageId:
 }
 
 public func asyncStanaloneSyntaxHighlight(current: CachedMessageSyntaxHighlight?, specs: [CachedMessageSyntaxHighlight.Spec]) -> Signal<CachedMessageSyntaxHighlight, NoError> {
-    if let current {
-        var hasMissingOrInvalidSpec = false
-        for spec in specs {
-            let expectedLength = (spec.text as NSString).length
-            guard let value = current.values[spec], validatedCachedMessageSyntaxHighlight(value, expectedLength: expectedLength, language: spec.language) != nil else {
-                hasMissingOrInvalidSpec = true
-                break
-            }
-        }
-        if !hasMissingOrInvalidSpec {
-            return .single(current)
-        }
+    if let current, !specs.contains(where: { current.values[$0] == nil }) {
+        return .single(current)
     }
     
     return Signal { subscriber in
@@ -694,11 +590,22 @@ public func asyncStanaloneSyntaxHighlight(current: CachedMessageSyntaxHighlight?
         let theme = SyntaxterTheme(dark: false, textColor: .black, textFont: internalFixedCodeFont, italicFont: internalFixedCodeFont, mediumFont: internalFixedCodeFont)
         
         for spec in specs {
-            let expectedLength = (spec.text as NSString).length
             if let value = current?.values[spec] {
-                updated[spec] = validatedCachedMessageSyntaxHighlight(value, expectedLength: expectedLength, language: spec.language) ?? MessageSyntaxHighlight(entities: [])
-            } else if let theme {
-                updated[spec] = generateMessageSyntaxHighlight(spec: spec, theme: theme)
+                updated[spec] = value
+            } else {
+                var entities: [MessageSyntaxHighlight.Entity] = []
+                
+                if let syntaxHighlighter {
+                    if let highlightedString = syntaxHighlighter.syntax(spec.text, language: spec.language, theme: theme) {
+                        highlightedString.enumerateAttribute(.foregroundColor, in: NSRange(location: 0, length: highlightedString.length), using: { value, subRange, _ in
+                            if let value = value as? UIColor, value != .black {
+                                entities.append(MessageSyntaxHighlight.Entity(color: Int32(bitPattern: value.rgb), range: subRange.lowerBound ..< subRange.upperBound))
+                            }
+                        })
+                    }
+                }
+                
+                updated[spec] = MessageSyntaxHighlight(entities: entities)
             }
         }
         

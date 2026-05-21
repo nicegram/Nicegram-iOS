@@ -146,7 +146,6 @@ public final class DustEffectLayer: MetalEngineSubjectLayer, MetalEngineSubject 
     
     public var animationSpeed: Float = 1.0
     public var playsBackwards: Bool = false
-    public var animateDown: Bool = false
     
     public var becameEmpty: (() -> Void)?
     
@@ -281,8 +280,6 @@ public final class DustEffectLayer: MetalEngineSubjectLayer, MetalEngineSubject 
                 return
             }
             
-            var verticalDirection: Float = self.animateDown ? -1.0 : 1.0
-            
             for item in self.items {
                 guard let particleBuffer = item.particleBuffer else {
                     continue
@@ -300,7 +297,6 @@ public final class DustEffectLayer: MetalEngineSubjectLayer, MetalEngineSubject 
                 if !item.particleBufferIsInitialized {
                     item.particleBufferIsInitialized = true
                     computeEncoder.setComputePipelineState(state.computePipelineStateInitializeParticle)
-                    computeEncoder.setBytes(&verticalDirection, length: 4, index: 1)
                     computeEncoder.dispatchThreadgroups(threadgroupCount, threadsPerThreadgroup: threadgroupSize)
                 }
                 
@@ -313,7 +309,6 @@ public final class DustEffectLayer: MetalEngineSubjectLayer, MetalEngineSubject 
                     var timeStep: Float = Float(lastTimeStep) / Float(UIView.animationDurationFactor())
                     timeStep *= 2.0
                     computeEncoder.setBytes(&timeStep, length: 4, index: 3)
-                    computeEncoder.setBytes(&verticalDirection, length: 4, index: 4)
                     computeEncoder.dispatchThreadgroups(threadgroupCount, threadsPerThreadgroup: threadgroupSize)
                 }
             }

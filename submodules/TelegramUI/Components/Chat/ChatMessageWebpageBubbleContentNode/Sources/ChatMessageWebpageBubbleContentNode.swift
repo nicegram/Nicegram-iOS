@@ -160,11 +160,6 @@ public final class ChatMessageWebpageBubbleContentNode: ChatMessageBubbleContent
                 return ChatMessageBubbleContentTapAction(content: .none)
             }
             
-            let incoming = item.message.effectivelyIncoming(item.context.account.peerId)
-            if incoming && item.associatedData.isSuspiciousPeer {
-                return ChatMessageBubbleContentTapAction(content: .none)
-            }
-            
             if let file = content.file {
                 if !file.isVideo, !file.isVideoSticker, !file.isAnimated, !file.isAnimatedSticker, !file.isSticker, !file.isMusic {
                     return ChatMessageBubbleContentTapAction(content: .openMessage)
@@ -270,19 +265,19 @@ public final class ChatMessageWebpageBubbleContentNode: ChatMessageBubbleContent
                     if case .full = automaticDownload {
                         automaticPlayback = true
                     } else {
-                        automaticPlayback = item.context.engine.resources.completedResourcePath(id: EngineMediaResource.Id(file.resource.id)) != nil
+                        automaticPlayback = item.context.account.postbox.mediaBox.completedResourcePath(file.resource) != nil
                     }
                 }
                 
                 switch type {
-                case .instagram, .twitter:
-                    if automaticPlayback {
+                    case .instagram, .twitter:
+                        if automaticPlayback {
+                            mainMedia = webpage.story ?? webpage.file ?? webpage.image
+                        } else {
+                            mainMedia = webpage.story ?? webpage.image ?? webpage.file
+                        }
+                    default:
                         mainMedia = webpage.story ?? webpage.file ?? webpage.image
-                    } else {
-                        mainMedia = webpage.story ?? webpage.image ?? webpage.file
-                    }
-                default:
-                    mainMedia = webpage.story ?? webpage.file ?? webpage.image
                 }
                 
                 let themeMimeType = "application/x-tgtheme-ios"
@@ -344,14 +339,6 @@ public final class ChatMessageWebpageBubbleContentNode: ChatMessageBubbleContent
                     for attribute in webpage.attributes {
                         if case let .starGift(gift) = attribute, case let .unique(uniqueGift) = gift.gift {
                             let media = UniqueGiftPreviewMedia(content: uniqueGift)
-                            mediaAndFlags = ([media], [])
-                            break
-                        }
-                    }
-                case "telegram_auction":
-                    for attribute in webpage.attributes {
-                        if case let .giftAuction(giftAuction) = attribute, case let .generic(gift) = giftAuction.gift {
-                            let media = GiftAuctionPreviewMedia(content: gift, endTime: giftAuction.endDate)
                             mediaAndFlags = ([media], [])
                             break
                         }
@@ -493,45 +480,6 @@ public final class ChatMessageWebpageBubbleContentNode: ChatMessageBubbleContent
                             actionTitle = item.presentationData.strings.Chat_ViewCollection
                         case "telegram_story_album":
                             actionTitle = item.presentationData.strings.Chat_ViewAlbum
-                        case "telegram_auction":
-                            var hasEnded = false
-                            var isUpcoming = false
-                            let currentTime = Int32(CFAbsoluteTimeGetCurrent() + kCFAbsoluteTimeIntervalSince1970)
-                            for attribute in webpage.attributes {
-                                if case let .giftAuction(giftAuction) = attribute {
-                                    if case let .generic(gift) = giftAuction.gift, let auctionStartDate = gift.auctionStartDate, currentTime < auctionStartDate {
-                                        isUpcoming = true
-                                    }
-                                    if giftAuction.endDate < currentTime {
-                                        hasEnded = true
-                                    }
-                                    break
-                                }
-                            }
-                            text = nil
-                            if isUpcoming {
-                                subtitle = NSAttributedString(string: item.presentationData.strings.Chat_Auction_Upcoming, font: titleFont)
-                                actionTitle = item.presentationData.strings.Chat_Auction_View
-                                actionIcon = nil
-                            } else {
-                                subtitle = NSAttributedString(string: item.presentationData.strings.Chat_Auction, font: titleFont)
-                                actionTitle = hasEnded ? item.presentationData.strings.Chat_Auction_ViewResults : item.presentationData.strings.Chat_Auction_Join
-                                actionIcon = !hasEnded ? .bid : nil
-                            }
-                        case "telegram_channel_direct":
-                            actionTitle = item.presentationData.strings.Chat_ContactChannel
-                        case "telegram_newbot":
-                            actionTitle = item.presentationData.strings.Chat_CreateBotLink
-                        case "telegram_aicomposetone":
-                            actionTitle = "VIEW STYLE"
-                        
-                            for attribute in webpage.attributes {
-                                if case let .aiTextStyle(aiTextStyle) = attribute {
-                                    if let file = item.message.associatedMedia[MediaId(namespace: Namespaces.Media.CloudFile, id: aiTextStyle.emojiFileId)] {
-                                        mediaAndFlags = ([file], [.preferMediaInline])
-                                    }
-                                }
-                            }
                         default:
                             break
                     }

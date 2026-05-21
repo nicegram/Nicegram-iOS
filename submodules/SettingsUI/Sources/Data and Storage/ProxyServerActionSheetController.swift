@@ -14,7 +14,6 @@ import PresentationDataUtils
 import UrlEscaping
 
 public final class ProxyServerActionSheetController: ActionSheetController {
-    private let sharedContext: SharedAccountContext
     private var presentationDisposable: Disposable?
     
     private let _ready = Promise<Bool>()
@@ -26,11 +25,10 @@ public final class ProxyServerActionSheetController: ActionSheetController {
     
     convenience public init(context: AccountContext, server: ProxyServerSettings) {
         let presentationData = context.sharedContext.currentPresentationData.with { $0 }
-        self.init(sharedContext: context.sharedContext, presentationData: presentationData, accountManager: context.sharedContext.accountManager, postbox: context.account.postbox, network: context.account.network, server: server, updatedPresentationData: context.sharedContext.presentationData)
+        self.init(presentationData: presentationData, accountManager: context.sharedContext.accountManager, postbox: context.account.postbox, network: context.account.network, server: server, updatedPresentationData: context.sharedContext.presentationData)
     }
     
-    public init(sharedContext: SharedAccountContext, presentationData: PresentationData, accountManager: AccountManager<TelegramAccountManagerTypes>, postbox: Postbox, network: Network, server: ProxyServerSettings, updatedPresentationData: Signal<PresentationData, NoError>?) {
-        self.sharedContext = sharedContext
+    public init(presentationData: PresentationData, accountManager: AccountManager<TelegramAccountManagerTypes>, postbox: Postbox, network: Network, server: ProxyServerSettings, updatedPresentationData: Signal<PresentationData, NoError>?) {
         let sheetTheme = ActionSheetControllerTheme(presentationData: presentationData)
         super.init(theme: sheetTheme)
         
@@ -41,7 +39,7 @@ public final class ProxyServerActionSheetController: ActionSheetController {
             items.append(ActionSheetTextItem(title: presentationData.strings.SocksProxySetup_AdNoticeHelp))
         }
         items.append(ProxyServerInfoItem(strings: presentationData.strings, network: network, server: server))
-        items.append(ProxyServerActionItem(sharedContext: sharedContext, accountManager:accountManager, postbox: postbox, network: network, presentationData: presentationData, server: server, dismiss: { [weak self] success in
+        items.append(ProxyServerActionItem(accountManager:accountManager, postbox: postbox, network: network, presentationData: presentationData, server: server, dismiss: { [weak self] success in
             guard let strongSelf = self, !strongSelf.isDismissed else {
                 return
             }
@@ -264,7 +262,6 @@ private final class ProxyServerInfoItemNode: ActionSheetItemNode {
 }
 
 private final class ProxyServerActionItem: ActionSheetItem {
-    private let sharedContext: SharedAccountContext
     private let accountManager: AccountManager<TelegramAccountManagerTypes>
     private let postbox: Postbox
     private let network: Network
@@ -273,8 +270,7 @@ private final class ProxyServerActionItem: ActionSheetItem {
     private let dismiss: (Bool) -> Void
     private let present: (ViewController, Any?) -> Void
     
-    init(sharedContext: SharedAccountContext, accountManager: AccountManager<TelegramAccountManagerTypes>, postbox: Postbox, network: Network, presentationData: PresentationData, server: ProxyServerSettings, dismiss: @escaping (Bool) -> Void, present: @escaping (ViewController, Any?) -> Void) {
-        self.sharedContext = sharedContext
+    init(accountManager: AccountManager<TelegramAccountManagerTypes>, postbox: Postbox, network: Network, presentationData: PresentationData, server: ProxyServerSettings, dismiss: @escaping (Bool) -> Void, present: @escaping (ViewController, Any?) -> Void) {
         self.accountManager = accountManager
         self.postbox = postbox
         self.network = network
@@ -285,7 +281,7 @@ private final class ProxyServerActionItem: ActionSheetItem {
     }
     
     func node(theme: ActionSheetControllerTheme) -> ActionSheetItemNode {
-        return ProxyServerActionItemNode(sharedContext: self.sharedContext, accountManager: self.accountManager, postbox: self.postbox, network: self.network, presentationData: self.presentationData, theme: theme, server: self.server, dismiss: self.dismiss, present: self.present)
+        return ProxyServerActionItemNode(accountManager: self.accountManager, postbox: self.postbox, network: self.network, presentationData: self.presentationData, theme: theme, server: self.server, dismiss: self.dismiss, present: self.present)
     }
     
     func updateNode(_ node: ActionSheetItemNode) {
@@ -293,7 +289,6 @@ private final class ProxyServerActionItem: ActionSheetItem {
 }
 
 private final class ProxyServerActionItemNode: ActionSheetItemNode {
-    private let sharedContext: SharedAccountContext
     private let accountManager: AccountManager<TelegramAccountManagerTypes>
     private let postbox: Postbox
     private let network: Network
@@ -310,8 +305,7 @@ private final class ProxyServerActionItemNode: ActionSheetItemNode {
     private let disposable = MetaDisposable()
     private var revertSettings: ProxySettings?
     
-    init(sharedContext: SharedAccountContext, accountManager: AccountManager<TelegramAccountManagerTypes>, postbox: Postbox, network: Network, presentationData: PresentationData, theme: ActionSheetControllerTheme, server: ProxyServerSettings, dismiss: @escaping (Bool) -> Void, present: @escaping (ViewController, Any?) -> Void) {
-        self.sharedContext = sharedContext
+    init(accountManager: AccountManager<TelegramAccountManagerTypes>, postbox: Postbox, network: Network, presentationData: PresentationData, theme: ActionSheetControllerTheme, server: ProxyServerSettings, dismiss: @escaping (Bool) -> Void, present: @escaping (ViewController, Any?) -> Void) {
         self.accountManager = accountManager
         self.postbox = postbox
         self.network = network
@@ -436,7 +430,7 @@ private final class ProxyServerActionItemNode: ActionSheetItemNode {
                             strongSelf.buttonNode.isUserInteractionEnabled = true
                             strongSelf.requestLayoutUpdate()
                             
-                            strongSelf.present(textAlertController(sharedContext: strongSelf.sharedContext, title: nil, text: strongSelf.presentationData.strings.SocksProxySetup_FailedToConnect, actions: [TextAlertAction(type: .defaultAction, title: strongSelf.presentationData.strings.Common_OK, action: {})]), nil)
+                            strongSelf.present(standardTextAlertController(theme: AlertControllerTheme(presentationData: strongSelf.presentationData), title: nil, text: strongSelf.presentationData.strings.SocksProxySetup_FailedToConnect, actions: [TextAlertAction(type: .defaultAction, title: strongSelf.presentationData.strings.Common_OK, action: {})]), nil)
                         }
                     }
                 }))

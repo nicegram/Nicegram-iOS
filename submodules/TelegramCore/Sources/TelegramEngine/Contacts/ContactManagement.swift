@@ -25,8 +25,7 @@ private func updatedRemoteContactPeers(network: Network, hash: Int64) -> Signal<
         switch result {
         case .contactsNotModified:
             return nil
-        case let .contacts(contactsData):
-            let (savedCount, users) = (contactsData.savedCount, contactsData.users)
+        case let .contacts(_, savedCount, users):
             return (AccumulatedPeers(users: users), savedCount)
         }
     }

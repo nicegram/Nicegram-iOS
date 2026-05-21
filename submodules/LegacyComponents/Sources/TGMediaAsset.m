@@ -143,7 +143,7 @@
 - (SSignal *)actualVideoDuration
 {
     if (!self.isVideo)
-        return nil;
+        return [SSignal fail:nil];
     
     if (_cachedDuration == nil)
     {

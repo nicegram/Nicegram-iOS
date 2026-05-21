@@ -89,7 +89,7 @@ extension CGSize {
 }
 
 private let springAnimationIn: CABasicAnimation = {
-    let animation = makeSpringAnimation("", duration: 0.5)
+    let animation = makeSpringAnimation("")
     return animation
 }()
 
@@ -115,10 +115,6 @@ public let listViewAnimationCurveLinear: (CGFloat) -> CGFloat = { t in
 
 public let listViewAnimationCurveEaseInOut: (CGFloat) -> CGFloat = { t in
     return bezierPoint(0.42, 0.0, 0.58, 1.0, t)
-}
-
-public let listViewAnimationCurveEaseIn: (CGFloat) -> CGFloat = { t in
-    return bezierPoint(0.42, 0.0, 1.0, 1.0, t)
 }
 
 #if os(iOS)
@@ -218,8 +214,6 @@ public func listViewAnimationDurationAndCurve(transition: ContainedViewLayoutTra
             case .linear:
                 return (animationDuration, .Default(duration: animationDuration))
             case .easeInOut:
-                return (animationDuration, .Default(duration: animationDuration))
-            case .easeIn:
                 return (animationDuration, .Default(duration: animationDuration))
             case .spring, .customSpring:
                 return (animationDuration, .Spring(duration: animationDuration))

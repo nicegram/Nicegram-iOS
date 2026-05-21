@@ -6,7 +6,6 @@ import TelegramCore
 import SwiftSignalKit
 import Postbox
 import TelegramPresentationData
-import PresentationDataUtils
 import AccountContext
 import ContextUI
 import PhotoResources
@@ -31,6 +30,7 @@ import StoryContainerScreen
 import EmptyStateIndicatorComponent
 import UIKitRuntimeUtils
 import PeerInfoPaneNode
+import ShareController
 import UndoUI
 import PlainButtonComponent
 import ComponentDisplayAdapters
@@ -489,7 +489,7 @@ private final class DurationLayer: SimpleLayer {
             })
             self.contents = image?.cgImage
             
-            if let smallProfileImage = author.smallProfileImage, let peerReference = PeerReference(author) {
+            if let smallProfileImage = author.smallProfileImage, let peerReference = PeerReference(author._asPeer()) {
                 if let result = directMediaImageCache.getAvatarImage(peer: peerReference, resource: MediaResourceReference.avatar(peer: peerReference, resource: smallProfileImage.resource), immediateThumbnail: smallProfileImage.immediateThumbnailData, size: 24, includeBlurred: true, synchronous: synchronous == .full) {
                     if let image = result.image {
                         avatarLayer.contents = image.cgImage
@@ -640,7 +640,6 @@ private final class ItemLayer: CALayer, SparseItemGridLayer {
             self.durationLayer = nil
             durationLayer.removeFromSuperlayer()
         }
-        
         
         if let topRightIcon {
             if let privacyTypeLayer = self.privacyTypeLayer {
@@ -1825,8 +1824,6 @@ public final class PeerInfoStoryPaneNode: ASDisplayNode, PeerInfoPaneNode, ASScr
         self.maxStoriesPerFolder = maxStoriesPerFolder
         
         super.init()
-        
-        self.clipsToBounds = true
 
         if case .peer = self.scope {
             let _ = (ApplicationSpecificNotice.getSharedMediaScrollingTooltip(accountManager: context.sharedContext.accountManager)
@@ -2115,7 +2112,7 @@ public final class PeerInfoStoryPaneNode: ASDisplayNode, PeerInfoPaneNode, ASScr
             }
 
             if case .botPreview = scope {
-                let backgroundColor = presentationData.theme.list.blocksBackgroundColor
+                let backgroundColor = presentationData.theme.list.plainBackgroundColor
                 let foregroundColor = presentationData.theme.list.itemBlocksBackgroundColor.withAlphaComponent(0.6)
                 
                 return SparseItemGrid.ShimmerColors(background: backgroundColor.argb, foreground: foregroundColor.argb)
@@ -2192,7 +2189,6 @@ public final class PeerInfoStoryPaneNode: ASDisplayNode, PeerInfoPaneNode, ASScr
         if case .location = scope {
             let mapNode = LocationMapHeaderNode(
                 presentationData: self.presentationData,
-                glass: false,
                 toggleMapModeSelection: { [weak self] in
                     guard let self else {
                         return
@@ -2201,8 +2197,6 @@ public final class PeerInfoStoryPaneNode: ASDisplayNode, PeerInfoPaneNode, ASScr
                     var state = self.locationViewState
                     state.displayingMapModeOptions = !state.displayingMapModeOptions
                     self.locationViewState = state
-                },
-                updateMapMode: { _ in
                 },
                 goToUserLocation: { [weak self] in
                     guard let self else {
@@ -2766,14 +2760,28 @@ public final class PeerInfoStoryPaneNode: ASDisplayNode, PeerInfoPaneNode, ASScr
                         guard let self else {
                             return
                         }
-                        guard let peer, let peerReference = PeerReference(peer) else {
+                        guard let peer, let peerReference = PeerReference(peer._asPeer()) else {
                             return
                         }
                         
-                        let shareController = self.context.sharedContext.makeShareController(context: self.context, params: ShareControllerParams(
+                        let shareController = ShareController(
+                            context: self.context,
                             subject: .media(.story(peer: peerReference, id: item.id, media: TelegramMediaStory(storyId: StoryId(peerId: peer.id, id: item.id), isMention: false)), nil),
-                            externalShare: false
-                        ))
+                            presetText: nil,
+                            preferredAction: .default,
+                            showInChat: nil,
+                            fromForeignApp: false,
+                            segmentedValues: nil,
+                            externalShare: false,
+                            immediateExternalShare: false,
+                            switchableAccounts: [],
+                            immediatePeerId: nil,
+                            updatedPresentationData: nil,
+                            forceTheme: nil,
+                            forcedActionTitle: nil,
+                            shareAsLink: false,
+                            collectibleItemInfo: nil
+                        )
                         self.parentController?.present(shareController, in: .window(.root))
                     })
                 })
@@ -2854,7 +2862,7 @@ public final class PeerInfoStoryPaneNode: ASDisplayNode, PeerInfoPaneNode, ASScr
         self.tempContextContentItemNode = tempSourceNode
         self.addSubnode(tempSourceNode)
         
-        let contextController = makeContextController(presentationData: self.presentationData, source: .extracted(ExtractedContentSourceImpl(controller: parentController, sourceNode: tempSourceNode.contextSourceNode, keepInPlace: false, blurBackground: true)), items: .single(ContextController.Items(content: .list(items))), gesture: gesture)
+        let contextController = ContextController(presentationData: self.presentationData, source: .extracted(ExtractedContentSourceImpl(controller: parentController, sourceNode: tempSourceNode.contextSourceNode, keepInPlace: false, blurBackground: true)), items: .single(ContextController.Items(content: .list(items))), gesture: gesture)
         parentController.presentInGlobalOverlay(contextController)
     }
 
@@ -3060,7 +3068,7 @@ public final class PeerInfoStoryPaneNode: ASDisplayNode, PeerInfoPaneNode, ASScr
             if let value = state.peerReference {
                 peerReference = value
             } else if let peer = item.peer {
-                peerReference = PeerReference(peer)
+                peerReference = PeerReference(peer._asPeer())
             }
             guard let peerReference else {
                 continue
@@ -3715,7 +3723,6 @@ public final class PeerInfoStoryPaneNode: ASDisplayNode, PeerInfoPaneNode, ASScr
             navigationBarHeight: 0.0,
             topPadding: mapOverscrollInset + self.additionalNavigationHeight,
             controlsTopPadding: controlsTopPadding,
-            controlsBottomPadding: 0.0,
             offset: mapOffset,
             size: mapSize,
             transition: transition
@@ -3974,7 +3981,7 @@ public final class PeerInfoStoryPaneNode: ASDisplayNode, PeerInfoPaneNode, ASScr
                             }
                             
                             let presentationData = self.presentationData
-                            let contextController = makeContextController(
+                            let contextController = ContextController(
                                 presentationData: presentationData,
                                 source: .extracted(ItemExtractedContentSource(
                                     sourceNode: sourceNode,
@@ -4013,17 +4020,14 @@ public final class PeerInfoStoryPaneNode: ASDisplayNode, PeerInfoPaneNode, ASScr
             transition: folderTabTransition,
             component: AnyComponent(TabSelectorComponent(
                 colors: TabSelectorComponent.Colors(
-                    foreground: self.presentationData.theme.list.itemPrimaryTextColor,
-                    selection: self.presentationData.theme.list.itemPrimaryTextColor.withMultipliedAlpha(0.05),
-                    normal: self.presentationData.theme.list.itemPrimaryTextColor,
-                    simple: true
+                    foreground: self.presentationData.theme.list.itemPrimaryTextColor.withMultipliedAlpha(0.8),
+                    selection: self.presentationData.theme.list.itemPrimaryTextColor.withMultipliedAlpha(0.05)
                 ),
                 theme: self.presentationData.theme,
                 customLayout: TabSelectorComponent.CustomLayout(
-                    font: Font.medium(15.0),
+                    font: Font.medium(14.0),
                     spacing: 9.0,
-                    verticalInset: 11.0,
-                    height: 44.0 - 5.0 * 2.0
+                    verticalInset: 11.0
                 ),
                 items: folderItems,
                 selectedId: selectedId,
@@ -4082,9 +4086,9 @@ public final class PeerInfoStoryPaneNode: ASDisplayNode, PeerInfoPaneNode, ASScr
                 }
             )),
             environment: {},
-            containerSize: CGSize(width: size.width - 6.0 * 2.0, height: 44.0)
+            containerSize: CGSize(width: size.width, height: 44.0)
         )
-        var folderTabFrame = CGRect(origin: CGPoint(x: floor((size.width - folderTabSize.width) * 0.5), y: topInset - 21.0), size: folderTabSize)
+        var folderTabFrame = CGRect(origin: CGPoint(x: floor((size.width - folderTabSize.width) * 0.5), y: topInset - 11.0), size: folderTabSize)
         
         let effectiveScrollingOffset: CGFloat
         effectiveScrollingOffset = self.itemGrid.scrollingOffset
@@ -4228,7 +4232,7 @@ public final class PeerInfoStoryPaneNode: ASDisplayNode, PeerInfoPaneNode, ASScr
         }
         
         var hasBarBackground = false
-        if self.isProfileEmbedded && !"".isEmpty {
+        if self.isProfileEmbedded {
             if case .botPreview = self.scope {
                 hasBarBackground = true
             } else if case let .peer(_, _, isArchived) = self.scope, ((self.canManageStories && !isArchived) || !self.currentStoryFolders.isEmpty) {
@@ -4270,9 +4274,9 @@ public final class PeerInfoStoryPaneNode: ASDisplayNode, PeerInfoPaneNode, ASScr
             if case .botPreview = self.scope {
                 updateBotPreviewFooter(size: size, bottomInset: 0.0, transition: transition)
                 if let botPreviewFooterView = self.botPreviewFooter?.view {
-                    listBottomInset += 18.0 + botPreviewFooterView.bounds.height
-                }
+                listBottomInset += 18.0 + botPreviewFooterView.bounds.height
             }
+        }
         }
         
         if self.isProfileEmbedded, let selectedIds = self.itemInteraction.selectedIds, self.canManageStories, case let .peer(peerId, _, isArchived) = self.scope {
@@ -4581,13 +4585,12 @@ public final class PeerInfoStoryPaneNode: ASDisplayNode, PeerInfoPaneNode, ASScr
                 } else {
                     backgroundColor = presentationData.theme.list.blocksBackgroundColor
                 }
-                let _ = backgroundColor
                 
-                /*if self.didUpdateItemsOnce {
+                if self.didUpdateItemsOnce {
                     ComponentTransition(animation: .curve(duration: 0.2, curve: .easeInOut)).setBackgroundColor(view: self.view, color: backgroundColor)
                 } else {
                     self.view.backgroundColor = backgroundColor
-                }*/
+                }
             } else {
                 let emptyStateView: ComponentView<Empty>
                 var emptyStateTransition = ComponentTransition(transition)
@@ -4649,13 +4652,12 @@ public final class PeerInfoStoryPaneNode: ASDisplayNode, PeerInfoPaneNode, ASScr
                 } else {
                     backgroundColor = presentationData.theme.list.blocksBackgroundColor
                 }
-                let _ = backgroundColor
                 
-                /*if self.didUpdateItemsOnce {
+                if self.didUpdateItemsOnce {
                     ComponentTransition(animation: .curve(duration: 0.2, curve: .easeInOut)).setBackgroundColor(view: self.view, color: backgroundColor)
                 } else {
                     self.view.backgroundColor = backgroundColor
-                }*/
+                }
             }
         } else if case .botPreview = self.scope, let items = self.items, items.items.isEmpty, items.count == 0 {
             let emptyStateView: ComponentView<Empty>
@@ -4735,13 +4737,12 @@ public final class PeerInfoStoryPaneNode: ASDisplayNode, PeerInfoPaneNode, ASScr
             } else {
                 backgroundColor = presentationData.theme.list.blocksBackgroundColor
             }
-            let _ = backgroundColor
             
-            /*if self.didUpdateItemsOnce {
+            if self.didUpdateItemsOnce {
                 ComponentTransition(animation: .curve(duration: 0.2, curve: .easeInOut)).setBackgroundColor(view: self.view, color: backgroundColor)
             } else {
                 self.view.backgroundColor = backgroundColor
-            }*/
+            }
         } else if case let .peer(_, _, isArchived) = self.scope, self.canManageStories, !isArchived, self.isProfileEmbedded, let items = self.items, items.items.isEmpty, items.count == 0 {
             let emptyStateView: ComponentView<Empty>
             var emptyStateTransition = ComponentTransition(transition)
@@ -4817,13 +4818,12 @@ public final class PeerInfoStoryPaneNode: ASDisplayNode, PeerInfoPaneNode, ASScr
             } else {
                 backgroundColor = presentationData.theme.list.blocksBackgroundColor
             }
-            let _ = backgroundColor
             
-            /*if self.didUpdateItemsOnce {
+            if self.didUpdateItemsOnce {
                 ComponentTransition(animation: .curve(duration: 0.2, curve: .easeInOut)).setBackgroundColor(view: self.view, color: backgroundColor)
             } else {
                 self.view.backgroundColor = backgroundColor
-            }*/
+            }
         } else {
             if let emptyStateView = self.emptyStateView {
                 let subTransition = ComponentTransition(animation: .curve(duration: 0.2, curve: .easeInOut))
@@ -4839,17 +4839,17 @@ public final class PeerInfoStoryPaneNode: ASDisplayNode, PeerInfoPaneNode, ASScr
                     }
                 }
                 
-                /*if self.isProfileEmbedded, case .botPreview = self.scope {
+                if self.isProfileEmbedded, case .botPreview = self.scope {
                     subTransition.setBackgroundColor(view: self.view, color: presentationData.theme.list.blocksBackgroundColor)
                 } else if self.isProfileEmbedded, case let .peer(_, _, isArchived) = self.scope, ((self.canManageStories && !isArchived) || !self.currentStoryFolders.isEmpty), self.isProfileEmbedded {
                     subTransition.setBackgroundColor(view: self.view, color: presentationData.theme.list.blocksBackgroundColor)
                 } else if self.isProfileEmbedded {
-                    subTransition.setBackgroundColor(view: self.view, color: presentationData.theme.list.blocksBackgroundColor)
+                    subTransition.setBackgroundColor(view: self.view, color: presentationData.theme.list.plainBackgroundColor)
                 } else {
                     subTransition.setBackgroundColor(view: self.view, color: presentationData.theme.list.blocksBackgroundColor)
-                }*/
+                }
             } else {
-                /*if self.isProfileEmbedded, case .botPreview = self.scope {
+                if self.isProfileEmbedded, case .botPreview = self.scope {
                     self.view.backgroundColor = presentationData.theme.list.blocksBackgroundColor
                 } else if self.isProfileEmbedded, case let .peer(_, _, isArchived) = self.scope, self.canManageStories, self.isProfileEmbedded, !isArchived {
                     self.view.backgroundColor = presentationData.theme.list.blocksBackgroundColor
@@ -4859,7 +4859,7 @@ public final class PeerInfoStoryPaneNode: ASDisplayNode, PeerInfoPaneNode, ASScr
                     } else {
                         self.view.backgroundColor = .clear
                     }
-                }*/
+                }
             }
         }
 
@@ -5009,7 +5009,7 @@ public final class PeerInfoStoryPaneNode: ASDisplayNode, PeerInfoPaneNode, ASScr
     
     private func presentAddStoryFolder(addItems: [EngineStoryItem] = []) {
         let promptController = promptController(
-            context: self.context,
+            sharedContext: self.context.sharedContext,
             updatedPresentationData: nil,
             text: self.presentationData.strings.Stories_CreateAlbum_Title,
             titleFont: .bold,
@@ -5042,7 +5042,7 @@ public final class PeerInfoStoryPaneNode: ASDisplayNode, PeerInfoPaneNode, ASScr
     
     private func presentRenameStoryFolder(id: Int64, title: String) {
         let promptController = promptController(
-            context: self.context,
+            sharedContext: self.context.sharedContext,
             updatedPresentationData: nil,
             text: self.presentationData.strings.Stories_EditAlbum_Title,
             titleFont: .bold,
@@ -5169,15 +5169,15 @@ public final class PeerInfoStoryPaneNode: ASDisplayNode, PeerInfoPaneNode, ASScr
     }
     
     public func presentUnableToAddMorePreviewsAlert() {
-        self.parentController?.present(textAlertController(context: self.context, title: nil, text: self.presentationData.strings.BotPreviews_AlertTooManyPreviews(Int32(self.maxBotPreviewCount)), actions: [
+        self.parentController?.present(standardTextAlertController(theme: AlertControllerTheme(presentationData: self.presentationData), title: nil, text: self.presentationData.strings.BotPreviews_AlertTooManyPreviews(Int32(self.maxBotPreviewCount)), actions: [
             TextAlertAction(type: .defaultAction, title: self.presentationData.strings.Common_OK, action: {
             })
         ], parseMarkdown: true), in: .window(.root))
     }
     
     public func presentDeleteBotPreviewLanguage() {
-        self.parentController?.present(textAlertController(context: self.context, title: self.presentationData.strings.BotPreviews_DeleteTranslationAlert_Title, text: self.presentationData.strings.BotPreviews_DeleteTranslationAlert_Text, actions: [
-            TextAlertAction(type: .genericAction, title: self.presentationData.strings.Common_Cancel, action: {
+        self.parentController?.present(standardTextAlertController(theme: AlertControllerTheme(presentationData: self.presentationData), title: self.presentationData.strings.BotPreviews_DeleteTranslationAlert_Title, text: self.presentationData.strings.BotPreviews_DeleteTranslationAlert_Text, actions: [
+            TextAlertAction(type: .defaultAction, title: self.presentationData.strings.Common_Cancel, action: {
             }),
             TextAlertAction(type: .destructiveAction, title: self.presentationData.strings.Common_OK, action: { [weak self] in
                 guard let self else {
@@ -5389,69 +5389,83 @@ public final class PeerInfoStoryPaneNode: ASDisplayNode, PeerInfoPaneNode, ASScr
                 urlBase = "\(peer.id.id._internalGetInt64Value())"
             }
             
-            let shareController = self.context.sharedContext.makeShareController(context: self.context, params: ShareControllerParams(
+            let shareController = ShareController(
+                context: self.context,
                 subject: .url("https://t.me/\(urlBase)/a/\(id)"),
+                presetText: nil,
+                preferredAction: .default,
+                showInChat: nil,
+                fromForeignApp: false,
+                segmentedValues: nil,
                 externalShare: false,
-                actionCompleted: { [weak self] in
-                    guard let self else {
-                        return
-                    }
-                    let presentationData = self.context.sharedContext.currentPresentationData.with { $0 }
-                    self.parentController?.present(UndoOverlayController(presentationData: presentationData, content: .linkCopied(title: nil, text: presentationData.strings.Conversation_LinkCopied), elevatedLayout: false, animateInAsReplacement: false, action: { _ in return false }), in: .window(.root))
-                },
-                completed: { [weak self] peerIds in
-                    guard let self else {
-                        return
-                    }
-                    let _ = (self.context.engine.data.get(
-                        EngineDataList(
-                            peerIds.map(TelegramEngine.EngineData.Item.Peer.Peer.init)
-                        )
-                    )
-                    |> deliverOnMainQueue).startStandalone(next: { [weak self] peerList in
-                        guard let self else {
-                            return
-                        }
-
-                        let peers = peerList.compactMap { $0 }
-                        let presentationData = self.context.sharedContext.currentPresentationData.with { $0 }
-
-                        let text: String
-                        var savedMessages = false
-                        if peers.count == 1, let peer = peers.first {
-                            let peerName = peer.id == self.context.account.peerId ? presentationData.strings.DialogList_SavedMessages : peer.displayTitle(strings: presentationData.strings, displayOrder: presentationData.nameDisplayOrder)
-                            text = presentationData.strings.WebBrowser_LinkForwardTooltip_Chat_One(peerName).string
-                            savedMessages = peer.id == self.context.account.peerId
-                        } else if peers.count == 2, let firstPeer = peers.first, let secondPeer = peers.last {
-                            let firstPeerName = firstPeer.id == self.context.account.peerId ? presentationData.strings.DialogList_SavedMessages : firstPeer.displayTitle(strings: presentationData.strings, displayOrder: presentationData.nameDisplayOrder)
-                            let secondPeerName = secondPeer.id == self.context.account.peerId ? presentationData.strings.DialogList_SavedMessages : secondPeer.displayTitle(strings: presentationData.strings, displayOrder: presentationData.nameDisplayOrder)
-                            text = presentationData.strings.WebBrowser_LinkForwardTooltip_TwoChats_One(firstPeerName, secondPeerName).string
-                        } else if let peer = peers.first {
-                            let peerName = peer.displayTitle(strings: presentationData.strings, displayOrder: presentationData.nameDisplayOrder)
-                            text = presentationData.strings.WebBrowser_LinkForwardTooltip_ManyChats_One(peerName, "\(peers.count - 1)").string
-                        } else {
-                            text = ""
-                        }
-
-                        self.parentController?.present(UndoOverlayController(presentationData: presentationData, content: .forward(savedMessages: savedMessages, text: text), elevatedLayout: false, animateInAsReplacement: true, action: { [weak self] action in
-                            if savedMessages, let self, action == .info {
-                                let _ = (self.context.engine.data.get(TelegramEngine.EngineData.Item.Peer.Peer(id: self.context.account.peerId))
-                                |> deliverOnMainQueue).start(next: { [weak self] peer in
-                                    guard let self, let peer else {
-                                        return
-                                    }
-                                    guard let navigationController = self.parentController?.navigationController as? NavigationController else {
-                                        return
-                                    }
-                                    self.context.sharedContext.navigateToChatController(NavigateToChatControllerParams(navigationController: navigationController, context: self.context, chatLocation: .peer(peer), forceOpenChat: true))
-                                })
-                            }
-                            return false
-                        }), in: .current)
-                    })
-                }
-            ))
+                immediateExternalShare: false,
+                switchableAccounts: [],
+                immediatePeerId: nil,
+                updatedPresentationData: nil,
+                forceTheme: nil,
+                forcedActionTitle: nil,
+                shareAsLink: false,
+                collectibleItemInfo: nil
+            )
             self.parentController?.present(shareController, in: .window(.root))
+            shareController.completed = { [weak self] peerIds in
+                guard let self else {
+                    return
+                }
+                let _ = (self.context.engine.data.get(
+                    EngineDataList(
+                        peerIds.map(TelegramEngine.EngineData.Item.Peer.Peer.init)
+                    )
+                )
+                |> deliverOnMainQueue).startStandalone(next: { [weak self] peerList in
+                    guard let self else {
+                        return
+                    }
+                    
+                    let peers = peerList.compactMap { $0 }
+                    let presentationData = self.context.sharedContext.currentPresentationData.with { $0 }
+                    
+                    let text: String
+                    var savedMessages = false
+                    if peers.count == 1, let peer = peers.first {
+                        let peerName = peer.id == self.context.account.peerId ? presentationData.strings.DialogList_SavedMessages : peer.displayTitle(strings: presentationData.strings, displayOrder: presentationData.nameDisplayOrder)
+                        text = presentationData.strings.WebBrowser_LinkForwardTooltip_Chat_One(peerName).string
+                        savedMessages = peer.id == self.context.account.peerId
+                    } else if peers.count == 2, let firstPeer = peers.first, let secondPeer = peers.last {
+                        let firstPeerName = firstPeer.id == self.context.account.peerId ? presentationData.strings.DialogList_SavedMessages : firstPeer.displayTitle(strings: presentationData.strings, displayOrder: presentationData.nameDisplayOrder)
+                        let secondPeerName = secondPeer.id == self.context.account.peerId ? presentationData.strings.DialogList_SavedMessages : secondPeer.displayTitle(strings: presentationData.strings, displayOrder: presentationData.nameDisplayOrder)
+                        text = presentationData.strings.WebBrowser_LinkForwardTooltip_TwoChats_One(firstPeerName, secondPeerName).string
+                    } else if let peer = peers.first {
+                        let peerName = peer.displayTitle(strings: presentationData.strings, displayOrder: presentationData.nameDisplayOrder)
+                        text = presentationData.strings.WebBrowser_LinkForwardTooltip_ManyChats_One(peerName, "\(peers.count - 1)").string
+                    } else {
+                        text = ""
+                    }
+                    
+                    self.parentController?.present(UndoOverlayController(presentationData: presentationData, content: .forward(savedMessages: savedMessages, text: text), elevatedLayout: false, animateInAsReplacement: true, action: { [weak self] action in
+                        if savedMessages, let self, action == .info {
+                            let _ = (self.context.engine.data.get(TelegramEngine.EngineData.Item.Peer.Peer(id: self.context.account.peerId))
+                            |> deliverOnMainQueue).start(next: { [weak self] peer in
+                                guard let self, let peer else {
+                                    return
+                                }
+                                guard let navigationController = self.parentController?.navigationController as? NavigationController else {
+                                    return
+                                }
+                                self.context.sharedContext.navigateToChatController(NavigateToChatControllerParams(navigationController: navigationController, context: self.context, chatLocation: .peer(peer), forceOpenChat: true))
+                            })
+                        }
+                        return false
+                    }), in: .current)
+                })
+            }
+            shareController.actionCompleted = { [weak self] in
+                guard let self else {
+                    return
+                }
+                let presentationData = self.context.sharedContext.currentPresentationData.with { $0 }
+                self.parentController?.present(UndoOverlayController(presentationData: presentationData, content: .linkCopied(title: nil, text: presentationData.strings.Conversation_LinkCopied), elevatedLayout: false, animateInAsReplacement: false, action: { _ in return false }), in: .window(.root))
+            }
         }
     }
 }

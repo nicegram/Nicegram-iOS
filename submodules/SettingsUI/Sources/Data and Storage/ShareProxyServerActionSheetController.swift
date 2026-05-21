@@ -7,6 +7,7 @@ import UIKit
 import SwiftSignalKit
 import TelegramPresentationData
 import QrCode
+import ShareController
 
 public final class ShareProxyServerActionSheetController: ActionSheetController {
     private var presentationDisposable: Disposable?

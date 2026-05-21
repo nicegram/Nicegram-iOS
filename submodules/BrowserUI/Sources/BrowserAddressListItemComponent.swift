@@ -12,15 +12,8 @@ import AccountContext
 import ContextUI
 import UrlEscaping
 
-private let iconFont = Font.with(size: 28.0, design: .round, weight: .bold)
-private let iconTextBackgroundImage = generateImage(CGSize(width: 40.0, height: 40.0), contextGenerator: { size, context in
-    context.clear(CGRect(origin: CGPoint(), size: size))
-    context.setFillColor(UIColor(rgb: 0xFF9500).cgColor)
-    
-    let path = UIBezierPath(roundedRect: CGRect(origin: .zero, size: size), cornerRadius: 12.0)
-    context.addPath(path.cgPath)
-    context.fillPath()
-})
+private let iconFont = Font.with(size: 30.0, design: .round, weight: .bold)
+private let iconTextBackgroundImage = generateStretchableFilledCircleImage(radius: 6.0, color: UIColor(rgb: 0xFF9500))
 
 final class BrowserAddressListItemComponent: Component {
     let context: AccountContext
@@ -268,7 +261,7 @@ final class BrowserAddressListItemComponent: Component {
             let iconImageLayout = self.icon.asyncLayout()
             var iconImageApply: (() -> Void)?
             if let iconImageReferenceAndRepresentation = iconImageReferenceAndRepresentation {
-                let imageCorners = ImageCorners(radius: 12.0, curve: .continuous)
+                let imageCorners = ImageCorners(radius: 6.0)
                 let arguments = TransformImageArguments(corners: imageCorners, imageSize: iconImageReferenceAndRepresentation.1.dimensions.cgSize.aspectFilled(iconSize), boundingSize: iconSize, intrinsicInsets: UIEdgeInsets(), emptyColor: component.theme.list.mediaPlaceholderColor)
                 iconImageApply = iconImageLayout(arguments)
             }

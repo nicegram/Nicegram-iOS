@@ -451,7 +451,7 @@ private final class FetchManagerCategoryContext {
                                 let context = accountContext,
                                 NGSettings.shouldDownloadVideo,
                                 shouldSave {
-                                let _ = (saveToCameraRoll(context: context, userLocation: userLocation, mediaReference: mediaReference)
+                                let _ = (saveToCameraRoll(context: context, postbox: postbox, userLocation: userLocation, mediaReference: mediaReference)
                                          |> deliverOnMainQueue).start(completed: {
                                     if #available(iOS 13.0, *) {
                                         Task {

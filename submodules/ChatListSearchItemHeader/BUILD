@@ -7,15 +7,12 @@ swift_library(
         "Sources/**/*.swift",
     ]),
     copts = [
-        "-warnings-as-errors",
+        #"-warnings-as-errors",
     ],
     deps = [
-        "//submodules/Display",
-        "//submodules/TelegramPresentationData",
-        "//submodules/ListSectionHeaderNode",
-        "//submodules/ComponentFlow",
-        "//submodules/Components/ComponentDisplayAdapters",
-        "//submodules/TelegramUI/Components/EdgeEffect",
+        "//submodules/Display:Display",
+        "//submodules/TelegramPresentationData:TelegramPresentationData",
+        "//submodules/ListSectionHeaderNode:ListSectionHeaderNode",
     ],
     visibility = [
         "//visibility:public",

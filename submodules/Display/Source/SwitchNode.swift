@@ -9,11 +9,7 @@ private final class SwitchNodeViewLayer: CALayer {
 
 private final class SwitchNodeView: UISwitch {
     override class var layerClass: AnyClass {
-        if #available(iOS 26.0, *) {
-            return super.layerClass
-        } else {
-            return SwitchNodeViewLayer.self
-        }
+        return SwitchNodeViewLayer.self
     }
 }
 
@@ -23,9 +19,7 @@ open class SwitchNode: ASDisplayNode {
     public var frameColor = UIColor(rgb: 0xe0e0e0) {
         didSet {
             if self.isNodeLoaded {
-                if oldValue != self.frameColor {
-                    (self.view as! UISwitch).tintColor = self.frameColor
-                }
+                (self.view as! UISwitch).tintColor = self.frameColor
             }
         }
     }
@@ -39,9 +33,7 @@ open class SwitchNode: ASDisplayNode {
     public var contentColor = UIColor(rgb: 0x42d451) {
         didSet {
             if self.isNodeLoaded {
-                if oldValue != self.contentColor {
-                    (self.view as! UISwitch).onTintColor = self.contentColor
-                }
+                (self.view as! UISwitch).onTintColor = self.contentColor
             }
         }
     }
@@ -75,6 +67,7 @@ open class SwitchNode: ASDisplayNode {
         
         (self.view as! UISwitch).backgroundColor = self.backgroundColor
         (self.view as! UISwitch).tintColor = self.frameColor
+        //(self.view as! UISwitch).thumbTintColor = self.handleColor
         (self.view as! UISwitch).onTintColor = self.contentColor
         
         (self.view as! UISwitch).setOn(self._isOn, animated: false)
@@ -90,11 +83,7 @@ open class SwitchNode: ASDisplayNode {
     }
     
     override open func calculateSizeThatFits(_ constrainedSize: CGSize) -> CGSize {
-        if #available(iOS 26.0, *) {
-            return CGSize(width: 63.0, height: 28.0)
-        } else {
-            return CGSize(width: 51.0, height: 31.0)
-        }
+        return CGSize(width: 51.0, height: 31.0)
     }
     
     @objc func switchValueChanged(_ view: UISwitch) {

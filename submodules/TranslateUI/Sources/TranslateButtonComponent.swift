@@ -60,14 +60,13 @@ private final class TranslateButtonContentComponent: CombinedComponent {
             )
             
             let sideInset: CGFloat = 16.0
-            let textSideInset: CGFloat = 60.0
                         
             context.add(title
-                .position(CGPoint(x: textSideInset + title.size.width / 2.0, y: context.availableSize.height / 2.0))
+                .position(CGPoint(x: sideInset + title.size.width / 2.0, y: context.availableSize.height / 2.0))
             )
 
             context.add(icon
-                .position(CGPoint(x: sideInset + icon.size.width / 2.0, y: context.availableSize.height / 2.0))
+                .position(CGPoint(x: context.availableSize.width - sideInset - icon.size.width / 2.0, y: context.availableSize.height / 2.0))
             )
                         
             return context.availableSize
@@ -156,7 +155,7 @@ final class TranslateButtonComponent: Component {
             self.component = component
             
             self.backgroundView.backgroundColor = component.theme.list.itemBlocksBackgroundColor
-            self.backgroundView.layer.cornerRadius = 26.0
+            self.backgroundView.layer.cornerRadius = 10.0
             
             let _ = self.centralContentView.update(
                 transition: transition,

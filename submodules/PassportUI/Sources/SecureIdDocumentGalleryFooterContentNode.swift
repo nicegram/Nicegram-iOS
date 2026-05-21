@@ -2,6 +2,7 @@ import Foundation
 import UIKit
 import AsyncDisplayKit
 import Display
+import Postbox
 import TelegramCore
 import SwiftSignalKit
 import Photos
@@ -90,7 +91,7 @@ final class SecureIdDocumentGalleryFooterContentNode: GalleryFooterContentNode {
         }
     }
     
-    override func updateLayout(size: CGSize, metrics: LayoutMetrics, leftInset: CGFloat, rightInset: CGFloat, bottomInset: CGFloat, contentInset: CGFloat, transition: ContainedViewLayoutTransition) -> LayoutInfo {
+    override func updateLayout(size: CGSize, metrics: LayoutMetrics, leftInset: CGFloat, rightInset: CGFloat, bottomInset: CGFloat, contentInset: CGFloat, transition: ContainedViewLayoutTransition) -> CGFloat {
         let width = size.width
         var panelHeight: CGFloat = 44.0 + bottomInset
         panelHeight += contentInset
@@ -116,7 +117,7 @@ final class SecureIdDocumentGalleryFooterContentNode: GalleryFooterContentNode {
             self.dateNode.frame = CGRect(origin: CGPoint(x: floor((width - dateSize.width) / 2.0), y: panelHeight - bottomInset - 44.0 + floor((44.0 - dateSize.height - authorNameSize.height - labelsSpacing) / 2.0) + authorNameSize.height + labelsSpacing), size: dateSize)
         }
         
-        return LayoutInfo(height: panelHeight, needsShadow: false)
+        return panelHeight
     }
     
     override func animateIn(fromHeight: CGFloat, previousContentNode: GalleryFooterContentNode, transition: ContainedViewLayoutTransition) {

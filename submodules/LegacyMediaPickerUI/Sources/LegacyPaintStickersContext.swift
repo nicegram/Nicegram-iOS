@@ -573,7 +573,6 @@ public final class LegacyPaintEntityRenderer: NSObject, TGPhotoPaintEntityRender
 
 public final class LegacyPaintStickersContext: NSObject, TGPhotoPaintStickersContext {
     public var captionPanelView: (() -> TGCaptionPanelView?)?
-    public var livePhotoButton: (() -> TGLivePhotoButton?)?
     public var editCover: ((CGSize, @escaping (UIImage) -> Void) -> Void)?
     
     private let context: AccountContext
@@ -720,7 +719,7 @@ private class SendStarsButtonView: HighlightTrackingButton, TGPhotoSendStarsButt
         let backgroundSize = CGSize(width: width - 11.0, height: 33.0)
         transition.updateFrame(view: self.backgroundView, frame: CGRect(origin: CGPoint(x: floorToScreenPixels((width - backgroundSize.width) / 2.0), y: floorToScreenPixels((buttonSize.height - backgroundSize.height) / 2.0)), size: backgroundSize))
         self.backgroundView.layer.cornerRadius = backgroundSize.height / 2.0
-        self.backgroundView.backgroundColor = UIColor(rgb: 0x0088ff)
+        self.backgroundView.backgroundColor = UIColor(rgb: 0x007aff)
         
         return buttonSize;
     }

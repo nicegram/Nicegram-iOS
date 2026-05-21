@@ -12,7 +12,7 @@ import SheetComponent
 import BundleIconComponent
 import BalancedTextComponent
 import MultilineTextComponent
-import ButtonComponent
+import SolidRoundedButtonComponent
 import LottieComponent
 import AccountContext
 
@@ -73,7 +73,7 @@ private final class SheetContent: CombinedComponent {
         
         let title = Child(BalancedTextComponent.self)
         let list = Child(List<Empty>.self)
-        let actionButton = Child(ButtonComponent.self)
+        let actionButton = Child(SolidRoundedButtonComponent.self)
         
         let infoBackground = Child(RoundedRectangle.self)
         let infoTitle = Child(MultilineTextComponent.self)
@@ -284,7 +284,7 @@ private final class SheetContent: CombinedComponent {
             let infoBackground = infoBackground.update(
                 component: RoundedRectangle(
                     color: theme.list.blocksBackgroundColor,
-                    cornerRadius: 26.0
+                    cornerRadius: 10.0
                 ),
                 availableSize: CGSize(width: context.availableSize.width - sideInset * 2.0, height: totalInfoHeight),
                 transition: .immediate
@@ -307,48 +307,37 @@ private final class SheetContent: CombinedComponent {
             contentSize.height += infoPadding
             contentSize.height += spacing
             
-            var buttonTitle: [AnyComponentWithIdentity<Empty>] = []
-            buttonTitle.append(AnyComponentWithIdentity(id: 0, component: AnyComponent(LottieComponent(
-                content: LottieComponent.AppBundleContent(name: "anim_ok"),
-                color: theme.list.itemCheckColors.foregroundColor,
-                startingPosition: .begin,
-                size: CGSize(width: 28.0, height: 28.0),
-                playOnce: state.playOnce
-            ))))
-            buttonTitle.append(AnyComponentWithIdentity(id: 1, component: AnyComponent(ButtonTextContentComponent(
-                text: strings.Monetization_Intro_Understood,
-                badge: 0,
-                textColor: theme.list.itemCheckColors.foregroundColor,
-                badgeBackground: theme.list.itemCheckColors.foregroundColor,
-                badgeForeground: theme.list.itemCheckColors.fillColor
-            ))))
-            
-            let buttonInsets = ContainerViewLayout.concentricInsets(bottomInset: environment.safeInsets.bottom, innerDiameter: 52.0, sideInset: 30.0)
             let actionButton = actionButton.update(
-                component: ButtonComponent(
-                    background: ButtonComponent.Background(
-                        style: .glass,
-                        color: theme.list.itemCheckColors.fillColor,
-                        foreground: theme.list.itemCheckColors.foregroundColor,
-                        pressedColor: theme.list.itemCheckColors.fillColor.withMultipliedAlpha(0.9)
+                component: SolidRoundedButtonComponent(
+                    title: strings.Monetization_Intro_Understood,
+                    theme: SolidRoundedButtonComponent.Theme(
+                        backgroundColor: theme.list.itemCheckColors.fillColor,
+                        backgroundColors: [],
+                        foregroundColor: theme.list.itemCheckColors.foregroundColor
                     ),
-                    content: AnyComponentWithIdentity(
-                        id: AnyHashable(0),
-                        component: AnyComponent(HStack(buttonTitle, spacing: 2.0))
-                    ),
+                    font: .bold,
+                    fontSize: 17.0,
+                    height: 50.0,
+                    cornerRadius: 10.0,
+                    gloss: false,
+                    iconName: nil,
+                    animationName: nil,
+                    iconPosition: .left,
                     action: {
                         component.dismiss()
                     }
                 ),
-                availableSize: CGSize(width: context.availableSize.width - buttonInsets.left - buttonInsets.right, height: 52.0),
+                availableSize: CGSize(width: context.availableSize.width - sideInset * 2.0, height: 50.0),
                 transition: context.transition
             )
             context.add(actionButton
                 .position(CGPoint(x: context.availableSize.width / 2.0, y: contentSize.height + actionButton.size.height / 2.0))
             )
             contentSize.height += actionButton.size.height
-            contentSize.height += buttonInsets.bottom
-                                    
+            contentSize.height += 22.0
+                        
+            contentSize.height += environment.safeInsets.bottom
+            
             state.playAnimationIfNeeded()
             
             return contentSize
@@ -408,7 +397,6 @@ private final class SheetContainerComponent: CombinedComponent {
                             })
                         }
                     )),
-                    style: .glass,
                     backgroundColor: .color(environment.theme.actionSheet.opaqueItemBackgroundColor),
                     followContentSizeChanges: true,
                     externalState: sheetExternalState,
@@ -417,8 +405,6 @@ private final class SheetContainerComponent: CombinedComponent {
                 environment: {
                     environment
                     SheetComponentEnvironment(
-                        metrics: environment.metrics,
-                        deviceMetrics: environment.deviceMetrics,
                         isDisplaying: environment.value.isVisible,
                         isCentered: environment.metrics.widthClass == .regular,
                         hasInputHeight: !environment.inputHeight.isZero,

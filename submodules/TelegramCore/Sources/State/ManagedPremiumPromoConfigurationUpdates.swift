@@ -19,8 +19,7 @@ func updatePremiumPromoConfigurationOnce(accountPeerId: PeerId, postbox: Postbox
             return .complete()
         }
         return postbox.transaction { transaction -> Void in
-            if case let .premiumPromo(premiumPromoData) = result {
-                let apiUsers = premiumPromoData.users
+            if case let .premiumPromo(_, _, _, _, _, apiUsers) = result {
                 let parsedPeers = AccumulatedPeers(transaction: transaction, chats: [], users: apiUsers)
                 updatePeers(transaction: transaction, accountPeerId: accountPeerId, peers: parsedPeers)
             }
@@ -60,8 +59,7 @@ private func updatePremiumPromoConfiguration(transaction: Transaction, _ f: (Pre
 private extension PremiumPromoConfiguration {
     init(apiPremiumPromo: Api.help.PremiumPromo) {
         switch apiPremiumPromo {
-            case let .premiumPromo(premiumPromoData):
-                let (statusText, statusEntities, videoSections, videoFiles, options) = (premiumPromoData.statusText, premiumPromoData.statusEntities, premiumPromoData.videoSections, premiumPromoData.videos, premiumPromoData.periodOptions)
+            case let .premiumPromo(statusText, statusEntities, videoSections, videoFiles, options, _):
                 self.status = statusText
                 self.statusEntities = messageTextEntitiesFromApiEntities(statusEntities)
 
@@ -75,8 +73,7 @@ private extension PremiumPromoConfiguration {
             
                 var productOptions: [PremiumProductOption] = []
                 for option in options {
-                    if case let .premiumSubscriptionOption(premiumSubscriptionOptionData) = option {
-                        let (flags, transaction, months, currency, amount, botUrl, storeProduct) = (premiumSubscriptionOptionData.flags, premiumSubscriptionOptionData.transaction, premiumSubscriptionOptionData.months, premiumSubscriptionOptionData.currency, premiumSubscriptionOptionData.amount, premiumSubscriptionOptionData.botUrl, premiumSubscriptionOptionData.storeProduct)
+                    if case let .premiumSubscriptionOption(flags, transaction, months, currency, amount, botUrl, storeProduct) = option {
                         productOptions.append(PremiumProductOption(isCurrent: (flags & (1 << 1)) != 0, months: months, currency: currency, amount: amount, botUrl: botUrl, transactionId: transaction, availableForUpgrade: (flags & (1 << 2)) != 0, storeProductId: storeProduct))
                     }
                 }

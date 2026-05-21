@@ -118,23 +118,23 @@ private func actionFromActivity(_ activity: PeerInputActivity?) -> Api.SendMessa
             case .playingGame:
                 return .sendMessageGamePlayAction
             case let .uploadingFile(progress):
-                return .sendMessageUploadDocumentAction(.init(progress: progress))
+                return .sendMessageUploadDocumentAction(progress: progress)
             case let .uploadingPhoto(progress):
-                return .sendMessageUploadPhotoAction(.init(progress: progress))
+                return .sendMessageUploadPhotoAction(progress: progress)
             case let .uploadingVideo(progress):
-                return .sendMessageUploadVideoAction(.init(progress: progress))
+                return .sendMessageUploadVideoAction(progress: progress)
             case .recordingInstantVideo:
                 return .sendMessageRecordRoundAction
             case let .uploadingInstantVideo(progress):
-                return .sendMessageUploadRoundAction(.init(progress: progress))
+                return .sendMessageUploadRoundAction(progress: progress)
             case .speakingInGroupCall:
                 return .speakingInGroupCallAction
             case .choosingSticker:
                 return .sendMessageChooseStickerAction
             case let .interactingWithEmoji(emoticon, messageId, interaction):
-                return .sendMessageEmojiInteraction(.init(emoticon: emoticon, msgId: messageId.id, interaction: interaction?.apiDataJson ?? .dataJSON(.init(data: ""))))
+                return .sendMessageEmojiInteraction(emoticon: emoticon, msgId: messageId.id, interaction: interaction?.apiDataJson ?? .dataJSON(data: ""))
             case let .seeingEmojiInteraction(emoticon):
-                return .sendMessageEmojiInteractionSeen(.init(emoticon: emoticon))
+                return .sendMessageEmojiInteractionSeen(emoticon: emoticon)
         }
     } else {
         return .sendMessageCancelAction
@@ -190,7 +190,7 @@ private func requestActivity(postbox: Postbox, network: Network, accountPeerId: 
                 }
             } else if let peer = peer as? TelegramSecretChat, activity == .typingText {
                 let _ = PeerId(peer.id.toInt64())
-                return network.request(Api.functions.messages.setEncryptedTyping(peer: .inputEncryptedChat(.init(chatId: Int32(peer.id.id._internalGetInt64Value()), accessHash: peer.accessHash)), typing: .boolTrue))
+                return network.request(Api.functions.messages.setEncryptedTyping(peer: .inputEncryptedChat(chatId: Int32(peer.id.id._internalGetInt64Value()), accessHash: peer.accessHash), typing: .boolTrue))
                 |> `catch` { _ -> Signal<Api.Bool, NoError> in
                     return .single(.boolFalse)
                 }

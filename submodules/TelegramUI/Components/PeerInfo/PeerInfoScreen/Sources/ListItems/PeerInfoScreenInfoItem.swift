@@ -6,6 +6,7 @@ import TelegramPresentationData
 import ItemListPeerItem
 import SwiftSignalKit
 import AccountContext
+import Postbox
 import TelegramCore
 import ItemListUI
 
@@ -14,7 +15,6 @@ final class PeerInfoScreenInfoItem: PeerInfoScreenItem {
     let title: String
     let text: InfoListItemText
     let isWarning: Bool
-    let style: InfoListItem.InfoStyle
     let linkAction: ((InfoListItemLinkAction) -> Void)?
  
     init(
@@ -22,14 +22,12 @@ final class PeerInfoScreenInfoItem: PeerInfoScreenItem {
         title: String,
         text: InfoListItemText,
         isWarning: Bool = false,
-        style: InfoListItem.InfoStyle = .default,
         linkAction: ((InfoListItemLinkAction) -> Void)?
     ) {
         self.id = id
         self.title = title
         self.text = text
         self.isWarning = isWarning
-        self.style = style
         self.linkAction = linkAction
     }
     
@@ -69,7 +67,7 @@ private final class PeerInfoScreenInfoItemNode: PeerInfoScreenItemNode {
         
         self.bottomSeparatorNode.backgroundColor = presentationData.theme.list.itemBlocksSeparatorColor
                 
-        let infoItem = InfoListItem(presentationData: ItemListPresentationData(presentationData), systemStyle: .glass, title: item.title, text: item.text, style: .blocks, hasDecorations: false, isWarning: item.isWarning, infoStyle: item.style, linkAction: { link in
+        let infoItem = InfoListItem(presentationData: ItemListPresentationData(presentationData), title: item.title, text: item.text, style: .blocks, hasDecorations: false, isWarning: item.isWarning, linkAction: { link in
             item.linkAction?(link)
         }, closeAction: nil)
         let params = ListViewItemLayoutParams(width: width, leftInset: safeInsets.left, rightInset: safeInsets.right, availableHeight: 1000.0)
@@ -112,7 +110,7 @@ private final class PeerInfoScreenInfoItemNode: PeerInfoScreenItemNode {
         let hasTopCorners = hasCorners && topItem == nil
         let hasBottomCorners = hasCorners && bottomItem == nil
         
-        self.maskNode.image = hasCorners ? PresentationResourcesItemList.cornersImage(presentationData.theme, top: hasTopCorners, bottom: hasBottomCorners, glass: true) : nil
+        self.maskNode.image = hasCorners ? PresentationResourcesItemList.cornersImage(presentationData.theme, top: hasTopCorners, bottom: hasBottomCorners) : nil
         self.maskNode.frame = CGRect(origin: CGPoint(x: safeInsets.left, y: 0.0), size: CGSize(width: width - safeInsets.left - safeInsets.right, height: height))
         self.bottomSeparatorNode.isHidden = hasBottomCorners
         

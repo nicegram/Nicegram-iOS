@@ -27,7 +27,6 @@ import ListItemSliderSelectorComponent
 import DateSelectionUI
 import PlainButtonComponent
 import TelegramStringFormatting
-import TextFormat
 import TimeSelectionActionSheet
 
 private let checkIcon: UIImage = {
@@ -196,7 +195,7 @@ final class AutomaticBusinessMessageSetupScreenComponent: Component {
             
             if self.isOn {
                 if !self.hasAccessToAllChatsByDefault && self.additionalPeerList.categories.isEmpty && self.additionalPeerList.peers.isEmpty {
-                    self.environment?.controller()?.present(textAlertController(context: component.context, title: nil, text: presentationData.strings.BusinessMessageSetup_ErrorNoRecipients_Text, actions: [
+                    self.environment?.controller()?.present(standardTextAlertController(theme: AlertControllerTheme(presentationData: presentationData), title: nil, text: presentationData.strings.BusinessMessageSetup_ErrorNoRecipients_Text, actions: [
                         TextAlertAction(type: .genericAction, title: presentationData.strings.Common_Cancel, action: {
                         }),
                         TextAlertAction(type: .defaultAction, title: presentationData.strings.BusinessMessageSetup_ErrorNoRecipients_ResetAction, action: {
@@ -224,7 +223,7 @@ final class AutomaticBusinessMessageSetupScreenComponent: Component {
                     }
                     
                     if let errorText {
-                        self.environment?.controller()?.present(textAlertController(context: component.context, title: nil, text: errorText, actions: [
+                        self.environment?.controller()?.present(standardTextAlertController(theme: AlertControllerTheme(presentationData: presentationData), title: nil, text: errorText, actions: [
                             TextAlertAction(type: .genericAction, title: presentationData.strings.Common_Cancel, action: {
                             }),
                             TextAlertAction(type: .defaultAction, title: presentationData.strings.BusinessMessageSetup_ErrorScheduleTime_ResetAction, action: {
@@ -781,7 +780,6 @@ final class AutomaticBusinessMessageSetupScreenComponent: Component {
             var generalSectionItems: [AnyComponentWithIdentity<Empty>] = []
             generalSectionItems.append(AnyComponentWithIdentity(id: 0, component: AnyComponent(ListActionItemComponent(
                 theme: environment.theme,
-                style: .glass,
                 title: AnyComponent(VStack([
                     AnyComponentWithIdentity(id: AnyHashable(0), component: AnyComponent(MultilineTextComponent(
                         text: .plain(NSAttributedString(
@@ -806,7 +804,6 @@ final class AutomaticBusinessMessageSetupScreenComponent: Component {
                 transition: transition,
                 component: AnyComponent(ListSectionComponent(
                     theme: environment.theme,
-                    style: .glass,
                     header: nil,
                     footer: nil,
                     items: generalSectionItems
@@ -847,7 +844,6 @@ final class AutomaticBusinessMessageSetupScreenComponent: Component {
             } else {
                 messagesSectionItems.append(AnyComponentWithIdentity(id: 0, component: AnyComponent(ListActionItemComponent(
                     theme: environment.theme,
-                    style: .glass,
                     title: AnyComponent(VStack([
                         AnyComponentWithIdentity(id: AnyHashable(0), component: AnyComponent(MultilineTextComponent(
                             text: .plain(NSAttributedString(
@@ -875,7 +871,6 @@ final class AutomaticBusinessMessageSetupScreenComponent: Component {
                 transition: transition,
                 component: AnyComponent(ListSectionComponent(
                     theme: environment.theme,
-                    style: .glass,
                     header: AnyComponent(MultilineTextComponent(
                         text: .plain(NSAttributedString(
                             string: component.mode == .greeting ? environment.strings.BusinessMessageSetup_GreetingMessageSectionHeader : environment.strings.BusinessMessageSetup_AwayMessageSectionHeader,
@@ -925,7 +920,6 @@ final class AutomaticBusinessMessageSetupScreenComponent: Component {
                     let isSelected = self.schedule == schedule
                     scheduleSectionItems.append(AnyComponentWithIdentity(id: scheduleSectionItems.count, component: AnyComponent(ListActionItemComponent(
                         theme: environment.theme,
-                        style: .glass,
                         title: AnyComponent(VStack([
                             AnyComponentWithIdentity(id: AnyHashable(0), component: AnyComponent(MultilineTextComponent(
                                 text: .plain(NSAttributedString(
@@ -958,7 +952,6 @@ final class AutomaticBusinessMessageSetupScreenComponent: Component {
                     transition: transition,
                     component: AnyComponent(ListSectionComponent(
                         theme: environment.theme,
-                        style: .glass,
                         header: AnyComponent(MultilineTextComponent(
                             text: .plain(NSAttributedString(
                                 string: environment.strings.BusinessMessageSetup_ScheduleSectionHeader,
@@ -1068,7 +1061,6 @@ final class AutomaticBusinessMessageSetupScreenComponent: Component {
                     
                     customScheduleSectionItems.append(AnyComponentWithIdentity(id: customScheduleSectionItems.count, component: AnyComponent(ListActionItemComponent(
                         theme: environment.theme,
-                        style: .glass,
                         title: AnyComponent(VStack([
                             AnyComponentWithIdentity(id: AnyHashable(0), component: AnyComponent(MultilineTextComponent(
                                 text: .plain(NSAttributedString(
@@ -1093,7 +1085,6 @@ final class AutomaticBusinessMessageSetupScreenComponent: Component {
                     transition: transition,
                     component: AnyComponent(ListSectionComponent(
                         theme: environment.theme,
-                        style: .glass,
                         header: nil,
                         footer: nil,
                         items: customScheduleSectionItems
@@ -1123,7 +1114,6 @@ final class AutomaticBusinessMessageSetupScreenComponent: Component {
                     transition: transition,
                     component: AnyComponent(ListSectionComponent(
                         theme: environment.theme,
-                        style: .glass,
                         header: nil,
                         footer: AnyComponent(MultilineTextComponent(
                             text: .markdown(
@@ -1142,7 +1132,6 @@ final class AutomaticBusinessMessageSetupScreenComponent: Component {
                         items: [
                             AnyComponentWithIdentity(id: 0, component: AnyComponent(ListActionItemComponent(
                                 theme: environment.theme,
-                                style: .glass,
                                 title: AnyComponent(VStack([
                                     AnyComponentWithIdentity(id: AnyHashable(0), component: AnyComponent(MultilineTextComponent(
                                         text: .plain(NSAttributedString(
@@ -1189,7 +1178,6 @@ final class AutomaticBusinessMessageSetupScreenComponent: Component {
                 transition: transition,
                 component: AnyComponent(ListSectionComponent(
                     theme: environment.theme,
-                    style: .glass,
                     header: AnyComponent(MultilineTextComponent(
                         text: .plain(NSAttributedString(
                             string: environment.strings.BusinessMessageSetup_RecipientsSectionHeader,
@@ -1202,7 +1190,6 @@ final class AutomaticBusinessMessageSetupScreenComponent: Component {
                     items: [
                         AnyComponentWithIdentity(id: 0, component: AnyComponent(ListActionItemComponent(
                             theme: environment.theme,
-                            style: .glass,
                             title: AnyComponent(VStack([
                                 AnyComponentWithIdentity(id: AnyHashable(0), component: AnyComponent(MultilineTextComponent(
                                     text: .plain(NSAttributedString(
@@ -1233,7 +1220,6 @@ final class AutomaticBusinessMessageSetupScreenComponent: Component {
                         ))),
                         AnyComponentWithIdentity(id: 1, component: AnyComponent(ListActionItemComponent(
                             theme: environment.theme,
-                            style: .glass,
                             title: AnyComponent(VStack([
                                 AnyComponentWithIdentity(id: AnyHashable(0), component: AnyComponent(MultilineTextComponent(
                                     text: .plain(NSAttributedString(
@@ -1282,7 +1268,6 @@ final class AutomaticBusinessMessageSetupScreenComponent: Component {
             var excludedSectionItems: [AnyComponentWithIdentity<Empty>] = []
             excludedSectionItems.append(AnyComponentWithIdentity(id: 0, component: AnyComponent(ListActionItemComponent(
                 theme: environment.theme,
-                style: .glass,
                 title: AnyComponent(VStack([
                     AnyComponentWithIdentity(id: AnyHashable(0), component: AnyComponent(MultilineTextComponent(
                         text: .plain(NSAttributedString(
@@ -1400,7 +1385,6 @@ final class AutomaticBusinessMessageSetupScreenComponent: Component {
                 transition: transition,
                 component: AnyComponent(ListSectionComponent(
                     theme: environment.theme,
-                    style: .glass,
                     header: AnyComponent(MultilineTextComponent(
                         text: .plain(NSAttributedString(
                             string: self.hasAccessToAllChatsByDefault ? environment.strings.BusinessMessageSetup_Recipients_ExcludedSectionHeader : environment.strings.BusinessMessageSetup_Recipients_IncludedSectionHeader,
@@ -1458,7 +1442,6 @@ final class AutomaticBusinessMessageSetupScreenComponent: Component {
                     transition: transition,
                     component: AnyComponent(ListSectionComponent(
                         theme: environment.theme,
-                        style: .glass,
                         header: AnyComponent(MultilineTextComponent(
                             text: .plain(NSAttributedString(
                                 string: environment.strings.BusinessMessageSetup_InactivitySectionHeader,
@@ -1493,8 +1476,7 @@ final class AutomaticBusinessMessageSetupScreenComponent: Component {
                                         self.inactivityDays = valueList[index]
                                         self.state?.updated(transition: .immediate)
                                     }
-                                )),
-                                preferNative: true
+                                ))
                             )))
                         ]
                     )),

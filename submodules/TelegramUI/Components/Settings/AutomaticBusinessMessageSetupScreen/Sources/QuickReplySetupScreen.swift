@@ -95,7 +95,6 @@ final class QuickReplySetupScreenComponent: Component {
             case .add:
                 return ItemListPeerActionItem(
                     presentationData: ItemListPresentationData(listNode.presentationData),
-                    systemStyle: .glass,
                     icon: PresentationResourcesItemList.plusIconImage(listNode.presentationData.theme),
                     iconSignal: nil,
                     title: listNode.presentationData.strings.QuickReply_InlineCreateAction,
@@ -220,6 +219,8 @@ final class QuickReplySetupScreenComponent: Component {
                     },
                     openStarsTopup: { _ in
                     },
+                    dismissNotice: { _ in
+                    },
                     editPeer: { [weak listNode] _ in
                         guard let listNode, let parentView = listNode.parentView else {
                             return
@@ -266,7 +267,6 @@ final class QuickReplySetupScreenComponent: Component {
                         presence: nil,
                         hasUnseenMentions: false,
                         hasUnseenReactions: false,
-                        hasUnseenPollVotes: false,
                         draftState: nil,
                         mediaDraftContentType: nil,
                         inputActivities: nil,
@@ -302,7 +302,7 @@ final class QuickReplySetupScreenComponent: Component {
         }
     }
     
-    private final class ContentListNode: ListViewImpl {
+    private final class ContentListNode: ListView {
         weak var parentView: View?
         let context: AccountContext
         var presentationData: PresentationData
@@ -602,7 +602,7 @@ final class QuickReplySetupScreenComponent: Component {
                 }
             } else {
                 var completion: ((String?) -> Void)?
-                let (alertController, displayError) = quickReplyNameAlertController(
+                let alertController = quickReplyNameAlertController(
                     context: component.context,
                     text: environment.strings.QuickReply_CreateShortcutTitle,
                     subtext: environment.strings.QuickReply_CreateShortcutText,
@@ -614,21 +614,24 @@ final class QuickReplySetupScreenComponent: Component {
                 )
                 completion = { [weak self, weak alertController] value in
                     guard let self, let environment = self.environment else {
-                        alertController?.dismiss(animated: true, completion: nil)
+                        alertController?.dismissAnimated()
                         return
                     }
                     if let value, !value.isEmpty {
                         guard let shortcutMessageList = self.shortcutMessageList else {
-                            alertController?.dismiss(animated: true, completion: nil)
+                            alertController?.dismissAnimated()
                             return
                         }
                         
                         if shortcutMessageList.items.contains(where: { $0.shortcut.lowercased() == value.lowercased() }) {
-                            displayError(environment.strings.QuickReply_ShortcutExistsInlineError)
+                            if let contentNode = alertController?.contentNode as? QuickReplyNameAlertContentNode {
+                                contentNode.setErrorText(errorText: environment.strings.QuickReply_ShortcutExistsInlineError)
+                            }
                             return
                         }
                         
-                        alertController?.dismiss(animated: true, completion: nil)
+                        alertController?.view.endEditing(true)
+                        alertController?.dismissAnimated()
                         self.openQuickReplyChat(shortcut: value, shortcutId: nil)
                     }
                 }
@@ -642,7 +645,7 @@ final class QuickReplySetupScreenComponent: Component {
             }
             
             var completion: ((String?) -> Void)?
-            let (alertController, displayError) = quickReplyNameAlertController(
+            let alertController = quickReplyNameAlertController(
                 context: component.context,
                 text: environment.strings.QuickReply_EditShortcutTitle,
                 subtext: environment.strings.QuickReply_EditShortcutText,
@@ -654,25 +657,28 @@ final class QuickReplySetupScreenComponent: Component {
             )
             completion = { [weak self, weak alertController] value in
                 guard let self, let component = self.component, let environment = self.environment else {
-                    alertController?.dismiss(animated: true, completion: nil)
+                    alertController?.dismissAnimated()
                     return
                 }
                 if let value, !value.isEmpty {
                     if value == currentValue {
-                        alertController?.dismiss(animated: true, completion: nil)
+                        alertController?.dismissAnimated()
                         return
                     }
                     guard let shortcutMessageList = self.shortcutMessageList else {
-                        alertController?.dismiss(animated: true, completion: nil)
+                        alertController?.dismissAnimated()
                         return
                     }
                     
                     if shortcutMessageList.items.contains(where: { $0.shortcut.lowercased() == value.lowercased() }) {
-                        displayError(environment.strings.QuickReply_ShortcutExistsInlineError)
+                        if let contentNode = alertController?.contentNode as? QuickReplyNameAlertContentNode {
+                            contentNode.setErrorText(errorText: environment.strings.QuickReply_ShortcutExistsInlineError)
+                        }
                     } else {
                         component.context.engine.accountData.editMessageShortcut(id: id, shortcut: value)
                         
-                        alertController?.dismiss(animated: true, completion: nil)
+                        alertController?.view.endEditing(true)
+                        alertController?.dismissAnimated()
                     }
                 }
             }
@@ -792,7 +798,8 @@ final class QuickReplySetupScreenComponent: Component {
                     }
                 ))) : nil,
                 rightButtons: rightButtons,
-                backPressed: isModal ? nil :{ [weak self] in
+                backTitle: isModal ? nil : strings.Common_Back,
+                backPressed: { [weak self] in
                     guard let self else {
                         return
                     }
@@ -811,15 +818,14 @@ final class QuickReplySetupScreenComponent: Component {
                     strings: strings,
                     statusBarHeight: statusBarHeight,
                     sideInset: insets.left,
-                    search: ChatListNavigationBar.Search(isEnabled: !self.isEditing),
-                    activeSearch: self.isSearchDisplayControllerActive ? ChatListNavigationBar.ActiveSearch(isExternal: false) : nil,
+                    isSearchActive: self.isSearchDisplayControllerActive,
+                    isSearchEnabled: !self.isEditing,
                     primaryContent: headerContent,
                     secondaryContent: nil,
                     secondaryTransition: 0.0,
                     storySubscriptions: nil,
                     storiesIncludeHidden: false,
                     uploadProgress: [:],
-                    headerPanels: nil,
                     tabsNode: nil,
                     tabsNodeIsSearch: false,
                     accessoryPanelContainer: nil,
@@ -1016,9 +1022,8 @@ final class QuickReplySetupScreenComponent: Component {
                     let searchBarTheme = SearchBarNodeTheme(theme: environment.theme, hasSeparator: false)
                     searchBarNode = SearchBarNode(
                         theme: searchBarTheme,
-                        presentationTheme: environment.theme,
                         strings: environment.strings,
-                        fieldStyle: .glass,
+                        fieldStyle: .modern,
                         displayBackground: false
                     )
                     searchBarNode.placeholderString = NSAttributedString(string: environment.strings.Common_Search, font: Font.regular(17.0), textColor: searchBarTheme.placeholder)
@@ -1064,16 +1069,12 @@ final class QuickReplySetupScreenComponent: Component {
                         let timingFunction: String
                         switch curve {
                         case .easeInOut:
-                            timingFunction = CAMediaTimingFunctionName.easeInEaseOut.rawValue
-                        case .easeIn:
-                            timingFunction = CAMediaTimingFunctionName.easeIn.rawValue
+                            timingFunction = CAMediaTimingFunctionName.easeOut.rawValue
                         case .linear:
                             timingFunction = CAMediaTimingFunctionName.linear.rawValue
                         case .spring:
                             timingFunction = kCAMediaTimingFunctionSpring
                         case .custom:
-                            timingFunction = kCAMediaTimingFunctionSpring
-                        case .bounce:
                             timingFunction = kCAMediaTimingFunctionSpring
                         }
                         
@@ -1162,7 +1163,7 @@ final class QuickReplySetupScreenComponent: Component {
                 contentListNode = ContentListNode(parentView: self, context: component.context)
                 self.contentListNode = contentListNode
                 
-                contentListNode.visibleContentOffsetChanged = { [weak self] offset, _ in
+                contentListNode.visibleContentOffsetChanged = { [weak self] offset in
                     guard let self else {
                         return
                     }

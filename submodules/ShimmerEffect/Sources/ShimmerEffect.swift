@@ -236,11 +236,12 @@ public final class ShimmerEffectForegroundNode: ASDisplayNode {
         
         let image: UIImage?
         if horizontal {
-            //let baseAlpha: CGFloat = 0.1
+            let baseAlpha: CGFloat = 0.1
             image = generateImage(CGSize(width: effectSize ?? 200.0, height: 16.0), opaque: false, scale: 1.0, rotatedContext: { size, context in
                 context.clear(CGRect(origin: CGPoint(), size: size))
                 
-                //let foregroundColor = foregroundColor //.withAlphaComponent(min(1.0, baseAlpha * 3.0))
+                let foregroundColor = UIColor(white: 1.0, alpha: min(1.0, baseAlpha * 4.0))
+                
                 if let shadowImage {
                     UIGraphicsPushContext(context)
                     

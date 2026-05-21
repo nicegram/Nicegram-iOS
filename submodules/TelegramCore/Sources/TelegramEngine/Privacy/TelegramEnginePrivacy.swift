@@ -9,8 +9,8 @@ public extension TelegramEngine {
             self.account = account
         }
 
-        public func requestUpdatePeerIsBlocked(peerId: PeerId, isBlocked: Bool, sourceMessageId: MessageId? = nil) -> Signal<Void, NoError> {
-            return _internal_requestUpdatePeerIsBlocked(account: self.account, peerId: peerId, isBlocked: isBlocked, sourceMessageId: sourceMessageId)
+        public func requestUpdatePeerIsBlocked(peerId: PeerId, isBlocked: Bool) -> Signal<Void, NoError> {
+            return _internal_requestUpdatePeerIsBlocked(account: self.account, peerId: peerId, isBlocked: isBlocked)
         }
 
         public func requestUpdatePeerIsBlockedFromStories(peerId: PeerId, isBlocked: Bool) -> Signal<Void, NoError> {
@@ -88,27 +88,5 @@ public extension TelegramEngine {
             return terminateAccountSession(account: self.account, hash: id)
             |> ignoreValues
         }
-    }
-}
-
-// Nicegram, apply recommended settings
-public extension TelegramEngine.Privacy {
-    func updatePrivacyToRecommended() async throws {
-        _ = try await combineLatest([
-            updateSelectiveAccountPrivacySettings(type: .phoneNumber, settings: .disableEveryone(enableFor: [:], enableForCloseFriends: false, enableForPremium: false, enableForBots: false)),
-            updateSelectiveAccountPrivacySettings(type: .presence, settings: .enableEveryone(disableFor: [:])),
-            updateSelectiveAccountPrivacySettings(type: .profilePhoto, settings: .enableEveryone(disableFor: [:])),
-            updateSelectiveAccountPrivacySettings(type: .bio, settings: .enableEveryone(disableFor: [:])),
-            updateSelectiveAccountPrivacySettings(type: .giftsAutoSave, settings: .enableEveryone(disableFor: [:])),
-            updateSelectiveAccountPrivacySettings(type: .birthday, settings: .enableContacts(enableFor: [:], disableFor: [:], enableForPremium: false, enableForBots: false)),
-            updateSelectiveAccountPrivacySettings(type: .savedMusic, settings: .enableEveryone(disableFor: [:])),
-            updateSelectiveAccountPrivacySettings(type: .forwards, settings: .disableEveryone(enableFor: [:], enableForCloseFriends: false, enableForPremium: false, enableForBots: false)),
-            updateSelectiveAccountPrivacySettings(type: .voiceCalls, settings: .enableContacts(enableFor: [:], disableFor: [:], enableForPremium: false, enableForBots: false)),
-            updateSelectiveAccountPrivacySettings(type: .voiceCallsP2P, settings: .enableContacts(enableFor: [:], disableFor: [:], enableForPremium: false, enableForBots: false)),
-            updateSelectiveAccountPrivacySettings(type: .voiceMessages, settings: .enableEveryone(disableFor: [:])),
-            updateSelectiveAccountPrivacySettings(type: .groupInvitations, settings: .enableContacts(enableFor: [:], disableFor: [:], enableForPremium: false, enableForBots: false)),
-            updatePhoneNumberDiscovery(value: false)
-        ])
-        .awaitForFirstValue()
     }
 }

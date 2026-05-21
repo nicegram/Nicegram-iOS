@@ -60,36 +60,27 @@ enum UpdateGroup {
 
 func apiUpdatePtsRange(_ update: Api.Update) -> (Int32, Int32)? {
     switch update {
-        case let .updateDeleteMessages(updateDeleteMessagesData):
-            let (pts, ptsCount) = (updateDeleteMessagesData.pts, updateDeleteMessagesData.ptsCount)
+        case let .updateDeleteMessages(_, pts, ptsCount):
             return (pts, ptsCount)
-        case let .updateNewMessage(updateNewMessageData):
-            let (pts, ptsCount) = (updateNewMessageData.pts, updateNewMessageData.ptsCount)
+        case let .updateNewMessage(_, pts, ptsCount):
             return (pts, ptsCount)
-        case let .updateReadHistoryInbox(updateReadHistoryInboxData):
-            let (pts, ptsCount) = (updateReadHistoryInboxData.pts, updateReadHistoryInboxData.ptsCount)
+        case let .updateReadHistoryInbox(_, _, _, _, _, pts, ptsCount):
             return (pts, ptsCount)
-        case let .updateReadHistoryOutbox(updateReadHistoryOutboxData):
-            let (pts, ptsCount) = (updateReadHistoryOutboxData.pts, updateReadHistoryOutboxData.ptsCount)
+        case let .updateReadHistoryOutbox(_, _, pts, ptsCount):
             return (pts, ptsCount)
-        case let .updateEditMessage(updateEditMessageData):
-            let (pts, ptsCount) = (updateEditMessageData.pts, updateEditMessageData.ptsCount)
+        case let .updateEditMessage(_, pts, ptsCount):
             return (pts, ptsCount)
-        case let .updateReadMessagesContents(updateReadMessagesContentsData):
-            let (pts, ptsCount) = (updateReadMessagesContentsData.pts, updateReadMessagesContentsData.ptsCount)
+        case let .updateReadMessagesContents(_, _, pts, ptsCount, _):
             return (pts, ptsCount)
-        case let .updateWebPage(updateWebPageData):
-            let (pts, ptsCount) = (updateWebPageData.pts, updateWebPageData.ptsCount)
+        case let .updateWebPage(_, pts, ptsCount):
             return (pts, ptsCount)
-        case let .updateFolderPeers(updateFolderPeersData):
-            let (pts, ptsCount) = (updateFolderPeersData.pts, updateFolderPeersData.ptsCount)
+        case let .updateFolderPeers(_, pts, ptsCount):
             if ptsCount != 0 {
                 return (pts, ptsCount)
             } else {
                 return nil
             }
-        case let .updatePinnedMessages(updatePinnedMessagesData):
-            let (pts, ptsCount) = (updatePinnedMessagesData.pts, updatePinnedMessagesData.ptsCount)
+        case let .updatePinnedMessages(_, _, _, pts, ptsCount):
             return (pts, ptsCount)
         default:
             return nil
@@ -98,8 +89,7 @@ func apiUpdatePtsRange(_ update: Api.Update) -> (Int32, Int32)? {
 
 func apiUpdateQtsRange(_ update: Api.Update) -> (Int32, Int32)? {
     switch update {
-        case let .updateNewEncryptedMessage(updateNewEncryptedMessageData):
-            let qts = updateNewEncryptedMessageData.qts
+        case let .updateNewEncryptedMessage(_, qts):
             return (qts, 1)
         case _:
             return nil

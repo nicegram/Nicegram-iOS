@@ -11,7 +11,7 @@ import TextNodeWithEntities
 
 public protocol ChatInputTextNodeDelegate: AnyObject {
     func chatInputTextNodeDidUpdateText()
-    func chatInputTextNodeShouldReturn(modifierFlags: UIKeyModifierFlags) -> Bool
+    func chatInputTextNodeShouldReturn() -> Bool
     func chatInputTextNodeDidChangeSelection(dueToEditing: Bool)
     func chatInputTextNodeDidBeginEditing()
     func chatInputTextNodeDidFinishEditing()
@@ -287,9 +287,6 @@ open class ChatInputTextNode: ASDisplayNode {
         self.setViewBlock({
             return ChatInputTextView(disableTiling: disableTiling)
         })
-    }
-    
-    deinit {
     }
     
     public func resetInitialPrimaryLanguage() {
@@ -1184,11 +1181,11 @@ public final class ChatInputTextView: ChatInputTextViewImpl, UITextViewDelegate,
             }
             return self.customDelegate?.chatInputTextNodeShouldPaste() ?? true
         }
-        self.shouldReturn = { [weak self] modifierFlags in
+        self.shouldReturn = { [weak self] in
             guard let self else {
                 return true
             }
-            return self.customDelegate?.chatInputTextNodeShouldReturn(modifierFlags: modifierFlags) ?? true
+            return self.customDelegate?.chatInputTextNodeShouldReturn() ?? true
         }
         self.backspaceWhileEmpty = { [weak self] in
             guard let self else {

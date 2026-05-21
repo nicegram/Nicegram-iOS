@@ -91,7 +91,7 @@ private final class ContentNode: ASDisplayNode {
         self.addSubnode(self.clippedNode)
 
         if let peer = peer {
-            if let representation = peer.smallProfileImage, let signal = peerAvatarImage(account: context.account, peerReference: PeerReference(peer), authorOfMessage: nil, representation: representation, displayDimensions: size, synchronousLoad: synchronousLoad) {
+            if let representation = peer.smallProfileImage, let signal = peerAvatarImage(account: context.account, peerReference: PeerReference(peer._asPeer()), authorOfMessage: nil, representation: representation, displayDimensions: size, synchronousLoad: synchronousLoad) {
                 let image = generateImage(size, rotatedContext: { size, context in
                     context.clear(CGRect(origin: CGPoint(), size: size))
                     context.setFillColor(UIColor.lightGray.cgColor)
@@ -328,7 +328,7 @@ public final class AnimatedAvatarSetView: UIView {
             self.addSubview(self.clippedView)
 
             if let peer = peer {
-                if let representation = peer.smallProfileImage, let signal = peerAvatarImage(account: context.account, peerReference: PeerReference(peer), authorOfMessage: nil, representation: representation, displayDimensions: size, synchronousLoad: synchronousLoad) {
+                if let representation = peer.smallProfileImage, let signal = peerAvatarImage(account: context.account, peerReference: PeerReference(peer._asPeer()), authorOfMessage: nil, representation: representation, displayDimensions: size, synchronousLoad: synchronousLoad) {
                     let image = generateImage(size, rotatedContext: { size, context in
                         context.clear(CGRect(origin: CGPoint(), size: size))
                         context.setFillColor(UIColor.lightGray.cgColor)

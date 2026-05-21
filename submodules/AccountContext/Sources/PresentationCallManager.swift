@@ -217,21 +217,12 @@ public struct PresentationGroupCallState: Equatable {
         case muted
     }
     
-    public enum ConnectionMode {
-        case rtc
-        case stream
-    }
-    
     public var myPeerId: EnginePeer.Id
     public var networkState: NetworkState
-    public var connectionMode: ConnectionMode
     public var canManageCall: Bool
     public var adminIds: Set<EnginePeer.Id>
     public var muteState: GroupCallParticipantsContext.Participant.MuteState?
     public var defaultParticipantMuteState: DefaultParticipantMuteState?
-    public var messagesAreEnabled: Bool
-    public var canEnableMessages: Bool
-    public var sendPaidMessageStars: Int64?
     public var recordingStartTimestamp: Int32?
     public var title: String?
     public var raisedHand: Bool
@@ -240,20 +231,14 @@ public struct PresentationGroupCallState: Equatable {
     public var isVideoEnabled: Bool
     public var isVideoWatchersLimitReached: Bool
     public var isMyVideoActive: Bool
-    public var isUnifiedStream: Bool
-    public var defaultSendAs: EnginePeer.Id?
     
     public init(
         myPeerId: EnginePeer.Id,
         networkState: NetworkState,
-        connectionMode: ConnectionMode,
         canManageCall: Bool,
         adminIds: Set<EnginePeer.Id>,
         muteState: GroupCallParticipantsContext.Participant.MuteState?,
         defaultParticipantMuteState: DefaultParticipantMuteState?,
-        messagesAreEnabled: Bool,
-        canEnableMessages: Bool,
-        sendPaidMessageStars: Int64?,
         recordingStartTimestamp: Int32?,
         title: String?,
         raisedHand: Bool,
@@ -261,20 +246,14 @@ public struct PresentationGroupCallState: Equatable {
         subscribedToScheduled: Bool,
         isVideoEnabled: Bool,
         isVideoWatchersLimitReached: Bool,
-        isMyVideoActive: Bool,
-        isUnifiedStream: Bool,
-        defaultSendAs: EnginePeer.Id?
+        isMyVideoActive: Bool
     ) {
         self.myPeerId = myPeerId
         self.networkState = networkState
-        self.connectionMode = connectionMode
         self.canManageCall = canManageCall
         self.adminIds = adminIds
         self.muteState = muteState
         self.defaultParticipantMuteState = defaultParticipantMuteState
-        self.messagesAreEnabled = messagesAreEnabled
-        self.canEnableMessages = canEnableMessages
-        self.sendPaidMessageStars = sendPaidMessageStars
         self.recordingStartTimestamp = recordingStartTimestamp
         self.title = title
         self.raisedHand = raisedHand
@@ -283,8 +262,6 @@ public struct PresentationGroupCallState: Equatable {
         self.isVideoEnabled = isVideoEnabled
         self.isVideoWatchersLimitReached = isVideoWatchersLimitReached
         self.isMyVideoActive = isMyVideoActive
-        self.isUnifiedStream = isUnifiedStream
-        self.defaultSendAs = defaultSendAs
     }
 }
 
@@ -526,7 +503,6 @@ public protocol PresentationGroupCall: AnyObject {
     func disableScreencast()
     func switchVideoCamera()
     func updateDefaultParticipantsAreMuted(isMuted: Bool)
-    func updateMessagesEnabled(isEnabled: Bool, sendPaidMessageStars: Int64?)
     func setVolume(peerId: EnginePeer.Id, volume: Int32, sync: Bool)
     func setRequestedVideoList(items: [PresentationGroupCallRequestedVideo])
     func setSuspendVideoChannelRequests(_ value: Bool)

@@ -1,6 +1,7 @@
 import Foundation
 import UIKit
 import TelegramCore
+import Postbox
 import Display
 import AccountContext
 import Emoji
@@ -9,7 +10,6 @@ import ChatPresentationInterfaceState
 import SwiftSignalKit
 import TextFormat
 import ChatContextQuery
-import ChatTextInputPanelNode
 
 func serviceTasksForChatPresentationIntefaceState(context: AccountContext, chatPresentationInterfaceState: ChatPresentationInterfaceState, updateState: @escaping ((ChatPresentationInterfaceState) -> ChatPresentationInterfaceState) -> Void) -> [AnyHashable: () -> Disposable] {
     var missingEmoji = Set<Int64>()
@@ -98,7 +98,7 @@ func inputContextQueriesForChatPresentationIntefaceState(_ chatPresentationInter
     return result
 }
 
-func inputTextPanelStateForChatPresentationInterfaceState(_ chatPresentationInterfaceState: ChatPresentationInterfaceState, context: AccountContext, controller: ChatControllerImpl) -> ChatTextInputPanelState {
+func inputTextPanelStateForChatPresentationInterfaceState(_ chatPresentationInterfaceState: ChatPresentationInterfaceState, context: AccountContext) -> ChatTextInputPanelState {
     var contextPlaceholder: NSAttributedString?
     loop: for (_, result) in chatPresentationInterfaceState.inputQueryResults {
         if case let .contextRequestResult(peer, _) = result, case let .user(botUser) = peer, let botInfo = botUser.botInfo, let inlinePlaceholder = botInfo.inlinePlaceholder {
@@ -176,10 +176,7 @@ func inputTextPanelStateForChatPresentationInterfaceState(_ chatPresentationInte
                 return ChatTextInputPanelState(accessoryItems: accessoryItems, contextPlaceholder: contextPlaceholder, mediaRecordingState: chatPresentationInterfaceState.inputTextPanelState.mediaRecordingState)
             } else {
                 var accessoryItems: [ChatTextInputAccessoryItem] = []
-                var isTextEmpty = chatPresentationInterfaceState.interfaceState.composeInputState.inputText.length == 0
-                if controller.isUpdatingChatLocationThread {
-                    isTextEmpty = true
-                }
+                let isTextEmpty = chatPresentationInterfaceState.interfaceState.composeInputState.inputText.length == 0
                 let hasForward = chatPresentationInterfaceState.interfaceState.forwardMessageIds != nil
                   
                 var extendedSearchLayout = false
@@ -225,7 +222,7 @@ func inputTextPanelStateForChatPresentationInterfaceState(_ chatPresentationInte
                 var stickersEnabled = true
                 var stickersAreEmoji = !isTextEmpty
                 if let peer = chatPresentationInterfaceState.renderedPeer?.peer as? TelegramChannel {
-                    if isTextEmpty, case .broadcast = peer.info, canSendMessagesToPeer(EnginePeer(peer)) {
+                    if isTextEmpty, case .broadcast = peer.info, canSendMessagesToPeer(peer) {
                         accessoryItems.append(.silentPost(chatPresentationInterfaceState.interfaceState.silentPosting))
                     }
                     if let boostsToUnrestrict = chatPresentationInterfaceState.boostsToUnrestrict, boostsToUnrestrict > 0 {

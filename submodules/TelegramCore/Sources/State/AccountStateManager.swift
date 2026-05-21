@@ -52,14 +52,6 @@ private final class UpdatedStarsRevenueStatusSubscriberContext {
     let subscribers = Bag<([PeerId: StarsRevenueStats.Balances]) -> Void>()
 }
 
-private final class UpdatedStarGiftAuctionStateSubscriberContext {
-    let subscribers = Bag<([Int64: GiftAuctionContext.State.AuctionState]) -> Void>()
-}
-
-private final class UpdatedStarGiftAuctionMyStateSubscriberContext {
-    let subscribers = Bag<([Int64: GiftAuctionContext.State.MyState]) -> Void>()
-}
-
 public enum DeletedMessageId: Hashable {
     case global(Int32)
     case messageId(MessageId)
@@ -313,11 +305,6 @@ public final class AccountStateManager {
             return self.groupCallParticipantUpdatesPipe.signal()
         }
         
-        private let groupCallMessageUpdatesPipe = ValuePipe<[GroupCallMessageUpdate]>()
-        public var groupCallMessageUpdates: Signal<[GroupCallMessageUpdate], NoError> {
-            return self.groupCallMessageUpdatesPipe.signal()
-        }
-        
         private let deletedMessagesPipe = ValuePipe<[DeletedMessageId]>()
         public var deletedMessages: Signal<[DeletedMessageId], NoError> {
             return self.deletedMessagesPipe.signal()
@@ -360,18 +347,11 @@ public final class AccountStateManager {
             return self.starRefBotConnectionEventsPipe.signal()
         }
         
-        fileprivate let installedStickerPacksArchivedEventsPipe = ValuePipe<Int>()
-        var installedStickerPacksArchivedEvents: Signal<Int, NoError> {
-            return self.installedStickerPacksArchivedEventsPipe.signal()
-        }
-        
         private var updatedWebpageContexts: [MediaId: UpdatedWebpageSubscriberContext] = [:]
         private var updatedPeersNearbyContext = UpdatedPeersNearbySubscriberContext()
         private var updatedStarsBalanceContext = UpdatedStarsBalanceSubscriberContext()
         private var updatedTonBalanceContext = UpdatedStarsBalanceSubscriberContext()
         private var updatedStarsRevenueStatusContext = UpdatedStarsRevenueStatusSubscriberContext()
-        private var updatedStarGiftAuctionStateContext = UpdatedStarGiftAuctionStateSubscriberContext()
-        private var updatedStarGiftAuctionMyStateContext = UpdatedStarGiftAuctionMyStateSubscriberContext()
         
         private let delayNotificatonsUntil = Atomic<Int32?>(value: nil)
         private let appliedMaxMessageIdPromise = Promise<Int32?>(nil)
@@ -379,7 +359,6 @@ public final class AccountStateManager {
         private let appliedQtsPromise = Promise<Int32?>(nil)
         private let appliedQtsDisposable = MetaDisposable()
         private let reportMessageDeliveryDisposable = DisposableSet()
-        private let updateEmojiGameInfoDisposable = MetaDisposable()
         
         let updateConfigRequested: (() -> Void)?
         let isPremiumUpdated: (() -> Void)?
@@ -420,7 +399,6 @@ public final class AccountStateManager {
             self.appliedMaxMessageIdDisposable.dispose()
             self.appliedQtsDisposable.dispose()
             self.reportMessageDeliveryDisposable.dispose()
-            self.updateEmojiGameInfoDisposable.dispose()
         }
         
         public func reset() {
@@ -930,8 +908,7 @@ public final class AccountStateManager {
                             return postbox.transaction { transaction -> (difference: Api.updates.Difference?, finalStatte: AccountReplayedFinalState?, skipBecauseOfError: Bool, resetState: Bool) in
                                 if let currentState = transaction.getState() as? AuthorizedAccountState {
                                     switch state {
-                                    case let .state(stateData):
-                                        let (pts, qts, date, seq) = (stateData.pts, stateData.qts, stateData.date, stateData.seq)
+                                    case let .state(pts, qts, date, seq, _):
                                         transaction.setState(currentState.changedState(AuthorizedAccountState.State(pts: pts, qts: qts, date: date, seq: seq)))
                                     }
                                 }
@@ -1139,17 +1116,6 @@ public final class AccountStateManager {
                             if !events.updatedStarsRevenueStatus.isEmpty {
                                 strongSelf.notifyUpdatedStarsRevenueStatus(events.updatedStarsRevenueStatus)
                             }
-                            if !events.updatedStarGiftAuctionState.isEmpty {
-                                strongSelf.notifyUpdatedStarGiftAuctionState(events.updatedStarGiftAuctionState)
-                            }
-                            if !events.updatedStarGiftAuctionMyState.isEmpty {
-                                strongSelf.notifyUpdatedStarGiftAuctionMyState(events.updatedStarGiftAuctionMyState)
-                            }
-                            if let updatedEmojiGameInfo = events.updatedEmojiGameInfo {
-                                strongSelf.updateEmojiGameInfoDisposable.set(strongSelf.postbox.transaction({ transaction in
-                                    updateEmojiGameInfo(transaction: transaction, { _ in return updatedEmojiGameInfo })
-                                }).start())
-                            }
                             if !events.updatedCalls.isEmpty {
                                 for call in events.updatedCalls {
                                     strongSelf.callSessionManager?.updateSession(call, completion: { _ in })
@@ -1162,9 +1128,6 @@ public final class AccountStateManager {
                             }
                             if !events.updatedGroupCallParticipants.isEmpty {
                                 strongSelf.groupCallParticipantUpdatesPipe.putNext(events.updatedGroupCallParticipants)
-                            }
-                            if !events.groupCallMessageUpdates.isEmpty {
-                                strongSelf.groupCallMessageUpdatesPipe.putNext(events.groupCallMessageUpdates)
                             }
                             if !events.storyUpdates.isEmpty {
                                 strongSelf.storyUpdatesPipe.putNext(events.storyUpdates)
@@ -1817,60 +1780,6 @@ public final class AccountStateManager {
                 subscriber(updatedStarsRevenueStatus)
             }
         }
-        
-        public func updatedStarGiftAuctionState() -> Signal<[Int64: GiftAuctionContext.State.AuctionState], NoError> {
-            let queue = self.queue
-            return Signal { [weak self] subscriber in
-                let disposable = MetaDisposable()
-                queue.async {
-                    if let strongSelf = self {
-                        let index = strongSelf.updatedStarGiftAuctionStateContext.subscribers.add({ starsBalance in
-                            subscriber.putNext(starsBalance)
-                        })
-                        
-                        disposable.set(ActionDisposable {
-                            if let strongSelf = self {
-                                strongSelf.updatedStarGiftAuctionStateContext.subscribers.remove(index)
-                            }
-                        })
-                    }
-                }
-                return disposable
-            }
-        }
-                
-        private func notifyUpdatedStarGiftAuctionState(_ updatedStarGiftAuctionState: [Int64: GiftAuctionContext.State.AuctionState]) {
-            for subscriber in self.updatedStarGiftAuctionStateContext.subscribers.copyItems() {
-                subscriber(updatedStarGiftAuctionState)
-            }
-        }
-        
-        public func updatedStarGiftAuctionMyState() -> Signal<[Int64: GiftAuctionContext.State.MyState], NoError> {
-            let queue = self.queue
-            return Signal { [weak self] subscriber in
-                let disposable = MetaDisposable()
-                queue.async {
-                    if let strongSelf = self {
-                        let index = strongSelf.updatedStarGiftAuctionMyStateContext.subscribers.add({ starsBalance in
-                            subscriber.putNext(starsBalance)
-                        })
-                        
-                        disposable.set(ActionDisposable {
-                            if let strongSelf = self {
-                                strongSelf.updatedStarGiftAuctionMyStateContext.subscribers.remove(index)
-                            }
-                        })
-                    }
-                }
-                return disposable
-            }
-        }
-                
-        private func notifyUpdatedStarGiftAuctionMyState(_ updatedStarGiftAuctionMyState: [Int64: GiftAuctionContext.State.MyState]) {
-            for subscriber in self.updatedStarGiftAuctionMyStateContext.subscribers.copyItems() {
-                subscriber(updatedStarGiftAuctionMyState)
-            }
-        }
                 
         func notifyDeletedMessages(messageIds: [MessageId]) {
             self.deletedMessagesPipe.putNext(messageIds.map { .messageId($0) })
@@ -1889,12 +1798,10 @@ public final class AccountStateManager {
             
             if let updates = Api.parse(Buffer(data: rawData)) as? Api.Updates {
                 switch updates {
-                case let .updates(updatesData):
-                    let updates = updatesData.updates
+                case let .updates(updates, _, _, _, _):
                     for update in updates {
                         switch update {
-                        case let .updatePhoneCall(updatePhoneCallData):
-                            let phoneCall = updatePhoneCallData.phoneCall
+                        case let .updatePhoneCall(phoneCall):
                             if let callSessionManager = self.callSessionManager {
                                 callSessionManager.updateSession(phoneCall, completion: { result in
                                     completion(result)
@@ -2017,12 +1924,6 @@ public final class AccountStateManager {
         }
     }
     
-    var groupCallMessageUpdates: Signal<[GroupCallMessageUpdate], NoError> {
-        return self.impl.signalWith { impl, subscriber in
-            return impl.groupCallMessageUpdates.start(next: subscriber.putNext, error: subscriber.putError, completed: subscriber.putCompletion)
-        }
-    }
-    
     public var deletedMessages: Signal<[DeletedMessageId], NoError> {
         return self.impl.signalWith { impl, subscriber in
             return impl.deletedMessages.start(next: subscriber.putNext, error: subscriber.putError, completed: subscriber.putCompletion)
@@ -2038,18 +1939,6 @@ public final class AccountStateManager {
     func injectStoryUpdates(updates: [InternalStoryUpdate]) {
         self.impl.with { impl in
             impl.storyUpdatesPipe.putNext(updates)
-        }
-    }
-    
-    public var installedStickerPacksArchivedEvents: Signal<Int, NoError> {
-        return self.impl.signalWith { impl, subscriber in
-            return impl.installedStickerPacksArchivedEvents.start(next: subscriber.putNext, error: subscriber.putError, completed: subscriber.putCompletion)
-        }
-    }
-    
-    func installedStickerPacksArchived(count: Int) {
-        self.impl.with { impl in
-            impl.installedStickerPacksArchivedEventsPipe.putNext(count)
         }
     }
     
@@ -2259,19 +2148,6 @@ public final class AccountStateManager {
         }
     }
     
-    
-    public func updatedStarGiftAuctionState() -> Signal<[Int64: GiftAuctionContext.State.AuctionState], NoError> {
-        return self.impl.signalWith { impl, subscriber in
-            return impl.updatedStarGiftAuctionState().start(next: subscriber.putNext, error: subscriber.putError, completed: subscriber.putCompletion)
-        }
-    }
-    
-    public func updatedStarGiftAuctionMyState() -> Signal<[Int64: GiftAuctionContext.State.MyState], NoError> {
-        return self.impl.signalWith { impl, subscriber in
-            return impl.updatedStarGiftAuctionMyState().start(next: subscriber.putNext, error: subscriber.putError, completed: subscriber.putCompletion)
-        }
-    }
-    
     func addCustomOperation<T, E>(_ f: Signal<T, E>) -> Signal<T, E> {
         return self.impl.signalWith { impl, subscriber in
             return impl.addCustomOperation(f).start(next: subscriber.putNext, error: subscriber.putError, completed: subscriber.putCompletion)
@@ -2317,20 +2193,17 @@ public final class AccountStateManager {
             return nil
         }
         switch updates {
-        case let .updates(updatesData):
-            let (updates, users) = (updatesData.updates, updatesData.users)
+        case let .updates(updates, users, _, _, _):
             var peers: [Peer] = []
             for user in users {
                 peers.append(TelegramUser(user: user))
             }
-
+            
             for update in updates {
                 switch update {
-                case let .updatePhoneCall(updatePhoneCallData):
-                    let phoneCall = updatePhoneCallData.phoneCall
+                case let .updatePhoneCall(phoneCall):
                     switch phoneCall {
-                    case let .phoneCallRequested(phoneCallRequestedData):
-                        let (flags, id, accessHash, date, adminId) = (phoneCallRequestedData.flags, phoneCallRequestedData.id, phoneCallRequestedData.accessHash, phoneCallRequestedData.date, phoneCallRequestedData.adminId)
+                    case let .phoneCallRequested(flags, id, accessHash, date, adminId, _, _, _):
                         guard let peer = peers.first(where: { $0.id == PeerId(namespace: Namespaces.Peer.CloudUser, id: PeerId.Id._internalFromInt64Value(adminId)) }) else {
                             return nil
                         }

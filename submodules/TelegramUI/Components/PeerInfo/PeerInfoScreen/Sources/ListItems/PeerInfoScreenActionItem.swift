@@ -25,22 +25,15 @@ final class PeerInfoScreenActionItem: PeerInfoScreenItem {
     let icon: UIImage?
     let iconSignal: Signal<UIImage?, NoError>?
     let alignment: PeerInfoScreenActionAligmnent
-    // Nicegram
-    let spacing: CGFloat?
-    //
     let action: (() -> Void)?
     
-    // Nicegram, spacing added
-    init(id: AnyHashable, text: String, color: PeerInfoScreenActionColor = .accent, icon: UIImage? = nil, iconSignal: Signal<UIImage?, NoError>? = nil, alignment: PeerInfoScreenActionAligmnent = .natural, spacing: CGFloat? = nil, action: (() -> Void)?) {
+    init(id: AnyHashable, text: String, color: PeerInfoScreenActionColor = .accent, icon: UIImage? = nil, iconSignal: Signal<UIImage?, NoError>? = nil, alignment: PeerInfoScreenActionAligmnent = .natural, action: (() -> Void)?) {
         self.id = id
         self.text = text
         self.color = color
         self.icon = icon
         self.iconSignal = iconSignal
         self.alignment = alignment
-        // Nicegram
-        self.spacing = spacing
-        //
         self.action = action
     }
     
@@ -109,9 +102,7 @@ private final class PeerInfoScreenActionItemNode: PeerInfoScreenItemNode {
         self.selectionNode.pressed = item.action
         
         let sideInset: CGFloat = 16.0 + safeInsets.left
-        // Nicegram, spacing added
-        let spacing = item.spacing ?? 16.0
-        var leftInset = (item.icon == nil && item.iconSignal == nil ? sideInset : sideInset + 29.0 + spacing)
+        var leftInset = (item.icon == nil && item.iconSignal == nil ? sideInset : sideInset + 29.0 + 16.0)
         var iconInset = sideInset
         if case .peerList = item.alignment {
             leftInset += 5.0
@@ -136,8 +127,10 @@ private final class PeerInfoScreenActionItemNode: PeerInfoScreenItemNode {
         self.activateArea.accessibilityLabel = item.text
         
         let textSize = self.textNode.updateLayout(CGSize(width: width - (leftInset + rightInset), height: .greatestFiniteMagnitude))
-        let height = textSize.height + 32.0
-        let textFrame = CGRect(origin: CGPoint(x: item.alignment == .center ? floorToScreenPixels((width - textSize.width) / 2.0) : leftInset, y: floorToScreenPixels((height - textSize.height) / 2.0)), size: textSize)
+        
+        let textFrame = CGRect(origin: CGPoint(x: item.alignment == .center ? floorToScreenPixels((width - textSize.width) / 2.0) : leftInset, y: 12.0), size: textSize)
+        
+        let height = textSize.height + 24.0
         
         if let icon = item.icon {
             if self.iconNode.supernode == nil {
@@ -174,7 +167,7 @@ private final class PeerInfoScreenActionItemNode: PeerInfoScreenItemNode {
         let hasTopCorners = hasCorners && topItem == nil
         let hasBottomCorners = hasCorners && bottomItem == nil
         
-        self.maskNode.image = hasCorners ? PresentationResourcesItemList.cornersImage(presentationData.theme, top: hasTopCorners, bottom: hasBottomCorners, glass: true) : nil
+        self.maskNode.image = hasCorners ? PresentationResourcesItemList.cornersImage(presentationData.theme, top: hasTopCorners, bottom: hasBottomCorners) : nil
         self.maskNode.frame = CGRect(origin: CGPoint(x: safeInsets.left, y: 0.0), size: CGSize(width: width - safeInsets.left - safeInsets.right, height: height))
         self.bottomSeparatorNode.isHidden = hasBottomCorners
         
@@ -182,9 +175,7 @@ private final class PeerInfoScreenActionItemNode: PeerInfoScreenItemNode {
         self.selectionNode.update(size: CGSize(width: width, height: height + highlightNodeOffset), theme: presentationData.theme, transition: transition)
         transition.updateFrame(node: self.selectionNode, frame: CGRect(origin: CGPoint(x: 0.0, y: -highlightNodeOffset), size: CGSize(width: width, height: height + highlightNodeOffset)))
         
-        let separatorRightInset: CGFloat = 16.0
-        
-        transition.updateFrame(node: self.bottomSeparatorNode, frame: CGRect(origin: CGPoint(x: separatorInset, y: height - UIScreenPixel), size: CGSize(width: width - separatorInset - separatorRightInset, height: UIScreenPixel)))
+        transition.updateFrame(node: self.bottomSeparatorNode, frame: CGRect(origin: CGPoint(x: separatorInset, y: height - UIScreenPixel), size: CGSize(width: width - separatorInset, height: UIScreenPixel)))
         transition.updateAlpha(node: self.bottomSeparatorNode, alpha: bottomItem == nil ? 0.0 : 1.0)
         
         self.activateArea.frame = CGRect(origin: CGPoint(x: safeInsets.left, y: 0.0), size: CGSize(width: width - safeInsets.left - safeInsets.right, height: height))

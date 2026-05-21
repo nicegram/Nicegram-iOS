@@ -220,7 +220,7 @@ private final class PeerInfoScreenBusinessHoursItemNode: PeerInfoScreenItemNode 
             }
             
             if isExtracted {
-                strongSelf.extractedBackgroundImageNode.image = generateStretchableFilledCircleImage(diameter: 52.0, color: theme.list.plainBackgroundColor)
+                strongSelf.extractedBackgroundImageNode.image = generateStretchableFilledCircleImage(diameter: 28.0, color: theme.list.plainBackgroundColor)
             }
             
             if let extractedRect = strongSelf.extractedRect, let nonExtractedRect = strongSelf.nonExtractedRect {
@@ -308,7 +308,7 @@ private final class PeerInfoScreenBusinessHoursItemNode: PeerInfoScreenItemNode 
         
         let labelSize = self.labelNode.updateLayout(CGSize(width: width - sideInset * 2.0, height: .greatestFiniteMagnitude))
         
-        var topOffset = 15.0
+        var topOffset = 10.0
         let labelFrame = CGRect(origin: CGPoint(x: sideInset, y: topOffset), size: labelSize)
         if labelSize.height > 0.0 {
             topOffset += labelSize.height
@@ -632,7 +632,7 @@ private final class PeerInfoScreenBusinessHoursItemNode: PeerInfoScreenItemNode 
             topOffset += dayHeights
         }
         
-        topOffset += 15.0
+        topOffset += 11.0
         
         transition.updateFrame(node: self.labelNode, frame: labelFrame)
         
@@ -645,7 +645,7 @@ private final class PeerInfoScreenBusinessHoursItemNode: PeerInfoScreenItemNode 
         let hasTopCorners = hasCorners && topItem == nil
         let hasBottomCorners = hasCorners && bottomItem == nil
         
-        self.maskNode.image = hasCorners ? PresentationResourcesItemList.cornersImage(presentationData.theme, top: hasTopCorners, bottom: hasBottomCorners, glass: true) : nil
+        self.maskNode.image = hasCorners ? PresentationResourcesItemList.cornersImage(presentationData.theme, top: hasTopCorners, bottom: hasBottomCorners) : nil
         transition.updateFrame(node: self.maskNode, frame: CGRect(origin: CGPoint(x: safeInsets.left, y: 0.0), size: CGSize(width: width - safeInsets.left - safeInsets.right, height: height)))
         self.bottomSeparatorNode.isHidden = hasBottomCorners
         

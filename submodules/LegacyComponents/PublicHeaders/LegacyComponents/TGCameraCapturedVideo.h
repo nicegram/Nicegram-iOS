@@ -16,7 +16,6 @@
 @property (nonatomic, readonly) NSString *uniformTypeIdentifier;
 
 - (instancetype)initWithURL:(NSURL *)url;
-- (instancetype)initWithURL:(NSURL *)url isAnimation:(bool)isAnimation;
 - (instancetype)initWithAsset:(TGMediaAsset *)asset livePhoto:(bool)livePhoto;
 
 - (void)_cleanUp;

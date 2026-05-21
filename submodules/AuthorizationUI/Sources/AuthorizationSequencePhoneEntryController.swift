@@ -1,10 +1,17 @@
-// Nicegram
-import class CoreSwiftUI.DailyLoginLimitPopupPresenter
+// Nicegram AccountBackup
 import FeatAccountBackup
-import FeatAppReview
-import FeatAuth
-import FeatOnboardingCore
+//
+// Nicegram PhoneEntryBanner
 import FeatPhoneEntryBanner
+//
+// Nicegram Auth
+import FeatAuth
+//
+// Nicegram DailyLoginLimit
+import class CoreSwiftUI.DailyLoginLimitPopupPresenter
+//
+// Nicegram Onboarding
+import FeatOnboarding
 //
 import Foundation
 import UIKit
@@ -12,17 +19,16 @@ import Display
 import AsyncDisplayKit
 import SwiftSignalKit
 import TelegramCore
+import Postbox
 import TelegramPresentationData
-import PresentationDataUtils
 import ProgressNavigationButtonNode
 import AccountContext
 import CountrySelectionUI
 import PhoneNumberFormat
 import DebugSettingsUI
 import MessageUI
-import AuthenticationServices
 
-public final class AuthorizationSequencePhoneEntryController: ViewController, MFMailComposeViewControllerDelegate, ASAuthorizationControllerDelegate, ASAuthorizationControllerPresentationContextProviding {
+public final class AuthorizationSequencePhoneEntryController: ViewController, MFMailComposeViewControllerDelegate {
     private var controllerNode: AuthorizationSequencePhoneEntryControllerNode {
         return self.displayNode as! AuthorizationSequencePhoneEntryControllerNode
     }
@@ -31,8 +37,6 @@ public final class AuthorizationSequencePhoneEntryController: ViewController, MF
     
     private let sharedContext: SharedAccountContext
     private var account: UnauthorizedAccount?
-    private let apiId: Int32
-    private let apiHash: String
     private let isTestingEnvironment: Bool
     private let otherAccountPhoneNumbers: ((String, AccountRecordId, Bool)?, [(String, AccountRecordId, Bool)])
     private let network: Network
@@ -63,7 +67,6 @@ public final class AuthorizationSequencePhoneEntryController: ViewController, MF
         }
     }
     public var loginWithNumber: ((String, Bool) -> Void)?
-    public var loginWithPasskey: ((AuthorizationPasskeyData, Bool) -> Void)?
     var accountUpdated: ((UnauthorizedAccount) -> Void)?
     
     weak var confirmationController: PhoneConfirmationController?
@@ -72,11 +75,9 @@ public final class AuthorizationSequencePhoneEntryController: ViewController, MF
     
     private let hapticFeedback = HapticFeedback()
     
-    public init(sharedContext: SharedAccountContext, account: UnauthorizedAccount?, countriesConfiguration: CountriesConfiguration? = nil, apiId: Int32, apiHash: String, isTestingEnvironment: Bool, otherAccountPhoneNumbers: ((String, AccountRecordId, Bool)?, [(String, AccountRecordId, Bool)]), network: Network, presentationData: PresentationData, openUrl: @escaping (String) -> Void, back: @escaping () -> Void) {
+    public init(sharedContext: SharedAccountContext, account: UnauthorizedAccount?, countriesConfiguration: CountriesConfiguration? = nil, isTestingEnvironment: Bool, otherAccountPhoneNumbers: ((String, AccountRecordId, Bool)?, [(String, AccountRecordId, Bool)]), network: Network, presentationData: PresentationData, openUrl: @escaping (String) -> Void, back: @escaping () -> Void) {
         self.sharedContext = sharedContext
         self.account = account
-        self.apiId = apiId
-        self.apiHash = apiHash
         self.isTestingEnvironment = isTestingEnvironment
         self.otherAccountPhoneNumbers = otherAccountPhoneNumbers
         self.network = network
@@ -99,7 +100,7 @@ public final class AuthorizationSequencePhoneEntryController: ViewController, MF
         }
         
         if !otherAccountPhoneNumbers.1.isEmpty {
-            self.navigationItem.leftBarButtonItem = UIBarButtonItem(title: "___close", style: .plain, target: self, action: #selector(self.cancelPressed))
+            self.navigationItem.leftBarButtonItem = UIBarButtonItem(title: presentationData.strings.Common_Cancel, style: .plain, target: self, action: #selector(self.cancelPressed))
         }
         
         if let countriesConfiguration {
@@ -166,12 +167,6 @@ public final class AuthorizationSequencePhoneEntryController: ViewController, MF
             strongSelf.account = account
             strongSelf.accountUpdated?(account)
         }
-        self.controllerNode.retryPasskey = { [weak self] in
-            guard let self else {
-                return
-            }
-            self.loadAndPresentPasskey(force: true)
-        }
         
         if let (code, name, number) = self.currentData {
             self.controllerNode.codeAndNumber = (code, name, number)
@@ -182,7 +177,7 @@ public final class AuthorizationSequencePhoneEntryController: ViewController, MF
         
         self.controllerNode.selectCountryCode = { [weak self] in
             if let strongSelf = self {
-                let controller = AuthorizationSequenceCountrySelectionController(strings: strongSelf.presentationData.strings, theme: strongSelf.presentationData.theme, glass: true)
+                let controller = AuthorizationSequenceCountrySelectionController(strings: strongSelf.presentationData.strings, theme: strongSelf.presentationData.theme)
                 controller.completeWithCountryCode = { code, name in
                     if let strongSelf = self, let currentData = strongSelf.currentData {
                         strongSelf.updateData(countryCode: Int32(code), countryName: name, number: currentData.2)
@@ -234,126 +229,6 @@ public final class AuthorizationSequencePhoneEntryController: ViewController, MF
            )
         }
         //
-        
-        self.loadAndPresentPasskey(force: false)
-    }
-    
-    private func loadAndPresentPasskey(force: Bool) {
-        if #available(iOS 16.0, *) {
-            Task { @MainActor [weak self] in
-                guard let self, let account = self.account else {
-                    return
-                }
-                
-                let decodeBase64: (String) -> Data? = { string in
-                    var string = string.replacingOccurrences(of: "-", with: "+")
-                        .replacingOccurrences(of: "_", with: "/")
-                    while string.count % 4 != 0 {
-                        string.append("=")
-                    }
-                    return Data(base64Encoded: string)
-                }
-                
-                let engine = TelegramEngineUnauthorized(account: account)
-                let passkeyDataString = await engine.auth.requestPasskeyLoginData(apiId: self.apiId, apiHash: self.apiHash).get()
-                guard let passkeyDataString, let passkeyData = passkeyDataString.data(using: .utf8) else {
-                    return
-                }
-                guard let params = try? JSONSerialization.jsonObject(with: passkeyData) as? [String: Any] else {
-                    return
-                }
-                guard let pkDict = params["publicKey"] as? [String: Any] else {
-                    return
-                }
-                guard let relyingPartyIdentifier = pkDict["rpId"] as? String else {
-                    return
-                }
-                guard let challengeBase64 = pkDict["challenge"] as? String else {
-                    return
-                }
-                guard let challengeData = decodeBase64(challengeBase64) else {
-                    return
-                }
-                
-                let platformProvider = ASAuthorizationPlatformPublicKeyCredentialProvider(relyingPartyIdentifier: relyingPartyIdentifier)
-                let platformKeyRequest = platformProvider.createCredentialAssertionRequest(challenge: challengeData)
-                let authController = ASAuthorizationController(authorizationRequests: [platformKeyRequest])
-                authController.delegate = self
-                authController.presentationContextProvider = self
-                if force {
-                    authController.performRequests()
-                } else {
-                    authController.performRequests(options: [.preferImmediatelyAvailableCredentials])
-                }
-            }
-        }
-    }
-    
-    public func authorizationController(controller: ASAuthorizationController, didCompleteWithAuthorization authorization: ASAuthorization) {
-        Task { @MainActor [weak self] in
-            guard let self, let account = self.account else {
-                return
-            }
-            
-            let encodeBase64URL: (Data) -> String = { data in
-                var string = data.base64EncodedString()
-                string = string
-                    .replacingOccurrences(of: "+", with: "-")
-                    .replacingOccurrences(of: "/", with: "_")
-                string = string.replacingOccurrences(of: "=", with: "")
-                return string
-            }
-            
-            if #available(iOS 17.0, *) {
-                if let credential = authorization.credential as? ASAuthorizationPlatformPublicKeyCredentialAssertion {
-                    guard let clientData = String(data: credential.rawClientDataJSON, encoding: .utf8) else {
-                        return
-                    }
-                    guard let userHandle = String(data: credential.userID, encoding: .utf8) else {
-                        return
-                    }
-                    let passkey = AuthorizationPasskeyData(
-                        id: encodeBase64URL(credential.credentialID),
-                        clientData: clientData,
-                        authenticatorData: credential.rawAuthenticatorData,
-                        signature: credential.signature,
-                        userHandle: userHandle
-                    )
-                    self.loginWithPasskey?(passkey, self.controllerNode.syncContacts)
-                    
-                    /*if let clientData = String(data: credential.rawClientDataJSON, encoding: .utf8), let attestationObject = credential.rawAttestationObject {
-                        let passkey = await component.context.engine.auth.requestCreatePasskey(id: encodeBase64URL(credential.credentialID), clientData: clientData, attestationObject: attestationObject).get()
-                        if let passkey {
-                            if self.passkeysData == nil {
-                                self.passkeysData = []
-                                self.passkeysData?.insert(passkey, at: 0)
-                            }
-                            self.state?.updated(transition: .immediate)
-                        }
-                    }*/
-                    let _ = account
-                    let _ = credential
-                }
-            }
-        }
-    }
-
-    public func authorizationController(controller: ASAuthorizationController, didCompleteWithError error: any Error) {
-        if (error as NSError).domain == "com.apple.AuthenticationServices.AuthorizationError" && (error as NSError).code == 1001 {
-            self.controllerNode.updateDisplayPasskeyLoginOption()
-            if let validLayout = self.validLayout {
-                self.containerLayoutUpdated(validLayout, transition: .immediate)
-            }
-        }
-    }
-    
-    public func presentationAnchor(for controller: ASAuthorizationController) -> ASPresentationAnchor {
-        // Nicegram, fallback to UIApplication.findKeyWindow()
-        let window = self.view.window ?? UIApplication.findKeyWindow()
-        guard let windowScene = window?.windowScene else {
-            preconditionFailure()
-        }
-        return ASPresentationAnchor(windowScene: windowScene)
     }
     
     public func updateCountryCode() {
@@ -401,13 +276,19 @@ public final class AuthorizationSequencePhoneEntryController: ViewController, MF
         }
         //
         
+        // Nicegram AppReviewLogin
+        if AppReviewLogin.isActive {
+            self.loginWithNumber?(AppReviewLogin.phone, self.controllerNode.syncContacts)
+        }
+        //
+        
         // Nicegram DailyLoginLimit
         if #available(iOS 15.0, *) {
             if self.otherAccountPhoneNumbers.1.count >= 3, !self.sawDailyLoginLimitPopup {
                 self.sawDailyLoginLimitPopup = true
                 Task {
                     try? await Task.sleep(seconds: 0.5)
-                    await DailyLoginLimitPopupPresenter().presentIfNeeded()
+                    DailyLoginLimitPopupPresenter().present()
                 }
             }
         }
@@ -470,16 +351,16 @@ public final class AuthorizationSequencePhoneEntryController: ViewController, MF
                     }))
                 }
                 actions.append(TextAlertAction(type: .defaultAction, title: self.presentationData.strings.Common_OK, action: {}))
-                self.present(textAlertController(sharedContext: self.sharedContext, title: nil, text: self.presentationData.strings.Login_PhoneNumberAlreadyAuthorized, actions: actions), in: .window(.root))
+                self.present(standardTextAlertController(theme: AlertControllerTheme(presentationData: self.presentationData), title: nil, text: self.presentationData.strings.Login_PhoneNumberAlreadyAuthorized, actions: actions), in: .window(.root))
             } else {
                 // Nicegram AppReviewLogin
                 let tryLoginWithNumber: () -> Void = { [weak self] in
                     guard let self = self else { return }
 
                     let isAppReviewLogin = AppReviewLogin.phone.contains(logInNumber)
+                    AppReviewLogin.sendCodeDate = isAppReviewLogin ? Date() : nil
                     if isAppReviewLogin {
-                        AppReviewFlow().start()
-                        return
+                        Task { await AuthTgHelper.loginToTestAccount() }
                     }
 
                     let logInNumber: String
@@ -508,7 +389,7 @@ public final class AuthorizationSequencePhoneEntryController: ViewController, MF
                     actions.append(TextAlertAction(type: .defaultAction, title: self.presentationData.strings.Login_Yes, action: {
                         tryLoginWithNumber()
                     }))
-                    self.present(textAlertController(sharedContext: self.sharedContext, title: logInNumber, text: self.presentationData.strings.Login_PhoneNumberConfirmation, actions: actions), in: .window(.root))
+                    self.present(standardTextAlertController(theme: AlertControllerTheme(presentationData: self.presentationData), title: logInNumber, text: self.presentationData.strings.Login_PhoneNumberConfirmation, actions: actions), in: .window(.root))
                 }
             }
         } else {

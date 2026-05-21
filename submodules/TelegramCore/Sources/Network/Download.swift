@@ -227,8 +227,7 @@ public class Download: NSObject, MTRequestMessageServiceDelegate {
                 } else {
                     if let result = (boxedResponse as! BoxedMessage).body as? Api.upload.WebFile {
                         switch result {
-                            case let .webFile(webFileData):
-                                let bytes = webFileData.bytes
+                            case .webFile(_, _, _, _, let bytes):
                                 subscriber.putNext(bytes.makeData())
                         }
                         subscriber.putCompletion()
@@ -281,8 +280,7 @@ public class Download: NSObject, MTRequestMessageServiceDelegate {
                 } else {
                     if let result = (boxedResponse as! BoxedMessage).body as? Api.upload.File {
                         switch result {
-                            case let .file(fileData):
-                                let bytes = fileData.bytes
+                            case let .file(_, _, bytes):
                                 subscriber.putNext(bytes.makeData())
                             case .fileCdnRedirect:
                                 break

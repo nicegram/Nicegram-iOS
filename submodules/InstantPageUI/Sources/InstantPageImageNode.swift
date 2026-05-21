@@ -1,6 +1,5 @@
 import Foundation
 import UIKit
-import ImageIO
 import AsyncDisplayKit
 import Display
 import TelegramCore
@@ -22,35 +21,7 @@ private struct FetchControls {
     let cancel: () -> Void
 }
 
-private enum ExternalImageLoadState {
-    case loading
-    case ready
-    case failed
-}
-
-private func externalImagePixelDimensions(data: Data) -> PixelDimensions? {
-    guard let source = CGImageSourceCreateWithData(data as CFData, nil) else {
-        return nil
-    }
-    guard let properties = CGImageSourceCopyPropertiesAtIndex(source, 0, nil) as? [CFString: Any] else {
-        return nil
-    }
-    guard let pixelWidth = (properties[kCGImagePropertyPixelWidth] as? NSNumber)?.int32Value,
-          let pixelHeight = (properties[kCGImagePropertyPixelHeight] as? NSNumber)?.int32Value,
-          pixelWidth > 0, pixelHeight > 0 else {
-        return nil
-    }
-    
-    let orientation = imageOrientationFromSource(source)
-    switch orientation {
-    case .left, .right, .leftMirrored, .rightMirrored:
-        return PixelDimensions(width: pixelHeight, height: pixelWidth)
-    default:
-        return PixelDimensions(width: pixelWidth, height: pixelHeight)
-    }
-}
-
-final class InstantPageImageNode: ASDisplayNode, InstantPageNode, InstantPageExternalMediaDimensionsNode {
+final class InstantPageImageNode: ASDisplayNode, InstantPageNode {
     private let context: AccountContext
     private let webPage: TelegramMediaWebpage
     private var theme: InstantPageTheme
@@ -61,13 +32,8 @@ final class InstantPageImageNode: ASDisplayNode, InstantPageNode, InstantPageExt
     private let fit: Bool
     private let openMedia: (InstantPageMedia) -> Void
     private let longPressMedia: (InstantPageMedia) -> Void
-    private let getPreloadedResource: (String) -> Data?
     
     private var fetchControls: FetchControls?
-    private var externalImageLoadState: ExternalImageLoadState?
-    var updateExternalMediaDimensions: ((EngineMedia.Id, PixelDimensions) -> Void)?
-    private var externalMediaDimensions: PixelDimensions?
-    private var didReportExternalMediaDimensions = false
 
     private let pinchContainerNode: PinchSourceContainerNode
     private let imageNode: TransformImageNode
@@ -82,7 +48,6 @@ final class InstantPageImageNode: ASDisplayNode, InstantPageNode, InstantPageExt
     private var statusDisposable = MetaDisposable()
     
     private var themeUpdated: Bool = false
-    private var externalMediaDimensionsUpdated: Bool = false
     
     init(context: AccountContext, sourceLocation: InstantPageSourceLocation, theme: InstantPageTheme, webPage: TelegramMediaWebpage, media: InstantPageMedia, attributes: [InstantPageImageAttribute], interactive: Bool, roundCorners: Bool, fit: Bool, openMedia: @escaping (InstantPageMedia) -> Void, longPressMedia: @escaping (InstantPageMedia) -> Void, activatePinchPreview: ((PinchSourceContainerNode) -> Void)?, pinchPreviewFinished: ((InstantPageNode) -> Void)?, getPreloadedResource: @escaping (String) -> Data?) {
         self.context = context
@@ -95,7 +60,6 @@ final class InstantPageImageNode: ASDisplayNode, InstantPageNode, InstantPageExt
         self.fit = fit
         self.openMedia = openMedia
         self.longPressMedia = longPressMedia
-        self.getPreloadedResource = getPreloadedResource
 
         self.pinchContainerNode = PinchSourceContainerNode()
         self.imageNode = TransformImageNode()
@@ -108,14 +72,33 @@ final class InstantPageImageNode: ASDisplayNode, InstantPageNode, InstantPageExt
         self.pinchContainerNode.contentNode.addSubnode(self.imageNode)
         self.addSubnode(self.pinchContainerNode)
         
-        if interactive, media.url != nil {
-            self.linkIconNode.image = UIImage(bundleImageName: "Instant View/ImageLink")
-            self.pinchContainerNode.contentNode.addSubnode(self.linkIconNode)
-        }
-        
         if case let .image(image) = media.media, let largest = largestImageRepresentation(image.representations) {
             if let externalResource = largest.resource as? InstantPageExternalMediaResource {
-                self.loadExternalImage(resourceUrl: externalResource.url)
+                var url = externalResource.url
+                if !url.hasPrefix("http") && !url.hasPrefix("https") && url.hasPrefix("//") {
+                    url = "https:\(url)"
+                }
+                let photoData: Signal<Tuple4<Data?, Data?, ChatMessagePhotoQuality, Bool>, NoError>
+                if let preloadedData = getPreloadedResource(externalResource.url) {
+                    photoData = .single(Tuple4(nil, preloadedData, .full, true))
+                } else {
+                    photoData = context.engine.resources.httpData(url: url, preserveExactUrl: true)
+                    |> map(Optional.init)
+                    |> `catch` { _ -> Signal<Data?, NoError> in
+                        return .single(nil)
+                    }
+                    |> map { data in
+                        if let data {
+                            return Tuple4(nil, data, .full, true)
+                        } else {
+                            return Tuple4(nil, nil, .full, false)
+                        }
+                    }
+                }
+                self.imageNode.setSignal(chatMessagePhotoInternal(photoData: photoData)
+                |> map { _, _, generate in
+                    return generate
+                })
             } else {
                 let imageReference = ImageMediaReference.webPage(webPage: WebpageReference(webPage), media: image)
                 self.imageNode.setSignal(chatMessagePhoto(postbox: context.account.postbox, userLocation: sourceLocation.userLocation, photoReference: imageReference))
@@ -133,21 +116,46 @@ final class InstantPageImageNode: ASDisplayNode, InstantPageNode, InstantPageExt
                 })
                 
                 if interactive {
-                    self.statusDisposable.set((context.engine.resources.status(resource: EngineMediaResource(largest.resource)) |> deliverOnMainQueue).start(next: { [weak self] status in
+                    self.statusDisposable.set((context.account.postbox.mediaBox.resourceStatus(largest.resource) |> deliverOnMainQueue).start(next: { [weak self] status in
                         displayLinkDispatcher.dispatch {
                             if let strongSelf = self {
-                                strongSelf.fetchStatus = status
+                                strongSelf.fetchStatus = EngineMediaResource.FetchStatus(status)
                                 strongSelf.updateFetchStatus()
                             }
                         }
                     }))
-
+                    
+                    if media.url != nil {
+                        self.linkIconNode.image = UIImage(bundleImageName: "Instant View/ImageLink")
+                        self.pinchContainerNode.contentNode.addSubnode(self.linkIconNode)
+                    }
+                    
                     self.pinchContainerNode.contentNode.addSubnode(self.statusNode)
                 }
             }
         } else if case let .file(file) = media.media {
             if let externalResource = file.resource as? InstantPageExternalMediaResource {
-                self.loadExternalImage(resourceUrl: externalResource.url)
+                let photoData: Signal<Tuple4<Data?, Data?, ChatMessagePhotoQuality, Bool>, NoError>
+                if let preloadedData = getPreloadedResource(externalResource.url) {
+                    photoData = .single(Tuple4(nil, preloadedData, .full, true))
+                } else {
+                    photoData = context.engine.resources.httpData(url: externalResource.url, preserveExactUrl: true)
+                    |> map(Optional.init)
+                    |> `catch` { _ -> Signal<Data?, NoError> in
+                        return .single(nil)
+                    }
+                    |> map { data in
+                        if let data {
+                            return Tuple4(nil, data, .full, true)
+                        } else {
+                            return Tuple4(nil, nil, .full, false)
+                        }
+                    }
+                }
+                self.imageNode.setSignal(chatMessagePhotoInternal(photoData: photoData)
+                |> map { _, _, generate in
+                    return generate
+                })
             } else {
                 let fileReference = FileMediaReference.webPage(webPage: WebpageReference(webPage), media: file)
                 if file.mimeType.hasPrefix("image/") {
@@ -227,114 +235,6 @@ final class InstantPageImageNode: ASDisplayNode, InstantPageNode, InstantPageExt
         }
     }
     
-    private func loadExternalImage(resourceUrl: String) {
-        self.externalImageLoadState = .loading
-        self.updateExternalImageLoadState()
-        
-        var requestUrl = resourceUrl
-        if !requestUrl.hasPrefix("http") && !requestUrl.hasPrefix("https") && requestUrl.hasPrefix("//") {
-            requestUrl = "https:\(requestUrl)"
-        }
-        
-        let photoData: Signal<Tuple4<Data?, Data?, ChatMessagePhotoQuality, Bool>, NoError>
-        if let preloadedData = self.getPreloadedResource(resourceUrl) {
-            photoData = .single(Tuple4(nil, preloadedData, .full, true))
-        } else {
-            photoData = self.context.engine.resources.httpData(url: requestUrl, preserveExactUrl: true)
-            |> map(Optional.init)
-            |> `catch` { _ -> Signal<Data?, NoError> in
-                return .single(nil)
-            }
-            |> map { data in
-                if let data {
-                    return Tuple4(nil, data, .full, true)
-                } else {
-                    return Tuple4(nil, nil, .full, false)
-                }
-            }
-        }
-        
-        let stateAwarePhotoData = photoData
-        |> deliverOnMainQueue
-        |> afterNext { [weak self] value in
-            guard let strongSelf = self else {
-                return
-            }
-            if let data = value._1 ?? value._0, UIImage(data: data) != nil {
-                if let dimensions = externalImagePixelDimensions(data: data) {
-                    strongSelf.externalMediaDimensions = dimensions
-                    strongSelf.externalMediaDimensionsUpdated = true
-                    strongSelf.maybeUpdateExternalMediaDimensions(dimensions)
-                }
-                strongSelf.externalImageLoadState = .ready
-                strongSelf.setNeedsLayout()
-            } else {
-                strongSelf.externalImageLoadState = .failed
-            }
-            strongSelf.updateExternalImageLoadState()
-        }
-        
-        self.imageNode.setSignal(chatMessagePhotoInternal(photoData: stateAwarePhotoData)
-        |> map { _, _, generate in
-            return generate
-        })
-        
-        self.fetchControls = FetchControls(fetch: { [weak self] _ in
-            self?.loadExternalImage(resourceUrl: resourceUrl)
-        }, cancel: {})
-    }
-    
-    private func currentMediaDimensions() -> PixelDimensions? {
-        if case let .image(image) = self.media.media, let largest = largestImageRepresentation(image.representations) {
-            return largest.dimensions
-        } else if case let .file(file) = self.media.media {
-            return file.dimensions
-        } else {
-            return nil
-        }
-    }
-    
-    private func effectiveMediaDimensions() -> PixelDimensions? {
-        return self.externalMediaDimensions ?? self.currentMediaDimensions()
-    }
-    
-    private func maybeUpdateExternalMediaDimensions(_ dimensions: PixelDimensions) {
-        guard !self.didReportExternalMediaDimensions, let mediaId = self.media.media.id else {
-            return
-        }
-        if let currentDimensions = self.currentMediaDimensions(), currentDimensions == dimensions {
-            return
-        }
-        self.didReportExternalMediaDimensions = true
-        self.updateExternalMediaDimensions?(mediaId, dimensions)
-    }
-    
-    private func updateExternalImageLoadState() {
-        guard let externalImageLoadState = self.externalImageLoadState else {
-            return
-        }
-        
-        if self.statusNode.supernode == nil {
-            self.pinchContainerNode.contentNode.addSubnode(self.statusNode)
-        }
-        
-        let state: RadialStatusNodeState
-        switch externalImageLoadState {
-        case .loading:
-            state = .progress(color: .white, lineWidth: nil, value: nil, cancelEnabled: false, animateRotation: true)
-        case .ready:
-            state = .none
-        case .failed:
-            state = .none
-        }
-        
-        self.statusNode.transitionToState(state, completion: { [weak statusNode] in
-            if state == .none {
-                statusNode?.removeFromSupernode()
-            }
-        })
-    }
-    
     private func updateFetchStatus() {
         var state: RadialStatusNodeState = .none
         if let fetchStatus = self.fetchStatus {
@@ -360,20 +260,19 @@ final class InstantPageImageNode: ASDisplayNode, InstantPageNode, InstantPageExt
         
         let size = self.bounds.size
         
-        if self.currentSize != size || self.themeUpdated || self.externalMediaDimensionsUpdated {
+        if self.currentSize != size || self.themeUpdated {
             self.currentSize = size
             self.themeUpdated = false
-            self.externalMediaDimensionsUpdated = false
             
             self.pinchContainerNode.frame = CGRect(origin: CGPoint(), size: size)
             self.pinchContainerNode.update(size: size, transition: .immediate)
             self.imageNode.frame = CGRect(origin: CGPoint(), size: size)
             
-            let radialStatusSize: CGFloat = max(18.0, min(50.0, floor(min(size.width, size.height) * 0.7)))
+            let radialStatusSize: CGFloat = 50.0
             self.statusNode.frame = CGRect(x: floorToScreenPixels((size.width - radialStatusSize) / 2.0), y: floorToScreenPixels((size.height - radialStatusSize) / 2.0), width: radialStatusSize, height: radialStatusSize)
             
-            if case .image = self.media.media, let dimensions = self.effectiveMediaDimensions() {
-                let imageSize = dimensions.cgSize.aspectFilled(size)
+            if case let .image(image) = self.media.media, let largest = largestImageRepresentation(image.representations) {
+                let imageSize = largest.dimensions.cgSize.aspectFilled(size)
                 let boundingSize = size
                 let radius: CGFloat = self.roundCorners ? floor(min(imageSize.width, imageSize.height) / 2.0) : 0.0
                 let makeLayout = self.imageNode.asyncLayout()
@@ -381,7 +280,7 @@ final class InstantPageImageNode: ASDisplayNode, InstantPageNode, InstantPageExt
                 apply()
                 
                 self.linkIconNode.frame = CGRect(x: size.width - 38.0, y: 14.0, width: 24.0, height: 24.0)
-            } else if case let .file(file) = self.media.media, let dimensions = self.effectiveMediaDimensions() {
+            } else if case let .file(file) = self.media.media, let dimensions = file.dimensions {
                 let emptyColor = file.mimeType.hasPrefix("image/") ? self.theme.imageTintColor : nil
                 
                 let imageSize = dimensions.cgSize.aspectFilled(size)
@@ -419,7 +318,7 @@ final class InstantPageImageNode: ASDisplayNode, InstantPageNode, InstantPageExt
     }
     
     func transitionNode(media: InstantPageMedia) -> (ASDisplayNode, CGRect, () -> (UIView?, UIView?))? {
-        if instantPageMediaMatchesNodeIdentity(media, self.media) {
+        if media == self.media {
             let imageNode = self.imageNode
             return (self.imageNode, self.imageNode.bounds, { [weak imageNode] in
                 return (imageNode?.view.snapshotContentTree(unhide: true), nil)
@@ -430,32 +329,14 @@ final class InstantPageImageNode: ASDisplayNode, InstantPageNode, InstantPageExt
     }
     
     func updateHiddenMedia(media: InstantPageMedia?) {
-        if let media {
-            self.imageNode.isHidden = instantPageMediaMatchesNodeIdentity(self.media, media)
-        } else {
-            self.imageNode.isHidden = false
-        }
+        self.imageNode.isHidden = self.media == media
         self.statusNode.isHidden = self.imageNode.isHidden
-        self.linkIconNode.isHidden = self.imageNode.isHidden
     }
     
     @objc private func tapGesture(_ recognizer: TapLongTapOrDoubleTapGestureRecognizer) {
         switch recognizer.state {
             case .ended:
                 if let (gesture, _) = recognizer.lastRecognizedGestureAndLocation {
-                    if let externalImageLoadState = self.externalImageLoadState {
-                        switch externalImageLoadState {
-                        case .loading:
-                            return
-                        case .failed:
-                            if case .tap = gesture {
-                                self.fetchControls?.fetch(true)
-                            }
-                            return
-                        case .ready:
-                            break
-                        }
-                    }
                     if let fetchStatus = self.fetchStatus {
                         switch fetchStatus {
                             case .Local:

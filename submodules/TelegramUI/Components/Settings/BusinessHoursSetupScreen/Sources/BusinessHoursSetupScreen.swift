@@ -3,6 +3,7 @@ import UIKit
 import Display
 import AsyncDisplayKit
 import SwiftSignalKit
+import Postbox
 import TelegramCore
 import TelegramPresentationData
 import TelegramUIPreferences
@@ -20,7 +21,6 @@ import Markdown
 import LocationUI
 import TelegramStringFormatting
 import TimezoneSelectionScreen
-import TextFormat
 
 private func wrappedMinuteRange(range: Range<Int>, dayIndexOffset: Int = 0) -> IndexSet {
     let mappedRange = (range.lowerBound + dayIndexOffset * 24 * 60) ..< (range.upperBound + dayIndexOffset * 24 * 60)
@@ -307,7 +307,8 @@ final class BusinessHoursSetupScreenComponent: Component {
                     let _ = component.context.engine.accountData.updateAccountBusinessHours(businessHours: businessHours).startStandalone()
                     return true
                 } catch _ {
-                    self.environment?.controller()?.present(textAlertController(context: component.context, title: nil, text: environment.strings.BusinessHoursSetup_ErrorIntersectingDays_Text, actions: [
+                    let presentationData = component.context.sharedContext.currentPresentationData.with { $0 }
+                    self.environment?.controller()?.present(standardTextAlertController(theme: AlertControllerTheme(presentationData: presentationData), title: nil, text: environment.strings.BusinessHoursSetup_ErrorIntersectingDays_Text, actions: [
                         TextAlertAction(type: .genericAction, title: environment.strings.Common_Cancel, action: {
                         }),
                         TextAlertAction(type: .defaultAction, title: environment.strings.BusinessHoursSetup_ErrorIntersectingDays_ResetAction, action: { [weak self] in
@@ -509,13 +510,11 @@ final class BusinessHoursSetupScreenComponent: Component {
                 transition: transition,
                 component: AnyComponent(ListSectionComponent(
                     theme: environment.theme,
-                    style: .glass,
                     header: nil,
                     footer: nil,
                     items: [
                         AnyComponentWithIdentity(id: 0, component: AnyComponent(ListActionItemComponent(
                             theme: environment.theme,
-                            style: .glass,
                             title: AnyComponent(VStack([
                                 AnyComponentWithIdentity(id: AnyHashable(0), component: AnyComponent(MultilineTextComponent(
                                     text: .plain(NSAttributedString(
@@ -616,7 +615,6 @@ final class BusinessHoursSetupScreenComponent: Component {
                 
                 daysSectionItems.append(AnyComponentWithIdentity(id: dayIndex, component: AnyComponent(ListActionItemComponent(
                     theme: environment.theme,
-                    style: .glass,
                     title: AnyComponent(VStack([
                         AnyComponentWithIdentity(id: AnyHashable(0), component: AnyComponent(MultilineTextComponent(
                             text: .plain(NSAttributedString(
@@ -674,7 +672,6 @@ final class BusinessHoursSetupScreenComponent: Component {
                 transition: transition,
                 component: AnyComponent(ListSectionComponent(
                     theme: environment.theme,
-                    style: .glass,
                     header: AnyComponent(MultilineTextComponent(
                         text: .plain(NSAttributedString(
                             string: environment.strings.BusinessHoursSetup_DaysSectionTitle,
@@ -718,13 +715,11 @@ final class BusinessHoursSetupScreenComponent: Component {
                 transition: transition,
                 component: AnyComponent(ListSectionComponent(
                     theme: environment.theme,
-                    style: .glass,
                     header: nil,
                     footer: nil,
                     items: [
                         AnyComponentWithIdentity(id: 0, component: AnyComponent(ListActionItemComponent(
                             theme: environment.theme,
-                            style: .glass,
                             title: AnyComponent(MultilineTextComponent(
                                 text: .plain(NSAttributedString(
                                     string: environment.strings.BusinessHoursSetup_TimeZone,

@@ -30,8 +30,7 @@ func _internal_getPreparedInlineMessage(account: Account, botId: EnginePeer.Id, 
             }
             return account.postbox.transaction { transaction -> PreparedInlineMessage? in
                 switch result {
-                case let .preparedInlineMessage(preparedInlineMessageData):
-                    let (queryId, result, apiPeerTypes, cacheTime, users) = (preparedInlineMessageData.queryId, preparedInlineMessageData.result, preparedInlineMessageData.peerTypes, preparedInlineMessageData.cacheTime, preparedInlineMessageData.users)
+                case let .preparedInlineMessage(queryId, result, apiPeerTypes, cacheTime, users):
                     updatePeers(transaction: transaction, accountPeerId: account.peerId, peers: AccumulatedPeers(users: users))
                     let _ = cacheTime
                     return PreparedInlineMessage(

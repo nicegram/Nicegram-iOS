@@ -59,11 +59,10 @@ public class ItemListSectionHeaderItem: ListViewItem, ItemListItem {
     let actionText: String?
     let action: (() -> Void)?
     public let sectionId: ItemListSectionId
-    public let tag: ItemListItemTag?
     
     public let isAlwaysPlain: Bool = true
     
-    public init(presentationData: ItemListPresentationData, text: String, badge: String? = nil, badgeStyle: BadgeStyle? = nil, multiline: Bool = false, activityIndicator: ItemListSectionHeaderActivityIndicator = .none, accessoryText: ItemListSectionHeaderAccessoryText? = nil, actionText: String? = nil, action: (() -> Void)? = nil, sectionId: ItemListSectionId, tag: ItemListItemTag? = nil) {
+    public init(presentationData: ItemListPresentationData, text: String, badge: String? = nil, badgeStyle: BadgeStyle? = nil, multiline: Bool = false, activityIndicator: ItemListSectionHeaderActivityIndicator = .none, accessoryText: ItemListSectionHeaderAccessoryText? = nil, actionText: String? = nil, action: (() -> Void)? = nil, sectionId: ItemListSectionId) {
         self.presentationData = presentationData
         self.text = text
         self.badge = badge
@@ -74,7 +73,6 @@ public class ItemListSectionHeaderItem: ListViewItem, ItemListItem {
         self.actionText = actionText
         self.action = action
         self.sectionId = sectionId
-        self.tag = tag
     }
     
     public func nodeConfiguredForParams(async: @escaping (@escaping () -> Void) -> Void, params: ListViewItemLayoutParams, synchronousLoads: Bool, previousItem: ListViewItem?, nextItem: ListViewItem?, completion: @escaping (ListViewItemNode, @escaping () -> (Signal<Void, NoError>?, (ListViewItemApply) -> Void)) -> Void) {
@@ -113,10 +111,9 @@ public class ItemListSectionHeaderItem: ListViewItem, ItemListItem {
     }
 }
 
-public class ItemListSectionHeaderItemNode: ListViewItemNode, ItemListItemNode {
+public class ItemListSectionHeaderItemNode: ListViewItemNode {
     private var item: ItemListSectionHeaderItem?
     
-    private let highlightNode: ASDisplayNode
     private let titleNode: TextNode
     private var badgeBackgroundLayer: SimpleLayer?
     private var badgeTextNode: TextNode?
@@ -128,16 +125,7 @@ public class ItemListSectionHeaderItemNode: ListViewItemNode, ItemListItemNode {
 
     private let activateArea: AccessibilityAreaNode
     
-    public var tag: ItemListItemTag? {
-        return self.item?.tag
-    }
-    
     public init() {
-        self.highlightNode = ASDisplayNode()
-        self.highlightNode.isLayerBacked = true
-        self.highlightNode.cornerRadius = 4.0
-        self.highlightNode.clipsToBounds = true
-        
         self.titleNode = TextNode()
         self.titleNode.isUserInteractionEnabled = false
         self.titleNode.contentMode = .left
@@ -151,21 +139,11 @@ public class ItemListSectionHeaderItemNode: ListViewItemNode, ItemListItemNode {
         self.activateArea = AccessibilityAreaNode()
         self.activateArea.accessibilityTraits = [.staticText, .header]
         
-        super.init(layerBacked: false)
-                
+        super.init(layerBacked: false, dynamicBounce: false)
+        
         self.addSubnode(self.titleNode)
         self.addSubnode(self.accessoryTextNode)
         self.addSubnode(self.activateArea)
-    }
-    
-    public func displayHighlight() {
-        self.insertSubnode(self.highlightNode, at: 0)
-        
-        Queue.mainQueue().after(1.2, {
-            self.highlightNode.layer.animateAlpha(from: 1.0, to: 0.0, duration: 0.3, removeOnCompletion: false, completion: { _ in
-                self.highlightNode.removeFromSupernode()
-            })
-        })
     }
     
     public func asyncLayout() -> (_ item: ItemListSectionHeaderItem, _ params: ListViewItemLayoutParams, _ neighbors: ItemListNeighbors) -> (ListViewItemNodeLayout, () -> Void) {
@@ -246,10 +224,7 @@ public class ItemListSectionHeaderItemNode: ListViewItemNode, ItemListItemNode {
                     strongSelf.activateArea.frame = CGRect(origin: CGPoint(x: params.leftInset, y: 0.0), size: CGSize(width: params.width - params.leftInset - params.rightInset, height: layout.contentSize.height))
                     strongSelf.activateArea.accessibilityLabel = item.text
                     
-                    strongSelf.highlightNode.backgroundColor = item.presentationData.theme.list.itemSearchHighlightColor
-                    
                     strongSelf.titleNode.frame = CGRect(origin: CGPoint(x: leftInset, y: 7.0), size: titleLayout.size)
-                    strongSelf.highlightNode.frame = strongSelf.titleNode.frame.insetBy(dx: -3.0, dy: -2.0)
                     
                     if let (actionLayout, actionApply) = actionLayoutAndApply {
                         let actionButtonNode: HighlightableButtonNode

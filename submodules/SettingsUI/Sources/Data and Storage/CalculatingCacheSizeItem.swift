@@ -90,7 +90,7 @@ private final class CalculatingCacheSizeItemNode: ListViewItemNode {
         self.titleNode.contentMode = .left
         self.titleNode.contentsScale = UIScreen.main.scale
         
-        super.init(layerBacked: false)
+        super.init(layerBacked: false, dynamicBounce: false)
         
         self.addSubnode(self.titleNode)
     }

@@ -53,10 +53,6 @@ final class UndoOverlayControllerNode: ViewControllerTracingNode {
     private let buttonNode: HighlightTrackingButtonNode
     private let undoButtonTextNode: ImmediateTextNode
     private let undoButtonNode: HighlightTrackingButtonNode
-    
-    private let changeButtonBackground: ASImageNode
-    private let changeButtonTextNode: ImmediateTextNode
-    
     private let panelNode: ASDisplayNode
     private let panelWrapperNode: ASDisplayNode
     private let action: (UndoOverlayAction) -> Bool
@@ -106,14 +102,6 @@ final class UndoOverlayControllerNode: ViewControllerTracingNode {
         self.textNode.maximumNumberOfLines = 0
         
         self.buttonNode = HighlightTrackingButtonNode()
-        
-        self.changeButtonBackground = ASImageNode()
-        self.changeButtonBackground.displaysAsynchronously = false
-        self.changeButtonBackground.isUserInteractionEnabled = false
-        
-        self.changeButtonTextNode = ImmediateTextNode()
-        self.changeButtonTextNode.displaysAsynchronously = false
-        self.changeButtonTextNode.isUserInteractionEnabled = false
         
         var displayUndo = true
         var undoText = presentationData.strings.Undo_Undo
@@ -361,14 +349,14 @@ final class UndoOverlayControllerNode: ViewControllerTracingNode {
                 self.avatarNode = nil
                 self.iconNode = nil
                 self.iconCheckNode = nil
-                self.animationNode = AnimationNode(animation: "anim_banned", colors: ["info1.info1.stroke": self.animationBackgroundColor, "info2.info2.Fill": self.animationBackgroundColor], scale: 0.9)
+                self.animationNode = AnimationNode(animation: "anim_banned", colors: ["info1.info1.stroke": self.animationBackgroundColor, "info2.info2.Fill": self.animationBackgroundColor], scale: 1.0)
                 self.animatedStickerNode = nil
             
                 let body = MarkdownAttributeSet(font: Font.regular(14.0), textColor: .white)
                 let bold = MarkdownAttributeSet(font: Font.semibold(14.0), textColor: .white)
                 let attributedText = parseMarkdownIntoAttributedString(text, attributes: MarkdownAttributes(body: body, bold: bold, link: body, linkAttribute: { _ in return nil }), textAlignment: .natural)
                 self.textNode.attributedText = attributedText
-                self.textNode.maximumNumberOfLines = 5
+                self.textNode.maximumNumberOfLines = 2
                 displayUndo = false
                 self.originalRemainingSeconds = 5
             case let .importedMessage(text):
@@ -597,7 +585,7 @@ final class UndoOverlayControllerNode: ViewControllerTracingNode {
                         updatedImageSignal = chatMessageStickerPackThumbnail(postbox: context.account.postbox, resource: resource._asResource(), animated: true)
                     }
                     if let resourceReference = resourceReference {
-                        updatedFetchSignal = context.engine.resources.fetch(reference: resourceReference, userLocation: .other, userContentType: .other)
+                        updatedFetchSignal = fetchedMediaResource(mediaBox: context.account.postbox.mediaBox, userLocation: .other, userContentType: .other, reference: resourceReference)
                         |> mapError { _ -> EngineMediaResource.Fetch.Error in
                             return .generic
                         }
@@ -636,7 +624,7 @@ final class UndoOverlayControllerNode: ViewControllerTracingNode {
                         animatedStickerNode.setup(source: AnimatedStickerResourceSource(account: context.account, resource: resource._asResource(), isVideo: isVideo), width: 80, height: 80, mode: .direct(cachePathPrefix: nil))
                     }
                 }
-            case let .dice(dice, context, text, action, changeAction):
+            case let .dice(dice, context, text, action):
                 self.avatarNode = nil
                 self.iconNode = nil
                 self.iconCheckNode = nil
@@ -645,11 +633,7 @@ final class UndoOverlayControllerNode: ViewControllerTracingNode {
                 let body = MarkdownAttributeSet(font: Font.regular(14.0), textColor: .white)
                 let bold = MarkdownAttributeSet(font: Font.semibold(14.0), textColor: .white)
                 let link = MarkdownAttributeSet(font: Font.regular(14.0), textColor: undoTextColor)
-                let attributedText = parseMarkdownIntoAttributedString(text, attributes: MarkdownAttributes(body: body, bold: bold, link: link, linkAttribute: { _ in return nil }), textAlignment: .natural).mutableCopy() as! NSMutableAttributedString
-                if let range = attributedText.string.range(of: "$"), let icon = generateTintedImage(image: UIImage(bundleImageName: "Ads/TonMedium"), color: .white) {
-                    attributedText.addAttribute(.attachment, value: icon, range: NSRange(range, in: attributedText.string))
-                    attributedText.addAttribute(.baselineOffset, value: 1.0, range: NSRange(range, in: attributedText.string))
-                }
+                let attributedText = parseMarkdownIntoAttributedString(text, attributes: MarkdownAttributes(body: body, bold: bold, link: link, linkAttribute: { _ in return nil }), textAlignment: .natural)
                 self.textNode.attributedText = attributedText
                 if let action = action {
                     displayUndo = true
@@ -666,11 +650,6 @@ final class UndoOverlayControllerNode: ViewControllerTracingNode {
                         self.stickerOffset = CGPoint(x: 0.0, y: -7.0)
                     default:
                         break
-                }
-            
-                if let changeAction {
-                    self.changeButtonTextNode.attributedText = NSAttributedString(string: changeAction, font: Font.regular(12.0), textColor: undoTextColor)
-                    self.changeButtonBackground.image = generateStretchableFilledCircleImage(diameter: 18.0, color: undoTextColor.withMultipliedAlpha(0.1))
                 }
                 
                 if dice.emoji == "🎰" {
@@ -691,7 +670,8 @@ final class UndoOverlayControllerNode: ViewControllerTracingNode {
                             switch stickerPack {
                                 case let .result(_, items, _):
                                     let item = items[Int(value)]
-                                    animatedStickerNode.setup(source: AnimatedStickerResourceSource(account: context.account, resource: item.file._parse().resource), width: 120, height: 120, playbackMode: .still(.end), mode: .direct(cachePathPrefix: nil))
+
+                                    animatedStickerNode.setup(source: AnimatedStickerResourceSource(account: context.account, resource: item.file._parse().resource), width: 120, height: 120, playbackMode: .once, mode: .direct(cachePathPrefix: nil))
                                 default:
                                     break
                             }
@@ -914,7 +894,7 @@ final class UndoOverlayControllerNode: ViewControllerTracingNode {
                         updatedImageSignal = chatMessageStickerPackThumbnail(postbox: context.account.postbox, resource: resource._asResource(), animated: true)
                     }
                     if let resourceReference = resourceReference {
-                        updatedFetchSignal = context.engine.resources.fetch(reference: resourceReference, userLocation: .other, userContentType: .other)
+                        updatedFetchSignal = fetchedMediaResource(mediaBox: context.account.postbox.mediaBox, userLocation: .other, userContentType: .other, reference: resourceReference)
                         |> mapError { _ -> EngineMediaResource.Fetch.Error in
                             return .generic
                         }
@@ -1573,7 +1553,7 @@ final class UndoOverlayControllerNode: ViewControllerTracingNode {
             self.panelNode.backgroundColor = .clear
         }
         self.panelNode.clipsToBounds = true
-        self.panelNode.cornerRadius = 25.0
+        self.panelNode.cornerRadius = 14.0
 
         self.panelWrapperNode = ASDisplayNode()
         
@@ -1644,10 +1624,6 @@ final class UndoOverlayControllerNode: ViewControllerTracingNode {
         if displayUndo {
             self.panelWrapperNode.addSubnode(self.undoButtonTextNode)
             self.panelWrapperNode.addSubnode(self.undoButtonNode)
-        }
-        if self.changeButtonBackground.image != nil {
-            self.panelWrapperNode.addSubnode(self.changeButtonBackground)
-            self.panelWrapperNode.addSubnode(self.changeButtonTextNode)
         }
         self.addSubnode(self.panelNode)
         self.addSubnode(self.panelWrapperNode)
@@ -1986,7 +1962,7 @@ final class UndoOverlayControllerNode: ViewControllerTracingNode {
         }
         contentHeight += textSize.height
         
-        contentHeight = max(50.0, contentHeight)
+        contentHeight = max(49.0, contentHeight)
         
         var insets = layout.insets(options: [.input])
         switch self.placementPosition {
@@ -2000,13 +1976,8 @@ final class UndoOverlayControllerNode: ViewControllerTracingNode {
             }
         }
         
-        var panelWidth = layout.size.width - leftMargin * 2.0 - layout.safeInsets.left - layout.safeInsets.right
-        if self.appearance?.isNarrow == true {
-            panelWidth = 210.0
-        }
-        
-        var panelFrame = CGRect(origin: CGPoint(x: floorToScreenPixels((layout.size.width - panelWidth) / 2.0), y: layout.size.height - contentHeight - insets.bottom - margin), size: CGSize(width: panelWidth, height: contentHeight))
-        var panelWrapperFrame = CGRect(origin: CGPoint(x: floorToScreenPixels((layout.size.width - panelWidth) / 2.0), y: layout.size.height - contentHeight - insets.bottom - margin), size: CGSize(width: panelWidth, height: contentHeight))
+        var panelFrame = CGRect(origin: CGPoint(x: leftMargin + layout.safeInsets.left, y: layout.size.height - contentHeight - insets.bottom - margin), size: CGSize(width: layout.size.width - leftMargin * 2.0 - layout.safeInsets.left - layout.safeInsets.right, height: contentHeight))
+        var panelWrapperFrame = CGRect(origin: CGPoint(x: leftMargin + layout.safeInsets.left, y: layout.size.height - contentHeight - insets.bottom - margin), size: CGSize(width: layout.size.width - leftMargin * 2.0 - layout.safeInsets.left - layout.safeInsets.right, height: contentHeight))
         
         if case .top = self.placementPosition {
             var topInset = insets.top
@@ -2019,7 +1990,7 @@ final class UndoOverlayControllerNode: ViewControllerTracingNode {
         
         transition.updateFrame(node: self.panelNode, frame: panelFrame)
         transition.updateFrame(node: self.panelWrapperNode, frame: panelWrapperFrame)
-        self.effectView.frame = CGRect(x: 0.0, y: 0.0, width: panelWidth, height: contentHeight)
+        self.effectView.frame = CGRect(x: 0.0, y: 0.0, width: layout.size.width - leftMargin * 2.0 - layout.safeInsets.left - layout.safeInsets.right, height: contentHeight)
         
         var buttonTextFrame = CGRect(origin: CGPoint(x: layout.size.width - layout.safeInsets.left - layout.safeInsets.right - rightInset - buttonTextSize.width - leftMargin * 2.0, y: floor((contentHeight - buttonTextSize.height) / 2.0)), size: buttonTextSize)
         var undoButtonFrame = CGRect(origin: CGPoint(x: layout.size.width - layout.safeInsets.left - layout.safeInsets.right - rightInset - buttonTextSize.width - 8.0 - leftMargin * 2.0, y: 0.0), size: CGSize(width: layout.safeInsets.right + rightInset + buttonTextSize.width + 8.0 + leftMargin, height: contentHeight))
@@ -2051,13 +2022,6 @@ final class UndoOverlayControllerNode: ViewControllerTracingNode {
             textComponentView.bounds = CGRect(origin: CGPoint(), size: textFrame.size)
         } else {
             transition.updateFrame(node: self.textNode, frame: textFrame)
-        }
-        
-        if self.changeButtonTextNode.supernode != nil {
-            let changeButtonTextSize = self.changeButtonTextNode.updateLayout(CGSize(width: 200.0, height: .greatestFiniteMagnitude))
-            let changeButtonFrame = CGRect(origin: CGPoint(x: textFrame.maxX + 10.0, y: floorToScreenPixels(textFrame.midY - changeButtonTextSize.height * 0.5)), size: changeButtonTextSize)
-            transition.updateFrame(node: self.changeButtonTextNode, frame: changeButtonFrame)
-            transition.updateFrame(node: self.changeButtonBackground, frame: changeButtonFrame.insetBy(dx: -6.0, dy: -2.0))
         }
         
         if let iconNode = self.iconNode {

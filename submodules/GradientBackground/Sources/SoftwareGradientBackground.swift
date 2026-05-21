@@ -201,33 +201,22 @@ public protocol GradientBackgroundPatternOverlayLayer: CALayer {
 public final class GradientBackgroundNode: ASDisplayNode {
     public final class CloneNode: ASImageNode {
         private weak var parentNode: GradientBackgroundNode?
-        private let isDimmed: Bool
         private var index: SparseBag<Weak<CloneNode>>.Index?
 
-        public init(parentNode: GradientBackgroundNode, isDimmed: Bool) {
+        public init(parentNode: GradientBackgroundNode) {
             self.parentNode = parentNode
-            self.isDimmed = isDimmed
 
             super.init()
             
             self.displaysAsynchronously = false
 
-            if isDimmed {
-                self.index = parentNode.cloneNodes.add(Weak<CloneNode>(self))
-                self.image = parentNode.dimmedImage
-            } else {
-                self.index = parentNode.rawCloneNodes.add(Weak<CloneNode>(self))
-                self.image = parentNode.rawImage
-            }
+            self.index = parentNode.cloneNodes.add(Weak<CloneNode>(self))
+            self.image = parentNode.dimmedImage
         }
 
         deinit {
             if let parentNode = self.parentNode, let index = self.index {
-                if self.isDimmed {
-                    parentNode.cloneNodes.remove(index)
-                } else {
-                    parentNode.rawCloneNodes.remove(index)
-                }
+                parentNode.cloneNodes.remove(index)
             }
         }
     }
@@ -269,14 +258,9 @@ public final class GradientBackgroundNode: ASDisplayNode {
             return nil
         }
     }
-    
-    private var rawImage: UIImage? {
-        return self.contentView.image
-    }
 
     private var validLayout: CGSize?
     private let cloneNodes = SparseBag<Weak<CloneNode>>()
-    private let rawCloneNodes = SparseBag<Weak<CloneNode>>()
 
     private let useSharedAnimationPhase: Bool
     static var sharedPhase: Int = 0
@@ -506,24 +490,6 @@ public final class GradientBackgroundNode: ASDisplayNode {
                             }
                         }
                     }
-                    
-                    if !self.rawCloneNodes.isEmpty {
-                        let cloneAnimation = CAKeyframeAnimation(keyPath: "contents")
-                        cloneAnimation.values = images.map { $0.0.cgImage! }
-                        cloneAnimation.duration = animation.duration
-                        cloneAnimation.calculationMode = animation.calculationMode
-                        cloneAnimation.isRemovedOnCompletion = animation.isRemovedOnCompletion
-                        cloneAnimation.fillMode = animation.fillMode
-                        cloneAnimation.beginTime = animation.beginTime
-
-                        for cloneNode in self.rawCloneNodes {
-                            if let value = cloneNode.value {
-                                value.image = images.last?.0
-                                value.layer.removeAnimation(forKey: "contents")
-                                value.layer.add(cloneAnimation, forKey: "contents")
-                            }
-                        }
-                    }
                 } else {
                     let (image, imageHash) = generateGradient(size: imageSize, colors: self.colors, positions: positions)
                     self.contentView.image = image
@@ -535,9 +501,6 @@ public final class GradientBackgroundNode: ASDisplayNode {
 
                     for cloneNode in self.cloneNodes {
                         cloneNode.value?.image = dimmedImage
-                    }
-                    for cloneNode in self.rawCloneNodes {
-                        cloneNode.value?.image = image
                     }
 
                     completion()
@@ -552,9 +515,6 @@ public final class GradientBackgroundNode: ASDisplayNode {
 
                 for cloneNode in self.cloneNodes {
                     cloneNode.value?.image = dimmedImage
-                }
-                for cloneNode in self.rawCloneNodes {
-                    cloneNode.value?.image = image
                 }
 
                 self.validPhase = self.phase
@@ -573,9 +533,6 @@ public final class GradientBackgroundNode: ASDisplayNode {
 
             for cloneNode in self.cloneNodes {
                 cloneNode.value?.image = dimmedImage
-            }
-            for cloneNode in self.rawCloneNodes {
-                cloneNode.value?.image = image
             }
 
             self.validPhase = self.phase

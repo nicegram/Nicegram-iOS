@@ -538,7 +538,7 @@ public final class PeerInfoAvatarListItemNode: ASDisplayNode {
                 self.didSetReady = true
                 self.isReady.set(.single(true))
             }
-        } else if let video = videoRepresentations.last, let peerReference = PeerReference(self.peer) {
+        } else if let video = videoRepresentations.last, let peerReference = PeerReference(self.peer._asPeer()) {
             let videoFileReference = FileMediaReference.avatarList(peer: peerReference, media: TelegramMediaFile(fileId: EngineMedia.Id(namespace: Namespaces.Media.LocalFile, id: 0), partialReference: nil, resource: video.representation.resource, previewRepresentations: representations.map { $0.representation }, videoThumbnails: [], immediateThumbnailData: immediateThumbnailData, mimeType: "video/mp4", size: nil, attributes: [.Animated, .Video(duration: 0, size: video.representation.dimensions, flags: [], preloadSize: nil, coverTime: nil, videoCodec: nil)], alternativeRepresentations: []))
             let videoContent = NativeVideoContent(id: .profileVideo(id, nil), userLocation: .other, fileReference: videoFileReference, streamVideo: isMediaStreamable(resource: video.representation.resource) ? .conservative : .none, loopVideo: true, enableSound: false, fetchAutomatically: true, onlyFullSizeThumbnail: fullSizeOnly, useLargeThumbnail: true, autoFetchFullSizeThumbnail: true, startTimestamp: video.representation.startTimestamp, continuePlayingWithoutSoundOnLostAudioSession: false, placeholderColor: .clear, storeAfterDownload: nil)
             
@@ -678,10 +678,10 @@ private final class VariableBlurView: UIVisualEffectView {
         variableBlur.setValue(self.maxBlurRadius, forKey: "inputRadius")
         variableBlur.setValue(gradientImageRef, forKey: "inputMaskImage")
         variableBlur.setValue(true, forKey: "inputNormalizeEdges")
+        variableBlur.setValue(UIScreenScale, forKey: "scale")
         
         let backdropLayer = self.subviews.first?.layer
         backdropLayer?.filters = [variableBlur]
-        backdropLayer?.setValue(UIScreenScale, forKey: "scale")
     }
 }
 

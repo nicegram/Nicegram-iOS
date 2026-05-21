@@ -50,8 +50,7 @@ func _internal_searchAdPeers(account: Account, query: String) -> Signal<[AdPeer]
         }
         return account.postbox.transaction { transaction -> [AdPeer] in
             switch result {
-            case let .sponsoredPeers(sponsoredPeersData):
-                let (peers, chats, users) = (sponsoredPeersData.peers, sponsoredPeersData.chats, sponsoredPeersData.users)
+            case let .sponsoredPeers(peers, chats, users):
                 let parsedPeers = AccumulatedPeers(transaction: transaction, chats: chats, users: users)
                 updatePeers(transaction: transaction, accountPeerId: account.peerId, peers: parsedPeers)
                 
@@ -59,8 +58,7 @@ func _internal_searchAdPeers(account: Account, query: String) -> Signal<[AdPeer]
                 for chat in chats {
                     if let groupOrChannel = parseTelegramGroupOrChannel(chat: chat) {
                         switch chat {
-                        case let .channel(channelData):
-                            let participantsCount = channelData.participantsCount
+                        case let .channel(_, _, _, _, _, _, _, _, _, _, _, _, participantsCount, _, _, _, _, _, _, _, _, _, _):
                             if let participantsCount = participantsCount {
                                 subscribers[groupOrChannel.id] = participantsCount
                             }
@@ -73,8 +71,7 @@ func _internal_searchAdPeers(account: Account, query: String) -> Signal<[AdPeer]
                 var result: [AdPeer] = []
                 for peer in peers {
                     switch peer {
-                    case let .sponsoredPeer(sponsoredPeerData):
-                        let (randomId, apiPeer, sponsorInfo, additionalInfo) = (sponsoredPeerData.randomId, sponsoredPeerData.peer, sponsoredPeerData.sponsorInfo, sponsoredPeerData.additionalInfo)
+                    case let .sponsoredPeer(_, randomId, apiPeer, sponsorInfo, additionalInfo):
                         guard let peer = parsedPeers.get(apiPeer.peerId) else {
                             continue
                         }

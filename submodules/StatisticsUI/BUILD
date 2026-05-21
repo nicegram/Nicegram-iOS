@@ -7,7 +7,7 @@ swift_library(
 		"Sources/**/*.swift",
     ]),
     copts = [
-        "-warnings-as-errors",
+        #"-warnings-as-errors",
     ],
     deps = [
         "//submodules/SSignalKit/SwiftSignalKit",
@@ -49,14 +49,13 @@ swift_library(
         "//submodules/TelegramNotices",
         "//submodules/UIKitRuntimeUtils",
         "//submodules/PasswordSetupUI",
+        "//submodules/TelegramUI/Components/PeerManagement/OwnershipTransferController",
         "//submodules/TelegramUI/Components/ListItemComponentAdaptor",
         "//submodules/TelegramUI/Components/Stars/StarsWithdrawalScreen",
         "//submodules/TelegramUI/Components/ButtonComponent",
         "//submodules/TelegramUI/Components/ListActionItemComponent",
         "//submodules/TelegramUI/Components/Stars/StarsAvatarComponent",
         "//submodules/TelegramUI/Components/PremiumPeerShortcutComponent",
-        "//submodules/TelegramUI/Components/AlertComponent",
-        "//submodules/TelegramUI/Components/AlertComponent/AlertInputFieldComponent",
     ],
     visibility = [
         "//visibility:public",

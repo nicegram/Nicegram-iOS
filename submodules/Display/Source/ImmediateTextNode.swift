@@ -13,7 +13,7 @@ public struct ImmediateTextNodeLayoutInfo {
     }
 }
 
-open class ImmediateTextNode: TextNode {
+public class ImmediateTextNode: TextNode {
     public var attributedText: NSAttributedString?
     public var textAlignment: NSTextAlignment = .natural
     public var verticalAlignment: TextVerticalAlignment = .top
@@ -60,7 +60,7 @@ open class ImmediateTextNode: TextNode {
     
     public var trailingLineWidth: CGFloat?
     
-    public var constrainedSize: CGSize?
+    var constrainedSize: CGSize?
     
     public var highlightAttributeAction: (([NSAttributedString.Key: Any]) -> NSAttributedString.Key?)? {
         didSet {
@@ -94,7 +94,7 @@ open class ImmediateTextNode: TextNode {
         return node
     }
     
-    open func updateLayout(_ constrainedSize: CGSize) -> CGSize {
+    public func updateLayout(_ constrainedSize: CGSize) -> CGSize {
         self.constrainedSize = constrainedSize
         
         let makeLayout = TextNode.asyncLayout(self)

@@ -87,7 +87,7 @@ final class NavigationSplitContainer: ASDisplayNode {
         let masterWidth: CGFloat = min(max(320.0, floor(layout.size.width / 3.0)), floor(layout.size.width / 2.0))
         let detailWidth = layout.size.width - masterWidth
         
-        self.masterScrollToTopView.frame = CGRect(origin: CGPoint(x: 0.0, y: -1.0), size: CGSize(width: masterWidth, height: 10.0))
+        self.masterScrollToTopView.frame = CGRect(origin: CGPoint(x: 0.0, y: -1.0), size: CGSize(width: masterWidth, height: 1.0))
         self.detailScrollToTopView.frame = CGRect(origin: CGPoint(x: masterWidth, y: -1.0), size: CGSize(width: detailWidth, height: 1.0))
         
         transition.updateFrame(node: self.masterContainer, frame: CGRect(origin: CGPoint(), size: CGSize(width: masterWidth, height: layout.size.height)))

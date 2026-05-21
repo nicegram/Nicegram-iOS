@@ -4,6 +4,7 @@ import AsyncDisplayKit
 import Display
 import TelegramCore
 import SwiftSignalKit
+import Postbox
 import TelegramPresentationData
 import TelegramUIPreferences
 import AccountContext
@@ -143,7 +144,7 @@ final class CommandMenuChatInputPanelItemNode: ListViewItemNode {
         self.activateAreaNode = AccessibilityAreaNode()
         self.activateAreaNode.accessibilityTraits = [.button]
         
-        super.init(layerBacked: false)
+        super.init(layerBacked: false, dynamicBounce: false)
                 
         self.addSubnode(self.clippingNode)
         self.clippingNode.addSubnode(self.shadowNode)
@@ -218,6 +219,7 @@ final class CommandMenuChatInputPanelItemNode: ListViewItemNode {
                     strongSelf.item = item
                     
                     strongSelf.separatorNode.backgroundColor = item.theme.list.itemPlainSeparatorColor
+                    strongSelf.backgroundNode.backgroundColor = item.theme.list.plainBackgroundColor
                     strongSelf.highlightedBackgroundNode.backgroundColor = item.theme.list.itemHighlightedBackgroundColor
                     
                     let _ = textApply()
@@ -259,7 +261,7 @@ final class CommandMenuChatInputPanelItemNode: ListViewItemNode {
         if highlighted {
             self.highlightedBackgroundNode.alpha = 1.0
             if self.highlightedBackgroundNode.supernode == nil {
-                //self.backgroundNode.insertSubnode(self.highlightedBackgroundNode, at: 0)
+                self.backgroundNode.insertSubnode(self.highlightedBackgroundNode, at: 0)
             }
         } else {
             if self.highlightedBackgroundNode.supernode != nil {

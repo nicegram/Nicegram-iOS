@@ -113,7 +113,7 @@ class BotCheckoutPriceItemNode: ListViewItemNode {
         self.maskNode = ASImageNode()
         self.maskNode.isUserInteractionEnabled = false
         
-        super.init(layerBacked: false)
+        super.init(layerBacked: false, dynamicBounce: false)
 
         self.addSubnode(self.backgroundNode)
         self.addSubnode(self.titleNode)
@@ -141,13 +141,13 @@ class BotCheckoutPriceItemNode: ListViewItemNode {
             let naturalContentHeight: CGFloat
             var verticalOffset: CGFloat = 0.0
             if item.isFinal {
-                naturalContentHeight = 52.0
+                naturalContentHeight = 44.0
             } else {
                 switch neighbors.bottom {
                 case .otherSection, .none:
-                    naturalContentHeight = 52.0
+                    naturalContentHeight = 44.0
                 default:
-                    naturalContentHeight = 42.0
+                    naturalContentHeight = 34.0
                 }
             }
             if let _ = previousItem as? BotCheckoutHeaderItem {
@@ -209,7 +209,7 @@ class BotCheckoutPriceItemNode: ListViewItemNode {
                     strongSelf.separatorNode.backgroundColor = item.theme.list.itemBlocksSeparatorColor
                     strongSelf.separatorNode.frame = CGRect(origin: CGPoint(x: leftInset, y: 0.0), size: CGSize(width: params.width - leftInset, height: UIScreenPixel))
                     
-                    strongSelf.maskNode.image = hasCorners ? PresentationResourcesItemList.cornersImage(item.theme, top: hasTopCorners, bottom: hasBottomCorners, glass: true) : nil
+                    strongSelf.maskNode.image = hasCorners ? PresentationResourcesItemList.cornersImage(item.theme, top: hasTopCorners, bottom: hasBottomCorners) : nil
                     
                     strongSelf.bottomSeparatorNode.backgroundColor = item.theme.list.itemBlocksSeparatorColor
                     strongSelf.bottomSeparatorNode.frame = CGRect(origin: CGPoint(x: 0.0, y: contentSize.height), size: CGSize(width: params.width, height: UIScreenPixel))

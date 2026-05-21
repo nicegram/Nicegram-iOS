@@ -7,12 +7,13 @@ swift_library(
         "Sources/**/*.swift",
     ]),
     copts = [
-        "-warnings-as-errors",
+        #"-warnings-as-errors",
     ],
     deps = [
         "//submodules/SSignalKit/SwiftSignalKit",
         "//submodules/Display",
         "//submodules/TelegramCore",
+        "//submodules/Postbox",
         "//submodules/TelegramPresentationData",
         "//submodules/AccountContext",
         "//submodules/ComponentFlow",
@@ -23,8 +24,6 @@ swift_library(
         "//submodules/TelegramUI/Components/EmojiTextAttachmentView",
         "//submodules/Utils/LokiRng",
         "//submodules/TextFormat",
-        "//submodules/AvatarNode",
-        "//submodules/Components/BundleIconComponent",
     ],
     visibility = [
         "//visibility:public",

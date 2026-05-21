@@ -410,7 +410,7 @@ public final class CombinedComponentContext<ComponentType: Component> {
     public let component: ComponentType
     public let availableSize: CGSize
     public let transition: ComponentTransition
-    private let addImpl: (_ updatedComponent: _UpdatedChildComponent, _ container: UIView?) -> Void
+    private let addImpl: (_ updatedComponent: _UpdatedChildComponent) -> Void
 
     public var environment: Environment<ComponentType.EnvironmentType> {
         return self.context.environment
@@ -425,7 +425,7 @@ public final class CombinedComponentContext<ComponentType: Component> {
         component: ComponentType,
         availableSize: CGSize,
         transition: ComponentTransition,
-        add: @escaping (_ updatedComponent: _UpdatedChildComponent, _ container: UIView?) -> Void
+        add: @escaping (_ updatedComponent: _UpdatedChildComponent) -> Void
     ) {
         self.context = context
         self.view = view
@@ -436,11 +436,7 @@ public final class CombinedComponentContext<ComponentType: Component> {
     }
 
     public func add(_ updatedComponent: _UpdatedChildComponent) {
-        self.addImpl(updatedComponent, nil)
-    }
-    
-    public func addWithExternalContainer(_ updatedComponent: _UpdatedChildComponent, container: UIView) {
-        self.addImpl(updatedComponent, container)
+        self.addImpl(updatedComponent)
     }
 }
 
@@ -675,7 +671,7 @@ public extension CombinedComponent {
                 component: self,
                 availableSize: availableSize,
                 transition: transition,
-                add: { updatedChild, optionalContainer in
+                add: { updatedChild in
                     if !addedChildIds.insert(updatedChild.id).inserted {
                         preconditionFailure("Child component can only be added once")
                     }
@@ -696,11 +692,7 @@ public extension CombinedComponent {
                             context.childViewIndices.remove(at: previousView.index)
                             context.childViewIndices.insert(updatedChild.id, at: index)
                             previousView.index = index
-                            if let optionalContainer {
-                                optionalContainer.addSubview(previousView.view)
-                            } else {
-                                view.insertSubview(previousView.view, at: index)
-                            }
+                            view.insertSubview(previousView.view, at: index)
                         }
 
                         previousView.updateGestures(updatedChild.gestures)
@@ -723,11 +715,7 @@ public extension CombinedComponent {
                         childView.transition = updatedChild.transitionDisappear
                         childView.transitionWithGuide = updatedChild.transitionDisappearWithGuide
 
-                        if let optionalContainer {
-                            optionalContainer.addSubview(updatedChild.view)
-                        } else {
-                            view.insertSubview(updatedChild.view, at: index)
-                        }
+                        view.insertSubview(updatedChild.view, at: index)
 
                         updatedChild.view.layer.anchorPoint = updatedChild._anchorPoint ?? CGPoint(x: 0.5, y: 0.5)
                         

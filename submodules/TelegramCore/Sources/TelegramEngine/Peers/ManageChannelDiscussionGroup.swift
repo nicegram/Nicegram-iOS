@@ -16,11 +16,9 @@ func _internal_availableGroupsForChannelDiscussion(accountPeerId: PeerId, postbo
     |> mapToSignal { result -> Signal<[Peer], AvailableChannelDiscussionGroupError> in
         let chats: [Api.Chat]
         switch result {
-        case let .chats(chatsData):
-            let c = chatsData.chats
+        case let .chats(c):
             chats = c
-        case let .chatsSlice(chatsSliceData):
-            let c = chatsSliceData.chats
+        case let .chatsSlice(_, c):
             chats = c
         }
         

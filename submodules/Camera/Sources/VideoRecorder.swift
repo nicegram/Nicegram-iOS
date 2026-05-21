@@ -204,7 +204,9 @@ private final class VideoRecorderImpl {
                         let maxDate = Date(timeIntervalSinceNow: 0.05)
                         RunLoop.current.run(until: maxDate)
                     }
+                }
 
+                if let videoInput = self.videoInput {
                     let time = CACurrentMediaTime()
 //                    if let previousPresentationTime = self.previousPresentationTime, let previousAppendTime = self.previousAppendTime {
 //                        print("appending \(presentationTime.seconds) (\(presentationTime.seconds - previousPresentationTime) ) on \(time) (\(time - previousAppendTime)")
@@ -232,9 +234,7 @@ private final class VideoRecorderImpl {
                                 } else if self.orientation == .portraitUpsideDown {
                                     orientation = .left
                                 }
-                                Queue.mainQueue().async {
-                                    self.transitionImage = UIImage(cgImage: cgImage, scale: 1.0, orientation: orientation)
-                                }
+                                self.transitionImage = UIImage(cgImage: cgImage, scale: 1.0, orientation: orientation)
                             } else {
                                 self.savedTransitionImage = false
                             }
@@ -366,7 +366,7 @@ private final class VideoRecorderImpl {
     
     private func maybeFinish() {
         dispatchPrecondition(condition: .onQueue(self.queue))
-        guard self.hasAllVideoBuffers && (!self.configuration.hasAudio || self.hasAllAudioBuffers) && !self.stopped else {
+        guard self.hasAllVideoBuffers && self.hasAllVideoBuffers && !self.stopped else {
             return
         }
         let _ = self._stopped.modify { _ in return true }
@@ -377,21 +377,21 @@ private final class VideoRecorderImpl {
         dispatchPrecondition(condition: .onQueue(self.queue))
         let completion = self.completion
         if self.recordingStopSampleTime == .invalid {
-            Queue.mainQueue().async {
+            DispatchQueue.main.async {
                 completion(false, nil, nil)
             }
             return
         }
         
         if let _ = self.error.with({ $0 }) {
-            Queue.mainQueue().async {
+            DispatchQueue.main.async {
                 completion(false, nil, nil)
             }
             return
         }
         
         if !self.tryAppendingPendingAudioBuffers() {
-            Queue.mainQueue().async {
+            DispatchQueue.main.async {
                 completion(false, nil, nil)
             }
             return
@@ -400,21 +400,21 @@ private final class VideoRecorderImpl {
         if self.assetWriter.status == .writing {
             self.assetWriter.finishWriting {
                 if let _ = self.assetWriter.error {
-                    Queue.mainQueue().async {
+                    DispatchQueue.main.async {
                         completion(false, nil, nil)
                     }
                 } else {
-                    Queue.mainQueue().async {
+                    DispatchQueue.main.async {
                         completion(true, self.transitionImage, self.positionChangeTimestamps)
                     }
                 }
             }
         } else if let _ = self.assetWriter.error {
-            Queue.mainQueue().async {
+            DispatchQueue.main.async {
                 completion(false, nil, nil)
             }
         } else {
-            Queue.mainQueue().async {
+            DispatchQueue.main.async {
                 completion(false, nil, nil)
             }
         }

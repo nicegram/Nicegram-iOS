@@ -216,56 +216,15 @@ public enum TextSelectionAction: Equatable {
 }
 
 public final class TextSelectionNode: ASDisplayNode {
-    public enum TextNodeOrView {
-        case node(TextNodeProtocol)
-        case view(TextView)
-        
-        var view: UIView {
-            switch self {
-            case let .node(node):
-                return node.view
-            case let .view(view):
-                return view
-            }
-        }
-        
-        var currentText: NSAttributedString? {
-            switch self {
-            case let .node(node):
-                return node.currentText
-            case let .view(view):
-                return view.cachedLayout?.attributedString
-            }
-        }
-        
-        func attributesAtPoint(_ point: CGPoint, orNearest: Bool = false) -> (Int, [NSAttributedString.Key: Any])? {
-            switch self {
-            case let .node(node):
-                return node.attributesAtPoint(point, orNearest: orNearest)
-            case let .view(view):
-                return view.attributesAtPoint(point, orNearest: orNearest)
-            }
-        }
-        
-        func textRangeRects(in range: NSRange) -> (rects: [CGRect], start: TextRangeRectEdge, end: TextRangeRectEdge)? {
-            switch self {
-            case let .node(node):
-                return node.textRangeRects(in: range)
-            case let .view(view):
-                return view.cachedLayout?.rangeRects(in: range)
-            }
-        }
-    }
-    
     private let theme: TextSelectionTheme
     private let strings: PresentationStrings
-    private let textNodeOrView: TextNodeOrView
+    private let textNode: TextNodeProtocol
     private let updateIsActive: (Bool) -> Void
     public var canBeginSelection: (CGPoint) -> Bool = { _ in true }
     public var updateRange: ((NSRange?) -> Void)?
     public var presentMenu: ((UIView, CGPoint, [ContextMenuAction]) -> Void)?
     private let present: (ViewController, Any?) -> Void
-    private let rootView: () -> UIView?
+    private let rootNode: () -> ASDisplayNode?
     private let performAction: (NSAttributedString, TextSelectionAction) -> Void
     private var highlightOverlay: LinkHighlightingNode?
     private let leftKnob: ASImageNode
@@ -293,13 +252,13 @@ public final class TextSelectionNode: ASDisplayNode {
     
     private weak var contextMenu: ContextMenuController?
     
-    public init(theme: TextSelectionTheme, strings: PresentationStrings, textNodeOrView: TextNodeOrView, updateIsActive: @escaping (Bool) -> Void, present: @escaping (ViewController, Any?) -> Void, rootView: @escaping () -> UIView?, externalKnobSurface: UIView? = nil, performAction: @escaping (NSAttributedString, TextSelectionAction) -> Void) {
+    public init(theme: TextSelectionTheme, strings: PresentationStrings, textNode: TextNodeProtocol, updateIsActive: @escaping (Bool) -> Void, present: @escaping (ViewController, Any?) -> Void, rootNode: @escaping () -> ASDisplayNode?, externalKnobSurface: UIView? = nil, performAction: @escaping (NSAttributedString, TextSelectionAction) -> Void) {
         self.theme = theme
         self.strings = strings
-        self.textNodeOrView = textNodeOrView
+        self.textNode = textNode
         self.updateIsActive = updateIsActive
         self.present = present
-        self.rootView = rootView
+        self.rootNode = rootNode
         self.performAction = performAction
         self.leftKnob = ASImageNode()
         self.leftKnob.isUserInteractionEnabled = false
@@ -347,8 +306,8 @@ public final class TextSelectionNode: ASDisplayNode {
                 return
             }
             
-            let mappedPoint = strongSelf.view.convert(point, to: strongSelf.textNodeOrView.view)
-            if let stringIndex = strongSelf.textNodeOrView.attributesAtPoint(mappedPoint, orNearest: true)?.0 {
+            let mappedPoint = strongSelf.view.convert(point, to: strongSelf.textNode.view)
+            if let stringIndex = strongSelf.textNode.attributesAtPoint(mappedPoint, orNearest: true)?.0 {
                 var updatedLeft = currentRange.0
                 var updatedRight = currentRange.1
                 switch knob {
@@ -376,15 +335,15 @@ public final class TextSelectionNode: ASDisplayNode {
             strongSelf.displayMenu()
         }
         recognizer.beginSelection = { [weak self] point in
-            guard let strongSelf = self, let attributedString = strongSelf.textNodeOrView.currentText else {
+            guard let strongSelf = self, let attributedString = strongSelf.textNode.currentText else {
                 return
             }
             
             strongSelf.dismissSelection()
             
-            let mappedPoint = strongSelf.view.convert(point, to: strongSelf.textNodeOrView.view)
+            let mappedPoint = strongSelf.view.convert(point, to: strongSelf.textNode.view)
             var resultRange: NSRange?
-            if let stringIndex = strongSelf.textNodeOrView.attributesAtPoint(mappedPoint, orNearest: false)?.0 {
+            if let stringIndex = strongSelf.textNode.attributesAtPoint(mappedPoint, orNearest: false)?.0 {
                 let string = attributedString.string as NSString
                 
                 let inputRange = CFRangeMake(0, string.length)
@@ -439,7 +398,7 @@ public final class TextSelectionNode: ASDisplayNode {
     }
     
     public func pretendInitiateSelection() {
-        guard let attributedString = self.textNodeOrView.currentText else {
+        guard let attributedString = self.textNode.currentText else {
             return
         }
         
@@ -473,7 +432,7 @@ public final class TextSelectionNode: ASDisplayNode {
     }
     
     public func pretendExtendSelection(to index: Int) {
-        guard let endRangeRect = self.textNodeOrView.textRangeRects(in: NSRange(location: index, length: 1))?.rects.first else {
+        guard let endRangeRect = self.textNode.textRangeRects(in: NSRange(location: index, length: 1))?.rects.first else {
             return
         }
         let startPoint = self.rightKnob.frame.center
@@ -490,7 +449,7 @@ public final class TextSelectionNode: ASDisplayNode {
     }
     
     public func setSelection(range: NSRange, displayMenu: Bool) {
-        guard let attributedString = self.textNodeOrView.currentText else {
+        guard let attributedString = self.textNode.currentText else {
             return
         }
         let range = self.convertSelectionFromOriginalText(attributedString: attributedString, range: range)
@@ -531,13 +490,7 @@ public final class TextSelectionNode: ASDisplayNode {
             })
         }
         
-        func normalizedSelectionRange(_ range: NSRange, length: Int) -> NSRange {
-            let location = min(max(range.location, 0), length)
-            let upperBound = min(max(location, range.location + range.length), length)
-            return NSRange(location: location, length: upperBound - location)
-        }
-        
-        return normalizedSelectionRange(adjustedRange, length: attributedString.length)
+        return adjustedRange
     }
     
     private func convertSelectionFromOriginalText(attributedString: NSAttributedString, range: NSRange) -> NSRange {
@@ -608,7 +561,7 @@ public final class TextSelectionNode: ASDisplayNode {
     }
     
     public func getSelection() -> NSRange? {
-        guard let currentRange = self.currentRange, let attributedString = self.textNodeOrView.currentText else {
+        guard let currentRange = self.currentRange, let attributedString = self.textNode.currentText else {
             return nil
         }
         let range = NSRange(location: min(currentRange.0, currentRange.1), length: max(currentRange.0, currentRange.1) - min(currentRange.0, currentRange.1))
@@ -621,7 +574,7 @@ public final class TextSelectionNode: ASDisplayNode {
         var rects: (rects: [CGRect], start: TextRangeRectEdge, end: TextRangeRectEdge)?
         
         if let range {
-            if var rectsValue = self.textNodeOrView.textRangeRects(in: range) {
+            if var rectsValue = self.textNode.textRangeRects(in: range) {
                 var rectList = rectsValue.rects
                 if rectList.count > 1 {
                     for i in 0 ..< rectList.count - 1 {
@@ -730,7 +683,7 @@ public final class TextSelectionNode: ASDisplayNode {
     }
     
     private func displayMenu() {
-        guard let currentRects = self.currentRects, !currentRects.isEmpty, let currentRange = self.currentRange, let attributedString = self.textNodeOrView.currentText else {
+        guard let currentRects = self.currentRects, !currentRects.isEmpty, let currentRange = self.currentRange, let attributedString = self.textNode.currentText else {
             return
         }
         let range = NSRange(location: min(currentRange.0, currentRange.1), length: max(currentRange.0, currentRange.1) - min(currentRange.0, currentRange.1))
@@ -825,15 +778,15 @@ public final class TextSelectionNode: ASDisplayNode {
             return true
         }
         self.contextMenu = contextMenu
-        self.present(contextMenu, ContextMenuControllerPresentationArguments(sourceViewAndRect: { [weak self] in
-            guard let strongSelf = self, let rootView = strongSelf.rootView() else {
+        self.present(contextMenu, ContextMenuControllerPresentationArguments(sourceNodeAndRect: { [weak self] in
+            guard let strongSelf = self, let rootNode = strongSelf.rootNode() else {
                 return nil
             }
             
             if strongSelf.menuSkipCoordnateConversion {
-                return (strongSelf.view, strongSelf.view.convert(completeRect, to: rootView), rootView, rootView.bounds)
+                return (strongSelf, strongSelf.view.convert(completeRect, to: rootNode.view), rootNode, rootNode.bounds)
             } else {
-                return (strongSelf.view, completeRect, rootView, rootView.bounds)
+                return (strongSelf, completeRect, rootNode, rootNode.bounds)
             }
         }, bounce: false))
     }

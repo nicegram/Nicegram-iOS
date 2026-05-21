@@ -450,7 +450,7 @@ private final class JoinAffiliateProgramScreenComponent: Component {
                 })))
             }
             
-            let contextController = makeContextController(presentationData: presentationData, source: .reference(HeaderContextReferenceContentSource(controller: controller, sourceView: sourceView, actionsOnTop: true)), items: .single(ContextController.Items(id: AnyHashable(0), content: .list(items))), gesture: nil)
+            let contextController = ContextController(presentationData: presentationData, source: .reference(HeaderContextReferenceContentSource(controller: controller, sourceView: sourceView, actionsOnTop: true)), items: .single(ContextController.Items(id: AnyHashable(0), content: .list(items))), gesture: nil)
             controller.presentInGlobalOverlay(contextController)
         }
         
@@ -875,7 +875,7 @@ private final class JoinAffiliateProgramScreenComponent: Component {
                         guard let infoController = component.context.sharedContext.makePeerInfoController(
                             context: component.context,
                             updatedPresentationData: nil,
-                            peer: component.sourcePeer,
+                            peer: component.sourcePeer._asPeer(),
                             mode: .generic,
                             avatarInitiallyExpanded: false,
                             fromChat: false,
@@ -1130,11 +1130,11 @@ private final class JoinAffiliateProgramScreenComponent: Component {
                         )),
                         background: AnyComponent(FilledRoundedRectangleComponent(
                             color: environment.theme.list.itemInputField.backgroundColor,
-                            cornerRadius: .minEdge,
+                            cornerRadius: .value(8.0),
                             smoothCorners: true
                         )),
                         effectAlignment: .center,
-                        minSize: CGSize(width: availableSize.width - sideInset * 2.0, height: 52.0),
+                        minSize: CGSize(width: availableSize.width - sideInset * 2.0, height: 50.0),
                         contentInsets: UIEdgeInsets(top: 0.0, left: 10.0, bottom: 0.0, right: 10.0),
                         action: { [weak self] in
                             guard let self, case let .active(active) = self.currentMode else {
@@ -1148,7 +1148,7 @@ private final class JoinAffiliateProgramScreenComponent: Component {
                         animateContents: false
                     )),
                     environment: {},
-                    containerSize: CGSize(width: availableSize.width - sideInset * 2.0, height: 52.0)
+                    containerSize: CGSize(width: availableSize.width - sideInset * 2.0, height: 50.0)
                 )
                 let linkTextFrame = CGRect(origin: CGPoint(x: floor((availableSize.width - linkTextSize.width) * 0.5), y: contentHeight), size: linkTextSize)
                 if let linkTextView = self.linkText.view {
@@ -1169,13 +1169,10 @@ private final class JoinAffiliateProgramScreenComponent: Component {
             case .active:
                 actionButtonTitle = environment.strings.AffiliateProgram_ActionCopyLink
             }
-            
-            let buttonSideInset: CGFloat = 30.0
             let actionButtonSize = self.actionButton.update(
                 transition: transition,
                 component: AnyComponent(ButtonComponent(
                     background: ButtonComponent.Background(
-                        style: .glass,
                         color: environment.theme.list.itemCheckColors.fillColor,
                         foreground: environment.theme.list.itemCheckColors.foregroundColor,
                         pressedColor: environment.theme.list.itemCheckColors.fillColor.withMultipliedAlpha(0.9)
@@ -1209,7 +1206,7 @@ private final class JoinAffiliateProgramScreenComponent: Component {
                     }
                 )),
                 environment: {},
-                containerSize: CGSize(width: availableSize.width - buttonSideInset * 2.0, height: 52.0)
+                containerSize: CGSize(width: availableSize.width - sideInset * 2.0, height: 50.0)
             )
             
             let bottomTextSize = self.bottomText.update(
@@ -1239,7 +1236,7 @@ private final class JoinAffiliateProgramScreenComponent: Component {
             let bottomPanelFrame = CGRect(origin: CGPoint(x: 0.0, y: availableSize.height - bottomPanelHeight), size: CGSize(width: availableSize.width, height: bottomPanelHeight))
             transition.setFrame(view: self.bottomPanelContainer, frame: bottomPanelFrame)
             
-            let actionButtonFrame = CGRect(origin: CGPoint(x: buttonSideInset, y: 0.0), size: actionButtonSize)
+            let actionButtonFrame = CGRect(origin: CGPoint(x: sideInset, y: 0.0), size: actionButtonSize)
             if let actionButtonView = self.actionButton.view {
                 if actionButtonView.superview == nil {
                     self.bottomPanelContainer.addSubview(actionButtonView)
@@ -2153,7 +2150,7 @@ final class PeerBadgeAvatarComponent: Component {
                 peer: component.peer,
                 synchronousLoad: synchronousLoad,
                 displayDimensions: size,
-                cutoutRect: component.hasBadge ? CGRect(origin: CGPoint(x: badgeFrame.minX, y: size.height - badgeFrame.maxY), size: badgeFrame.size).insetBy(dx: -1.0 + UIScreenPixel, dy: -1.0 + UIScreenPixel) : nil
+                cutoutRect: component.hasBadge ? badgeFrame.insetBy(dx: -(1.0 + UIScreenPixel), dy: -(1.0 + UIScreenPixel)) : nil
             )
             
             if self.badgeBackground.image == nil {

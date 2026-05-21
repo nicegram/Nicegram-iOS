@@ -15,8 +15,7 @@ func _internal_getDeepLinkInfo(network: Network, path: String) -> Signal<DeepLin
         switch value {
             case .deepLinkInfoEmpty:
                 return nil
-            case let .deepLinkInfo(deepLinkInfoData):
-                let (flags, message, entities) = (deepLinkInfoData.flags, deepLinkInfoData.message, deepLinkInfoData.entities)
+            case let .deepLinkInfo(flags, message, entities):
                 return DeepLinkInfo(message: message, entities: entities != nil ? messageTextEntitiesFromApiEntities(entities!) : [], updateApp: (flags & (1 << 0)) != 0)
         }
     }

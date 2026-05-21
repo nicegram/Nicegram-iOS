@@ -45,7 +45,7 @@ func localizedOldChannelDate(peer: InactiveChannel, strings: PresentationStrings
         string = strings.OldChannels_InactiveYear(Int32(dif))
     }
     
-    if case let .channel(channel) = peer.peer, case .group = channel.info {
+    if let channel = peer.peer as? TelegramChannel, case .group = channel.info {
         if let participantsCount = peer.participantsCount, participantsCount != 0 {
             string = strings.OldChannels_GroupFormat(participantsCount) + ", " + string
         } else {
@@ -168,11 +168,15 @@ private enum OldChannelsEntry: ItemListNodeEntry {
         let arguments = arguments as! OldChannelsItemArguments
         switch self {
         case let .info(count, limit, premiumLimit, text, isPremiumDisabled):
-            return IncreaseLimitHeaderItem(theme: presentationData.theme, strings: presentationData.strings, icon: .group, count: count, limit: limit, premiumCount: premiumLimit, text: text, isPremiumDisabled: isPremiumDisabled, sectionId: self.section)
+            // Nicegram JoinGroupLimit
+            let nicegramNotice = "Logging out from your account and logging in again may fix this error"
+            //
+            // Nicegram JoinGroupLimit, nicegramNotice added
+            return IncreaseLimitHeaderItem(nicegramNotice: nicegramNotice, theme: presentationData.theme, strings: presentationData.strings, icon: .group, count: count, limit: limit, premiumCount: premiumLimit, text: text, isPremiumDisabled: isPremiumDisabled, sectionId: self.section)
         case let .peersHeader(title):
             return ItemListSectionHeaderItem(presentationData: presentationData, text: title, sectionId: self.section)
         case let .peer(_, peer, selected):
-            return ContactsPeerItem(presentationData: presentationData, style: .blocks, systemStyle: .glass, sectionId: self.section, sortOrder: .firstLast, displayOrder: .firstLast, context: arguments.context, peerMode: .peer, peer: .peer(peer: peer.peer, chatPeer: peer.peer), status: .custom(string: NSAttributedString(string: localizedOldChannelDate(peer: peer, strings: presentationData.strings)), multiline: false, isActive: false, icon: nil), badge: nil, enabled: true, selection: ContactsPeerItemSelection.selectable(selected: selected), editing: ContactsPeerItemEditing(editable: false, editing: false, revealed: false), options: [], actionIcon: .none, index: nil, header: nil, action: { _ in
+            return ContactsPeerItem(presentationData: presentationData, style: .blocks, sectionId: self.section, sortOrder: .firstLast, displayOrder: .firstLast, context: arguments.context, peerMode: .peer, peer: .peer(peer: EnginePeer(peer.peer), chatPeer: EnginePeer(peer.peer)), status: .custom(string: NSAttributedString(string: localizedOldChannelDate(peer: peer, strings: presentationData.strings)), multiline: false, isActive: false, icon: nil), badge: nil, enabled: true, selection: ContactsPeerItemSelection.selectable(selected: selected), editing: ContactsPeerItemEditing(editable: false, editing: false, revealed: false), options: [], actionIcon: .none, index: nil, header: nil, action: { _ in
                 arguments.togglePeer(peer.peer.id, true)
             }, setPeerIdWithRevealedOptions: nil, deletePeer: nil, itemHighlighting: nil, contextAction: nil)
         }
@@ -386,7 +390,7 @@ public func oldChannelsController(context: AccountContext, updatedPresentationDa
             let peers = peers ?? []
             
             let ensureStoredPeers = peers.map { $0.peer }.filter { state.selectedPeers.contains($0.id) }
-            let ensureStoredPeersSignal: Signal<Never, NoError> = context.engine.peers.ensurePeersAreLocallyAvailable(peers: ensureStoredPeers)
+            let ensureStoredPeersSignal: Signal<Never, NoError> = context.engine.peers.ensurePeersAreLocallyAvailable(peers: ensureStoredPeers.map(EnginePeer.init))
             
             return ensureStoredPeersSignal
             |> then(context.engine.peers.removePeerChats(peerIds: Array(ensureStoredPeers.map(\.id))))

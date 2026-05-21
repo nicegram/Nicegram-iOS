@@ -217,10 +217,9 @@ public final class InitialPresentationDataAndSettings {
     public let mediaInputSettings: MediaInputSettings
     public let mediaDisplaySettings: MediaDisplaySettings
     public let stickerSettings: StickerSettings
-    public let chatSettings: ChatSettings
     public let experimentalUISettings: ExperimentalUISettings
     
-    public init(presentationData: PresentationData, automaticMediaDownloadSettings: MediaAutoDownloadSettings, autodownloadSettings: AutodownloadSettings, callListSettings: CallListSettings, inAppNotificationSettings: InAppNotificationSettings, mediaInputSettings: MediaInputSettings, mediaDisplaySettings: MediaDisplaySettings, stickerSettings: StickerSettings, chatSettings: ChatSettings, experimentalUISettings: ExperimentalUISettings) {
+    public init(presentationData: PresentationData, automaticMediaDownloadSettings: MediaAutoDownloadSettings, autodownloadSettings: AutodownloadSettings, callListSettings: CallListSettings, inAppNotificationSettings: InAppNotificationSettings, mediaInputSettings: MediaInputSettings, mediaDisplaySettings: MediaDisplaySettings, stickerSettings: StickerSettings, experimentalUISettings: ExperimentalUISettings) {
         self.presentationData = presentationData
         self.automaticMediaDownloadSettings = automaticMediaDownloadSettings
         self.autodownloadSettings = autodownloadSettings
@@ -229,7 +228,6 @@ public final class InitialPresentationDataAndSettings {
         self.mediaInputSettings = mediaInputSettings
         self.mediaDisplaySettings = mediaDisplaySettings
         self.stickerSettings = stickerSettings
-        self.chatSettings = chatSettings
         self.experimentalUISettings = experimentalUISettings
     }
 }
@@ -247,7 +245,6 @@ public func currentPresentationDataAndSettings(accountManager: AccountManager<Te
         var experimentalUISettings: PreferencesEntry?
         var contactSynchronizationSettings: PreferencesEntry?
         var stickerSettings: PreferencesEntry?
-        var chatSettings: PreferencesEntry?
         
         init(
             localizationSettings: PreferencesEntry?,
@@ -260,8 +257,7 @@ public func currentPresentationDataAndSettings(accountManager: AccountManager<Te
             mediaDisplaySettings: PreferencesEntry?,
             experimentalUISettings: PreferencesEntry?,
             contactSynchronizationSettings: PreferencesEntry?,
-            stickerSettings: PreferencesEntry?,
-            chatSettings: PreferencesEntry?
+            stickerSettings: PreferencesEntry?
         ) {
             self.localizationSettings = localizationSettings
             self.presentationThemeSettings = presentationThemeSettings
@@ -274,7 +270,6 @@ public func currentPresentationDataAndSettings(accountManager: AccountManager<Te
             self.experimentalUISettings = experimentalUISettings
             self.contactSynchronizationSettings = contactSynchronizationSettings
             self.stickerSettings = stickerSettings
-            self.chatSettings = chatSettings
         }
     }
     
@@ -290,7 +285,6 @@ public func currentPresentationDataAndSettings(accountManager: AccountManager<Te
         let experimentalUISettings = transaction.getSharedData(ApplicationSpecificSharedDataKeys.experimentalUISettings)
         let contactSynchronizationSettings = transaction.getSharedData(ApplicationSpecificSharedDataKeys.contactSynchronizationSettings)
         let stickerSettings = transaction.getSharedData(ApplicationSpecificSharedDataKeys.stickerSettings)
-        let chatSettings = transaction.getSharedData(ApplicationSpecificSharedDataKeys.chatSettings)
         
         return InternalData(
             localizationSettings: localizationSettings,
@@ -303,8 +297,7 @@ public func currentPresentationDataAndSettings(accountManager: AccountManager<Te
             mediaDisplaySettings: mediaDisplaySettings,
             experimentalUISettings: experimentalUISettings,
             contactSynchronizationSettings: contactSynchronizationSettings,
-            stickerSettings: stickerSettings,
-            chatSettings: chatSettings
+            stickerSettings: stickerSettings
         )
     }
     |> deliverOn(Queue(name: "PresentationData-Load", qos: .userInteractive))
@@ -372,13 +365,6 @@ public func currentPresentationDataAndSettings(accountManager: AccountManager<Te
             stickerSettings = StickerSettings.defaultSettings
         }
         
-        let chatSettings: ChatSettings
-        if let value = internalData.chatSettings?.get(ChatSettings.self) {
-            chatSettings = value
-        } else {
-            chatSettings = ChatSettings.defaultSettings
-        }
-        
         let experimentalUISettings: ExperimentalUISettings = internalData.experimentalUISettings?.get(ExperimentalUISettings.self) ?? ExperimentalUISettings.defaultSettings
         
         let contactSettings: ContactSynchronizationSettings = internalData.contactSynchronizationSettings?.get(ContactSynchronizationSettings.self) ?? ContactSynchronizationSettings.defaultSettings
@@ -427,7 +413,7 @@ public func currentPresentationDataAndSettings(accountManager: AccountManager<Te
         
         let chatBubbleCorners = PresentationChatBubbleCorners(mainRadius: CGFloat(themeSettings.chatBubbleSettings.mainRadius), auxiliaryRadius: CGFloat(themeSettings.chatBubbleSettings.auxiliaryRadius), mergeBubbleCorners: themeSettings.chatBubbleSettings.mergeBubbleCorners)
         
-        return InitialPresentationDataAndSettings(presentationData: PresentationData(strings: stringsValue, theme: theme, autoNightModeTriggered: autoNightModeTriggered, chatWallpaper: effectiveChatWallpaper, chatFontSize: chatFontSize, chatBubbleCorners: chatBubbleCorners, listsFontSize: listsFontSize, dateTimeFormat: dateTimeFormat, nameDisplayOrder: nameDisplayOrder, nameSortOrder: nameSortOrder, reduceMotion: themeSettings.reduceMotion, largeEmoji: themeSettings.largeEmoji), automaticMediaDownloadSettings: automaticMediaDownloadSettings, autodownloadSettings: autodownloadSettings, callListSettings: callListSettings, inAppNotificationSettings: inAppNotificationSettings, mediaInputSettings: mediaInputSettings, mediaDisplaySettings: mediaDisplaySettings, stickerSettings: stickerSettings, chatSettings: chatSettings, experimentalUISettings: experimentalUISettings)
+        return InitialPresentationDataAndSettings(presentationData: PresentationData(strings: stringsValue, theme: theme, autoNightModeTriggered: autoNightModeTriggered, chatWallpaper: effectiveChatWallpaper, chatFontSize: chatFontSize, chatBubbleCorners: chatBubbleCorners, listsFontSize: listsFontSize, dateTimeFormat: dateTimeFormat, nameDisplayOrder: nameDisplayOrder, nameSortOrder: nameSortOrder, reduceMotion: themeSettings.reduceMotion, largeEmoji: themeSettings.largeEmoji), automaticMediaDownloadSettings: automaticMediaDownloadSettings, autodownloadSettings: autodownloadSettings, callListSettings: callListSettings, inAppNotificationSettings: inAppNotificationSettings, mediaInputSettings: mediaInputSettings, mediaDisplaySettings: mediaDisplaySettings, stickerSettings: stickerSettings, experimentalUISettings: experimentalUISettings)
     }
 }
 

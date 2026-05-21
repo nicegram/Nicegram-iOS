@@ -4,6 +4,7 @@ import Display
 import ComponentFlow
 import TelegramPresentationData
 import TelegramCore
+import Postbox
 import SwiftSignalKit
 import AccountContext
 import PhotoResources
@@ -182,7 +183,7 @@ public final class StorySetIndicatorComponent: Component {
         init(context: AccountContext, item: StorySetIndicatorComponent.Item, displayAvatars: Bool, updated: @escaping () -> Void) {
             self.updated = updated
             
-            let peerReference = PeerReference(item.peer)
+            let peerReference = PeerReference(item.peer._asPeer())
             
             var messageMedia: EngineMedia?
             switch item.storyItem.media {

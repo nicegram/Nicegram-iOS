@@ -13,7 +13,7 @@ func _internal_enqueueOutgoingMessageWithChatContextResult(account: Account, to 
 func _internal_outgoingMessageWithChatContextResult(to peerId: PeerId, threadId: Int64?, botId: PeerId, result: ChatContextResult, replyToMessageId: EngineMessageReplySubject?, replyToStoryId: StoryId?, hideVia: Bool, silentPosting: Bool, scheduleTime: Int32?, sendPaidMessageStars: StarsAmount?, postpone: Bool, correlationId: Int64?) -> EnqueueMessage? {
     var replyToMessageId = replyToMessageId
     if replyToMessageId == nil, let threadId = threadId {
-        replyToMessageId = EngineMessageReplySubject(messageId: MessageId(peerId: peerId, namespace: Namespaces.Message.Cloud, id: MessageId.Id(clamping: threadId)), quote: nil, innerSubject: nil)
+        replyToMessageId = EngineMessageReplySubject(messageId: MessageId(peerId: peerId, namespace: Namespaces.Message.Cloud, id: MessageId.Id(clamping: threadId)), quote: nil, todoItemId: nil)
     }
     
     var webpageUrl: String?
@@ -27,7 +27,7 @@ func _internal_outgoingMessageWithChatContextResult(to peerId: PeerId, threadId:
         attributes.append(InlineBotMessageAttribute(peerId: botId, title: nil))
     }
     if let scheduleTime = scheduleTime {
-        attributes.append(OutgoingScheduleInfoMessageAttribute(scheduleTime: scheduleTime, repeatPeriod: nil))
+        attributes.append(OutgoingScheduleInfoMessageAttribute(scheduleTime: scheduleTime))
     }
     if silentPosting {
         attributes.append(NotificationInfoMessageAttribute(flags: .muted))

@@ -226,7 +226,7 @@ class WebSearchControllerNode: ASDisplayNode {
         self.gridNode = GridNode()
         self.gridNode.backgroundColor = theme.list.plainBackgroundColor
         
-        self.recentQueriesNode = ListViewImpl()
+        self.recentQueriesNode = ListView()
         self.recentQueriesNode.backgroundColor = theme.list.plainBackgroundColor
         self.recentQueriesNode.accessibilityPageScrolledString = { row, count in
             return presentationData.strings.VoiceOver_ScrollStatus(row, count).string
@@ -792,7 +792,7 @@ class WebSearchControllerNode: ASDisplayNode {
             }
         } else {
             if let mode = self.controller?.mode, case let .editor(completion) = mode {
-                if let item = legacyWebSearchItem(engine: self.context.engine, result: currentResult) {
+                if let item = legacyWebSearchItem(account: self.context.account, result: currentResult) {
                     let _ = (item.originalImage
                     |> deliverOnMainQueue).start(next: { image in
                         if !image.degraded() {

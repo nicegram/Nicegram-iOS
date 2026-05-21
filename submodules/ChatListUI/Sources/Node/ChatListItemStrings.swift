@@ -77,21 +77,20 @@ private func paidContentGroupType(paidContent: TelegramMediaPaidContent) -> Mess
     return currentType
 }
 
-public func chatListItemStrings(strings: PresentationStrings, nameDisplayOrder: PresentationPersonNameOrder, dateTimeFormat: PresentationDateTimeFormat, contentSettings: ContentSettings, messages: [EngineMessage], chatPeer: EngineRenderedPeer, accountPeerId: EnginePeer.Id, enableMediaEmoji: Bool = true, isPeerGroup: Bool = false) -> (peer: EnginePeer?, hideAuthor: Bool, messageText: String, messageEntities: [MessageTextEntity], spoilers: [NSRange]?, customEmojiRanges: [(NSRange, ChatTextInputTextCustomEmojiAttribute)]?) {
+public func chatListItemStrings(strings: PresentationStrings, nameDisplayOrder: PresentationPersonNameOrder, dateTimeFormat: PresentationDateTimeFormat, contentSettings: ContentSettings, messages: [EngineMessage], chatPeer: EngineRenderedPeer, accountPeerId: EnginePeer.Id, enableMediaEmoji: Bool = true, isPeerGroup: Bool = false) -> (peer: EnginePeer?, hideAuthor: Bool, messageText: String, spoilers: [NSRange]?, customEmojiRanges: [(NSRange, ChatTextInputTextCustomEmojiAttribute)]?) {
     let peer: EnginePeer?
     
     let message = messages.last
     
     if let restrictionReason = message?._asMessage().restrictionReason(platform: "ios", contentSettings: contentSettings) {
-        return (nil, false, restrictionReason, [], nil, nil)
+        return (nil, false, restrictionReason, nil, nil)
     }
     if let restrictionReason = chatPeer.chatMainPeer?.restrictionText(platform: "ios", contentSettings: contentSettings) {
-        return (nil, false, restrictionReason, [], nil, nil)
+        return (nil, false, restrictionReason, nil, nil)
     }
     
     var hideAuthor = false
     var messageText: String
-    var messageEntities: [MessageTextEntity] = []
     var spoilers: [NSRange]?
     var customEmojiRanges: [(NSRange, ChatTextInputTextCustomEmojiAttribute)]?
     if let message = message {
@@ -105,17 +104,6 @@ public func chatListItemStrings(strings: PresentationStrings, nameDisplayOrder: 
         for message in messages {
             if !message.text.isEmpty {
                 messageText = message.text
-                messageEntities = message._asMessage().textEntitiesAttribute?.entities ?? []
-                for entity in messageEntities {
-                    if case let .CustomEmoji(_, fileId) = entity.type {
-                        if customEmojiRanges == nil {
-                            customEmojiRanges = []
-                        }
-                        let range = NSRange(location: entity.range.lowerBound, length: entity.range.upperBound - entity.range.lowerBound)
-                        let attribute = ChatTextInputTextCustomEmojiAttribute(interactivelySelectedFromPackId: nil, fileId: fileId, file: message.associatedMedia[EngineMedia.Id(namespace: Namespaces.Media.CloudFile, id: fileId)] as? TelegramMediaFile)
-                        customEmojiRanges?.append((range, attribute))
-                    }
-                }
                 break
             }
         }
@@ -205,13 +193,9 @@ public func chatListItemStrings(strings: PresentationStrings, nameDisplayOrder: 
                                 break
                             }
                         }
-                    case let imageMedia as TelegramMediaImage:
+                    case _ as TelegramMediaImage:
                         if message.text.isEmpty {
-                            if imageMedia.flags.contains(.isLivePhoto) {
-                                messageText = strings.Message_LivePhoto
-                            } else {
-                                messageText = strings.Message_Photo
-                            }
+                            messageText = strings.Message_Photo
                         } else if enableMediaEmoji {
                             messageText = "🖼 \(messageText)"
                         }
@@ -225,12 +209,14 @@ public func chatListItemStrings(strings: PresentationStrings, nameDisplayOrder: 
                                     break inner
                                 case let .Audio(isVoice, _, title, performer, _):
                                     if !message.text.isEmpty {
-                                        if enableMediaEmoji {
-                                            messageText = "🎤 \(messageText)"
-                                        }
+                                        messageText = "🎤 \(messageText)"
                                         processed = true
                                     } else if isVoice {
-                                        messageText = strings.Message_Audio
+                                        if message.text.isEmpty {
+                                            messageText = strings.Message_Audio
+                                        } else {
+                                            messageText = "🎤 \(messageText)"
+                                        }
                                         processed = true
                                         break inner
                                     } else {
@@ -285,9 +271,7 @@ public func chatListItemStrings(strings: PresentationStrings, nameDisplayOrder: 
                         }
                         if !processed {
                             if !message.text.isEmpty {
-                                if enableMediaEmoji {
-                                    messageText = "📎 \(messageText)"
-                                }
+                                messageText = "📎 \(messageText)"
                             } else {
                                 if fileMedia.isAnimatedSticker {
                                     messageText = strings.Message_Sticker
@@ -309,7 +293,7 @@ public func chatListItemStrings(strings: PresentationStrings, nameDisplayOrder: 
                     case _ as TelegramMediaContact:
                         messageText = strings.Message_Contact
                     case let game as TelegramMediaGame:
-                        messageText = game.title
+                        messageText = "🎮 \(game.title)"
                     case let invoice as TelegramMediaInvoice:
                         messageText = invoice.title
                     case let action as TelegramMediaAction:
@@ -394,11 +378,15 @@ public func chatListItemStrings(strings: PresentationStrings, nameDisplayOrder: 
                             messageText = text
                         }
                     case let poll as TelegramMediaPoll:
-                        messageText = poll.text
-                        customEmojiRanges = []
+                        let pollPrefix = "📊 "
+                        let entityOffset = (pollPrefix as NSString).length
+                        messageText = "\(pollPrefix)\(poll.text)"
                         for entity in poll.textEntities {
                             if case let .CustomEmoji(_, fileId) = entity.type {
-                                let range = NSRange(location: entity.range.lowerBound, length: entity.range.upperBound - entity.range.lowerBound)
+                                if customEmojiRanges == nil {
+                                    customEmojiRanges = []
+                                }
+                                let range = NSRange(location: entityOffset + entity.range.lowerBound, length: entity.range.upperBound - entity.range.lowerBound)
                                 let attribute = ChatTextInputTextCustomEmojiAttribute(interactivelySelectedFromPackId: nil, fileId: fileId, file: message.associatedMedia[EngineMedia.Id(namespace: Namespaces.Media.CloudFile, id: fileId)] as? TelegramMediaFile)
                                 customEmojiRanges?.append((range, attribute))
                             }
@@ -436,11 +424,15 @@ public func chatListItemStrings(strings: PresentationStrings, nameDisplayOrder: 
                             messageText = content.displayUrl
                         }
                     case let todo as TelegramMediaTodo:
-                        messageText = todo.text
-                        customEmojiRanges = []
+                        let pollPrefix = "☑️ "
+                        let entityOffset = (pollPrefix as NSString).length
+                        messageText = "\(pollPrefix)\(todo.text)"
                         for entity in todo.textEntities {
                             if case let .CustomEmoji(_, fileId) = entity.type {
-                                let range = NSRange(location: entity.range.lowerBound, length: entity.range.upperBound - entity.range.lowerBound)
+                                if customEmojiRanges == nil {
+                                    customEmojiRanges = []
+                                }
+                                let range = NSRange(location: entityOffset + entity.range.lowerBound, length: entity.range.upperBound - entity.range.lowerBound)
                                 let attribute = ChatTextInputTextCustomEmojiAttribute(interactivelySelectedFromPackId: nil, fileId: fileId, file: message.associatedMedia[EngineMedia.Id(namespace: Namespaces.Media.CloudFile, id: fileId)] as? TelegramMediaFile)
                                 customEmojiRanges?.append((range, attribute))
                             }
@@ -477,5 +469,5 @@ public func chatListItemStrings(strings: PresentationStrings, nameDisplayOrder: 
         }
     }
     
-    return (peer, hideAuthor, messageText, messageEntities, spoilers, customEmojiRanges)
+    return (peer, hideAuthor, messageText, spoilers, customEmojiRanges)
 }

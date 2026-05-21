@@ -26,27 +26,23 @@ public class ContactListActionItem: ListViewItem, ListViewItemWithHeader {
     }
     
     let presentationData: ItemListPresentationData
-    let style: ItemListStyle
-    let systemStyle: ItemListSystemStyle
     let title: String
     let subtitle: String?
     let height: Height
     let icon: ContactListActionItemIcon
-    let actionStyle: Style
+    let style: Style
     let highlight: ContactListActionItemHighlight
     let clearHighlightAutomatically: Bool
     let accessible: Bool
     let action: () -> Void
     public let header: ListViewItemHeader?
     
-    public init(presentationData: ItemListPresentationData, style: ItemListStyle = .plain, systemStyle: ItemListSystemStyle = .legacy, title: String, subtitle: String? = nil, icon: ContactListActionItemIcon, actionStyle: Style = .accent, height: Height = .generic, highlight: ContactListActionItemHighlight = .cell, clearHighlightAutomatically: Bool = true, accessible: Bool = true, header: ListViewItemHeader?, action: @escaping () -> Void) {
+    public init(presentationData: ItemListPresentationData, title: String, subtitle: String? = nil, icon: ContactListActionItemIcon, style: Style = .accent, height: Height = .generic, highlight: ContactListActionItemHighlight = .cell, clearHighlightAutomatically: Bool = true, accessible: Bool = true, header: ListViewItemHeader?, action: @escaping () -> Void) {
         self.presentationData = presentationData
-        self.style = style
-        self.systemStyle = systemStyle
         self.title = title
         self.subtitle = subtitle
         self.icon = icon
-        self.actionStyle = actionStyle
+        self.style = style
         self.height = height
         self.highlight = highlight
         self.header = header
@@ -137,7 +133,6 @@ class ContactListActionItemNode: ListViewItemNode {
     private let topStripeNode: ASDisplayNode
     private let bottomStripeNode: ASDisplayNode
     private let highlightedBackgroundNode: ASDisplayNode
-    private let maskNode: ASImageNode
     
     private let iconNode: ASImageNode
     private let titleNode: TextNode
@@ -157,9 +152,6 @@ class ContactListActionItemNode: ListViewItemNode {
         
         self.bottomStripeNode = ASDisplayNode()
         self.bottomStripeNode.isLayerBacked = true
-        
-        self.maskNode = ASImageNode()
-        self.maskNode.isUserInteractionEnabled = false
         
         self.titleNode = TextNode()
         self.titleNode.isUserInteractionEnabled = false
@@ -181,7 +173,7 @@ class ContactListActionItemNode: ListViewItemNode {
         
         self.activateArea = AccessibilityAreaNode()
         
-        super.init(layerBacked: false)
+        super.init(layerBacked: false, dynamicBounce: false)
         
         self.addSubnode(self.iconNode)
         self.addSubnode(self.titleNode)
@@ -213,7 +205,7 @@ class ContactListActionItemNode: ListViewItemNode {
             
             let titleColor: UIColor
             let titleFont: UIFont
-            switch item.actionStyle {
+            switch item.style {
             case .accent:
                 titleColor = item.presentationData.theme.list.itemAccentColor
                 titleFont = Font.regular(item.presentationData.fontSize.itemListBaseFontSize)
@@ -237,10 +229,7 @@ class ContactListActionItemNode: ListViewItemNode {
             }
             
             let contentHeight: CGFloat
-            var verticalInset: CGFloat = subtitleAttributedString != nil ? 6.0 : 12.0
-            if case .glass = item.systemStyle {
-                verticalInset += 4.0
-            }
+            let verticalInset: CGFloat = subtitleAttributedString != nil ? 6.0 : 12.0
             if case .tall = item.height {
                 contentHeight = 50.0
             } else if case .alpha = item.highlight {
@@ -268,7 +257,7 @@ class ContactListActionItemNode: ListViewItemNode {
                         strongSelf.backgroundNode.backgroundColor = item.presentationData.theme.list.plainBackgroundColor
                         strongSelf.highlightedBackgroundNode.backgroundColor = item.presentationData.theme.list.itemHighlightedBackgroundColor
                         
-                        if case .generic = item.actionStyle {
+                        if case .generic = item.style {
                             strongSelf.iconNode.image = item.icon.image
                         } else {
                             strongSelf.iconNode.image = generateTintedImage(image: item.icon.image, color: item.presentationData.theme.list.itemAccentColor)
@@ -318,17 +307,8 @@ class ContactListActionItemNode: ListViewItemNode {
                     if strongSelf.bottomStripeNode.supernode == nil {
                         strongSelf.insertSubnode(strongSelf.bottomStripeNode, at: 2)
                     }
-                                        
-                    strongSelf.backgroundNode.frame = CGRect(origin: CGPoint(x: 0.0, y: -min(insets.top, separatorHeight)), size: CGSize(width: params.width, height: contentSize.height + min(insets.top, separatorHeight) + min(insets.bottom, separatorHeight)))
                     
-                    let hasCorners = itemListHasRoundedBlockLayout(params)
-                    if case .blocks = item.style {
-                        if strongSelf.maskNode.supernode == nil {
-                            strongSelf.addSubnode(strongSelf.maskNode)
-                        }
-                        strongSelf.maskNode.image = hasCorners ? PresentationResourcesItemList.cornersImage(item.presentationData.theme, top: false, bottom: true, glass: item.systemStyle == .glass) : nil
-                        strongSelf.maskNode.frame = strongSelf.backgroundNode.frame.insetBy(dx: params.leftInset, dy: 0.0)
-                    }
+                    strongSelf.backgroundNode.frame = CGRect(origin: CGPoint(x: 0.0, y: -min(insets.top, separatorHeight)), size: CGSize(width: params.width, height: contentSize.height + min(insets.top, separatorHeight) + min(insets.bottom, separatorHeight)))
                     
                     strongSelf.topStripeNode.isHidden = true
                     strongSelf.bottomStripeNode.isHidden = hideBottomStripe

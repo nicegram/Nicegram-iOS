@@ -286,7 +286,6 @@ public class ChatMessageStoryMentionContentNode: ChatMessageBubbleContentNode {
                                     component: AnyComponent(AvatarStoryIndicatorComponent(
                                         hasUnseen: hasUnseen,
                                         hasUnseenCloseFriendsItems: hasUnseen && (story?.isCloseFriends ?? false),
-                                        hasLiveItems: false,
                                         colors: storyColors,
                                         activeLineWidth: 3.0,
                                         inactiveLineWidth: 1.0 + UIScreenPixel,

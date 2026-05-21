@@ -106,13 +106,11 @@ public final class TextNodeWithEntities {
     public let textNode: TextNode
     private var inlineStickerItemLayers: [InlineStickerItemLayer.Key: InlineStickerItemLayer] = [:]
     
-    public var enableLooping: Bool = true
-    public var energySavingEnableLooping: Bool = true
+    private var enableLooping: Bool = true
     
-    private var effectiveEnableLooping: Bool {
-        return self.enableLooping && self.energySavingEnableLooping
-    }
-    
+    // Nicegram ColorAlign
+    public var disableAnimations: Bool = false
+    //
     public var resetEmojiToFirstFrameAutomatically: Bool = false
     
     public var visibilityRect: CGRect? {
@@ -129,7 +127,7 @@ public final class TextNodeWithEntities {
                     } else {
                         isItemVisible = false
                     }
-                    let isVisibleForAnimations = self.effectiveEnableLooping && isItemVisible && itemLayer.enableAnimation
+                    let isVisibleForAnimations = self.enableLooping && isItemVisible && itemLayer.enableAnimation
                     if itemLayer.isVisibleForAnimations != isVisibleForAnimations {
                         itemLayer.isVisibleForAnimations = isVisibleForAnimations
                         if !isVisibleForAnimations && self.resetEmojiToFirstFrameAutomatically {
@@ -166,6 +164,10 @@ public final class TextNodeWithEntities {
     public static func asyncLayout(_ maybeNode: TextNodeWithEntities?) -> (TextNodeLayoutArguments) -> (TextNodeLayout, (TextNodeWithEntities.Arguments?) -> TextNodeWithEntities) {
         let makeLayout = TextNode.asyncLayout(maybeNode?.textNode)
         return { [weak maybeNode] arguments in
+            // Nicegram ColorAlign
+            let arguments = maybeNode?.nicegramAdjust(textNodeLayoutArguments: arguments) ?? arguments
+            //
+            
             var updatedString: NSAttributedString?
             if let sourceString = arguments.attributedString {
                 let string = NSMutableAttributedString(attributedString: sourceString)
@@ -253,6 +255,42 @@ public final class TextNodeWithEntities {
         }
     }
     
+    // Nicegram ColorAlign
+    func nicegramAdjust(textNodeLayoutArguments arguments: TextNodeLayoutArguments) -> TextNodeLayoutArguments {
+        guard self.disableAnimations else {
+            return arguments
+        }
+        
+        let attributedString: NSAttributedString?
+        if let originalAttributedString = arguments.attributedString {
+            let mutableString = NSMutableAttributedString(attributedString: originalAttributedString)
+            
+            var attributesToRemove = [
+                ChatTextInputAttributes.customEmoji,
+                ChatTextInputAttributes.spoiler
+            ]
+            attributesToRemove.append(
+                contentsOf: [TelegramTextAttributes.Spoiler].compactMap {
+                    NSAttributedString.Key($0)
+                }
+            )
+            attributesToRemove.forEach {
+                mutableString.removeAttribute(
+                    $0,
+                    range: NSRange(location: 0, length: mutableString.length)
+                )
+            }
+            
+            attributedString = mutableString
+        } else {
+            attributedString = nil
+        }
+        
+        return arguments
+            .withAttributedString(attributedString)
+    }
+    //
+    
     private func isItemVisible(itemRect: CGRect) -> Bool {
         if let visibilityRect = self.visibilityRect {
             return itemRect.intersects(visibilityRect)
@@ -262,7 +300,7 @@ public final class TextNodeWithEntities {
     }
     
     private func updateInlineStickers(context: AccountContext, cache: AnimationCache, renderer: MultiAnimationRenderer, textLayout: TextNodeLayout?, placeholderColor: UIColor, attemptSynchronousLoad: Bool, emojiOffset: CGPoint, fontSizeNorm: CGFloat) {
-        self.energySavingEnableLooping = context.sharedContext.energyUsageSettings.loopEmoji
+        self.enableLooping = context.sharedContext.energyUsageSettings.loopEmoji
         
         var nextIndexById: [Int64: Int] = [:]
         var validIds: [InlineStickerItemLayer.Key] = []
@@ -297,7 +335,7 @@ public final class TextNodeWithEntities {
                         self.textNode.layer.addSublayer(itemLayer)
                     }
                     itemLayer.enableAnimation = stickerItem.enableAnimation
-                    let isVisibleForAnimations = self.effectiveEnableLooping && self.isItemVisible(itemRect: itemFrame) && itemLayer.enableAnimation
+                    let isVisibleForAnimations = self.enableLooping && self.isItemVisible(itemRect: itemFrame) && itemLayer.enableAnimation
                     if itemLayer.isVisibleForAnimations != isVisibleForAnimations {
                         if !isVisibleForAnimations && self.resetEmojiToFirstFrameAutomatically {
                             itemLayer.reloadAnimation()
@@ -415,12 +453,7 @@ public class ImmediateTextNodeWithEntities: TextNode {
     public var spoilerColor: UIColor = .black
     public var balancedTextLayout: Bool = false
     
-    public var enableLooping: Bool = true
-    public var energySavingEnableLooping: Bool = true
-    
-    private var effectiveEnableLooping: Bool {
-        return self.enableLooping && self.energySavingEnableLooping
-    }
+    private var enableLooping: Bool = true
     
     public var arguments: TextNodeWithEntities.Arguments?
     
@@ -433,7 +466,7 @@ public class ImmediateTextNodeWithEntities: TextNode {
         didSet {
             if !self.inlineStickerItemLayers.isEmpty && oldValue != self.visibility {
                 for (_, itemLayer) in self.inlineStickerItemLayers {
-                    let isVisibleForAnimations = self.effectiveEnableLooping && self.visibility && itemLayer.enableAnimation
+                    let isVisibleForAnimations = self.enableLooping && self.visibility && itemLayer.enableAnimation
                     if itemLayer.isVisibleForAnimations != isVisibleForAnimations {
                         itemLayer.isVisibleForAnimations = isVisibleForAnimations
                         if !isVisibleForAnimations && self.resetEmojiToFirstFrameAutomatically {
@@ -585,7 +618,7 @@ public class ImmediateTextNodeWithEntities: TextNode {
     }
     
     private func updateInlineStickers(context: AccountContext, cache: AnimationCache, renderer: MultiAnimationRenderer, textLayout: TextNodeLayout?, placeholderColor: UIColor, fontSizeNorm: CGFloat) {
-        self.energySavingEnableLooping = context.sharedContext.energyUsageSettings.loopEmoji
+        self.enableLooping = context.sharedContext.energyUsageSettings.loopEmoji
         
         var nextIndexById: [Int64: Int] = [:]
         var validIds: [InlineStickerItemLayer.Key] = []
@@ -623,7 +656,7 @@ public class ImmediateTextNodeWithEntities: TextNode {
                     }
                     
                     itemLayer.enableAnimation = stickerItem.enableAnimation
-                    let isVisibleForAnimations = self.effectiveEnableLooping && self.visibility && itemLayer.enableAnimation
+                    let isVisibleForAnimations = self.enableLooping && self.visibility && itemLayer.enableAnimation
                     if itemLayer.isVisibleForAnimations != isVisibleForAnimations {
                         itemLayer.isVisibleForAnimations = isVisibleForAnimations
                         if !isVisibleForAnimations && self.resetEmojiToFirstFrameAutomatically {
@@ -675,12 +708,9 @@ public class ImmediateTextNodeWithEntities: TextNode {
         
         let _ = apply()
         
-        var enableAnimations = true
         if let arguments = self.arguments {
             self.updateInlineStickers(context: arguments.context, cache: arguments.cache, renderer: arguments.renderer, textLayout: layout, placeholderColor: arguments.placeholderColor, fontSizeNorm: arguments.fontSizeNorm)
-            enableAnimations = arguments.context.sharedContext.energyUsageSettings.fullTranslucency
         }
-        self.updateSpoilers(enableAnimations: enableAnimations, textLayout: layout)
         
         return ImmediateTextNodeLayoutInfo(size: layout.size, truncated: layout.truncated, numberOfLines: layout.numberOfLines)
     }

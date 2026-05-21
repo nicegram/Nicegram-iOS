@@ -488,7 +488,7 @@ public func peersNearbyController(context: AccountContext) -> ViewController {
         let presentationData = context.sharedContext.currentPresentationData.with { $0 }
         let chatController = context.sharedContext.makeChatController(context: context, chatLocation: .peer(id: peer.id), subject: nil, botStart: nil, mode: .standard(.previewing), params: nil)
         chatController.canReadHistory.set(false)
-        let contextController = makeContextController(presentationData: presentationData, source: .controller(ContextControllerContentSourceImpl(controller: chatController, sourceNode: node)), items: peerNearbyContextMenuItems(context: context, peerId: peer.id, present: { c in
+        let contextController = ContextController(presentationData: presentationData, source: .controller(ContextControllerContentSourceImpl(controller: chatController, sourceNode: node)), items: peerNearbyContextMenuItems(context: context, peerId: peer.id, present: { c in
             presentControllerImpl?(c, nil)
         }) |> map { ContextController.Items(content: .list($0), animationCache: nil) }, gesture: gesture)
         presentInGlobalOverlayImpl?(contextController)
@@ -597,11 +597,11 @@ public func peersNearbyController(context: AccountContext) -> ViewController {
         |> delay(1.0, queue: Queue.mainQueue())
     )
         
-    let signal = combineLatest(context.sharedContext.presentationData, dataPromise.get(), chatLocationPromise.get(), displayLoading, expandedPromise.get(), context.engine.data.subscribe(TelegramEngine.EngineData.Item.Configuration.ApplicationSpecificPreference(key: PreferencesKeys.peersNearby)))
+    let signal = combineLatest(context.sharedContext.presentationData, dataPromise.get(), chatLocationPromise.get(), displayLoading, expandedPromise.get(), context.account.postbox.preferencesView(keys: [PreferencesKeys.peersNearby]))
     |> deliverOnMainQueue
     |> map { presentationData, data, chatLocation, displayLoading, expanded, view -> (ItemListControllerState, (ItemListNodeState, Any)) in
         let previous = previousData.swap(data)
-        let state = view?.get(PeersNearbyState.self) ?? .default
+        let state = view.values[PreferencesKeys.peersNearby]?.get(PeersNearbyState.self) ?? .default
         
         var crossfade = false
         if (data?.users.isEmpty ?? true) != (previous?.users.isEmpty ?? true) {
@@ -626,7 +626,7 @@ public func peersNearbyController(context: AccountContext) -> ViewController {
         controller?.clearItemNodesHighlight(animated: true)
     }
     navigateToProfileImpl = { [weak controller] peer, distance in
-        if let navigationController = controller?.navigationController as? NavigationController, let controller = context.sharedContext.makePeerInfoController(context: context, updatedPresentationData: nil, peer: peer, mode: .nearbyPeer(distance: distance), avatarInitiallyExpanded: peer.largeProfileImage != nil, fromChat: false, requestsContext: nil) {
+        if let navigationController = controller?.navigationController as? NavigationController, let controller = context.sharedContext.makePeerInfoController(context: context, updatedPresentationData: nil, peer: peer._asPeer(), mode: .nearbyPeer(distance: distance), avatarInitiallyExpanded: peer.largeProfileImage != nil, fromChat: false, requestsContext: nil) {
             navigationController.pushViewController(controller)
         }
     }

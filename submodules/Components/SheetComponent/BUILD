@@ -7,14 +7,13 @@ swift_library(
         "Sources/**/*.swift",
     ]),
     copts = [
-        "-warnings-as-errors",
+        #"-warnings-as-errors",
     ],
     deps = [
         "//submodules/Display:Display",
         "//submodules/ComponentFlow:ComponentFlow",
         "//submodules/Components/ViewControllerComponent:ViewControllerComponent",
         "//submodules/SSignalKit/SwiftSignalKit:SwiftSignalKit",
-        "//submodules/TelegramUI/Components/DynamicCornerRadiusView",
     ],
     visibility = [
         "//visibility:public",

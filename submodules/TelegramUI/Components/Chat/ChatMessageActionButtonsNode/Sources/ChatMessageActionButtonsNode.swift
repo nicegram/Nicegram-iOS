@@ -10,9 +10,6 @@ import WallpaperBackgroundNode
 import UrlHandling
 import SwiftSignalKit
 import TextLoadingEffect
-import ComponentFlow
-import ComponentDisplayAdapters
-import EmojiStatusComponent
 
 private let titleFont = Font.medium(16.0)
 
@@ -73,12 +70,9 @@ private final class ChatMessageActionButtonNode: ASDisplayNode {
     private var iconNode: ASImageNode?
     private var buttonView: HighlightTrackingButton?
     
-    private var icon: ComponentView<Empty>?
-    
     private var wallpaperBackgroundNode: WallpaperBackgroundNode?
     private var backgroundContent: WallpaperBubbleBackgroundNode?
     private var backgroundColorNode: ASDisplayNode?
-    private var backgroundColorView: UIImageView?
     
     private var maskPath: CGPath?
     private var loadingEffectView: TextLoadingEffectView?
@@ -181,8 +175,6 @@ private final class ChatMessageActionButtonNode: ASDisplayNode {
                     self.view.insertSubview(loadingEffectView, belowSubview: iconNode.view)
                 } else if let titleNode = self.titleNode, titleNode.view.superview != nil {
                     self.view.insertSubview(loadingEffectView, belowSubview: titleNode.view)
-                } else if let iconView = self.icon?.view, iconView.superview != nil {
-                    self.view.insertSubview(loadingEffectView, belowSubview: iconView)
                 } else {
                     self.view.addSubview(loadingEffectView)
                 }
@@ -328,12 +320,6 @@ private final class ChatMessageActionButtonNode: ASDisplayNode {
                 customIconSpaceWidth = 3.0 + iconImage.size.width
             }
             
-            let emojiIconSize = CGSize(width: 24.0, height: 24.0)
-            let emojiIconSpacing: CGFloat = 6.0
-            if button.style?.iconFileId != nil {
-                customIconSpaceWidth = emojiIconSpacing + emojiIconSize.width
-            }
-            
             let (titleSize, titleApply) = titleLayout(TextNodeLayoutArguments(attributedString: attributedTitle, backgroundColor: nil, maximumNumberOfLines: 1, truncationType: .end, constrainedSize: CGSize(width: max(44.0, constrainedWidth - minimumSideInset - minimumSideInset - customIconSpaceWidth), height: CGFloat.greatestFiniteMagnitude), alignment: .center, cutout: nil, insets: UIEdgeInsets(top: 1.0, left: 0.0, bottom: 1.0, right: 0.0)))
             let contentWidth = titleSize.size.width + sideInset + sideInset + customIconSpaceWidth
 
@@ -359,6 +345,8 @@ private final class ChatMessageActionButtonNode: ASDisplayNode {
                         node.longTapRecognizer?.isEnabled = false
                     }
                     
+                    //animation.animator.updateFrame(layer: node.backgroundBlurNode.layer, frame: CGRect(origin: CGPoint(), size: CGSize(width: max(0.0, width), height: 42.0)), completion: nil)
+                    
                     if node.backgroundBlurView == nil {
                         if let backgroundBlurView = backgroundNode?.makeFreeBackground() {
                             node.backgroundBlurView = backgroundBlurView
@@ -368,6 +356,9 @@ private final class ChatMessageActionButtonNode: ASDisplayNode {
                     if let backgroundBlurView = node.backgroundBlurView {
                         animation.animator.updateFrame(layer: backgroundBlurView.view.layer, frame: CGRect(origin: CGPoint(), size: CGSize(width: max(0.0, width), height: 42.0)), completion: nil)
                     }
+                    
+                    /*node.backgroundBlurNode.update(size: node.backgroundBlurNode.bounds.size, cornerRadius: 0.0, animator: animation.animator)
+                    node.backgroundBlurNode.updateColor(color: selectDateFillStaticColor(theme: theme.theme, wallpaper: theme.wallpaper), enableBlur: context.sharedContext.energyUsageSettings.fullTranslucency && dateFillNeedsBlur(theme: theme.theme, wallpaper: theme.wallpaper), transition: .immediate)*/
                     
                     if backgroundNode?.hasExtraBubbleBackground() == true {
                         if node.backgroundContent == nil, let backgroundContent = backgroundNode?.makeBubbleBackground(for: .free) {
@@ -396,7 +387,7 @@ private final class ChatMessageActionButtonNode: ASDisplayNode {
                     if let backgroundContent = node.backgroundContent {
                         //node.backgroundBlurNode.isHidden = true
                         node.backgroundBlurView?.view.isHidden = true
-                        animation.animator.updateFrame(layer: backgroundContent.layer, frame: CGRect(origin: CGPoint(), size: CGSize(width: max(0.0, width), height: 42.0)), completion: nil)
+                        backgroundContent.frame = CGRect(origin: CGPoint(), size: CGSize(width: max(0.0, width), height: 42.0))
                         
                         node.backgroundColorNode?.frame = backgroundContent.bounds
                         
@@ -409,6 +400,7 @@ private final class ChatMessageActionButtonNode: ASDisplayNode {
                     } else {
                         node.backgroundBlurView?.view.isHidden = false
                     }
+                    
                     
                     let rect = CGRect(origin: CGPoint(), size: CGSize(width: max(0.0, width), height: 42.0))
                     let maskPath: CGPath?
@@ -432,57 +424,18 @@ private final class ChatMessageActionButtonNode: ASDisplayNode {
                     
                     if currentMaskPath != effectiveMaskPath {
                         if let effectiveMaskPath = effectiveMaskPath {
-                            if let shapeLayer = node.layer.mask as? SimpleShapeLayer {
-                                animation.animator.updateShapeLayerPath(layer: shapeLayer, path: effectiveMaskPath, completion: nil)
-                            } else {
-                                let shapeLayer = SimpleShapeLayer()
-                                shapeLayer.path = effectiveMaskPath
-                                node.layer.mask = shapeLayer
-                            }
+                            let shapeLayer = CAShapeLayer()
+                            shapeLayer.path = effectiveMaskPath
+                            node.layer.mask = shapeLayer
                         } else {
                             node.layer.mask = nil
                         }
-                    }
-                    
-                    if let color = button.style?.color {
-                        let backgroundColorView: UIImageView
-                        if let current = node.backgroundColorView {
-                            backgroundColorView = current
-                        } else {
-                            backgroundColorView = UIImageView()
-                            node.backgroundColorView = backgroundColorView
-                            
-                            if let iconNode = node.iconNode, iconNode.view.superview != nil {
-                                node.view.insertSubview(backgroundColorView, belowSubview: iconNode.view)
-                            } else if let titleNode = node.titleNode, titleNode.view.superview != nil {
-                                node.view.insertSubview(backgroundColorView, belowSubview: titleNode.view)
-                            } else if let iconView = node.icon?.view, iconView.superview != nil {
-                                node.view.insertSubview(backgroundColorView, belowSubview: iconView)
-                            } else {
-                                node.view.addSubview(backgroundColorView)
-                            }
-                        }
-                        
-                        animation.animator.updateFrame(layer: backgroundColorView.layer, frame: CGRect(origin: CGPoint(), size: CGSize(width: max(0.0, width), height: 42.0)), completion: nil)
-                        
-                        switch color {
-                        case .primary:
-                            backgroundColorView.backgroundColor = theme.theme.list.itemAccentColor.withMultipliedAlpha(0.7)
-                        case .danger:
-                            backgroundColorView.backgroundColor = theme.theme.contextMenu.destructiveColor.withMultipliedAlpha(0.7)
-                        case .success:
-                            backgroundColorView.backgroundColor = theme.theme.list.freeTextSuccessColor.withMultipliedAlpha(0.7)
-                        }
-                    } else if let backgroundColorView = node.backgroundColorView {
-                        node.backgroundColorView = nil
-                        backgroundColorView.removeFromSuperview()
                     }
                                         
                     if iconImage != nil {
                         if node.iconNode == nil {
                             let iconNode = ASImageNode()
                             iconNode.contentMode = .center
-                            iconNode.isUserInteractionEnabled = false
                             node.iconNode = iconNode
                             node.addSubnode(iconNode)
                         }
@@ -501,10 +454,7 @@ private final class ChatMessageActionButtonNode: ASDisplayNode {
                     }
                     
                     var titleFrame = CGRect(origin: CGPoint(x: floor((width - titleSize.size.width) / 2.0), y: floor((42.0 - titleSize.size.height) / 2.0) + 1.0), size: titleSize.size)
-                    
-                    if button.style?.iconFileId != nil {
-                        titleFrame.origin.x = floorToScreenPixels((width - titleSize.size.width - emojiIconSize.width - emojiIconSpacing) * 0.5) + emojiIconSize.width + emojiIconSpacing
-                    } else if let image = node.iconNode?.image, customInfo?.icon != nil {
+                    if let image = node.iconNode?.image, customInfo?.icon != nil {
                         if customInfo?.icon == .actionArrow {
                             titleFrame.origin.x = floorToScreenPixels((width - titleSize.size.width - image.size.width + 1.0) * 0.5) - 0.0
                         } else {
@@ -529,56 +479,6 @@ private final class ChatMessageActionButtonNode: ASDisplayNode {
                             iconFrame = CGRect(x: width - 16.0, y: 4.0, width: 12.0, height: 12.0)
                         }
                         animation.animator.updateFrame(layer: iconNode.layer, frame: iconFrame, completion: nil)
-                    }
-                    
-                    if let iconFileId = button.style?.iconFileId {
-                        let icon: ComponentView<Empty>
-                        var iconTransition = animation.animator
-                        if let current = node.icon {
-                            icon = current
-                        } else {
-                            iconTransition = ListViewItemUpdateAnimation.None.animator
-                            icon = ComponentView()
-                            node.icon = icon
-                        }
-                        
-                        var animationContent: EmojiStatusComponent.AnimationContent = .customEmoji(fileId: iconFileId)
-                        if let file = message.associatedMedia[MediaId(namespace: Namespaces.Media.CloudFile, id: iconFileId)] as? TelegramMediaFile {
-                            animationContent = .file(file: file)
-                        }
-                        
-                        let _ = icon.update(
-                            transition: .immediate,
-                            component: AnyComponent(EmojiStatusComponent(
-                                context: context,
-                                animationCache: context.animationCache,
-                                animationRenderer: context.animationRenderer,
-                                content: .animation(
-                                    content: animationContent,
-                                    size: emojiIconSize,
-                                    placeholderColor: theme.theme.overallDarkAppearance ? UIColor(white: 1.0, alpha: 0.1) : UIColor(white: 0.0, alpha: 0.1),
-                                    themeColor: titleColor,
-                                    loopMode: .count(0)
-                                ),
-                                isVisibleForAnimations: true,
-                                action: nil
-                            )),
-                            environment: {},
-                            containerSize: emojiIconSize
-                        )
-                        
-                        let contentX = titleFrame.origin.x - emojiIconSize.width - emojiIconSpacing
-                        
-                        let iconFrame = CGRect(origin: CGPoint(x: contentX, y: floor((42.0 - emojiIconSize.height) * 0.5) - 1.0), size: emojiIconSize)
-                        if let iconView = icon.view {
-                            if iconView.superview == nil {
-                                node.view.addSubview(iconView)
-                            }
-                            iconTransition.updateFrame(layer: iconView.layer, frame: iconFrame, completion: nil)
-                        }
-                    } else if let icon = node.icon {
-                        node.icon = nil
-                        icon.view?.removeFromSuperview()
                     }
                     
                     if let (rect, size) = node.absolutePosition {

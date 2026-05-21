@@ -12,7 +12,6 @@ import FeatDockWidget
 import MinimizedContainer
 import NGData
 import NGStrings
-import TelegramBridge
 //
 import Foundation
 import UIKit
@@ -47,6 +46,7 @@ import PeerInfoScreen
 import PeerInfoStoryGridScreen
 import ShareWithPeersScreen
 import ChatEmptyNode
+import UndoUI
 
 private class DetailsChatPlaceholderNode: ASDisplayNode, NavigationDetailsPlaceholderNode {
     private var presentationData: PresentationData
@@ -57,7 +57,7 @@ private class DetailsChatPlaceholderNode: ASDisplayNode, NavigationDetailsPlaceh
     
     init(context: AccountContext) {
         self.presentationData = context.sharedContext.currentPresentationData.with { $0 }
-        self.presentationInterfaceState = ChatPresentationInterfaceState(chatWallpaper: self.presentationData.chatWallpaper, theme: self.presentationData.theme, preferredGlassType: .default, strings: self.presentationData.strings, dateTimeFormat: self.presentationData.dateTimeFormat, nameDisplayOrder: self.presentationData.nameDisplayOrder, limitsConfiguration: context.currentLimitsConfiguration.with { $0 }, fontSize: self.presentationData.chatFontSize, bubbleCorners: self.presentationData.chatBubbleCorners, accountPeerId: context.account.peerId, mode: .standard(.default), chatLocation: .peer(id: context.account.peerId), subject: nil, greetingData: nil, pendingUnpinnedAllMessages: false, activeGroupCallInfo: nil, hasActiveGroupCall: false, threadData: nil, isGeneralThreadClosed: nil, replyMessage: nil, accountPeerColor: nil, businessIntro: nil)
+        self.presentationInterfaceState = ChatPresentationInterfaceState(chatWallpaper: self.presentationData.chatWallpaper, theme: self.presentationData.theme, strings: self.presentationData.strings, dateTimeFormat: self.presentationData.dateTimeFormat, nameDisplayOrder: self.presentationData.nameDisplayOrder, limitsConfiguration: context.currentLimitsConfiguration.with { $0 }, fontSize: self.presentationData.chatFontSize, bubbleCorners: self.presentationData.chatBubbleCorners, accountPeerId: context.account.peerId, mode: .standard(.default), chatLocation: .peer(id: context.account.peerId), subject: nil, peerNearbyData: nil, greetingData: nil, pendingUnpinnedAllMessages: false, activeGroupCallInfo: nil, hasActiveGroupCall: false, importState: nil, threadData: nil, isGeneralThreadClosed: nil, replyMessage: nil, accountPeerColor: nil, businessIntro: nil)
         
         self.wallpaperBackgroundNode = createWallpaperBackgroundNode(context: context, forChatDisplay: true, useSharedAnimationPhase: true)
         self.emptyNode = ChatEmptyNode(context: context, interaction: nil)
@@ -70,8 +70,7 @@ private class DetailsChatPlaceholderNode: ASDisplayNode, NavigationDetailsPlaceh
     
     func updatePresentationData(_ presentationData: PresentationData) {
         self.presentationData = presentationData
-        let preferredGlassType = self.presentationInterfaceState.preferredGlassType
-        self.presentationInterfaceState = ChatPresentationInterfaceState(chatWallpaper: self.presentationData.chatWallpaper, theme: self.presentationData.theme, preferredGlassType: preferredGlassType, strings: self.presentationData.strings, dateTimeFormat: self.presentationData.dateTimeFormat, nameDisplayOrder: self.presentationData.nameDisplayOrder, limitsConfiguration: self.presentationInterfaceState.limitsConfiguration, fontSize: self.presentationData.chatFontSize, bubbleCorners: self.presentationData.chatBubbleCorners, accountPeerId: self.presentationInterfaceState.accountPeerId, mode: .standard(.default), chatLocation: self.presentationInterfaceState.chatLocation, subject: nil, greetingData: nil, pendingUnpinnedAllMessages: false, activeGroupCallInfo: nil, hasActiveGroupCall: false, threadData: nil, isGeneralThreadClosed: nil, replyMessage: nil, accountPeerColor: nil, businessIntro: nil)
+        self.presentationInterfaceState = ChatPresentationInterfaceState(chatWallpaper: self.presentationData.chatWallpaper, theme: self.presentationData.theme, strings: self.presentationData.strings, dateTimeFormat: self.presentationData.dateTimeFormat, nameDisplayOrder: self.presentationData.nameDisplayOrder, limitsConfiguration: self.presentationInterfaceState.limitsConfiguration, fontSize: self.presentationData.chatFontSize, bubbleCorners: self.presentationData.chatBubbleCorners, accountPeerId: self.presentationInterfaceState.accountPeerId, mode: .standard(.default), chatLocation: self.presentationInterfaceState.chatLocation, subject: nil, peerNearbyData: nil, greetingData: nil, pendingUnpinnedAllMessages: false, activeGroupCallInfo: nil, hasActiveGroupCall: false, importState: nil, threadData: nil, isGeneralThreadClosed: nil, replyMessage: nil, accountPeerColor: nil, businessIntro: nil)
         
         self.wallpaperBackgroundNode.update(wallpaper: presentationData.chatWallpaper, animated: false)
     }
@@ -92,11 +91,9 @@ public final class TelegramRootController: NavigationController, TelegramRootCon
     // Nicegram Assistant
     public var assistantController: ViewController?
     //
-    
-    // Nicegram, NCG-11054: assistant tab search handling
-    private var isSearchActivatedFromAssistantTab: Bool = false
-    //
-    
+// Nicegram NCG-6373 Feed tab
+    private var feedController: FeedController?
+//
     private let context: AccountContext
     
     public var rootTabController: TabBarController?
@@ -209,7 +206,7 @@ public final class TelegramRootController: NavigationController, TelegramRootCon
                 let previousTheme = strongSelf.presentationData.theme
                 strongSelf.presentationData = presentationData
                 if previousTheme !== presentationData.theme {
-                    (strongSelf.rootTabController as? TabBarControllerImpl)?.updateTheme(theme: presentationData.theme)
+                    (strongSelf.rootTabController as? TabBarControllerImpl)?.updateTheme(navigationBarPresentationData: NavigationBarPresentationData(presentationData: presentationData), theme: TabBarControllerTheme(rootControllerTheme: presentationData.theme))
                     strongSelf.rootTabController?.statusBar.statusBarStyle = presentationData.theme.rootController.statusBarStyle.style
                 }
             }
@@ -290,20 +287,8 @@ public final class TelegramRootController: NavigationController, TelegramRootCon
         return self.chatListController
     }
     
-    public func getSettingsController() -> ViewController? {
-        return self.accountSettingsController
-    }
-    
     public func getPrivacySettings() -> Promise<AccountPrivacySettings?>? {
         return self.accountSettingsController?.privacySettings
-    }
-    
-    public func getTwoStepAuthData() -> Promise<TwoStepAuthData?>? {
-        return self.accountSettingsController?.twoStepAuthData
-    }
-    
-    public func getNotificationExceptions() -> Promise<NotificationExceptionsList?>? {
-        return self.accountSettingsController?.notificationExceptions
     }
     
     override public func containerLayoutUpdated(_ layout: ContainerViewLayout, transition: ContainedViewLayoutTransition) {
@@ -333,7 +318,8 @@ public final class TelegramRootController: NavigationController, TelegramRootCon
     }
     
     public func addRootControllers(showCallsTab: Bool) {
-        let tabBarController = TabBarControllerImpl(theme: self.presentationData.theme, strings: self.presentationData.strings)
+        // Nicegram (showTabNames)
+        let tabBarController = TabBarControllerImpl(navigationBarPresentationData: NavigationBarPresentationData(presentationData: self.presentationData), theme: TabBarControllerTheme(rootControllerTheme: self.presentationData.theme), showTabNames: NGSettings.showTabNames)
         tabBarController.navigationPresentation = .master
         let chatListController = self.context.sharedContext.makeChatListController(context: self.context, location: .chatList(groupId: .root), controlsHistoryPreload: true, hideNetworkActivityStatus: false, previewing: false, enableDebugActions: !GlobalExperimentalSettings.isAppStoreBuild)
         if let sharedContext = self.context.sharedContext as? SharedAccountContextImpl {
@@ -359,38 +345,32 @@ public final class TelegramRootController: NavigationController, TelegramRootCon
 
         controllers.append(chatListController)
         
+// Nicegram NCG-6373 Feed tab
+        let feedController = FeedController(
+            context: self.context
+        )
+        if NGSettings.showFeedTab &&
+           NGSettings.feedPeer[context.account.id.int64] != nil {
+            controllers.append(feedController)
+        }
+        self.feedController = feedController
+//
+        
         // Nicegram Assistant
         if #available(iOS 15.0, *) {
             let assistantController = NativeControllerWrapper(
                 controller: AssistantTgHelper.assistantTab(),
-                accountContext: self.context
+                accountContext: self.context,
+                adjustSafeArea: true
             )
-            
-            assistantController.onTabBarSearchActivated = { [weak self] in
-                guard let rootTabController = self?.rootTabController,
-                      let index = rootTabController.controllers.firstIndex(where: { $0 is PeerInfoScreenImpl }) else {
-                    return
-                }
-                
-                rootTabController.selectedIndex = index
-                let settingsController = rootTabController.controllers[index]
-                
-                _ = (settingsController.ready.get()
-                 |> filter { $0 }
-                 |> take(1)
-                 |> ignoreValues)
-                .start(completed: {
-                    settingsController.tabBarActivateSearch()
-                    self?.isSearchActivatedFromAssistantTab = true
-                })
-            }
-            
-            assistantController.tabBarItem = tabBarItem(
+            assistantController.tabBarItem = UITabBarItem(
                 title: "Nicegram",
-                image: NGCoreUI.images.logoNicegram()
+                image: NGCoreUI.images.logoNicegram()?.sd_resizedImage(
+                    with: CGSize(width: 30, height: 30),
+                    scaleMode: .aspectFit
+                )?.withRenderingMode(.alwaysTemplate),
+                tag: 0
             )
-            
-            assistantController.updateTabBarSearchState(ViewController.TabBarSearchState(isActive: false), transition: .immediate)
             
             self.assistantController = assistantController
             
@@ -433,15 +413,6 @@ public final class TelegramRootController: NavigationController, TelegramRootCon
         }
         //
         
-        // Nicegram RootReturn
-        tabBarController.isVisiblePublisher
-            .filter { $0 }
-            .sink { _ in
-                TelegramBridgeModule.shared.telegramRootReturnManager().executePendingActions()
-            }
-            .store(in: &cancellables)
-        //
-        
         var restoreSettignsController: (ViewController & SettingsController)?
         if let sharedContext = self.context.sharedContext as? SharedAccountContextImpl {
             restoreSettignsController = sharedContext.switchingData.settingsController
@@ -451,7 +422,7 @@ public final class TelegramRootController: NavigationController, TelegramRootCon
             sharedContext.switchingData = (nil, nil, nil)
         }
         
-        let accountSettingsController = PeerInfoScreenImpl(context: self.context, updatedPresentationData: nil, peerId: self.context.account.peerId, avatarInitiallyExpanded: false, isOpenedFromChat: false, reactionSourceMessageId: nil, callMessages: [], isSettings: true)
+        let accountSettingsController = PeerInfoScreenImpl(context: self.context, updatedPresentationData: nil, peerId: self.context.account.peerId, avatarInitiallyExpanded: false, isOpenedFromChat: false, nearbyPeerDistance: nil, reactionSourceMessageId: nil, callMessages: [], isSettings: true)
         accountSettingsController.tabBarItemDebugTapAction = { [weak self] in
             guard let strongSelf = self else {
                 return
@@ -460,21 +431,6 @@ public final class TelegramRootController: NavigationController, TelegramRootCon
         }
         accountSettingsController.parentController = self
         controllers.append(accountSettingsController)
-        
-        // Nicegram, NCG-11054: assistant tab search handling
-        accountSettingsController.onTabBarSearchDeactivated = { [weak self] in
-            guard let self else {
-                return
-            }
-            
-            if self.isSearchActivatedFromAssistantTab {
-                isSearchActivatedFromAssistantTab = false
-                if let index = self.rootTabController?.controllers.firstIndex(where: { $0 === self.assistantController }) {
-                    self.rootTabController?.selectedIndex = index
-                }
-            }
-        }
-        //
                 
         // Nicegram Assistant
         // calculate chatListControllerIndex (instead of (controllers.count - 2))
@@ -490,31 +446,6 @@ public final class TelegramRootController: NavigationController, TelegramRootCon
         self.rootTabController = tabBarController
         self.pushViewController(tabBarController, animated: false)
     }
-    
-    // Nicegram
-    private func tabBarItem(
-        title: String,
-        image: UIImage?,
-    ) -> UITabBarItem {
-        let image = image?
-            .sd_resizedImage(
-                with: CGSize(width: 30, height: 30),
-                scaleMode: .aspectFit
-            )?
-            .withRenderingMode(.alwaysTemplate)
-        
-        func coloredImage(_ color: UIColor) -> UIImage? {
-            image?.sd_tintedImage(with: color)
-        }
-        
-        let theme = presentationData.theme.rootController.tabBar
-        return UITabBarItem(
-            title: title,
-            image: coloredImage(theme.textColor),
-            selectedImage: coloredImage(theme.selectedTextColor)
-        )
-    }
-    //
         
     public func updateRootControllers(showCallsTab: Bool) {
         guard let rootTabController = self.rootTabController as? TabBarControllerImpl else {
@@ -530,7 +461,12 @@ public final class TelegramRootController: NavigationController, TelegramRootCon
             controllers.append(self.callListController!)
         }
         controllers.append(self.chatListController!)
-
+// Nicegram NCG-6373 Feed tab
+        if NGSettings.showFeedTab &&
+           NGSettings.feedPeer[context.account.id.int64] != nil {
+            controllers.append(self.feedController!)
+        }
+//
         // Nicegram Assistant
         if let assistantController {
             controllers.append(assistantController)
@@ -590,7 +526,7 @@ public final class TelegramRootController: NavigationController, TelegramRootCon
     }
     
     @discardableResult
-    public func openStoryCamera(mode: StoryCameraMode, customTarget: Stories.PendingTarget?, resumeLiveStream: Bool, transitionIn: StoryCameraTransitionIn?, transitionedIn: @escaping () -> Void, transitionOut: @escaping (Stories.PendingTarget?, Bool) -> StoryCameraTransitionOut?) -> StoryCameraTransitionInCoordinator? {
+    public func openStoryCamera(customTarget: Stories.PendingTarget?, transitionIn: StoryCameraTransitionIn?, transitionedIn: @escaping () -> Void, transitionOut: @escaping (Stories.PendingTarget?, Bool) -> StoryCameraTransitionOut?) -> StoryCameraTransitionInCoordinator? {
         guard let controller = self.viewControllers.last as? ViewController else {
             return nil
         }
@@ -605,27 +541,6 @@ public final class TelegramRootController: NavigationController, TelegramRootCon
             transitionOut: nil
         )
         
-        let mediaEditorCustomTarget = customTarget.flatMap { value -> EnginePeer.Id? in
-            switch value {
-            case .myStories:
-                return nil
-            case let .peer(id):
-                return id
-            case let .botPreview(id, _):
-                return id
-            }
-        }
-        
-        let cameraMode: CameraScreenImpl.CameraMode
-        switch mode {
-        case .photo:
-            cameraMode = .photo
-        case .video:
-            cameraMode = .video
-        case .live:
-            cameraMode = .live
-        }
-        
         var presentImpl: ((ViewController) -> Void)?
         var returnToCameraImpl: (() -> Void)?
         var dismissCameraImpl: (() -> Void)?
@@ -633,9 +548,6 @@ public final class TelegramRootController: NavigationController, TelegramRootCon
         let cameraController = CameraScreenImpl(
             context: context,
             mode: .story,
-            cameraMode: cameraMode,
-            customTarget: mediaEditorCustomTarget,
-            resumeLiveStream: resumeLiveStream,
             transitionIn: transitionIn.flatMap {
                 if let sourceView = $0.sourceView {
                     return CameraScreenImpl.TransitionIn(
@@ -721,6 +633,17 @@ public final class TelegramRootController: NavigationController, TelegramRootCon
                     )
                 } else {
                     transitionIn = .camera
+                }
+                
+                let mediaEditorCustomTarget = customTarget.flatMap { value -> EnginePeer.Id? in
+                    switch value {
+                    case .myStories:
+                        return nil
+                    case let .peer(id):
+                        return id
+                    case let .botPreview(id, _):
+                        return id
+                    }
                 }
                 
                 let controller = MediaEditorScreenImpl(
@@ -1028,12 +951,6 @@ public final class TelegramRootController: NavigationController, TelegramRootCon
                 }
                 
                 if let media {
-                    #if DEBUG
-                    if !"".isEmpty {
-                        let _ = context.engine.messages.beginStoryLivestream(peerId: context.account.peerId, rtmp: true, privacy: result.options.privacy, isForwardingDisabled: false, messagesEnabled: true, sendPaidMessageStars: 0).startStandalone()
-                    }
-                    #endif
-                    
                     let _ = (context.engine.messages.uploadStory(
                         target: target,
                         media: media,
@@ -1047,7 +964,6 @@ public final class TelegramRootController: NavigationController, TelegramRootCon
                         randomId: result.randomId,
                         forwardInfo: forwardInfo,
                         folders: folders,
-                        music: result.music,
                         uploadInfo: results.count > 1 ? StoryUploadInfo(groupingId: groupingId, index: index, total: Int32(results.count)) : nil
                     )
                     |> deliverOnMainQueue).startStandalone(next: { stableId in
@@ -1060,31 +976,7 @@ public final class TelegramRootController: NavigationController, TelegramRootCon
         }
     }
     
-    public func openChats() {
-        guard let rootTabController = self.rootTabController else {
-            return
-        }
-        
-        self.popToRoot(animated: false)
-    
-        if let index = rootTabController.controllers.firstIndex(where: { $0 is ChatListController }) {
-            rootTabController.selectedIndex = index
-        }
-    }
-    
-    public func openContacts() {
-        guard let rootTabController = self.rootTabController else {
-            return
-        }
-        
-        self.popToRoot(animated: false)
-    
-        if let index = rootTabController.controllers.firstIndex(where: { $0 is ContactsController }) {
-            rootTabController.selectedIndex = index
-        }
-    }
-        
-    public func openSettings(edit: Bool) {
+    public func openSettings() {
         guard let rootTabController = self.rootTabController else {
             return
         }
@@ -1093,10 +985,6 @@ public final class TelegramRootController: NavigationController, TelegramRootCon
     
         if let index = rootTabController.controllers.firstIndex(where: { $0 is PeerInfoScreenImpl }) {
             rootTabController.selectedIndex = index
-        }
-        
-        if edit {
-            self.accountSettingsController?.activateEdit()
         }
     }
     
@@ -1113,10 +1001,6 @@ public final class TelegramRootController: NavigationController, TelegramRootCon
             self.rootTabController?.updateControllerLayout(controller: accountSettingsController)
             accountSettingsController.openAvatars()
         }
-    }
-    
-    public func startNewCall() {
-        self.callListController?.tabBarActivateSearch()
     }
 }
 

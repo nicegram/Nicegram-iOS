@@ -65,12 +65,12 @@ func _internal_requestRecommendedBots(account: Account, peerId: EnginePeer.Id, f
                 let parsedPeers: AccumulatedPeers
                 var count: Int32
                 switch result {
-                case let .users(usersData):
-                    users = usersData.users
-                    count = Int32(usersData.users.count)
-                case let .usersSlice(usersSliceData):
-                    users = usersSliceData.users
-                    count = usersSliceData.count
+                case let .users(apiUsers):
+                    users = apiUsers
+                    count = Int32(apiUsers.count)
+                case let .usersSlice(apiCount, apiUsers):
+                    users = apiUsers
+                    count = apiCount
                 }
                 parsedPeers = AccumulatedPeers(users: users)
                 updatePeers(transaction: transaction, accountPeerId: account.peerId, peers: parsedPeers)

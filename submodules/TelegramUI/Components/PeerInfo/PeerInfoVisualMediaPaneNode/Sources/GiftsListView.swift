@@ -502,14 +502,18 @@ final class GiftsListView: UIView {
                     peer = nil
                     resellAmount = gift.resellAmounts?.first(where: { $0.currency == .stars })
                     
-                    if !(gift.resellAmounts ?? []).isEmpty {
+                    if let _ = resellAmount {
                         ribbonText = params.presentationData.strings.PeerInfo_Gifts_Sale
                         ribbonFont = .larger
                         ribbonColor = .green
                         ribbonOutline =  params.presentationData.theme.list.blocksBackgroundColor
                     } else {
-                        ribbonFont = .monospaced
-                        ribbonText = "#\(gift.number)"
+                        if product.pinnedToTop || self.canSelect || self.isCollection {
+                            ribbonFont = .monospaced
+                            ribbonText = "#\(gift.number)"
+                        } else {
+                            ribbonText = params.presentationData.strings.PeerInfo_Gifts_OneOf(compactNumericCountString(Int(gift.availability.issued), decimalSeparator: params.presentationData.dateTimeFormat.decimalSeparator)).string
+                        }
                         for attribute in gift.attributes {
                             if case let .backdrop(_, _, innerColor, outerColor, _, _, _) = attribute {
                                 ribbonColor = .custom(outerColor, innerColor)
@@ -536,7 +540,6 @@ final class GiftsListView: UIView {
                     component: AnyComponent(
                         GiftItemComponent(
                             context: self.context,
-                            style: .glass,
                             theme: params.presentationData.theme,
                             strings: params.presentationData.strings,
                             peer: peer,
@@ -602,7 +605,6 @@ final class GiftsListView: UIView {
                                         subject: .profileGift(self.peerId, product),
                                         allSubjects: allSubjects,
                                         index: index,
-                                        profileGiftsContext: self.profileGifts,
                                         updateSavedToProfile: { [weak self] reference, added in
                                             guard let self else {
                                                 return
@@ -615,14 +617,8 @@ final class GiftsListView: UIView {
                                             }
                                             self.profileGifts.convertStarGift(reference: reference)
                                         },
-                                        dropOriginalDetails: { [weak self] reference in
-                                            guard let self else {
-                                                return .complete()
-                                            }
-                                            return self.profileGifts.dropOriginalDetails(reference: reference)
-                                        },
-                                        transferGift: { [weak self] prepaid, reference, peerId in
-                                            guard let self else {
+                                        transferGift: { [weak self] prepaid, peerId in
+                                            guard let self, let reference = product.reference else {
                                                 return .complete()
                                             }
                                             return self.profileGifts.transferStarGift(prepaid: prepaid, reference: reference, peerId: peerId)
@@ -639,34 +635,36 @@ final class GiftsListView: UIView {
                                             }
                                             return self.profileGifts.buyStarGift(slug: slug, peerId: peerId, price: price)
                                         },
-                                        updateResellStars: { [weak self] reference, price in
-                                            guard let self else {
+                                        updateResellStars: { [weak self] price in
+                                            guard let self, let reference = product.reference else {
                                                 return .never()
                                             }
                                             return self.profileGifts.updateStarGiftResellPrice(reference: reference, price: price)
                                         },
-                                        togglePinnedToTop: { [weak self] reference, pinnedToTop in
+                                        togglePinnedToTop: { [weak self] pinnedToTop in
                                             guard let self else {
                                                 return false
                                             }
-                                            if pinnedToTop && self.pinnedReferences.count >= self.maxPinnedCount {
-                                                self.displayUnpinScreen?(product, {
-                                                    dismissImpl?()
-                                                })
-                                                return false
-                                            }
-                                            self.profileGifts.updateStarGiftPinnedToTop(reference: reference, pinnedToTop: pinnedToTop)
-                                            
-                                            var title = ""
-                                            if case let .unique(uniqueGift) = product.gift {
-                                                title = "\(uniqueGift.title) #\(formatCollectibleNumber(uniqueGift.number, dateTimeFormat: params.presentationData.dateTimeFormat))"
-                                            }
-                                            
-                                            if pinnedToTop {
-                                                Queue.mainQueue().after(0.35) {
-                                                    let toastTitle = params.presentationData.strings.PeerInfo_Gifts_ToastPinned_TitleNew(title).string
-                                                    let toastText = params.presentationData.strings.PeerInfo_Gifts_ToastPinned_Text
-                                                    self.parentController?.present(UndoOverlayController(presentationData: params.presentationData, content: .universal(animation: "anim_toastpin", scale: 0.06, colors: [:], title: toastTitle, text: toastText, customUndoText: nil, timeout: 5), elevatedLayout: true, animateInAsReplacement: false, action: { _ in return false }), in: .window(.root))
+                                            if let reference = product.reference {
+                                                if pinnedToTop && self.pinnedReferences.count >= self.maxPinnedCount {
+                                                    self.displayUnpinScreen?(product, {
+                                                        dismissImpl?()
+                                                    })
+                                                    return false
+                                                }
+                                                self.profileGifts.updateStarGiftPinnedToTop(reference: reference, pinnedToTop: pinnedToTop)
+                                                
+                                                var title = ""
+                                                if case let .unique(uniqueGift) = product.gift {
+                                                    title = "\(uniqueGift.title) #\(formatCollectibleNumber(uniqueGift.number, dateTimeFormat: params.presentationData.dateTimeFormat))"
+                                                }
+                                                
+                                                if pinnedToTop {
+                                                    Queue.mainQueue().after(0.35) {
+                                                        let toastTitle = params.presentationData.strings.PeerInfo_Gifts_ToastPinned_TitleNew(title).string
+                                                        let toastText = params.presentationData.strings.PeerInfo_Gifts_ToastPinned_Text
+                                                        self.parentController?.present(UndoOverlayController(presentationData: params.presentationData, content: .universal(animation: "anim_toastpin", scale: 0.06, colors: [:], title: toastTitle, text: toastText, customUndoText: nil, timeout: 5), elevatedLayout: true, animateInAsReplacement: false, action: { _ in return false }), in: .window(.root))
+                                                    }
                                                 }
                                             }
                                             return true

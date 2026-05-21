@@ -21,8 +21,6 @@ public enum TelegramChannelPermission {
     case editStories
     case deleteStories
     case manageDirect
-    case editRank
-    case manageRanks
 }
 
 public extension TelegramChannel {
@@ -260,23 +258,6 @@ public extension TelegramChannel {
             case .deleteStories:
                 if let adminRights = self.adminRights {
                     return adminRights.rights.contains(.canDeleteStories)
-                } else {
-                    return false
-                }
-            case .editRank:
-                if let adminRights = self.adminRights, adminRights.rights.contains(.canManageRanks) {
-                    return true
-                }
-                if let bannedRights = self.bannedRights, bannedRights.flags.contains(.banEditRank) {
-                    return false
-                }
-                if let defaultBannedRights = self.defaultBannedRights, defaultBannedRights.flags.contains(.banEditRank) {
-                    return false
-                }
-                return true
-            case .manageRanks:
-                if let adminRights = self.adminRights {
-                    return adminRights.rights.contains(.canManageRanks)
                 } else {
                     return false
                 }

@@ -7,7 +7,7 @@ swift_library(
         "Sources/**/*.swift",
     ]),
     copts = [
-        "-warnings-as-errors",
+        #"-warnings-as-errors",
     ],
     deps = [
         "//submodules/SSignalKit/SwiftSignalKit",
@@ -31,7 +31,6 @@ swift_library(
         "//submodules/TelegramUI/Components/MaskedContainerComponent",
         "//submodules/AppBundle",
         "//submodules/PresentationDataUtils",
-        "//submodules/TelegramUI/Components/GlassBackgroundComponent",
     ],
     visibility = [
         "//visibility:public",

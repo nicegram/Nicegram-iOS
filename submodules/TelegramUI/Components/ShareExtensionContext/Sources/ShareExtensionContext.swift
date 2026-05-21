@@ -27,15 +27,10 @@ import ManagedFile
 import TelegramUIDeclareEncodables
 import AnimationCache
 import MultiAnimationRenderer
-import DCTAnimationCacheImpl
-import DCTMultiAnimationRendererImpl
 import TelegramUIDeclareEncodables
 import TelegramAccountAuxiliaryMethods
 import PeerSelectionController
 import ContextMenuScreen
-import NavigationBarImpl
-import ContextUI
-import ContextControllerImpl
 
 private var installedSharedLogger = false
 
@@ -109,14 +104,14 @@ private final class ShareControllerAccountContextExtension: ShareControllerAccou
         self.stateManager = stateManager
         self.engineData = TelegramEngine.EngineData(accountPeerId: stateManager.accountPeerId, postbox: stateManager.postbox)
         let cacheStorageBox = stateManager.postbox.mediaBox.cacheStorageBox
-        self.animationCache = DCTAnimationCacheImpl(basePath: stateManager.postbox.mediaBox.basePath + "/animation-cache", allocateTempFile: {
+        self.animationCache = AnimationCacheImpl(basePath: stateManager.postbox.mediaBox.basePath + "/animation-cache", allocateTempFile: {
             return TempBox.shared.tempFile(fileName: "file").path
         }, updateStorageStats: { path, size in
             if let pathData = path.data(using: .utf8) {
                 cacheStorageBox.update(id: pathData, size: size)
             }
         })
-        self.animationRenderer = DCTMultiAnimationRendererImpl()
+        self.animationRenderer = MultiAnimationRendererImpl()
         self.contentSettings = contentSettings
         self.appConfiguration = appConfiguration
     }
@@ -199,22 +194,6 @@ public class ShareRootControllerImpl {
     public init(initializationData: ShareRootControllerInitializationData, getExtensionContext: @escaping () -> NSExtensionContext?) {
         self.initializationData = initializationData
         self.getExtensionContext = getExtensionContext
-        
-        defaultNavigationBarImpl = { presentationData in
-            return NavigationBarImpl(presentationData: presentationData)
-        }
-        makeContextControllerImpl = { context, presentationData, configuration, recognizer, gesture, workaroundUseLegacyImplementation, disableScreenshots, hideReactionPanelTail in
-            return ContextControllerImpl(
-                context: context,
-                presentationData: presentationData,
-                configuration: configuration,
-                recognizer: recognizer,
-                gesture: gesture,
-                workaroundUseLegacyImplementation: workaroundUseLegacyImplementation,
-                disableScreenshots: disableScreenshots,
-                hideReactionPanelTail: hideReactionPanelTail
-            )
-        }
     }
     
     deinit {
@@ -431,7 +410,7 @@ public class ShareRootControllerImpl {
             let accountData: Signal<(ShareControllerEnvironment, ShareControllerAccountContext, [ShareControllerSwitchableAccount]), NoError> = accountManager.accountRecords()
             |> take(1)
             |> mapToSignal { view -> Signal<(ShareControllerEnvironment, ShareControllerAccountContext, [ShareControllerSwitchableAccount]), NoError> in
-                var signals: [Signal<(AccountRecordId, AccountStateManager, EnginePeer)?, NoError>] = []
+                var signals: [Signal<(AccountRecordId, AccountStateManager, Peer)?, NoError>] = []
                 for record in view.records {
                     if record.attributes.contains(where: { attribute in
                         if case .loggedOut = attribute {
@@ -455,14 +434,14 @@ public class ShareRootControllerImpl {
                         rootPath: rootPath,
                         auxiliaryMethods: makeTelegramAccountAuxiliaryMethods(uploadInBackground: nil)
                     )
-                    |> mapToSignal { result -> Signal<(AccountRecordId, AccountStateManager, EnginePeer)?, NoError> in
+                    |> mapToSignal { result -> Signal<(AccountRecordId, AccountStateManager, Peer)?, NoError> in
                         if let result {
-                            return result.postbox.transaction { transaction -> (AccountRecordId, AccountStateManager, EnginePeer)? in
+                            return result.postbox.transaction { transaction -> (AccountRecordId, AccountStateManager, Peer)? in
                                 guard let peer = transaction.getPeer(result.accountPeerId) else {
                                     return nil
                                 }
-
-                                return (record.id, result, EnginePeer(peer))
+                                
+                                return (record.id, result, peer)
                             }
                         } else {
                             return .single(nil)

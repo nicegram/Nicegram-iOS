@@ -43,29 +43,6 @@
 
 #import <LegacyComponents/TGPhotoCaptionInputMixin.h>
 
-static TGMediaAsset *TGMediaPickerGalleryLivePhotoAsset(id<TGMediaEditableItem> editableMediaItem)
-{
-    if ([editableMediaItem isKindOfClass:[TGCameraCapturedVideo class]])
-        return ((TGCameraCapturedVideo *)editableMediaItem).originalAsset;
-
-    if ([editableMediaItem isKindOfClass:[TGMediaAsset class]])
-        return (TGMediaAsset *)editableMediaItem;
-
-    return nil;
-}
-
-static TGMediaLivePhotoMode TGMediaPickerGalleryResolvedLivePhotoMode(NSNumber *livePhotoMode, bool forceLivePhotoEnabled, id<TGMediaEditableItem> editableMediaItem)
-{
-    if (livePhotoMode != nil)
-        return (TGMediaLivePhotoMode)[livePhotoMode unsignedIntegerValue];
-
-    TGMediaAsset *asset = TGMediaPickerGalleryLivePhotoAsset(editableMediaItem);
-    if ((asset.subtypes & TGMediaAssetSubtypePhotoLive) == 0)
-        return TGMediaLivePhotoModeOff;
-
-    return forceLivePhotoEnabled ? TGMediaLivePhotoModeLive : TGMediaLivePhotoModeOff;
-}
-
 @interface TGMediaPickerGalleryWrapperView: UIView
 {
     
@@ -304,7 +281,7 @@ static TGMediaLivePhotoMode TGMediaPickerGalleryResolvedLivePhotoMode(NSNumber *
                 if (_editingContext != nil)
                 {
                     _timersChangedDisposable = [_editingContext.timersUpdatedSignal startStrictWithNext:^(__unused NSNumber *next)
-                    {
+                                                {
                         __strong TGMediaPickerGalleryInterfaceView *strongSelf = weakSelf;
                         if (strongSelf == nil)
                             return;
@@ -313,7 +290,7 @@ static TGMediaLivePhotoMode TGMediaPickerGalleryResolvedLivePhotoMode(NSNumber *
                     } file:__FILE_NAME__ line:__LINE__];
                     
                     _adjustmentsChangedDisposable = [_editingContext.adjustmentsUpdatedSignal startStrictWithNext:^(__unused NSNumber *next)
-                    {
+                                                     {
                         __strong TGMediaPickerGalleryInterfaceView *strongSelf = weakSelf;
                         if (strongSelf == nil)
                             return;
@@ -363,11 +340,6 @@ static TGMediaLivePhotoMode TGMediaPickerGalleryResolvedLivePhotoMode(NSNumber *
             {
                 TGMediaPickerGalleryVideoItemView *videoItemView = (TGMediaPickerGalleryVideoItemView *)strongSelf->_currentItemView;
                 [videoItemView returnFromEditing];
-            }
-            else if ([currentItemView isKindOfClass:[TGMediaPickerGalleryPhotoItemView class]])
-            {
-                TGMediaPickerGalleryPhotoItemView *photoItemView = (TGMediaPickerGalleryPhotoItemView *)strongSelf->_currentItemView;
-                [photoItemView returnFromEditing];
             }
             
             [strongSelf setSelectionInterfaceHidden:false delay:0.25 animated:true];
@@ -424,21 +396,8 @@ static TGMediaLivePhotoMode TGMediaPickerGalleryResolvedLivePhotoMode(NSNumber *
             [strongSelf->_editingContext setCaptionAbove:captionIsAbove];
         };
         
-        _captionMixin.livePhotoModeUpdated = ^(NSUInteger mode) {
-            __strong TGMediaPickerGalleryInterfaceView *strongSelf = weakSelf;
-            if (strongSelf == nil)
-                return;
-            
-            if (![strongSelf->_currentItem conformsToProtocol:@protocol(TGModernGalleryEditableItem)])
-                return;
-            
-            id<TGModernGalleryEditableItem> galleryEditableItem = (id<TGModernGalleryEditableItem>)strongSelf->_currentItem;
-            [strongSelf->_editingContext setLivePhotoMode:(TGMediaLivePhotoMode)mode forItem:galleryEditableItem.editableMediaItem];
-            
-            [strongSelf->_selectionContext setItem:(id<TGMediaSelectableItem>)galleryEditableItem.editableMediaItem selected:true animated:true sender:nil];
-        };
-        
         _captionMixin.stickersContext = stickersContext;
+        [_captionMixin createInputPanelIfNeeded];
         
         _headerWrapperView = [[TGMediaPickerGalleryWrapperView alloc] init];
         [_wrapperView addSubview:_headerWrapperView];
@@ -485,8 +444,6 @@ static TGMediaLivePhotoMode TGMediaPickerGalleryResolvedLivePhotoMode(NSNumber *
         if ([UIDevice currentDevice].userInterfaceIdiom != UIUserInterfaceIdiomPad)
             [_wrapperView addSubview:_landscapeToolbarView];
         
-        [_captionMixin createInputPanelIfNeeded];
-        
         if (hasCoverButton) {
             _cancelCoverButton = [[TGModernButton alloc] init];
             _cancelCoverButton.hidden = true;
@@ -509,7 +466,7 @@ static TGMediaLivePhotoMode TGMediaPickerGalleryResolvedLivePhotoMode(NSNumber *
             _saveCoverButton.clipsToBounds = true;
             _saveCoverButton.layer.cornerRadius = 10.0;
             _saveCoverButton.hidden = true;
-            [_saveCoverButton setBackgroundColor:UIColorRGB(0x0088ff)];
+            [_saveCoverButton setBackgroundColor:UIColorRGB(0x007aff)];
             _saveCoverButton.titleLabel.font = TGBoldSystemFontOfSize(17.0);
             [_saveCoverButton setTitle:TGLocalized(@"Media.SaveCover") forState:UIControlStateNormal];
             [_saveCoverButton setTitleColor:[UIColor whiteColor] forState:UIControlStateNormal];
@@ -576,10 +533,6 @@ static TGMediaLivePhotoMode TGMediaPickerGalleryResolvedLivePhotoMode(NSNumber *
 - (void)updateCameraButtonVisibility
 {
     
-}
-
-- (void)beginEditingCaption {
-    [_captionMixin activateInput];
 }
 
 - (void)setHasCaptions:(bool)hasCaptions
@@ -739,11 +692,6 @@ static TGMediaLivePhotoMode TGMediaPickerGalleryResolvedLivePhotoMode(NSNumber *
                 if ([item.asset isKindOfClass:[TGCameraCapturedVideo class]] && ((TGCameraCapturedVideo *)item.asset).isAnimation) {
                     sendableAsGif = false;
                 }
-            } else if ([strongSelf->_currentItem isKindOfClass:[TGMediaPickerGalleryFetchResultItem class]]) {
-                TGMediaPickerGalleryFetchResultItem *item = (TGMediaPickerGalleryFetchResultItem *)strongSelf->_currentItem;
-                if ([item.asset isKindOfClass:[TGMediaAsset class]] && ((TGMediaAsset *)item.asset).type == TGMediaAssetPhotoType) {
-                    sendableAsGif = false;
-                }
             }
             strongSelf->_muteButton.hidden = !sendableAsGif;
             
@@ -758,7 +706,6 @@ static TGMediaLivePhotoMode TGMediaPickerGalleryResolvedLivePhotoMode(NSNumber *
         }
     } file:__FILE_NAME__ line:__LINE__]];
     
-    bool hasLivePhotoButton = false;
     UIImage *muteIcon = [TGPhotoEditorInterfaceAssets muteIcon];
     UIImage *muteActiveIcon = [TGPhotoEditorInterfaceAssets muteActiveIcon];
     if ([item isKindOfClass:[TGMediaPickerGalleryVideoItem class]]) {
@@ -770,28 +717,10 @@ static TGMediaLivePhotoMode TGMediaPickerGalleryResolvedLivePhotoMode(NSNumber *
                 muteActiveIcon = [TGPhotoEditorInterfaceAssets gifActiveIcon];
             }
         }
-    } else if ([item isKindOfClass:[TGMediaPickerGalleryFetchResultItem class]]) {
-        TGMediaPickerGalleryFetchResultItem *photoGalleryItem = (TGMediaPickerGalleryFetchResultItem *)item;
-        if ([photoGalleryItem.asset isKindOfClass:[TGMediaAsset class]]) {
-            TGMediaAsset *asset = (TGMediaAsset *)photoGalleryItem.asset;
-            if (asset.subtypes & TGMediaAssetSubtypePhotoLive) {
-                hasLivePhotoButton = true;
-            }
-        }
-    } else if ([item isKindOfClass:[TGMediaPickerGalleryPhotoItem class]]) {
-        TGMediaPickerGalleryPhotoItem *photoGalleryItem = (TGMediaPickerGalleryPhotoItem *)item;
-        if ([photoGalleryItem.asset isKindOfClass:[TGMediaAsset class]]) {
-            TGMediaAsset *asset = (TGMediaAsset *)photoGalleryItem.asset;
-            if (asset.subtypes & TGMediaAssetSubtypePhotoLive) {
-                hasLivePhotoButton = true;
-            }
-        }
     }
     [_muteButton setImage:muteIcon forState:UIControlStateNormal];
     [_muteButton setImage:muteActiveIcon forState:UIControlStateSelected];
     [_muteButton setImage:muteActiveIcon forState:UIControlStateSelected | UIControlStateHighlighted];
-    
-    [_captionMixin setLivePhotoHidden:!hasLivePhotoButton];
     
     [self setNeedsLayout];
 }
@@ -1111,18 +1040,13 @@ static TGMediaLivePhotoMode TGMediaPickerGalleryResolvedLivePhotoMode(NSNumber *
         [_adjustmentsDisposable setDisposable:[[[[galleryEditableItem.editingContext adjustmentsSignalForItem:editableMediaItem] mapToSignal:^SSignal *(id<TGMediaEditAdjustments> adjustments) {
             __strong id<TGModernGalleryEditableItem> strongGalleryEditableItem = weakGalleryEditableItem;
             if (strongGalleryEditableItem != nil) {
-                return [[strongGalleryEditableItem.editingContext timerSignalForItem:editableMediaItem] mapToSignal:^id(id timer) {
-                    return [[strongGalleryEditableItem.editingContext forceLivePhotoEnabled] mapToSignal:^SSignal *(NSNumber *forceLivePhotoEnabled) {
-                        return [[strongGalleryEditableItem.editingContext livePhotoModeSignalForItem:editableMediaItem] map:^id(id livePhotoMode) {
-                            NSMutableDictionary *dict = [[NSMutableDictionary alloc] init];
-                            if (adjustments != nil)
-                                dict[@"adjustments"] = adjustments;
-                            if (timer != nil)
-                                dict[@"timer"] = timer;
-                            dict[@"livePhotoMode"] = @(TGMediaPickerGalleryResolvedLivePhotoMode(livePhotoMode, [forceLivePhotoEnabled boolValue], editableMediaItem));
-                            return dict;
-                        }];
-                    }];
+                return [[strongGalleryEditableItem.editingContext timerSignalForItem:editableMediaItem] map:^id(id timer) {
+                    NSMutableDictionary *dict = [[NSMutableDictionary alloc] init];
+                    if (adjustments != nil)
+                        dict[@"adjustments"] = adjustments;
+                    if (timer != nil)
+                        dict[@"timer"] = timer;
+                    return dict;
                 }];
             } else {
                 return [SSignal never];
@@ -1135,12 +1059,6 @@ static TGMediaLivePhotoMode TGMediaPickerGalleryResolvedLivePhotoMode(NSNumber *
             
             id<TGMediaEditAdjustments> adjustments = dict[@"adjustments"];
             NSNumber *timer = dict[@"timer"];
-            TGMediaLivePhotoMode livePhotoMode = (TGMediaLivePhotoMode)[dict[@"livePhotoMode"] unsignedIntValue];
-            
-            [strongSelf->_captionMixin setLivePhotoMode:livePhotoMode];
-            if ([strongSelf->_currentItemView isKindOfClass:[TGMediaPickerGalleryPhotoItemView class]]) {
-                [((TGMediaPickerGalleryPhotoItemView *)strongSelf->_currentItemView) setLivePhotoMode:livePhotoMode];
-            }
             
             [strongSelf->_captionMixin setTimeout:[timer intValue] isVideo:editableMediaItem.isVideo isCaptionAbove:isCaptionAbove];
             
@@ -1481,7 +1399,7 @@ static TGMediaLivePhotoMode TGMediaPickerGalleryResolvedLivePhotoMode(NSNumber *
             _portraitToolbarView.alpha = alpha;
             _landscapeToolbarView.alpha = alpha;
             _captionMixin.inputPanelView.alpha = alpha;
-            _captionMixin.livePhotoButtonView.alpha = alpha;
+            _captionMixin.backgroundView.alpha = alpha;
         } completion:^(BOOL finished)
         {
             if (finished)
@@ -1492,7 +1410,7 @@ static TGMediaLivePhotoMode TGMediaPickerGalleryResolvedLivePhotoMode(NSNumber *
                 _portraitToolbarView.userInteractionEnabled = !hidden;
                 _landscapeToolbarView.userInteractionEnabled = !hidden;
                 _captionMixin.inputPanelView.userInteractionEnabled = !hidden;
-                _captionMixin.livePhotoButtonView.userInteractionEnabled = !hidden;
+                _captionMixin.backgroundView.userInteractionEnabled = !hidden;
             }
         }];
         
@@ -1531,8 +1449,8 @@ static TGMediaLivePhotoMode TGMediaPickerGalleryResolvedLivePhotoMode(NSNumber *
         _captionMixin.inputPanelView.alpha = alpha;
         _captionMixin.inputPanelView.userInteractionEnabled = !hidden;
         
-        _captionMixin.livePhotoButtonView.alpha = alpha;
-        _captionMixin.livePhotoButtonView.userInteractionEnabled = !hidden;
+        _captionMixin.backgroundView.alpha = alpha;
+        _captionMixin.backgroundView.userInteractionEnabled = !hidden;
     }
     
     if (hidden)
@@ -1586,18 +1504,6 @@ static TGMediaLivePhotoMode TGMediaPickerGalleryResolvedLivePhotoMode(NSNumber *
     }
 }
 
-- (void)setupGifEditing {
-    if (![_currentItem conformsToProtocol:@protocol(TGModernGalleryEditableItem)])
-        return;
-    
-    TGModernGalleryItemView *currentItemView = _currentItemView;
-    bool sendableAsGif = [currentItemView isKindOfClass:[TGMediaPickerGalleryVideoItemView class]];
-    if (sendableAsGif)
-        [(TGMediaPickerGalleryVideoItemView *)currentItemView toggleSendAsGif:false];
-    
-    [_muteButton removeFromSuperview];
-}
-
 - (void)toggleSendAsGif
 {
     if (![_currentItem conformsToProtocol:@protocol(TGModernGalleryEditableItem)])
@@ -1606,7 +1512,7 @@ static TGMediaLivePhotoMode TGMediaPickerGalleryResolvedLivePhotoMode(NSNumber *
     TGModernGalleryItemView *currentItemView = _currentItemView;
     bool sendableAsGif = [currentItemView isKindOfClass:[TGMediaPickerGalleryVideoItemView class]];
     if (sendableAsGif)
-        [(TGMediaPickerGalleryVideoItemView *)currentItemView toggleSendAsGif:true];
+        [(TGMediaPickerGalleryVideoItemView *)currentItemView toggleSendAsGif];
 }
 
 - (void)toggleGrouping
@@ -1718,6 +1624,7 @@ static TGMediaLivePhotoMode TGMediaPickerGalleryResolvedLivePhotoMode(NSNumber *
 - (void)immediateEditorTransitionIn {
     [self setSelectionInterfaceHidden:true animated:false];
     _captionMixin.inputPanelView.alpha = 0.0f;
+    _captionMixin.backgroundView.alpha = 0.0f;
     _portraitToolbarView.doneButton.alpha = 0.0f;
     _landscapeToolbarView.doneButton.alpha = 0.0f;
     
@@ -1738,6 +1645,7 @@ static TGMediaLivePhotoMode TGMediaPickerGalleryResolvedLivePhotoMode(NSNumber *
     [UIView animateWithDuration:0.2 animations:^
     {
         _captionMixin.inputPanelView.alpha = 0.0f;
+        _captionMixin.backgroundView.alpha = 0.0f;
         _portraitToolbarView.doneButton.alpha = 0.0f;
         _landscapeToolbarView.doneButton.alpha = 0.0f;
     }];
@@ -1750,6 +1658,7 @@ static TGMediaLivePhotoMode TGMediaPickerGalleryResolvedLivePhotoMode(NSNumber *
     [UIView animateWithDuration:0.3 animations:^
     {
         _captionMixin.inputPanelView.alpha = 1.0f;
+        _captionMixin.backgroundView.alpha = 1.0f;
         _portraitToolbarView.doneButton.alpha = 1.0f;
         _landscapeToolbarView.doneButton.alpha = 1.0f;
     }];
@@ -1795,7 +1704,6 @@ static TGMediaLivePhotoMode TGMediaPickerGalleryResolvedLivePhotoMode(NSNumber *
             || [view isDescendantOfView:_landscapeToolbarView]
             || [view isDescendantOfView:_selectedPhotosView]
             || [view isDescendantOfView:_captionMixin.inputPanelView]
-            || [view isDescendantOfView:_captionMixin.livePhotoButtonView]
             || ([view isDescendantOfView:_captionMixin.dismissView] && _captionMixin.dismissView.alpha > 0.0)
             || [view isKindOfClass:[TGMenuButtonView class]])
             

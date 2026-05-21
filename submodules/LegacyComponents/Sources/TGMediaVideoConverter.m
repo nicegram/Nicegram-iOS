@@ -885,10 +885,7 @@
 
 + (TGMediaVideoConversionPreset)presetFromAdjustments:(TGMediaVideoEditAdjustments *)adjustments
 {
-    TGMediaVideoConversionPreset preset = TGMediaVideoConversionPresetCompressedDefault;
-    if ([adjustments isKindOfClass:[TGMediaVideoEditAdjustments class]]) {
-        preset = adjustments.preset;
-    }
+    TGMediaVideoConversionPreset preset = adjustments.preset;
     if (preset == TGMediaVideoConversionPresetCompressedDefault)
     {
         NSNumber *presetValue = [[NSUserDefaults standardUserDefaults] objectForKey:@"TG_preferredVideoPreset_v0"];

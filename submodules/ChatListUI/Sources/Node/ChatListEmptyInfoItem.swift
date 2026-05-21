@@ -92,7 +92,7 @@ class ChatListEmptyInfoItemNode: ListViewItemNode {
         self.animationNode = DefaultAnimatedStickerNodeImpl()
         self.textNode = TextNode()
         
-        super.init(layerBacked: false)
+        super.init(layerBacked: false, dynamicBounce: false)
         
         self.addSubnode(self.animationNode)
         self.addSubnode(self.textNode)
@@ -207,7 +207,7 @@ class ChatListSectionHeaderNode: ListViewItemNode {
     private var headerNode: ListSectionHeaderNode?
     
     required init() {
-        super.init(layerBacked: false)
+        super.init(layerBacked: false, dynamicBounce: false)
         
         self.zPosition = 1.0
     }

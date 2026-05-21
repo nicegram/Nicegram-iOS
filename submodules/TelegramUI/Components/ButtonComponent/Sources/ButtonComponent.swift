@@ -6,7 +6,6 @@ import AnimatedTextComponent
 import ActivityIndicator
 import BundleIconComponent
 import ShimmerEffect
-import GlassBackgroundComponent
 
 public final class ButtonBadgeComponent: Component {
     let fillColor: UIColor
@@ -282,7 +281,7 @@ public final class ButtonTextContentComponent: Component {
             }
             
             if let badgeSize, let badge = self.badge {
-                let badgeFrame = CGRect(origin: CGPoint(x: contentFrame.minX + contentSize.width + badgeSpacing, y: floorToScreenPixels((size.height - badgeSize.height) * 0.5) + UIScreenPixel), size: badgeSize)
+                let badgeFrame = CGRect(origin: CGPoint(x: contentFrame.minX + contentSize.width + badgeSpacing, y: floorToScreenPixels((size.height - badgeSize.height) * 0.5) + 1.0), size: badgeSize)
                 
                 if let badgeView = badge.view {
                     var animateIn = false
@@ -339,13 +338,6 @@ public final class ButtonTextContentComponent: Component {
 
 public final class ButtonComponent: Component {
     public struct Background: Equatable {
-        public enum Style {
-            case glass
-            case actualGlass
-            case legacy
-        }
-        
-        public var style: Style
         public var color: UIColor
         public var foreground: UIColor
         public var pressedColor: UIColor
@@ -353,14 +345,12 @@ public final class ButtonComponent: Component {
         public var isShimmering: Bool
 
         public init(
-            style: Style = .legacy,
             color: UIColor,
             foreground: UIColor,
             pressedColor: UIColor,
             cornerRadius: CGFloat = 10.0,
             isShimmering: Bool = false
         ) {
-            self.style = style
             self.color = color
             self.foreground = foreground
             self.pressedColor = pressedColor
@@ -370,7 +360,6 @@ public final class ButtonComponent: Component {
         
         public func withIsShimmering(_ isShimmering: Bool) -> Background {
             return Background(
-                style: self.style,
                 color: self.color,
                 foreground: self.foreground,
                 pressedColor: self.pressedColor,
@@ -382,37 +371,28 @@ public final class ButtonComponent: Component {
 
     public let background: Background
     public let content: AnyComponentWithIdentity<Empty>
-    public let contentInsets: UIEdgeInsets?
-    public let fitToContentWidth: Bool
     public let isEnabled: Bool
     public let tintWhenDisabled: Bool
     public let allowActionWhenDisabled: Bool
     public let displaysProgress: Bool
     public let action: () -> Void
-    public let longPressAction: (() -> Void)?
-
+    
     public init(
         background: Background,
         content: AnyComponentWithIdentity<Empty>,
-        contentInsets: UIEdgeInsets? = nil,
-        fitToContentWidth: Bool = false,
         isEnabled: Bool = true,
         tintWhenDisabled: Bool = true,
         allowActionWhenDisabled: Bool = false,
         displaysProgress: Bool = false,
-        action: @escaping () -> Void,
-        longPressAction: (() -> Void)? = nil
+        action: @escaping () -> Void
     ) {
         self.background = background
         self.content = content
-        self.contentInsets = contentInsets
-        self.fitToContentWidth = fitToContentWidth
         self.isEnabled = isEnabled
         self.tintWhenDisabled = tintWhenDisabled
         self.allowActionWhenDisabled = allowActionWhenDisabled
         self.displaysProgress = displaysProgress
         self.action = action
-        self.longPressAction = longPressAction
     }
 
     public static func ==(lhs: ButtonComponent, rhs: ButtonComponent) -> Bool {
@@ -420,12 +400,6 @@ public final class ButtonComponent: Component {
             return false
         }
         if lhs.content != rhs.content {
-            return false
-        }
-        if lhs.contentInsets != rhs.contentInsets {
-            return false
-        }
-        if lhs.fitToContentWidth != rhs.fitToContentWidth {
             return false
         }
         if lhs.isEnabled != rhs.isEnabled {
@@ -440,9 +414,6 @@ public final class ButtonComponent: Component {
         if lhs.displaysProgress != rhs.displaysProgress {
             return false
         }
-        if (lhs.longPressAction == nil) != (rhs.longPressAction == nil) {
-            return false
-        }
         return true
     }
 
@@ -455,63 +426,28 @@ public final class ButtonComponent: Component {
         }
     }
 
-    public final class View: UIView {
+    public final class View: HighlightTrackingButton {
         private var component: ButtonComponent?
         private weak var componentState: EmptyComponentState?
 
-        private var containerView: UIView
-        private var glassContainerView: GlassBackgroundView?
-        private var glassShadowView: UIImageView?
-        private var glassShadowCornerRadius: CGFloat?
-        private var glassHighlightContainerView: UIView?
-        private let button: HighlightTrackingButton
-        private let glassHighlightRecognizer: GlassHighlightGestureRecognizer
-        
         private var shimmeringView: ButtonShimmeringView?
-        private var chromeView: UIImageView?
         private var contentItem: ContentItem?
         
         private var activityIndicator: ActivityIndicator?
-        private var longPressGesture: UILongPressGestureRecognizer?
         
         override init(frame: CGRect) {
-            self.containerView = UIView()
-            self.containerView.clipsToBounds = true
-            self.containerView.isUserInteractionEnabled = false
-            
-            self.button = HighlightTrackingButton()
-            self.glassHighlightRecognizer = GlassHighlightGestureRecognizer(target: nil, action: nil)
-            
             super.init(frame: frame)
             
-            self.button.isExclusiveTouch = true
-            self.layer.rasterizationScale = UIScreenScale
+            self.addTarget(self, action: #selector(self.pressed), for: .touchUpInside)
             
-            self.addSubview(self.containerView)
-            self.addSubview(self.button)
-            self.addGestureRecognizer(self.glassHighlightRecognizer)
-            self.glassHighlightRecognizer.isEnabled = false
-            
-            self.button.addTarget(self, action: #selector(self.pressed), for: .touchUpInside)
-
-            let longPressGesture = UILongPressGestureRecognizer(target: self, action: #selector(self.longPressed(_:)))
-            longPressGesture.isEnabled = false
-            self.longPressGesture = longPressGesture
-            self.button.addGestureRecognizer(longPressGesture)
-
-            self.button.highligthedChanged = { [weak self] highlighted in
+            self.highligthedChanged = { [weak self] highlighted in
                 if let self, let component = self.component, component.isEnabled {
-                    switch component.background.style {
-                    case .legacy:
-                        if highlighted {
-                            self.containerView.layer.removeAnimation(forKey: "opacity")
-                            self.containerView.alpha = 0.7
-                        } else {
-                            self.containerView.alpha = 1.0
-                            self.containerView.layer.animateAlpha(from: 0.7, to: 1.0, duration: 0.2)
-                        }
-                    default:
-                        break
+                    if highlighted {
+                        self.layer.removeAnimation(forKey: "opacity")
+                        self.alpha = 0.7
+                    } else {
+                        self.alpha = 1.0
+                        self.layer.animateAlpha(from: 7, to: 1.0, duration: 0.2)
                     }
                 }
             }
@@ -521,86 +457,11 @@ public final class ButtonComponent: Component {
             preconditionFailure()
         }
         
-        private func removeGlassEffect(transition: ComponentTransition) {
-            self.glassHighlightRecognizer.isEnabled = false
-            self.glassHighlightRecognizer.highlightContainerView = nil
-            
-            if let glassShadowView = self.glassShadowView, glassShadowView.superview != nil {
-                if transition.animation.isImmediate {
-                    glassShadowView.removeFromSuperview()
-                } else {
-                    transition.setAlpha(view: glassShadowView, alpha: 0.0, completion: { _ in
-                        glassShadowView.removeFromSuperview()
-                    })
-                }
-            }
-            if let glassHighlightContainerView = self.glassHighlightContainerView, glassHighlightContainerView.superview != nil {
-                glassHighlightContainerView.removeFromSuperview()
-            }
-            self.glassShadowCornerRadius = nil
-            
-            self.layer.removeAnimation(forKey: "sublayerTransform")
-            self.layer.sublayerTransform = CATransform3DIdentity
-        }
-        
-        private func updateGlassEffect(component: ButtonComponent, size: CGSize, cornerRadius: CGFloat, transition: ComponentTransition) {
-            let shadowInset: CGFloat = 48.0
-            
-            let glassShadowView: UIImageView
-            if let current = self.glassShadowView {
-                glassShadowView = current
-            } else {
-                glassShadowView = UIImageView()
-                glassShadowView.isUserInteractionEnabled = false
-                self.glassShadowView = glassShadowView
-            }
-            if glassShadowView.superview == nil {
-                self.insertSubview(glassShadowView, at: 0)
-            } else {
-                self.sendSubviewToBack(glassShadowView)
-            }
-            if self.glassShadowCornerRadius != cornerRadius || glassShadowView.image == nil {
-                glassShadowView.image = GlassBackgroundView.generateLegacyShadowImage(cornerRadius: cornerRadius, shadowInset: shadowInset, shadowIntensity: 0.18, shadowBlur: 64.0)
-                self.glassShadowCornerRadius = cornerRadius
-            }
-            transition.setFrame(view: glassShadowView, frame: CGRect(origin: .zero, size: size).insetBy(dx: -shadowInset, dy: -shadowInset))
-            transition.setAlpha(view: glassShadowView, alpha: 1.0)
-            
-            let glassHighlightContainerView: UIView
-            if let current = self.glassHighlightContainerView {
-                glassHighlightContainerView = current
-            } else {
-                glassHighlightContainerView = UIView()
-                glassHighlightContainerView.isUserInteractionEnabled = false
-                glassHighlightContainerView.clipsToBounds = true
-                self.glassHighlightContainerView = glassHighlightContainerView
-            }            
-            if glassHighlightContainerView.superview == nil {
-                self.insertSubview(glassHighlightContainerView, aboveSubview: self.containerView)
-            } else if self.button.superview === self {
-                self.insertSubview(glassHighlightContainerView, belowSubview: self.button)
-            } else {
-                self.bringSubviewToFront(glassHighlightContainerView)
-            }
-            transition.setFrame(view: glassHighlightContainerView, frame: CGRect(origin: .zero, size: size))
-            transition.setCornerRadius(layer: glassHighlightContainerView.layer, cornerRadius: cornerRadius)
-            
-            self.glassHighlightRecognizer.highlightContainerView = glassHighlightContainerView
-            self.glassHighlightRecognizer.isEnabled = component.isEnabled && !component.displaysProgress
-        }
-        
         @objc private func pressed() {
             guard let component = self.component else {
                 return
             }
             component.action()
-        }
-
-        @objc private func longPressed(_ gesture: UILongPressGestureRecognizer) {
-            guard gesture.state == .began, let component = self.component else {
-                return
-            }
-            component.longPressAction?()
         }
         
         override public func hitTest(_ point: CGPoint, with event: UIEvent?) -> UIView? {
@@ -610,11 +471,12 @@ public final class ButtonComponent: Component {
         func update(component: ButtonComponent, availableSize: CGSize, state: EmptyComponentState, environment: Environment<Empty>, transition: ComponentTransition) -> CGSize {
             self.component = component
             self.componentState = state
-
-            self.longPressGesture?.isEnabled = component.longPressAction != nil
             
-            self.button.isEnabled = (component.isEnabled || component.allowActionWhenDisabled) && !component.displaysProgress
-                        
+            self.isEnabled = (component.isEnabled || component.allowActionWhenDisabled) && !component.displaysProgress
+            
+            transition.setBackgroundColor(view: self, color: component.background.color)
+            transition.setCornerRadius(layer: self.layer, cornerRadius: component.background.cornerRadius)
+            
             var contentAlpha: CGFloat = 1.0
             if component.displaysProgress {
                 contentAlpha = 0.0
@@ -633,108 +495,43 @@ public final class ButtonComponent: Component {
                 contentItem = ContentItem(id: component.content.id)
                 self.contentItem = contentItem
             }
-            
-            var cornerRadius: CGFloat = component.background.cornerRadius
-            if [.glass, .actualGlass].contains(component.background.style), component.background.cornerRadius == 10.0 {
-                cornerRadius = availableSize.height * 0.5
-            }
-            
-            var maxContentWidth = availableSize.width - cornerRadius
-            if let contentInsets = component.contentInsets {
-                if contentInsets.left == 0.0 && contentInsets.right == 0.0 {
-                    maxContentWidth = availableSize.width
-                }
-            }
 
             let contentSize = contentItem.view.update(
                 transition: contentItemTransition,
                 component: component.content.component,
                 environment: {},
-                containerSize: CGSize(width: maxContentWidth, height: availableSize.height)
+                containerSize: availableSize
             )
-            
-            var size = availableSize
-            if component.fitToContentWidth {
-                size.width = floor(contentSize.width + cornerRadius * 1.5)
-            }
-            
-            let contentContainerView: UIView
-            switch component.background.style {
-            case .actualGlass:
-                let glassContainerView: GlassBackgroundView
-                if let current = self.glassContainerView {
-                    glassContainerView = current
-                } else {
-                    self.containerView.removeFromSuperview()
-                    
-                    glassContainerView = GlassBackgroundView()
-                    self.glassContainerView = glassContainerView
-                    self.insertSubview(glassContainerView, at: 0)
-                    
-                    glassContainerView.contentView.addSubview(self.button)
-                }
-                let tintColor: GlassBackgroundView.TintColor
-                if component.background.color.alpha < 0.1 {
-                    tintColor = .init(kind: .panel)
-                } else {
-                    tintColor = .init(kind: .panel, innerColor: component.background.color, innerInset: 0.0)
-                }
-                glassContainerView.update(size: size, cornerRadius: cornerRadius, isDark: component.background.color.brightness < 0.2, tintColor: tintColor, isInteractive: true, transition: transition)
-                contentContainerView = glassContainerView.contentView
-                                
-                transition.setFrame(view: glassContainerView, frame: CGRect(origin: .zero, size: size))
-            case .glass, .legacy:
-                if self.containerView.superview == nil {
-                    self.insertSubview(self.containerView, at: 0)
-                    self.addSubview(self.button)
-                }
-                contentContainerView = self.containerView
-                
-                transition.setBackgroundColor(view: self.containerView, color: component.background.color)
-                transition.setCornerRadius(layer: self.containerView.layer, cornerRadius: cornerRadius)
-            }
-            
-            if component.background.style == .glass, component.background.color.alpha > 1.0 - .ulpOfOne {
-                self.updateGlassEffect(component: component, size: size, cornerRadius: cornerRadius, transition: transition)
-            } else {
-                self.removeGlassEffect(transition: transition)
-            }
-            
             if let contentView = contentItem.view.view {
                 var animateIn = false
                 var contentTransition = transition
                 if contentView.superview == nil {
                     contentTransition = .immediate
                     animateIn = true
-                    contentView.layer.rasterizationScale = UIScreenScale
                     contentView.isUserInteractionEnabled = false
-                    contentContainerView.addSubview(contentView)
+                    self.addSubview(contentView)
                     
                     contentItem.view.parentState = state
                 }
-                let contentFrame = CGRect(origin: CGPoint(x: floorToScreenPixels((size.width - contentSize.width) * 0.5), y: floorToScreenPixels((size.height - contentSize.height) * 0.5)), size: contentSize)
+                let contentFrame = CGRect(origin: CGPoint(x: floorToScreenPixels((availableSize.width - contentSize.width) * 0.5), y: floorToScreenPixels((availableSize.height - contentSize.height) * 0.5)), size: contentSize)
                 
                 contentTransition.setFrame(view: contentView, frame: contentFrame)
                 contentTransition.setAlpha(view: contentView, alpha: contentAlpha)
                 
                 if animateIn && previousContentItem != nil && !transition.animation.isImmediate {
-                    contentView.layer.shouldRasterize = true
-                    contentView.layer.animateScale(from: 0.4, to: 1.0, duration: 0.35, timingFunction: kCAMediaTimingFunctionSpring, completion: { _ in
-                        contentView.layer.shouldRasterize = false
-                    })
+                    contentView.layer.animateScale(from: 0.4, to: 1.0, duration: 0.35, timingFunction: kCAMediaTimingFunctionSpring)
                     contentView.layer.animateAlpha(from: 0.0, to: contentAlpha, duration: 0.1)
-                    contentView.layer.animatePosition(from: CGPoint(x: 0.0, y: -size.height * 0.15), to: CGPoint(), duration: 0.35, timingFunction: kCAMediaTimingFunctionSpring, additive: true)
+                    contentView.layer.animatePosition(from: CGPoint(x: 0.0, y: -availableSize.height * 0.15), to: CGPoint(), duration: 0.35, timingFunction: kCAMediaTimingFunctionSpring, additive: true)
                 }
             }
             
             if let previousContentItem, let previousContentView = previousContentItem.view.view {
                 if !transition.animation.isImmediate {
-                    previousContentView.layer.shouldRasterize = true
                     previousContentView.layer.animateScale(from: 1.0, to: 0.0, duration: 0.35, timingFunction: kCAMediaTimingFunctionSpring, removeOnCompletion: false)
                     previousContentView.layer.animateAlpha(from: contentAlpha, to: 0.0, duration: 0.2, removeOnCompletion: false, completion: { [weak previousContentView] _ in
                         previousContentView?.removeFromSuperview()
                     })
-                    previousContentView.layer.animatePosition(from: CGPoint(), to: CGPoint(x: 0.0, y: size.height * 0.35), duration: 0.3, timingFunction: kCAMediaTimingFunctionSpring, removeOnCompletion: false, additive: true)
+                    previousContentView.layer.animatePosition(from: CGPoint(), to: CGPoint(x: 0.0, y: availableSize.height * 0.35), duration: 0.3, timingFunction: kCAMediaTimingFunctionSpring, removeOnCompletion: false, additive: true)
                 } else {
                     previousContentView.removeFromSuperview()
                 }
@@ -750,11 +547,11 @@ public final class ButtonComponent: Component {
                     activityIndicator = ActivityIndicator(type: .custom(component.background.foreground, 22.0, 2.0, true))
                     activityIndicator.view.alpha = 0.0
                     self.activityIndicator = activityIndicator
-                    contentContainerView.addSubview(activityIndicator.view)
+                    self.addSubview(activityIndicator.view)
                 }
                 let indicatorSize = CGSize(width: 22.0, height: 22.0)
                 transition.setAlpha(view: activityIndicator.view, alpha: 1.0)
-                activityIndicatorTransition.setFrame(view: activityIndicator.view, frame: CGRect(origin: CGPoint(x: floorToScreenPixels((size.width - indicatorSize.width) / 2.0), y: floorToScreenPixels((size.height - indicatorSize.height) / 2.0)), size: indicatorSize))
+                activityIndicatorTransition.setFrame(view: activityIndicator.view, frame: CGRect(origin: CGPoint(x: floorToScreenPixels((availableSize.width - indicatorSize.width) / 2.0), y: floorToScreenPixels((availableSize.height - indicatorSize.height) / 2.0)), size: indicatorSize))
             } else {
                 if let activityIndicator = self.activityIndicator {
                     self.activityIndicator = nil
@@ -773,10 +570,10 @@ public final class ButtonComponent: Component {
                     shimmeringTransition = .immediate
                     shimmeringView = ButtonShimmeringView(frame: .zero)
                     self.shimmeringView = shimmeringView
-                    contentContainerView.insertSubview(shimmeringView, at: 0)
+                    self.insertSubview(shimmeringView, at: 0)
                 }
-                shimmeringView.update(size: size, background: component.background, cornerRadius: cornerRadius, transition: shimmeringTransition)
-                shimmeringTransition.setFrame(view: shimmeringView, frame: CGRect(origin: .zero, size: size))
+                shimmeringView.update(size: availableSize, background: component.background, cornerRadius: component.background.cornerRadius, transition: shimmeringTransition)
+                shimmeringTransition.setFrame(view: shimmeringView, frame: CGRect(origin: .zero, size: availableSize))
             } else if let shimmeringView = self.shimmeringView {
                 self.shimmeringView = nil
                 shimmeringView.layer.animateAlpha(from: 1.0, to: 0.0, duration: 0.15, removeOnCompletion: false, completion: { _ in
@@ -784,39 +581,7 @@ public final class ButtonComponent: Component {
                 })
             }
             
-            if component.background.style == .glass, component.background.color.alpha > 0.9 {
-                let chromeView: UIImageView
-                var chromeTransition = transition
-                if let current = self.chromeView {
-                    chromeView = current
-                } else {
-                    chromeTransition = .immediate
-                    chromeView = UIImageView()
-                    self.chromeView = chromeView
-                    if let shimmeringView = self.shimmeringView {
-                        contentContainerView.insertSubview(chromeView, aboveSubview: shimmeringView)
-                    } else {
-                        contentContainerView.insertSubview(chromeView, at: 0)
-                    }
-                    
-                    chromeView.layer.compositingFilter = "overlayBlendMode"
-                    chromeView.alpha = 0.8
-                    chromeView.image = GlassBackgroundView.generateForegroundImage(size: CGSize(width: 26.0 * 2.0, height: 26.0 * 2.0), isDark: component.background.color.lightness < 0.36, fillColor: .clear)
-                }
-                chromeTransition.setFrame(view: chromeView, frame: CGRect(origin: .zero, size: size))
-            } else if let chromeView = self.chromeView {
-                self.chromeView = nil
-                chromeView.layer.animateAlpha(from: 1.0, to: 0.0, duration: 0.15, removeOnCompletion: false, completion: { _ in
-                    chromeView.removeFromSuperview()
-                })
-            }
-            
-            transition.setPosition(view: self.containerView, position: CGPoint(x: size.width / 2.0, y: size.height / 2.0))
-            transition.setBoundsSize(view: self.containerView, size: size)
-            
-            transition.setFrame(view: self.button, frame: CGRect(origin: .zero, size: size))
-            
-            return size
+            return availableSize
         }
     }
 

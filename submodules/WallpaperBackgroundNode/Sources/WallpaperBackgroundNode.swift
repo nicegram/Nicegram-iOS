@@ -16,7 +16,6 @@ import AppBundle
 import AnimatedStickerNode
 import TelegramAnimatedStickerNode
 import HierarchyTrackingLayer
-import EdgeEffect
 
 private let motionAmount: CGFloat = 32.0
 
@@ -33,7 +32,7 @@ private func generateBlurredContents(image: UIImage, dimColor: UIColor?) -> UIIm
     telegramFastBlurMore(Int32(context.size.width), Int32(context.size.height), Int32(context.bytesPerRow), context.bytes)
 
     adjustSaturationInContext(context: context, saturation: 1.7)
-
+    
     if let dimColor {
         context.withFlippedContext { c in
             c.setFillColor(dimColor.cgColor)
@@ -42,147 +41,6 @@ private func generateBlurredContents(image: UIImage, dimColor: UIColor?) -> UIIm
     }
 
     return context.generateImage()
-}
-
-private func calculateWallpaperBrightness(from colors: [UInt32]) -> CGFloat {
-    guard !colors.isEmpty else {
-        return 1.0
-    }
-    return UIColor.average(of: colors.map(UIColor.init(rgb:))).hsb.b
-}
-
-private func calculateWallpaperSaturation(from colors: [UInt32]) -> CGFloat {
-    guard !colors.isEmpty else {
-        return 0.0
-    }
-
-    var hsbValues: [(h: CGFloat, s: CGFloat, b: CGFloat)] = []
-    for color in colors {
-        hsbValues.append(UIColor(rgb: color).hsb)
-    }
-
-    // Check if any two colors have different hues (>60° apart)
-    var colorsAreDiverse = false
-    outer: for i in 0 ..< hsbValues.count {
-        for j in (i + 1) ..< hsbValues.count {
-            let hueDiff = abs(hsbValues[i].h - hsbValues[j].h)
-            let angularDiff = min(hueDiff, 1.0 - hueDiff)
-            if angularDiff > 0.167 {
-                colorsAreDiverse = true
-                break outer
-            }
-        }
-    }
-
-    var maxSaturation: CGFloat = 0.0
-    for hsb in hsbValues {
-        let saturation: CGFloat
-        if colorsAreDiverse {
-            // Diverse colors: only penalize darkness, not brightness
-            saturation = hsb.s * min(hsb.b * 2.0, 1.0)
-        } else {
-            // Similar colors: original formula
-            saturation = hsb.s * min(hsb.b, 1.0 - hsb.b) * 2.0
-        }
-        maxSaturation = max(maxSaturation, saturation)
-    }
-    return maxSaturation
-}
-
-private func calculateWallpaperBrightness(from image: UIImage) -> CGFloat {
-    guard let cgImage = image.cgImage else {
-        return 1.0
-    }
-
-    let sourceWidth = cgImage.width
-    let sourceHeight = cgImage.height
-    let topRegionHeight = max(1, Int(CGFloat(sourceHeight) * 0.1))
-    let cropRect = CGRect(x: 0, y: 0, width: sourceWidth, height: topRegionHeight)
-
-    guard let croppedImage = cgImage.cropping(to: cropRect) else {
-        return 1.0
-    }
-
-    let targetSize = CGSize(width: 10.0, height: 10.0)
-    let width = Int(targetSize.width)
-    let height = Int(targetSize.height)
-    let bytesPerPixel = 4
-    let bytesPerRow = bytesPerPixel * width
-    let bitsPerComponent = 8
-
-    var pixelData = [UInt8](repeating: 0, count: width * height * bytesPerPixel)
-
-    guard let context = CGContext(
-        data: &pixelData,
-        width: width,
-        height: height,
-        bitsPerComponent: bitsPerComponent,
-        bytesPerRow: bytesPerRow,
-        space: CGColorSpaceCreateDeviceRGB(),
-        bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
-    ) else {
-        return 1.0
-    }
-
-    context.draw(croppedImage, in: CGRect(origin: .zero, size: targetSize))
-
-    var totalLuminance: CGFloat = 0.0
-    let pixelCount = width * height
-
-    for i in 0 ..< pixelCount {
-        let offset = i * bytesPerPixel
-        let r = CGFloat(pixelData[offset]) / 255.0
-        let g = CGFloat(pixelData[offset + 1]) / 255.0
-        let b = CGFloat(pixelData[offset + 2]) / 255.0
-        totalLuminance += 0.299 * r + 0.587 * g + 0.114 * b
-    }
-
-    return totalLuminance / CGFloat(pixelCount)
-}
-
-private func calculateWallpaperSaturation(from image: UIImage) -> CGFloat {
-    guard let cgImage = image.cgImage else {
-        return 0.0
-    }
-
-    let targetSize = CGSize(width: 10.0, height: 10.0)
-    let width = Int(targetSize.width)
-    let height = Int(targetSize.height)
-    let bytesPerPixel = 4
-    let bytesPerRow = bytesPerPixel * width
-    let bitsPerComponent = 8
-
-    var pixelData = [UInt8](repeating: 0, count: width * height * bytesPerPixel)
-
-    guard let context = CGContext(
-        data: &pixelData,
-        width: width,
-        height: height,
-        bitsPerComponent: bitsPerComponent,
-        bytesPerRow: bytesPerRow,
-        space: CGColorSpaceCreateDeviceRGB(),
-        bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
-    ) else {
-        return 0.0
-    }
-
-    context.draw(cgImage, in: CGRect(origin: .zero, size: targetSize))
-
-    var totalWeightedSaturation: CGFloat = 0.0
-    let pixelCount = width * height
-
-    for i in 0 ..< pixelCount {
-        let offset = i * bytesPerPixel
-        let r = CGFloat(pixelData[offset]) / 255.0
-        let g = CGFloat(pixelData[offset + 1]) / 255.0
-        let b = CGFloat(pixelData[offset + 2]) / 255.0
-
-        let hsb = UIColor(red: r, green: g, blue: b, alpha: 1.0).hsb
-        let weightedSaturation = hsb.s * min(hsb.b, 1.0 - hsb.b) * 2.0
-        totalWeightedSaturation += weightedSaturation
-    }
-
-    return totalWeightedSaturation / CGFloat(pixelCount)
 }
 
 public enum WallpaperBubbleType {
@@ -223,40 +81,9 @@ public enum WallpaperDisplayMode {
     }
 }
 
-public struct WallpaperEdgeEffectEdge: Equatable {
-    public enum Edge {
-        case top
-        case bottom
-    }
-    
-    public var edge: Edge
-    public var size: CGFloat
-    
-    public init(edge: Edge, size: CGFloat) {
-        self.edge = edge
-        self.size = size
-    }
-}
-
-public protocol WallpaperEdgeEffectNode: ASDisplayNode {
-    func update(rect: CGRect, edge: WallpaperEdgeEffectEdge, alpha: CGFloat, blur: Bool, containerSize: CGSize, transition: ContainedViewLayoutTransition)
-}
-
-public struct WallpaperContentStats: Equatable {
-    public let isDark: Bool
-    public let isSaturated: Bool
-    
-    public init(isDark: Bool, isSaturated: Bool) {
-        self.isDark = isDark
-        self.isSaturated = isSaturated
-    }
-}
-
 public protocol WallpaperBackgroundNode: ASDisplayNode {
     var isReady: Signal<Bool, NoError> { get }
     var rotation: CGFloat { get set }
-    var contentStats: WallpaperContentStats? { get }
-    var contentStatsUpdated: (() -> Void)? { get set }
 
     func update(wallpaper: TelegramWallpaper, animated: Bool)
     func update(wallpaper: TelegramWallpaper, starGift: StarGift?, animated: Bool)
@@ -272,44 +99,9 @@ public protocol WallpaperBackgroundNode: ASDisplayNode {
     func hasExtraBubbleBackground() -> Bool
     
     func makeDimmedNode() -> ASDisplayNode?
-    
-    func makeEdgeEffectNode() -> WallpaperEdgeEffectNode?
 }
 
-final class EffectImageLayer: SimpleLayer, GradientBackgroundPatternOverlayLayer {
-    final class CloneLayer: SimpleLayer {
-        private weak var parentLayer: EffectImageLayer?
-        private var index: SparseBag<Weak<CloneLayer>>.Index?
-
-        init(parentLayer: EffectImageLayer) {
-            self.parentLayer = parentLayer
-
-            super.init()
-            
-            self.index = parentLayer.cloneLayers.add(Weak(self))
-
-            self.backgroundColor = parentLayer.backgroundColor
-            self.contents = parentLayer.contents
-            self.compositingFilter = parentLayer.compositingFilter
-            self.opacity = parentLayer.opacity
-            self.isOpaque = parentLayer.isOpaque
-        }
-        
-        override init(layer: Any) {
-            super.init(layer: layer)
-        }
-        
-        required init?(coder: NSCoder) {
-            fatalError("init(coder:) has not been implemented")
-        }
-        
-        deinit {
-            if let parentLayer = self.parentLayer, let index = self.index {
-                parentLayer.cloneLayers.remove(index)
-            }
-        }
-    }
-    
+private final class EffectImageLayer: SimpleLayer, GradientBackgroundPatternOverlayLayer {
     enum SoftlightMode {
         case whileAnimating
         case always
@@ -327,12 +119,6 @@ final class EffectImageLayer: SimpleLayer, GradientBackgroundPatternOverlayLayer
                     }
                 } else {
                     self.backgroundColor = nil
-                }
-                
-                for cloneLayer in self.cloneLayers {
-                    if let value = cloneLayer.value {
-                        value.backgroundColor = self.backgroundColor
-                    }
                 }
             }
         }
@@ -377,8 +163,6 @@ final class EffectImageLayer: SimpleLayer, GradientBackgroundPatternOverlayLayer
     var suspendCompositionUpdates: Bool = false
     private var needsCompositionUpdate: Bool = false
     
-    fileprivate let cloneLayers = SparseBag<Weak<CloneLayer>>()
-    
     private func updateFilters() {
         let useSoftlight: Bool
         let useFilter: Bool
@@ -401,12 +185,6 @@ final class EffectImageLayer: SimpleLayer, GradientBackgroundPatternOverlayLayer
                 self.compositingFilter = "softLightBlendMode"
             } else {
                 self.compositingFilter = nil
-            }
-            
-            for cloneLayer in self.cloneLayers {
-                if let value = cloneLayer.value {
-                    value.compositingFilter = self.compositingFilter
-                }
             }
             
             self.updateContents()
@@ -531,13 +309,6 @@ final class EffectImageLayer: SimpleLayer, GradientBackgroundPatternOverlayLayer
             self.allowSettingContents = false
             
             self.backgroundColor = nil
-            
-            for cloneLayer in self.cloneLayers {
-                if let value = cloneLayer.value {
-                    value.contents = self.contents
-                    value.backgroundColor = self.backgroundColor
-                }
-            }
         }
     }
     
@@ -552,13 +323,6 @@ final class EffectImageLayer: SimpleLayer, GradientBackgroundPatternOverlayLayer
             self.opacity = 1.0
             self.allowSettingOpacity = false
             self.isOpaque = true
-        }
-        
-        for cloneLayer in self.cloneLayers {
-            if let value = cloneLayer.value {
-                value.opacity = self.opacity
-                value.isOpaque = self.isOpaque
-            }
         }
     }
 }
@@ -729,7 +493,7 @@ public final class WallpaperBackgroundNodeImpl: ASDisplayNode, WallpaperBackgrou
 
                 if needsGradientBackground, let gradientBackgroundNode = gradientBackgroundSource {
                     if self.gradientWallpaperNode == nil {
-                        let gradientWallpaperNode = GradientBackgroundNode.CloneNode(parentNode: gradientBackgroundNode, isDimmed: true)
+                        let gradientWallpaperNode = GradientBackgroundNode.CloneNode(parentNode: gradientBackgroundNode)
                         gradientWallpaperNode.frame = self.bounds
                         self.gradientWallpaperNode = gradientWallpaperNode
                         self.insertSubnode(gradientWallpaperNode, at: 0)
@@ -939,9 +703,7 @@ public final class WallpaperBackgroundNodeImpl: ASDisplayNode, WallpaperBackgrou
     private let context: AccountContext
     private let useSharedAnimationPhase: Bool
     
-    let contentNode: ASDisplayNode
-    
-    let edgeEffectNodes = SparseBag<Weak<WallpaperEdgeEffectNodeImpl>>()
+    private let contentNode: ASDisplayNode
     
     private var blurredBackgroundContents: UIImage?
     
@@ -990,9 +752,9 @@ public final class WallpaperBackgroundNodeImpl: ASDisplayNode, WallpaperBackgrou
         }
     }
 
-    var gradientBackgroundNode: GradientBackgroundNode?
+    private var gradientBackgroundNode: GradientBackgroundNode?
     private var outgoingBubbleGradientBackgroundNode: GradientBackgroundNode?
-    let patternImageLayer: EffectImageLayer
+    private let patternImageLayer: EffectImageLayer
     private let dimLayer: SimpleLayer
     private var isGeneratingPatternImage: Bool = false
 
@@ -1134,21 +896,11 @@ public final class WallpaperBackgroundNodeImpl: ASDisplayNode, WallpaperBackgrou
     }
     private static var cachedSharedPattern: (PatternKey, UIImage)?
     
-    public private(set) var contentStats: WallpaperContentStats?
-    public var contentStatsUpdated: (() -> Void)?
-
-    private func updateContentStats(_ contentStats: WallpaperContentStats?) {
-        if self.contentStats != contentStats {
-            self.contentStats = contentStats
-            self.contentStatsUpdated?()
-        }
-    }
-
     private let _isReady = ValuePromise<Bool>(false, ignoreRepeated: true)
     public var isReady: Signal<Bool, NoError> {
         return self._isReady.get()
     }
-
+        
     init(context: AccountContext, useSharedAnimationPhase: Bool) {
         self.context = context
         self.useSharedAnimationPhase = useSharedAnimationPhase
@@ -1282,12 +1034,6 @@ public final class WallpaperBackgroundNodeImpl: ASDisplayNode, WallpaperBackgrou
                 if self.isLooping {
                     scheduleLoopingEvent = true
                 }
-                
-                for edgeEffectNode in self.edgeEffectNodes {
-                    if let edgeEffectNode = edgeEffectNode.value {
-                        edgeEffectNode.updateGradientNode()
-                    }
-                }
             }
             self.gradientBackgroundNode?.updateColors(colors: mappedColors)
 
@@ -1296,12 +1042,6 @@ public final class WallpaperBackgroundNodeImpl: ASDisplayNode, WallpaperBackgrou
             self.blurredBackgroundContents = nil
             self.motionEnabled = false
             self.wallpaperDisposable.set(nil)
-            
-            if case let .file(file) = wallpaper, file.isPattern {
-                self.updateContentStats(nil)
-            } else {
-                self.updateContentStats(WallpaperContentStats(isDark: calculateWallpaperBrightness(from: gradientColors) <= 0.34, isSaturated: calculateWallpaperSaturation(from: gradientColors) > 0.35))
-            }
         } else {
             if let gradientBackgroundNode = self.gradientBackgroundNode {
                 self.gradientBackgroundNode = nil
@@ -1330,20 +1070,17 @@ public final class WallpaperBackgroundNodeImpl: ASDisplayNode, WallpaperBackgrou
                 self.contentNode.contents = image?.cgImage
                 self.blurredBackgroundContents = image
                 self.wallpaperDisposable.set(nil)
-                updateContentStats(WallpaperContentStats(isDark: calculateWallpaperBrightness(from: gradientColors) <= 0.3, isSaturated: calculateWallpaperSaturation(from: gradientColors) > 0.35))
             } else if gradientColors.count >= 1 {
                 self.contentNode.backgroundColor = UIColor(rgb: gradientColors[0])
                 self.contentNode.contents = nil
                 self.blurredBackgroundContents = nil
                 self.wallpaperDisposable.set(nil)
-                updateContentStats(WallpaperContentStats(isDark: calculateWallpaperBrightness(from: gradientColors) <= 0.3, isSaturated: calculateWallpaperSaturation(from: gradientColors) > 0.35))
             } else {
                 self.contentNode.backgroundColor = .white
                 if let image = chatControllerBackgroundImage(theme: nil, wallpaper: wallpaper, mediaBox: self.context.sharedContext.accountManager.mediaBox, knockoutMode: false) {
                     self.contentNode.contents = image.cgImage
                     self.blurredBackgroundContents = generateBlurredContents(image: image, dimColor: wallpaperDimColor)
                     self.wallpaperDisposable.set(nil)
-                    updateContentStats(WallpaperContentStats(isDark: calculateWallpaperBrightness(from: image) <= 0.55, isSaturated: calculateWallpaperSaturation(from: image) > 0.35))
                     Queue.mainQueue().justDispatch {
                         self._isReady.set(true)
                     }
@@ -1351,7 +1088,6 @@ public final class WallpaperBackgroundNodeImpl: ASDisplayNode, WallpaperBackgrou
                     self.contentNode.contents = image.cgImage
                     self.blurredBackgroundContents = generateBlurredContents(image: image, dimColor: wallpaperDimColor)
                     self.wallpaperDisposable.set(nil)
-                    self.updateContentStats(WallpaperContentStats(isDark: calculateWallpaperBrightness(from: image) <= 0.55, isSaturated: calculateWallpaperSaturation(from: image) > 0.35))
                     Queue.mainQueue().justDispatch {
                         self._isReady.set(true)
                     }
@@ -1364,16 +1100,10 @@ public final class WallpaperBackgroundNodeImpl: ASDisplayNode, WallpaperBackgrou
                         strongSelf.contentNode.contents = image?.0?.cgImage
                         if let image = image?.0 {
                             strongSelf.blurredBackgroundContents = generateBlurredContents(image: image, dimColor: wallpaperDimColor)
-                            strongSelf.updateContentStats(WallpaperContentStats(isDark: calculateWallpaperBrightness(from: image) <= 0.55, isSaturated: calculateWallpaperSaturation(from: image) > 0.35))
                         } else {
                             strongSelf.blurredBackgroundContents = nil
                         }
                         strongSelf.updateBubbles()
-                        for edgeEffectNode in strongSelf.edgeEffectNodes {
-                            if let edgeEffectNode = edgeEffectNode.value {
-                                edgeEffectNode.updateContents()
-                            }
-                        }
                         strongSelf._isReady.set(true)
                     }))
                 }
@@ -1407,13 +1137,8 @@ public final class WallpaperBackgroundNodeImpl: ASDisplayNode, WallpaperBackgrou
             }
         }
         self.updateBubbles()
-        self.updateDimming()
         
-        for edgeEffectNode in self.edgeEffectNodes {
-            if let edgeEffectNode = edgeEffectNode.value {
-                edgeEffectNode.updateContents()
-            }
-        }
+        self.updateDimming()
     }
 
     public func _internalUpdateIsSettingUpWallpaper() {
@@ -1463,12 +1188,6 @@ public final class WallpaperBackgroundNodeImpl: ASDisplayNode, WallpaperBackgrou
                 self.contentNode.alpha = 1.0
                 self.patternImageLayer.backgroundColor = nil
             }
-            
-            for edgeEffectNode in self.edgeEffectNodes {
-                if let edgeEffectNode = edgeEffectNode.value {
-                    edgeEffectNode.updatePattern(isInverted: invertPattern)
-                }
-            }
         default:
             self.patternImageDisposable.set(nil)
             self.symbolImageDisposable.set(nil)
@@ -1479,12 +1198,6 @@ public final class WallpaperBackgroundNodeImpl: ASDisplayNode, WallpaperBackgrou
             self.backgroundColor = nil
             self.gradientBackgroundNode?.contentView.alpha = 1.0
             self.contentNode.alpha = 1.0
-            
-            for edgeEffectNode in self.edgeEffectNodes {
-                if let edgeEffectNode = edgeEffectNode.value {
-                    edgeEffectNode.updatePattern(isInverted: false)
-                }
-            }
         }
     }
 
@@ -1600,6 +1313,7 @@ public final class WallpaperBackgroundNodeImpl: ASDisplayNode, WallpaperBackgrou
             
             if self.validPatternGeneratedImage != updatedGeneratedImage {
                 self.validPatternGeneratedImage = updatedGeneratedImage
+
                 if let cachedValidPatternImage = WallpaperBackgroundNodeImpl.cachedValidPatternImage, cachedValidPatternImage.generated == updatedGeneratedImage {
                     self.patternImageLayer.suspendCompositionUpdates = true
                     self.updatePatternPresentation()
@@ -1662,14 +1376,14 @@ public final class WallpaperBackgroundNodeImpl: ASDisplayNode, WallpaperBackgrou
         if let validPatternImage = self.validPatternImage, !validPatternImage.rects.isEmpty, let starGift = validPatternImage.starGift {
             if case let .unique(uniqueGift) = starGift {
                 for attribute in uniqueGift.attributes {
-                    if case let .model(_, file, _, _) = attribute {
+                    if case let .model(_, file, _) = attribute {
                         modelFile = file
                     }
                 }
             }
         }
         if let validPatternImage = self.validPatternImage, !validPatternImage.rects.isEmpty, var modelRectIndex = self.modelRectIndex, let modelFile {
-            let filteredRects = validPatternImage.rects.filter { $0.center.y > $0.containerSize.height * 0.1 && $0.center.y < $0.containerSize.height * 0.9 }
+            let filteredRects = validPatternImage.rects.filter { $0.center.y > 240.0 }
             modelRectIndex = modelRectIndex % Int32(filteredRects.count);
             
             let rect = filteredRects[Int(modelRectIndex)]
@@ -1687,24 +1401,16 @@ public final class WallpaperBackgroundNodeImpl: ASDisplayNode, WallpaperBackgrou
             
             let targetSize: CGSize = self.bounds.size
             let containerSize: CGSize = rect.containerSize
+            let useAspectFit: Bool = false
             
-            let isAspectFit: Bool = (displayMode == .aspectFit || displayMode == .halfAspectFill)
-            
-            let renderScale: CGFloat = isAspectFit
+            let renderScale: CGFloat = useAspectFit
             ? min(targetSize.width / containerSize.width, targetSize.height / containerSize.height)
             : max(targetSize.width / containerSize.width, targetSize.height / containerSize.height)
             
             let drawingSize = CGSize(width: containerSize.width * renderScale, height: containerSize.height * renderScale)
             
-            let offsetX: CGFloat
-            let offsetY: CGFloat
-            if isAspectFit {
-                offsetX = 0.0
-                offsetY = (targetSize.height - drawingSize.height) * 0.5
-            } else {
-                offsetX = (targetSize.width  - drawingSize.width)  * 0.5
-                offsetY = (targetSize.height - drawingSize.height) * 0.5
-            }
+            let offsetX = (targetSize.width  - drawingSize.width)  * 0.5
+            let offsetY = (targetSize.height - drawingSize.height) * 0.5
             
             let onScreenCenter = CGPoint(x: offsetX + rect.center.x * renderScale, y: offsetY + rect.center.y * renderScale)
             
@@ -1964,15 +1670,10 @@ public final class WallpaperBackgroundNodeImpl: ASDisplayNode, WallpaperBackgrou
     
     public func makeDimmedNode() -> ASDisplayNode? {
         if let gradientBackgroundNode = self.gradientBackgroundNode {
-            return GradientBackgroundNode.CloneNode(parentNode: gradientBackgroundNode, isDimmed: true)
+            return GradientBackgroundNode.CloneNode(parentNode: gradientBackgroundNode)
         } else {
             return nil
         }
-    }
-    
-    public func makeEdgeEffectNode() -> WallpaperEdgeEffectNode? {
-        let node = WallpaperEdgeEffectNodeImpl(parentNode: self)
-        return node
     }
 }
 

@@ -6,9 +6,6 @@ swift_library(
     srcs = glob([
         "Sources/**/*.swift",
     ]),
-    copts = [
-        "-warnings-as-errors",
-    ],
     deps = [
         "//submodules/AccountContext:AccountContext",
         "//submodules/Display:Display",
@@ -30,13 +27,14 @@ swift_library(
         "//Nicegram/NGLogging:NGLogging",
         "//Nicegram/NGStrings:NGStrings",
         "//Nicegram/NGAppCache:NGAppCache",
+        "//Nicegram/NGWebUtils:NGWebUtils",
         "//Nicegram/NGEnv:NGEnv",
         "//Nicegram/NGDoubleBottom:NGDoubleBottom",
         "//Nicegram/NGQuickReplies:NGQuickReplies",
+        "//Nicegram/NGRemoteConfig:NGRemoteConfig",
         "@swiftpkg_nicegram_assistant_ios//:NGAiChatUI",
         "@swiftpkg_nicegram_assistant_ios//:FeatAccountBackup",
         "@swiftpkg_nicegram_assistant_ios//:FeatAdsgram",
-        "@swiftpkg_nicegram_assistant_ios//:FeatCallRecorder",
         "@swiftpkg_nicegram_assistant_ios//:FeatDataSharing",
         "@swiftpkg_nicegram_assistant_ios//:FeatPinnedChats",
         "@swiftpkg_nicegram_assistant_ios//:FeatSpeechToText",

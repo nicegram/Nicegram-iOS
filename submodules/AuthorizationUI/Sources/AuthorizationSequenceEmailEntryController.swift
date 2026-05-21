@@ -2,10 +2,8 @@ import Foundation
 import UIKit
 import Display
 import AsyncDisplayKit
-import SwiftSignalKit
 import TelegramPresentationData
 import ProgressNavigationButtonNode
-import AccountContext
 
 public final class AuthorizationSequenceEmailEntryController: ViewController {
     public enum Mode {
@@ -14,7 +12,6 @@ public final class AuthorizationSequenceEmailEntryController: ViewController {
     }
     
     private let mode: Mode
-    private let blocking: Bool
     
     private var controllerNode: AuthorizationSequenceEmailEntryControllerNode {
         return self.displayNode as! AuthorizationSequenceEmailEntryControllerNode
@@ -38,16 +35,9 @@ public final class AuthorizationSequenceEmailEntryController: ViewController {
         }
     }
     
-    public var authorization: Any?
-    public var authorizationDelegate: Any?
-    
-    private var inBackground = false
-    private var inBackgroundDisposable: Disposable?
-    
-    public init(context: AccountContext? = nil, presentationData: PresentationData, mode: Mode, blocking: Bool = false, back: @escaping () -> Void) {
+    public init(presentationData: PresentationData, mode: Mode, back: @escaping () -> Void) {
         self.presentationData = presentationData
         self.mode = mode
-        self.blocking = blocking
         
         super.init(navigationBarPresentationData: NavigationBarPresentationData(theme: AuthorizationSequenceController.navigationBarTheme(presentationData.theme), strings: NavigationBarStrings(presentationStrings: presentationData.strings)))
         
@@ -63,41 +53,10 @@ public final class AuthorizationSequenceEmailEntryController: ViewController {
         self.navigationBar?.backPressed = {
             back()
         }
-        
-        if self.blocking {
-            self.navigationItem.leftBarButtonItem = UIBarButtonItem(customView: UIView())
-        }
-        
-        if let context {
-            self.inBackgroundDisposable = (context.sharedContext.applicationBindings.applicationInForeground
-            |> deliverOnMainQueue).start(next: { [weak self] value in
-                guard let self else {
-                    return
-                }
-                let previousValue = self.inBackground
-                self.inBackground = value
-                
-                if !value && previousValue {
-                    let _ = (context.engine.notices.getServerProvidedSuggestions(reload: true)
-                    |> deliverOnMainQueue).start(next: { [weak self] currentValues in
-                        guard let self else {
-                            return
-                        }
-                        if !currentValues.contains(.setupLoginEmail) && !currentValues.contains(.setupLoginEmailBlocking) {
-                            self.dismiss()
-                        }
-                    })
-                }
-            })
-        }
     }
     
     required init(coder aDecoder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
-    }
-    
-    deinit {
-        self.inBackgroundDisposable?.dispose()
     }
     
     override public func loadDisplayNode() {
@@ -127,7 +86,7 @@ public final class AuthorizationSequenceEmailEntryController: ViewController {
         guard let layout = self.validLayout, layout.size.width < 360.0 else {
             return
         }
-                        
+                
         if self.inProgress {
             let item = UIBarButtonItem(customDisplayNode: ProgressNavigationButtonNode(color: self.presentationData.theme.rootController.navigationBar.accentTextColor))
             self.navigationItem.rightBarButtonItem = item
@@ -150,7 +109,7 @@ public final class AuthorizationSequenceEmailEntryController: ViewController {
         }
     }
     
-    override public func containerLayoutUpdated(_ layout: ContainerViewLayout, transition: ContainedViewLayoutTransition) {
+    override public  func containerLayoutUpdated(_ layout: ContainerViewLayout, transition: ContainedViewLayoutTransition) {
         super.containerLayoutUpdated(layout, transition: transition)
         
         let hadLayout = self.validLayout != nil

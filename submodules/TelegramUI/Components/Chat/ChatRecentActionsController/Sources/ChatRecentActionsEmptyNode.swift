@@ -1,3 +1,6 @@
+// Nicegram Unblock
+import SolidRoundedButtonNode
+//
 import Foundation
 import UIKit
 import Display
@@ -27,6 +30,10 @@ public final class ChatRecentActionsEmptyNode: ASDisplayNode {
     
     private var layoutParams: (CGSize, ChatPresentationData)?
     
+    // Nicegram Unblock
+    private let buttonNode: SolidRoundedButtonNode
+    //
+    
     private var title: String = ""
     private var text: String = ""
     
@@ -46,6 +53,10 @@ public final class ChatRecentActionsEmptyNode: ASDisplayNode {
         self.textNode = TextNode()
         self.textNode.isUserInteractionEnabled = false
         
+        // Nicegram Unblock
+        self.buttonNode = SolidRoundedButtonNode(theme: SolidRoundedButtonTheme(theme: self.theme), height: 50.0, cornerRadius: 11.0, gloss: true)
+        //
+        
         super.init()
         
         self.allowsGroupOpacity = true
@@ -56,6 +67,9 @@ public final class ChatRecentActionsEmptyNode: ASDisplayNode {
         }
         self.addSubnode(self.titleNode)
         self.addSubnode(self.textNode)
+        // Nicegram Unblock
+        self.addSubnode(self.buttonNode)
+        //
     }
     
     public func update(rect: CGRect, within containerSize: CGSize, transition: ContainedViewLayoutTransition = .immediate) {
@@ -114,6 +128,22 @@ public final class ChatRecentActionsEmptyNode: ASDisplayNode {
         let titleFrame = CGRect(origin: CGPoint(x: backgroundFrame.minX + floor((contentSize.width - titleLayout.size.width) / 2.0), y: self.hasIcon ? iconFrame.maxY - 2.0 : backgroundFrame.minY + insets.top), size: titleLayout.size)
         transition.updateFrame(node: self.titleNode, frame: titleFrame)
         
+        // Nicegram Unblock
+        let buttonSize = CGSize(
+            width: size.width - insets.left - insets.right,
+            height: 50
+        )
+        let buttonFrame = CGRect(
+            origin: CGPoint(
+                x: (size.width - buttonSize.width) / 2,
+                y: backgroundFrame.maxY + 50
+            ),
+            size: buttonSize
+        )
+        transition.updateFrame(node: self.buttonNode, frame: buttonFrame)
+        let _ = self.buttonNode.updateLayout(width: buttonFrame.width, transition: transition)
+        //
+        
         let textFrame = CGRect(origin: CGPoint(x: backgroundFrame.minX + floor((contentSize.width - textLayout.size.width) / 2.0), y: titleFrame.maxY + spacing), size: textLayout.size)
         transition.updateFrame(node: self.textNode, frame: textFrame)
        
@@ -146,6 +176,14 @@ public final class ChatRecentActionsEmptyNode: ASDisplayNode {
             self.backgroundNode.isHidden = false
         }
     }
+    
+    // Nicegram Unblock
+    public func setupButton(title: String?, handler: (() -> Void)?) {
+        self.buttonNode.title = title
+        self.buttonNode.isHidden = (title == nil)
+        self.buttonNode.pressed = handler
+    }
+    //
     
     public func setup(title: String, text: String) {
         if self.title != title || self.text != text {

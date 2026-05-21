@@ -4,6 +4,7 @@ import Display
 import TelegramCore
 import SwiftSignalKit
 import AsyncDisplayKit
+import Postbox
 import AccountContext
 import GridMessageSelectionNode
 import SettingsThemeWallpaperNode

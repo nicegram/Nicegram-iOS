@@ -21,8 +21,6 @@ import LottieComponent
 import TextFieldComponent
 import ListMultilineTextFieldItemComponent
 import ButtonComponent
-import BundleIconComponent
-import GlassBarButtonComponent
 
 private enum ReportResult {
     case reported
@@ -85,6 +83,8 @@ private final class SheetPageContent: CombinedComponent {
     }
     
     final class State: ComponentState {
+        var backArrowImage: (UIImage, PresentationTheme)?
+
         let playOnce =  ActionSlot<Void>()
         private var didPlayAnimation = false
 
@@ -104,7 +104,8 @@ private final class SheetPageContent: CombinedComponent {
     }
         
     static var body: Body {
-        let background = Child(Rectangle.self)
+        let background = Child(RoundedRectangle.self)
+        let back = Child(Button.self)
         let title = Child(Text.self)
         let animation = Child(LottieComponent.self)
         let section = Child(ListSectionComponent.self)
@@ -123,10 +124,10 @@ private final class SheetPageContent: CombinedComponent {
             
             let sideInset: CGFloat = 16.0 + environment.safeInsets.left
             
-            var contentSize = CGSize(width: context.availableSize.width, height: 26.0)
+            var contentSize = CGSize(width: context.availableSize.width, height: 18.0)
                         
             let background = background.update(
-                component: Rectangle(color: theme.list.modalBlocksBackgroundColor),
+                component: RoundedRectangle(color: theme.list.modalBlocksBackgroundColor, cornerRadius: 8.0),
                 availableSize: CGSize(width: context.availableSize.width, height: 1000.0),
                 transition: .immediate
             )
@@ -134,7 +135,40 @@ private final class SheetPageContent: CombinedComponent {
                 .position(CGPoint(x: context.availableSize.width / 2.0, y: background.size.height / 2.0))
             )
             
-            let constrainedTitleWidth = context.availableSize.width - 60.0 * 2.0
+            let backArrowImage: UIImage
+            if let (cached, cachedTheme) = state.backArrowImage, cachedTheme === theme {
+                backArrowImage = cached
+            } else {
+                backArrowImage = NavigationBarTheme.generateBackArrowImage(color: theme.list.itemAccentColor)!
+                state.backArrowImage = (backArrowImage, theme)
+            }
+            
+            let backContents: AnyComponent<Empty>
+            if component.isFirst {
+                backContents = AnyComponent(Text(text: strings.Common_Cancel, font: Font.regular(17.0), color: theme.list.itemAccentColor))
+            } else {
+                backContents = AnyComponent(
+                    HStack([
+                        AnyComponentWithIdentity(id: "arrow", component: AnyComponent(Image(image: backArrowImage, contentMode: .center))),
+                        AnyComponentWithIdentity(id: "label", component: AnyComponent(Text(text: strings.Common_Back, font: Font.regular(17.0), color: theme.list.itemAccentColor)))
+                    ], spacing: 6.0)
+                )
+            }
+            let back = back.update(
+                component: Button(
+                    content: backContents,
+                    action: {
+                        component.pop()
+                    }
+                ),
+                availableSize: CGSize(width: context.availableSize.width, height: context.availableSize.height),
+                transition: .immediate
+            )
+            context.add(back
+                .position(CGPoint(x: sideInset + back.size.width / 2.0 - (!component.isFirst ? 8.0 : 0.0), y: contentSize.height + back.size.height / 2.0))
+            )
+            
+            let constrainedTitleWidth = context.availableSize.width - (back.size.width + 16.0) * 2.0
             
             let titleString: String
             if let title = component.title {
@@ -152,7 +186,7 @@ private final class SheetPageContent: CombinedComponent {
                 .position(CGPoint(x: context.availableSize.width / 2.0, y: contentSize.height + title.size.height / 2.0))
             )
             contentSize.height += title.size.height
-            contentSize.height += 40.0
+            contentSize.height += 24.0
                                     
             var items: [AnyComponentWithIdentity<Empty>] = []
             var footer: AnyComponent<Empty>?
@@ -162,7 +196,6 @@ private final class SheetPageContent: CombinedComponent {
                 for item in options  {
                     items.append(AnyComponentWithIdentity(id: item.title, component: AnyComponent(ListActionItemComponent(
                         theme: theme,
-                        style: .glass,
                         title: AnyComponent(VStack([
                             AnyComponentWithIdentity(id: AnyHashable(0), component: AnyComponent(MultilineTextComponent(
                                 text: .plain(NSAttributedString(
@@ -241,7 +274,6 @@ private final class SheetPageContent: CombinedComponent {
             let section = section.update(
                 component: ListSectionComponent(
                     theme: theme,
-                    style: .glass,
                     header: AnyComponent(MultilineTextComponent(
                         text: .plain(NSAttributedString(
                             string: component.subtitle.uppercased(),
@@ -262,21 +294,15 @@ private final class SheetPageContent: CombinedComponent {
                 .position(CGPoint(x: context.availableSize.width / 2.0, y: contentSize.height + section.size.height / 2.0))
             )
             contentSize.height += section.size.height
-            
-            let bottomInsets = ContainerViewLayout.concentricInsets(bottomInset: environment.safeInsets.bottom, innerDiameter: 26.0, sideInset: 16.0)
-            contentSize.height += bottomInsets.bottom
+            contentSize.height += 54.0
             
             if case let .comment(isOptional, option) = component.content {
-                contentSize.height -= bottomInsets.bottom
-                contentSize.height += 24.0
-                
-                let bottomInsets = ContainerViewLayout.concentricInsets(bottomInset: environment.safeInsets.bottom, innerDiameter: 52.0, sideInset: 30.0)
+                contentSize.height -= 16.0
                 
                 let action = component.action
                 let button = button.update(
                     component: ButtonComponent(
                         background: ButtonComponent.Background(
-                            style: .glass,
                             color: theme.list.itemCheckColors.fillColor,
                             foreground: theme.list.itemCheckColors.foregroundColor,
                             pressedColor: theme.list.itemCheckColors.fillColor.withMultipliedAlpha(0.8)
@@ -290,18 +316,19 @@ private final class SheetPageContent: CombinedComponent {
                         }
                     ),
                     environment: {},
-                    availableSize: CGSize(width: context.availableSize.width - bottomInsets.left - bottomInsets.right, height: 52.0),
+                    availableSize: CGSize(width: context.availableSize.width - sideInset * 2.0, height: 50.0),
                     transition: context.transition
                 )
                 context.add(button
+                    .clipsToBounds(true)
+                    .cornerRadius(10.0)
                     .position(CGPoint(x: context.availableSize.width / 2.0, y: contentSize.height + button.size.height / 2.0))
                 )
                 contentSize.height += button.size.height
+                contentSize.height += 16.0
                 
-                if environment.inputHeight > 0.0 {
-                    contentSize.height += 8.0
-                } else {
-                    contentSize.height += bottomInsets.bottom
+                if environment.inputHeight.isZero && environment.safeInsets.bottom > 0.0 {
+                    contentSize.height += environment.safeInsets.bottom
                 }
             }
             
@@ -400,7 +427,6 @@ private final class SheetContent: CombinedComponent {
         
     static var body: Body {
         let navigation = Child(NavigationStackComponent<EnvironmentType>.self)
-        let backButton = Child(GlassBarButtonComponent.self)
         
         return { context in
             let environment = context.environment[EnvironmentType.self]
@@ -515,39 +541,10 @@ private final class SheetContent: CombinedComponent {
             )
             context.add(navigation
                 .position(CGPoint(x: context.availableSize.width / 2.0, y: navigation.size.height / 2.0))
+                .clipsToBounds(true)
+                .cornerRadius(8.0)
             )
             contentSize.height += navigation.size.height
-            
-            let isBack = items.count > 1
-            let barButtonSize = CGSize(width: 44.0, height: 44.0)
-            let backButton = backButton.update(
-                component: GlassBarButtonComponent(
-                    size: barButtonSize,
-                    backgroundColor: nil,
-                    isDark: environment.theme.overallDarkAppearance,
-                    state: .glass,
-                    component: AnyComponentWithIdentity(id: isBack ? "back" : "close", component: AnyComponent(
-                        BundleIconComponent(
-                            name: isBack ? "Navigation/Back" : "Navigation/Close",
-                            tintColor: environment.theme.chat.inputPanel.panelControlColor
-                        )
-                    )),
-                    action: { [weak state] _ in
-                        if isBack {
-                            state?.pushedOptions.removeLast()
-                            update(.spring(duration: 0.45))
-                        } else {
-                            component.dismiss()
-                        }
-                    }
-                ),
-                environment: {},
-                availableSize: barButtonSize,
-                transition: context.transition
-            )
-            context.add(backButton
-                .position(CGPoint(x: 16.0 + backButton.size.width / 2.0, y: 16.0 + backButton.size.height / 2.0))
-            )
                         
             return contentSize
         }
@@ -641,18 +638,14 @@ private final class SheetContainerComponent: CombinedComponent {
                         },
                         requestSelectMessages: context.component.requestSelectMessages
                     )),
-                    style: .glass,
                     backgroundColor: .color(environment.theme.list.modalBlocksBackgroundColor),
                     followContentSizeChanges: true,
-                    clipsContent: true,
                     externalState: sheetExternalState,
                     animateOut: animateOut
                 ),
                 environment: {
                     environment
                     SheetComponentEnvironment(
-                        metrics: environment.metrics,
-                        deviceMetrics: environment.deviceMetrics,
                         isDisplaying: environment.value.isVisible,
                         isCentered: environment.metrics.widthClass == .regular,
                         hasInputHeight: !environment.inputHeight.isZero,

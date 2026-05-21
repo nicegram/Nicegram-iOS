@@ -19,7 +19,7 @@ public struct SecureIdPreparePhoneVerificationPayload {
 }
 
 public func secureIdPreparePhoneVerification(network: Network, value: SecureIdPhoneValue) -> Signal<SecureIdPreparePhoneVerificationPayload, SecureIdPreparePhoneVerificationError> {
-    return network.request(Api.functions.account.sendVerifyPhoneCode(phoneNumber: value.phone, settings: .codeSettings(.init(flags: 0, logoutTokens: nil, token: nil, appSandbox: nil))), automaticFloodWait: false)
+    return network.request(Api.functions.account.sendVerifyPhoneCode(phoneNumber: value.phone, settings: .codeSettings(flags: 0, logoutTokens: nil, token: nil, appSandbox: nil)), automaticFloodWait: false)
     |> mapError { error -> SecureIdPreparePhoneVerificationError in
         if error.errorDescription.hasPrefix("FLOOD_WAIT") {
             return .flood
@@ -28,8 +28,7 @@ public func secureIdPreparePhoneVerification(network: Network, value: SecureIdPh
     }
     |> mapToSignal { sentCode -> Signal<SecureIdPreparePhoneVerificationPayload, SecureIdPreparePhoneVerificationError> in
         switch sentCode {
-        case let .sentCode(sentCodeData):
-            let (type, phoneCodeHash, nextType, timeout) = (sentCodeData.type, sentCodeData.phoneCodeHash, sentCodeData.nextType, sentCodeData.timeout)
+        case let .sentCode(_, type, phoneCodeHash, nextType, timeout):
             return .single(SecureIdPreparePhoneVerificationPayload(type: SentAuthorizationCodeType(apiType: type), nextType: nextType.flatMap(AuthorizationCodeNextType.init), timeout: timeout, phone: value.phone, phoneCodeHash: phoneCodeHash))
         case .sentCodeSuccess, .sentCodePaymentRequired:
             return .never()
@@ -85,8 +84,7 @@ public func secureIdPrepareEmailVerification(network: Network, value: SecureIdEm
     }
     |> map { sentCode -> SecureIdPrepareEmailVerificationPayload in
         switch sentCode {
-            case let .sentEmailCode(sentEmailCodeData):
-                let length = sentEmailCodeData.length
+            case .sentEmailCode(_, let length):
                 return SecureIdPrepareEmailVerificationPayload(email: value.email, length: length)
         }
     }
@@ -99,7 +97,7 @@ public enum SecureIdCommitEmailVerificationError {
 }
 
 public func secureIdCommitEmailVerification(postbox: Postbox, network: Network, context: SecureIdAccessContext, payload: SecureIdPrepareEmailVerificationPayload, code: String) -> Signal<SecureIdValueWithContext, SecureIdCommitEmailVerificationError> {
-    return network.request(Api.functions.account.verifyEmail(purpose: .emailVerifyPurposePassport, verification: .emailVerificationCode(.init(code: code))), automaticFloodWait: false)
+    return network.request(Api.functions.account.verifyEmail(purpose: .emailVerifyPurposePassport, verification: .emailVerificationCode(code: code)), automaticFloodWait: false)
     |> mapError { error -> SecureIdCommitEmailVerificationError in
         if error.errorDescription.hasPrefix("FLOOD_WAIT") {
             return .flood

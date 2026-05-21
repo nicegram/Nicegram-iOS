@@ -28,6 +28,8 @@
 
 "NiceFeatures.Folders.Header" = "폴더";
 "NiceFeatures.Account.Header" = "프라이버시 설정";
+"NiceFeatures.Folders.TgFolders" = "폴더를 하단에 표시";
+"NiceFeatures.Folders.TgFolders.Notice" = "iOS 스타일 폴더 목록";
 
 "NiceFeatures.RoundVideos.Header" = "라운드 비디오";
 "NiceFeatures.RoundVideos.UseRearCamera" = "후면 카메라로 시작";
@@ -48,6 +50,8 @@
 /*Common*/
 "Common.ExitNow" = "지금 종료";
 "Common.Later" = "나중에";
+"Common.RestartRequired" = "재시작 필요!";
+"NiceFeatures.Tabs.ShowNames" = "탭 이름 표시";
 "Chat.ForwardAsCopy" = "복사본으로 전달";
 
 /*Folder*/
@@ -107,9 +111,7 @@
 "Messages.Translate" = "번역";
 "Messages.UndoTranslate" = "번역 취소";
 "Messages.TranslateError" = "죄송합니다. 번역 할 수 없습니다.";
-"Messages.SelectAllFromUser" = "이 사용자에게서 온 모든 메시지 선택 
-
-";
+"Messages.SelectAllFromUser" = "이 사용자에게서 온 모든 메시지 선택 \n\n";
 "Messages.ToLanguage" = "언어";
 "Messages.ToLanguage.WithCode" = "언어: %@";
 "Messages.TranslateError.ToLanguageNotFound" = "텍스트를 번역할 언어를 결정할 수 없습니다. 수동으로 선택하고 다시 시도하십시오.";
@@ -154,10 +156,23 @@
 "NicegramSettings.Other.hidePhoneInSettingsNotice" = "전화 번호는 UI에서만 숨겨집니다. 다른 사람에게 숨기려면 개인 정보 설정을 사용하세요.";
 "NicegramSettings.Other.showProfileId" = "프로필 ID 표시";
 "NicegramSettings.Other.showRegDate" = "가입 날짜 표시";
+"NicegramSettings.Unblock.Header" = "차단 해제";
+"NicegramSettings.Unblock.Button" = "차단해제 안내";
+"NicegramSettings.Other.hideReactions" = "반응 숨기기";
+"NicegramSettings.Other.hideReactionsToYourMessages" = "메시지에 대한 반응 숨기기";
 "NicegramSettings.RoundVideos.DownloadVideos" = "사진앨범으로 동영상 다운로드";
 "Premium.OnetapTranslate.UseIgnoreLanguages" = "언어 무시하기";
 "Premium.OnetapTranslate.UseIgnoreLanguages.Note" = "앱은 기기에서 각 메시지의 언어를 감지합니다. 배터리 수명에 영향을 줄 수 있는 고성능 작업입니다.";
 "Premium.rememberFolderOnExit" = "종료시 현재 폴더 기억하기";
+"NicegramSettings.HideStories" = "스토리 숨기기";
+"NicegramSettings.HideBadgeCounters" = "반응 알림 숨기기";
+"NicegramSettings.HideUnreadCounters" = "읽지 않은 카운터 숨기기";
+"NicegramSettings.HideMentionNotification" = "언급 알림 숨기기";
+"NicegramSettings.EnableAnimationsInChatList" = "채팅 목록의 애니메이션";
+"NicegramSettings.EnableGrayscaleAll" = "전체 화면 흑백";
+"NicegramSettings.EnableGrayscaleInChatList" = "채팅 목록의 그레이스케일";
+"NicegramSettings.EnableGrayscaleInChat" = "채팅에서의 그레이스케일";
+"NicegramSettings.EnableAppleSpeech2Text" = "Apple Speech2Text 활성화";
 "NicegramSettings.ShowKeywords" = "키워드 폴더 보기";
 
 /*Registration Date*/
@@ -187,6 +202,10 @@
 "RoundedVideos.MoreButtonTooltip" = "한 번의 탭으로 정사각형 비디오를 원형으로 변환하여 보내기.";
 "RoundedVideos.SendButtonTooltip" = "길게 눌러 스타일리시한 원형으로 비디오를 보내세요.";
 
+/*Speech to text*/
+"SpeechToText.UseOpenAi" = "OpenAI 음성에서 텍스트로";
+"SpeechToText.Toast" = "OpenAI 음성에서 텍스트로 기술을 더 빠르고 좋게 이용하려면 [Nicegram Premium에 가입하세요]()!";
+
 /*Confirm Call*/
 "ConfirmCall.Desc" = "전화를 걸겠습니까?";
 
@@ -208,6 +227,7 @@
 "NicegramCallRecord.StopAlertDescription" = "이 통화 녹음을 중지하시겠습니까?";
 "NicegramCallRecord.StopAlertButtonStop" = "중지";
 "NicegramCallRecord.StopAlertButtonCancel" = "Cancel";
+"NicegramCallRecord.SavedMessage" = "녹음된 통화가 **저장된 메시지**에 저장되었습니다.";
 
 /*Feed*/
 "NicegramFeed.Title" = "피드";
@@ -216,6 +236,7 @@
 
 /*SpeechToText*/
 "NicegramSpeechToText.Language.Title" = "Speеch-2-Text";
+"NicegramSpeechToText.Language.Whisper" = "⚠️ 정확도를 높이기 위해 음성 메시지의 언어를 선택하거나, [Whisper를 활성화](https://my.nicegram.app/)하여 수월한 자동 인식을 사용하세요";
 "NicegramSpeechToText.Language.Choose" = "인식할 언어 선택";
 "NicegramSpeechToText.SelectLanguage" = "언어 선택";
 "NicegramSpeechToText.NotAvailable" = "음성 인식이 현재 사용할 수 없습니다";
@@ -246,15 +267,3 @@
 "AccountsBackup.ImportFromFile" = "파일에서 가져오기";
 "AccountsBackup.ExportAsFile" = "파일로 내보내기";
 "AccountsBackup.DeleteSessions" = "세션 삭제";
-
-/*Privacy Settings Recommendation*/
-"NicegramSettings.AccountPrivacy.Button" = "계정 개인정보 업데이트";
-"NicegramSettings.AccountPrivacy.Alert.Title" = "추천 개인정보 설정을 적용하시겠습니까?";
-"NicegramSettings.AccountPrivacy.Alert.Body" = "계정에 추천된 개인정보 및 보안 설정을 적용하세요. 나중에 설정 → 개인정보 보호 및 보안에서 변경할 수 있습니다";
-"NicegramSettings.AccountPrivacy.Alert.Apply" = "적용";
-"NicegramSettings.AccountPrivacy.Alert.Cancel" = "Cancel";
-
-/*WhiteBridge*/
-"whitebridge.profile.button" = "WhiteBridge";
-"whitebridge.profile.hint" = "온라인에서 찾은 공개 정보를 구조적으로 확인하세요 — 프로필, 배경, 소셜 활동 등!";
-"whitebridge.chats.quick.action" = "WhiteBridge 보고서 보기";

@@ -1,8 +1,6 @@
 // Nicegram
 import FeatAiChatAnalysis
-import FeatChatExport
 import FeatHiddenChats
-import FeatWhitebridge
 import NGCoreUI
 import NGData
 import NGStrings
@@ -68,27 +66,6 @@ enum ChatContextMenuSource {
 func chatContextMenuItems(context: AccountContext, peerId: PeerId, promoInfo: ChatListNodeEntryPromoInfo?, source: ChatContextMenuSource, chatListController: ChatListControllerImpl?, joined: Bool) -> Signal<[ContextMenuItem], NoError> {
     let presentationData = context.sharedContext.currentPresentationData.with({ $0 })
     let strings = presentationData.strings
-    
-    // Nicegram
-    func appendBackItem(items: inout [ContextMenuItem]) {
-        let backItem = ContextMenuActionItem(
-            text: strings.ChatList_Context_Back,
-            icon: { theme in
-                generateTintedImage(
-                    image: UIImage(bundleImageName: "Chat/Context Menu/Back"),
-                    color: theme.contextMenu.primaryColor
-                )
-            },
-            iconPosition: .left,
-            action: { c, _ in
-                c?.setItems(chatContextMenuItems(context: context, peerId: peerId, promoInfo: promoInfo, source: source, chatListController: chatListController, joined: joined) |> map { ContextController.Items(content: .list($0)) }, minHeight: nil, animated: true)
-            }
-        )
-        
-        items.append(.action(backItem))
-        items.append(.separator)
-    }
-    //
 
     return combineLatest(
         context.engine.data.get(TelegramEngine.EngineData.Item.Messages.ChatListGroup(id: peerId)),
@@ -144,6 +121,42 @@ func chatContextMenuItems(context: AccountContext, peerId: PeerId, promoInfo: Ch
                     }
 
                     var items: [ContextMenuItem] = []
+// Nicegram NCG-6373 Feed tab
+                    if case .chatList = source {
+                        let isFeedPeerEqualPeer = NGSettings.feedPeer[context.account.id.int64] == peerId
+                        let text = isFeedPeerEqualPeer ? l("NicegramFeed.Remove") : l("NicegramFeed.Add")
+                        let color: ContextMenuActionItemTextColor = isFeedPeerEqualPeer ? .destructive : .primary
+                        items.append(
+                            .action(ContextMenuActionItem(
+                                text: text,
+                                textColor: color,
+                                icon: { theme in
+                                    let color = isFeedPeerEqualPeer ? theme.contextMenu.destructiveColor : theme.contextMenu.primaryColor
+                                    return generateTintedImage(image: UIImage(bundleImageName: "feed"), color: color)
+                                },
+                                action: { _, f in
+                                    if isFeedPeerEqualPeer {
+                                        NGSettings.feedPeer.removeValue(forKey: context.account.id.int64)
+                                        updateTabs(with: context)
+                                    } else {
+                                        let needUpdateTabs =
+                                        !NGSettings.showFeedTab ||
+                                        NGSettings.feedPeer[context.account.id.int64] == nil
+
+                                        NGSettings.feedPeer[context.account.id.int64] = peerId
+                                        if needUpdateTabs {
+                                            NGSettings.showFeedTab = true
+                                            updateTabs(with: context)
+                                        }
+                                    }
+                                    context.needUpdateFeed()
+                                    f(.default)
+                                }
+                            ))
+                        )
+                        items.append(.separator)
+                    }
+//
                     if case let .search(search) = source {
                         switch search {
                         case .recentPeers:
@@ -274,44 +287,6 @@ func chatContextMenuItems(context: AccountContext, peerId: PeerId, promoInfo: Ch
                                 }
                             }
                             
-                            // Nicegram WhiteBridge
-                            let getConfigUseCase = WhitebridgeModule.shared.getWhitebridgeConfigUseCase()
-                            let isWhitebridgeEnabled = getConfigUseCase().enabled
-                            if #available(iOS 15.0, *),
-                               isWhitebridgeEnabled,
-                               !isSavedMessages,
-                               case let .user(userPeer) = peer,
-                               !userPeer.flags.contains(.isSupport),
-                               userPeer.botInfo == nil,
-                               !userPeer.isDeleted {
-                                let targetUsername = userPeer.displayedName
-                                sendWhitebridgeAnalytics(with: .show(source: .quickAction))
-                                items.append(
-                                    .action(
-                                        ContextMenuActionItem(
-                                            text: l("whitebridge.chats.quick.action"),
-                                            icon: { theme in
-                                                generateTintedImage(
-                                                    image: UIImage(bundleImageName: "profile_analysis"),
-                                                    color: theme.contextMenu.primaryColor,
-                                                    customSize: .init(width: 22, height: 22)
-                                                )
-                                            },
-                                            action: { _, f in
-                                                f(.default)
-                                                Task { @MainActor in
-                                                    WhitebridgePresenter().presentFlow(
-                                                        reportType: .userReport(userName: targetUsername),
-                                                        source: .quickAction
-                                                    )
-                                                }
-                                            }
-                                        )
-                                    )
-                                )
-                            }
-                            //
-                            
                             if hasFolders {
                                 items.append(.action(ContextMenuActionItem(text: strings.ChatList_Context_AddToFolder, icon: { theme in generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Folder"), color: theme.contextMenu.primaryColor) }, action: { c, _ in
                                     var updatedItems: [ContextMenuItem] = []
@@ -400,7 +375,7 @@ func chatContextMenuItems(context: AccountContext, peerId: PeerId, promoInfo: Ch
                                                         }
                                                         return filters
                                                     }).startStandalone()
-                                                    chatListController?.present(UndoOverlayController(presentationData: presentationData, content: .chatAddedToFolder(context: context, chatTitle: peer.displayTitle(strings: presentationData.strings, displayOrder: presentationData.nameDisplayOrder), folderTitle: title.rawAttributedString), elevatedLayout: false, animateInAsReplacement: true, action: { _ in
+                                                    chatListController?.present(UndoOverlayController( presentationData: presentationData, content: .chatAddedToFolder(context: context, chatTitle: peer.displayTitle(strings: presentationData.strings, displayOrder: presentationData.nameDisplayOrder), folderTitle: title.rawAttributedString), elevatedLayout: false, animateInAsReplacement: true, action: { _ in
                                                         return false
                                                     }), in: .current)
                                                 })
@@ -439,55 +414,6 @@ func chatContextMenuItems(context: AccountContext, peerId: PeerId, promoInfo: Ch
                                 }
                             )))
                             
-                            // Nicegram ChatExport
-                            items.append(.action(ContextMenuActionItem(
-                                text: FeatChatExport.strings.exportChatBtn(),
-                                icon: { theme in
-                                    generateTintedImage(
-                                        image: UIImage(bundleImageName: "Chat/Context Menu/Forward"),
-                                        color: theme.contextMenu.primaryColor
-                                    )
-                                },
-                                action: { controller, _ in
-                                    let exportChatViewModel = ExportChatViewModel(
-                                        peer: peer._asPeer().toTelegramBridgePeer()
-                                    )
-                                    
-                                    var subItems: [ContextMenuItem] = []
-                                    
-                                    appendBackItem(items: &subItems)
-                                    
-                                    let options = exportChatViewModel.getOptions()
-                                    for option in options {
-                                        let item = ContextMenuActionItem(
-                                            text: option.title,
-                                            icon: { _ in nil },
-                                            action: { _, f in
-                                                Task { @MainActor in
-                                                    try await exportChatViewModel.export(using: option)
-                                                    
-                                                    let toastController = UndoOverlayController(
-                                                        presentationData: presentationData,
-                                                        content: .forward(
-                                                            savedMessages: true,
-                                                            text: FeatChatExport.strings.chatExportedToastTitle()
-                                                        ),
-                                                        action: { _ in true }
-                                                    )
-                                                    chatListController?.present(toastController, in: .current)
-                                                }
-                                                
-                                                f(.dismissWithoutContent)
-                                            }
-                                        )
-                                        subItems.append(.action(item))
-                                    }
-                                    
-                                    controller?.setItems(.single(.init(content: .list(subItems))), minHeight: nil, animated: true)
-                                }
-                            )))
-                            //
-                            
                             func copySourceMessages(_ count: Int) {
                                 Task {
                                     let messages = try await context.engine.messages
@@ -523,12 +449,7 @@ func chatContextMenuItems(context: AccountContext, peerId: PeerId, promoInfo: Ch
                             let messagesCount = 100
                             items.append(.action(ContextMenuActionItem(
                                 text: FeatAiChatAnalysis.strings.copyLastMessages(messagesCount),
-                                icon: { theme in
-                                    generateTintedImage(
-                                        image: UIImage(bundleImageName: "Chat/Context Menu/Copy"),
-                                        color: theme.contextMenu.primaryColor
-                                    )
-                                },
+                                icon: { _ in nil },
                                 action: { _, f in
                                     copySourceMessages(messagesCount)
                                     f(.default)
@@ -539,12 +460,7 @@ func chatContextMenuItems(context: AccountContext, peerId: PeerId, promoInfo: Ch
                             if unreadCount > 0 {
                                 items.append(.action(ContextMenuActionItem(
                                     text: FeatAiChatAnalysis.strings.copyUnreadMessages(),
-                                    icon: { theme in
-                                        generateTintedImage(
-                                            image: UIImage(bundleImageName: "Chat/Context Menu/Copy"),
-                                            color: theme.contextMenu.primaryColor
-                                        )
-                                    },
+                                    icon: { _ in nil },
                                     action: { _, f in
                                         copySourceMessages(unreadCount)
                                         f(.default)
@@ -563,7 +479,7 @@ func chatContextMenuItems(context: AccountContext, peerId: PeerId, promoInfo: Ch
                             })))
                         } else if !isForum {
                             var canMarkAsUnread = true
-                            if peerId.namespace == Namespaces.Peer.CloudChannel && joined {
+                            if peerId.namespace == Namespaces.Peer.CloudChannel && !joined {
                                 canMarkAsUnread = false
                             }
                             if canMarkAsUnread {
@@ -781,7 +697,7 @@ func chatContextMenuItems(context: AccountContext, peerId: PeerId, promoInfo: Ch
                                         }
                                         
                                         joinChannelDisposable.set((createSignal
-                                        |> deliverOnMainQueue).start(next: { _ in
+                                                                   |> deliverOnMainQueue).start(next: { _ in
                                         }, error: { _ in
                                             if let chatListController = chatListController {
                                                 let presentationData = context.sharedContext.currentPresentationData.with { $0 }
@@ -874,31 +790,18 @@ public func chatForumTopicMenuItems(context: AccountContext, peerId: PeerId, thr
         TelegramEngine.EngineData.Item.NotificationSettings.Global()
     )
     |> mapToSignal { peer, peerNotificationSettings, threadData, globalNotificationSettings -> Signal<[ContextMenuItem], NoError> in
-        guard let peer else {
+        guard case let .channel(channel) = peer else {
             return .single([])
         }
-        guard let threadData else {
+        guard let threadData = threadData else {
             return .single([])
         }
         
         var items: [ContextMenuItem] = []
         
-        var isCreator = false
-        var canManageTopics = false
-        var canDeleteMessages = false
-        if case let .channel(channel) = peer {
-            isCreator = channel.flags.contains(.isCreator)
-            canManageTopics = channel.hasPermission(.manageTopics)
-            canDeleteMessages = channel.hasPermission(.deleteAllMessages)
-        } else if case .user = peer {
-            isCreator = true
-            canManageTopics = true
-            canDeleteMessages = true
-        }
-        
-        if let isClosed, isClosed && threadId != 1 {
+        if let isClosed = isClosed, isClosed && threadId != 1 {
         } else {
-            if let isPinned, canManageTopics {
+            if let isPinned, channel.hasPermission(.manageTopics) {
                 items.append(.action(ContextMenuActionItem(text: isPinned ? presentationData.strings.ChatList_Context_Unpin : presentationData.strings.ChatList_Context_Pin, icon: { theme in generateTintedImage(image: UIImage(bundleImageName: isPinned ? "Chat/Context Menu/Unpin": "Chat/Context Menu/Pin"), color: theme.contextMenu.primaryColor) }, action: { c, f in
                     if let customPinUnpin {
                         if let c = c as? ContextController {
@@ -949,14 +852,12 @@ public func chatForumTopicMenuItems(context: AccountContext, peerId: PeerId, thr
         }
         
         var canOpenClose = false
-        if case .channel = peer {
-            if isCreator {
-                canOpenClose = true
-            } else if canManageTopics {
-                canOpenClose = true
-            } else if threadData.isOwnedByMe {
-                canOpenClose = true
-            }
+        if channel.flags.contains(.isCreator) {
+            canOpenClose = true
+        } else if channel.hasPermission(.manageTopics) {
+            canOpenClose = true
+        } else if threadData.isOwnedByMe {
+            canOpenClose = true
         }
         
         if threadId != 1, canOpenClose, let customEdit {
@@ -1127,7 +1028,7 @@ public func chatForumTopicMenuItems(context: AccountContext, peerId: PeerId, thr
                         
                         let defaultSound: PeerMessageSound
                         
-                        if case let .channel(channel) = peer, case .broadcast = channel.info {
+                        if case .broadcast = channel.info {
                             defaultSound = globalSettings.channels.sound._asMessageSound()
                         } else {
                             defaultSound = globalSettings.groupChats.sound._asMessageSound()
@@ -1135,7 +1036,7 @@ public func chatForumTopicMenuItems(context: AccountContext, peerId: PeerId, thr
                         
                         let canRemove = false
                         
-                        let exceptionController = notificationPeerExceptionController(context: context, updatedPresentationData: nil, peer: peer, threadId: threadId, isStories: nil, canRemove: canRemove, defaultSound: defaultSound, defaultStoriesSound: defaultSound, edit: true, updatePeerSound: { peerId, sound in
+                        let exceptionController = notificationPeerExceptionController(context: context, updatedPresentationData: nil, peer: .channel(channel), threadId: threadId, isStories: nil, canRemove: canRemove, defaultSound: defaultSound, defaultStoriesSound: defaultSound, edit: true, updatePeerSound: { peerId, sound in
                             let _ = (updatePeerSound(peerId, sound)
                             |> deliverOnMainQueue).startStandalone(next: { _ in
                             })
@@ -1204,7 +1105,7 @@ public func chatForumTopicMenuItems(context: AccountContext, peerId: PeerId, thr
                     let _ = context.engine.peers.setForumChannelTopicClosed(id: peerId, threadId: threadId, isClosed: !threadData.isClosed).startStandalone()
                 })))
             }
-            if canDeleteMessages {
+            if channel.hasPermission(.deleteAllMessages) {
                 items.append(.action(ContextMenuActionItem(text: strings.ChatList_Context_Delete, textColor: .destructive, icon: { theme in generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Delete"), color: theme.contextMenu.destructiveColor) }, action: { [weak chatListController] c, _ in
                     c?.dismiss(completion: {
                         if let chatListController = chatListController as? ChatListControllerImpl {
@@ -1229,7 +1130,6 @@ public func chatForumTopicMenuItems(context: AccountContext, peerId: PeerId, thr
                                     })
                                 ])
                             ])
-                            chatListController.view.endEditing(true)
                             chatListController.present(actionSheet, in: .window(.root))
                         }
                     })
@@ -1299,7 +1199,7 @@ public func savedMessagesPeerMenuItems(context: AccountContext, threadId: Int64,
 }
 
 private func openCustomMute(context: AccountContext, peerId: EnginePeer.Id, threadId: Int64, baseController: ViewController) {
-    let controller = ChatTimerScreen(context: context, updatedPresentationData: nil, style: .default, mode: .mute, currentTime: nil, completion: { [weak baseController] value in
+    let controller = ChatTimerScreen(context: context, updatedPresentationData: nil, style: .default, mode: .mute, currentTime: nil, dismissByTapOutside: true, completion: { [weak baseController] value in
         let presentationData = context.sharedContext.currentPresentationData.with { $0 }
         
         if value <= 0 {

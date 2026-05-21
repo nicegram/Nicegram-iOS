@@ -11,7 +11,6 @@ final class ContactListNameIndexHeader: Equatable, ListViewItemHeader {
     let letter: unichar
     let stickDirection: ListViewItemHeaderStickDirection = .top
     public let stickOverInsets: Bool = true
-    public let isSticky: Bool = false
     
     let height: CGFloat = 29.0
     

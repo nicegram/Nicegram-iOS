@@ -41,8 +41,7 @@ apple_resource_bundle(
 )
 
 NGDEPS = [
-    "@swiftpkg_nicegram_assistant_ios//:FeatCalls",
-    "@swiftpkg_nicegram_assistant_ios//:NGCore",
+    "@swiftpkg_nicegram_assistant_ios//:NGCore"
 ]
 
 swift_library(
@@ -52,7 +51,7 @@ swift_library(
         "Sources/**/*.swift",
     ]),
     copts = [
-        "-warnings-as-errors",
+        #"-warnings-as-errors",
     ],
     data = [
         ":TelegramCallsUIBundle",
@@ -89,11 +88,13 @@ swift_library(
         "//submodules/AnimatedAvatarSetNode:AnimatedAvatarSetNode",
         "//submodules/AlertUI:AlertUI",
         "//submodules/DirectionalPanGesture:DirectionalPanGesture",
+        "//submodules/PeerInfoUI:PeerInfoUI",
         "//submodules/AnimatedCountLabelNode:AnimatedCountLabelNode",
         "//submodules/DeviceProximity:DeviceProximity",
         "//submodules/ManagedAnimationNode:ManagedAnimationNode",
         "//submodules/TemporaryCachedPeerDataManager:TemporaryCachedPeerDataManager",
         "//submodules/PeerInfoAvatarListNode:PeerInfoAvatarListNode",
+        "//submodules/WebSearchUI:WebSearchUI",
         "//submodules/MapResourceToAvatarSizes:MapResourceToAvatarSizes",
         "//submodules/TextFormat:TextFormat",
         "//submodules/Markdown:Markdown",
@@ -119,24 +120,13 @@ swift_library(
         "//submodules/TelegramUI/Components/LottieComponent",
         "//submodules/TelegramUI/Components/Stories/PeerListItemComponent",
         "//submodules/TelegramUI/Components/BackButtonComponent",
+        "//submodules/TelegramUI/Components/AlertComponent",
         "//submodules/Components/BlurredBackgroundComponent",
         "//submodules/DirectMediaImageCache",
         "//submodules/FastBlur",
         "//submodules/InviteLinksUI",
         "//third-party/td:TdBinding",
         "//submodules/TelegramUI/Components/AnimatedTextComponent",
-        "//submodules/TelegramUI/Components/GlassBackgroundComponent",
-        "//submodules/ChatPresentationInterfaceState",
-        "//submodules/TelegramUI/Components/MessageInputPanelComponent",
-        "//submodules/TelegramUI/Components/TextFieldComponent",
-        "//submodules/ReactionSelectionNode",
-        "//submodules/TelegramUI/Components/EntityKeyboard",
-        "//submodules/TelegramUI/Components/EdgeEffect",
-        "//submodules/PremiumUI",
-        "//submodules/TelegramUI/Components/Calls/VideoChatMicButtonComponent",
-        "//submodules/TelegramUI/Components/AlertComponent",
-        "//submodules/TelegramUI/Components/AlertComponent/AlertInputFieldComponent",
-        "//submodules/TelegramUI/Components/GlassControls",
     ],
     visibility = [
         "//visibility:public",

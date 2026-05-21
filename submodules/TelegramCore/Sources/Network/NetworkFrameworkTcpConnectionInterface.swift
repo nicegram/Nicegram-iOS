@@ -163,8 +163,8 @@ final class NetworkFrameworkTcpConnectionInterface: NSObject, MTTcpConnectionInt
                     connectTimeoutTimer.invalidate()
                 }
                 
-                let delegate = self.delegate
-                self.delegateQueue.async { [weak delegate] in
+                weak var delegate = self.delegate
+                self.delegateQueue.async {
                     if let delegate = delegate {
                         delegate.connectionInterfaceDidConnect()
                     }
@@ -221,9 +221,9 @@ final class NetworkFrameworkTcpConnectionInterface: NSObject, MTTcpConnectionInt
             if requestChunkLength == 0 {
                 self.currentReadRequest = nil
                 
-                let delegate = self.delegate
+                weak var delegate = self.delegate
                 let currentInterfaceIsWifi = self.currentInterfaceIsWifi
-                self.delegateQueue.async { [weak delegate] in
+                self.delegateQueue.async {
                     if let delegate = delegate {
                         delegate.connectionInterfaceDidRead(currentReadRequest.data, withTag: currentReadRequest.request.tag, networkType: currentInterfaceIsWifi ? 0 : 1)
                     }
@@ -249,8 +249,8 @@ final class NetworkFrameworkTcpConnectionInterface: NSObject, MTTcpConnectionInt
                             
                             let tag = currentReadRequest.request.tag
                             let readCount = data.count
-                            let delegate = self.delegate
-                            self.delegateQueue.async { [weak delegate] in
+                            weak var delegate = self.delegate
+                            self.delegateQueue.async {
                                 if let delegate = delegate {
                                     delegate.connectionInterfaceDidReadPartialData(ofLength: UInt(readCount), tag: tag)
                                 }
@@ -279,8 +279,8 @@ final class NetworkFrameworkTcpConnectionInterface: NSObject, MTTcpConnectionInt
             
             if !self.reportedDisconnection {
                 self.reportedDisconnection = true
-                let delegate = self.delegate
-                self.delegateQueue.async { [weak delegate] in
+                weak var delegate = self.delegate
+                self.delegateQueue.async {
                     if let delegate = delegate {
                         delegate.connectionInterfaceDidDisconnectWithError(error)
                     }

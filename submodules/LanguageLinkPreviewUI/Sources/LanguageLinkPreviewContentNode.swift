@@ -6,8 +6,8 @@ import TelegramCore
 import TelegramPresentationData
 import TextFormat
 import AccountContext
-import Markdown
 import ShareController
+import Markdown
 
 final class LanguageLinkPreviewContentNode: ASDisplayNode, ShareContentContainerNode {
     private var contentOffsetUpdated: ((CGFloat, ContainedViewLayoutTransition) -> Void)?

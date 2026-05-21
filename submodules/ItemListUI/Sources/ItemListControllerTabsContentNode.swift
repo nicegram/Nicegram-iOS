@@ -63,10 +63,10 @@ final class ItemListControllerTabsContentNode: NavigationBarContentNode {
         guard let (size, leftInset, rightInset) = self.validLayout else {
             return
         }
-        let _ = self.updateLayout(size: size, leftInset: leftInset, rightInset: rightInset, transition: transition)
+        self.updateLayout(size: size, leftInset: leftInset, rightInset: rightInset, transition: transition)
     }
         
-    override func updateLayout(size: CGSize, leftInset: CGFloat, rightInset: CGFloat, transition: ContainedViewLayoutTransition) -> CGSize {
+    override func updateLayout(size: CGSize, leftInset: CGFloat, rightInset: CGFloat, transition: ContainedViewLayoutTransition) {
         let isFirstTime = self.validLayout == nil
         self.validLayout = (size, leftInset, rightInset)
     
@@ -116,8 +116,6 @@ final class ItemListControllerTabsContentNode: NavigationBarContentNode {
         if isFirstTime {
             self.requestContainerLayout(.immediate)
         }
-        
-        return size
     }
     
     override var height: CGFloat {

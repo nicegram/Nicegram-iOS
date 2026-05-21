@@ -13,8 +13,6 @@ import Display
 import FeatAccountBackup
 import FeatAdsgram
 import FeatAiShortcuts
-import FeatCallRecorder
-import FeatCalls
 import FeatDataSharing
 import FeatPinnedChats
 import Foundation
@@ -32,12 +30,14 @@ import TelegramUIPreferences
 import UIKit
 import class NGCoreUI.SharedLoadingView
 import NGEnv
+import NGWebUtils
 import NGAppCache
 import NGCore
 import var NGCoreUI.strings
 import NGDataSharing
 import NGDoubleBottom
 import NGQuickReplies
+import NGRemoteConfig
 import NGUtils
 
 fileprivate let LOGTAG = extractNameFromPath(#file)
@@ -65,12 +65,12 @@ private final class NicegramSettingsControllerArguments {
 // MARK: Sections
 
 private enum NicegramSettingsControllerSection: Int32 {
+    case Unblock
     case Tabs
     case Folders
     case RoundVideos
     case Account
     case Other
-    case CallRecorder
     case QuickReplies
     case ShareData
     case PinnedChats
@@ -85,6 +85,15 @@ private enum EasyToggleType {
     case sendWithEnter
     case showProfileId
     case showRegDate
+    case hideReactions
+    case hideStories
+    case hideBadgeCounters
+    case hideUnreadCounters
+    case hideMentionNotification
+    case enableAnimationsInChatList
+    case enableGrayscaleAll
+    case enableGrayscaleInChatList
+    case enableGrayscaleInChat
 }
 
 
@@ -94,6 +103,8 @@ private enum NicegramSettingsControllerEntry: ItemListNodeEntry {
     case TabsHeader(String)
     case showContactsTab(String, Bool)
     case showCallsTab(String, Bool)
+    case showTabNames(String, Bool)
+    case showFeedTab(String, Bool)
     
     case pinnedChatsHeader
     case pinnedChat(PinnedChat)
@@ -101,12 +112,13 @@ private enum NicegramSettingsControllerEntry: ItemListNodeEntry {
         var index: Int32 = 0
         let title: String
         let enabled: Bool
-        var enableInteractiveChanges: Bool = false
         @IgnoreEquatable var setEnabled: (Bool) -> Void
     }
 
     case FoldersHeader(String)
     case foldersKeywords(String, Int64, Bool)
+    case foldersAtBottom(String, Bool)
+    case foldersAtBottomNotice(String)
 
     case RoundVideosHeader(String)
     case startWithRearCam(String, Bool)
@@ -120,14 +132,13 @@ private enum NicegramSettingsControllerEntry: ItemListNodeEntry {
     
     case Account(String)
     case doubleBottom(String)
-    case nicegramCalls
     
-    case recomendedPrivacySettings(String)
-    
-    case callRecorderReceiverId
+    case unblockHeader(String)
+    case unblock(String, URL)
     
     case quickReplies(String)
     
+    case enableAppleSpeech2Text(String, Int64, Bool)
     case onetaptr(String, Bool)
     
     case shareBotsData(String, Bool)
@@ -146,25 +157,25 @@ private enum NicegramSettingsControllerEntry: ItemListNodeEntry {
 
     var section: ItemListSectionId {
         switch self {
-        case .TabsHeader, .showContactsTab, .showCallsTab:
+        case .TabsHeader, .showContactsTab, .showCallsTab, .showTabNames, .showFeedTab:
             return NicegramSettingsControllerSection.Tabs.rawValue
-        case .FoldersHeader, .foldersKeywords:
+        case .FoldersHeader, .foldersAtBottom, .foldersAtBottomNotice, .foldersKeywords:
             return NicegramSettingsControllerSection.Folders.rawValue
         case .RoundVideosHeader, .startWithRearCam, .shouldDownloadVideo:
             return NicegramSettingsControllerSection.RoundVideos.rawValue
         case .OtherHeader, .hidePhoneInSettings, .hidePhoneInSettingsNotice, .easyToggle:
             return NicegramSettingsControllerSection.Other.rawValue
-        case .callRecorderReceiverId:
-            return NicegramSettingsControllerSection.CallRecorder.rawValue
         case .quickReplies:
             return NicegramSettingsControllerSection.QuickReplies.rawValue
-        case .Account, .recomendedPrivacySettings, .doubleBottom, .nicegramCalls:
+        case .unblockHeader, .unblock:
+            return NicegramSettingsControllerSection.Unblock.rawValue
+        case .Account, .doubleBottom:
             return NicegramSettingsControllerSection.Account.rawValue
         case .shareBotsData, .shareChannelsData, .shareStickersData, .shareDataNote:
             return NicegramSettingsControllerSection.ShareData.rawValue
         case .pinnedChatsHeader, .pinnedChat:
             return NicegramSettingsControllerSection.PinnedChats.rawValue
-        case .onetaptr:
+        case .enableAppleSpeech2Text, .onetaptr:
             return NicegramSettingsControllerSection.Tools.rawValue
         case .accountsBackupHeader, .icloudBackupEnabled, .importFromBackup, .importFromFile, .exportToFile, .deleteSessions:
             return NicegramSettingsControllerSection.AccountsBackup.rawValue
@@ -175,15 +186,11 @@ private enum NicegramSettingsControllerEntry: ItemListNodeEntry {
 
     var stableId: Int32 {
         switch self {
-        case .Account:
-            return 700
+        case .unblockHeader:
+            return 800
             
-        case .recomendedPrivacySettings:
-            return 701
-        case .doubleBottom:
-            return 702
-        case .nicegramCalls:
-            return 703
+        case .unblock:
+            return 900
             
         case .TabsHeader:
             return 1300
@@ -194,11 +201,23 @@ private enum NicegramSettingsControllerEntry: ItemListNodeEntry {
         case .showCallsTab:
             return 1500
             
+        case .showTabNames:
+            return 1600
+            
+        case .showFeedTab:
+            return 1650
+            
         case .FoldersHeader:
             return 1700
             
         case .foldersKeywords:
             return 1750
+            
+        case .foldersAtBottom:
+            return 1800
+            
+        case .foldersAtBottomNotice:
+            return 1900
             
         case .pinnedChatsHeader:
             return 1910
@@ -224,11 +243,14 @@ private enum NicegramSettingsControllerEntry: ItemListNodeEntry {
         case .hidePhoneInSettingsNotice:
             return 2400
             
-        case .callRecorderReceiverId:
-            return 2425
-            
         case .quickReplies:
             return 2450
+            
+        case .Account:
+            return 2500
+            
+        case .doubleBottom:
+            return 2700
             
         case .accountsBackupHeader:
             return 3000
@@ -248,6 +270,8 @@ private enum NicegramSettingsControllerEntry: ItemListNodeEntry {
             
         case .onetaptr:
             return 5900
+        case .enableAppleSpeech2Text:
+            return 5950
             
         case .shareBotsData:
             return 6000
@@ -293,8 +317,35 @@ private enum NicegramSettingsControllerEntry: ItemListNodeEntry {
                 }
             })
             
+        case let .showTabNames(text, value):
+            return ItemListSwitchItem(presentationData: presentationData, title: text, value: value, enabled: true, sectionId: section, style: .blocks, updated: { value in
+                ngLog("[showTabNames] invoked with \(value)", LOGTAG)
+                NGSettings.showTabNames = value
+                
+                showRestartRequiredAlert(with: arguments, presentationData: presentationData)
+            })
+            
+        case let .showFeedTab(text, value):
+            return ItemListSwitchItem(presentationData: presentationData, title: text, value: value, enabled: true, sectionId: section, style: .blocks, updated: { value in
+                ngLog("[showFeedTab] invoked with \(value)", LOGTAG)
+                NGSettings.showFeedTab = value
+                arguments.updateTabs()
+            })
+            
         case let .FoldersHeader(text):
             return ItemListSectionHeaderItem(presentationData: presentationData, text: text, sectionId: section)
+            
+        case let .foldersAtBottom(text, value):
+            return ItemListSwitchItem(presentationData: presentationData, title: text, value: value, enabled: true, sectionId: section, style: .blocks, updated: { value in
+                ngLog("[foldersAtBottom] invoked with \(value)", LOGTAG)
+                let _ = arguments.context.sharedContext.accountManager.transaction ({ transaction in
+                    transaction.updateSharedData(ApplicationSpecificSharedDataKeys.experimentalUISettings, { settings in
+                        var settings = settings?.get(ExperimentalUISettings.self) ?? ExperimentalUISettings.defaultSettings
+                        settings.foldersTabAtBottom = value
+                        return PreferencesEntry(settings)
+                    })
+                }).start()
+            })
             
         case let .foldersKeywords(text, id, value):
             return ItemListSwitchItem(presentationData: presentationData, title: text, value: value, enabled: true, sectionId: section, style: .blocks, updated: { value in
@@ -305,6 +356,9 @@ private enum NicegramSettingsControllerEntry: ItemListNodeEntry {
                     $0.keywords.show[id] = value
                 }
             })
+            
+        case let .foldersAtBottomNotice(text):
+            return ItemListTextItem(presentationData: presentationData, text: .plain(text), sectionId: section)
             
         case let .RoundVideosHeader(text):
             return ItemListSectionHeaderItem(presentationData: presentationData, text: text, sectionId: section)
@@ -348,14 +402,49 @@ private enum NicegramSettingsControllerEntry: ItemListNodeEntry {
                     NGSettings.showProfileId = value
                 case .showRegDate:
                     NGSettings.showRegDate = value
+                case .hideReactions:
+                    VarSystemNGSettings.hideReactions = value
+                    if value {
+                        sendUserSettingsAnalytics(with: .hideReactionsOn)
+                    }
+                case .hideStories:
+                    NGSettings.hideStories = value
+                    if value {
+                        sendUserSettingsAnalytics(with: .hideStoriesOn)
+                    }
+                case .hideBadgeCounters:
+                    NGSettings.hideBadgeCounters = value
+                    showRestartRequiredAlert(with: arguments, presentationData: presentationData)
+                case .hideUnreadCounters:
+                    NGSettings.hideUnreadCounters = value
+                    showRestartRequiredAlert(with: arguments, presentationData: presentationData)
+                case .hideMentionNotification:
+                    NGSettings.hideMentionNotification = value
+                    showRestartRequiredAlert(with: arguments, presentationData: presentationData)
+                case .enableAnimationsInChatList:
+                    updateNicegramSettings {
+                        $0.disableAnimationsInChatList = !value
+                    }
+                case .enableGrayscaleAll:
+                    updateNicegramSettings {
+                        $0.grayscaleAll = value
+                    }
+                case .enableGrayscaleInChatList:
+                    updateNicegramSettings {
+                        $0.grayscaleInChatList = value
+                    }
+                case .enableGrayscaleInChat:
+                    updateNicegramSettings {
+                        $0.grayscaleInChat = value
+                    }
                 }
             })
-        case let .recomendedPrivacySettings(text):
+        case let .unblockHeader(text):
+            return ItemListSectionHeaderItem(presentationData: presentationData, text: text, sectionId: section)
+        case let .unblock(text, url):
             return ItemListActionItem(presentationData: presentationData, title: text, kind: .neutral, alignment: .natural, sectionId: section, style: .blocks) {
-                showPrivacySettingsApplyingAlert(with: arguments) {
-                    Task {
-                        try await NGDefaultPrivacySettingsApplyer.applyDefaultPrivacySettings(for: arguments.context)
-                    }
+                Task { @MainActor in
+                    CoreContainer.shared.urlOpener().open(url)
                 }
             }
         case let .Account(text):
@@ -363,18 +452,6 @@ private enum NicegramSettingsControllerEntry: ItemListNodeEntry {
         case let .doubleBottom(text):
             return ItemListActionItem(presentationData: presentationData, title: text, kind: .neutral, alignment: .natural, sectionId: section, style: .blocks) {
                 arguments.pushController(doubleBottomListController(context: arguments.context, presentationData: arguments.context.sharedContext.currentPresentationData.with { $0 }, accountsContexts: arguments.accountsContexts))
-            }
-        case .nicegramCalls:
-            return ItemListActionItem(presentationData: presentationData, title: FeatCalls.strings.settingsItemTitle(), kind: .neutral, alignment: .natural, sectionId: section, style: .blocks) {
-                if #available(iOS 15.0, *) {
-                    Task { @MainActor in
-                        FeatCalls.SettingsPresenter().present()
-                    }
-                }
-            }
-        case .callRecorderReceiverId:
-            return ItemListActionItem(presentationData: presentationData, title: FeatCallRecorder.strings.receiverIdItem(), kind: .neutral, alignment: .natural, sectionId: section, style: .blocks) {
-                ReceiverIdAlertPresenter().present()
             }
         case let .quickReplies(text):
             return ItemListActionItem(presentationData: presentationData, title: text, kind: .neutral, alignment: .natural, sectionId: section, style: .blocks) {
@@ -429,12 +506,17 @@ private enum NicegramSettingsControllerEntry: ItemListNodeEntry {
                 presentationData: presentationData,
                 title: chat.title,
                 value: chat.enabled,
-                enableInteractiveChanges: chat.enableInteractiveChanges,
                 enabled: true,
                 sectionId: section,
                 style: .blocks,
                 updated: chat.setEnabled
             )
+        case let .enableAppleSpeech2Text(text, id, value):
+            return ItemListSwitchItem(presentationData: presentationData, title: text, value: value, enabled: true, sectionId: section, style: .blocks, updated: { value in
+                updateNicegramSettings {
+                    $0.speechToText.appleRecognizerState[id] = value
+                }
+            })
         case let .onetaptr(text, value):
             return ItemListSwitchItem(presentationData: presentationData, title: text, value: value, enabled: true, sectionId: section, style: .blocks, updated: { value in
                 NGSettings.oneTapTr = value
@@ -505,15 +587,9 @@ private func nicegramSettingsControllerEntries(presentationData: PresentationDat
     
     var entries: [NicegramSettingsControllerEntry] = []
     
-    entries.append(.Account(l("NiceFeatures.Account.Header").localizedUppercase))
-    entries.append(.recomendedPrivacySettings(l("NicegramSettings.AccountPrivacy.Button")))
-    
-    if !context.account.isHidden || !VarSystemNGSettings.inDoubleBottom {
-        entries.append(.doubleBottom(l("DoubleBottom.Title")))
-    }
-    if #available(iOS 15.0, *),
-       isNicegramCallsEnabled() {
-        entries.append(.nicegramCalls)
+    if !hideUnblock {
+        entries.append(.unblockHeader(l("NicegramSettings.Unblock.Header").uppercased()))
+        entries.append(.unblock(l("NicegramSettings.Unblock.Button"), nicegramUnblockUrl))
     }
 
     entries.append(.TabsHeader(l("NiceFeatures.Tabs.Header")))
@@ -525,6 +601,14 @@ private func nicegramSettingsControllerEntries(presentationData: PresentationDat
         l("NiceFeatures.Tabs.ShowCalls"),
         showCalls
     ))
+    entries.append(.showTabNames(
+        l("NiceFeatures.Tabs.ShowNames"),
+        NGSettings.showTabNames
+    ))
+    entries.append(.showFeedTab(
+        l("Show Feed Tab"),
+        NGSettings.showFeedTab
+    ))
 
     entries.append(.FoldersHeader(l("NiceFeatures.Folders.Header")))
     let peerId = context.account.peerId.toInt64()
@@ -532,6 +616,13 @@ private func nicegramSettingsControllerEntries(presentationData: PresentationDat
         l("NicegramSettings.ShowKeywords"),
         peerId,
         nicegramSettings.keywords.show[peerId] ?? true
+    ))
+    entries.append(.foldersAtBottom(
+        l("NiceFeatures.Folders.TgFolders"),
+        experimentalSettings.foldersTabAtBottom
+    ))
+    entries.append(.foldersAtBottomNotice(
+        l("NiceFeatures.Folders.TgFolders.Notice")
     ))
     
     if !pinnedChats.isEmpty {
@@ -561,10 +652,14 @@ private func nicegramSettingsControllerEntries(presentationData: PresentationDat
         l("NicegramSettings.Other.hidePhoneInSettingsNotice")
     ))
     
-    entries.append(.callRecorderReceiverId)
-    
     if #available(iOS 10.0, *) {
         entries.append(.quickReplies(l("NiceFeatures.QuickReplies")))
+    }
+
+    
+    entries.append(.Account(l("NiceFeatures.Account.Header").localizedUppercase))
+    if !context.account.isHidden || !VarSystemNGSettings.inDoubleBottom {
+        entries.append(.doubleBottom(l("DoubleBottom.Title")))
     }
     
     if #available(iOS 15.0, *) {
@@ -593,7 +688,62 @@ private func nicegramSettingsControllerEntries(presentationData: PresentationDat
     entries.append(.easyToggle(toggleIndex, .showRegDate, l("NicegramSettings.Other.showRegDate"), NGSettings.showRegDate))
     toggleIndex += 1
     
+    entries.append(.easyToggle(toggleIndex, .hideReactions, l("NicegramSettings.Other.hideReactions"), VarSystemNGSettings.hideReactions))
+    toggleIndex += 1
+    
+    entries.append(.easyToggle(toggleIndex, .hideStories, l("NicegramSettings.HideStories"), NGSettings.hideStories))
+    toggleIndex += 1
+
+    entries.append(
+        .easyToggle(
+            toggleIndex,
+            .hideBadgeCounters,
+            l("NicegramSettings.HideBadgeCounters"),
+            NGSettings.hideBadgeCounters
+        )
+    )
+    toggleIndex += 1
+
+    entries.append(
+        .easyToggle(
+            toggleIndex,
+            .hideUnreadCounters,
+            l("NicegramSettings.HideUnreadCounters"),
+            NGSettings.hideUnreadCounters
+        )
+    )
+    toggleIndex += 1
+
+    entries.append(
+        .easyToggle(
+            toggleIndex,
+            .hideMentionNotification,
+            l("NicegramSettings.HideMentionNotification"),
+            NGSettings.hideMentionNotification
+        )
+    )
+    toggleIndex += 1
+    
+    entries.append(.easyToggle(toggleIndex, .enableAnimationsInChatList, l("NicegramSettings.EnableAnimationsInChatList"), !nicegramSettings.disableAnimationsInChatList))
+    toggleIndex += 1
+    
+    entries.append(.easyToggle(toggleIndex, .enableGrayscaleAll, l("NicegramSettings.EnableGrayscaleAll"), nicegramSettings.grayscaleAll))
+    toggleIndex += 1
+    
+    entries.append(.easyToggle(toggleIndex, .enableGrayscaleInChatList, l("NicegramSettings.EnableGrayscaleInChatList"), nicegramSettings.grayscaleInChatList))
+    toggleIndex += 1
+    
+    entries.append(.easyToggle(toggleIndex, .enableGrayscaleInChat, l("NicegramSettings.EnableGrayscaleInChat"), nicegramSettings.grayscaleInChat))
+    toggleIndex += 1
+    
     entries.append(.onetaptr(l("Premium.OnetapTranslate"), NGSettings.oneTapTr))
+    let id = context.account.peerId.id._internalGetInt64Value()
+    entries.append(
+        .enableAppleSpeech2Text(l("NicegramSettings.EnableAppleSpeech2Text"),
+                                id,
+                                (nicegramSettings.speechToText.appleRecognizerState[id] ?? false) ?? false
+                               )
+    )
 
     entries.append(
         .shareBotsData(
@@ -629,6 +779,8 @@ public func nicegramSettingsController(context: AccountContext, accountsContexts
     var getRootControllerImpl: (() -> UIViewController?)?
     var updateTabsImpl: (() -> Void)?
 
+    let presentationData = context.sharedContext.currentPresentationData.with { $0 }
+
     let arguments = NicegramSettingsControllerArguments(context: context, accountsContexts: accountsContexts, presentController: { controller, arguments in
         presentControllerImpl?(controller, arguments)
     }, pushController: { controller in
@@ -661,12 +813,12 @@ public func nicegramSettingsController(context: AccountContext, accountsContexts
             enabled ? settings : nil
         }
     
-    let pinnedChatsSignal = PinnedChatsContainer.shared.getResolvedBannersUseCase()
+    let pinnedChatsSignal = PinnedChatsContainer.shared.getPinnedChatsUseCase()
         .publisher()
         .combineLatestThreadSafe(
             adsgramSettingsPublisher
         )
-        .map { banners, adsgramSettings in
+        .map { pinnedChats, adsgramSettings in
             var entries = [NicegramSettingsControllerEntry.PinnedChat]()
             
             if let adsgramSettings {
@@ -685,24 +837,23 @@ public func nicegramSettingsController(context: AccountContext, accountsContexts
                 )
             }
             
-            for banner in banners {
-                let entry = NicegramSettingsControllerEntry.PinnedChat(
-                    title: banner.banner.name,
-                    enabled: banner.isPinned,
-                    setEnabled: { isPinned in
-                        Task {
-                            let flow = BannerPinningFlow()
-                            let id = banner.banner.id
-                            if isPinned {
-                                await flow.pin(id)
-                            } else {
-                                try await flow.unpin(id)
+            entries.append(
+                contentsOf: pinnedChats.map { chat in
+                    NicegramSettingsControllerEntry.PinnedChat(
+                        title: chat.name,
+                        enabled: chat.isPinned,
+                        setEnabled: { value in
+                            Task {
+                                let setChatPinnedUseCase = PinnedChatsContainer.shared.setChatPinnedUseCase()
+                                await setChatPinnedUseCase(
+                                    id: chat.id,
+                                    pinned: value
+                                )
                             }
                         }
-                    }
-                )
-                entries.append(entry)
-            }
+                    )
+                }
+            )
             
             for i in entries.startIndex..<entries.endIndex {
                 entries[i].index = Int32(i + 1)
@@ -781,27 +932,18 @@ public func updateTabs(with context: AccountContext) {
     })
 }
 
-private func showPrivacySettingsApplyingAlert(
+private func showRestartRequiredAlert(
     with arguments: NicegramSettingsControllerArguments,
-    onSettingsApply: @escaping () -> Void
+    presentationData: ItemListPresentationData
 ) {
     let controller = standardTextAlertController(
         theme: AlertControllerTheme(
             presentationData: arguments.context.sharedContext.currentPresentationData.with { $0 }
         ),
-        title: l("NicegramSettings.AccountPrivacy.Alert.Title"),
-        text: l("NicegramSettings.AccountPrivacy.Alert.Body"),
+        title: nil,
+        text: l("Common.RestartRequired"),
         actions: [
-            TextAlertAction(
-                type: .defaultAction,
-                title: l("NicegramSettings.AccountPrivacy.Alert.Apply"),
-                action: onSettingsApply
-            ),
-            TextAlertAction(
-                type: .genericAction,
-                title: l("NicegramSettings.AccountPrivacy.Alert.Cancel"),
-                action: {}
-            )
+            TextAlertAction(type: .genericAction, title: strings.nicegramAlertOk(), action: {})
         ]
     )
 

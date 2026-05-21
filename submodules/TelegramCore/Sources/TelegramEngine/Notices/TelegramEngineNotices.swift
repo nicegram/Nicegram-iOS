@@ -21,15 +21,8 @@ public extension TelegramEngine {
             |> ignoreValues
         }
         
-        public func getServerProvidedSuggestions(reload: Bool = false) -> Signal<[ServerProvidedSuggestion], NoError> {
-            if reload {
-                return _internal_fetchPromoInfo(accountPeerId: self.account.peerId, postbox: self.account.postbox, network: self.account.network)
-                |> mapToSignal {
-                    return _internal_getServerProvidedSuggestions(account: self.account)
-                }
-            } else {
-                return _internal_getServerProvidedSuggestions(account: self.account)
-            }
+        public func getServerProvidedSuggestions() -> Signal<[ServerProvidedSuggestion], NoError> {
+            return _internal_getServerProvidedSuggestions(account: self.account)
         }
         
         public func getServerDismissedSuggestions() -> Signal<[String], NoError> {

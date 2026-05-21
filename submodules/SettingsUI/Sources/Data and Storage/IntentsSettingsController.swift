@@ -2,6 +2,7 @@ import Foundation
 import UIKit
 import Display
 import SwiftSignalKit
+import Postbox
 import TelegramCore
 import TelegramPresentationData
 import TelegramUIPreferences
@@ -10,20 +11,6 @@ import ItemListPeerItem
 import AccountContext
 import TelegramIntents
 import AccountUtils
-
-public enum IntentsEntryTag: ItemListItemTag, Equatable {
-    case suggested
-    case suggestBy
-    case reset
-
-    public func isEqual(to other: ItemListItemTag) -> Bool {
-        if let other = other as? IntentsEntryTag, self == other {
-            return true
-        } else {
-            return false
-        }
-    }
-}
 
 private final class IntentsSettingsControllerArguments {
     let context: AccountContext
@@ -46,7 +33,7 @@ private enum IntentsSettingsSection: Int32 {
 
 private enum IntentsSettingsControllerEntry: ItemListNodeEntry {
     case accountHeader(PresentationTheme, String)
-    case account(PresentationTheme, Account, EnginePeer, Bool, Int32)
+    case account(PresentationTheme, EnginePeer, Bool, Int32)
     case accountInfo(PresentationTheme, String)
     
     case chatsHeader(PresentationTheme, String)
@@ -79,7 +66,7 @@ private enum IntentsSettingsControllerEntry: ItemListNodeEntry {
         switch self {
             case .accountHeader:
                 return 0
-            case let .account(_, _, _, _, index):
+            case let .account(_, _, _, index):
                 return 1 + index
             case .accountInfo:
                 return 1000
@@ -114,8 +101,8 @@ private enum IntentsSettingsControllerEntry: ItemListNodeEntry {
                 } else {
                     return false
                 }
-            case let .account(lhsTheme, lhsAccount, lhsPeer, lhsSelected, lhsIndex):
-                if case let .account(rhsTheme, rhsAccount, rhsPeer, rhsSelected, rhsIndex) = rhs, lhsTheme === rhsTheme, lhsAccount === rhsAccount, lhsPeer == rhsPeer, lhsSelected == rhsSelected, lhsIndex == rhsIndex {
+            case let .account(lhsTheme, lhsPeer, lhsSelected, lhsIndex):
+                if case let .account(rhsTheme, rhsPeer, rhsSelected, rhsIndex) = rhs, lhsTheme === rhsTheme, lhsPeer == rhsPeer, lhsSelected == rhsSelected, lhsIndex == rhsIndex {
                     return true
                 } else {
                     return false
@@ -199,8 +186,8 @@ private enum IntentsSettingsControllerEntry: ItemListNodeEntry {
         switch self {
             case let .accountHeader(_, text):
                 return ItemListSectionHeaderItem(presentationData: presentationData, text: text, sectionId: self.section)
-            case let .account(_, account, peer, selected, _):
-                return ItemListPeerItem(presentationData: presentationData, systemStyle: .glass, dateTimeFormat: PresentationDateTimeFormat(), nameDisplayOrder: .firstLast, context: arguments.context.sharedContext.makeTempAccountContext(account: account), peer: peer, height: .generic, aliasHandling: .standard, nameStyle: .plain, presence: nil, text: .none, label: .none, editing: ItemListPeerItemEditing(editable: true, editing: false, revealed: false), revealOptions: nil, switchValue: ItemListPeerItemSwitch(value: selected, style: .check), enabled: true, selectable: true, sectionId: self.section, action: {
+            case let .account(_, peer, selected, _):
+                return ItemListPeerItem(presentationData: presentationData, dateTimeFormat: PresentationDateTimeFormat(), nameDisplayOrder: .firstLast, context: arguments.context.sharedContext.makeTempAccountContext(account: arguments.context.account), peer: peer, height: .generic, aliasHandling: .standard, nameStyle: .plain, presence: nil, text: .none, label: .none, editing: ItemListPeerItemEditing(editable: true, editing: false, revealed: false), revealOptions: nil, switchValue: ItemListPeerItemSwitch(value: selected, style: .check), enabled: true, selectable: true, sectionId: self.section, action: {
                     arguments.updateSettings { $0.withUpdatedAccount(peer.id) }
                 }, setPeerIdWithRevealedOptions: { _, _ in}, removePeer: { _ in })
             case let .accountInfo(_, text):
@@ -208,38 +195,38 @@ private enum IntentsSettingsControllerEntry: ItemListNodeEntry {
             case let .chatsHeader(_, text):
                 return ItemListSectionHeaderItem(presentationData: presentationData, text: text, sectionId: self.section)
             case let .contacts(_, text, value):
-                return ItemListSwitchItem(presentationData: presentationData, systemStyle: .glass, title: text, value: value, enableInteractiveChanges: true, enabled: true, sectionId: self.section, style: .blocks, updated: { value in
+                return ItemListSwitchItem(presentationData: presentationData, title: text, value: value, enableInteractiveChanges: true, enabled: true, sectionId: self.section, style: .blocks, updated: { value in
                     arguments.updateSettings { $0.withUpdatedContacts(value) }
-                }, tag: IntentsEntryTag.suggested)
+                })
             case let .savedMessages(_, text, value):
-                return ItemListSwitchItem(presentationData: presentationData, systemStyle: .glass, title: text, value: value, enableInteractiveChanges: true, enabled: true, sectionId: self.section, style: .blocks, updated: { value in
+                return ItemListSwitchItem(presentationData: presentationData, title: text, value: value, enableInteractiveChanges: true, enabled: true, sectionId: self.section, style: .blocks, updated: { value in
                     arguments.updateSettings { $0.withUpdatedSavedMessages(value) }
                 })
             case let .privateChats(_, text, value):
-                return ItemListSwitchItem(presentationData: presentationData, systemStyle: .glass, title: text, value: value, enableInteractiveChanges: true, enabled: true, sectionId: self.section, style: .blocks, updated: { value in
+                return ItemListSwitchItem(presentationData: presentationData, title: text, value: value, enableInteractiveChanges: true, enabled: true, sectionId: self.section, style: .blocks, updated: { value in
                     arguments.updateSettings { $0.withUpdatedPrivateChats(value) }
                 })
             case let .groups(_, text, value):
-                return ItemListSwitchItem(presentationData: presentationData, systemStyle: .glass, title: text, value: value, enableInteractiveChanges: true, enabled: true, sectionId: self.section, style: .blocks, updated: { value in
+                return ItemListSwitchItem(presentationData: presentationData, title: text, value: value, enableInteractiveChanges: true, enabled: true, sectionId: self.section, style: .blocks, updated: { value in
                     arguments.updateSettings { $0.withUpdatedGroups(value) }
                 })
             case let .chatsInfo(_, text):
                 return ItemListTextItem(presentationData: presentationData, text: .plain(text), sectionId: self.section)
             case let .suggestHeader(_, text):
-                return ItemListSectionHeaderItem(presentationData: presentationData, text: text, sectionId: self.section, tag: IntentsEntryTag.suggestBy)
+                return ItemListSectionHeaderItem(presentationData: presentationData, text: text, sectionId: self.section)
             case let .suggestAll(_, text, value):
-                return ItemListCheckboxItem(presentationData: presentationData, systemStyle: .glass, title: text, style: .left, checked: value, zeroSeparatorInsets: false, sectionId: self.section, action: {
+                return ItemListCheckboxItem(presentationData: presentationData, title: text, style: .left, checked: value, zeroSeparatorInsets: false, sectionId: self.section, action: {
                     arguments.updateSettings { $0.withUpdatedOnlyShared(false) }
                 })
             case let .suggestOnlyShared(_, text, value):
-                return ItemListCheckboxItem(presentationData: presentationData, systemStyle: .glass, title: text, style: .left, checked: value, zeroSeparatorInsets: false, sectionId: self.section, action: {
+                return ItemListCheckboxItem(presentationData: presentationData, title: text, style: .left, checked: value, zeroSeparatorInsets: false, sectionId: self.section, action: {
                     arguments.updateSettings { $0.withUpdatedOnlyShared(true) }
                 })
 
             case let .resetAll(_, text):
-                return ItemListActionItem(presentationData: presentationData, systemStyle: .glass, title: text, kind: .destructive, alignment: .natural, sectionId: self.section, style: .blocks, action: {
+                return ItemListActionItem(presentationData: presentationData, title: text, kind: .destructive, alignment: .natural, sectionId: self.section, style: .blocks, action: {
                     arguments.resetAll()
-                }, tag: IntentsEntryTag.reset)
+                })
         }
     }
 }
@@ -250,8 +237,8 @@ private func intentsSettingsControllerEntries(context: AccountContext, presentat
     if accounts.count > 1 {
         entries.append(.accountHeader(presentationData.theme, presentationData.strings.IntentsSettings_MainAccount.uppercased()))
         var index: Int32 = 0
-        for (account, peer) in accounts {
-            entries.append(.account(presentationData.theme, account, peer, peer.id == settings.account, index))
+        for (_, peer) in accounts {
+            entries.append(.account(presentationData.theme, peer, peer.id == settings.account, index))
             index += 1
         }
         entries.append(.accountInfo(presentationData.theme, presentationData.strings.IntentsSettings_MainAccountInfo))
@@ -274,7 +261,7 @@ private func intentsSettingsControllerEntries(context: AccountContext, presentat
     return entries
 }
 
-public func intentsSettingsController(context: AccountContext, focusOnItemTag: IntentsEntryTag? = nil) -> ViewController {
+public func intentsSettingsController(context: AccountContext) -> ViewController {
     var presentControllerImpl: ((ViewController) -> Void)?
 
     let arguments = IntentsSettingsControllerArguments(context: context, updateSettings: { f in
@@ -330,20 +317,5 @@ public func intentsSettingsController(context: AccountContext, focusOnItemTag: I
     presentControllerImpl = { [weak controller] c in
         controller?.present(c, in: .window(.root))
     }
-    
-    if let focusOnItemTag {
-        var didFocusOnItem = false
-        controller.afterTransactionCompleted = { [weak controller] in
-            if !didFocusOnItem, let controller {
-                controller.forEachItemNode { itemNode in
-                    if let itemNode = itemNode as? ItemListItemNode, let tag = itemNode.tag, tag.isEqual(to: focusOnItemTag) {
-                        didFocusOnItem = true
-                        itemNode.displayHighlight()
-                    }
-                }
-            }
-        }
-    }
-    
     return controller
 }

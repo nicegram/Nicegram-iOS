@@ -123,7 +123,7 @@ class ItemListSecretChatKeyItemNode: ListViewItemNode {
         self.highlightedBackgroundNode = ASDisplayNode()
         self.highlightedBackgroundNode.isLayerBacked = true
         
-        super.init(layerBacked: false)
+        super.init(layerBacked: false, dynamicBounce: false)
         
         self.addSubnode(self.titleNode)
         self.addSubnode(self.keyNode)

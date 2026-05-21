@@ -102,6 +102,10 @@ final class StarsTransactionsScreenComponent: Component {
         private let scrollView: ScrollViewImpl
         
         private var currentSelectedPanelId: AnyHashable?
+       
+        private let navigationBackgroundView: BlurredBackgroundView
+        private let navigationSeparatorLayer: SimpleLayer
+        private let navigationSeparatorLayerContainer: SimpleLayer
                 
         private let scrollContainerView: UIView
         
@@ -156,6 +160,14 @@ final class StarsTransactionsScreenComponent: Component {
         private var cachedChevronImage: (UIImage, PresentationTheme)?
                 
         override init(frame: CGRect) {
+            self.navigationBackgroundView = BlurredBackgroundView(color: nil, enableBlur: true)
+            self.navigationBackgroundView.alpha = 0.0
+            
+            self.navigationSeparatorLayer = SimpleLayer()
+            self.navigationSeparatorLayer.opacity = 0.0
+            self.navigationSeparatorLayerContainer = SimpleLayer()
+            self.navigationSeparatorLayerContainer.opacity = 0.0
+            
             self.scrollContainerView = UIView()
             self.scrollView = ScrollViewImpl()
                                     
@@ -179,6 +191,11 @@ final class StarsTransactionsScreenComponent: Component {
             self.addSubview(self.scrollView)
             
             self.scrollView.addSubview(self.scrollContainerView)
+                        
+            self.addSubview(self.navigationBackgroundView)
+            
+            self.navigationSeparatorLayerContainer.addSublayer(self.navigationSeparatorLayer)
+            self.layer.addSublayer(self.navigationSeparatorLayerContainer)
         }
         
         required init?(coder: NSCoder) {
@@ -279,6 +296,7 @@ final class StarsTransactionsScreenComponent: Component {
                 
                 var topContentOffset = self.scrollView.contentOffset.y
                 
+                let navigationBackgroundAlpha = min(20.0, max(0.0, topContentOffset - 95.0)) / 20.0
                 topContentOffset = topContentOffset + max(0.0, min(1.0, topContentOffset / titleOffsetDelta)) * 10.0
                 titleOffset = topContentOffset
                 let fraction = max(0.0, min(1.0, titleOffset / titleOffsetDelta))
@@ -299,10 +317,15 @@ final class StarsTransactionsScreenComponent: Component {
                     headerTransition.setScale(view: titleView, scale: titleScale)
                 }
                 
+                let animatedTransition = ComponentTransition(animation: .curve(duration: 0.18, curve: .easeInOut))
+                animatedTransition.setAlpha(view: self.navigationBackgroundView, alpha: navigationBackgroundAlpha)
+                animatedTransition.setAlpha(layer: self.navigationSeparatorLayerContainer, alpha: navigationBackgroundAlpha)
+                
                 let expansionDistance: CGFloat = 32.0
                 var expansionDistanceFactor: CGFloat = abs(scrollBounds.maxY - self.scrollView.contentSize.height) / expansionDistance
                 expansionDistanceFactor = max(0.0, min(1.0, expansionDistanceFactor))
                 
+                transition.setAlpha(layer: self.navigationSeparatorLayer, alpha: expansionDistanceFactor)
                 if let panelContainerView = self.panelContainer.view as? StarsTransactionsPanelContainerComponent.View {
                     panelContainerView.updateNavigationMergeFactor(value: 1.0 - expansionDistanceFactor, transition: transition)
                 }
@@ -412,6 +435,18 @@ final class StarsTransactionsScreenComponent: Component {
             
             self.navigationMetrics = (environment.navigationHeight, environment.statusBarHeight)
             
+            self.navigationSeparatorLayer.backgroundColor = environment.theme.rootController.navigationBar.separatorColor.cgColor
+            
+            let navigationFrame = CGRect(origin: CGPoint(), size: CGSize(width: availableSize.width, height: environment.navigationHeight))
+            self.navigationBackgroundView.updateColor(color: environment.theme.rootController.navigationBar.blurredBackgroundColor, transition: .immediate)
+            self.navigationBackgroundView.update(size: navigationFrame.size, transition: transition.containedViewLayoutTransition)
+            transition.setFrame(view: self.navigationBackgroundView, frame: navigationFrame)
+            
+            let navigationSeparatorFrame = CGRect(origin: CGPoint(x: 0.0, y: navigationFrame.maxY), size: CGSize(width: availableSize.width, height: UIScreenPixel))
+            
+            transition.setFrame(layer: self.navigationSeparatorLayerContainer, frame: navigationSeparatorFrame)
+            transition.setFrame(layer: self.navigationSeparatorLayer, frame: CGRect(origin: CGPoint(), size: navigationSeparatorFrame.size))
+            
             self.backgroundColor = environment.theme.list.blocksBackgroundColor
             
             var contentHeight: CGFloat = 0.0
@@ -484,7 +519,7 @@ final class StarsTransactionsScreenComponent: Component {
                         UIColor(rgb: 0xfdd219)
                     ],
                     particleColor: UIColor(rgb: 0xf9b004),
-                    backgroundColor: nil
+                    backgroundColor: environment.theme.list.blocksBackgroundColor
                 ))
             }
                     
@@ -497,13 +532,7 @@ final class StarsTransactionsScreenComponent: Component {
             let starFrame = CGRect(origin: .zero, size: starSize)
             if let starView = self.starView.view {
                 if starView.superview == nil {
-                    if let navigationBar = environment.controller()?.navigationBar {
-                        if let titleView = self.titleView.view, titleView.superview != nil {
-                            navigationBar.view.insertSubview(starView, belowSubview: titleView)
-                        } else {
-                            navigationBar.view.insertSubview(starView, aboveSubview: navigationBar.backgroundView)
-                        }
-                    }
+                    self.insertSubview(starView, aboveSubview: self.scrollView)
                 }
                 starTransition.setBounds(view: starView, bounds: starFrame)
             }
@@ -533,9 +562,7 @@ final class StarsTransactionsScreenComponent: Component {
             )
             if let titleView = self.titleView.view {
                 if titleView.superview == nil {
-                    if let navigationBar = environment.controller()?.navigationBar {
-                        navigationBar.view.insertSubview(titleView, aboveSubview: navigationBar.backgroundView)
-                    }
+                    self.addSubview(titleView)
                 }
                 starTransition.setBounds(view: titleView, bounds: CGRect(origin: .zero, size: titleSize))
             }
@@ -590,13 +617,7 @@ final class StarsTransactionsScreenComponent: Component {
             if let topBalanceTitleView = self.topBalanceTitleView.view {
                 if topBalanceTitleView.superview == nil {
                     topBalanceTitleView.alpha = 0.0
-                    if let navigationBar = environment.controller()?.navigationBar {
-                        if let titleView = self.titleView.view, titleView.superview != nil {
-                            navigationBar.view.insertSubview(topBalanceTitleView, aboveSubview: titleView)
-                        } else {
-                            navigationBar.view.insertSubview(topBalanceTitleView, aboveSubview: navigationBar.backgroundView)
-                        }
-                    }
+                    self.addSubview(topBalanceTitleView)
                 }
                 starTransition.setFrame(view: topBalanceTitleView, frame: topBalanceTitleFrame)
             }
@@ -605,13 +626,7 @@ final class StarsTransactionsScreenComponent: Component {
             if let topBalanceValueView = self.topBalanceValueView.view {
                 if topBalanceValueView.superview == nil {
                     topBalanceValueView.alpha = 0.0
-                    if let navigationBar = environment.controller()?.navigationBar {
-                        if let titleView = self.titleView.view, titleView.superview != nil {
-                            navigationBar.view.insertSubview(topBalanceValueView, aboveSubview: titleView)
-                        } else {
-                            navigationBar.view.insertSubview(topBalanceValueView, aboveSubview: navigationBar.backgroundView)
-                        }
-                    }
+                    self.addSubview(topBalanceValueView)
                 }
                 starTransition.setFrame(view: topBalanceValueView, frame: topBalanceValueFrame)
             }
@@ -623,13 +638,7 @@ final class StarsTransactionsScreenComponent: Component {
             if let topBalanceIconView = self.topBalanceIconView.view {
                 if topBalanceIconView.superview == nil {
                     topBalanceIconView.alpha = 0.0
-                    if let navigationBar = environment.controller()?.navigationBar {
-                        if let titleView = self.titleView.view, titleView.superview != nil {
-                            navigationBar.view.insertSubview(topBalanceIconView, aboveSubview: titleView)
-                        } else {
-                            navigationBar.view.insertSubview(topBalanceIconView, aboveSubview: navigationBar.backgroundView)
-                        }
-                    }
+                    self.addSubview(topBalanceIconView)
                 }
                 starTransition.setFrame(view: topBalanceIconView, frame: topBalanceIconFrame)
             }
@@ -668,7 +677,6 @@ final class StarsTransactionsScreenComponent: Component {
                     transition: .immediate,
                     component: AnyComponent(ListSectionComponent(
                         theme: environment.theme,
-                        style: .glass,
                         header: AnyComponent(MultilineTextComponent(
                             text: .plain(NSAttributedString(
                                 string: environment.strings.Ton_ProceedsOverview.uppercased(),
@@ -730,7 +738,6 @@ final class StarsTransactionsScreenComponent: Component {
                 transition: .immediate,
                 component: AnyComponent(ListSectionComponent(
                     theme: environment.theme,
-                    style: .glass,
                     header: nil,
                     footer: component.starsContext.ton ? AnyComponent(MultilineTextComponent(
                         text: .plain(balanceInfoString),
@@ -830,12 +837,11 @@ final class StarsTransactionsScreenComponent: Component {
                     transition: .immediate,
                     component: AnyComponent(ListSectionComponent(
                         theme: environment.theme,
-                        style: .glass,
                         header: nil,
                         footer: nil,
                         items: [
                             AnyComponentWithIdentity(id: 0, component: AnyComponent(ListItemComponentAdaptor(
-                                itemGenerator: ItemListDisclosureItem(presentationData: ItemListPresentationData(presentationData), icon: PresentationResourcesSettings.earnStars, title: environment.strings.Monetization_EarnStarsInfo_Title, titleBadge: nil, label: environment.strings.Monetization_EarnStarsInfo_Text, labelStyle: .multilineDetailText, sectionId: 0, style: .blocks, action: {
+                                itemGenerator: ItemListDisclosureItem(presentationData: ItemListPresentationData(presentationData), icon: PresentationResourcesSettings.earnStars, title: environment.strings.Monetization_EarnStarsInfo_Title, titleBadge: presentationData.strings.Settings_New, label: environment.strings.Monetization_EarnStarsInfo_Text, labelStyle: .multilineDetailText, sectionId: 0, style: .blocks, action: {
                                 }),
                                 params: ListViewItemLayoutParams(width: availableSize.width, leftInset: 0.0, rightInset: 0.0, availableHeight: 10000.0, isStandalone: true),
                                 action: { [weak self] in
@@ -920,7 +926,7 @@ final class StarsTransactionsScreenComponent: Component {
                         if let photo = subscription.photo {
                             nameGroupComponent = AnyComponent(
                                 HStack([
-                                    AnyComponentWithIdentity(id: AnyHashable(0), component: AnyComponent(StarsAvatarComponent(context: component.context, theme: environment.theme, peer: nil, photo: photo, media: [], gift: nil, backgroundColor: .clear, size: CGSize(width: 19.0, height: 19.0)))),
+                                    AnyComponentWithIdentity(id: AnyHashable(0), component: AnyComponent(StarsAvatarComponent(context: component.context, theme: environment.theme, peer: nil, photo: photo, media: [], uniqueGift: nil, backgroundColor: .clear, size: CGSize(width: 19.0, height: 19.0)))),
                                     AnyComponentWithIdentity(id: AnyHashable(1), component: nameComponent)
                                 ], spacing: 6.0)
                             )
@@ -960,10 +966,9 @@ final class StarsTransactionsScreenComponent: Component {
                         component: AnyComponent(
                             ListActionItemComponent(
                                 theme: environment.theme,
-                                style: .glass,
                                 title: AnyComponent(VStack(titleComponents, alignment: .left, spacing: 2.0)),
                                 contentInsets: UIEdgeInsets(top: 9.0, left: 0.0, bottom: 8.0, right: 0.0),
-                                leftIcon: .custom(AnyComponentWithIdentity(id: "avatar", component: AnyComponent(StarsAvatarComponent(context: component.context, theme: environment.theme, peer: .transactionPeer(.peer(subscription.peer)), photo: nil, media: [], gift: nil, backgroundColor: environment.theme.list.plainBackgroundColor))), false),
+                                leftIcon: .custom(AnyComponentWithIdentity(id: "avatar", component: AnyComponent(StarsAvatarComponent(context: component.context, theme: environment.theme, peer: .transactionPeer(.peer(subscription.peer)), photo: nil, media: [], uniqueGift: nil, backgroundColor: environment.theme.list.plainBackgroundColor))), false),
                                 icon: nil,
                                 accessory: .custom(ListActionItemComponent.CustomAccessory(component: labelComponent, insets: UIEdgeInsets(top: 0, left: 0, bottom: 0, right: 16.0))),
                                 action: { [weak self] _ in
@@ -982,7 +987,6 @@ final class StarsTransactionsScreenComponent: Component {
                         component: AnyComponent(
                             ListActionItemComponent(
                                 theme: environment.theme,
-                                style: .glass,
                                 title: AnyComponent(Text(
                                     text: environment.strings.Stars_Intro_Subscriptions_ShowMore,
                                     font: Font.regular(17.0),
@@ -1025,7 +1029,6 @@ final class StarsTransactionsScreenComponent: Component {
                     transition: transition,
                     component: AnyComponent(ListSectionComponent(
                         theme: environment.theme,
-                        style: .glass,
                         header: AnyComponent(MultilineTextComponent(
                             text: .plain(NSAttributedString(
                                 string: environment.strings.Stars_Intro_Subscriptions_Title.uppercased(),
@@ -1125,7 +1128,7 @@ final class StarsTransactionsScreenComponent: Component {
             
             if !panelItems.isEmpty {
                 let panelContainerInset: CGFloat = self.listIsExpanded ? 0.0 : 16.0
-                let panelContainerCornerRadius: CGFloat = self.listIsExpanded ? 0.0 : 26.0
+                let panelContainerCornerRadius: CGFloat = self.listIsExpanded ? 0.0 : 11.0
                 
                 let panelContainerSize = self.panelContainer.update(
                     transition: panelTransition,
@@ -1252,7 +1255,7 @@ public final class StarsTransactionsScreen: ViewControllerComponentContainer {
             gift: {
                 giftImpl?()
             }
-        ), navigationBarAppearance: .default)
+        ), navigationBarAppearance: .transparent)
         
         self.navigationPresentation = .modalInLargeLayout
         
@@ -1285,7 +1288,7 @@ public final class StarsTransactionsScreen: ViewControllerComponentContainer {
                     
                     var hasLeft = false
                     var isKicked = false
-                    if case let .channel(channel) = subscription.peer {
+                    if let channel = subscription.peer._asPeer() as? TelegramChannel {
                         switch channel.participationStatus {
                         case .left:
                             hasLeft = true
@@ -1331,7 +1334,7 @@ public final class StarsTransactionsScreen: ViewControllerComponentContainer {
                 guard let self else {
                     return
                 }
-                let controller = context.sharedContext.makeStarsPurchaseScreen(context: context, starsContext: starsContext, options: options, purpose: .generic, targetPeerId: nil, customTheme: nil, completion: { [weak self] stars in
+                let controller = context.sharedContext.makeStarsPurchaseScreen(context: context, starsContext: starsContext, options: options, purpose: .generic, completion: { [weak self] stars in
                     guard let self else {
                         return
                     }
@@ -1455,8 +1458,6 @@ public final class StarsTransactionsScreen: ViewControllerComponentContainer {
                         starsContext: starsContext,
                         options: options,
                         purpose: .gift(peerId: peerId),
-                        targetPeerId: nil,
-                        customTheme: nil,
                         completion: { [weak self] stars in
                             guard let self else {
                                 return

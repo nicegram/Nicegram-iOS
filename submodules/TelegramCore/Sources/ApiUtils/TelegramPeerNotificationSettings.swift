@@ -6,8 +6,7 @@ import TelegramApi
 extension TelegramPeerNotificationSettings {
     convenience init(apiSettings: Api.PeerNotifySettings) {
         switch apiSettings {
-        case let .peerNotifySettings(peerNotifySettingsData):
-            let (showPreviews, muteUntil, iosSound, desktopSound, storiesMuted, storiesHideSender, storiesIosSound, storiesDesktopSound) = (peerNotifySettingsData.showPreviews, peerNotifySettingsData.muteUntil, peerNotifySettingsData.iosSound, peerNotifySettingsData.otherSound, peerNotifySettingsData.storiesMuted, peerNotifySettingsData.storiesHideSender, peerNotifySettingsData.storiesIosSound, peerNotifySettingsData.storiesOtherSound)
+        case let .peerNotifySettings(_, showPreviews, _, muteUntil, iosSound, _, desktopSound, storiesMuted, storiesHideSender, storiesIosSound, _, storiesDesktopSound):
             let sound: Api.NotificationSound?
             let storiesSound: Api.NotificationSound?
             #if os(iOS)
@@ -69,8 +68,7 @@ extension PeerMessageSound {
             self = .default
         case .notificationSoundNone:
             self = .none
-        case let .notificationSoundLocal(notificationSoundLocalData):
-            let (_, data) = (notificationSoundLocalData.title, notificationSoundLocalData.data)
+        case let .notificationSoundLocal(_, data):
             var rawApiSound = data
             if let index = rawApiSound.firstIndex(of: ".") {
                 rawApiSound = String(rawApiSound[..<index])
@@ -96,8 +94,7 @@ extension PeerMessageSound {
                 }
             }
             self = parsedSound
-        case let .notificationSoundRingtone(notificationSoundRingtoneData):
-            let id = notificationSoundRingtoneData.id
+        case let .notificationSoundRingtone(id):
             self = .cloud(fileId: id)
         }
     }
@@ -110,12 +107,12 @@ extension PeerMessageSound {
             return .notificationSoundDefault
         case let .bundledModern(id):
             let string = "\(id + 100)"
-            return .notificationSoundLocal(.init(title: string, data: string))
+            return .notificationSoundLocal(title: string, data: string)
         case let .bundledClassic(id):
             let string = "\(id + 2)"
-            return .notificationSoundLocal(.init(title: string, data: string))
+            return .notificationSoundLocal(title: string, data: string)
         case let .cloud(fileId):
-            return .notificationSoundRingtone(.init(id: fileId))
+            return .notificationSoundRingtone(id: fileId)
         }
     }
 }

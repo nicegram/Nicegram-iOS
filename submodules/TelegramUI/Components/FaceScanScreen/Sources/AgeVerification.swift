@@ -2,6 +2,7 @@ import Foundation
 import UIKit
 import Display
 import SwiftSignalKit
+import Postbox
 import TelegramCore
 import AccountContext
 import FileMediaResourceStatus
@@ -73,7 +74,7 @@ public func ageVerificationAvailability(context: AccountContext) -> Signal<AgeVe
         |> take(1)
         |> mapToSignal { maybeFileAndMessage -> Signal<AgeVerificationAvailability, NoError> in
             if let (file, message) = maybeFileAndMessage {
-                let fetchedData = context.engine.resources.fetch(reference: FileMediaReference.message(message: MessageReference(message._asMessage()), media: file).resourceReference(file.resource), userLocation: .other, userContentType: .file)
+                let fetchedData = fetchedMediaResource(mediaBox: context.account.postbox.mediaBox, userLocation: .other, userContentType: .file, reference: FileMediaReference.message(message: MessageReference(message._asMessage()), media: file).resourceReference(file.resource))
                 
                 enum FetchStatus {
                     case completed(String)
@@ -83,8 +84,8 @@ public func ageVerificationAvailability(context: AccountContext) -> Signal<AgeVe
                                     
                 let fetchStatus = Signal<FetchStatus, NoError> { subscriber in
                     let fetchedDisposable = fetchedData.start()
-                    let resourceDataDisposable = context.engine.resources.data(resource: EngineMediaResource(file.resource)).start(next: { next in
-                        if next.isComplete {
+                    let resourceDataDisposable = context.account.postbox.mediaBox.resourceData(file.resource, attemptSynchronously: false).start(next: { next in
+                        if next.complete {
                             SSZipArchive.unzipFile(atPath: next.path, toDestination: NSTemporaryDirectory())
                             subscriber.putNext(.completed(compiledModelPath))
                             subscriber.putCompletion()

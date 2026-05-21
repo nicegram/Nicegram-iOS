@@ -3,27 +3,22 @@ import Postbox
 import TelegramApi
 import SwiftSignalKit
 
-func _internal_installInteractiveReadMessagesAction(postbox: Postbox, stateManager: AccountStateManager, peerId: PeerId, threadId: Int64?) -> Disposable {
+func _internal_installInteractiveReadMessagesAction(postbox: Postbox, stateManager: AccountStateManager, peerId: PeerId) -> Disposable {
     return postbox.installStoreMessageAction(peerId: peerId, { messages, transaction in
         var consumeMessageIds: [MessageId] = []
-        var readReactionOrPollVotesIds: [MessageId] = []
+        var readReactionIds: [MessageId] = []
+        readReactionIds.removeAll()
         
         var readMessageIndexByNamespace: [MessageId.Namespace: MessageIndex] = [:]
         
         for message in messages {
             if case let .Id(id) = message.id {
-                if threadId == nil || message.threadId == threadId {
-                } else {
-                    continue
-                }
-                
                 var hasUnconsumedMention = false
                 var hasUnconsumedContent = false
                 var hasUnseenReactions = false
-                var hasUnseenPollVotes = false
                 
-                if message.tags.contains(.unseenPersonalMessage) || message.tags.contains(.unseenReaction) || message.tags.contains(.unseenPollVote) {
-                    for attribute in message.attributes {
+                if message.tags.contains(.unseenPersonalMessage) || message.tags.contains(.unseenReaction) {
+                    inner: for attribute in message.attributes {
                         if let attribute = attribute as? ConsumablePersonalMentionMessageAttribute, !attribute.consumed, !attribute.pending {
                             hasUnconsumedMention = true
                         } else if let attribute = attribute as? ConsumableContentMessageAttribute, !attribute.consumed {
@@ -32,20 +27,13 @@ func _internal_installInteractiveReadMessagesAction(postbox: Postbox, stateManag
                             hasUnseenReactions = true
                         }
                     }
-                    for media in message.media {
-                        if let poll = media as? TelegramMediaPoll {
-                            if poll.results.hasUnseenVotes == true {
-                                hasUnseenPollVotes = true
-                            }
-                        }
-                    }
                 }
                 
                 if hasUnconsumedMention && !hasUnconsumedContent {
                     consumeMessageIds.append(id)
                 }
-                if hasUnseenReactions || hasUnseenPollVotes {
-                    readReactionOrPollVotesIds.append(id)
+                if hasUnseenReactions {
+                    //readReactionIds.append(id)
                 }
                 
                 if !message.flags.intersection(.IsIncomingMask).isEmpty {
@@ -58,7 +46,7 @@ func _internal_installInteractiveReadMessagesAction(postbox: Postbox, stateManag
             }
         }
         
-        for id in Set(consumeMessageIds + readReactionOrPollVotesIds) {
+        for id in Set(consumeMessageIds + readReactionIds) {
             transaction.updateMessage(id, update: { currentMessage in
                 var attributes = currentMessage.attributes
                 if consumeMessageIds.contains(id) {
@@ -70,82 +58,28 @@ func _internal_installInteractiveReadMessagesAction(postbox: Postbox, stateManag
                     }
                 }
                 var tags = currentMessage.tags
-                var media = currentMessage.media
-                if readReactionOrPollVotesIds.contains(id) {
+                if readReactionIds.contains(id) {
                     reactionsLoop: for j in 0 ..< attributes.count {
                         if let attribute = attributes[j] as? ReactionsMessageAttribute {
                             attributes[j] = attribute.withAllSeen()
                             break reactionsLoop
                         }
                     }
-                    pollVoteLoop: for j in 0 ..< media.count {
-                        if let poll = media[j] as? TelegramMediaPoll {
-                            media[j] = poll.withoutUnreadResults()
-                            break pollVoteLoop
-                        }
-                    }
                     tags.remove(.unseenReaction)
-                    tags.remove(.unseenPollVote)
                 }
-                return .update(StoreMessage(id: currentMessage.id, customStableId: nil, globallyUniqueId: currentMessage.globallyUniqueId, groupingKey: currentMessage.groupingKey, threadId: currentMessage.threadId, timestamp: currentMessage.timestamp, flags: StoreMessageFlags(currentMessage.flags), tags: tags, globalTags: currentMessage.globalTags, localTags: currentMessage.localTags, forwardInfo: currentMessage.forwardInfo.flatMap(StoreMessageForwardInfo.init), authorId: currentMessage.author?.id, text: currentMessage.text, attributes: attributes, media: media))
+                return .update(StoreMessage(id: currentMessage.id, customStableId: nil, globallyUniqueId: currentMessage.globallyUniqueId, groupingKey: currentMessage.groupingKey, threadId: currentMessage.threadId, timestamp: currentMessage.timestamp, flags: StoreMessageFlags(currentMessage.flags), tags: tags, globalTags: currentMessage.globalTags, localTags: currentMessage.localTags, forwardInfo: currentMessage.forwardInfo.flatMap(StoreMessageForwardInfo.init), authorId: currentMessage.author?.id, text: currentMessage.text, attributes: attributes, media: currentMessage.media))
             })
             
             if consumeMessageIds.contains(id) {
                 transaction.setPendingMessageAction(type: .consumeUnseenPersonalMessage, id: id, action: ConsumePersonalMessageAction())
             }
-            if readReactionOrPollVotesIds.contains(id) {
-                transaction.setPendingMessageAction(type: .readReactionOrPollVote, id: id, action: ReadReactionAction())
+            if readReactionIds.contains(id) {
+                transaction.setPendingMessageAction(type: .readReaction, id: id, action: ReadReactionAction())
             }
         }
         
         for (_, index) in readMessageIndexByNamespace {
-            if let threadId {
-                var newCountIsZero = false
-                if var data = transaction.getMessageHistoryThreadInfo(peerId: peerId, threadId: threadId)?.data.get(MessageHistoryThreadData.self) {
-                    if index.id.id >= data.maxIncomingReadId {
-                        if let count = transaction.getThreadMessageCount(peerId: peerId, threadId: threadId, namespace: Namespaces.Message.Cloud, fromIdExclusive: data.maxIncomingReadId, toIndex: index) {
-                            data.incomingUnreadCount = max(0, data.incomingUnreadCount - Int32(count))
-                            data.maxIncomingReadId = index.id.id
-                            newCountIsZero = data.incomingUnreadCount == 0
-                        }
-                        
-                        if let topMessageIndex = transaction.getMessageHistoryThreadTopMessage(peerId: peerId, threadId: threadId, namespaces: Set([Namespaces.Message.Cloud])) {
-                            if index.id.id >= topMessageIndex.id.id {
-                                let containingHole = transaction.getThreadIndexHole(peerId: peerId, threadId: threadId, namespace: topMessageIndex.id.namespace, containing: topMessageIndex.id.id)
-                                if let _ = containingHole[.everywhere] {
-                                } else {
-                                    data.incomingUnreadCount = 0
-                                }
-                            }
-                        }
-                        
-                        data.maxKnownMessageId = max(data.maxKnownMessageId, index.id.id)
-                        
-                        if let entry = StoredMessageHistoryThreadInfo(data) {
-                            transaction.setMessageHistoryThreadInfo(peerId: peerId, threadId: threadId, info: entry)
-                        }
-                    }
-                }
-                
-                if newCountIsZero, let peer = transaction.getPeer(peerId), peer.isForumOrMonoForum {
-                    var allTopicsAreRead = true
-                    for item in transaction.getMessageHistoryThreadIndex(peerId: peer.id, limit: 100) {
-                        guard let data = transaction.getMessageHistoryThreadInfo(peerId: index.id.peerId, threadId: item.threadId)?.data.get(MessageHistoryThreadData.self) else {
-                            continue
-                        }
-                        if data.incomingUnreadCount != 0 {
-                            allTopicsAreRead = false
-                            break
-                        }
-                    }
-                    
-                    if allTopicsAreRead {
-                        _internal_applyMaxReadIndexInteractively(transaction: transaction, stateManager: stateManager, index: index)
-                    }
-                }
-            } else {
-                _internal_applyMaxReadIndexInteractively(transaction: transaction, stateManager: stateManager, index: index)
-            }
+            _internal_applyMaxReadIndexInteractively(transaction: transaction, stateManager: stateManager, index: index)
         }
     })
 }
@@ -183,7 +117,6 @@ private final class StoreOrUpdateMessageActionImpl: StoreOrUpdateMessageAction {
     
     func addOrUpdate(messages: [StoreMessage], transaction: Transaction) {
         var readReactionIds: [MessageId: [ReactionsMessageAttribute.RecentPeer]] = [:]
-        var readPollVoteIds = Set<MessageId>()
         
         guard let visibleRange = self.getVisibleRange() else {
             return
@@ -205,33 +138,22 @@ private final class StoreOrUpdateMessageActionImpl: StoreOrUpdateMessageAction {
                     }
                 }
             }
-            if message.tags.contains(.unseenPollVote) {
-                readPollVoteIds.insert(index.id)
-            }
         }
         
-        for id in Set(readReactionIds.keys).union(readPollVoteIds) {
+        for id in readReactionIds.keys {
             transaction.updateMessage(id, update: { currentMessage in
                 var attributes = currentMessage.attributes
-                var media = currentMessage.media
                 reactionsLoop: for j in 0 ..< attributes.count {
                     if let attribute = attributes[j] as? ReactionsMessageAttribute {
                         attributes[j] = attribute.withAllSeen()
                         break reactionsLoop
                     }
                 }
-                pollVotesLoop: for j in 0 ..< media.count {
-                    if let poll = media[j] as? TelegramMediaPoll {
-                        media[j] = poll.withoutUnreadResults()
-                        break pollVotesLoop
-                    }
-                }
                 var tags = currentMessage.tags
                 tags.remove(.unseenReaction)
-                tags.remove(.unseenPollVote)
-                return .update(StoreMessage(id: currentMessage.id, customStableId: nil, globallyUniqueId: currentMessage.globallyUniqueId, groupingKey: currentMessage.groupingKey, threadId: currentMessage.threadId, timestamp: currentMessage.timestamp, flags: StoreMessageFlags(currentMessage.flags), tags: tags, globalTags: currentMessage.globalTags, localTags: currentMessage.localTags, forwardInfo: currentMessage.forwardInfo.flatMap(StoreMessageForwardInfo.init), authorId: currentMessage.author?.id, text: currentMessage.text, attributes: attributes, media: media))
+                return .update(StoreMessage(id: currentMessage.id, customStableId: nil, globallyUniqueId: currentMessage.globallyUniqueId, groupingKey: currentMessage.groupingKey, threadId: currentMessage.threadId, timestamp: currentMessage.timestamp, flags: StoreMessageFlags(currentMessage.flags), tags: tags, globalTags: currentMessage.globalTags, localTags: currentMessage.localTags, forwardInfo: currentMessage.forwardInfo.flatMap(StoreMessageForwardInfo.init), authorId: currentMessage.author?.id, text: currentMessage.text, attributes: attributes, media: currentMessage.media))
             })
-            transaction.setPendingMessageAction(type: .readReactionOrPollVote, id: id, action: ReadReactionAction())
+            transaction.setPendingMessageAction(type: .readReaction, id: id, action: ReadReactionAction())
         }
         
         self.didReadReactionsInMessages(readReactionIds)

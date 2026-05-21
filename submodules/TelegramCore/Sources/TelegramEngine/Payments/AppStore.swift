@@ -20,7 +20,7 @@ public enum AppStoreTransactionPurpose {
     case stars(count: Int64, currency: String, amount: Int64, peerId: EnginePeer.Id?)
     case starsGift(peerId: EnginePeer.Id, count: Int64, currency: String, amount: Int64)
     case starsGiveaway(stars: Int64, boostPeer: EnginePeer.Id, additionalPeerIds: [EnginePeer.Id], countries: [String], onlyNewSubscribers: Bool, showWinners: Bool, prizeDescription: String?, randomId: Int64, untilDate: Int32, currency: String, amount: Int64, users: Int32)
-    case authCode(restore: Bool, phoneNumber: String, phoneCodeHash: String, premiumDays: Int32, currency: String, amount: Int64)
+    case authCode(restore: Bool, phoneNumber: String, phoneCodeHash: String, currency: String, amount: Int64)
 }
 
 private func apiInputStorePaymentPurpose(postbox: Postbox, purpose: AppStoreTransactionPurpose) -> Signal<Api.InputStorePaymentPurpose, NoError> {
@@ -35,14 +35,14 @@ private func apiInputStorePaymentPurpose(postbox: Postbox, purpose: AppStoreTran
         default:
             break
         }
-        return .single(.inputStorePaymentPremiumSubscription(.init(flags: flags)))
+        return .single(.inputStorePaymentPremiumSubscription(flags: flags))
     case let .gift(peerId, currency, amount):
         return  postbox.loadedPeerWithId(peerId)
         |> mapToSignal { peer -> Signal<Api.InputStorePaymentPurpose, NoError> in
             guard let inputUser = apiInputUser(peer) else {
                 return .complete()
             }
-            return .single(.inputStorePaymentGiftPremium(.init(userId: inputUser, currency: currency, amount: amount)))
+            return .single(.inputStorePaymentGiftPremium(userId: inputUser, currency: currency, amount: amount))
         }
     case let .giftCode(peerIds, boostPeerId, currency, amount, text, entities):
         return postbox.transaction { transaction -> Api.InputStorePaymentPurpose in
@@ -64,10 +64,10 @@ private func apiInputStorePaymentPurpose(postbox: Postbox, purpose: AppStoreTran
             var message: Api.TextWithEntities?
             if let text, !text.isEmpty {
                 flags |= (1 << 1)
-                message = .textWithEntities(.init(text: text, entities: entities.flatMap { apiEntitiesFromMessageTextEntities($0, associatedPeers: SimpleDictionary()) } ?? []))
+                message = .textWithEntities(text: text, entities: entities.flatMap { apiEntitiesFromMessageTextEntities($0, associatedPeers: SimpleDictionary()) } ?? [])
             }
             
-            return .inputStorePaymentPremiumGiftCode(.init(flags: flags, users: apiInputUsers, boostPeer: apiBoostPeer, currency: currency, amount: amount, message: message))
+            return .inputStorePaymentPremiumGiftCode(flags: flags, users: apiInputUsers, boostPeer: apiBoostPeer, currency: currency, amount: amount, message: message)
         }
     case let .giveaway(boostPeerId, additionalPeerIds, countries, onlyNewSubscribers, showWinners, prizeDescription, randomId, untilDate, currency, amount):
         return postbox.transaction { transaction -> Signal<Api.InputStorePaymentPurpose, NoError> in
@@ -96,7 +96,7 @@ private func apiInputStorePaymentPurpose(postbox: Postbox, purpose: AppStoreTran
             if let _ = prizeDescription {
                 flags |= (1 << 4)
             }
-            return .single(.inputStorePaymentPremiumGiveaway(.init(flags: flags, boostPeer: apiBoostPeer, additionalPeers: additionalPeers, countriesIso2: countries, prizeDescription: prizeDescription, randomId: randomId, untilDate: untilDate, currency: currency, amount: amount)))
+            return .single(.inputStorePaymentPremiumGiveaway(flags: flags, boostPeer: apiBoostPeer, additionalPeers: additionalPeers, countriesIso2: countries, prizeDescription: prizeDescription, randomId: randomId, untilDate: untilDate, currency: currency, amount: amount))
         }
         |> switchToLatest
     case let .stars(count, currency, amount, peerId):
@@ -115,7 +115,7 @@ private func apiInputStorePaymentPurpose(postbox: Postbox, purpose: AppStoreTran
             if let _ = spendPurposePeer {
                 flags |= (1 << 0)
             }
-            return .inputStorePaymentStarsTopup(.init(flags: flags, stars: count, currency: currency, amount: amount, spendPurposePeer: spendPurposePeer))
+            return .inputStorePaymentStarsTopup(flags: flags, stars: count, currency: currency, amount: amount, spendPurposePeer: spendPurposePeer)
         }
     case let .starsGift(peerId, count, currency, amount):
         return postbox.loadedPeerWithId(peerId)
@@ -123,7 +123,7 @@ private func apiInputStorePaymentPurpose(postbox: Postbox, purpose: AppStoreTran
             guard let inputUser = apiInputUser(peer) else {
                 return .complete()
             }
-            return .single(.inputStorePaymentStarsGift(.init(userId: inputUser, stars: count, currency: currency, amount: amount)))
+            return .single(.inputStorePaymentStarsGift(userId: inputUser, stars: count, currency: currency, amount: amount))
         }
     case let .starsGiveaway(stars, boostPeerId, additionalPeerIds, countries, onlyNewSubscribers, showWinners, prizeDescription, randomId, untilDate, currency, amount, users):
         return postbox.transaction { transaction -> Signal<Api.InputStorePaymentPurpose, NoError> in
@@ -152,15 +152,15 @@ private func apiInputStorePaymentPurpose(postbox: Postbox, purpose: AppStoreTran
             if let _ = prizeDescription {
                 flags |= (1 << 4)
             }
-            return .single(.inputStorePaymentStarsGiveaway(.init(flags: flags, stars: stars, boostPeer: apiBoostPeer, additionalPeers: additionalPeers, countriesIso2: countries, prizeDescription: prizeDescription, randomId: randomId, untilDate: untilDate, currency: currency, amount: amount, users: users)))
+            return .single(.inputStorePaymentStarsGiveaway(flags: flags, stars: stars, boostPeer: apiBoostPeer, additionalPeers: additionalPeers, countriesIso2: countries, prizeDescription: prizeDescription, randomId: randomId, untilDate: untilDate, currency: currency, amount: amount, users: users))
         }
         |> switchToLatest
-    case let .authCode(restore, phoneNumber, phoneCodeHash, premiumDays, currency, amount):
+    case let .authCode(restore, phoneNumber, phoneCodeHash, currency, amount):
         var flags: Int32 = 0
         if restore {
             flags |= (1 << 0)
         }
-        return .single(.inputStorePaymentAuthCode(.init(flags: flags, phoneNumber: phoneNumber, phoneCodeHash: phoneCodeHash, premiumDays: premiumDays, currency: currency, amount: amount)))
+        return .single(.inputStorePaymentAuthCode(flags: flags, phoneNumber: phoneNumber, phoneCodeHash: phoneCodeHash, currency: currency, amount: amount))
     }
 }
 

@@ -230,10 +230,10 @@ func preparedChatHistoryViewTransition(from fromView: ChatHistoryView?, to toVie
                             }
                             return 0.0
                         }))
-                    } else if let subject = scrollSubject.subject {
+                    } else if let todoTaskId = scrollSubject.todoTaskId {
                         position = .center(.custom({ itemNode in
                             if let itemNode = itemNode as? ChatMessageBubbleItemNode {
-                                if let taskRect = itemNode.getInnerReplySubjectRect(innerSubject: subject) {
+                                if let taskRect = itemNode.getTodoTaskRect(id: todoTaskId) {
                                     return taskRect.midY
                                 }
                             }

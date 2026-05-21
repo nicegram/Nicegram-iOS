@@ -38,7 +38,7 @@ final class SearchNavigationContentNode: NavigationBarContentNode, ItemListContr
         
         self.cancel = cancel
         
-        self.searchBar = SearchBarNode(theme: SearchBarNodeTheme(theme: theme, hasSeparator: false), presentationTheme: theme, strings: strings, fieldStyle: .modern, displayBackground: false)
+        self.searchBar = SearchBarNode(theme: SearchBarNodeTheme(theme: theme, hasSeparator: false), strings: strings, fieldStyle: .modern, displayBackground: false)
         
         super.init()
         
@@ -66,7 +66,7 @@ final class SearchNavigationContentNode: NavigationBarContentNode, ItemListContr
     
     func updateTheme(_ theme: PresentationTheme) {
         self.theme = theme
-        self.searchBar.updateThemeAndStrings(theme: SearchBarNodeTheme(theme: self.theme), presentationTheme: self.theme, strings: self.strings)
+        self.searchBar.updateThemeAndStrings(theme: SearchBarNodeTheme(theme: self.theme), strings: self.strings)
         self.updatePlaceholder()
     }
     
@@ -78,12 +78,10 @@ final class SearchNavigationContentNode: NavigationBarContentNode, ItemListContr
         return 56.0
     }
     
-    override func updateLayout(size: CGSize, leftInset: CGFloat, rightInset: CGFloat, transition: ContainedViewLayoutTransition) -> CGSize {
+    override func updateLayout(size: CGSize, leftInset: CGFloat, rightInset: CGFloat, transition: ContainedViewLayoutTransition) {
         let searchBarFrame = CGRect(origin: CGPoint(x: 0.0, y: size.height - self.nominalHeight), size: CGSize(width: size.width, height: 56.0))
         self.searchBar.frame = searchBarFrame
         self.searchBar.updateLayout(boundingSize: searchBarFrame.size, leftInset: leftInset, rightInset: rightInset, transition: transition)
-        
-        return size
     }
     
     func activate() {
@@ -152,7 +150,7 @@ final class InviteRequestsSearchItem: ItemListControllerSearch {
         }
     }
     
-    func titleContentNode(current: (NavigationBarContentNode & ItemListControllerSearchNavigationContentNode)?) -> (NavigationBarContentNode & ItemListControllerSearchNavigationContentNode)? {
+    func titleContentNode(current: (NavigationBarContentNode & ItemListControllerSearchNavigationContentNode)?) -> NavigationBarContentNode & ItemListControllerSearchNavigationContentNode {
         let presentationData = self.context.sharedContext.currentPresentationData.with { $0 }
         if let current = current as? SearchNavigationContentNode {
             current.updateTheme(presentationData.theme)
@@ -364,7 +362,7 @@ public final class InviteRequestsSearchContainerNode: SearchDisplayControllerCon
         self.dimNode = ASDisplayNode()
         self.dimNode.backgroundColor = UIColor.black.withAlphaComponent(0.5)
         
-        self.listNode = ListViewImpl()
+        self.listNode = ListView()
         self.listNode.accessibilityPageScrolledString = { row, count in
             return presentationData.strings.VoiceOver_ScrollStatus(row, count).string
         }
@@ -457,7 +455,7 @@ public final class InviteRequestsSearchContainerNode: SearchDisplayControllerCon
         //            dismissPromise.set(true)
         //        }
                 
-                let contextController = makeContextController(presentationData: presentationData, source: .extracted(source), items: .single(ContextController.Items(content: .list(items))), gesture: gesture)
+                let contextController = ContextController(presentationData: presentationData, source: .extracted(source), items: .single(ContextController.Items(content: .list(items))), gesture: gesture)
                 presentInGlobalOverlay(contextController)
             })
         })

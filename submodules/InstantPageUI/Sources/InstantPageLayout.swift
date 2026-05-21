@@ -6,7 +6,6 @@ import TelegramPresentationData
 import TelegramUIPreferences
 import TelegramStringFormatting
 import MosaicLayout
-import TextFormat
 
 public final class InstantPageLayout {
     public let origin: CGPoint
@@ -29,7 +28,8 @@ public final class InstantPageLayout {
     }
 }
 
-private func setupStyleStack(_ stack: InstantPageTextStyleStack, theme: InstantPageTheme, attributes: InstantPageTextAttributes) {
+private func setupStyleStack(_ stack: InstantPageTextStyleStack, theme: InstantPageTheme, category: InstantPageTextCategoryType, link: Bool) {
+    let attributes = theme.textCategories.attributes(type: category, link: link)
     stack.push(.textColor(attributes.color))
     stack.push(.markerColor(theme.markerColor))
     stack.push(.linkColor(theme.linkColor))
@@ -47,125 +47,7 @@ private func setupStyleStack(_ stack: InstantPageTextStyleStack, theme: InstantP
     }
 }
 
-private func setupStyleStack(_ stack: InstantPageTextStyleStack, theme: InstantPageTheme, category: InstantPageTextCategoryType, link: Bool) {
-    setupStyleStack(stack, theme: theme, attributes: theme.textCategories.attributes(type: category, link: link))
-}
-
-private func instantPageFont(style: InstantPageTextAttributes, bold: Bool = false, italic: Bool = false, fixed: Bool = false) -> UIFont {
-    let size = style.font.size
-    if fixed {
-        if bold && italic {
-            return UIFont(name: "Menlo-BoldItalic", size: size) ?? Font.semiboldItalic(size)
-        } else if bold {
-            return UIFont(name: "Menlo-Bold", size: size) ?? Font.bold(size)
-        } else if italic {
-            return UIFont(name: "Menlo-Italic", size: size) ?? Font.italic(size)
-        } else {
-            return UIFont(name: "Menlo", size: size) ?? Font.regular(size)
-        }
-    }
-    switch style.font.style {
-    case .serif:
-        if bold && italic {
-            return UIFont(name: "Georgia-BoldItalic", size: size) ?? Font.semiboldItalic(size)
-        } else if bold {
-            return UIFont(name: "Georgia-Bold", size: size) ?? Font.bold(size)
-        } else if italic {
-            return UIFont(name: "Georgia-Italic", size: size) ?? Font.italic(size)
-        } else {
-            return UIFont(name: "Georgia", size: size) ?? Font.regular(size)
-        }
-    case .sans:
-        if bold && italic {
-            return Font.semiboldItalic(size)
-        } else if bold {
-            return Font.bold(size)
-        } else if italic {
-            return Font.italic(size)
-        } else {
-            return Font.regular(size)
-        }
-    }
-}
-
-private func attributedStringForPreformattedText(_ text: RichText, language: String?, theme: InstantPageTheme, cachedMessageSyntaxHighlight: CachedMessageSyntaxHighlight?) -> NSAttributedString {
-    let paragraphAttributes = theme.textCategories.attributes(type: .paragraph, link: false)
-    let textValue = text.plainText
-    guard !textValue.isEmpty else {
-        return NSAttributedString(
-            string: "",
-            attributes: [
-                .font: instantPageFont(style: paragraphAttributes, fixed: true),
-                .foregroundColor: paragraphAttributes.color,
-                NSAttributedString.Key(rawValue: InstantPageLineSpacingFactorAttribute): paragraphAttributes.font.lineSpacingFactor as NSNumber
-            ]
-        )
-    }
-
-    let attributedString = stringWithAppliedEntities(
-        textValue,
-        entities: [
-            MessageTextEntity(range: 0 ..< (textValue as NSString).length, type: .Pre(language: language))
-        ],
-        baseColor: paragraphAttributes.color,
-        linkColor: theme.linkColor,
-        codeBlockTitleColor: paragraphAttributes.color,
-        codeBlockAccentColor: paragraphAttributes.color,
-        codeBlockBackgroundColor: theme.codeBlockBackgroundColor,
-        baseFont: instantPageFont(style: paragraphAttributes),
-        linkFont: instantPageFont(style: paragraphAttributes),
-        boldFont: instantPageFont(style: paragraphAttributes, bold: true),
-        italicFont: instantPageFont(style: paragraphAttributes, italic: true),
-        boldItalicFont: instantPageFont(style: paragraphAttributes, bold: true, italic: true),
-        fixedFont: instantPageFont(style: paragraphAttributes, fixed: true),
-        blockQuoteFont: instantPageFont(style: paragraphAttributes),
-        underlineLinks: false,
-        message: nil,
-        cachedMessageSyntaxHighlight: cachedMessageSyntaxHighlight
-    ).mutableCopy() as! NSMutableAttributedString
-    attributedString.addAttribute(
-        NSAttributedString.Key(rawValue: InstantPageLineSpacingFactorAttribute),
-        value: paragraphAttributes.font.lineSpacingFactor as NSNumber,
-        range: NSRange(location: 0, length: attributedString.length)
-    )
-    return attributedString
-}
-
-private let instantPageTaskListUncheckedNumber = "\u{001f}tg-md-task:unchecked"
-private let instantPageTaskListCheckedNumber = "\u{001f}tg-md-task:checked"
-private let instantPageChecklistMarkerSize = CGSize(width: 18.0, height: 18.0)
-
-private func instantPageTaskListMarkerState(_ number: String?) -> Bool? {
-    switch number {
-    case instantPageTaskListUncheckedNumber:
-        return false
-    case instantPageTaskListCheckedNumber:
-        return true
-    default:
-        return nil
-    }
-}
-
-private func instantPageFirstTextLineMidY(in items: [InstantPageItem]) -> CGFloat? {
-    for item in items {
-        if let textItem = item as? InstantPageTextItem {
-            if let line = textItem.lines.first {
-                return textItem.frame.minY + line.frame.midY
-            } else {
-                return textItem.frame.midY
-            }
-        } else if let scrollableTextItem = item as? InstantPageScrollableTextItem {
-            if let line = scrollableTextItem.item.lines.first {
-                return scrollableTextItem.frame.minY + scrollableTextItem.item.frame.minY + line.frame.midY
-            } else {
-                return scrollableTextItem.frame.midY
-            }
-        }
-    }
-    return nil
-}
-
-public func layoutInstantPageBlock(webpage: TelegramMediaWebpage, userLocation: MediaResourceUserLocation, rtl: Bool, block: InstantPageBlock, boundingWidth: CGFloat, horizontalInset: CGFloat, safeInset: CGFloat, isCover: Bool, previousItems: [InstantPageItem], fillToSize: CGSize?, media: [EngineMedia.Id: EngineMedia], mediaIndexCounter: inout Int, embedIndexCounter: inout Int, detailsIndexCounter: inout Int, theme: InstantPageTheme, strings: PresentationStrings, dateTimeFormat: PresentationDateTimeFormat, webEmbedHeights: [Int : CGFloat] = [:], cachedMessageSyntaxHighlight: CachedMessageSyntaxHighlight? = nil, excludeCaptions: Bool) -> InstantPageLayout {
+public func layoutInstantPageBlock(webpage: TelegramMediaWebpage, userLocation: MediaResourceUserLocation, rtl: Bool, block: InstantPageBlock, boundingWidth: CGFloat, horizontalInset: CGFloat, safeInset: CGFloat, isCover: Bool, previousItems: [InstantPageItem], fillToSize: CGSize?, media: [EngineMedia.Id: EngineMedia], mediaIndexCounter: inout Int, embedIndexCounter: inout Int, detailsIndexCounter: inout Int, theme: InstantPageTheme, strings: PresentationStrings, dateTimeFormat: PresentationDateTimeFormat, webEmbedHeights: [Int : CGFloat] = [:], excludeCaptions: Bool) -> InstantPageLayout {
    
     let layoutCaption: (InstantPageCaption, CGSize) -> ([InstantPageItem], CGSize) = { caption, contentSize in
         var items: [InstantPageItem] = []
@@ -218,7 +100,7 @@ public func layoutInstantPageBlock(webpage: TelegramMediaWebpage, userLocation: 
     
     switch block {
         case let .cover(block):
-            return layoutInstantPageBlock(webpage: webpage, userLocation: userLocation, rtl: rtl, block: block, boundingWidth: boundingWidth, horizontalInset: horizontalInset, safeInset: safeInset, isCover: true, previousItems:previousItems, fillToSize: fillToSize, media: media, mediaIndexCounter: &mediaIndexCounter, embedIndexCounter: &embedIndexCounter, detailsIndexCounter: &detailsIndexCounter, theme: theme, strings: strings, dateTimeFormat: dateTimeFormat, webEmbedHeights: webEmbedHeights, cachedMessageSyntaxHighlight: cachedMessageSyntaxHighlight, excludeCaptions: false)
+            return layoutInstantPageBlock(webpage: webpage, userLocation: userLocation, rtl: rtl, block: block, boundingWidth: boundingWidth, horizontalInset: horizontalInset, safeInset: safeInset, isCover: true, previousItems:previousItems, fillToSize: fillToSize, media: media, mediaIndexCounter: &mediaIndexCounter, embedIndexCounter: &embedIndexCounter, detailsIndexCounter: &detailsIndexCounter, theme: theme, strings: strings, dateTimeFormat: dateTimeFormat, webEmbedHeights: webEmbedHeights, excludeCaptions: false)
         case let .title(text):
             let styleStack = InstantPageTextStyleStack()
             setupStyleStack(styleStack, theme: theme, category: .header, link: false)
@@ -286,65 +168,16 @@ public func layoutInstantPageBlock(webpage: TelegramMediaWebpage, userLocation: 
             setupStyleStack(styleStack, theme: theme, category: .subheader, link: false)
             let (_, items, contentSize) = layoutTextItemWithString(attributedStringForRichText(text, styleStack: styleStack), boundingWidth: boundingWidth - horizontalInset * 2.0, offset: CGPoint(x: horizontalInset, y: 0.0), media: media, webpage: webpage)
             return InstantPageLayout(origin: CGPoint(), contentSize: contentSize, items: items)
-        case let .heading(text, level):
-            let styleStack = InstantPageTextStyleStack()
-            setupStyleStack(styleStack, theme: theme, attributes: theme.headingTextAttributes(level: level, link: false))
-            let (_, items, contentSize) = layoutTextItemWithString(attributedStringForRichText(text, styleStack: styleStack), boundingWidth: boundingWidth - horizontalInset * 2.0, offset: CGPoint(x: horizontalInset, y: 0.0), media: media, webpage: webpage)
-            return InstantPageLayout(origin: CGPoint(), contentSize: contentSize, items: items)
-        case let .formula(latex):
-            let styleStack = InstantPageTextStyleStack()
-            setupStyleStack(styleStack, theme: theme, category: .paragraph, link: false)
-            let attributes = styleStack.textAttributes()
-            let textColor = (attributes[NSAttributedString.Key.foregroundColor] as? UIColor) ?? theme.textCategories.paragraph.color
-            let fontSize = (attributes[NSAttributedString.Key.font] as? UIFont)?.pointSize ?? theme.textCategories.paragraph.font.size
-
-            guard let attachment = instantPageMathAttachment(latex: latex, fontSize: fontSize, textColor: textColor, mode: .block) else {
-                let (_, items, contentSize) = layoutTextItemWithString(attributedStringForRichText(.plain(latex), styleStack: styleStack), boundingWidth: boundingWidth - horizontalInset * 2.0, offset: CGPoint(x: horizontalInset, y: 0.0), media: media, webpage: webpage)
-                return InstantPageLayout(origin: CGPoint(), contentSize: contentSize, items: items)
-            }
-
-            let availableWidth = boundingWidth - horizontalInset * 2.0
-            if attachment.rendered.size.width > availableWidth {
-                let scrollableItem = InstantPageScrollableFormulaItem(
-                    frame: CGRect(origin: .zero, size: CGSize(width: boundingWidth, height: attachment.rendered.size.height)),
-                    attachment: attachment,
-                    totalWidth: attachment.rendered.size.width,
-                    horizontalInset: horizontalInset
-                )
-                return InstantPageLayout(origin: CGPoint(), contentSize: scrollableItem.frame.size, items: [scrollableItem])
-            } else {
-                let item = InstantPageFormulaItem(
-                    frame: CGRect(
-                        origin: CGPoint(x: horizontalInset + floor((availableWidth - attachment.rendered.size.width) / 2.0), y: 0.0),
-                        size: attachment.rendered.size
-                    ),
-                    attachment: attachment
-                )
-                return InstantPageLayout(origin: CGPoint(), contentSize: CGSize(width: boundingWidth, height: attachment.rendered.size.height), items: [item])
-            }
         case let .paragraph(text):
             let styleStack = InstantPageTextStyleStack()
             setupStyleStack(styleStack, theme: theme, category: .paragraph, link: false)
             let (_, items, contentSize) = layoutTextItemWithString(attributedStringForRichText(text, styleStack: styleStack), boundingWidth: boundingWidth - horizontalInset * 2.0, horizontalInset: horizontalInset, offset: CGPoint(x: horizontalInset, y: 0.0), media: media, webpage: webpage)
             return InstantPageLayout(origin: CGPoint(), contentSize: contentSize, items: items)
-        case let .preformatted(text, language):
+        case let .preformatted(text):
+            let styleStack = InstantPageTextStyleStack()
+            setupStyleStack(styleStack, theme: theme, category: .paragraph, link: false)
             let backgroundInset: CGFloat = 14.0
-            let attributedString: NSAttributedString
-            if let language, !language.isEmpty {
-                attributedString = attributedStringForPreformattedText(text, language: language, theme: theme, cachedMessageSyntaxHighlight: cachedMessageSyntaxHighlight)
-            } else {
-                let styleStack = InstantPageTextStyleStack()
-                setupStyleStack(styleStack, theme: theme, category: .paragraph, link: false)
-                attributedString = attributedStringForRichText(text, styleStack: styleStack)
-            }
-            let (_, items, contentSize) = layoutTextItemWithString(
-                attributedString,
-                boundingWidth: boundingWidth - horizontalInset * 2.0 - backgroundInset * 2.0,
-                offset: CGPoint(x: 17.0, y: backgroundInset),
-                media: media,
-                webpage: webpage,
-                opaqueBackground: true
-            )
+            let (_, items, contentSize) = layoutTextItemWithString(attributedStringForRichText(text, styleStack: styleStack), boundingWidth: boundingWidth - horizontalInset * 2.0 - backgroundInset * 2.0, offset: CGPoint(x: 17.0, y: backgroundInset), media: media, webpage: webpage, opaqueBackground: true)
             let backgroundItem = InstantPageShapeItem(frame: CGRect(origin: CGPoint(), size: CGSize(width: boundingWidth, height: contentSize.height + backgroundInset * 2.0)), shapeFrame: CGRect(origin: CGPoint(), size: CGSize(width: boundingWidth, height: contentSize.height + backgroundInset * 2.0)), shape: .rect, color: theme.codeBlockBackgroundColor)
             var allItems: [InstantPageItem] = [backgroundItem]
             allItems.append(contentsOf: items)
@@ -363,21 +196,12 @@ public func layoutInstantPageBlock(webpage: TelegramMediaWebpage, userLocation: 
             var maxIndexWidth: CGFloat = 0.0
             var listItems: [InstantPageItem] = []
             var indexItems: [InstantPageItem] = []
-            var hasTaskMarkers = false
             
             var hasNums = false
             if ordered {
                 for item in contentItems {
-                    if instantPageTaskListMarkerState(item.num) != nil {
-                        hasTaskMarkers = true
-                    } else if let num = item.num, !num.isEmpty {
+                    if let num = item.num, !num.isEmpty {
                         hasNums = true
-                    }
-                }
-            } else {
-                for item in contentItems {
-                    if instantPageTaskListMarkerState(item.num) != nil {
-                        hasTaskMarkers = true
                         break
                     }
                 }
@@ -385,13 +209,7 @@ public func layoutInstantPageBlock(webpage: TelegramMediaWebpage, userLocation: 
             
             for i in 0 ..< contentItems.count {
                 let item = contentItems[i]
-                if let checked = instantPageTaskListMarkerState(item.num) {
-                    let checklistItem = InstantPageChecklistMarkerItem(frame: CGRect(origin: .zero, size: instantPageChecklistMarkerSize), checked: checked)
-                    if ordered {
-                        maxIndexWidth = max(maxIndexWidth, instantPageChecklistMarkerSize.width)
-                    }
-                    indexItems.append(checklistItem)
-                } else if ordered {
+                if ordered {
                     let styleStack = InstantPageTextStyleStack()
                     setupStyleStack(styleStack, theme: theme, category: .paragraph, link: false)
                     let value: String
@@ -415,7 +233,7 @@ public func layoutInstantPageBlock(webpage: TelegramMediaWebpage, userLocation: 
                     indexItems.append(shapeItem)
                 }
             }
-            let indexSpacing: CGFloat = ordered ? (hasTaskMarkers ? 16.0 : 12.0) : (hasTaskMarkers ? 24.0 : 20.0)
+            let indexSpacing: CGFloat = ordered ? 12.0 : 20.0
             for (i, item) in contentItems.enumerated() {
                 if (i != 0) {
                     contentSize.height += 18.0
@@ -446,12 +264,6 @@ public func layoutInstantPageBlock(webpage: TelegramMediaWebpage, userLocation: 
                         
                         if let textIndexItem = indexItem as? InstantPageTextItem, let line = textIndexItem.lines.first {
                             itemFrame = itemFrame.offsetBy(dx: horizontalInset + maxIndexWidth - line.frame.width, dy: floorToScreenPixels(lineMidY - (itemFrame.height / 2.0)))
-                        } else if indexItem is InstantPageChecklistMarkerItem {
-                            if ordered {
-                                itemFrame = itemFrame.offsetBy(dx: horizontalInset + maxIndexWidth - itemFrame.width, dy: floorToScreenPixels(lineMidY - (itemFrame.height / 2.0)))
-                            } else {
-                                itemFrame = itemFrame.offsetBy(dx: horizontalInset, dy: floorToScreenPixels(lineMidY - (itemFrame.height / 2.0)))
-                            }
                         } else {
                             itemFrame = itemFrame.offsetBy(dx: horizontalInset, dy: floorToScreenPixels(lineMidY - itemFrame.height / 2.0))
                         }
@@ -461,17 +273,13 @@ public func layoutInstantPageBlock(webpage: TelegramMediaWebpage, userLocation: 
                     case let .blocks(blocks, _):
                         var previousBlock: InstantPageBlock?
                         var originY: CGFloat = contentSize.height
-                        var firstBlockLineMidY: CGFloat?
                         for subBlock in blocks {
-                            let subLayout = layoutInstantPageBlock(webpage: webpage, userLocation: userLocation, rtl: rtl, block: subBlock, boundingWidth: boundingWidth - horizontalInset * 2.0 - indexSpacing - maxIndexWidth, horizontalInset: 0.0, safeInset: 0.0, isCover: false, previousItems: listItems, fillToSize: nil, media: media, mediaIndexCounter: &mediaIndexCounter, embedIndexCounter: &embedIndexCounter, detailsIndexCounter: &detailsIndexCounter, theme: theme, strings: strings, dateTimeFormat: dateTimeFormat, webEmbedHeights: webEmbedHeights, cachedMessageSyntaxHighlight: cachedMessageSyntaxHighlight, excludeCaptions: false)
+                            let subLayout = layoutInstantPageBlock(webpage: webpage, userLocation: userLocation, rtl: rtl, block: subBlock, boundingWidth: boundingWidth - horizontalInset * 2.0 - indexSpacing - maxIndexWidth, horizontalInset: 0.0, safeInset: 0.0, isCover: false, previousItems: listItems, fillToSize: nil, media: media, mediaIndexCounter: &mediaIndexCounter, embedIndexCounter: &embedIndexCounter, detailsIndexCounter: &detailsIndexCounter, theme: theme, strings: strings, dateTimeFormat: dateTimeFormat, webEmbedHeights: webEmbedHeights, excludeCaptions: false)
                             
                             let spacing: CGFloat = previousBlock != nil && subLayout.contentSize.height > 0.0 ? spacingBetweenBlocks(upper: previousBlock, lower: subBlock) : 0.0
                             let blockItems = subLayout.flattenedItemsWithOrigin(CGPoint(x: horizontalInset + indexSpacing + maxIndexWidth, y: contentSize.height + spacing))
                             if previousBlock == nil {
                                 originY += spacing
-                            }
-                            if firstBlockLineMidY == nil {
-                                firstBlockLineMidY = instantPageFirstTextLineMidY(in: blockItems)
                             }
                             listItems.append(contentsOf: blockItems)
                             contentSize.height += subLayout.contentSize.height + spacing
@@ -481,18 +289,6 @@ public func layoutInstantPageBlock(webpage: TelegramMediaWebpage, userLocation: 
                         var indexItemFrame = indexItem.frame
                         if let textIndexItem = indexItem as? InstantPageTextItem, let line = textIndexItem.lines.first {
                             indexItemFrame = indexItemFrame.offsetBy(dx: horizontalInset + maxIndexWidth - line.frame.width, dy: originY)
-                        } else if indexItem is InstantPageChecklistMarkerItem {
-                            let markerOriginY: CGFloat
-                            if let firstBlockLineMidY {
-                                markerOriginY = floorToScreenPixels(firstBlockLineMidY - indexItemFrame.height / 2.0)
-                            } else {
-                                markerOriginY = originY
-                            }
-                            if ordered {
-                                indexItemFrame = indexItemFrame.offsetBy(dx: horizontalInset + maxIndexWidth - indexItemFrame.width, dy: markerOriginY)
-                            } else {
-                                indexItemFrame = indexItemFrame.offsetBy(dx: horizontalInset, dy: markerOriginY)
-                            }
                         } else {
                             indexItemFrame = indexItemFrame.offsetBy(dx: horizontalInset, dy: originY)
                         }
@@ -680,7 +476,7 @@ public func layoutInstantPageBlock(webpage: TelegramMediaWebpage, userLocation: 
             var i = 0
             for subItem in innerItems {
                 let frame = mosaicLayout[i].0
-                let subLayout = layoutInstantPageBlock(webpage: webpage, userLocation: userLocation, rtl: rtl, block: subItem, boundingWidth: frame.width, horizontalInset: 0.0, safeInset: 0.0, isCover: false, previousItems: items, fillToSize: frame.size, media: media, mediaIndexCounter: &mediaIndexCounter, embedIndexCounter: &embedIndexCounter, detailsIndexCounter: &detailsIndexCounter, theme: theme, strings: strings, dateTimeFormat: dateTimeFormat, webEmbedHeights: webEmbedHeights, cachedMessageSyntaxHighlight: cachedMessageSyntaxHighlight, excludeCaptions: true)
+                let subLayout = layoutInstantPageBlock(webpage: webpage, userLocation: userLocation, rtl: rtl, block: subItem, boundingWidth: frame.width, horizontalInset: 0.0, safeInset: 0.0, isCover: false, previousItems: items, fillToSize: frame.size, media: media, mediaIndexCounter: &mediaIndexCounter, embedIndexCounter: &embedIndexCounter, detailsIndexCounter: &detailsIndexCounter, theme: theme, strings: strings, dateTimeFormat: dateTimeFormat, webEmbedHeights: webEmbedHeights, excludeCaptions: true)
                 items.append(contentsOf: subLayout.flattenedItemsWithOrigin(frame.origin))
                 i += 1
             }
@@ -754,7 +550,7 @@ public func layoutInstantPageBlock(webpage: TelegramMediaWebpage, userLocation: 
             
             var previousBlock: InstantPageBlock?
             for subBlock in blocks {
-                let subLayout = layoutInstantPageBlock(webpage: webpage, userLocation: userLocation, rtl: rtl, block: subBlock, boundingWidth: boundingWidth - horizontalInset * 2.0 - lineInset, horizontalInset: 0.0, safeInset: 0.0, isCover: false, previousItems: items, fillToSize: nil, media: media, mediaIndexCounter: &mediaIndexCounter, embedIndexCounter: &embedIndexCounter, detailsIndexCounter: &detailsIndexCounter, theme: theme, strings: strings, dateTimeFormat: dateTimeFormat, webEmbedHeights: webEmbedHeights, cachedMessageSyntaxHighlight: cachedMessageSyntaxHighlight, excludeCaptions: false)
+                let subLayout = layoutInstantPageBlock(webpage: webpage, userLocation: userLocation, rtl: rtl, block: subBlock, boundingWidth: boundingWidth - horizontalInset * 2.0 - lineInset, horizontalInset: 0.0, safeInset: 0.0, isCover: false, previousItems: items, fillToSize: nil, media: media, mediaIndexCounter: &mediaIndexCounter, embedIndexCounter: &embedIndexCounter, detailsIndexCounter: &detailsIndexCounter, theme: theme, strings: strings, dateTimeFormat: dateTimeFormat, webEmbedHeights: webEmbedHeights, excludeCaptions: false)
                 
                 let spacing = spacingBetweenBlocks(upper: previousBlock, lower: subBlock)
                 let blockItems = subLayout.flattenedItemsWithOrigin(CGPoint(x: horizontalInset + lineInset, y: contentSize.height + spacing))
@@ -937,7 +733,7 @@ public func layoutInstantPageBlock(webpage: TelegramMediaWebpage, userLocation: 
             
             var previousBlock: InstantPageBlock?
             for subBlock in blocks {
-                let subLayout = layoutInstantPageBlock(webpage: webpage, userLocation: userLocation, rtl: rtl, block: subBlock, boundingWidth: boundingWidth, horizontalInset: horizontalInset, safeInset: safeInset, isCover: false, previousItems: subitems, fillToSize: nil, media: media, mediaIndexCounter: &mediaIndexCounter, embedIndexCounter: &embedIndexCounter, detailsIndexCounter: &subDetailsIndex, theme: theme, strings: strings, dateTimeFormat: dateTimeFormat, webEmbedHeights: webEmbedHeights, cachedMessageSyntaxHighlight: cachedMessageSyntaxHighlight, excludeCaptions: false)
+                let subLayout = layoutInstantPageBlock(webpage: webpage, userLocation: userLocation, rtl: rtl, block: subBlock, boundingWidth: boundingWidth, horizontalInset: horizontalInset, safeInset: safeInset, isCover: false, previousItems: subitems, fillToSize: nil, media: media, mediaIndexCounter: &mediaIndexCounter, embedIndexCounter: &embedIndexCounter, detailsIndexCounter: &subDetailsIndex, theme: theme, strings: strings, dateTimeFormat: dateTimeFormat, webEmbedHeights: webEmbedHeights, excludeCaptions: false)
                 
                 let spacing = spacingBetweenBlocks(upper: previousBlock, lower: subBlock)
                 let blockItems = subLayout.flattenedItemsWithOrigin(CGPoint(x: 0.0, y: contentSize.height + spacing))
@@ -1046,7 +842,7 @@ public func layoutInstantPageBlock(webpage: TelegramMediaWebpage, userLocation: 
     }
 }
 
-public func instantPageLayoutForWebPage(_ webPage: TelegramMediaWebpage, instantPage: InstantPage?, userLocation: MediaResourceUserLocation, boundingWidth: CGFloat, safeInset: CGFloat, strings: PresentationStrings, theme: InstantPageTheme, dateTimeFormat: PresentationDateTimeFormat, webEmbedHeights: [Int : CGFloat] = [:], cachedMessageSyntaxHighlight: CachedMessageSyntaxHighlight? = nil, addFeedback: Bool = true) -> InstantPageLayout {
+public func instantPageLayoutForWebPage(_ webPage: TelegramMediaWebpage, instantPage: InstantPage?, userLocation: MediaResourceUserLocation, boundingWidth: CGFloat, safeInset: CGFloat, strings: PresentationStrings, theme: InstantPageTheme, dateTimeFormat: PresentationDateTimeFormat, webEmbedHeights: [Int : CGFloat] = [:]) -> InstantPageLayout {
     var maybeLoadedContent: TelegramMediaWebpageLoadedContent?
     if case let .Loaded(content) = webPage.content {
         maybeLoadedContent = content
@@ -1075,7 +871,7 @@ public func instantPageLayoutForWebPage(_ webPage: TelegramMediaWebpage, instant
     
     var previousBlock: InstantPageBlock?
     for block in pageBlocks {
-        let blockLayout = layoutInstantPageBlock(webpage: webPage, userLocation: userLocation, rtl: rtl, block: block, boundingWidth: boundingWidth, horizontalInset: 17.0 + safeInset, safeInset: safeInset, isCover: false, previousItems: items, fillToSize: nil, media: media, mediaIndexCounter: &mediaIndexCounter, embedIndexCounter: &embedIndexCounter, detailsIndexCounter: &detailsIndexCounter, theme: theme, strings: strings, dateTimeFormat: dateTimeFormat, webEmbedHeights: webEmbedHeights, cachedMessageSyntaxHighlight: cachedMessageSyntaxHighlight, excludeCaptions: false)
+        let blockLayout = layoutInstantPageBlock(webpage: webPage, userLocation: userLocation, rtl: rtl, block: block, boundingWidth: boundingWidth, horizontalInset: 17.0 + safeInset, safeInset: safeInset, isCover: false, previousItems: items, fillToSize: nil, media: media, mediaIndexCounter: &mediaIndexCounter, embedIndexCounter: &embedIndexCounter, detailsIndexCounter: &detailsIndexCounter, theme: theme, strings: strings, dateTimeFormat: dateTimeFormat, webEmbedHeights: webEmbedHeights, excludeCaptions: false)
         let spacing = spacingBetweenBlocks(upper: previousBlock, lower: block)
         let blockItems = blockLayout.flattenedItemsWithOrigin(CGPoint(x: 0.0, y: contentSize.height + spacing))
         items.append(contentsOf: blockItems)
@@ -1088,7 +884,7 @@ public func instantPageLayoutForWebPage(_ webPage: TelegramMediaWebpage, instant
     let closingSpacing = spacingBetweenBlocks(upper: previousBlock, lower: nil)
     contentSize.height += closingSpacing
     
-    if webPage.webpageId.id != 0 && addFeedback {
+    if webPage.webpageId.id != 0 {
         let feedbackItem = InstantPageFeedbackItem(frame: CGRect(x: 0.0, y: contentSize.height, width: boundingWidth, height: 40.0), webPage: webPage)
         contentSize.height += feedbackItem.frame.height
         items.append(feedbackItem)

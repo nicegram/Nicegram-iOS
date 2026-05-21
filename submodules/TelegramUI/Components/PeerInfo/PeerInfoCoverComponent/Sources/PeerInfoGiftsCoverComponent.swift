@@ -259,7 +259,9 @@ public final class PeerInfoGiftsCoverComponent: Component {
                     seed: self.seed
                 )
                 
+                let start = CACurrentMediaTime()
                 self.iconPositions = positionGenerator.generatePositions(count: 12, itemSize: iconSize)
+                print("generated icon positions in \( CACurrentMediaTime() - start )s")
             }
             self.appliedGiftIds = giftIds
             
@@ -504,7 +506,7 @@ private class GiftIconLayer: SimpleLayer {
             file = gift.file
         case let .unique(gift):
             for attribute in gift.attributes {
-                if case let .model(_, fileValue, _, _) = attribute {
+                if case let .model(_, fileValue, _) = attribute {
                     file = fileValue
                 } else if case let .backdrop(_, _, innerColor, _, _, _, _) = attribute {
                     color = UIColor(rgb: UInt32(bitPattern: innerColor))
@@ -570,7 +572,7 @@ private class GiftIconLayer: SimpleLayer {
             file = gift.file
         case let .unique(gift):
             for attribute in gift.attributes {
-                if case let .model(_, fileValue, _, _) = attribute {
+                if case let .model(_, fileValue, _) = attribute {
                     file = fileValue
                 } else if case let .backdrop(_, _, innerColor, _, _, _, _) = attribute {
                     color = UIColor(rgb: UInt32(bitPattern: innerColor))

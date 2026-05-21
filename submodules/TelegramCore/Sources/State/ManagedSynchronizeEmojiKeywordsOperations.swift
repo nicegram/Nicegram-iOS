@@ -123,21 +123,18 @@ private func synchronizeEmojiKeywords(postbox: Postbox, transaction: Transaction
         |> retryRequest
         |> mapToSignal { result -> Signal<Void, NoError> in
             switch result {
-                case let .emojiKeywordsDifference(emojiKeywordsDifferenceData):
-                    let (langCode, version, keywords) = (emojiKeywordsDifferenceData.langCode, emojiKeywordsDifferenceData.version, emojiKeywordsDifferenceData.keywords)
+                case let .emojiKeywordsDifference(langCode, _, version, keywords):
                     if langCode == languageCode {
                         var itemsToAppend: [String: EmojiKeywordItem] = [:]
                         var itemsToSubtract: [String: EmojiKeywordItem] = [:]
                         for apiEmojiKeyword in keywords {
                             switch apiEmojiKeyword {
-                                case let .emojiKeyword(emojiKeywordData):
-                                    let (rawKeyword, emoticons) = (emojiKeywordData.keyword, emojiKeywordData.emoticons)
-                                    let keyword = rawKeyword.replacingOccurrences(of: " ", with: "")
+                                case let .emojiKeyword(keyword, emoticons):
+                                    let keyword = keyword.replacingOccurrences(of: " ", with: "")
                                     let indexKeys = stringIndexTokens(keyword, transliteration: .none).map { $0.toMemoryBuffer() }
                                     let item = EmojiKeywordItem(index: ItemCollectionItemIndex(index: 0, id: 0), collectionId: collectionId.id, keyword: keyword, emoticons: emoticons, indexKeys: indexKeys)
                                     itemsToAppend[keyword] = item
-                                case let .emojiKeywordDeleted(emojiKeywordDeletedData):
-                                    let (keyword, emoticons) = (emojiKeywordDeletedData.keyword, emojiKeywordDeletedData.emoticons)
+                                case let .emojiKeywordDeleted(keyword, emoticons):
                                     let item = EmojiKeywordItem(index: ItemCollectionItemIndex(index: 0, id: 0), collectionId: collectionId.id, keyword: keyword, emoticons: emoticons, indexKeys: [])
                                     itemsToSubtract[keyword] = item
                             }
@@ -198,13 +195,11 @@ private func synchronizeEmojiKeywords(postbox: Postbox, transaction: Transaction
         |> retryRequest
         |> mapToSignal { result -> Signal<Void, NoError> in
             switch result {
-                case let .emojiKeywordsDifference(emojiKeywordsDifferenceData):
-                    let (langCode, version, keywords) = (emojiKeywordsDifferenceData.langCode, emojiKeywordsDifferenceData.version, emojiKeywordsDifferenceData.keywords)
+                case let .emojiKeywordsDifference(langCode, _, version, keywords):
                     var items: [EmojiKeywordItem] = []
                     var index: Int32 = 0
                     for apiEmojiKeyword in keywords {
-                        if case let .emojiKeyword(emojiKeywordData) = apiEmojiKeyword, !emojiKeywordData.emoticons.isEmpty {
-                            let (fullKeyword, emoticons) = (emojiKeywordData.keyword, emojiKeywordData.emoticons)
+                        if case let .emojiKeyword(fullKeyword, emoticons) = apiEmojiKeyword, !emoticons.isEmpty {
                             let keyword = fullKeyword
                             let indexKeys = stringIndexTokens(keyword, transliteration: .none).map { $0.toMemoryBuffer() }
                             let item = EmojiKeywordItem(index: ItemCollectionItemIndex(index: index, id: keywordCollectionItemId(keyword, inputLanguageCode: operation.inputLanguageCode)), collectionId: collectionId.id, keyword: keyword, emoticons: emoticons, indexKeys: indexKeys)

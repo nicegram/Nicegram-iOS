@@ -18,9 +18,9 @@ private final class BlockedPeersControllerArguments {
     let setPeerIdWithRevealedOptions: (PeerId?, PeerId?) -> Void
     let addPeer: () -> Void
     let removePeer: (PeerId) -> Void
-    let openPeer: (EnginePeer) -> Void
-
-    init(context: AccountContext, setPeerIdWithRevealedOptions: @escaping (PeerId?, PeerId?) -> Void, addPeer: @escaping () -> Void, removePeer: @escaping (PeerId) -> Void, openPeer: @escaping (EnginePeer) -> Void) {
+    let openPeer: (Peer) -> Void
+    
+    init(context: AccountContext, setPeerIdWithRevealedOptions: @escaping (PeerId?, PeerId?) -> Void, addPeer: @escaping () -> Void, removePeer: @escaping (PeerId) -> Void, openPeer: @escaping (Peer) -> Void) {
         self.context = context
         self.setPeerIdWithRevealedOptions = setPeerIdWithRevealedOptions
         self.addPeer = addPeer
@@ -41,7 +41,7 @@ private enum BlockedPeersEntryStableId: Hashable {
 
 private enum BlockedPeersEntry: ItemListNodeEntry {
     case add(PresentationTheme, String)
-    case peerItem(Int32, PresentationTheme, PresentationStrings, PresentationDateTimeFormat, PresentationPersonNameOrder, EnginePeer, ItemListPeerItemEditing, Bool)
+    case peerItem(Int32, PresentationTheme, PresentationStrings, PresentationDateTimeFormat, PresentationPersonNameOrder, Peer, ItemListPeerItemEditing, Bool)
     
     var section: ItemListSectionId {
         switch self {
@@ -86,7 +86,7 @@ private enum BlockedPeersEntry: ItemListNodeEntry {
                     if lhsNameOrder != rhsNameOrder {
                         return false
                     }
-                    if lhsPeer != rhsPeer {
+                    if !lhsPeer.isEqual(rhsPeer) {
                         return false
                     }
                     if lhsEditing != rhsEditing {
@@ -124,7 +124,7 @@ private enum BlockedPeersEntry: ItemListNodeEntry {
         let arguments = arguments as! BlockedPeersControllerArguments
         switch self {
             case let .add(theme, text):
-                return ItemListPeerActionItem(presentationData: presentationData, systemStyle: .glass, icon: PresentationResourcesItemList.blockAccentIcon(theme), title: text, sectionId: self.section, height: .generic, editing: false, action: {
+                return ItemListPeerActionItem(presentationData: presentationData, icon: PresentationResourcesItemList.blockAccentIcon(theme), title: text, sectionId: self.section, height: .generic, editing: false, action: {
                     arguments.addPeer()
                 })
             case let .peerItem(_, _, strings, dateTimeFormat, nameDisplayOrder, peer, editing, enabled):
@@ -132,7 +132,7 @@ private enum BlockedPeersEntry: ItemListNodeEntry {
                     arguments.removePeer(peer.id)
                 })])
                 
-                return ItemListPeerItem(presentationData: presentationData, systemStyle: .glass, dateTimeFormat: dateTimeFormat, nameDisplayOrder: nameDisplayOrder, context: arguments.context, peer: peer, presence: nil, text: .none, label: .none, editing: editing, revealOptions: revealOptions, switchValue: nil, enabled: enabled, selectable: true, sectionId: self.section, action: {
+                return ItemListPeerItem(presentationData: presentationData, dateTimeFormat: dateTimeFormat, nameDisplayOrder: nameDisplayOrder, context: arguments.context, peer: EnginePeer(peer), presence: nil, text: .none, label: .none, editing: editing, revealOptions: revealOptions, switchValue: nil, enabled: enabled, selectable: true, sectionId: self.section, action: {
                     arguments.openPeer(peer)
                 }, setPeerIdWithRevealedOptions: { previousId, id in
                     arguments.setPeerIdWithRevealedOptions(previousId, id)
@@ -195,7 +195,7 @@ private func blockedPeersControllerEntries(presentationData: PresentationData, s
         
         var index: Int32 = 0
         for peer in blockedPeersState.peers {
-            entries.append(.peerItem(index, presentationData.theme, presentationData.strings, presentationData.dateTimeFormat, presentationData.nameDisplayOrder, EnginePeer(peer.peer!), ItemListPeerItemEditing(editable: true, editing: state.editing, revealed: peer.peerId == state.peerIdWithRevealedOptions), state.removingPeerId != peer.peerId))
+            entries.append(.peerItem(index, presentationData.theme, presentationData.strings, presentationData.dateTimeFormat, presentationData.nameDisplayOrder, peer.peer!, ItemListPeerItemEditing(editable: true, editing: state.editing, revealed: peer.peerId == state.peerIdWithRevealedOptions), state.removingPeerId != peer.peerId))
             index += 1
         }
     }
@@ -203,17 +203,11 @@ private func blockedPeersControllerEntries(presentationData: PresentationData, s
     return entries
 }
 
-public func blockedPeersController(context: AccountContext, blockedPeersContext: BlockedPeersContext, forceEdit: Bool = false) -> ViewController {
+public func blockedPeersController(context: AccountContext, blockedPeersContext: BlockedPeersContext) -> ViewController {
     let statePromise = ValuePromise(BlockedPeersControllerState(), ignoreRepeated: true)
     let stateValue = Atomic(value: BlockedPeersControllerState())
     let updateState: ((BlockedPeersControllerState) -> BlockedPeersControllerState) -> Void = { f in
         statePromise.set(stateValue.modify { f($0) })
-    }
-    
-    if forceEdit {
-        updateState {
-            $0.withUpdatedEditing(true)
-        }
     }
     
     var pushControllerImpl: ((ViewController) -> Void)?

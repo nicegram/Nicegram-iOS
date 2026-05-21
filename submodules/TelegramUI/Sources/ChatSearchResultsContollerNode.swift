@@ -99,7 +99,6 @@ private enum ChatListSearchEntry: Comparable, Identifiable {
                         presence: nil,
                         hasUnseenMentions: false,
                         hasUnseenReactions: false,
-                        hasUnseenPollVotes: false,
                         draftState: nil,
                         mediaDraftContentType: nil,
                         inputActivities: nil,
@@ -198,7 +197,7 @@ class ChatSearchResultsControllerNode: ViewControllerTracingNode, ASScrollViewDe
         self.animationCache = context.animationCache
         self.animationRenderer = context.animationRenderer
         
-        self.listNode = ListViewImpl()
+        self.listNode = ListView()
         self.listNode.verticalScrollIndicatorColor = self.presentationData.theme.list.scrollIndicatorColor
         self.listNode.accessibilityPageScrolledString = { row, count in
             return presentationData.strings.VoiceOver_ScrollStatus(row, count).string
@@ -270,7 +269,7 @@ class ChatSearchResultsControllerNode: ViewControllerTracingNode, ASScrollViewDe
                 if let message = peerData.messages.first {
                     let chatController = strongSelf.context.sharedContext.makeChatController(context: strongSelf.context, chatLocation: .peer(id: peerData.peer.peerId), subject: .message(id: .id(message.id), highlight: ChatControllerSubject.MessageHighlight(quote: nil), timecode: nil, setupReply: false), botStart: nil, mode: .standard(.previewing), params: nil)
                     chatController.canReadHistory.set(false)
-                    let contextController = makeContextController(presentationData: strongSelf.presentationData, source: .controller(ContextControllerContentSourceImpl(controller: chatController, sourceNode: node)), items: .single(ContextController.Items(content: .list([]))), gesture: gesture)
+                    let contextController = ContextController(presentationData: strongSelf.presentationData, source: .controller(ContextControllerContentSourceImpl(controller: chatController, sourceNode: node)), items: .single(ContextController.Items(content: .list([]))), gesture: gesture)
                     presentInGlobalOverlay(contextController)
                 } else {
                     gesture?.cancel()
@@ -292,6 +291,7 @@ class ChatSearchResultsControllerNode: ViewControllerTracingNode, ASScrollViewDe
         }, hideChatFolderUpdates: {
         }, openStories: { _, _ in
         }, openStarsTopup: { _ in
+        }, dismissNotice: { _ in
         }, editPeer: { _ in
         }, openWebApp: { _ in
         }, openPhotoSetup: {

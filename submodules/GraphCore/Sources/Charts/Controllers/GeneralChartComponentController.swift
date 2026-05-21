@@ -371,7 +371,7 @@ class GeneralChartComponentController: ChartThemeContainer {
             values.append(ChartDetailsViewModel.Value(
                 prefix: nil,
                 title: self.strings.revenueInUsd,
-                value: "~$\(convertedValueString)",
+                value: "≈$\(convertedValueString)",
                 color: color,
                 visible: firstValue.visible
             ))

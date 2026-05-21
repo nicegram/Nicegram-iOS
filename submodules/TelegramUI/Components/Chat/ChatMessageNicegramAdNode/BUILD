@@ -8,11 +8,17 @@ swift_library(
         "Sources/**/*.swift",
     ]),
     copts = [
-        "-warnings-as-errors",
+        #"-warnings-as-errors",
     ],
     deps = [
+        "//submodules/AsyncDisplayKit",
+        "//submodules/TelegramUI/Components/ChatControllerInteraction",
+        "//submodules/TelegramUI/Components/Chat/ChatMessageItemCommon",
         "//submodules/TelegramUI/Components/Chat/ChatMessageItemView",
-        "@swiftpkg_nicegram_assistant_ios//:FeatAdsgram",
+        "//submodules/Display",
+        "//submodules/SSignalKit/SwiftSignalKit",
+        "//submodules/TelegramPresentationData",
+        "@swiftpkg_nicegram_assistant_ios//:FeatAttentionEconomy",
     ],
     visibility = [
         "//visibility:public",

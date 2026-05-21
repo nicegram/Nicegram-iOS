@@ -159,7 +159,6 @@ public struct ChatMessageBubbleContentTapAction {
         case ignore
         case openPollResults(Data)
         case copy(String)
-        case date(Int32, String)
         case largeEmoji(String, String?, TelegramMediaFile)
         case customEmoji(TelegramMediaFile)
         case custom(() -> Void)

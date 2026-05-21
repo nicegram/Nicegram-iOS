@@ -80,7 +80,7 @@ func _internal_searchGroupMembers(postbox: Postbox, network: Network, accountPee
                     let existingIds = Set(local.map { $0.id })
                     let filtered: [Peer]
                     if let participants = participants {
-                        filtered = participants.map({ $0.peer._asPeer() }).filter({ peer in
+                        filtered = participants.map({ $0.peer }).filter({ peer in
                             if existingIds.contains(peer.id) {
                                 return false
                             }

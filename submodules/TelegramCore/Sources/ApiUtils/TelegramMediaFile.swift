@@ -46,39 +46,18 @@ public extension TelegramMediaFile {
     }
 }
 
-public extension TelegramMediaFile {
-    func isValidForDisplay(chatPeerId: PeerId) -> Bool {
-        if chatPeerId.namespace == Namespaces.Peer.SecretChat {
-            if self.isAnimatedSticker {
-                if !self.attributes.contains(where: { attribute in
-                    if case .hintIsValidated = attribute {
-                        return true
-                    }
-                    return false
-                }) {
-                    return false
-                }
-            }
-        }
-        return true
-    }
-}
-
 extension StickerPackReference {
     init?(apiInputSet: Api.InputStickerSet) {
         switch apiInputSet {
         case .inputStickerSetEmpty:
             return nil
-        case let .inputStickerSetID(inputStickerSetIDData):
-            let (id, accessHash) = (inputStickerSetIDData.id, inputStickerSetIDData.accessHash)
+        case let .inputStickerSetID(id, accessHash):
             self = .id(id: id, accessHash: accessHash)
-        case let .inputStickerSetShortName(inputStickerSetShortNameData):
-            let shortName = inputStickerSetShortNameData.shortName
+        case let .inputStickerSetShortName(shortName):
             self = .name(shortName)
         case .inputStickerSetAnimatedEmoji:
             self = .animatedEmoji
-        case let .inputStickerSetDice(inputStickerSetDiceData):
-            let emoticon = inputStickerSetDiceData.emoticon
+        case let .inputStickerSetDice(emoticon):
             self = .dice(emoticon)
         case .inputStickerSetAnimatedEmojiAnimations:
             self = .animatedEmojiAnimations
@@ -101,8 +80,7 @@ extension StickerPackReference {
 extension StickerMaskCoords {
     init(apiMaskCoords: Api.MaskCoords) {
         switch apiMaskCoords {
-            case let .maskCoords(maskCoordsData):
-                let (n, x, y, zoom) = (maskCoordsData.n, maskCoordsData.x, maskCoordsData.y, maskCoordsData.zoom)
+            case let .maskCoords(n, x, y, zoom):
                 self.init(n: n, x: x, y: y, zoom: zoom)
         }
     }
@@ -112,21 +90,17 @@ func telegramMediaFileAttributesFromApiAttributes(_ attributes: [Api.DocumentAtt
     var result: [TelegramMediaFileAttribute] = []
     for attribute in attributes {
         switch attribute {
-            case let .documentAttributeFilename(documentAttributeFilenameData):
-                let fileName = documentAttributeFilenameData.fileName
+            case let .documentAttributeFilename(fileName):
                 result.append(.FileName(fileName: fileName))
-            case let .documentAttributeSticker(documentAttributeStickerData):
-                let (alt, stickerSet, maskCoords) = (documentAttributeStickerData.alt, documentAttributeStickerData.stickerset, documentAttributeStickerData.maskCoords)
+            case let .documentAttributeSticker(_, alt, stickerSet, maskCoords):
                 result.append(.Sticker(displayText: alt, packReference: StickerPackReference(apiInputSet: stickerSet), maskData: maskCoords.flatMap(StickerMaskCoords.init)))
             case .documentAttributeHasStickers:
                 result.append(.HasLinkedStickers)
-            case let .documentAttributeImageSize(documentAttributeImageSizeData):
-                let (w, h) = (documentAttributeImageSizeData.w, documentAttributeImageSizeData.h)
+            case let .documentAttributeImageSize(w, h):
                 result.append(.ImageSize(size: PixelDimensions(width: w, height: h)))
             case .documentAttributeAnimated:
                 result.append(.Animated)
-            case let .documentAttributeVideo(documentAttributeVideoData):
-                let (flags, duration, w, h, preloadSize, videoStart, videoCodec) = (documentAttributeVideoData.flags, documentAttributeVideoData.duration, documentAttributeVideoData.w, documentAttributeVideoData.h, documentAttributeVideoData.preloadPrefixSize, documentAttributeVideoData.videoStartTs, documentAttributeVideoData.videoCodec)
+            case let .documentAttributeVideo(flags, duration, w, h, preloadSize, videoStart, videoCodec):
                 var videoFlags = TelegramMediaVideoFlags()
                 if (flags & (1 << 0)) != 0 {
                     videoFlags.insert(.instantRoundVideo)
@@ -138,13 +112,11 @@ func telegramMediaFileAttributesFromApiAttributes(_ attributes: [Api.DocumentAtt
                     videoFlags.insert(.isSilent)
                 }
                 result.append(.Video(duration: Double(duration), size: PixelDimensions(width: w, height: h), flags: videoFlags, preloadSize: preloadSize, coverTime: videoStart, videoCodec: videoCodec))
-            case let .documentAttributeAudio(documentAttributeAudioData):
-                let (flags, duration, title, performer, waveform) = (documentAttributeAudioData.flags, documentAttributeAudioData.duration, documentAttributeAudioData.title, documentAttributeAudioData.performer, documentAttributeAudioData.waveform)
+            case let .documentAttributeAudio(flags, duration, title, performer, waveform):
                 let isVoice = (flags & (1 << 10)) != 0
                 let waveformBuffer: Data? = waveform?.makeData()
                 result.append(.Audio(isVoice: isVoice, duration: Int(duration), title: title, performer: performer, waveform: waveformBuffer))
-            case let .documentAttributeCustomEmoji(documentAttributeCustomEmojiData):
-                let (flags, alt, stickerSet) = (documentAttributeCustomEmojiData.flags, documentAttributeCustomEmojiData.alt, documentAttributeCustomEmojiData.stickerset)
+            case let .documentAttributeCustomEmoji(flags, alt, stickerSet):
                 let isFree = (flags & (1 << 0)) != 0
                 let isSingleColor = (flags & (1 << 1)) != 0
                 result.append(.CustomEmoji(isPremium: !isFree, isSingleColor: isSingleColor, alt: alt, packReference: StickerPackReference(apiInputSet: stickerSet)))
@@ -167,23 +139,18 @@ func telegramMediaFileThumbnailRepresentationsFromApiSizes(datacenterId: Int32, 
     var representations: [TelegramMediaImageRepresentation] = []
     for size in sizes {
         switch size {
-            case let .photoCachedSize(photoCachedSizeData):
-                let (type, w, h, _) = (photoCachedSizeData.type, photoCachedSizeData.w, photoCachedSizeData.h, photoCachedSizeData.bytes)
+            case let .photoCachedSize(type, w, h, _):
                 let resource = CloudDocumentSizeMediaResource(datacenterId: datacenterId, documentId: documentId, accessHash: accessHash, sizeSpec: type, fileReference: fileReference)
                 representations.append(TelegramMediaImageRepresentation(dimensions: PixelDimensions(width: w, height: h), resource: resource, progressiveSizes: [], immediateThumbnailData: nil, hasVideo: false, isPersonal: false))
-            case let .photoSize(photoSizeData):
-                let (type, w, h, _) = (photoSizeData.type, photoSizeData.w, photoSizeData.h, photoSizeData.size)
+            case let .photoSize(type, w, h, _):
                 let resource = CloudDocumentSizeMediaResource(datacenterId: datacenterId, documentId: documentId, accessHash: accessHash, sizeSpec: type, fileReference: fileReference)
                 representations.append(TelegramMediaImageRepresentation(dimensions: PixelDimensions(width: w, height: h), resource: resource, progressiveSizes: [], immediateThumbnailData: nil, hasVideo: false, isPersonal: false))
-            case let .photoSizeProgressive(photoSizeProgressiveData):
-                let (type, w, h, sizes) = (photoSizeProgressiveData.type, photoSizeProgressiveData.w, photoSizeProgressiveData.h, photoSizeProgressiveData.sizes)
+            case let .photoSizeProgressive(type, w, h, sizes):
                 let resource = CloudDocumentSizeMediaResource(datacenterId: datacenterId, documentId: documentId, accessHash: accessHash, sizeSpec: type, fileReference: fileReference)
                 representations.append(TelegramMediaImageRepresentation(dimensions: PixelDimensions(width: w, height: h), resource: resource, progressiveSizes: sizes, immediateThumbnailData: nil, hasVideo: false, isPersonal: false))
-            case let .photoPathSize(photoPathSizeData):
-                let (_, data) = (photoPathSizeData.type, photoPathSizeData.bytes)
+            case let .photoPathSize(_, data):
                 immediateThumbnailData = data.makeData()
-            case let .photoStrippedSize(photoStrippedSizeData):
-                let (_, data) = (photoStrippedSizeData.type, photoStrippedSizeData.bytes)
+            case let .photoStrippedSize(_, data):
                 immediateThumbnailData = data.makeData()
             case .photoSizeEmpty:
                 break
@@ -194,24 +161,9 @@ func telegramMediaFileThumbnailRepresentationsFromApiSizes(datacenterId: Int32, 
 
 func telegramMediaFileFromApiDocument(_ document: Api.Document, altDocuments: [Api.Document]?, videoCover: Api.Photo? = nil) -> TelegramMediaFile? {
     switch document {
-        case let .document(documentData):
-            let (id, accessHash, fileReference, mimeType, size, thumbs, videoThumbs, dcId, attributes) = (documentData.id, documentData.accessHash, documentData.fileReference, documentData.mimeType, documentData.size, documentData.thumbs, documentData.videoThumbs, documentData.dcId, documentData.attributes)
+        case let .document(_, id, accessHash, fileReference, _, mimeType, size, thumbs, videoThumbs, dcId, attributes):
             var parsedAttributes = telegramMediaFileAttributesFromApiAttributes(attributes)
-            var isSticker = false
-            var isAnimated = false
-            for attribute in parsedAttributes {
-                switch attribute {
-                case .Sticker:
-                    isSticker = true
-                case .Animated:
-                    isAnimated = true
-                default:
-                    break
-                }
-            }
-            if isSticker && isAnimated {
-                parsedAttributes.append(.hintIsValidated)
-            }
+            parsedAttributes.append(.hintIsValidated)
             
             let (immediateThumbnail, previewRepresentations) = telegramMediaFileThumbnailRepresentationsFromApiSizes(datacenterId: dcId, documentId: id, accessHash: accessHash, fileReference: fileReference.makeData(), sizes: thumbs ?? [])
         
@@ -219,8 +171,7 @@ func telegramMediaFileFromApiDocument(_ document: Api.Document, altDocuments: [A
             if let videoThumbs = videoThumbs {
                 for thumb in videoThumbs {
                     switch thumb {
-                    case let .videoSize(videoSizeData):
-                        let (_, type, w, h, _, _) = (videoSizeData.flags, videoSizeData.type, videoSizeData.w, videoSizeData.h, videoSizeData.size, videoSizeData.videoStartTs)
+                    case let .videoSize(_, type, w, h, _, _):
                         let resource: TelegramMediaResource
                         resource = CloudDocumentSizeMediaResource(datacenterId: dcId, documentId: id, accessHash: accessHash, sizeSpec: type, fileReference: fileReference.makeData())
                         
@@ -238,7 +189,7 @@ func telegramMediaFileFromApiDocument(_ document: Api.Document, altDocuments: [A
                 alternativeRepresentations = altDocuments.compactMap { telegramMediaFileFromApiDocument($0, altDocuments: []) }
             }
             
-            return TelegramMediaFile(fileId: MediaId(namespace: Namespaces.Media.CloudFile, id: id), partialReference: nil, resource: CloudDocumentMediaResource(datacenterId: Int(dcId), fileId: id, accessHash: accessHash, size: size, fileReference: fileReference.makeData(), fileName: fileNameFromFileAttributes(parsedAttributes)), previewRepresentations: previewRepresentations, videoThumbnails: videoThumbnails, videoCover: videoCover.flatMap({ telegramMediaImageFromApiPhoto($0) }), immediateThumbnailData: immediateThumbnail, mimeType: mimeType, size: size, attributes: parsedAttributes, alternativeRepresentations: alternativeRepresentations)
+            return TelegramMediaFile(fileId: MediaId(namespace: Namespaces.Media.CloudFile, id: id), partialReference: nil, resource: CloudDocumentMediaResource(datacenterId: Int(dcId), fileId: id, accessHash: accessHash, size: size, fileReference: fileReference.makeData(), fileName: fileNameFromFileAttributes(parsedAttributes)), previewRepresentations: previewRepresentations,  videoThumbnails: videoThumbnails, videoCover: videoCover.flatMap(telegramMediaImageFromApiPhoto), immediateThumbnailData: immediateThumbnail, mimeType: mimeType, size: size, attributes: parsedAttributes, alternativeRepresentations: alternativeRepresentations)
         case .documentEmpty:
             return nil
     }

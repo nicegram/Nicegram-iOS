@@ -9,6 +9,7 @@ import ChatControllerInteraction
 import Display
 import UIKit
 import UndoUI
+import ShareController
 import ChatShareMessageTagView
 import ReactionSelectionNode
 import TopMessageReactions
@@ -92,59 +93,6 @@ func chatShareToSavedMessagesAdditionalView(_ chatController: ChatControllerImpl
 }
 
 extension ChatControllerImpl {
-//    func openMessageShareMenu(id: EngineMessage.Id) {
-//        guard let messages = self.chatDisplayNode.historyNode.messageGroupInCurrentHistoryView(id), let message = messages.first else {
-//            return
-//        }
-//        
-//        let chatPresentationInterfaceState = self.presentationInterfaceState
-//        var warnAboutPrivate = false
-//        var canShareToStory = false
-//        if case .peer = chatPresentationInterfaceState.chatLocation, let channel = message.peers[message.id.peerId] as? TelegramChannel {
-//            if case .broadcast = channel.info {
-//                canShareToStory = true
-//                if let message = messages.first, message.media.contains(where: { media in
-//                    if media is TelegramMediaContact || media is TelegramMediaPoll || media is TelegramMediaTodo {
-//                        return true
-//                    } else if let file = media as? TelegramMediaFile, file.isSticker || file.isAnimatedSticker || file.isVideoSticker {
-//                        return true
-//                    } else {
-//                        return false
-//                    }
-//                }) {
-//                    canShareToStory = false
-//                }
-//                if message.text.containsOnlyEmoji {
-//                    canShareToStory = false
-//                }
-//            }
-//            if channel.addressName == nil {
-//                warnAboutPrivate = true
-//            }
-//        }
-//        
-//        let _ = warnAboutPrivate
-//        
-////        let shareScreen = self.context.sharedContext.makeShareController(
-////            context: self.context,
-////            subject: .messages(messages),
-////            forceExternal: false,
-////            shareStory: canShareToStory ? { [weak self] in
-////                guard let self else {
-////                    return
-////                }
-////                Queue.mainQueue().after(0.15) {
-////                    let controller = self.context.sharedContext.makeStorySharingScreen(context: self.context, subject: .messages(messages), parentController: self)
-////                    self.push(controller)
-////                }
-////            } : nil,
-////            enqueued: nil,
-////            actionCompleted: nil
-////        )
-//        self.chatDisplayNode.dismissInput()
-//        self.push(shareScreen)
-//    }
-    
     func openMessageShareMenu(id: EngineMessage.Id) {
         guard let messages = self.chatDisplayNode.historyNode.messageGroupInCurrentHistoryView(id), let message = messages.first else {
             return
@@ -161,6 +109,9 @@ extension ChatControllerImpl {
                 warnAboutPrivate = true
             }
         }
+        let shareController = ShareController(context: self.context, subject: .messages(messages), updatedPresentationData: self.updatedPresentationData, shareAsLink: true)
+        shareController.parentNavigationController = self.navigationController as? NavigationController
+        
         if let message = messages.first, message.media.contains(where: { media in
             if media is TelegramMediaContact || media is TelegramMediaPoll || media is TelegramMediaTodo {
                 return true
@@ -175,18 +126,24 @@ extension ChatControllerImpl {
         if message.text.containsOnlyEmoji {
             canShareToStory = false
         }
-
-        let shareStory: (() -> Void)? = canShareToStory ? { [weak self] in
-            guard let self else {
-                return
+        
+        if canShareToStory {
+            shareController.shareStory = { [weak self] in
+                guard let self else {
+                    return
+                }
+                Queue.mainQueue().after(0.15) {
+                    let controller = self.context.sharedContext.makeStorySharingScreen(context: self.context, subject: .messages(messages), parentController: self)
+                    self.push(controller)
+                }
             }
-            Queue.mainQueue().after(0.15) {
-                let controller = self.context.sharedContext.makeStorySharingScreen(context: self.context, subject: .messages(messages), parentController: self)
-                self.push(controller)
+        }
+        shareController.dismissed = { [weak self] shared in
+            if shared {
+                self?.commitPurposefulAction()
             }
-        } : nil
-
-        let shareController = self.context.sharedContext.makeShareController(context: self.context, params: ShareControllerParams(subject: .messages(messages), updatedPresentationData: self.updatedPresentationData, shareAsLink: true, actionCompleted: { [weak self] in
+        }
+        shareController.actionCompleted = { [weak self] in
             guard let self else {
                 return
             }
@@ -197,15 +154,12 @@ extension ChatControllerImpl {
                 content = .linkCopied(title: nil, text: self.presentationData.strings.Conversation_LinkCopied)
             }
             self.present(UndoOverlayController(presentationData: self.presentationData, content: content, elevatedLayout: false, animateInAsReplacement: false, action: { _ in return false }), in: .current)
-        }, dismissed: { [weak self] shared in
-            if shared {
-                self?.commitPurposefulAction()
-            }
-        }, enqueued: { [weak self] peerIds, correlationIds in
+        }
+        shareController.enqueued = { [weak self] peerIds, correlationIds in
             guard let self else {
                 return
             }
-
+          
             let _ = (self.context.engine.data.get(
                 EngineDataList(
                     peerIds.map(TelegramEngine.EngineData.Item.Peer.RenderedPeer.init)
@@ -241,20 +195,20 @@ extension ChatControllerImpl {
                         text = ""
                     }
                 }
-
+                
                 let reactionItems: Signal<[ReactionItem], NoError>
                 if savedMessages {
                     reactionItems = tagMessageReactions(context: self.context, subPeerId: self.chatLocation.threadId.flatMap(EnginePeer.Id.init))
                 } else {
                     reactionItems = .single([])
                 }
-
+                
                 let _ = (reactionItems
                 |> deliverOnMainQueue).startStandalone(next: { [weak self] reactionItems in
                     guard let self else {
                         return
                     }
-
+                    
                     self.present(UndoOverlayController(presentationData: presentationData, content: .forward(savedMessages: savedMessages, text: text), elevatedLayout: false, position: savedMessages ? .top : .bottom, animateInAsReplacement: !savedMessages, action: { [weak self] action in
                         if savedMessages, let self, action == .info {
                             let _ = (self.context.engine.data.get(TelegramEngine.EngineData.Item.Peer.Peer(id: self.context.account.peerId))
@@ -272,7 +226,7 @@ extension ChatControllerImpl {
                     }, additionalView: savedMessages ? chatShareToSavedMessagesAdditionalView(self, reactionItems: reactionItems, correlationIds: correlationIds) : nil), in: .current)
                 })
             })
-        }, shareStory: shareStory, parentNavigationController: self.navigationController as? NavigationController))
+        }
         self.chatDisplayNode.dismissInput()
         self.present(shareController, in: .window(.root), blockInteraction: true)
     }

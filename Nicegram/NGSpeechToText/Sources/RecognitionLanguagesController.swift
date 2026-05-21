@@ -11,11 +11,17 @@ import TelegramPresentationData
 import NGStrings
 import NGUI
 
+public enum RecognitionLanguagesControllerStyle {
+    case normal, whisper
+}
+
 public func recognitionLanguagesController(
     context: AccountContext,
+    style: RecognitionLanguagesControllerStyle = .normal,
     currentLocale: Locale?,
-    onSelect: @escaping (Locale) -> Void,
-    onCloseWithoutSelect: @escaping () -> Void
+    selectLocale: @escaping (Locale) -> Void,
+    selectWhisper: @escaping () -> Void,
+    closeWithoutSelect: @escaping () -> Void
 ) -> ViewController {
     let languages = SFSpeechRecognizer.supportedLocales()
         .compactMap { locale -> LanguageInfo? in
@@ -45,7 +51,10 @@ public func recognitionLanguagesController(
                 state.selectedLanguageCode = code
                 return state
             }
-            onSelect(Locale(identifier: code))
+            selectLocale(Locale(identifier: code))
+        },
+        selectWhisper: {
+            selectWhisper()
         }
     )
 
@@ -61,7 +70,7 @@ public func recognitionLanguagesController(
 
         let listState = ItemListNodeState(
             presentationData: ItemListPresentationData(presentationData),
-            entries: entries(theme: presentationData.theme, state: state),
+            entries: entries(theme: presentationData.theme, state: state, style: style),
             style: .blocks,
             animateChanges: false
         )
@@ -70,27 +79,39 @@ public func recognitionLanguagesController(
     }
     
     let controller = ItemListController(context: context, state: signal)
-    controller.navigationPresentation = .modal
-    
-    controller.didDisappear = { _ in
-        let selectedLocale = stateValue.with(\.selectedLanguageCode)
-        if selectedLocale == currentLocale?.identifier {
-            onCloseWithoutSelect()
+    controller.willDisappear = { _ in
+        stateValue.with { state in
+            if state.selectedLanguageCode == nil {
+                closeWithoutSelect()
+            }
         }
     }
-    
+
     return controller
 }
 
 private func entries(
     theme: PresentationTheme,
-    state: LanguageListControllerState
+    state: LanguageListControllerState,
+    style: RecognitionLanguagesControllerStyle
 ) -> [RecognitionLanguageEntry] {
     var index: Int32 = 0
     var entries: [RecognitionLanguageEntry]
     
-    let header = RecognitionLanguageEntry.header(index, l("NicegramSpeechToText.Language.Choose").uppercased())
+    if style == .whisper {
+        let error = RecognitionLanguageEntry.whisper(
+            index,
+            theme,
+            l("NicegramSpeechToText.Language.Whisper"),
+            false
+        )
+        index += 1
+        let header = RecognitionLanguageEntry.header(index, l("NicegramSpeechToText.Language.Choose").uppercased())
+        entries = [error, header]
+    } else {
+        let header = RecognitionLanguageEntry.header(index, l("NicegramSpeechToText.Language.Choose").uppercased())
         entries = [header]
+    }
     index += 1
     
     let (languages, selectedCode) = (state.languages, state.selectedLanguageCode)
@@ -104,17 +125,21 @@ private func entries(
 
 private enum RecognitionLanguageSection: Int32 {
     case languages
+    case whisper
     case header
 }
 
 private enum RecognitionLanguageEntry: ItemListNodeEntry {
     case header(Int32, String)
     case language(Int32, PresentationTheme, LanguageInfo, Bool)
+    case whisper(Int32, PresentationTheme, String, Bool)
    
     var section: ItemListSectionId {
         switch self {
         case .language:
             return RecognitionLanguageSection.languages.rawValue
+        case .whisper:
+            return RecognitionLanguageSection.whisper.rawValue
         case .header:
             return RecognitionLanguageSection.languages.rawValue
         }
@@ -123,6 +148,7 @@ private enum RecognitionLanguageEntry: ItemListNodeEntry {
     var stableId: Int32 {
         switch self {
         case let .language(index, _, _, _): return index
+        case let .whisper(index, _, _, _): return index
         case let .header(index, _): return index
         }
     }
@@ -139,6 +165,16 @@ private enum RecognitionLanguageEntry: ItemListNodeEntry {
                 presentationData: presentationData,
                 text: text,
                 sectionId: self.section
+            )
+        case let .whisper(_, _, message, _):
+            return ItemListTextWithBackgroundItem(
+                presentationData: presentationData,
+                text: .markdown(message),
+                style: .blocks,
+                sectionId: self.section,
+                linkAction: { _ in
+                    arguments.selectWhisper()
+                }
             )
         case let .language(_, _, info, value):
             return LocalizationListItem(

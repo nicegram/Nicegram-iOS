@@ -7,7 +7,7 @@ swift_library(
         "Sources/**/*.swift",
     ]),
     copts = [
-        "-warnings-as-errors",
+        #"-warnings-as-errors",
     ],
     deps = [
     	"//submodules/SSignalKit/SwiftSignalKit:SwiftSignalKit",
@@ -27,12 +27,6 @@ swift_library(
         "//submodules/TelegramNotices:TelegramNotices",
         "//submodules/TooltipUI:TooltipUI",
         "//submodules/TelegramUI/Components/SliderContextItem:SliderContextItem",
-        "//submodules/ComponentFlow",
-        "//submodules/Components/MultilineTextComponent",
-        "//submodules/Components/BundleIconComponent",
-        "//submodules/TelegramUI/Components/ButtonComponent",
-        "//submodules/TelegramUI/Components/Gifts/GiftItemComponent",
-        "//submodules/TelegramUI/Components/AnimatedTextComponent",
     ],
     visibility = [
         "//visibility:public",

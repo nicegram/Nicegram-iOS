@@ -34,7 +34,6 @@ public struct ItemListMultilineInputInlineAction {
 
 public class ItemListMultilineInputItem: ListViewItem, ItemListItem {
     let presentationData: ItemListPresentationData
-    let systemStyle: ItemListSystemStyle
     let text: String
     let placeholder: String
     public let sectionId: ItemListSectionId
@@ -53,9 +52,8 @@ public class ItemListMultilineInputItem: ListViewItem, ItemListItem {
     let noInsets: Bool
     public let tag: ItemListItemTag?
     
-    public init(presentationData: ItemListPresentationData, systemStyle: ItemListSystemStyle = .legacy, text: String, placeholder: String, maxLength: ItemListMultilineInputItemTextLimit?, sectionId: ItemListSectionId, style: ItemListStyle, capitalization: Bool = true, autocorrection: Bool = true, returnKeyType: UIReturnKeyType = .default, minimalHeight: CGFloat? = nil, textUpdated: @escaping (String) -> Void, shouldUpdateText: @escaping (String) -> Bool = { _ in return true }, processPaste: ((String) -> Void)? = nil, updatedFocus: ((Bool) -> Void)? = nil, tag: ItemListItemTag? = nil, action: (() -> Void)? = nil, inlineAction: ItemListMultilineInputInlineAction? = nil, noInsets: Bool = false) {
+    public init(presentationData: ItemListPresentationData, text: String, placeholder: String, maxLength: ItemListMultilineInputItemTextLimit?, sectionId: ItemListSectionId, style: ItemListStyle, capitalization: Bool = true, autocorrection: Bool = true, returnKeyType: UIReturnKeyType = .default, minimalHeight: CGFloat? = nil, textUpdated: @escaping (String) -> Void, shouldUpdateText: @escaping (String) -> Bool = { _ in return true }, processPaste: ((String) -> Void)? = nil, updatedFocus: ((Bool) -> Void)? = nil, tag: ItemListItemTag? = nil, action: (() -> Void)? = nil, inlineAction: ItemListMultilineInputInlineAction? = nil, noInsets: Bool = false) {
         self.presentationData = presentationData
-        self.systemStyle = systemStyle
         self.text = text
         self.placeholder = placeholder
         self.maxLength = maxLength
@@ -152,7 +150,7 @@ public class ItemListMultilineInputItemNode: ListViewItemNode, ASEditableTextNod
         self.limitTextNode = TextNode()
         self.limitTextNode.displaysAsynchronously = false
         
-        super.init(layerBacked: false)
+        super.init(layerBacked: false, dynamicBounce: false)
         
         self.textClippingNode.addSubnode(self.textNode)
         self.addSubnode(self.textClippingNode)
@@ -240,18 +238,9 @@ public class ItemListMultilineInputItemNode: ListViewItemNode, ASEditableTextNod
             let (textLayout, textApply) = makeTextLayout(TextNodeLayoutArguments(attributedString: attributedMeasureText, backgroundColor: nil, maximumNumberOfLines: 0, truncationType: .end, constrainedSize: CGSize(width: params.width - 16.0 - leftInset - rightInset, height: CGFloat.greatestFiniteMagnitude), alignment: .natural, lineSpacing: 0.0, cutout: nil, insets: UIEdgeInsets()))
             
             let separatorHeight = UIScreenPixel
-            let separatorRightInset: CGFloat = item.systemStyle == .glass ? 16.0 : 0.0
             
-            let textTopInset: CGFloat
-            let textBottomInset: CGFloat
-            switch item.systemStyle {
-            case .glass:
-                textTopInset = 15.0
-                textBottomInset = 15.0
-            case .legacy:
-                textTopInset = 11.0
-                textBottomInset = 11.0
-            }
+            let textTopInset: CGFloat = 11.0
+            let textBottomInset: CGFloat = 11.0
             
             var contentHeight: CGFloat = textLayout.size.height + textTopInset + textBottomInset
             if let minimalHeight = item.minimalHeight {
@@ -343,11 +332,11 @@ public class ItemListMultilineInputItemNode: ListViewItemNode, ASEditableTextNod
                             strongSelf.bottomStripeNode.isHidden = hasCorners
                     }
                     
-                    strongSelf.maskNode.image = hasCorners ? PresentationResourcesItemList.cornersImage(item.presentationData.theme, top: hasTopCorners, bottom: hasBottomCorners, glass: item.systemStyle == .glass) : nil
+                    strongSelf.maskNode.image = hasCorners ? PresentationResourcesItemList.cornersImage(item.presentationData.theme, top: hasTopCorners, bottom: hasBottomCorners) : nil
                     
                     if !item.noInsets {
                         strongSelf.topStripeNode.frame = CGRect(origin: CGPoint(x: 0.0, y: -min(insets.top, separatorHeight)), size: CGSize(width: layoutSize.width, height: separatorHeight))
-                        strongSelf.bottomStripeNode.frame = CGRect(origin: CGPoint(x: bottomStripeInset, y: contentSize.height), size: CGSize(width: layoutSize.width - bottomStripeInset - params.rightInset - separatorRightInset, height: separatorHeight))
+                        strongSelf.bottomStripeNode.frame = CGRect(origin: CGPoint(x: bottomStripeInset, y: contentSize.height), size: CGSize(width: layoutSize.width - bottomStripeInset, height: separatorHeight))
                     }
                     
                     if strongSelf.textNode.attributedPlaceholderText == nil || !strongSelf.textNode.attributedPlaceholderText!.isEqual(to: attributedPlaceholderText) {

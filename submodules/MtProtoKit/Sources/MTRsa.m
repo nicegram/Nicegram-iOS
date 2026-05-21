@@ -287,8 +287,6 @@ static NSData *base64_decode(NSString *str) {
         
         size_t outlen = block_size;
         OSStatus status = noErr;
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wdeprecated-declarations"
         status = SecKeyEncrypt(keyRef,
                                kSecPaddingNone,
                                srcbuf + idx,
@@ -296,7 +294,6 @@ static NSData *base64_decode(NSString *str) {
                                outbuf,
                                &outlen
                                );
-#pragma clang diagnostic pop
         if (status != 0) {
             NSLog(@"SecKeyEncrypt fail. Error Code: %d", (int)status);
             ret = nil;
@@ -346,8 +343,6 @@ static NSData *base64_decode(NSString *str) {
         
         size_t outlen = block_size;
         OSStatus status = noErr;
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wdeprecated-declarations"
         status = SecKeyDecrypt(keyRef,
                                kSecPaddingNone,
                                srcbuf + idx,
@@ -355,7 +350,6 @@ static NSData *base64_decode(NSString *str) {
                                outbuf,
                                &outlen
                                );
-#pragma clang diagnostic pop
         if (status != 0) {
             NSLog(@"SecKeyEncrypt fail. Error Code: %d", (int)status);
             ret = nil;

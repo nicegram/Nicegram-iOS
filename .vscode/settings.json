@@ -1,7 +1,7 @@
 {
-    "swift.disableSwiftPackageManagerIntegration": true,
-    "swift.autoGenerateLaunchConfigurations": false,
-    "swift.disableAutoResolve": true,
+    "sweetpad.build.xcodeWorkspacePath": "Telegram/Telegram.xcodeproj/project.xcworkspace",
+    "lldb.library": "/Applications/Xcode.app/Contents/SharedFrameworks/LLDB.framework/Versions/A/LLDB",
+    "lldb.launch.expressions": "native",
     "search.followSymlinks": false,
     "files.exclude": {
         ".git/**": true
@@ -12,18 +12,6 @@
     "search.exclude": {
         ".git/**": true
     },
-    "swift.sourcekit-lsp.backgroundIndexing": "on",
-    "swift.sourcekit-lsp.trace.server": "messages",
-    "terminal.integrated.profiles.osx": {
-        "zsh": {
-            "path": "/bin/zsh",
-            "args": [
-                "-l",
-                "-i"
-            ]
-        }
-    },
-    "swift.sourcekit-lsp.serverPath": "${workspaceFolder}/build-input/sourcekit-lsp",
-    "sourcekit-bazel-bsp.rulesAppleName": "build_bazel_rules_apple",
-    "cmake.sourceDirectory": "/Users/ali/build/telegram/telegram-ios/submodules/rlottie/rlottie/test"
+    "files.associations": {
+    }
 }

@@ -9,12 +9,12 @@ private let pinOffset = CGPoint(x: 0.0, y: 33.0)
 
 public enum LocationMapMode {
     case map
-    case satellite
+    case sattelite
     case hybrid
     
     var mapType: MKMapType {
         switch self {
-            case .satellite:
+            case .sattelite:
                 return .satellite
             case .hybrid:
                 return .hybrid
@@ -54,14 +54,6 @@ private class PickerAnnotationContainerView: UIView {
 private class LocationMapView: MKMapView, UIGestureRecognizerDelegate {
     var customHitTest: ((CGPoint) -> Bool)?
     private var allowSelectionChanges = true
-    
-    var onTouch: (() -> Void)?
-    
-    override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
-        super.touchesBegan(touches, with: event)
-        
-        self.onTouch?()
-    }
     
     @objc override func gestureRecognizerShouldBegin(_ gestureRecognizer: UIGestureRecognizer) -> Bool {
         if let customHitTest = self.customHitTest, customHitTest(gestureRecognizer.location(in: self)) {
@@ -109,7 +101,7 @@ func generateHeadingArrowImage() -> UIImage? {
         context.clip()
         
         var locations: [CGFloat] = [0.0, 0.4, 1.0]
-        let colors: [CGColor] = [UIColor(rgb: 0x0088ff, alpha: 0.5).cgColor, UIColor(rgb: 0x0088ff, alpha: 0.3).cgColor, UIColor(rgb: 0x0088ff, alpha: 0.0).cgColor]
+        let colors: [CGColor] = [UIColor(rgb: 0x007aff, alpha: 0.5).cgColor, UIColor(rgb: 0x007aff, alpha: 0.3).cgColor, UIColor(rgb: 0x007aff, alpha: 0.0).cgColor]
         let colorSpace = CGColorSpaceCreateDeviceRGB()
         let gradient = CGGradient(colorsSpace: colorSpace, colors: colors as CFArray, locations: &locations)!
         
@@ -240,7 +232,6 @@ public final class LocationMapNode: ASDisplayNode, MKMapViewDelegateTarget {
     var returnedToUserLocation = true
     var ignoreRegionChanges = false
     var isDragging = false
-    var onTouch: (() -> Void)?
     var beganInteractiveDragging: (() -> Void)?
     var endedInteractiveDragging: ((CLLocationCoordinate2D) -> Void)?
     var disableHorizontalTransitionGesture = false
@@ -361,12 +352,6 @@ public final class LocationMapNode: ASDisplayNode, MKMapViewDelegateTarget {
             }
             
             return false
-        }
-        mapView.onTouch = { [weak self] in
-            guard let self else {
-                return
-            }
-            self.onTouch?()
         }
         self.view.addSubview(self.pickerAnnotationContainerView)
     }

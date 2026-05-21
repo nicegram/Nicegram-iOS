@@ -366,15 +366,9 @@ absl_sources = [
     #
 ]
 
-absl_inc_files = [
-    f
-    for f in glob(["absl/**/*.inc"])
-    if f not in absl_headers
-]
-
 cc_library(
     name = "absl",
-    hdrs = absl_headers + absl_inc_files,
+    hdrs = absl_headers,
     srcs = absl_sources,
     cxxopts = [
         "-std=c++17",

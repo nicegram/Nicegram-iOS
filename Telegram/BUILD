@@ -8,13 +8,8 @@ load("@build_bazel_rules_apple//apple:ios.bzl",
     "ios_application",
     "ios_extension",
     "ios_framework",
+    "ios_unit_test",
     "ios_ui_test",
-    "ios_ui_test_suite",
-)
-
-load(
-    "@build_bazel_rules_apple//apple/testing/default_runner:ios_test_runner.bzl",
-    "ios_test_runner",
 )
 
 load("@build_bazel_rules_apple//apple:resources.bzl",
@@ -27,8 +22,8 @@ load("@build_bazel_rules_swift//swift:swift.bzl",
 
 load(
     "@rules_xcodeproj//xcodeproj:defs.bzl",
-    "top_level_targets",
     "top_level_target",
+    "top_level_targets",
     "xcodeproj",
     "xcode_provisioning_profile",
 )
@@ -144,7 +139,7 @@ genrule(
     ],
 )
 
-minimum_os_version = "15.0"
+minimum_os_version = "14.0"
 
 notificationServiceExtensionVersion = "v1"
 
@@ -283,40 +278,11 @@ filegroup(
     ], exclude = ["Telegram-iOS/Icons.xcassets/**/.*"]),
 )
 
-# Nicegram: every app icon (primary, in-app switchable, PPO test) lives in a
-# single asset catalog and is shipped via rules_apple's `app_icons` so that
-# `actool` (not `alticonstool`) emits the final `CFBundleIcons` /
-# `CFBundleAlternateIcons`. This is required for ASC Product Page Optimization
-# to enumerate alternate App Icons.
-#
-# The catalog also carries per-icon `.imageset` siblings so the in-app icon
-# switcher can render preview thumbnails via `UIImage(named:)`. rules_apple's
-# `app_icons` attribute rejects anything that is not a `.appiconset/` / `.icon/`
-# file (plus the root `.xcassets/Contents.json`), so the globs below split the
-# same catalog across two attributes:
-#
-#   * `:AppIcons` (shipped via `app_icons`)        - .appiconset/** + root
-#   * `:AppIconImagesets` (shipped via `resources`) - .imageset/**
-#
-# Both filegroups feed into a single `actool` invocation - rules_apple merges
-# every `.xcassets/**` file into one `asset_catalogs` bucket before compiling.
 filegroup(
-    name = "AppIcons",
+    name = "DefaultAppIcon",
     srcs = glob([
-        "Telegram-iOS/AppIcons.xcassets/Contents.json",
-        "Telegram-iOS/AppIcons.xcassets/**/*.appiconset/**",
-    ], exclude = [
-        "Telegram-iOS/AppIcons.xcassets/**/.*",
-    ]),
-)
-
-filegroup(
-    name = "AppIconImagesets",
-    srcs = glob([
-        "Telegram-iOS/AppIcons.xcassets/**/*.imageset/**",
-    ], exclude = [
-        "Telegram-iOS/AppIcons.xcassets/**/.*",
-    ]),
+        "Telegram-iOS/DefaultAppIcon.xcassets/**/*",
+    ], exclude = ["Telegram-iOS/DefaultAppIcon.xcassets/**/.*"]),
 )
 
 # Nicegram
@@ -335,6 +301,39 @@ filegroup(
     ], allow_empty=True),
 )
 
+# Nicegram AltIcons
+# removed BlackClassicIcon, BlueClassicIcon 
+alternate_icon_folders = [
+    "BlackIcon",
+    "BlackFilledIcon",
+    "BlueIcon",
+    "BlueFilledIcon",
+    "WhiteFilledIcon",
+    "New1",
+    "New2",
+    "New3",
+    "NicegramAlt",
+    "NicegramBetaIcon",
+    "CommunityClassic",
+    "CommunityOnyx",
+    "CommunityRuby",
+    "CommunityWatercolor",
+    "Premium",
+    "PremiumBlack",
+    "PremiumTurbo",
+    "NewBlack",
+    "NewWhite"
+]
+
+[
+    filegroup(
+        name = "{}".format(name),
+        srcs = glob([
+            "Telegram-iOS/{}.alticon/*.png".format(name),
+        ]),
+    ) for name in alternate_icon_folders
+]
+
 filegroup(
     name = "LaunchScreen",
     srcs = glob([
@@ -344,7 +343,6 @@ filegroup(
 
 objc_library(
     name = "Main",
-    module_name = "Main",
     srcs = [
         "Telegram-iOS/main.m"
     ],
@@ -362,7 +360,6 @@ NGRESOURCES_DEPS = [
 
 swift_library(
     name = "Lib",
-    module_name = "Lib",
     srcs = glob([
         "Telegram-iOS/Application.swift",
     ]),
@@ -396,8 +393,7 @@ plist_fragment(
     """
     <key>CFBundleVersion</key>
     <string>{buildNumber}</string>
-    """,
-    defaults = {"buildNumber": "1"},
+    """
 )
 
 plist_fragment(
@@ -519,7 +515,7 @@ icloud_fragment = "" if not telegram_enable_icloud else """
     <string>iCloud.{telegram_bundle_id}</string>
 </array>
 <key>com.apple.developer.ubiquity-kvstore-identifier</key>
-<string>{telegram_team_id}.{telegram_bundle_id}</string>
+<string>{telegram_team_id}.*</string>
 <key>com.apple.developer.icloud-container-environment</key>
 <string>{telegram_icloud_environment}</string>
 """.format(
@@ -536,8 +532,6 @@ associated_domains_fragment = "" if telegram_bundle_id not in nicegram_bundle_id
     <string>applinks:nicegram.app</string>
     <string>applinks:yfqcuhfv.xyz</string>
     <string>applinks:*.t.me</string>
-    <string>webcredentials:t.me</string>
-    <string>webcredentials:telegram.org</string>
 </array>
 """
 
@@ -570,12 +564,6 @@ official_communication_notifications_fragment = """
 # Nicegram, change 'official_bundle_ids' to 'nicegram_bundle_ids'
 communication_notifications_fragment = official_communication_notifications_fragment if telegram_bundle_id in nicegram_bundle_ids else ""
 
-official_notification_filtering_fragment = """
-<key>com.apple.developer.usernotifications.filtering</key>
-<true/>
-"""
-notification_filtering_fragment = official_notification_filtering_fragment if telegram_bundle_id == "ph.telegra.Telegraph" else ""
-
 store_signin_fragment = """
 <key>com.apple.developer.applesignin</key>
 <array>
@@ -583,12 +571,6 @@ store_signin_fragment = """
 </array>
 """
 signin_fragment = store_signin_fragment if telegram_bundle_id in store_bundle_ids else ""
-
-official_background_gpu_fragment = """
-<key>com.apple.developer.background-tasks.continued-processing.gpu</key>
-<true/>
-"""
-background_gpu_fragment = official_background_gpu_fragment if telegram_bundle_id == "ph.telegra.Telegraph" else ""
 
 # Nicegram, keychain_access_groups_fragment
 keychain_access_groups_fragment = """
@@ -614,31 +596,20 @@ plist_fragment(
         unrestricted_voip_fragment,
         carplay_fragment,
         communication_notifications_fragment,
-        notification_filtering_fragment,
         signin_fragment,
-        background_gpu_fragment,
         # Nicegram, keychain_access_groups_fragment
         keychain_access_groups_fragment
     ])
 )
 
-genrule(
+plist_fragment(
     name = "VersionInfoPlist",
-    srcs = ["//:versions.json"],
-    outs = ["VersionInfoPlist.plist"],
-    cmd = """
-        version=$$(python3 -c "import json; print(json.load(open('$(location //:versions.json)'))['app'])")
-        cat > $@ <<PLIST
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0">
-<dict>
+    extension = "plist",
+    template =
+    """
     <key>CFBundleShortVersionString</key>
-    <string>$$version</string>
-</dict>
-</plist>
-PLIST
-    """,
+    <string>{telegramVersion}</string>
+    """
 )
 
 plist_fragment(
@@ -908,6 +879,33 @@ genrule(
     ]
 )
 
+genrule(
+    name = "GenerateAddAlternateIcons",
+    srcs = [
+        "Telegram-iOS/AddAlternateIcons.sh",
+    ],
+    cmd_bash =
+"""
+    cat $(location Telegram-iOS/AddAlternateIcons.sh) >> $(location AddAlternateIcons.sh)
+""",
+    outs = [
+        "AddAlternateIcons.sh",
+    ],
+    executable = True,
+    visibility = [
+        "//visibility:public",
+    ]
+)
+
+sh_binary(
+    name = "AddAlternateIcons",
+    data = [
+        "Telegram-iOS/AlternateIcons.plist",
+        "Telegram-iOS/AlternateIcons-iPad.plist",
+    ],
+    srcs = [":GenerateAddAlternateIcons"],
+)
+
 plist_fragment(
     name = "TelegramUIInfoPlist",
     extension = "plist",
@@ -1012,7 +1010,7 @@ swift_library(
         "Share/**/*.swift",
     ]),
     copts = [
-        "-warnings-as-errors",
+        #"-warnings-as-errors",
     ],
     deps = [
         "//submodules/TelegramUI",
@@ -1099,13 +1097,32 @@ swift_library(
         "NotificationContent/**/*.swift",
     ]),
     copts = [
-        "-warnings-as-errors",
+        #"-warnings-as-errors",
     ],
     deps = [
         "//submodules/TelegramUI:TelegramUI",
         ":NotificationContentExtensionLink",
     ],
 )
+
+'''genrule(
+    name = "SetMinOsVersionNotificationContentExtension",
+    cmd_bash =
+"""
+    name=NotificationContentExtension.appex
+    cat $(location PatchMinOSVersion.source.sh) | sed -e "s/<<<MIN_OS_VERSION>>>/10\\.0/g" | sed -e "s/<<<NAME>>>/$$name/g" > $(location SetMinOsVersionNotificationContentExtension.sh)
+""",
+    srcs = [
+        "PatchMinOSVersion.source.sh",
+    ],
+    outs = [
+        "SetMinOsVersionNotificationContentExtension.sh",
+    ],
+    executable = True,
+    visibility = [
+        "//visibility:public",
+    ]
+)'''
 
 ios_extension(
     name = "NotificationContentExtension",
@@ -1124,6 +1141,7 @@ ios_extension(
         ":AppNameInfoPlist",
     ],
     minimum_os_version = minimum_os_version, # maintain the same minimum OS version across extensions
+    #ipa_post_processor = ":SetMinOsVersionNotificationContentExtension",
     provisioning_profile = select({
         ":disableProvisioningProfilesSetting": None,
         "//conditions:default": "@build_configuration//provisioning:NotificationContent.mobileprovision",
@@ -1174,7 +1192,7 @@ swift_library(
         "WidgetKitWidget/**/*.swift",
     ]),
     copts = [
-        "-warnings-as-errors",
+        #"-warnings-as-errors",
     ],
     data = [
         ":WidgetAssets",
@@ -1190,6 +1208,25 @@ swift_library(
         "//submodules/OpenSSLEncryptionProvider:OpenSSLEncryptionProvider",
         "//Telegram:GeneratedSources",
     ],
+)
+
+genrule(
+    name = "SetMinOsVersionWidgetExtension",
+    cmd_bash =
+"""
+    name=WidgetExtension.appex
+    cat $(location PatchMinOSVersion.source.sh) | sed -e "s/<<<MIN_OS_VERSION>>>/14\\.0/g" | sed -e "s/<<<NAME>>>/$$name/g" > $(location SetMinOsVersionWidgetExtension.sh)
+""",
+    srcs = [
+        "PatchMinOSVersion.source.sh",
+    ],
+    outs = [
+        "SetMinOsVersionWidgetExtension.sh",
+    ],
+    executable = True,
+    visibility = [
+        "//visibility:public",
+    ]
 )
 
 ios_extension(
@@ -1209,6 +1246,7 @@ ios_extension(
         ":AppNameInfoPlist",
     ],
     minimum_os_version = minimum_os_version, # maintain the same minimum OS version across extensions
+    ipa_post_processor = ":SetMinOsVersionWidgetExtension",
     #provides_main = True,
     provisioning_profile = select({
         ":disableProvisioningProfilesSetting": None,
@@ -1289,7 +1327,7 @@ swift_library(
         "SiriIntents/**/*.swift",
     ]),
     copts = [
-        "-warnings-as-errors",
+        #"-warnings-as-errors",
     ],
     data = glob([
         "SiriIntents/*.lproj/Intents.intentdefinition"
@@ -1309,6 +1347,25 @@ swift_library(
     ],
 )
 
+'''genrule(
+    name = "SetMinOsVersionIntentsExtension",
+    cmd_bash =
+"""
+    name=IntentsExtension.appex
+    cat $(location PatchMinOSVersion.source.sh) | sed -e "s/<<<MIN_OS_VERSION>>>/10\\.0/g" | sed -e "s/<<<NAME>>>/$$name/g" > $(location SetMinOsVersionIntentsExtension.sh)
+""",
+    srcs = [
+        "PatchMinOSVersion.source.sh",
+    ],
+    outs = [
+        "SetMinOsVersionIntentsExtension.sh",
+    ],
+    executable = True,
+    visibility = [
+        "//visibility:public",
+    ]
+)'''
+
 ios_extension(
     name = "IntentsExtension",
     bundle_id = "{telegram_bundle_id}.SiriIntents".format(
@@ -1326,6 +1383,7 @@ ios_extension(
         ":AppNameInfoPlist",
     ],
     minimum_os_version = minimum_os_version, # maintain the same minimum OS version across extensions
+    #ipa_post_processor = ":SetMinOsVersionIntentsExtension",
     provisioning_profile = select({
         ":disableProvisioningProfilesSetting": None,
         "//conditions:default": "@build_configuration//provisioning:Intents.mobileprovision",
@@ -1372,7 +1430,7 @@ swift_library(
         "BroadcastUpload/**/*.swift",
     ]),
     copts = [
-        "-warnings-as-errors",
+        #"-warnings-as-errors",
     ],
     deps = [
         "//submodules/TelegramUI:TelegramUI",
@@ -1383,6 +1441,25 @@ swift_library(
         "//submodules/BroadcastUploadHelpers:BroadcastUploadHelpers",
     ],
 )
+
+'''genrule(
+    name = "SetMinOsVersionBroadcastUploadExtension",
+    cmd_bash =
+"""
+    name=BroadcastUploadExtension.appex
+    cat $(location PatchMinOSVersion.source.sh) | sed -e "s/<<<MIN_OS_VERSION>>>/11\\.0/g" | sed -e "s/<<<NAME>>>/$$name/g" > $(location SetMinOsVersionBroadcastUploadExtension.sh)
+""",
+    srcs = [
+        "PatchMinOSVersion.source.sh",
+    ],
+    outs = [
+        "SetMinOsVersionBroadcastUploadExtension.sh",
+    ],
+    executable = True,
+    visibility = [
+        "//visibility:public",
+    ]
+)'''
 
 ios_extension(
     name = "BroadcastUploadExtension",
@@ -1401,6 +1478,7 @@ ios_extension(
         ":AppNameInfoPlist",
     ],
     minimum_os_version = minimum_os_version, # maintain the same minimum OS version across extensions
+    #ipa_post_processor = ":SetMinOsVersionBroadcastUploadExtension",
     provisioning_profile = select({
         ":disableProvisioningProfilesSetting": None,
         "//conditions:default": "@build_configuration//provisioning:BroadcastUpload.mobileprovision",
@@ -1872,7 +1950,6 @@ plist_fragment(
     <array>
         <string>{telegram_bundle_id}.refresh</string>
         <string>{telegram_bundle_id}.cleanup</string>
-        <string>{telegram_bundle_id}.upload.*</string>
     </array>
     <key>CFBundleAllowMixedLocalizations</key>
     <true/>
@@ -1957,12 +2034,16 @@ plist_fragment(
     <string>You can use Siri to send messages.</string>
     <key>NSSpeechRecognitionUsageDescription</key>
     <string>We need this to transcribe audio messages on your request.</string>
-    <key>NSUserTrackingUsageDescription</key>
-    <string>We would like to access your advertising ID in order to accurately identify the source of app installation and provide you with a high quality service</string>
     <key>NSUserActivityTypes</key>
     <array>
         <string>INSendMessageIntent</string>
         <string>RemindAboutChatIntent</string>
+    </array>
+    <key>UIAppFonts</key>
+    <array>
+        <string>SFCompactRounded-Semibold.otf</string>
+        <string>AremacFS-Regular.otf</string>
+        <string>AremacFS-Semibold.otf</string>
     </array>
     <key>UIBackgroundModes</key>
     <array>
@@ -2016,7 +2097,7 @@ plist_fragment(
             <string>Telegram iOS Color Theme File</string>
             <key>UTTypeIconFiles</key>
             <array>
-                <string>BlueIcon60x60@3x.png</string>
+                <string>BlueIcon@3x.png</string>
             </array>
             <key>UTTypeIdentifier</key>
             <string>org.telegram.Telegram-iOS.theme</string>
@@ -2070,17 +2151,6 @@ xcode_provisioning_profile(
    provisioning_profile = ":Telegram_local_profile",
 )
 
-# Nicegram, required for Adjust SDK
-objc_library(
-    name = "OptionalSystemFrameworks",
-    weak_sdk_frameworks = [
-        "AdServices",
-        "AdSupport",
-        "AppTrackingTransparency",
-        "StoreKit",
-    ]
-)
-
 ios_application(
     name = "Telegram",
     bundle_id = "{telegram_bundle_id}".format(
@@ -2100,11 +2170,12 @@ ios_application(
         ":RequiredDeviceCapabilitiesPlist",
         ":UrlTypesInfoPlist",
     ],
-    app_icons = [":AppIcons"],
-    primary_app_icon = "PrimaryIcon",
+    alternate_icons = [
+        ":{}".format(name) for name in alternate_icon_folders
+    ],
     resources = [
-        ":AppIconImagesets",
         ":LaunchScreen",
+        ":DefaultAppIcon",
     ],
     frameworks = [
         ":MtProtoKitFramework",
@@ -2131,8 +2202,6 @@ ios_application(
     deps = [
         ":Main",
         ":Lib",
-        # Nicegram
-        ":OptionalSystemFrameworks",
     ],
     visibility = ["//visibility:public"],
 )
@@ -2142,10 +2211,12 @@ xcodeproj(
     bazel_path = telegram_bazel_path,
     project_name = "Telegram",
     tags = ["manual"],
-    top_level_targets = [
-        top_level_target(":Telegram", target_environments = ["device", "simulator"]),
-        ":iOSAppUITestSuite",
-    ],
+    top_level_targets = top_level_targets(
+        labels = [
+            ":Telegram",
+        ],
+        target_environments = ["device", "simulator"],
+    ),
     xcode_configurations = {
         "Debug": {
             "//command_line_option:compilation_mode": "dbg",
@@ -2155,39 +2226,6 @@ xcodeproj(
         },
     },
     default_xcode_configuration = "Debug"
-)
-
-filegroup(
-    name = "TestSources",
-    srcs = glob(["Tests/Sources/**/*.swift"]),
-)
-
-ios_test_runner(
-    name = "iPhone-17__26.2",
-    device_type = "iPhone 17",
-    os_version = "26.2",
-)
-
-
-swift_library(
-    name = "iOSAppUITestSuite.library",
-    testonly = True,
-    srcs = [":TestSources"],
-    module_name = "iOSAppUITestSuite",
-    tags = ["manual"],
-)
-
-ios_ui_test_suite(
-    name = "iOSAppUITestSuite",
-    bundle_id = "org.telegram.Telegram-iOS-uitests",
-    minimum_os_version = minimum_os_version,
-    runners = [
-        ":iPhone-17__26.2",
-    ],
-    tags = ["manual"],
-    test_host = "//Telegram",
-    visibility = ["@rules_xcodeproj//xcodeproj:generated"],
-    deps = [":iOSAppUITestSuite.library"],
 )
 
 # Temporary targets used to simplify build tests

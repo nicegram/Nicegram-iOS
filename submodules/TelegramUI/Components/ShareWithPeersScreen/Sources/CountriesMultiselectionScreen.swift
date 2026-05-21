@@ -9,6 +9,7 @@ import ComponentDisplayAdapters
 import TelegramPresentationData
 import AccountContext
 import TelegramCore
+import Postbox
 import MultilineTextComponent
 import PresentationDataUtils
 import ButtonComponent
@@ -18,8 +19,6 @@ import TelegramStringFormatting
 import LottieComponent
 import UndoUI
 import CountrySelectionUI
-import GlassBarButtonComponent
-import BundleIconComponent
 
 final class CountriesMultiselectionScreenComponent: Component {
     typealias EnvironmentType = ViewControllerComponentContainer.Environment
@@ -240,8 +239,8 @@ final class CountriesMultiselectionScreenComponent: Component {
             self.navigationContainerView.addSubview(self.navigationBackgroundView)
             self.navigationContainerView.layer.addSublayer(self.navigationSeparatorLayer)
             
-            //self.containerView.addSubview(self.bottomBackgroundView)
-            //self.containerView.layer.addSublayer(self.bottomSeparatorLayer)
+            self.containerView.addSubview(self.bottomBackgroundView)
+            self.containerView.layer.addSublayer(self.bottomSeparatorLayer)
             
             self.containerView.addSubnode(self.indexNode)
             
@@ -464,7 +463,8 @@ final class CountriesMultiselectionScreenComponent: Component {
                                     update()
                                 }
                                 
-                                if let limit = component.stateContext.maxCount, self.selectedCountries.count >= limit, index == nil {
+                                let limit = component.context.userLimits.maxGiveawayCountriesCount
+                                if self.selectedCountries.count >= limit, index == nil {
                                     self.hapticFeedback.error()
                                     
                                     let presentationData = component.context.sharedContext.currentPresentationData.with { $0 }
@@ -751,7 +751,7 @@ final class CountriesMultiselectionScreenComponent: Component {
                 if let searchStateContext = self.searchStateContext, searchStateContext.subject == .countriesSearch(query: self.navigationTextFieldState.text) {
                 } else {
                     self.searchStateDisposable?.dispose()
-                    let searchStateContext = CountriesMultiselectionScreen.StateContext(context: component.context, subject: .countriesSearch(query: self.navigationTextFieldState.text), showFragment: component.stateContext.showFragment)
+                    let searchStateContext = CountriesMultiselectionScreen.StateContext(context: component.context, subject: .countriesSearch(query: self.navigationTextFieldState.text))
                     var applyState = false
                     self.searchStateDisposable = (searchStateContext.ready |> filter { $0 } |> take(1) |> deliverOnMainQueue).start(next: { [weak self] _ in
                         guard let self else {
@@ -788,6 +788,7 @@ final class CountriesMultiselectionScreenComponent: Component {
                         
             var sections: [ItemLayout.Section] = []
             if let stateValue = self.effectiveStateValue {
+                 
                 var id: Int = 0
                 for (_, countries) in stateValue.sections {
                     sections.append(ItemLayout.Section(
@@ -802,30 +803,21 @@ final class CountriesMultiselectionScreenComponent: Component {
             
             let containerInset: CGFloat = environment.statusBarHeight
             
-            var navigationHeight: CGFloat = 76.0
+            var navigationHeight: CGFloat = 56.0
             let navigationSideInset: CGFloat = 16.0
             var navigationButtonsWidth: CGFloat = 0.0
             
             let navigationLeftButtonSize = self.navigationLeftButton.update(
                 transition: transition,
-                component: AnyComponent(GlassBarButtonComponent(
-                    size: CGSize(width: 44.0, height: 44.0),
-                    backgroundColor: nil,
-                    isDark: environment.theme.overallDarkAppearance,
-                    state: .glass,
-                    component: AnyComponentWithIdentity(id: "close", component: AnyComponent(
-                        BundleIconComponent(
-                            name: "Navigation/Close",
-                            tintColor: environment.theme.chat.inputPanel.panelControlColor
-                        )
-                    )),
-                    action: { [weak self] _ in
+                component: AnyComponent(Button(
+                    content: AnyComponent(Text(text: environment.strings.Common_Cancel, font: Font.regular(17.0), color: environment.theme.rootController.navigationBar.accentTextColor)),
+                    action: { [weak self] in
                         guard let self, let environment = self.environment, let controller = environment.controller() as? CountriesMultiselectionScreen else {
                             return
                         }
                         controller.requestDismiss()
                     }
-                )),
+                ).minSize(CGSize(width: navigationHeight, height: navigationHeight))),
                 environment: {},
                 containerSize: CGSize(width: availableSize.width, height: navigationHeight)
             )
@@ -838,25 +830,21 @@ final class CountriesMultiselectionScreenComponent: Component {
             }
             navigationButtonsWidth += navigationLeftButtonSize.width + navigationSideInset
             
-            let actionButtonTitle = environment.strings.CountriesList_SaveCountries            
-            var titleComponents: [AnyComponentWithIdentity<Empty>] = [
-                AnyComponentWithIdentity(
-                    id: "title",
-                    component: AnyComponent(Text(text: environment.strings.CountriesList_SelectCountries, font: Font.semibold(17.0), color: environment.theme.rootController.navigationBar.primaryTextColor))
-                )
-            ]
-            
-            if let maxCount = component.stateContext.maxCount {
-                titleComponents.append(
-                    AnyComponentWithIdentity(
-                        id: "subtitle",
-                        component: AnyComponent(Text(text: environment.strings.CountriesList_SelectUpTo(maxCount), font: Font.regular(13.0), color: environment.theme.rootController.navigationBar.secondaryTextColor))
-                    )
-                )
-            }
+            let actionButtonTitle = environment.strings.CountriesList_SaveCountries
+            let title = environment.strings.CountriesList_SelectCountries
+            let subtitle = environment.strings.CountriesList_SelectUpTo(component.context.userLimits.maxGiveawayCountriesCount)
             
             let titleComponent = AnyComponent<Empty>(
-                List(titleComponents,
+                List([
+                    AnyComponentWithIdentity(
+                        id: "title",
+                        component: AnyComponent(Text(text: title, font: Font.semibold(17.0), color: environment.theme.rootController.navigationBar.primaryTextColor))
+                    ),
+                    AnyComponentWithIdentity(
+                        id: "subtitle",
+                        component: AnyComponent(Text(text: subtitle, font: Font.regular(13.0), color: environment.theme.rootController.navigationBar.secondaryTextColor))
+                    )
+                ],
                 centerAlignment: true)
             )
             
@@ -896,12 +884,10 @@ final class CountriesMultiselectionScreenComponent: Component {
 
             let badge = self.selectedCountries.count
             
-            let buttonInsets = ContainerViewLayout.concentricInsets(bottomInset: environment.safeInsets.bottom, innerDiameter: 52.0, sideInset: 30.0)
             let actionButtonSize = self.actionButton.update(
                 transition: transition,
                 component: AnyComponent(ButtonComponent(
                     background: ButtonComponent.Background(
-                        style: .glass,
                         color: environment.theme.list.itemCheckColors.fillColor,
                         foreground: environment.theme.list.itemCheckColors.foregroundColor,
                         pressedColor: environment.theme.list.itemCheckColors.fillColor.withMultipliedAlpha(0.9)
@@ -931,15 +917,15 @@ final class CountriesMultiselectionScreenComponent: Component {
                     }
                 )),
                 environment: {},
-                containerSize: CGSize(width: containerWidth - buttonInsets.left - buttonInsets.right, height: 52.0)
+                containerSize: CGSize(width: containerWidth - navigationSideInset * 2.0, height: 50.0)
             )
+            
             if environment.inputHeight != 0.0 {
                 bottomPanelHeight += environment.inputHeight + 8.0 + actionButtonSize.height
             } else {
-                bottomPanelHeight += actionButtonSize.height
-                bottomPanelHeight += buttonInsets.bottom
+                bottomPanelHeight += 10.0 + environment.safeInsets.bottom + actionButtonSize.height
             }
-            let actionButtonFrame = CGRect(origin: CGPoint(x: containerSideInset + buttonInsets.left, y: availableSize.height - bottomPanelHeight), size: actionButtonSize)
+            let actionButtonFrame = CGRect(origin: CGPoint(x: containerSideInset + navigationSideInset, y: availableSize.height - bottomPanelHeight), size: actionButtonSize)
             if let actionButtonView = self.actionButton.view {
                 if actionButtonView.superview == nil {
                     self.containerView.addSubview(actionButtonView)
@@ -1118,9 +1104,7 @@ public extension CountriesMultiselectionScreen {
         var stateValue: State?
         
         public let subject: Subject
-        public let maxCount: Int32?
         public let initialSelectedCountries: [String]
-        public let showFragment: Bool
         
         private var stateDisposable: Disposable?
         private let stateSubject = Promise<State>()
@@ -1136,22 +1120,14 @@ public extension CountriesMultiselectionScreen {
         public init(
             context: AccountContext,
             subject: Subject = .countries,
-            maxCount: Int32? = nil,
-            initialSelectedCountries: [String] = [],
-            showFragment: Bool = false
+            initialSelectedCountries: [String] = []
         ) {
             self.subject = subject
-            self.maxCount = maxCount
             self.initialSelectedCountries = initialSelectedCountries
-            self.showFragment = showFragment
             
             let presentationData = context.sharedContext.currentPresentationData.with { $0 }
-            let countryList = localizedCountryNamesAndCodes(strings: presentationData.strings)
-            var countries = countryList.sorted { lhs, rhs in
+            let countries = localizedCountryNamesAndCodes(strings: presentationData.strings).sorted { lhs, rhs in
                 return lhs.0.1.lowercased() < rhs.0.1.lowercased()
-            }
-            if showFragment, let index = countries.firstIndex(where: { $0.1 == "FR" }) {
-                countries.insert((("Fragment", "Fragment"), "FT", [888]), at: index)
             }
             
             switch subject {
@@ -1161,8 +1137,8 @@ public extension CountriesMultiselectionScreen {
                 var currentSection: String?
                 var currentCountries: [CountryItem] = []
                 for country in countries {
-                    let section = String(country.0.1.prefix(1)).uppercased()
-                    if currentSection != section && country.1 != "FT" {
+                    let section = String(country.0.1.prefix(1))
+                    if currentSection != section {
                         if let currentSection {
                             sections.append((currentSection, currentCountries))
                         }

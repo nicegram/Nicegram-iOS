@@ -25,21 +25,123 @@ import ContextUI
 import StarsBalanceOverlayComponent
 import TelegramStringFormatting
 import ChatScheduleTimeController
-import StoryLiveChatMessageComponent
+
+private final class BalanceComponent: CombinedComponent {
+    let context: AccountContext
+    let theme: PresentationTheme
+    let strings: PresentationStrings
+    let balance: StarsAmount?
+    
+    init(
+        context: AccountContext,
+        theme: PresentationTheme,
+        strings: PresentationStrings,
+        balance: StarsAmount?
+    ) {
+        self.context = context
+        self.theme = theme
+        self.strings = strings
+        self.balance = balance
+    }
+    
+    static func ==(lhs: BalanceComponent, rhs: BalanceComponent) -> Bool {
+        if lhs.context !== rhs.context {
+            return false
+        }
+        if lhs.theme !== rhs.theme {
+            return false
+        }
+        if lhs.strings !== rhs.strings {
+            return false
+        }
+        if lhs.balance != rhs.balance {
+            return false
+        }
+        return true
+    }
+    
+    static var body: Body {
+        let title = Child(MultilineTextComponent.self)
+        let balance = Child(MultilineTextComponent.self)
+        let icon = Child(BundleIconComponent.self)
+        
+        return { context in
+            var size = CGSize(width: 0.0, height: 0.0)
+            
+            let title = title.update(
+                component: MultilineTextComponent(
+                    text: .plain(NSAttributedString(string: context.component.strings.SendStarReactions_Balance, font: Font.regular(14.0), textColor: context.component.theme.list.itemPrimaryTextColor))
+                ),
+                availableSize: context.availableSize,
+                transition: .immediate
+            )
+            
+            size.width = max(size.width, title.size.width)
+            size.height += title.size.height
+            
+            let balanceText: String
+            if let value = context.component.balance {
+                balanceText = "\(value.stringValue)"
+            } else {
+                balanceText = "..."
+            }
+            let balance = balance.update(
+                component: MultilineTextComponent(
+                    text: .plain(NSAttributedString(string: balanceText, font: Font.medium(15.0), textColor: context.component.theme.list.itemPrimaryTextColor))
+                ),
+                availableSize: context.availableSize,
+                transition: .immediate
+            )
+            
+            let iconSize = CGSize(width: 18.0, height: 18.0)
+            let icon = icon.update(
+                component: BundleIconComponent(
+                    name: "Premium/Stars/StarLarge",
+                    tintColor: nil
+                ),
+                availableSize: iconSize,
+                transition: context.transition
+            )
+            
+            let titleSpacing: CGFloat = 1.0
+            let iconSpacing: CGFloat = 2.0
+            
+            size.height += titleSpacing
+            
+            size.width = max(size.width, icon.size.width + iconSpacing + balance.size.width)
+            size.height += balance.size.height
+            
+            context.add(
+                title.position(
+                    title.size.centered(in: CGRect(origin: CGPoint(x: 0.0, y: 0.0), size: title.size)).center
+                )
+            )
+            context.add(
+                balance.position(
+                    balance.size.centered(in: CGRect(origin: CGPoint(x: icon.size.width + iconSpacing, y: title.size.height + titleSpacing), size: balance.size)).center
+                )
+            )
+            context.add(
+                icon.position(
+                    icon.size.centered(in: CGRect(origin: CGPoint(x: -1.0, y: title.size.height + titleSpacing), size: icon.size)).center
+                )
+            )
+
+            return size
+        }
+    }
+}
 
 private final class BadgeComponent: Component {
     let theme: PresentationTheme
     let title: String
-    let color: UIColor
     
     init(
         theme: PresentationTheme,
-        title: String,
-        color: UIColor
+        title: String
     ) {
         self.theme = theme
         self.title = title
-        self.color = color
     }
     
     static func ==(lhs: BadgeComponent, rhs: BadgeComponent) -> Bool {
@@ -47,9 +149,6 @@ private final class BadgeComponent: Component {
             return false
         }
         if lhs.title != rhs.title {
-            return false
-        }
-        if lhs.color != rhs.color {
             return false
         }
         return true
@@ -126,7 +225,7 @@ private final class BadgeComponent: Component {
         }
         
         override func hitTest(_ point: CGPoint, with event: UIEvent?) -> UIView? {
-            if self.isUserInteractionEnabled && self.badgeView.frame.contains(point) {
+            if self.badgeView.frame.contains(point) {
                 return self
             } else {
                 return nil
@@ -143,7 +242,6 @@ private final class BadgeComponent: Component {
                 self.badgeIcon.image = UIImage(bundleImageName: "Premium/SendStarsStarSliderIcon")?.withRenderingMode(.alwaysTemplate)
             }
              
-            let previousComponent = self.component
             self.component = component
             self.badgeIcon.tintColor = .white
             
@@ -170,12 +268,12 @@ private final class BadgeComponent: Component {
             let size = badgeSize
             transition.setFrame(view: self.badgeLabel, frame: CGRect(origin: CGPoint(x: 14.0 + floorToScreenPixels((badgeFullSize.width - badgeLabelSize.width) / 2.0), y: 5.0), size: badgeLabelSize))
             
-            if self.previousAvailableSize != availableSize || previousComponent?.color != component.color {
+            if self.previousAvailableSize != availableSize {
                 self.previousAvailableSize = availableSize
                 
                 let activeColors: [UIColor] = [
-                    component.color,
-                    component.color
+                    UIColor(rgb: 0xFFAB03),
+                    UIColor(rgb: 0xFFCB37)
                 ]
                 
                 var locations: [CGFloat] = []
@@ -257,16 +355,13 @@ private final class BadgeComponent: Component {
 private final class PeerBadgeComponent: Component {
     let theme: PresentationTheme
     let title: String
-    let color: UIColor
     
     init(
         theme: PresentationTheme,
-        title: String,
-        color: UIColor
+        title: String
     ) {
         self.theme = theme
         self.title = title
-        self.color = color
     }
     
     static func ==(lhs: PeerBadgeComponent, rhs: PeerBadgeComponent) -> Bool {
@@ -274,9 +369,6 @@ private final class PeerBadgeComponent: Component {
             return false
         }
         if lhs.title != rhs.title {
-            return false
-        }
-        if lhs.color != rhs.color {
             return false
         }
         return true
@@ -329,8 +421,8 @@ private final class PeerBadgeComponent: Component {
             let contentSize = CGSize(width: iconSize.width + titleSpacing + titleSize.width, height: titleSize.height)
             let size = CGSize(width: contentSize.width + sideInset * 2.0, height: contentSize.height + 3.0 * 2.0)
             
-            self.backgroundMaskLayer.backgroundColor = component.theme.overallDarkAppearance ? component.theme.list.blocksBackgroundColor.cgColor : component.theme.list.plainBackgroundColor.cgColor
-            self.backgroundLayer.backgroundColor = component.color.cgColor
+            self.backgroundMaskLayer.backgroundColor = component.theme.list.plainBackgroundColor.cgColor
+            self.backgroundLayer.backgroundColor = UIColor(rgb: 0xFFB10D).cgColor
             
             let backgroundFrame = CGRect(origin: CGPoint(), size: size)
             self.backgroundLayer.frame = backgroundFrame
@@ -376,25 +468,19 @@ private final class PeerComponent: Component {
     let strings: PresentationStrings
     let peer: EnginePeer?
     let count: String
-    let topPlace: Int?
-    let color: UIColor
     
     init(
         context: AccountContext,
         theme: PresentationTheme,
         strings: PresentationStrings,
         peer: EnginePeer?,
-        count: String,
-        topPlace: Int?,
-        color: UIColor
+        count: String
     ) {
         self.context = context
         self.theme = theme
         self.strings = strings
         self.peer = peer
         self.count = count
-        self.topPlace = topPlace
-        self.color = color
     }
     
     static func ==(lhs: PeerComponent, rhs: PeerComponent) -> Bool {
@@ -413,19 +499,12 @@ private final class PeerComponent: Component {
         if lhs.count != rhs.count {
             return false
         }
-        if lhs.topPlace != rhs.topPlace {
-            return false
-        }
-        if lhs.color != rhs.color {
-            return false
-        }
         return true
     }
     
     final class View: UIView {
         private var avatarNode: AvatarNode?
         private let badge = ComponentView<Empty>()
-        private var crownIcon: UIImageView?
         private let title = ComponentView<Empty>()
 
         private var component: PeerComponent?
@@ -439,7 +518,6 @@ private final class PeerComponent: Component {
         }
         
         func update(component: PeerComponent, availableSize: CGSize, state: EmptyComponentState, environment: Environment<Empty>, transition: ComponentTransition) -> CGSize {
-            let previousComponent = self.component
             self.component = component
             
             let avatarNode: AvatarNode
@@ -465,8 +543,7 @@ private final class PeerComponent: Component {
                 transition: .immediate,
                 component: AnyComponent(PeerBadgeComponent(
                     theme: component.theme,
-                    title: component.count,
-                    color: component.color
+                    title: component.count
                 )),
                 environment: {},
                 containerSize: CGSize(width: 200.0, height: 200.0)
@@ -477,30 +554,6 @@ private final class PeerComponent: Component {
                     self.addSubview(badgeView)
                 }
                 badgeView.frame = badgeFrame
-            }
-            
-            if let topPlace = component.topPlace {
-                let crownIcon: UIImageView
-                if let current = self.crownIcon {
-                    crownIcon = current
-                } else {
-                    crownIcon = UIImageView()
-                    self.crownIcon = crownIcon
-                    self.addSubview(crownIcon)
-                }
-                
-                if topPlace != previousComponent?.topPlace || previousComponent?.color != component.color {
-                    crownIcon.image = StoryLiveChatMessageComponent.generateCrownImage(place: topPlace, backgroundColor: component.color, foregroundColor: .white, borderColor: component.theme.actionSheet.opaqueItemBackgroundColor)
-                }
-                if let image = crownIcon.image {
-                    let crownIconFrame = CGRect(origin: CGPoint(x: avatarFrame.minX + floor((avatarFrame.width - image.size.width) * 0.5), y: avatarFrame.minY - 13.0), size: image.size)
-                    crownIcon.frame = crownIconFrame
-                }
-            } else {
-                if let crownIcon = self.crownIcon {
-                    self.crownIcon = nil
-                    crownIcon.removeFromSuperview()
-                }
             }
             
             let titleSpacing: CGFloat = 8.0
@@ -546,20 +599,17 @@ private final class SliderBackgroundComponent: Component {
     let strings: PresentationStrings
     let value: CGFloat
     let topCutoff: CGFloat?
-    let color: UIColor
     
     init(
         theme: PresentationTheme,
         strings: PresentationStrings,
         value: CGFloat,
-        topCutoff: CGFloat?,
-        color: UIColor
+        topCutoff: CGFloat?
     ) {
         self.theme = theme
         self.strings = strings
         self.value = value
         self.topCutoff = topCutoff
-        self.color = color
     }
     
     static func ==(lhs: SliderBackgroundComponent, rhs: SliderBackgroundComponent) -> Bool {
@@ -573,9 +623,6 @@ private final class SliderBackgroundComponent: Component {
             return false
         }
         if lhs.topCutoff != rhs.topCutoff {
-            return false
-        }
-        if lhs.color != rhs.color {
             return false
         }
         return true
@@ -645,7 +692,7 @@ private final class SliderBackgroundComponent: Component {
         
         func update(component: SliderBackgroundComponent, availableSize: CGSize, state: EmptyComponentState, environment: Environment<Empty>, transition: ComponentTransition) -> CGSize {
             self.sliderBackground.backgroundColor = component.theme.list.itemPrimaryTextColor.withMultipliedAlpha(component.theme.overallDarkAppearance ? 0.2 : 0.07)
-            self.sliderForeground.backgroundColor = component.color
+            self.sliderForeground.backgroundColor = UIColor(rgb: 0xFFB10D)
             self.topForegroundLine.backgroundColor = component.theme.list.plainBackgroundColor.cgColor
             self.topBackgroundLine.backgroundColor = component.theme.list.plainBackgroundColor.cgColor
             
@@ -799,14 +846,12 @@ private final class ChatSendStarsScreenComponent: Component {
     private struct ItemLayout: Equatable {
         var containerSize: CGSize
         var containerInset: CGFloat
-        var containerCornerRadius: CGFloat
         var bottomInset: CGFloat
         var topInset: CGFloat
         
-        init(containerSize: CGSize, containerInset: CGFloat, containerCornerRadius: CGFloat, bottomInset: CGFloat, topInset: CGFloat) {
+        init(containerSize: CGSize, containerInset: CGFloat, bottomInset: CGFloat, topInset: CGFloat) {
             self.containerSize = containerSize
             self.containerInset = containerInset
-            self.containerCornerRadius = containerCornerRadius
             self.bottomInset = bottomInset
             self.topInset = topInset
         }
@@ -820,7 +865,6 @@ private final class ChatSendStarsScreenComponent: Component {
     
     private struct Amount: Equatable {
         private let sliderSteps: [Int]
-        private let minRealValue: Int
         private let maxRealValue: Int
         let maxSliderValue: Int
         private let isLogarithmic: Bool
@@ -828,16 +872,14 @@ private final class ChatSendStarsScreenComponent: Component {
         private(set) var realValue: Int
         private(set) var sliderValue: Int
         
-        private static func makeSliderSteps(minRealValue: Int, maxRealValue: Int, isLogarithmic: Bool) -> [Int] {
+        private static func makeSliderSteps(maxRealValue: Int, isLogarithmic: Bool) -> [Int] {
             if isLogarithmic {
-                var sliderSteps: [Int] = [1, 10, 50, 100, 500, 1_000, 2_000, 5_000, 7_500, 10_000 ]
-                sliderSteps.removeAll(where: { $0 <= minRealValue })
-                sliderSteps.insert(minRealValue, at: 0)
+                var sliderSteps: [Int] = [ 1, 10, 50, 100, 500, 1_000, 2_000, 5_000, 7_500, 10_000 ]
                 sliderSteps.removeAll(where: { $0 >= maxRealValue })
                 sliderSteps.append(maxRealValue)
                 return sliderSteps
             } else {
-                return [minRealValue, maxRealValue]
+                return [1, maxRealValue]
             }
         }
         
@@ -869,9 +911,8 @@ private final class ChatSendStarsScreenComponent: Component {
             }
         }
         
-        init(realValue: Int, minRealValue: Int, maxRealValue: Int, maxSliderValue: Int, isLogarithmic: Bool) {
-            self.sliderSteps = Amount.makeSliderSteps(minRealValue: minRealValue, maxRealValue: maxRealValue, isLogarithmic: isLogarithmic)
-            self.minRealValue = minRealValue
+        init(realValue: Int, maxRealValue: Int, maxSliderValue: Int, isLogarithmic: Bool) {
+            self.sliderSteps = Amount.makeSliderSteps(maxRealValue: maxRealValue, isLogarithmic: isLogarithmic)
             self.maxRealValue = maxRealValue
             self.maxSliderValue = maxSliderValue
             self.isLogarithmic = isLogarithmic
@@ -880,9 +921,8 @@ private final class ChatSendStarsScreenComponent: Component {
             self.sliderValue = Amount.remapValueToSlider(realValue: self.realValue, maxSliderValue: self.maxSliderValue, steps: self.sliderSteps)
         }
         
-        init(sliderValue: Int, minRealValue: Int, maxRealValue: Int, maxSliderValue: Int, isLogarithmic: Bool) {
-            self.sliderSteps = Amount.makeSliderSteps(minRealValue: minRealValue, maxRealValue: maxRealValue, isLogarithmic: isLogarithmic)
-            self.minRealValue = minRealValue
+        init(sliderValue: Int, maxRealValue: Int, maxSliderValue: Int, isLogarithmic: Bool) {
+            self.sliderSteps = Amount.makeSliderSteps(maxRealValue: maxRealValue, isLogarithmic: isLogarithmic)
             self.maxRealValue = maxRealValue
             self.maxSliderValue = maxSliderValue
             self.isLogarithmic = isLogarithmic
@@ -892,11 +932,11 @@ private final class ChatSendStarsScreenComponent: Component {
         }
         
         func withRealValue(_ realValue: Int) -> Amount {
-            return Amount(realValue: realValue, minRealValue: self.minRealValue, maxRealValue: self.maxRealValue, maxSliderValue: self.maxSliderValue, isLogarithmic: self.isLogarithmic)
+            return Amount(realValue: realValue, maxRealValue: self.maxRealValue, maxSliderValue: self.maxSliderValue, isLogarithmic: self.isLogarithmic)
         }
         
         func withSliderValue(_ sliderValue: Int) -> Amount {
-            return Amount(sliderValue: sliderValue, minRealValue: self.minRealValue, maxRealValue: self.maxRealValue, maxSliderValue: self.maxSliderValue, isLogarithmic: self.isLogarithmic)
+            return Amount(sliderValue: sliderValue, maxRealValue: self.maxRealValue, maxSliderValue: self.maxSliderValue, isLogarithmic: self.isLogarithmic)
         }
     }
     
@@ -908,7 +948,6 @@ private final class ChatSendStarsScreenComponent: Component {
     
     final class View: UIView, UIScrollViewDelegate {
         private let dimView: UIView
-        private let containerView: UIView
         private let backgroundLayer: SimpleLayer
         private let navigationBarContainer: SparseContainerView
         private let scrollView: ScrollView
@@ -918,7 +957,6 @@ private final class ChatSendStarsScreenComponent: Component {
         
         private var balanceOverlay = ComponentView<Empty>()
         
-        private let backgroundHandleView: UIImageView
         private let leftButton = ComponentView<Empty>()
         private let peerSelectorButton = ComponentView<Empty>()
         private let closeButton = ComponentView<Empty>()
@@ -932,9 +970,6 @@ private final class ChatSendStarsScreenComponent: Component {
         private let sliderBackground = ComponentView<Empty>()
         private let slider = ComponentView<Empty>()
         private let badge = ComponentView<Empty>()
-        
-        private var liveStreamPerks: [ComponentView<Empty>] = []
-        private var liveStreamMessagePreview: ComponentView<Empty>?
         
         private var topPeersLeftSeparator: SimpleLayer?
         private var topPeersRightSeparator: SimpleLayer?
@@ -963,7 +998,7 @@ private final class ChatSendStarsScreenComponent: Component {
         
         private var balance: StarsAmount?
         
-        private var amount: Amount = Amount(realValue: 1, minRealValue: 1, maxRealValue: 1000, maxSliderValue: 1000, isLogarithmic: true)
+        private var amount: Amount = Amount(realValue: 1, maxRealValue: 1000, maxSliderValue: 1000, isLogarithmic: true)
         private var didChangeAmount: Bool = false
         
         private var privacyPeer: PrivacyPeer = .account
@@ -984,17 +1019,10 @@ private final class ChatSendStarsScreenComponent: Component {
             self.bottomOverscrollLimit = 200.0
             
             self.dimView = UIView()
-            self.containerView = UIView()
-            
-            self.containerView.clipsToBounds = true
-            self.containerView.layer.cornerRadius = 40.0
-            self.containerView.layer.maskedCorners = [.layerMinXMaxYCorner, .layerMaxXMaxYCorner]
             
             self.backgroundLayer = SimpleLayer()
             self.backgroundLayer.maskedCorners = [.layerMinXMinYCorner, .layerMaxXMinYCorner]
-            self.backgroundLayer.cornerRadius = 40.0
-            
-            self.backgroundHandleView = UIImageView()
+            self.backgroundLayer.cornerRadius = 10.0
             
             self.navigationBarContainer = SparseContainerView()
             
@@ -1010,8 +1038,7 @@ private final class ChatSendStarsScreenComponent: Component {
             super.init(frame: frame)
             
             self.addSubview(self.dimView)
-            self.addSubview(self.containerView)
-            self.containerView.layer.addSublayer(self.backgroundLayer)
+            self.layer.addSublayer(self.backgroundLayer)
                         
             self.scrollView.delaysContentTouches = true
             self.scrollView.canCancelContentTouches = true
@@ -1030,16 +1057,16 @@ private final class ChatSendStarsScreenComponent: Component {
             self.scrollView.delegate = self
             self.scrollView.clipsToBounds = true
             
-            self.containerView.addSubview(self.scrollContentClippingView)
+            self.addSubview(self.scrollContentClippingView)
             self.scrollContentClippingView.addSubview(self.scrollView)
             
             self.scrollView.addSubview(self.scrollContentView)
             
-            self.containerView.addSubview(self.navigationBarContainer)
+            self.addSubview(self.navigationBarContainer)
             
             self.dimView.addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(self.dimTapGesture(_:))))
             
-            self.containerView.addSubnode(self.hierarchyTrackingNode)
+            self.addSubnode(self.hierarchyTrackingNode)
             
             self.hierarchyTrackingNode.updated = { [weak self] value in
                 guard let self else {
@@ -1080,7 +1107,7 @@ private final class ChatSendStarsScreenComponent: Component {
         }
         
         func scrollViewWillEndDragging(_ scrollView: UIScrollView, withVelocity velocity: CGPoint, targetContentOffset: UnsafeMutablePointer<CGPoint>) {
-            /*guard let itemLayout = self.itemLayout, let topOffsetDistance = self.topOffsetDistance else {
+            guard let itemLayout = self.itemLayout, let topOffsetDistance = self.topOffsetDistance else {
                 return
             }
             
@@ -1090,7 +1117,7 @@ private final class ChatSendStarsScreenComponent: Component {
             if topOffset < topOffsetDistance {
                 targetContentOffset.pointee.y = scrollView.contentOffset.y
                 scrollView.setContentOffset(CGPoint(x: 0.0, y: itemLayout.topInset), animated: true)
-            }*/
+            }
         }
         
         override func hitTest(_ point: CGPoint, with event: UIEvent?) -> UIView? {
@@ -1130,7 +1157,7 @@ private final class ChatSendStarsScreenComponent: Component {
         }
         
         private func updateScrolling(transition: ComponentTransition) {
-            guard let itemLayout = self.itemLayout else {
+            guard let environment = self.environment, let controller = environment.controller(), let itemLayout = self.itemLayout else {
                 return
             }
             var topOffset = -self.scrollView.bounds.minY + itemLayout.topInset
@@ -1139,25 +1166,13 @@ private final class ChatSendStarsScreenComponent: Component {
             
             transition.setPosition(view: self.navigationBarContainer, position: CGPoint(x: 0.0, y: topOffset + itemLayout.containerInset))
             
-            var topOffsetFraction = self.scrollView.bounds.minY / 100.0
+            let topOffsetDistance: CGFloat = min(60.0, floor(itemLayout.containerSize.height * 0.25))
+            self.topOffsetDistance = topOffsetDistance
+            var topOffsetFraction = topOffset / topOffsetDistance
             topOffsetFraction = max(0.0, min(1.0, topOffsetFraction))
             
-            let minScale: CGFloat = (itemLayout.containerSize.width - 6.0 * 2.0) / itemLayout.containerSize.width
-            let minScaledTranslation: CGFloat = (itemLayout.containerSize.height - itemLayout.containerSize.height * minScale) * 0.5 - 6.0
-            let minScaledCornerRadius: CGFloat = itemLayout.containerCornerRadius
-            
-            let scale = minScale * (1.0 - topOffsetFraction) + 1.0 * topOffsetFraction
-            let scaledTranslation = minScaledTranslation * (1.0 - topOffsetFraction)
-            let scaledCornerRadius = minScaledCornerRadius * (1.0 - topOffsetFraction) + itemLayout.containerCornerRadius * topOffsetFraction
-            
-            var containerTransform = CATransform3DIdentity
-            containerTransform = CATransform3DTranslate(containerTransform, 0.0, scaledTranslation, 0.0)
-            #if DEBUG
-            #else
-            containerTransform = CATransform3DScale(containerTransform, scale, scale, scale)
-            #endif
-            transition.setTransform(view: self.containerView, transform: containerTransform)
-            transition.setCornerRadius(layer: self.containerView.layer, cornerRadius: scaledCornerRadius)
+            let transitionFactor: CGFloat = 1.0 - topOffsetFraction
+            controller.updateModalStyleOverlayTransitionFactor(transitionFactor, transition: transition.containedViewLayoutTransition)
         }
         
         func animateIn() {
@@ -1281,7 +1296,7 @@ private final class ChatSendStarsScreenComponent: Component {
             
             var items: [ContextMenuItem] = []
             
-            let presentationData = component.context.sharedContext.currentPresentationData.with({ $0 }).withUpdated(theme: environment.theme)
+            let presentationData = component.context.sharedContext.currentPresentationData.with({ $0 })
             
             var peers: [EnginePeer] = [reactData.myPeer]
             peers.append(contentsOf: self.channelsForPublicReaction)
@@ -1354,23 +1369,17 @@ private final class ChatSendStarsScreenComponent: Component {
                         }
                         
                         if reactData.myTopPeer != nil {
-                            switch reactData.reactSubject {
-                            case let .message(messageId):
-                                let mappedPrivacy: TelegramPaidReactionPrivacy
-                                switch self.privacyPeer {
-                                case .account:
-                                    mappedPrivacy = .default
-                                case .anonymous:
-                                    mappedPrivacy = .anonymous
-                                case let .peer(peer):
-                                    mappedPrivacy = .peer(peer.id)
-                                }
-                                
-                                let _ = component.context.engine.messages.updateStarsReactionPrivacy(id: messageId, privacy: mappedPrivacy).startStandalone()
-                            case .liveStream:
-                                //TODO:release
-                                break
+                            let mappedPrivacy: TelegramPaidReactionPrivacy
+                            switch self.privacyPeer {
+                            case .account:
+                                mappedPrivacy = .default
+                            case .anonymous:
+                                mappedPrivacy = .anonymous
+                            case let .peer(peer):
+                                mappedPrivacy = .peer(peer.id)
                             }
+                            
+                            let _ = component.context.engine.messages.updateStarsReactionPrivacy(id: reactData.messageId, privacy: mappedPrivacy).startStandalone()
                         }
                     }
                     
@@ -1378,7 +1387,7 @@ private final class ChatSendStarsScreenComponent: Component {
                 })))
             }
             
-            let contextController = makeContextController(presentationData: presentationData, source: .reference(HeaderContextReferenceContentSource(controller: controller, sourceView: sourceView, actionsOnTop: false)), items: .single(ContextController.Items(id: AnyHashable(0), content: .list(items))), gesture: nil)
+            let contextController = ContextController(presentationData: presentationData, source: .reference(HeaderContextReferenceContentSource(controller: controller, sourceView: sourceView, actionsOnTop: false)), items: .single(ContextController.Items(id: AnyHashable(0), content: .list(items))), gesture: nil)
             controller.presentInGlobalOverlay(contextController)
         }
         
@@ -1401,72 +1410,48 @@ private final class ChatSendStarsScreenComponent: Component {
             }
             let sideInset: CGFloat = floor((availableSize.width - fillingSize) * 0.5) + 16.0
             
-            var isOnlyDisplay = false
-            switch component.initialData.subjectInitialData {
-            case let .react(reactData):
-                if case let .liveStream(_, _, _, _, _, isOnlyDisplayValue) = reactData.reactSubject {
-                    isOnlyDisplay = isOnlyDisplayValue
-                }
-            case .liveStreamMessage:
-                break
-            }
-            
             let context = component.context
-            if !isOnlyDisplay {
-                let balanceSize = self.balanceOverlay.update(
-                    transition: .immediate,
-                    component: AnyComponent(
-                        StarsBalanceOverlayComponent(
-                            context: component.context,
-                            peerId: component.context.account.peerId,
-                            theme: environment.theme,
-                            currency: .stars,
-                            action: { [weak self] in
-                                guard let self, let component = self.component, let starsContext = context.starsContext, let navigationController = self.environment?.controller()?.navigationController as? NavigationController else {
-                                    return
-                                }
-                                self.environment?.controller()?.dismiss()
-                                
-                                let targetPeerId: EnginePeer.Id
-                                switch component.initialData.subjectInitialData {
-                                case let .react(reactData):
-                                    targetPeerId = reactData.peer.id
-                                case let .liveStreamMessage(liveStreamMessageData):
-                                    targetPeerId = liveStreamMessageData.peer.id
-                                }
-                                
-                                let customTheme = environment.theme
-                                
-                                let _ = (context.engine.payments.starsTopUpOptions()
-                                         |> take(1)
-                                         |> deliverOnMainQueue).startStandalone(next: { options in
-                                    let controller = context.sharedContext.makeStarsPurchaseScreen(
-                                        context: context,
-                                        starsContext: starsContext,
-                                        options: options,
-                                        purpose: .generic,
-                                        targetPeerId: targetPeerId,
-                                        customTheme: customTheme,
-                                        completion: { _ in }
-                                    )
-                                    navigationController.pushViewController(controller)
-                                })
+            let balanceSize = self.balanceOverlay.update(
+                transition: .immediate,
+                component: AnyComponent(
+                    StarsBalanceOverlayComponent(
+                        context: component.context,
+                        peerId: component.context.account.peerId,
+                        theme: environment.theme,
+                        currency: .stars,
+                        action: { [weak self] in
+                            guard let self, let starsContext = context.starsContext, let navigationController = self.environment?.controller()?.navigationController as? NavigationController else {
+                                return
                             }
-                        )
-                    ),
-                    environment: {},
-                    containerSize: availableSize
-                )
-                if let view = self.balanceOverlay.view {
-                    if view.superview == nil {
-                        self.addSubview(view)
-                        
-                        view.layer.animatePosition(from: CGPoint(x: 0.0, y: -64.0), to: .zero, duration: 0.4, timingFunction: kCAMediaTimingFunctionSpring, additive: true)
-                        view.layer.animateSpring(from: 0.8 as NSNumber, to: 1.0 as NSNumber, keyPath: "transform.scale", duration: 0.5, initialVelocity: 0.0, removeOnCompletion: true, additive: false, completion: nil)
-                        view.layer.animateAlpha(from: 0.0, to: 1.0, duration: 0.25)
-                    }
-                    view.frame = CGRect(origin: CGPoint(x: floorToScreenPixels((availableSize.width - balanceSize.width) / 2.0), y: environment.statusBarHeight + 5.0), size: balanceSize)
+                            self.environment?.controller()?.dismiss()
+                            
+                            let _ = (context.engine.payments.starsTopUpOptions()
+                            |> take(1)
+                            |> deliverOnMainQueue).startStandalone(next: { options in
+                                let controller = context.sharedContext.makeStarsPurchaseScreen(
+                                    context: context,
+                                    starsContext: starsContext,
+                                    options: options,
+                                    purpose: .generic,
+                                    completion: { _ in }
+                                )
+                                navigationController.pushViewController(controller)
+                            })
+                        }
+                    )
+                ),
+                environment: {},
+                containerSize: availableSize
+            )
+            if let view = self.balanceOverlay.view {
+                if view.superview == nil {
+                    self.addSubview(view)
+                    
+                    view.layer.animatePosition(from: CGPoint(x: 0.0, y: -64.0), to: .zero, duration: 0.4, timingFunction: kCAMediaTimingFunctionSpring, additive: true)
+                    view.layer.animateSpring(from: 0.8 as NSNumber, to: 1.0 as NSNumber, keyPath: "transform.scale", duration: 0.5, initialVelocity: 0.0, removeOnCompletion: true, additive: false, completion: nil)
+                    view.layer.animateAlpha(from: 0.0, to: 1.0, duration: 0.25)
                 }
+                view.frame = CGRect(origin: CGPoint(x: floorToScreenPixels((availableSize.width - balanceSize.width) / 2.0), y: environment.statusBarHeight + 5.0), size: balanceSize)
             }
             
             if self.component == nil {
@@ -1475,7 +1460,7 @@ private final class ChatSendStarsScreenComponent: Component {
                 switch component.initialData.subjectInitialData {
                 case let .react(reactData):
                     self.currentMyPeer = reactData.myPeer
-                    self.amount = Amount(realValue: max(reactData.minAmount, 50), minRealValue: reactData.minAmount, maxRealValue: reactData.maxAmount, maxSliderValue: 999, isLogarithmic: true)
+                    self.amount = Amount(realValue: 50, maxRealValue: reactData.maxAmount, maxSliderValue: 999, isLogarithmic: true)
                     
                     if let myTopPeer = reactData.myTopPeer {
                         if myTopPeer.isAnonymous {
@@ -1498,30 +1483,18 @@ private final class ChatSendStarsScreenComponent: Component {
                         }
                     }
                     
-                    switch reactData.reactSubject {
-                    case .message:
-                        self.channelsForPublicReactionDisposable = (component.context.engine.peers.channelsForPublicReaction(useLocalCache: false)
-                        |> deliverOnMainQueue).startStrict(next: { [weak self] peers in
-                            guard let self else {
-                                return
+                    self.channelsForPublicReactionDisposable = (component.context.engine.peers.channelsForPublicReaction(useLocalCache: false)
+                    |> deliverOnMainQueue).startStrict(next: { [weak self] peers in
+                        guard let self else {
+                            return
+                        }
+                        if self.channelsForPublicReaction != peers {
+                            self.channelsForPublicReaction = peers
+                            if !self.isUpdating {
+                                self.state?.updated(transition: .immediate)
                             }
-                            if self.channelsForPublicReaction != peers {
-                                self.channelsForPublicReaction = peers
-                                if !self.isUpdating {
-                                    self.state?.updated(transition: .immediate)
-                                }
-                            }
-                        })
-                    case let .liveStream(_, _, _, _, availableSendAsPeers, _):
-                        self.channelsForPublicReaction = availableSendAsPeers.filter({ $0.id != reactData.myPeer.id })
-                    }
-                case let .liveStreamMessage(liveStreamMessageData):
-                    self.currentMyPeer = nil
-                    
-                    let currentValue: Int = liveStreamMessageData.currentAmount ?? 50
-                    self.amount = Amount(realValue: max(currentValue, liveStreamMessageData.minAmount), minRealValue: liveStreamMessageData.minAmount, maxRealValue: liveStreamMessageData.maxAmount, maxSliderValue: 999, isLogarithmic: true)
-                    
-                    self.privacyPeer = .account
+                        }
+                    })
                 }
                 
                 if let starsContext = component.context.starsContext {
@@ -1546,7 +1519,7 @@ private final class ChatSendStarsScreenComponent: Component {
             
             if themeUpdated {
                 self.dimView.backgroundColor = UIColor(white: 0.0, alpha: 0.5)
-                self.backgroundLayer.backgroundColor = environment.theme.actionSheet.opaqueItemBackgroundColor.cgColor
+                self.backgroundLayer.backgroundColor = environment.theme.list.plainBackgroundColor.cgColor
                 
                 var locations: [NSNumber] = []
                 var colors: [CGColor] = []
@@ -1579,8 +1552,6 @@ private final class ChatSendStarsScreenComponent: Component {
                             switch component.initialData.subjectInitialData {
                             case let .react(reactData):
                                 maxAmount = reactData.maxAmount
-                            case let .liveStreamMessage(liveStreamMessageData):
-                                maxAmount = liveStreamMessageData.maxAmount
                             }
                             
                             self.amount = self.amount.withSliderValue(value)
@@ -1626,10 +1597,7 @@ private final class ChatSendStarsScreenComponent: Component {
                 environment: {},
                 containerSize: CGSize(width: availableSize.width - sliderInset * 2.0, height: 30.0)
             )
-            
-            contentHeight += 148.0
-            
-            let sliderFrame = CGRect(origin: CGPoint(x: sliderInset, y: contentHeight), size: sliderSize)
+            let sliderFrame = CGRect(origin: CGPoint(x: sliderInset, y: contentHeight + 127.0), size: sliderSize)
             let sliderBackgroundFrame = CGRect(origin: CGPoint(x: sliderFrame.minX - 8.0, y: sliderFrame.minY + 7.0), size: CGSize(width: sliderFrame.width + 16.0, height: sliderFrame.height - 14.0))
             
             let progressFraction: CGFloat = CGFloat(self.amount.sliderValue) / CGFloat(self.amount.maxSliderValue)
@@ -1637,7 +1605,6 @@ private final class ChatSendStarsScreenComponent: Component {
             var topCutoffFraction: CGFloat?
             
             var topCount: Int?
-            var sliderColor: UIColor = UIColor(rgb: 0xFFB10D)
             switch component.initialData.subjectInitialData {
             case let .react(reactData):
                 let topOthersCount: Int? = reactData.topPeers.filter({ !$0.isMy }).max(by: { $0.count < $1.count })?.count
@@ -1664,14 +1631,6 @@ private final class ChatSendStarsScreenComponent: Component {
                 } else {
                     self.isPastTopCutoff = nil
                 }
-                
-                if case let .liveStream(_, _, _, liveChatMessageParams, _, _) = reactData.reactSubject {
-                    let color = GroupCallMessagesContext.getStarAmountParamMapping(params: liveChatMessageParams, value: Int64(self.amount.realValue)).color ?? GroupCallMessagesContext.Message.Color(rawValue: 0x985FDC)
-                    sliderColor = StoryLiveChatMessageComponent.getMessageColor(color: color)
-                }
-            case let .liveStreamMessage(liveStreamMessage):
-                let color = GroupCallMessagesContext.getStarAmountParamMapping(params: liveStreamMessage.liveChatMessageParams, value: Int64(self.amount.realValue)).color ?? GroupCallMessagesContext.Message.Color(rawValue: 0x985FDC)
-                sliderColor = StoryLiveChatMessageComponent.getMessageColor(color: color)
             }
             
             let _ = self.sliderBackground.update(
@@ -1680,8 +1639,7 @@ private final class ChatSendStarsScreenComponent: Component {
                     theme: environment.theme,
                     strings: environment.strings,
                     value: progressFraction,
-                    topCutoff: topCutoffFraction,
-                    color: sliderColor
+                    topCutoff: topCutoffFraction
                 )),
                 environment: {},
                 containerSize: sliderBackgroundFrame.size
@@ -1692,10 +1650,6 @@ private final class ChatSendStarsScreenComponent: Component {
                     self.scrollContentView.addSubview(self.badgeStars)
                     self.scrollContentView.addSubview(sliderBackgroundView)
                     self.scrollContentView.addSubview(sliderView)
-                    
-                    if isOnlyDisplay {
-                        sliderView.isUserInteractionEnabled = false
-                    }
                 }
                 transition.setFrame(view: sliderView, frame: sliderFrame)
                 
@@ -1705,8 +1659,7 @@ private final class ChatSendStarsScreenComponent: Component {
                     transition: transition,
                     component: AnyComponent(BadgeComponent(
                         theme: environment.theme,
-                        title: "\(self.amount.realValue)",
-                        color: sliderColor
+                        title: "\(self.amount.realValue)"
                     )),
                     environment: {},
                     containerSize: CGSize(width: 200.0, height: 200.0)
@@ -1719,9 +1672,6 @@ private final class ChatSendStarsScreenComponent: Component {
                 var badgeFrame = CGRect(origin: CGPoint(x: sliderForegroundFrame.minX + sliderForegroundFrame.width - floorToScreenPixels(sliderMinWidth * 0.5), y: sliderForegroundFrame.minY - 8.0), size: badgeSize)
                 if let badgeView = self.badge.view as? BadgeComponent.View {
                     if badgeView.superview == nil {
-                        if isOnlyDisplay {
-                            badgeView.isUserInteractionEnabled = false
-                        }
                         self.scrollContentView.insertSubview(badgeView, belowSubview: self.badgeStars)
                     }
                     
@@ -1745,76 +1695,37 @@ private final class ChatSendStarsScreenComponent: Component {
                 
                 let starsRect = CGRect(origin: .zero, size: CGSize(width: availableSize.width, height: sliderForegroundFrame.midY))
                 self.badgeStars.frame = starsRect
-                self.badgeStars.update(size: starsRect.size, color: sliderColor, emitterPosition: CGPoint(x: badgeFrame.minX, y: badgeFrame.midY - 64.0))
+                self.badgeStars.update(size: starsRect.size, emitterPosition: CGPoint(x: badgeFrame.minX, y: badgeFrame.midY - 64.0))
             }
             
-            switch component.initialData.subjectInitialData {
-            case let .liveStreamMessage(liveStreamMessageData):
-                let params = GroupCallMessagesContext.getStarAmountParamMapping(params: liveStreamMessageData.liveChatMessageParams, value: Int64(self.amount.realValue))
-                var perks: [(String, String)] = []
-                
-                perks.append((
-                    shortTimeIntervalString(strings: environment.strings, value: Int32(params.period), useLargeFormat: false),
-                    environment.strings.SendStarReactions_LiveStreamPerk1Title
-                ))
-                
-                perks.append((
-                    "\(params.maxLength)",
-                    environment.strings.SendStarReactions_LiveStreamPerk2Title
-                ))
-                
-                perks.append((
-                    "\(params.emojiCount)",
-                    environment.strings.SendStarReactions_LiveStreamPerk3Title
-                ))
-                
-                contentHeight += 54.0
-                
-                let perkHeight: CGFloat = 58.0
-                let perkSpacing: CGFloat = 10.0
-                let perkWidth: CGFloat = floor((fillingSize - perkSpacing * CGFloat(perks.count - 1)) / CGFloat(perks.count))
-                
-                for i in 0 ..< perks.count {
-                    var perkFrame = CGRect(origin: CGPoint(x: sideInset + CGFloat(i) * (perkWidth + perkSpacing), y: contentHeight), size: CGSize(width: perkWidth, height: perkHeight))
-                    if i == perks.count - 1 {
-                        perkFrame.size.width = max(0.0, availableSize.width - sideInset - perkFrame.minX)
-                    }
-                    let perkView: ComponentView<Empty>
-                    if self.liveStreamPerks.count > i {
-                        perkView = self.liveStreamPerks[i]
-                    } else {
-                        perkView = ComponentView()
-                        self.liveStreamPerks.append(perkView)
-                    }
-                    let perk = perks[i]
-                    let _ = perkView.update(
-                        transition: transition,
-                        component: AnyComponent(LiveStreamPerkComponent(
-                            title: perk.0,
-                            subtitle: perk.1,
-                            theme: environment.theme
-                        )),
-                        environment: {},
-                        containerSize: perkFrame.size
-                    )
-                    if let perkComponentView = perkView.view {
-                        if perkComponentView.superview == nil {
-                            self.scrollContentView.addSubview(perkComponentView)
-                        }
-                        transition.setFrame(view: perkComponentView, frame: perkFrame)
-                    }
-                }
-                
-                contentHeight += perkHeight
-                contentHeight += 32.0
-            case .react:
-                contentHeight += 64.0
-            }
+            contentHeight += 123.0
             
+            var leftButtonFrameValue: CGRect?
             switch component.initialData.subjectInitialData {
             case let .react(reactData):
                 var sendAsPeers: [EnginePeer] = [reactData.myPeer]
                 sendAsPeers.append(contentsOf: self.channelsForPublicReaction)
+                
+                let leftButtonSize = self.leftButton.update(
+                    transition: transition,
+                    component: AnyComponent(BalanceComponent(
+                        context: component.context,
+                        theme: environment.theme,
+                        strings: environment.strings,
+                        balance: self.balance
+                    )),
+                    environment: {},
+                    containerSize: CGSize(width: 120.0, height: 100.0)
+                )
+                let leftButtonFrame = CGRect(origin: CGPoint(x: sideInset, y: floor((56.0 - leftButtonSize.height) * 0.5)), size: leftButtonSize)
+                if let leftButtonView = self.leftButton.view {
+                    if leftButtonView.superview == nil {
+                        self.navigationBarContainer.addSubview(leftButtonView)
+                    }
+                    transition.setFrame(view: leftButtonView, frame: leftButtonFrame)
+                    leftButtonView.isHidden = sendAsPeers.count > 1
+                }
+                leftButtonFrameValue = leftButtonFrame
                 
                 let currentMyPeer = self.currentMyPeer ?? reactData.myPeer
                 
@@ -1835,7 +1746,7 @@ private final class ChatSendStarsScreenComponent: Component {
                     environment: {},
                     containerSize: CGSize(width: 120.0, height: 100.0)
                 )
-                let peerSelectorButtonFrame = CGRect(origin: CGPoint(x: availableSize.width - sideInset - peerSelectorButtonSize.width, y: floor((78.0 - peerSelectorButtonSize.height) * 0.5)), size: peerSelectorButtonSize)
+                let peerSelectorButtonFrame = CGRect(origin: CGPoint(x: sideInset, y: 1.0 + floor((56.0 - peerSelectorButtonSize.height) * 0.5)), size: peerSelectorButtonSize)
                 if let peerSelectorButtonView = self.peerSelectorButton.view {
                     if peerSelectorButtonView.superview == nil {
                         self.navigationBarContainer.addSubview(peerSelectorButtonView)
@@ -1843,19 +1754,7 @@ private final class ChatSendStarsScreenComponent: Component {
                     transition.setFrame(view: peerSelectorButtonView, frame: peerSelectorButtonFrame)
                     peerSelectorButtonView.isHidden = sendAsPeers.count <= 1
                 }
-            case .liveStreamMessage:
-                break
             }
-            
-            if self.backgroundHandleView.image == nil {
-                self.backgroundHandleView.image = generateStretchableFilledCircleImage(diameter: 5.0, color: .white)?.withRenderingMode(.alwaysTemplate)
-            }
-            self.backgroundHandleView.tintColor = environment.theme.list.itemPrimaryTextColor.withMultipliedAlpha(environment.theme.overallDarkAppearance ? 0.2 : 0.07)
-            let backgroundHandleFrame = CGRect(origin: CGPoint(x: floor((availableSize.width - 36.0) * 0.5), y: 5.0), size: CGSize(width: 36.0, height: 5.0))
-            if self.backgroundHandleView.superview == nil {
-                self.navigationBarContainer.addSubview(self.backgroundHandleView)
-            }
-            transition.setFrame(view: self.backgroundHandleView, frame: backgroundHandleFrame)
             
             if themeUpdated {
                 self.cachedCloseImage = nil
@@ -1864,7 +1763,7 @@ private final class ChatSendStarsScreenComponent: Component {
             if let current = self.cachedCloseImage {
                 closeImage = current
             } else {
-                closeImage = generateCloseButtonImage(backgroundColor: UIColor(rgb: 0x808084, alpha: 0.1), foregroundColor: environment.theme.chat.inputPanel.panelControlColor)!
+                closeImage = generateCloseButtonImage(backgroundColor: UIColor(rgb: 0x808084, alpha: 0.1), foregroundColor: environment.theme.actionSheet.inputClearButtonColor)!
                 self.cachedCloseImage = closeImage
             }
             let closeButtonSize = self.closeButton.update(
@@ -1880,9 +1779,9 @@ private final class ChatSendStarsScreenComponent: Component {
                     }
                 )),
                 environment: {},
-                containerSize: CGSize(width: 40.0, height: 40.0)
+                containerSize: CGSize(width: 30.0, height: 30.0)
             )
-            let closeButtonFrame = CGRect(origin: CGPoint(x: sideInset, y: 16.0), size: closeButtonSize)
+            let closeButtonFrame = CGRect(origin: CGPoint(x: availableSize.width - sideInset - closeButtonSize.width, y: floor((56.0 - 34.0) * 0.5)), size: closeButtonSize)
             if let closeButtonView = self.closeButton.view {
                 if closeButtonView.superview == nil {
                     self.navigationBarContainer.addSubview(closeButtonView)
@@ -1904,14 +1803,8 @@ private final class ChatSendStarsScreenComponent: Component {
             let subtitleText: String?
             switch component.initialData.subjectInitialData {
             case let .react(reactData):
-                if case .message = reactData.reactSubject {
-                    let currentMyPeer = self.currentMyPeer ?? reactData.myPeer
-                    subtitleText = environment.strings.SendStarReactions_SubtitleFrom(currentMyPeer.compactDisplayTitle).string
-                } else {
-                    subtitleText = nil
-                }
-            case .liveStreamMessage:
-                subtitleText = nil
+                let currentMyPeer = self.currentMyPeer ?? reactData.myPeer
+                subtitleText = environment.strings.SendStarReactions_SubtitleFrom(currentMyPeer.compactDisplayTitle).string
             }
             
             var subtitleSize: CGSize?
@@ -1922,7 +1815,7 @@ private final class ChatSendStarsScreenComponent: Component {
                         text: .plain(NSAttributedString(string: subtitleText, font: Font.regular(12.0), textColor: environment.theme.list.itemSecondaryTextColor))
                     )),
                     environment: {},
-                    containerSize: CGSize(width: availableSize.width - sideInset * 2.0, height: 100.0)
+                    containerSize: CGSize(width: availableSize.width - (leftButtonFrameValue?.maxX ?? sideInset) * 2.0, height: 100.0)
                 )
             }
             
@@ -1930,8 +1823,6 @@ private final class ChatSendStarsScreenComponent: Component {
             switch component.initialData.subjectInitialData {
             case .react:
                 titleText = environment.strings.SendStarReactions_Title
-            case .liveStreamMessage:
-                titleText = environment.strings.SendStarReactions_LiveStreamMessageTitle
             }
             
             let titleSize = title.update(
@@ -1940,7 +1831,7 @@ private final class ChatSendStarsScreenComponent: Component {
                     text: .plain(NSAttributedString(string: titleText, font: Font.semibold(17.0), textColor: environment.theme.list.itemPrimaryTextColor))
                 )),
                 environment: {},
-                containerSize: CGSize(width: availableSize.width - sideInset * 2.0, height: 100.0)
+                containerSize: CGSize(width: availableSize.width - (leftButtonFrameValue?.maxX ?? sideInset) * 2.0, height: 100.0)
             )
             
             let titleSubtitleHeight: CGFloat
@@ -1950,7 +1841,7 @@ private final class ChatSendStarsScreenComponent: Component {
                 titleSubtitleHeight = titleSize.height
             }
             
-            let titleFrame = CGRect(origin: CGPoint(x: floor((availableSize.width - titleSize.width) * 0.5), y: floor((78.0 - titleSubtitleHeight) * 0.5)), size: titleSize)
+            let titleFrame = CGRect(origin: CGPoint(x: floor((availableSize.width - titleSize.width) * 0.5), y: floor((56.0 - titleSubtitleHeight) * 0.5)), size: titleSize)
             if let titleView = title.view {
                 if titleView.superview == nil {
                     self.navigationBarContainer.addSubview(titleView)
@@ -1968,229 +1859,122 @@ private final class ChatSendStarsScreenComponent: Component {
                 }
             }
             
+            contentHeight += 56.0
+            contentHeight += 8.0
+            
             let text: String
             switch component.initialData.subjectInitialData {
             case let .react(reactData):
-                if case .liveStream = reactData.reactSubject {
-                    text = environment.strings.SendStarReactions_LiveStreamReactionText(reactData.peer.displayTitle(strings: environment.strings, displayOrder: .firstLast)).string
+                if let currentSentAmount = reactData.currentSentAmount {
+                    text = environment.strings.SendStarReactions_TextSentStars(Int32(clamping: currentSentAmount))
                 } else {
-                    if let currentSentAmount = reactData.currentSentAmount {
-                        text = environment.strings.SendStarReactions_TextSentStars(Int32(clamping: currentSentAmount))
-                    } else {
-                        text = environment.strings.SendStarReactions_TextGeneric(reactData.peer.debugDisplayTitle).string
-                    }
+                    text = environment.strings.SendStarReactions_TextGeneric(reactData.peer.debugDisplayTitle).string
                 }
-            case let .liveStreamMessage(liveStreamMessageData):
-                text = environment.strings.SendStarReactions_LiveStreamMessageText(liveStreamMessageData.peer.displayTitle(strings: environment.strings, displayOrder: .firstLast)).string
             }
             
-            let addDescriptionText: () -> Void = {
-                let body = MarkdownAttributeSet(font: Font.regular(15.0), textColor: environment.theme.list.itemPrimaryTextColor)
-                let bold = MarkdownAttributeSet(font: Font.semibold(15.0), textColor: environment.theme.list.itemPrimaryTextColor)
-                
-                let descriptionTextSize = descriptionText.update(
-                    transition: .immediate,
-                    component: AnyComponent(MultilineTextComponent(
-                        text: .markdown(text: text, attributes: MarkdownAttributes(
-                            body: body,
-                            bold: bold,
-                            link: body,
-                            linkAttribute: { _ in nil }
-                        )),
-                        horizontalAlignment: .center,
-                        maximumNumberOfLines: 0,
-                        lineSpacing: 0.2
+            let body = MarkdownAttributeSet(font: Font.regular(15.0), textColor: environment.theme.list.itemPrimaryTextColor)
+            let bold = MarkdownAttributeSet(font: Font.semibold(15.0), textColor: environment.theme.list.itemPrimaryTextColor)
+            
+            let descriptionTextSize = descriptionText.update(
+                transition: .immediate,
+                component: AnyComponent(MultilineTextComponent(
+                    text: .markdown(text: text, attributes: MarkdownAttributes(
+                        body: body,
+                        bold: bold,
+                        link: body,
+                        linkAttribute: { _ in nil }
                     )),
-                    environment: {},
-                    containerSize: CGSize(width: availableSize.width - sideInset * 2.0 - 16.0 * 2.0, height: 1000.0)
-                )
-                let descriptionTextFrame = CGRect(origin: CGPoint(x: floor((availableSize.width - descriptionTextSize.width) * 0.5), y: contentHeight), size: descriptionTextSize)
-                if let descriptionTextView = descriptionText.view {
-                    if descriptionTextView.superview == nil {
-                        self.scrollContentView.addSubview(descriptionTextView)
-                    }
-                    transition.setFrame(view: descriptionTextView, frame: descriptionTextFrame)
+                    horizontalAlignment: .center,
+                    maximumNumberOfLines: 0,
+                    lineSpacing: 0.2
+                )),
+                environment: {},
+                containerSize: CGSize(width: availableSize.width - sideInset * 2.0 - 16.0 * 2.0, height: 1000.0)
+            )
+            let descriptionTextFrame = CGRect(origin: CGPoint(x: floor((availableSize.width - descriptionTextSize.width) * 0.5), y: contentHeight), size: descriptionTextSize)
+            if let descriptionTextView = descriptionText.view {
+                if descriptionTextView.superview == nil {
+                    self.scrollContentView.addSubview(descriptionTextView)
                 }
-                contentHeight += descriptionTextFrame.height
+                transition.setFrame(view: descriptionTextView, frame: descriptionTextFrame)
             }
             
-            switch component.initialData.subjectInitialData {
-            case .liveStreamMessage:
-                addDescriptionText()
-            case let .react(reactData):
-                if case .message = reactData.reactSubject {
-                    addDescriptionText()
-                }
-            }
+            contentHeight += descriptionTextFrame.height
+            contentHeight += 22.0
+            contentHeight += 2.0
             
-            var liveStreamMessagePreviewData: GroupCallMessagesContext.Message?
-            if case let .liveStreamMessage(liveStreamMessage) =
-                component.initialData.subjectInitialData, liveStreamMessage.text.length != 0 {
-                let entities = generateChatInputTextEntities(liveStreamMessage.text, generateLinks: false)
-                liveStreamMessagePreviewData = GroupCallMessagesContext.Message(
-                    id: GroupCallMessagesContext.Message.Id(
-                        space: .local,
-                        id: 1
-                    ),
-                    stableId: 0,
-                    isIncoming: false,
-                    author: liveStreamMessage.myPeer,
-                    isFromAdmin: false,
-                    text: liveStreamMessage.text.string,
-                    entities: entities,
-                    date: 0,
-                    lifetime: 0,
-                    paidStars: Int64(self.amount.realValue)
-                )
-            } else if case let .react(reactData) = component.initialData.subjectInitialData, case .liveStream = reactData.reactSubject {
-                liveStreamMessagePreviewData = GroupCallMessagesContext.Message(
-                    id: GroupCallMessagesContext.Message.Id(
-                        space: .local,
-                        id: 1
-                    ),
-                    stableId: 0,
-                    isIncoming: false,
-                    author: self.currentMyPeer ?? reactData.myPeer,
-                    isFromAdmin: false,
-                    text: "",
-                    entities: [],
-                    date: 0,
-                    lifetime: 0,
-                    paidStars: Int64(self.amount.realValue)
-                )
-            }
-            
-            let addLiveStreamMessagePreview: (Int?) -> Void = { topIndex in
-                guard let liveStreamMessagePreviewData else {
-                    return
-                }
-                
-                let liveStreamMessagePreview: ComponentView<Empty>
-                if let current = self.liveStreamMessagePreview {
-                    liveStreamMessagePreview = current
-                } else {
-                    liveStreamMessagePreview = ComponentView()
-                    self.liveStreamMessagePreview = liveStreamMessagePreview
-                }
-                
-                let liveStreamMessagePreviewSize = liveStreamMessagePreview.update(
-                    transition: transition,
-                    component: AnyComponent(StoryLiveChatMessageComponent(
-                        context: component.context,
-                        strings: environment.strings,
-                        theme: environment.theme,
-                        layout: StoryLiveChatMessageComponent.Layout(
-                            isFlipped: false,
-                            insets: UIEdgeInsets(top: 0.0, left: 0.0, bottom: 0.0, right: 0.0),
-                            fitToWidth: true,
-                            transparentBackground: false
-                        ),
-                        message: liveStreamMessagePreviewData,
-                        topPlace: topIndex,
-                        contextGesture: nil
-                    )),
-                    environment: {},
-                    containerSize: CGSize(width: min(fillingSize - sideInset * 2.0, 290.0), height: 100000.0)
-                )
-                let liveStreamMessagePreviewFrame = CGRect(origin: CGPoint(x: floor((fillingSize - liveStreamMessagePreviewSize.width) * 0.5), y: contentHeight), size: liveStreamMessagePreviewSize)
-                if let liveStreamMessagePreviewView = liveStreamMessagePreview.view {
-                    if liveStreamMessagePreviewView.superview == nil {
-                        self.scrollContentView.addSubview(liveStreamMessagePreviewView)
-                    }
-                    transition.setFrame(view: liveStreamMessagePreviewView, frame: liveStreamMessagePreviewFrame)
-                }
-                contentHeight += liveStreamMessagePreviewSize.height
-            }
-            
-            if let _ = liveStreamMessagePreviewData, case .liveStreamMessage = component.initialData.subjectInitialData {
-                contentHeight += 29.0
-                addLiveStreamMessagePreview(nil)
-                contentHeight += 10.0
-            } else if case let .react(reactData) = component.initialData.subjectInitialData {
-                if case .liveStream = reactData.reactSubject {
-                    contentHeight -= 3.0
-                } else {
-                    contentHeight += 24.0
-                }
-            }
-            
-            var mappedTopPeers: [ChatSendStarsScreen.TopPeer] = []
             switch component.initialData.subjectInitialData {
             case let .react(reactData):
                 if !reactData.topPeers.isEmpty {
                     contentHeight += 3.0
                     
-                    if case .message = reactData.reactSubject {
-                        let topPeersLeftSeparator: SimpleLayer
-                        if let current = self.topPeersLeftSeparator {
-                            topPeersLeftSeparator = current
-                        } else {
-                            topPeersLeftSeparator = SimpleLayer()
-                            self.topPeersLeftSeparator = topPeersLeftSeparator
-                            self.scrollContentView.layer.addSublayer(topPeersLeftSeparator)
-                        }
-                        
-                        let topPeersRightSeparator: SimpleLayer
-                        if let current = self.topPeersRightSeparator {
-                            topPeersRightSeparator = current
-                        } else {
-                            topPeersRightSeparator = SimpleLayer()
-                            self.topPeersRightSeparator = topPeersRightSeparator
-                            self.scrollContentView.layer.addSublayer(topPeersRightSeparator)
-                        }
-                        
-                        let topPeersTitleBackground: SimpleLayer
-                        if let current = self.topPeersTitleBackground {
-                            topPeersTitleBackground = current
-                        } else {
-                            topPeersTitleBackground = SimpleLayer()
-                            self.topPeersTitleBackground = topPeersTitleBackground
-                            self.scrollContentView.layer.addSublayer(topPeersTitleBackground)
-                        }
-                        
-                        let topPeersTitle: ComponentView<Empty>
-                        if let current = self.topPeersTitle {
-                            topPeersTitle = current
-                        } else {
-                            topPeersTitle = ComponentView()
-                            self.topPeersTitle = topPeersTitle
-                        }
-                        
-                        topPeersLeftSeparator.backgroundColor = environment.theme.list.itemPlainSeparatorColor.cgColor
-                        topPeersRightSeparator.backgroundColor = environment.theme.list.itemPlainSeparatorColor.cgColor
-                        
-                        let topPeersTitleSize = topPeersTitle.update(
-                            transition: .immediate,
-                            component: AnyComponent(MultilineTextComponent(
-                                text: .plain(NSAttributedString(string: environment.strings.SendStarReactions_SectionTop, font: Font.semibold(15.0), textColor: .white))
-                            )),
-                            environment: {},
-                            containerSize: CGSize(width: 300.0, height: 100.0)
-                        )
-                        let topPeersBackgroundSize = CGSize(width: topPeersTitleSize.width + 16.0 * 2.0, height: topPeersTitleSize.height + 9.0 * 2.0)
-                        let topPeersBackgroundFrame = CGRect(origin: CGPoint(x: floor((availableSize.width - topPeersBackgroundSize.width) * 0.5), y: contentHeight), size: topPeersBackgroundSize)
-                        
-                        topPeersTitleBackground.backgroundColor = UIColor(rgb: 0xFFB10D).cgColor
-                        topPeersTitleBackground.cornerRadius = topPeersBackgroundFrame.height * 0.5
-                        transition.setFrame(layer: topPeersTitleBackground, frame: topPeersBackgroundFrame)
-                        
-                        let topPeersTitleFrame = CGRect(origin: CGPoint(x: topPeersBackgroundFrame.minX + floor((topPeersBackgroundFrame.width - topPeersTitleSize.width) * 0.5), y: topPeersBackgroundFrame.minY + floor((topPeersBackgroundFrame.height - topPeersTitleSize.height) * 0.5)), size: topPeersTitleSize)
-                        if let topPeersTitleView = topPeersTitle.view {
-                            if topPeersTitleView.superview == nil {
-                                self.scrollContentView.addSubview(topPeersTitleView)
-                            }
-                            transition.setFrame(view: topPeersTitleView, frame: topPeersTitleFrame)
-                        }
-                        
-                        let separatorY = topPeersBackgroundFrame.midY
-                        let separatorSpacing: CGFloat = 10.0
-                        transition.setFrame(layer: topPeersLeftSeparator, frame: CGRect(origin: CGPoint(x: sideInset, y: separatorY), size: CGSize(width: max(0.0, topPeersBackgroundFrame.minX - separatorSpacing - sideInset), height: UIScreenPixel)))
-                        transition.setFrame(layer: topPeersRightSeparator, frame: CGRect(origin: CGPoint(x: topPeersBackgroundFrame.maxX + separatorSpacing, y: separatorY), size: CGSize(width: max(0.0, availableSize.width - sideInset - (topPeersBackgroundFrame.maxX + separatorSpacing)), height: UIScreenPixel)))
-                        
-                        contentHeight += 60.0
+                    let topPeersLeftSeparator: SimpleLayer
+                    if let current = self.topPeersLeftSeparator {
+                        topPeersLeftSeparator = current
+                    } else {
+                        topPeersLeftSeparator = SimpleLayer()
+                        self.topPeersLeftSeparator = topPeersLeftSeparator
+                        self.scrollContentView.layer.addSublayer(topPeersLeftSeparator)
                     }
                     
-                    mappedTopPeers = reactData.topPeers
+                    let topPeersRightSeparator: SimpleLayer
+                    if let current = self.topPeersRightSeparator {
+                        topPeersRightSeparator = current
+                    } else {
+                        topPeersRightSeparator = SimpleLayer()
+                        self.topPeersRightSeparator = topPeersRightSeparator
+                        self.scrollContentView.layer.addSublayer(topPeersRightSeparator)
+                    }
+                    
+                    let topPeersTitleBackground: SimpleLayer
+                    if let current = self.topPeersTitleBackground {
+                        topPeersTitleBackground = current
+                    } else {
+                        topPeersTitleBackground = SimpleLayer()
+                        self.topPeersTitleBackground = topPeersTitleBackground
+                        self.scrollContentView.layer.addSublayer(topPeersTitleBackground)
+                    }
+                    
+                    let topPeersTitle: ComponentView<Empty>
+                    if let current = self.topPeersTitle {
+                        topPeersTitle = current
+                    } else {
+                        topPeersTitle = ComponentView()
+                        self.topPeersTitle = topPeersTitle
+                    }
+                    
+                    topPeersLeftSeparator.backgroundColor = environment.theme.list.itemPlainSeparatorColor.cgColor
+                    topPeersRightSeparator.backgroundColor = environment.theme.list.itemPlainSeparatorColor.cgColor
+                    
+                    let topPeersTitleSize = topPeersTitle.update(
+                        transition: .immediate,
+                        component: AnyComponent(MultilineTextComponent(
+                            text: .plain(NSAttributedString(string: environment.strings.SendStarReactions_SectionTop, font: Font.semibold(15.0), textColor: .white))
+                        )),
+                        environment: {},
+                        containerSize: CGSize(width: 300.0, height: 100.0)
+                    )
+                    let topPeersBackgroundSize = CGSize(width: topPeersTitleSize.width + 16.0 * 2.0, height: topPeersTitleSize.height + 9.0 * 2.0)
+                    let topPeersBackgroundFrame = CGRect(origin: CGPoint(x: floor((availableSize.width - topPeersBackgroundSize.width) * 0.5), y: contentHeight), size: topPeersBackgroundSize)
+                    
+                    topPeersTitleBackground.backgroundColor = UIColor(rgb: 0xFFB10D).cgColor
+                    topPeersTitleBackground.cornerRadius = topPeersBackgroundFrame.height * 0.5
+                    transition.setFrame(layer: topPeersTitleBackground, frame: topPeersBackgroundFrame)
+                    
+                    let topPeersTitleFrame = CGRect(origin: CGPoint(x: topPeersBackgroundFrame.minX + floor((topPeersBackgroundFrame.width - topPeersTitleSize.width) * 0.5), y: topPeersBackgroundFrame.minY + floor((topPeersBackgroundFrame.height - topPeersTitleSize.height) * 0.5)), size: topPeersTitleSize)
+                    if let topPeersTitleView = topPeersTitle.view {
+                        if topPeersTitleView.superview == nil {
+                            self.scrollContentView.addSubview(topPeersTitleView)
+                        }
+                        transition.setFrame(view: topPeersTitleView, frame: topPeersTitleFrame)
+                    }
+                    
+                    let separatorY = topPeersBackgroundFrame.midY
+                    let separatorSpacing: CGFloat = 10.0
+                    transition.setFrame(layer: topPeersLeftSeparator, frame: CGRect(origin: CGPoint(x: sideInset, y: separatorY), size: CGSize(width: max(0.0, topPeersBackgroundFrame.minX - separatorSpacing - sideInset), height: UIScreenPixel)))
+                    transition.setFrame(layer: topPeersRightSeparator, frame: CGRect(origin: CGPoint(x: topPeersBackgroundFrame.maxX + separatorSpacing, y: separatorY), size: CGSize(width: max(0.0, availableSize.width - sideInset - (topPeersBackgroundFrame.maxX + separatorSpacing)), height: UIScreenPixel)))
+                    
+                    var mappedTopPeers = reactData.topPeers
                     if let index = mappedTopPeers.firstIndex(where: { $0.isMy }) {
                         mappedTopPeers.remove(at: index)
                     }
@@ -2251,14 +2035,6 @@ private final class ChatSendStarsScreenComponent: Component {
                         
                         let itemCountString = presentationStringsFormattedNumber(Int32(topPeer.count), environment.dateTimeFormat.groupingSeparator)
                         
-                        var peerColor: UIColor = UIColor(rgb: 0xFFB10D)
-                        var topPlace: Int?
-                        if case let .liveStream(_, _, _, liveChatMessageParams, _, _) = reactData.reactSubject {
-                            let color = GroupCallMessagesContext.getStarAmountParamMapping(params: liveChatMessageParams, value: Int64(topPeer.count)).color ?? GroupCallMessagesContext.Message.Color(rawValue: 0x985FDC)
-                            peerColor = StoryLiveChatMessageComponent.getMessageColor(color: color)
-                            topPlace = validIds.count - 1
-                        }
-                        
                         let itemSize = itemView.update(
                             transition: .immediate,
                             component: AnyComponent(PlainButtonComponent(
@@ -2267,9 +2043,7 @@ private final class ChatSendStarsScreenComponent: Component {
                                     theme: environment.theme,
                                     strings: environment.strings,
                                     peer: topPeer.peer,
-                                    count: itemCountString,
-                                    topPlace: topPlace,
-                                    color: peerColor
+                                    count: itemCountString
                                 )),
                                 effectAlignment: .center,
                                 action: { [weak self] in
@@ -2293,7 +2067,7 @@ private final class ChatSendStarsScreenComponent: Component {
                                         if let peerInfoController = context.sharedContext.makePeerInfoController(
                                             context: context,
                                             updatedPresentationData: nil,
-                                            peer: peer,
+                                            peer: peer._asPeer(),
                                             mode: .generic,
                                             avatarInitiallyExpanded: false,
                                             fromChat: false,
@@ -2358,7 +2132,7 @@ private final class ChatSendStarsScreenComponent: Component {
                                 itemComponentView.alpha = 0.0
                             }
                             
-                            let itemFrame = CGRect(origin: CGPoint(x: itemX, y: contentHeight), size: itemSize)
+                            let itemFrame = CGRect(origin: CGPoint(x: itemX, y: contentHeight + 56.0), size: itemSize)
                             
                             if animateItem {
                                 itemPositionTransition.setPosition(view: itemComponentView, position: itemFrame.center)
@@ -2374,124 +2148,93 @@ private final class ChatSendStarsScreenComponent: Component {
                         itemX += itemSize.width + itemSpacing
                     }
                     
-                    contentHeight += 104.0
+                    contentHeight += 161.0
                 }
                 
                 if !reactData.topPeers.isEmpty {
                     contentHeight += 2.0
                 }
                 
-                if case .message = reactData.reactSubject {
-                    if self.anonymousSeparator.superlayer == nil {
-                        self.scrollContentView.layer.addSublayer(self.anonymousSeparator)
-                    }
-                    
-                    self.anonymousSeparator.backgroundColor = environment.theme.list.itemPlainSeparatorColor.cgColor
-                    
-                    let checkTheme = CheckComponent.Theme(
-                        backgroundColor: environment.theme.list.itemCheckColors.fillColor,
-                        strokeColor: environment.theme.list.itemCheckColors.foregroundColor,
-                        borderColor: environment.theme.list.itemCheckColors.strokeColor,
-                        overlayBorder: false,
-                        hasInset: false,
-                        hasShadow: false
-                    )
-                    let anonymousContentsSize = self.anonymousContents.update(
-                        transition: transition,
-                        component: AnyComponent(PlainButtonComponent(
-                            content: AnyComponent(HStack([
-                                AnyComponentWithIdentity(id: AnyHashable(0), component: AnyComponent(CheckComponent(
-                                    theme: checkTheme,
-                                    selected: self.privacyPeer != .anonymous
-                                ))),
-                                AnyComponentWithIdentity(id: AnyHashable(1), component: AnyComponent(MultilineTextComponent(
-                                    text: .plain(NSAttributedString(string: environment.strings.SendStarReactions_ShowMyselfInTop, font: Font.regular(17.0), textColor: environment.theme.list.itemPrimaryTextColor))
-                                )))
-                            ], spacing: 10.0)),
-                            effectAlignment: .center,
-                            action: { [weak self] in
-                                guard let self, let component = self.component else {
-                                    return
+                if self.anonymousSeparator.superlayer == nil {
+                    self.scrollContentView.layer.addSublayer(self.anonymousSeparator)
+                }
+                
+                self.anonymousSeparator.backgroundColor = environment.theme.list.itemPlainSeparatorColor.cgColor
+                
+                let checkTheme = CheckComponent.Theme(
+                    backgroundColor: environment.theme.list.itemCheckColors.fillColor,
+                    strokeColor: environment.theme.list.itemCheckColors.foregroundColor,
+                    borderColor: environment.theme.list.itemCheckColors.strokeColor,
+                    overlayBorder: false,
+                    hasInset: false,
+                    hasShadow: false
+                )
+                let anonymousContentsSize = self.anonymousContents.update(
+                    transition: transition,
+                    component: AnyComponent(PlainButtonComponent(
+                        content: AnyComponent(HStack([
+                            AnyComponentWithIdentity(id: AnyHashable(0), component: AnyComponent(CheckComponent(
+                                theme: checkTheme,
+                                selected: self.privacyPeer != .anonymous
+                            ))),
+                            AnyComponentWithIdentity(id: AnyHashable(1), component: AnyComponent(MultilineTextComponent(
+                                text: .plain(NSAttributedString(string: environment.strings.SendStarReactions_ShowMyselfInTop, font: Font.regular(16.0), textColor: environment.theme.list.itemPrimaryTextColor))
+                            )))
+                        ], spacing: 10.0)),
+                        effectAlignment: .center,
+                        action: { [weak self] in
+                            guard let self, let component = self.component else {
+                                return
+                            }
+                            
+                            switch self.privacyPeer {
+                            case .anonymous:
+                                if let currentMyPeer = self.currentMyPeer {
+                                    if currentMyPeer.id == component.context.account.peerId {
+                                        self.privacyPeer = .account
+                                    } else {
+                                        self.privacyPeer = .peer(currentMyPeer)
+                                    }
                                 }
-                                
+                            default:
+                                self.privacyPeer = .anonymous
+                            }
+                            self.state?.updated(transition: .easeInOut(duration: 0.2))
+                            
+                            if reactData.myTopPeer != nil {
+                                let mappedPrivacy: TelegramPaidReactionPrivacy
                                 switch self.privacyPeer {
+                                case .account:
+                                    mappedPrivacy = .default
                                 case .anonymous:
-                                    if let currentMyPeer = self.currentMyPeer {
-                                        if currentMyPeer.id == component.context.account.peerId {
-                                            self.privacyPeer = .account
-                                        } else {
-                                            self.privacyPeer = .peer(currentMyPeer)
-                                        }
-                                    }
-                                default:
-                                    self.privacyPeer = .anonymous
+                                    mappedPrivacy = .anonymous
+                                case let .peer(peer):
+                                    mappedPrivacy = .peer(peer.id)
                                 }
-                                self.state?.updated(transition: .easeInOut(duration: 0.2))
                                 
-                                if reactData.myTopPeer != nil {
-                                    switch reactData.reactSubject {
-                                    case let .message(messageId):let mappedPrivacy: TelegramPaidReactionPrivacy
-                                        switch self.privacyPeer {
-                                        case .account:
-                                            mappedPrivacy = .default
-                                        case .anonymous:
-                                            mappedPrivacy = .anonymous
-                                        case let .peer(peer):
-                                            mappedPrivacy = .peer(peer.id)
-                                        }
-                                        
-                                        let _ = component.context.engine.messages.updateStarsReactionPrivacy(id: messageId, privacy: mappedPrivacy).startStandalone()
-                                    case .liveStream:
-                                        //TODO:release
-                                        break
-                                    }
-                                }
-                            },
-                            animateAlpha: false,
-                            animateScale: false
-                        )),
-                        environment: {},
-                        containerSize: CGSize(width: availableSize.width - sideInset * 2.0, height: 1000.0)
-                    )
-                    
-                    transition.setFrame(layer: self.anonymousSeparator, frame: CGRect(origin: CGPoint(x: sideInset, y: contentHeight), size: CGSize(width: availableSize.width - sideInset * 2.0, height: UIScreenPixel)))
-                    
-                    contentHeight += 21.0
-                    
-                    let anonymousContentsFrame = CGRect(origin: CGPoint(x: floor((availableSize.width - anonymousContentsSize.width) * 0.5), y: contentHeight), size: anonymousContentsSize)
-                    if let anonymousContentsView = self.anonymousContents.view {
-                        if anonymousContentsView.superview == nil {
-                            self.scrollContentView.addSubview(anonymousContentsView)
-                        }
-                        transition.setFrame(view: anonymousContentsView, frame: anonymousContentsFrame)
+                                let _ = component.context.engine.messages.updateStarsReactionPrivacy(id: reactData.messageId, privacy: mappedPrivacy).startStandalone()
+                            }
+                        },
+                        animateAlpha: false,
+                        animateScale: false
+                    )),
+                    environment: {},
+                    containerSize: CGSize(width: availableSize.width - sideInset * 2.0, height: 1000.0)
+                )
+                
+                transition.setFrame(layer: self.anonymousSeparator, frame: CGRect(origin: CGPoint(x: sideInset, y: contentHeight), size: CGSize(width: availableSize.width - sideInset * 2.0, height: UIScreenPixel)))
+                
+                contentHeight += 21.0
+                
+                let anonymousContentsFrame = CGRect(origin: CGPoint(x: floor((availableSize.width - anonymousContentsSize.width) * 0.5), y: contentHeight), size: anonymousContentsSize)
+                if let anonymousContentsView = self.anonymousContents.view {
+                    if anonymousContentsView.superview == nil {
+                        self.scrollContentView.addSubview(anonymousContentsView)
                     }
-                    
-                    contentHeight += anonymousContentsSize.height + 16.0
+                    transition.setFrame(view: anonymousContentsView, frame: anonymousContentsFrame)
                 }
-            case .liveStreamMessage:
-                break
-            }
-            
-            switch component.initialData.subjectInitialData {
-            case .liveStreamMessage:
-                break
-            case let .react(reactData):
-                if case .liveStream = reactData.reactSubject {
-                    contentHeight += 14.0
-                    addDescriptionText()
-                }
-            }
-            
-            if let _ = liveStreamMessagePreviewData, case let .react(reactData) = component.initialData.subjectInitialData {
-                if case .liveStream = reactData.reactSubject {
-                    contentHeight += 29.0
-                } else {
-                    contentHeight += 12.0
-                }
-                addLiveStreamMessagePreview(mappedTopPeers.firstIndex(where: { $0.isMy }))
-                contentHeight += 18.0
-            } else {
-                contentHeight += 18.0
+                
+                contentHeight += anonymousContentsSize.height + 27.0
             }
             
             initialContentHeight = contentHeight
@@ -2503,32 +2246,23 @@ private final class ChatSendStarsScreenComponent: Component {
             let buttonString: String
             switch component.initialData.subjectInitialData {
             case .react:
-                if isOnlyDisplay {
-                    buttonString = environment.strings.SendStarReactions_OwnLiveStreamCloseButton
-                } else {
-                    buttonString = environment.strings.SendStarReactions_SendButtonTitle("\(self.amount.realValue)").string
-                }
-            case .liveStreamMessage:
-                buttonString = environment.strings.SendStarReactions_LiveStreamActionButton("\(self.amount.realValue)").string
+                buttonString = environment.strings.SendStarReactions_SendButtonTitle("\(self.amount.realValue)").string
             }
-            let buttonAttributedString = NSMutableAttributedString(string: buttonString, font: Font.semibold(17.0), textColor: environment.theme.list.itemCheckColors.foregroundColor, paragraphAlignment: .center)
+            let buttonAttributedString = NSMutableAttributedString(string: buttonString, font: Font.semibold(17.0), textColor: .white, paragraphAlignment: .center)
             if let range = buttonAttributedString.string.range(of: "#"), let starImage = self.cachedStarImage?.0 {
                 buttonAttributedString.addAttribute(.attachment, value: starImage, range: NSRange(range, in: buttonAttributedString.string))
-                buttonAttributedString.addAttribute(.foregroundColor, value: environment.theme.list.itemCheckColors.foregroundColor, range: NSRange(range, in: buttonAttributedString.string))
+                buttonAttributedString.addAttribute(.foregroundColor, value: UIColor(rgb: 0xffffff), range: NSRange(range, in: buttonAttributedString.string))
                 buttonAttributedString.addAttribute(.baselineOffset, value: 1.0, range: NSRange(range, in: buttonAttributedString.string))
             }
-            
-            let buttonInsets = ContainerViewLayout.concentricInsets(bottomInset: environment.safeInsets.bottom, innerDiameter: 54.0, sideInset: 32.0)
             
             let actionButtonSize = actionButton.update(
                 transition: transition,
                 component: AnyComponent(ButtonComponent(
                     background: ButtonComponent.Background(
-                        style: .glass,
                         color: environment.theme.list.itemCheckColors.fillColor,
                         foreground: environment.theme.list.itemCheckColors.foregroundColor,
                         pressedColor: environment.theme.list.itemCheckColors.fillColor.withMultipliedAlpha(0.9),
-                        cornerRadius: 54.0 * 0.5
+                        cornerRadius: 10.0
                     ),
                     content: AnyComponentWithIdentity(
                         id: AnyHashable(0),
@@ -2540,19 +2274,6 @@ private final class ChatSendStarsScreenComponent: Component {
                         guard let self, let component = self.component else {
                             return
                         }
-                        
-                        switch component.initialData.subjectInitialData {
-                        case let .react(reactData):
-                            if case let .liveStream(_, _, _, _, _, isOnlyDisplay) = reactData.reactSubject {
-                                if isOnlyDisplay {
-                                    self.environment?.controller()?.dismiss()
-                                    return
-                                }
-                            }
-                        case .liveStreamMessage:
-                            break
-                        }
-                        
                         guard let balance = self.balance else {
                             return
                         }
@@ -2572,11 +2293,9 @@ private final class ChatSendStarsScreenComponent: Component {
                                 switch component.initialData.subjectInitialData {
                                 case let .react(reactData):
                                     purchasePurpose = .reactions(peerId: reactData.peer.id, requiredStars: Int64(self.amount.realValue))
-                                case let .liveStreamMessage(liveStreamMessageData):
-                                    purchasePurpose = .reactions(peerId: liveStreamMessageData.peer.id, requiredStars: Int64(self.amount.realValue))
                                 }
                                 
-                                let purchaseScreen = component.context.sharedContext.makeStarsPurchaseScreen(context: component.context, starsContext: starsContext, options: options, purpose: purchasePurpose, targetPeerId: nil, customTheme: environment.theme, completion: { result in
+                                let purchaseScreen = component.context.sharedContext.makeStarsPurchaseScreen(context: component.context, starsContext: starsContext, options: options, purpose: purchasePurpose, completion: { result in
                                     let _ = result
                                     //TODO:release
                                 })
@@ -2617,19 +2336,12 @@ private final class ChatSendStarsScreenComponent: Component {
                                     sourceView: badgeView.badgeIcon
                                 )
                             )
-                        case let .liveStreamMessage(liveStreamMessageData):
-                            liveStreamMessageData.completion(
-                                Int64(self.amount.realValue),
-                                ChatSendStarsScreen.TransitionOut(
-                                    sourceView: badgeView.badgeIcon
-                                )
-                            )
                         }
                         self.environment?.controller()?.dismiss()
                     }
                 )),
                 environment: {},
-                containerSize: CGSize(width: availableSize.width - buttonInsets.left - buttonInsets.right, height: 54.0)
+                containerSize: CGSize(width: availableSize.width - sideInset * 2.0, height: 50.0)
             )
             
             var buttonDescriptionTextSize: CGSize?
@@ -2637,7 +2349,7 @@ private final class ChatSendStarsScreenComponent: Component {
                 buttonDescriptionTextSize = self.buttonDescriptionText.update(
                     transition: .immediate,
                     component: AnyComponent(MultilineTextComponent(
-                        text: .markdown(text: isOnlyDisplay ? environment.strings.SendStarReactions_OwnLiveStreamInfoText : environment.strings.SendStarReactions_TermsOfServiceFooter, attributes: MarkdownAttributes(
+                        text: .markdown(text: environment.strings.SendStarReactions_TermsOfServiceFooter, attributes: MarkdownAttributes(
                             body: MarkdownAttributeSet(font: Font.regular(13.0), textColor: environment.theme.list.itemSecondaryTextColor),
                             bold: MarkdownAttributeSet(font: Font.semibold(13.0), textColor: environment.theme.list.itemSecondaryTextColor),
                             link: MarkdownAttributeSet(font: Font.regular(13.0), textColor: environment.theme.list.itemAccentColor),
@@ -2668,17 +2380,16 @@ private final class ChatSendStarsScreenComponent: Component {
             }
             let buttonDescriptionSpacing: CGFloat = 14.0
             
-            var bottomPanelHeight = 13.0 + buttonInsets.bottom + actionButtonSize.height
-            var actionButtonFrame = CGRect(origin: CGPoint(x: buttonInsets.left, y: availableSize.height - buttonInsets.bottom - actionButtonSize.height), size: actionButtonSize)
+            var bottomPanelHeight = 13.0 + environment.safeInsets.bottom + actionButtonSize.height
             if let buttonDescriptionTextSize {
                 bottomPanelHeight += buttonDescriptionSpacing + buttonDescriptionTextSize.height
-                actionButtonFrame.origin.y -= (buttonDescriptionSpacing + buttonDescriptionTextSize.height)
             } else {
                 bottomPanelHeight -= 1.0
             }
+            let actionButtonFrame = CGRect(origin: CGPoint(x: sideInset, y: availableSize.height - bottomPanelHeight), size: actionButtonSize)
             if let actionButtonView = actionButton.view {
                 if actionButtonView.superview == nil {
-                    self.containerView.addSubview(actionButtonView)
+                    self.addSubview(actionButtonView)
                 }
                 transition.setFrame(view: actionButtonView, frame: actionButtonFrame)
             }
@@ -2687,7 +2398,7 @@ private final class ChatSendStarsScreenComponent: Component {
                 let buttonDescriptionTextFrame = CGRect(origin: CGPoint(x: floor((availableSize.width - buttonDescriptionTextSize.width) * 0.5), y: actionButtonFrame.maxY + buttonDescriptionSpacing), size: buttonDescriptionTextSize)
                 if let buttonDescriptionTextView = buttonDescriptionText.view {
                     if buttonDescriptionTextView.superview == nil {
-                        self.containerView.addSubview(buttonDescriptionTextView)
+                        self.addSubview(buttonDescriptionTextView)
                     }
                     transition.setFrame(view: buttonDescriptionTextView, frame: buttonDescriptionTextFrame)
                 }
@@ -2704,7 +2415,7 @@ private final class ChatSendStarsScreenComponent: Component {
             
             self.scrollContentClippingView.layer.cornerRadius = 10.0
             
-            self.itemLayout = ItemLayout(containerSize: availableSize, containerInset: containerInset, containerCornerRadius: environment.deviceMetrics.screenCornerRadius, bottomInset: environment.safeInsets.bottom, topInset: topInset)
+            self.itemLayout = ItemLayout(containerSize: availableSize, containerInset: containerInset, bottomInset: environment.safeInsets.bottom, topInset: topInset)
             
             transition.setFrame(view: self.scrollContentView, frame: CGRect(origin: CGPoint(x: 0.0, y: topInset + containerInset), size: CGSize(width: availableSize.width, height: contentHeight)))
             
@@ -2727,9 +2438,6 @@ private final class ChatSendStarsScreenComponent: Component {
             self.ignoreScrolling = false
             self.updateScrolling(transition: transition)
             
-            transition.setPosition(view: self.containerView, position: CGRect(origin: CGPoint(), size: availableSize).center)
-            transition.setBounds(view: self.containerView, bounds: CGRect(origin: CGPoint(), size: availableSize))
-            
             return availableSize
         }
     }
@@ -2744,73 +2452,34 @@ private final class ChatSendStarsScreenComponent: Component {
 }
 
 public class ChatSendStarsScreen: ViewControllerComponentContainer {
-    public enum ReactSubject {
-        case message(EngineMessage.Id)
-        case liveStream(peerId: EnginePeer.Id, storyId: Int32, minAmount: Int, liveChatMessageParams: LiveChatMessageParams, availableSendAsPeers: [EnginePeer], isDisplayOnly: Bool)
-    }
-    
     fileprivate enum SubjectInitialData {
         final class React {
             let peer: EnginePeer
             let myPeer: EnginePeer
             let defaultPrivacyPeer: ChatSendStarsScreenComponent.PrivacyPeer
             let channelsForPublicReaction: [EnginePeer]
-            let reactSubject: ReactSubject
+            let messageId: EngineMessage.Id
             let currentSentAmount: Int?
             let topPeers: [ChatSendStarsScreen.TopPeer]
             let myTopPeer: ChatSendStarsScreen.TopPeer?
-            let minAmount: Int
             let maxAmount: Int
             let completion: (Int64, TelegramPaidReactionPrivacy, Bool, ChatSendStarsScreen.TransitionOut) -> Void
             
-            init(peer: EnginePeer, myPeer: EnginePeer, defaultPrivacyPeer: ChatSendStarsScreenComponent.PrivacyPeer, channelsForPublicReaction: [EnginePeer], reactSubject: ReactSubject, currentSentAmount: Int?, topPeers: [ChatSendStarsScreen.TopPeer], myTopPeer: ChatSendStarsScreen.TopPeer?, minAmount: Int, maxAmount: Int, completion: @escaping (Int64, TelegramPaidReactionPrivacy, Bool, ChatSendStarsScreen.TransitionOut) -> Void) {
+            init(peer: EnginePeer, myPeer: EnginePeer, defaultPrivacyPeer: ChatSendStarsScreenComponent.PrivacyPeer, channelsForPublicReaction: [EnginePeer], messageId: EngineMessage.Id, currentSentAmount: Int?, topPeers: [ChatSendStarsScreen.TopPeer], myTopPeer: ChatSendStarsScreen.TopPeer?, maxAmount: Int, completion: @escaping (Int64, TelegramPaidReactionPrivacy, Bool, ChatSendStarsScreen.TransitionOut) -> Void) {
                 self.peer = peer
                 self.myPeer = myPeer
                 self.defaultPrivacyPeer = defaultPrivacyPeer
                 self.channelsForPublicReaction = channelsForPublicReaction
-                self.reactSubject = reactSubject
+                self.messageId = messageId
                 self.currentSentAmount = currentSentAmount
                 self.topPeers = topPeers
                 self.myTopPeer = myTopPeer
-                self.minAmount = minAmount
                 self.maxAmount = maxAmount
-                self.completion = completion
-            }
-        }
-        
-        final class LiveStreamMessage {
-            let peer: EnginePeer
-            let myPeer: EnginePeer
-            let minAmount: Int
-            let maxAmount: Int
-            let liveChatMessageParams: LiveChatMessageParams
-            let currentAmount: Int?
-            let text: NSAttributedString
-            let completion: (Int64, ChatSendStarsScreen.TransitionOut) -> Void
-            
-            init(
-                peer: EnginePeer,
-                myPeer: EnginePeer,
-                minAmount: Int,
-                maxAmount: Int,
-                liveChatMessageParams: LiveChatMessageParams,
-                currentAmount: Int?,
-                text: NSAttributedString,
-                completion: @escaping (Int64, ChatSendStarsScreen.TransitionOut) -> Void
-            ) {
-                self.peer = peer
-                self.myPeer = myPeer
-                self.minAmount = minAmount
-                self.maxAmount = maxAmount
-                self.liveChatMessageParams = liveChatMessageParams
-                self.currentAmount = currentAmount
-                self.text = text
                 self.completion = completion
             }
         }
         
         case react(React)
-        case liveStreamMessage(LiveStreamMessage)
     }
     
     public final class InitialData {
@@ -2889,15 +2558,15 @@ public class ChatSendStarsScreen: ViewControllerComponentContainer {
     private var didPlayAppearAnimation: Bool = false
     private var isDismissed: Bool = false
     
-    public init(context: AccountContext, initialData: InitialData, theme: PresentationTheme? = nil) {
+    private var presenceDisposable: Disposable?
+    
+    public init(context: AccountContext, initialData: InitialData) {
         self.context = context
         
         super.init(context: context, component: ChatSendStarsScreenComponent(
             context: context,
             initialData: initialData
-        ), navigationBarAppearance: .none, theme: theme.flatMap {
-            return .custom($0)
-        } ?? .default)
+        ), navigationBarAppearance: .none)
         
         self.statusBar.statusBarStyle = .Ignore
         self.navigationPresentation = .flatModal
@@ -2909,6 +2578,7 @@ public class ChatSendStarsScreen: ViewControllerComponentContainer {
     }
     
     deinit {
+        self.presenceDisposable?.dispose()
     }
     
     override public func viewDidAppear(_ animated: Bool) {
@@ -2925,7 +2595,7 @@ public class ChatSendStarsScreen: ViewControllerComponentContainer {
         }
     }
     
-    public static func initialData(context: AccountContext, peerId: EnginePeer.Id, myPeer: EnginePeer? = nil, reactSubject: ReactSubject, topPeers: [ReactionsMessageAttribute.TopPeer], completion: @escaping (Int64, TelegramPaidReactionPrivacy, Bool, TransitionOut) -> Void) -> Signal<InitialData?, NoError> {
+    public static func initialData(context: AccountContext, peerId: EnginePeer.Id, messageId: EngineMessage.Id, topPeers: [ReactionsMessageAttribute.TopPeer], completion: @escaping (Int64, TelegramPaidReactionPrivacy, Bool, TransitionOut) -> Void) -> Signal<InitialData?, NoError> {
         let balance: Signal<StarsAmount?, NoError>
         if let starsContext = context.starsContext {
             balance = starsContext.state
@@ -2951,13 +2621,7 @@ public class ChatSendStarsScreen: ViewControllerComponentContainer {
             topPeers = Array(topPeers.prefix(3))
         }
         
-        let channelsForPublicReaction: Signal<[EnginePeer], NoError>
-        switch reactSubject {
-        case .message:
-            channelsForPublicReaction = context.engine.peers.channelsForPublicReaction(useLocalCache: true)
-        case let .liveStream(_, _, _, _, availableSendAsPeers, _):
-            channelsForPublicReaction = .single(availableSendAsPeers)
-        }
+        let channelsForPublicReaction = context.engine.peers.channelsForPublicReaction(useLocalCache: true)
         
         let defaultPrivacyPeer: Signal<ChatSendStarsScreenComponent.PrivacyPeer, NoError> = context.engine.data.get(
             TelegramEngine.EngineData.Item.Peer.StarsReactionDefaultPrivacy()
@@ -2987,11 +2651,6 @@ public class ChatSendStarsScreen: ViewControllerComponentContainer {
             maxAmount = Int(value)
         }
         
-        var minAmount = 1
-        if case let .liveStream(_, _, minAmountValue, _, _, _) = reactSubject {
-            minAmount = minAmountValue
-        }
-        
         return combineLatest(
             context.engine.data.get(
                 TelegramEngine.EngineData.Item.Peer.Peer(id: peerId),
@@ -3003,8 +2662,7 @@ public class ChatSendStarsScreen: ViewControllerComponentContainer {
             defaultPrivacyPeer
         )
         |> map { peerAndTopPeerMap, balance, channelsForPublicReaction, defaultPrivacyPeer -> InitialData? in
-            let (peer, myPeerValue, topPeerMap) = peerAndTopPeerMap
-            let myPeer = myPeer ?? myPeerValue
+            let (peer, myPeer, topPeerMap) = peerAndTopPeerMap
             guard let peer, let myPeer else {
                 return nil
             }
@@ -3016,7 +2674,7 @@ public class ChatSendStarsScreen: ViewControllerComponentContainer {
                     myPeer: myPeer,
                     defaultPrivacyPeer: defaultPrivacyPeer,
                     channelsForPublicReaction: channelsForPublicReaction,
-                    reactSubject: reactSubject,
+                    messageId: messageId,
                     currentSentAmount: currentSentAmount,
                     topPeers: topPeers.compactMap { topPeer -> ChatSendStarsScreen.TopPeer? in
                         guard let topPeerId = topPeer.peerId else {
@@ -3066,61 +2724,7 @@ public class ChatSendStarsScreen: ViewControllerComponentContainer {
                             count: Int(topPeer.count)
                         )
                     },
-                    minAmount: minAmount,
                     maxAmount: maxAmount,
-                    completion: completion
-                )),
-                balance: balance
-            )
-        }
-    }
-    
-    public static func initialDataLiveStreamMessage(
-        context: AccountContext,
-        peerId: EnginePeer.Id,
-        text: NSAttributedString,
-        minAmount: Int,
-        currentAmount: Int?,
-        completion: @escaping (Int64, TransitionOut) -> Void
-    ) -> Signal<InitialData?, NoError> {
-        let balance: Signal<StarsAmount?, NoError>
-        if let starsContext = context.starsContext {
-            balance = starsContext.state
-            |> map { state in
-                return state?.balance
-            }
-            |> take(1)
-        } else {
-            balance = .single(nil)
-        }
-        
-        var maxAmount = 10000
-        if let data = context.currentAppConfiguration.with({ $0 }).data, let value = data["stars_live_stream_pin_amount_max"] as? Double {
-            maxAmount = Int(value)
-        }
-        
-        return combineLatest(
-            context.engine.data.get(
-                TelegramEngine.EngineData.Item.Peer.Peer(id: peerId),
-                TelegramEngine.EngineData.Item.Peer.Peer(id: context.account.peerId),
-            ),
-            balance
-        )
-        |> map { peers, balance -> InitialData? in
-            let (peer, myPeer) = peers
-            guard let peer, let myPeer else {
-                return nil
-            }
-            
-            return InitialData(
-                subjectInitialData: .liveStreamMessage(SubjectInitialData.LiveStreamMessage(
-                    peer: peer,
-                    myPeer: myPeer,
-                    minAmount: minAmount,
-                    maxAmount: maxAmount,
-                    liveChatMessageParams: LiveChatMessageParams(appConfig: context.currentAppConfiguration.with({ $0 })),
-                    currentAmount: currentAmount,
-                    text: text,
                     completion: completion
                 )),
                 balance: balance
@@ -3145,7 +2749,7 @@ public class ChatSendStarsScreen: ViewControllerComponentContainer {
 }
 
 private func generateCloseButtonImage(backgroundColor: UIColor, foregroundColor: UIColor) -> UIImage? {
-    return generateImage(CGSize(width: 40.0, height: 40.0), contextGenerator: { size, context in
+    return generateImage(CGSize(width: 30.0, height: 30.0), contextGenerator: { size, context in
         context.clear(CGRect(origin: CGPoint(), size: size))
         
         context.setFillColor(backgroundColor.cgColor)
@@ -3156,10 +2760,10 @@ private func generateCloseButtonImage(backgroundColor: UIColor, foregroundColor:
         context.setStrokeColor(foregroundColor.cgColor)
         
         context.beginPath()
-        context.move(to: CGPoint(x: 12.0, y: 12.0))
-        context.addLine(to: CGPoint(x: size.width - 12.0, y: size.height - 12.0))
-        context.move(to: CGPoint(x: size.width - 12.0, y: 12.0))
-        context.addLine(to: CGPoint(x: 12.0, y: size.height - 12.0))
+        context.move(to: CGPoint(x: 10.0, y: 10.0))
+        context.addLine(to: CGPoint(x: 20.0, y: 20.0))
+        context.move(to: CGPoint(x: 20.0, y: 10.0))
+        context.addLine(to: CGPoint(x: 10.0, y: 20.0))
         context.strokePath()
     })
 }
@@ -3167,7 +2771,6 @@ private func generateCloseButtonImage(backgroundColor: UIColor, foregroundColor:
 private final class BadgeStarsView: UIView {
     private let staticEmitterLayer = CAEmitterLayer()
     private let dynamicEmitterLayer = CAEmitterLayer()
-    private var currentColor: UIColor?
     
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -3181,10 +2784,7 @@ private final class BadgeStarsView: UIView {
     }
         
     private func setupEmitter() {
-        guard let currentColor = self.currentColor else {
-            return
-        }
-        let color = currentColor
+        let color = UIColor(rgb: 0xffbe27)
         
         self.staticEmitterLayer.emitterShape = .circle
         self.staticEmitterLayer.emitterSize = CGSize(width: 10.0, height: 5.0)
@@ -3289,39 +2889,9 @@ private final class BadgeStarsView: UIView {
         }
     }
     
-    func update(size: CGSize, color: UIColor, emitterPosition: CGPoint) {
+    func update(size: CGSize, emitterPosition: CGPoint) {
         if self.staticEmitterLayer.emitterCells == nil {
-            self.currentColor = color
             self.setupEmitter()
-        } else if self.currentColor != color {
-            self.currentColor = color
-            
-            let staticColors: [Any] = [
-                UIColor.white.withAlphaComponent(0.0).cgColor,
-                UIColor.white.withAlphaComponent(0.35).cgColor,
-                color.cgColor,
-                color.cgColor,
-                color.withAlphaComponent(0.0).cgColor
-            ]
-            let staticColorBehavior = CAEmitterCell.createEmitterBehavior(type: "colorOverLife")
-            staticColorBehavior.setValue(staticColors, forKey: "colors")
-            
-            let dynamicColors: [Any] = [
-                UIColor.white.withAlphaComponent(0.35).cgColor,
-                color.withAlphaComponent(0.85).cgColor,
-                color.cgColor,
-                color.cgColor,
-                color.withAlphaComponent(0.0).cgColor
-            ]
-            let dynamicColorBehavior = CAEmitterCell.createEmitterBehavior(type: "colorOverLife")
-            dynamicColorBehavior.setValue(dynamicColors, forKey: "colors")
-            
-            for cell in self.staticEmitterLayer.emitterCells ?? [] {
-                cell.setValue([staticColorBehavior], forKey: "emitterBehaviors")
-            }
-            for cell in self.dynamicEmitterLayer.emitterCells ?? [] {
-                cell.setValue([dynamicColorBehavior], forKey: "emitterBehaviors")
-            }
         }
         
         self.staticEmitterLayer.frame = CGRect(origin: .zero, size: size)
@@ -3384,8 +2954,8 @@ private final class SliderStarsView: UIView {
             self.setupEmitter()
         }
         
-        self.emitterLayer.setValue(20.0 + Float(value * 200.0), forKeyPath: "emitterCells.emitter.birthRate")
-        self.emitterLayer.setValue(15.0 + value * 250.0, forKeyPath: "emitterCells.emitter.velocity")
+        self.emitterLayer.setValue(20.0 + Float(value * 40.0), forKeyPath: "emitterCells.emitter.birthRate")
+        self.emitterLayer.setValue(15.0 + value * 75.0, forKeyPath: "emitterCells.emitter.velocity")
         
         self.emitterLayer.frame = CGRect(origin: .zero, size: size)
         self.emitterLayer.emitterPosition = CGPoint(x: size.width / 2.0, y: size.height / 2.0)
@@ -3559,115 +3129,5 @@ final class HeaderContextReferenceContentSource: ContextReferenceContentSource {
 
     func transitionInfo() -> ContextControllerReferenceViewInfo? {
         return ContextControllerReferenceViewInfo(referenceView: self.sourceView, contentAreaInScreenSpace: UIScreen.main.bounds, actionsPosition: self.actionsOnTop ? .top : .bottom)
-    }
-}
-
-private final class LiveStreamPerkComponent: Component {
-    let title: String
-    let subtitle: String
-    let theme: PresentationTheme
-    
-    init(
-        title: String,
-        subtitle: String,
-        theme: PresentationTheme
-    ) {
-        self.title = title
-        self.subtitle = subtitle
-        self.theme = theme
-    }
-    
-    static func ==(lhs: LiveStreamPerkComponent, rhs: LiveStreamPerkComponent) -> Bool {
-        if lhs.title != rhs.title {
-            return false
-        }
-        if lhs.subtitle != rhs.subtitle {
-            return false
-        }
-        if lhs.theme != rhs.theme {
-            return false
-        }
-        return true
-    }
-    
-    final class View: UIView {
-        let background = ComponentView<Empty>()
-        let title = ComponentView<Empty>()
-        let subtitle = ComponentView<Empty>()
-        
-        override init(frame: CGRect) {
-            super.init(frame: frame)
-        }
-        
-        required init?(coder: NSCoder) {
-            fatalError("init(coder:) has not been implemented")
-        }
-        
-        func update(component: LiveStreamPerkComponent, availableSize: CGSize, state: EmptyComponentState, environment: Environment<Empty>, transition: ComponentTransition) -> CGSize {
-            let backgroundFrame = CGRect(origin: CGPoint(), size: availableSize)
-            let _ = self.background.update(
-                transition: transition,
-                component: AnyComponent(FilledRoundedRectangleComponent(
-                    color: UIColor(rgb: 0x808084, alpha: 0.1),
-                    cornerRadius: .value(10.0),
-                    smoothCorners: true
-                )),
-                environment: {},
-                containerSize: backgroundFrame.size
-            )
-            if let backgroundView = self.background.view {
-                if backgroundView.superview == nil {
-                    self.addSubview(backgroundView)
-                }
-                transition.setFrame(view: backgroundView, frame: backgroundFrame)
-            }
-            
-            let titleSize = self.title.update(
-                transition: .immediate,
-                component: AnyComponent(MultilineTextComponent(
-                    text: .plain(NSAttributedString(string: component.title, font: Font.semibold(20.0), textColor: component.theme.list.itemPrimaryTextColor))
-                )),
-                environment: {},
-                containerSize: backgroundFrame.size
-            )
-            
-            let subtitleSize = self.subtitle.update(
-                transition: .immediate,
-                component: AnyComponent(MultilineTextComponent(
-                    text: .plain(NSAttributedString(string: component.subtitle, font: Font.regular(11.0), textColor: component.theme.list.itemPrimaryTextColor))
-                )),
-                environment: {},
-                containerSize: backgroundFrame.size
-            )
-            
-            let spacing: CGFloat = 2.0
-            
-            let titleFrame = CGRect(origin: CGPoint(x: floor((backgroundFrame.width - titleSize.width) * 0.5), y: floor((backgroundFrame.height - titleSize.height - spacing - subtitleSize.height) * 0.5)), size: titleSize)
-            let subtitleFrame = CGRect(origin: CGPoint(x: floor((backgroundFrame.width - subtitleSize.width) * 0.5), y: titleFrame.maxY + spacing), size: subtitleSize)
-            
-            if let titleView = self.title.view {
-                if titleView.superview == nil {
-                    self.addSubview(titleView)
-                }
-                titleView.frame = titleFrame
-            }
-            
-            if let subtitleView = self.subtitle.view {
-                if subtitleView.superview == nil {
-                    self.addSubview(subtitleView)
-                }
-                subtitleView.frame = subtitleFrame
-            }
-            
-            return availableSize
-        }
-    }
-    
-    func makeView() -> View {
-        return View(frame: CGRect())
-    }
-    
-    func update(view: View, availableSize: CGSize, state: EmptyComponentState, environment: Environment<Empty>, transition: ComponentTransition) -> CGSize {
-        return view.update(component: self, availableSize: availableSize, state: state, environment: environment, transition: transition)
     }
 }

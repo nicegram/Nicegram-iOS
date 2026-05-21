@@ -48,7 +48,8 @@ private struct PeersEntry: Comparable, Identifiable {
             strings: self.strings,
             mode: .list(compact: true),
             accountPeerId: context.account.peerId,
-            stateManager: context.account.stateManager,
+            postbox: context.account.postbox,
+            network: context.account.network,
             energyUsageSettings: context.sharedContext.energyUsageSettings,
             contentSettings: context.currentContentSettings.with { $0 },
             animationCache: context.animationCache,
@@ -165,10 +166,10 @@ class DeleteAccountPeersItemNode: ListViewItemNode, ItemListItemNode {
         self.maskNode = ASImageNode()
         self.maskNode.isUserInteractionEnabled = false
         
-        self.listView = ListViewImpl()
+        self.listView = ListView()
         self.listView.transform = CATransform3DMakeRotation(-CGFloat.pi / 2.0, 0.0, 0.0, 1.0)
             
-        super.init(layerBacked: false)
+        super.init(layerBacked: false, dynamicBounce: false)
         
         self.addSubnode(self.listView)
         

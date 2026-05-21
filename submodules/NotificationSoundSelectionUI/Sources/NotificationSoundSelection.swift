@@ -183,7 +183,7 @@ private enum NotificationSoundSelectionEntry: ItemListNodeEntry {
             return ItemListSectionHeaderItem(presentationData: presentationData, text: text, sectionId: self.section)
         case let .uploadSound(text):
             let icon = PresentationResourcesItemList.uploadToneIcon(presentationData.theme)
-            return ItemListCheckboxItem(presentationData: presentationData, systemStyle: .glass, icon: icon, iconSize: nil, iconPlacement: .check, title: text, style: .left, textColor: .accent, checked: false, zeroSeparatorInsets: false, sectionId: self.section, action: {
+            return ItemListCheckboxItem(presentationData: presentationData, icon: icon, iconSize: nil, iconPlacement: .check, title: text, style: .left, textColor: .accent, checked: false, zeroSeparatorInsets: false, sectionId: self.section, action: {
                 arguments.upload()
             })
         case let .cloudInfo(text):
@@ -193,15 +193,15 @@ private enum NotificationSoundSelectionEntry: ItemListNodeEntry {
         case let .classicHeader(_, text):
             return ItemListSectionHeaderItem(presentationData: presentationData, text: text, sectionId: self.section)
         case let .none(_, _, text, selected):
-            return ItemListCheckboxItem(presentationData: presentationData, systemStyle: .glass, title: text, style: .left, checked: selected, zeroSeparatorInsets: true, sectionId: self.section, action: {
+            return ItemListCheckboxItem(presentationData: presentationData, title: text, style: .left, checked: selected, zeroSeparatorInsets: true, sectionId: self.section, action: {
                 arguments.selectSound(.none)
             })
         case let .default(_, _, text, selected):
-            return ItemListCheckboxItem(presentationData: presentationData, systemStyle: .glass, title: text, style: .left, checked: selected, zeroSeparatorInsets: false, sectionId: self.section, action: {
+            return ItemListCheckboxItem(presentationData: presentationData, title: text, style: .left, checked: selected, zeroSeparatorInsets: false, sectionId: self.section, action: {
                 arguments.selectSound(.default)
             })
         case let .sound(_, _, _, text, sound, selected, canBeDeleted):
-            return ItemListCheckboxItem(presentationData: presentationData, systemStyle: .glass, title: text, style: .left, checked: selected, zeroSeparatorInsets: false, sectionId: self.section, action: {
+            return ItemListCheckboxItem(presentationData: presentationData, title: text, style: .left, checked: selected, zeroSeparatorInsets: false, sectionId: self.section, action: {
                 arguments.selectSound(sound)
             }, deleteAction: canBeDeleted ? {
                 arguments.deleteSound(sound, text)
@@ -455,7 +455,7 @@ public func notificationSoundSelectionController(context: AccountContext, update
         
         let presentationData = context.sharedContext.currentPresentationData.with { $0 }
         
-        controller.present(textAlertController(context: context, title: presentationData.strings.PeerInfo_DeleteToneTitle, text: presentationData.strings.PeerInfo_DeleteToneText(title).string, actions: [
+        controller.present(standardTextAlertController(theme: AlertControllerTheme(presentationData: presentationData), title: presentationData.strings.PeerInfo_DeleteToneTitle, text: presentationData.strings.PeerInfo_DeleteToneText(title).string, actions: [
             TextAlertAction(type: .destructiveAction, title: presentationData.strings.Common_Delete, action: {
                 updateState { state in
                     var state = state
@@ -476,7 +476,7 @@ public func notificationSoundSelectionController(context: AccountContext, update
                     break
                 }
             }),
-            TextAlertAction(type: .genericAction, title: presentationData.strings.Common_Cancel, action: {
+            TextAlertAction(type: .defaultAction, title: presentationData.strings.Common_Cancel, action: {
             })
         ], parseMarkdown: true), in: .window(.root))
     }

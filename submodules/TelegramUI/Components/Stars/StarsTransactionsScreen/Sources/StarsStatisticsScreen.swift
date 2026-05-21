@@ -26,7 +26,6 @@ final class StarsStatisticsScreenComponent: Component {
     typealias EnvironmentType = ViewControllerComponentContainer.Environment
     
     let context: AccountContext
-    let overNavigationContainer: UIView
     let peerId: EnginePeer.Id
     let revenueContext: StarsRevenueStatsContext
     let openTransaction: (StarsContext.State.Transaction) -> Void
@@ -37,7 +36,6 @@ final class StarsStatisticsScreenComponent: Component {
     
     init(
         context: AccountContext,
-        overNavigationContainer: UIView,
         peerId: EnginePeer.Id,
         revenueContext: StarsRevenueStatsContext,
         openTransaction: @escaping (StarsContext.State.Transaction) -> Void,
@@ -47,7 +45,6 @@ final class StarsStatisticsScreenComponent: Component {
         buyAds: @escaping () -> Void
     ) {
         self.context = context
-        self.overNavigationContainer = overNavigationContainer
         self.peerId = peerId
         self.revenueContext = revenueContext
         self.openTransaction = openTransaction
@@ -128,6 +125,10 @@ final class StarsStatisticsScreenComponent: Component {
         private let scrollView: ScrollViewImpl
         
         private var currentSelectedPanelId: AnyHashable?
+       
+        private let navigationBackgroundView: BlurredBackgroundView
+        private let navigationSeparatorLayer: SimpleLayer
+        private let navigationSeparatorLayerContainer: SimpleLayer
         
         private let headerView = ComponentView<Empty>()
         private let headerOffsetContainer: UIView
@@ -174,6 +175,14 @@ final class StarsStatisticsScreenComponent: Component {
             self.headerOffsetContainer = UIView()
             self.headerOffsetContainer.isUserInteractionEnabled = false
             
+            self.navigationBackgroundView = BlurredBackgroundView(color: nil, enableBlur: true)
+            self.navigationBackgroundView.alpha = 0.0
+            
+            self.navigationSeparatorLayer = SimpleLayer()
+            self.navigationSeparatorLayer.opacity = 0.0
+            self.navigationSeparatorLayerContainer = SimpleLayer()
+            self.navigationSeparatorLayerContainer.opacity = 0.0
+            
             self.scrollContainerView = UIView()
             self.scrollView = ScrollViewImpl()
                                     
@@ -198,6 +207,11 @@ final class StarsStatisticsScreenComponent: Component {
             
             self.scrollView.addSubview(self.scrollContainerView)
             self.scrollContainerView.addSubview(self.transactionsBackground)
+            
+            self.addSubview(self.navigationBackgroundView)
+            
+            self.navigationSeparatorLayerContainer.addSublayer(self.navigationSeparatorLayer)
+            self.layer.addSublayer(self.navigationSeparatorLayerContainer)
             
             self.addSubview(self.headerOffsetContainer)
         }
@@ -293,10 +307,18 @@ final class StarsStatisticsScreenComponent: Component {
             let isLockedAtPanels = scrollBounds.maxY == self.scrollView.contentSize.height
             
             if let _ = self.navigationMetrics {
+                let topContentOffset = self.scrollView.contentOffset.y
+                let navigationBackgroundAlpha = min(20.0, max(0.0, topContentOffset)) / 20.0
+                                
+                let animatedTransition = ComponentTransition(animation: .curve(duration: 0.18, curve: .easeInOut))
+                animatedTransition.setAlpha(view: self.navigationBackgroundView, alpha: navigationBackgroundAlpha)
+                animatedTransition.setAlpha(layer: self.navigationSeparatorLayerContainer, alpha: navigationBackgroundAlpha)
+                
                 let expansionDistance: CGFloat = 32.0
                 var expansionDistanceFactor: CGFloat = abs(scrollBounds.maxY - self.scrollView.contentSize.height) / expansionDistance
                 expansionDistanceFactor = max(0.0, min(1.0, expansionDistanceFactor))
                 
+                transition.setAlpha(layer: self.navigationSeparatorLayer, alpha: expansionDistanceFactor)
                 if let panelContainerView = self.panelContainer.view as? StarsTransactionsPanelContainerComponent.View {
                     panelContainerView.updateNavigationMergeFactor(value: 1.0 - expansionDistanceFactor, transition: transition)
                 }
@@ -395,7 +417,19 @@ final class StarsStatisticsScreenComponent: Component {
             self.controller = environment.controller
             
             self.navigationMetrics = (environment.navigationHeight, environment.statusBarHeight)
-
+            
+            self.navigationSeparatorLayer.backgroundColor = environment.theme.rootController.navigationBar.separatorColor.cgColor
+            
+            let navigationFrame = CGRect(origin: CGPoint(), size: CGSize(width: availableSize.width, height: environment.navigationHeight))
+            self.navigationBackgroundView.updateColor(color: environment.theme.rootController.navigationBar.blurredBackgroundColor, transition: .immediate)
+            self.navigationBackgroundView.update(size: navigationFrame.size, transition: transition.containedViewLayoutTransition)
+            transition.setFrame(view: self.navigationBackgroundView, frame: navigationFrame)
+            
+            let navigationSeparatorFrame = CGRect(origin: CGPoint(x: 0.0, y: navigationFrame.maxY), size: CGSize(width: availableSize.width, height: UIScreenPixel))
+            
+            transition.setFrame(layer: self.navigationSeparatorLayerContainer, frame: navigationSeparatorFrame)
+            transition.setFrame(layer: self.navigationSeparatorLayer, frame: CGRect(origin: CGPoint(), size: navigationSeparatorFrame.size))
+            
             self.backgroundColor = environment.theme.list.blocksBackgroundColor
             
             var contentHeight: CGFloat = 0.0
@@ -420,7 +454,7 @@ final class StarsStatisticsScreenComponent: Component {
             )
             if let titleView = self.titleView.view {
                 if titleView.superview == nil {
-                    component.overNavigationContainer.addSubview(titleView)
+                    self.addSubview(titleView)
                 }
                 let titlePosition = CGPoint(x: availableSize.width / 2.0, y: environment.statusBarHeight + (environment.navigationHeight - environment.statusBarHeight) / 2.0)
                 transition.setPosition(view: titleView, position: titlePosition)
@@ -432,7 +466,6 @@ final class StarsStatisticsScreenComponent: Component {
                     transition: .immediate,
                     component: AnyComponent(ListSectionComponent(
                         theme: environment.theme,
-                        style: .glass,
                         header: AnyComponent(MultilineTextComponent(
                             text: .plain(NSAttributedString(
                                 string: strings.Stars_BotRevenue_Revenue_Title.uppercased(),
@@ -468,7 +501,6 @@ final class StarsStatisticsScreenComponent: Component {
                 transition: .immediate,
                 component: AnyComponent(ListSectionComponent(
                     theme: environment.theme,
-                    style: .glass,
                     header: AnyComponent(MultilineTextComponent(
                         text: .plain(NSAttributedString(
                             string: strings.Stars_BotRevenue_Proceeds_Title.uppercased(),
@@ -624,7 +656,6 @@ final class StarsStatisticsScreenComponent: Component {
                 transition: .immediate,
                 component: AnyComponent(ListSectionComponent(
                     theme: environment.theme,
-                    style: .glass,
                     header: AnyComponent(MultilineTextComponent(
                         text: .plain(NSAttributedString(
                             string: strings.Stars_BotRevenue_Withdraw_Balance.uppercased(),
@@ -743,7 +774,7 @@ final class StarsStatisticsScreenComponent: Component {
             let panelTransition = transition
             if !panelItems.isEmpty {
                 let panelContainerInset: CGFloat = self.listIsExpanded ? 0.0 : 16.0
-                let panelContainerCornerRadius: CGFloat = self.listIsExpanded ? 0.0 : 26.0
+                let panelContainerCornerRadius: CGFloat = self.listIsExpanded ? 0.0 : 11.0
                 
                 let panelContainerSize = self.panelContainer.update(
                     transition: panelTransition,
@@ -813,8 +844,6 @@ public final class StarsStatisticsScreen: ViewControllerComponentContainer {
     private let peerId: EnginePeer.Id
     private let revenueContext: StarsRevenueStatsContext
     
-    private let overNavigationContainer: UIView
-    
     private weak var tooltipScreen: UndoOverlayController?
     private var timer: Foundation.Timer?
     
@@ -825,8 +854,6 @@ public final class StarsStatisticsScreen: ViewControllerComponentContainer {
         self.peerId = peerId
         self.revenueContext = revenueContext
         
-        self.overNavigationContainer = SparseContainerView()
-        
         var buyImpl: (() -> Void)?
         var withdrawImpl: (() -> Void)?
         var buyAdsImpl: (() -> Void)?
@@ -834,7 +861,6 @@ public final class StarsStatisticsScreen: ViewControllerComponentContainer {
         var openTransactionImpl: ((StarsContext.State.Transaction) -> Void)?
         super.init(context: context, component: StarsStatisticsScreenComponent(
             context: context,
-            overNavigationContainer: self.overNavigationContainer,
             peerId: peerId,
             revenueContext: revenueContext,
             openTransaction: { transaction in
@@ -852,7 +878,7 @@ public final class StarsStatisticsScreen: ViewControllerComponentContainer {
             buyAds: {
                 buyAdsImpl?()
             }
-        ), navigationBarAppearance: .default)
+        ), navigationBarAppearance: .transparent)
         
         self.navigationPresentation = .modalInLargeLayout
                 
@@ -884,7 +910,7 @@ public final class StarsStatisticsScreen: ViewControllerComponentContainer {
                 guard let self, let starsContext = context.starsContext else {
                     return
                 }
-                let controller = context.sharedContext.makeStarsPurchaseScreen(context: context, starsContext: starsContext, options: options, purpose: .generic, targetPeerId: nil, customTheme: nil, completion: { [weak self] stars in
+                let controller = context.sharedContext.makeStarsPurchaseScreen(context: context, starsContext: starsContext, options: options, purpose: .generic, completion: { [weak self] stars in
                     guard let self else {
                         return
                     }
@@ -1030,10 +1056,6 @@ public final class StarsStatisticsScreen: ViewControllerComponentContainer {
                 return
             }
             componentView.scrollToTop()
-        }
-        
-        if let navigationBar = self.navigationBar {
-            navigationBar.customOverBackgroundContentView.insertSubview(self.overNavigationContainer, at: 0)
         }
     }
     

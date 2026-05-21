@@ -13,6 +13,7 @@ import AccountContext
 import AppBundle
 import PromptUI
 import SafariServices
+import ShareController
 import UndoUI
 import UrlEscaping
 
@@ -62,7 +63,7 @@ final class BrowserDocumentContent: UIView, BrowserContent, WKNavigationDelegate
         
         var title: String = "file"
         var url = ""
-        if let path = self.context.engine.resources.completedResourcePath(id: EngineMediaResource.Id(file.media.resource.id)) {
+        if let path = self.context.account.postbox.mediaBox.completedResourcePath(file.media.resource) {
             var updatedPath = path
             if let fileName = file.media.fileName {
                 let tempFile = TempBox.shared.file(path: path, fileName: fileName)
@@ -409,9 +410,10 @@ final class BrowserDocumentContent: UIView, BrowserContent, WKNavigationDelegate
     
     private func share(url: String) {
         let presentationData = self.context.sharedContext.currentPresentationData.with { $0 }
-        let shareController = self.context.sharedContext.makeShareController(context: self.context, params: ShareControllerParams(subject: .url(url), actionCompleted: { [weak self] in
+        let shareController = ShareController(context: self.context, subject: .url(url))
+        shareController.actionCompleted = { [weak self] in
             self?.present(UndoOverlayController(presentationData: presentationData, content: .linkCopied(title: nil, text: presentationData.strings.Conversation_LinkCopied), elevatedLayout: false, animateInAsReplacement: false, action: { _ in return false }), nil)
-        }))
+        }
         self.present(shareController, nil)
     }
     

@@ -9,7 +9,6 @@ import AccountContext
 import TelegramPresentationData
 import StickerResources
 import ContextUI
-import ContextControllerImpl
 
 final class StickerPackListContextItem: ContextMenuCustomItem {
     let context: AccountContext
@@ -96,9 +95,9 @@ private final class StickerPackListContextItemNode: ASDisplayNode, ContextMenuCu
         super.init()
         
         self.addSubnode(self.scrollNode)
-//        for separatorNode in self.separatorNodes {
-//            self.scrollNode.addSubnode(separatorNode)
-//        }
+        for separatorNode in self.separatorNodes {
+            self.scrollNode.addSubnode(separatorNode)
+        }
         for actionNode in self.actionNodes {
             self.scrollNode.addSubnode(actionNode)
         }
@@ -171,7 +170,7 @@ private final class StickerPackListContextItemNode: ASDisplayNode, ContextMenuCu
     }
     
     func canBeHighlighted() -> Bool {
-        return false
+        return self.isActionEnabled
     }
     
     func updateIsHighlighted(isHighlighted: Bool) {

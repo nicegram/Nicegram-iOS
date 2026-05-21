@@ -23,6 +23,8 @@ func fetchFavicon(context: AccountContext, url: String, size: CGSize) -> Signal<
         if let data {
             if let image = UIImage(data: data) {
                 return image
+            } else if url.lowercased().contains(".svg"), let preparedData = prepareSvgImage(data, false), let image = renderPreparedImage(preparedData, size, .clear, UIScreenScale, false) {
+                return image
             }
             return nil
         } else {

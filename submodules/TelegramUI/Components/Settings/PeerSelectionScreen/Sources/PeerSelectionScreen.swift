@@ -142,7 +142,7 @@ final class PeerSelectionScreenComponent: Component {
         }
     }
     
-    private final class ContentListNode: ListViewImpl {
+    private final class ContentListNode: ListView {
         weak var parentView: View?
         let context: AccountContext
         var presentationData: PresentationData
@@ -218,7 +218,7 @@ final class PeerSelectionScreenComponent: Component {
         private var channels: [PeerSelectionScreen.ChannelInfo]?
         private var channelsDisposable: Disposable?
         
-        private var isSearchDisplayControllerActive: ChatListNavigationBar.ActiveSearch?
+        private var isSearchDisplayControllerActive: Bool = false
         private var searchQuery: String = ""
         private let searchQueryComponentSeparationCharacterSet: CharacterSet
         
@@ -298,7 +298,8 @@ final class PeerSelectionScreenComponent: Component {
                     }
                 ))) : nil,
                 rightButtons: rightButtons,
-                backPressed: isModal ? nil : { [weak self] in
+                backTitle: isModal ? nil : strings.Common_Back,
+                backPressed: { [weak self] in
                     guard let self else {
                         return
                     }
@@ -317,15 +318,14 @@ final class PeerSelectionScreenComponent: Component {
                     strings: strings,
                     statusBarHeight: statusBarHeight,
                     sideInset: insets.left,
-                    search: ChatListNavigationBar.Search(isEnabled: true),
-                    activeSearch: self.isSearchDisplayControllerActive,
+                    isSearchActive: self.isSearchDisplayControllerActive,
+                    isSearchEnabled: true,
                     primaryContent: headerContent,
                     secondaryContent: nil,
                     secondaryTransition: 0.0,
                     storySubscriptions: nil,
                     storiesIncludeHidden: false,
                     uploadProgress: [:],
-                    headerPanels: nil,
                     tabsNode: nil,
                     tabsNodeIsSearch: false,
                     accessoryPanelContainer: nil,
@@ -335,7 +335,7 @@ final class PeerSelectionScreenComponent: Component {
                             return
                         }
                         
-                        self.isSearchDisplayControllerActive = ChatListNavigationBar.ActiveSearch(isExternal: false)
+                        self.isSearchDisplayControllerActive = true
                         self.state?.updated(transition: .spring(duration: 0.4))
                     },
                     openStatusSetup: { _ in
@@ -385,7 +385,7 @@ final class PeerSelectionScreenComponent: Component {
             let resultingOffset = mainOffset
             
             var offset = resultingOffset
-            if self.isSearchDisplayControllerActive != nil {
+            if self.isSearchDisplayControllerActive {
                 offset = 0.0
             }
             
@@ -468,7 +468,7 @@ final class PeerSelectionScreenComponent: Component {
             self.navigationHeight = navigationHeight
             
             var removedSearchBar: SearchBarNode?
-            if self.isSearchDisplayControllerActive != nil {
+            if self.isSearchDisplayControllerActive {
                 let searchBarNode: SearchBarNode
                 var searchBarTransition = transition
                 if let current = self.searchBarNode {
@@ -478,9 +478,8 @@ final class PeerSelectionScreenComponent: Component {
                     let searchBarTheme = SearchBarNodeTheme(theme: environment.theme, hasSeparator: false)
                     searchBarNode = SearchBarNode(
                         theme: searchBarTheme,
-                        presentationTheme: environment.theme,
                         strings: environment.strings,
-                        fieldStyle: .glass,
+                        fieldStyle: .modern,
                         displayBackground: false
                     )
                     searchBarNode.placeholderString = NSAttributedString(string: environment.strings.Common_Search, font: Font.regular(17.0), textColor: searchBarTheme.placeholder)
@@ -489,7 +488,7 @@ final class PeerSelectionScreenComponent: Component {
                         guard let self else {
                             return
                         }
-                        self.isSearchDisplayControllerActive = nil
+                        self.isSearchDisplayControllerActive = false
                         self.state?.updated(transition: .spring(duration: 0.4))
                     }
                     searchBarNode.textUpdated = { [weak self] query, _ in
@@ -522,16 +521,12 @@ final class PeerSelectionScreenComponent: Component {
                         let timingFunction: String
                         switch curve {
                         case .easeInOut:
-                            timingFunction = CAMediaTimingFunctionName.easeInEaseOut.rawValue
-                        case .easeIn:
-                            timingFunction = CAMediaTimingFunctionName.easeIn.rawValue
+                            timingFunction = CAMediaTimingFunctionName.easeOut.rawValue
                         case .linear:
                             timingFunction = CAMediaTimingFunctionName.linear.rawValue
                         case .spring:
                             timingFunction = kCAMediaTimingFunctionSpring
                         case .custom:
-                            timingFunction = kCAMediaTimingFunctionSpring
-                        case .bounce:
                             timingFunction = kCAMediaTimingFunctionSpring
                         }
                         
@@ -553,7 +548,7 @@ final class PeerSelectionScreenComponent: Component {
                 contentListNode = ContentListNode(parentView: self, context: component.context)
                 self.contentListNode = contentListNode
                 
-                contentListNode.visibleContentOffsetChanged = { [weak self] offset, _ in
+                contentListNode.visibleContentOffsetChanged = { [weak self] offset in
                     guard let self else {
                         return
                     }

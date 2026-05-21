@@ -155,7 +155,6 @@ public final class EngineChatList: Equatable {
         public let presence: EnginePeer.Presence?
         public let hasUnseenMentions: Bool
         public let hasUnseenReactions: Bool
-        public let hasUnseenPollVotes: Bool
         public let forumTopicData: ForumTopicData?
         public let topForumTopicItems: [EngineChatList.ForumTopicData]
         public let hasFailed: Bool
@@ -178,7 +177,6 @@ public final class EngineChatList: Equatable {
             presence: EnginePeer.Presence?,
             hasUnseenMentions: Bool,
             hasUnseenReactions: Bool,
-            hasUnseenPollVotes: Bool,
             forumTopicData: ForumTopicData?,
             topForumTopicItems: [EngineChatList.ForumTopicData],
             hasFailed: Bool,
@@ -200,7 +198,6 @@ public final class EngineChatList: Equatable {
             self.presence = presence
             self.hasUnseenMentions = hasUnseenMentions
             self.hasUnseenReactions = hasUnseenReactions
-            self.hasUnseenPollVotes = hasUnseenPollVotes
             self.forumTopicData = forumTopicData
             self.topForumTopicItems = topForumTopicItems
             self.hasFailed = hasFailed
@@ -244,9 +241,6 @@ public final class EngineChatList: Equatable {
                 return false
             }
             if lhs.hasUnseenReactions != rhs.hasUnseenReactions {
-                return false
-            }
-            if lhs.hasUnseenPollVotes != rhs.hasUnseenPollVotes {
                 return false
             }
             if lhs.forumTopicData != rhs.forumTopicData {
@@ -474,11 +468,8 @@ public extension EngineChatList.RelativePosition {
     }
 }
 
-private func calculateIsPremiumRequiredToMessage(accountPeerId: PeerId?, isPremium: Bool, targetPeer: Peer, cachedIsPremiumRequired: Bool) -> Bool {
+private func calculateIsPremiumRequiredToMessage(isPremium: Bool, targetPeer: Peer, cachedIsPremiumRequired: Bool) -> Bool {
     if isPremium {
-        return false
-    }
-    if let accountPeerId, targetPeer.id == accountPeerId {
         return false
     }
     guard let targetPeer = targetPeer as? TelegramUser else {
@@ -491,7 +482,7 @@ private func calculateIsPremiumRequiredToMessage(accountPeerId: PeerId?, isPremi
 }
 
 extension EngineChatList.Item {
-    convenience init?(_ entry: ChatListEntry, accountPeerId: PeerId?, isPremium: Bool, displayAsTopicList: Bool) {
+    convenience init?(_ entry: ChatListEntry, isPremium: Bool, displayAsTopicList: Bool) {
         switch entry {
         case let .MessageEntry(entryData):
             let index = entryData.index
@@ -510,7 +501,7 @@ extension EngineChatList.Item {
             
             var isPremiumRequiredToMessage = false
             if let targetPeer = renderedPeer.chatMainPeer, let extractedData = entryData.extractedCachedData?.base as? ExtractedChatListItemCachedData {
-                isPremiumRequiredToMessage = calculateIsPremiumRequiredToMessage(accountPeerId: accountPeerId, isPremium: isPremium, targetPeer: targetPeer, cachedIsPremiumRequired: extractedData.isPremiumRequiredToMessage)
+                isPremiumRequiredToMessage = calculateIsPremiumRequiredToMessage(isPremium: isPremium, targetPeer: targetPeer, cachedIsPremiumRequired: extractedData.isPremiumRequiredToMessage)
             }
             
             var draft: EngineChatList.Draft?
@@ -535,17 +526,9 @@ extension EngineChatList.Item {
             var hasUnseenReactions = false
             if let info = tagSummaryInfo[ChatListEntryMessageTagSummaryKey(
                 tag: .unseenReaction,
-                actionType: PendingMessageActionType.readReactionOrPollVote
+                actionType: PendingMessageActionType.readReaction
             )] {
-                hasUnseenReactions = (info.tagSummaryCount ?? 0) != 0
-            }
-            
-            var hasUnseenPollVotes = false
-            if let info = tagSummaryInfo[ChatListEntryMessageTagSummaryKey(
-                tag: .unseenPollVote,
-                actionType: PendingMessageActionType.readReactionOrPollVote
-            )] {
-                hasUnseenPollVotes = (info.tagSummaryCount ?? 0) != 0
+                hasUnseenReactions = (info.tagSummaryCount ?? 0) != 0// > (info.actionsSummaryCount ?? 0)
             }
             
             var forumTopicDataValue: EngineChatList.ForumTopicData?
@@ -586,7 +569,6 @@ extension EngineChatList.Item {
                 presence: presence.flatMap(EnginePeer.Presence.init),
                 hasUnseenMentions: hasUnseenMentions,
                 hasUnseenReactions: hasUnseenReactions,
-                hasUnseenPollVotes: hasUnseenPollVotes,
                 forumTopicData: forumTopicDataValue,
                 topForumTopicItems: topForumTopicItems,
                 hasFailed: hasFailed,
@@ -635,7 +617,7 @@ extension EngineChatList.AdditionalItem.PromoInfo {
 
 extension EngineChatList.AdditionalItem {
     convenience init?(_ entry: ChatListAdditionalItemEntry) {
-        guard let item = EngineChatList.Item(entry.entry, accountPeerId: nil, isPremium: false, displayAsTopicList: false) else {
+        guard let item = EngineChatList.Item(entry.entry, isPremium: false, displayAsTopicList: false) else {
             return nil
         }
         guard let promoInfo = (entry.info as? PromoChatListItem).flatMap(EngineChatList.AdditionalItem.PromoInfo.init) else {
@@ -660,7 +642,7 @@ public extension EngineChatList {
         loop: for entry in view.entries {
             switch entry {
             case .MessageEntry:
-                if let item = EngineChatList.Item(entry, accountPeerId: accountPeerId, isPremium: isPremium, displayAsTopicList: entry.index.messageIndex.id.peerId == accountPeerId ? displaySavedMessagesAsTopicList : false) {
+                if let item = EngineChatList.Item(entry, isPremium: isPremium, displayAsTopicList: entry.index.messageIndex.id.peerId == accountPeerId ? displaySavedMessagesAsTopicList : false) {
                     items.append(item)
                 }
             case .HoleEntry:

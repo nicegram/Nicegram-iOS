@@ -9,11 +9,6 @@ import PlainButtonComponent
 import BundleIconComponent
 
 public final class ListTextFieldItemComponent: Component {
-    public enum Style {
-        case glass
-        case legacy
-    }
-    
     public final class ResetText: Equatable {
         public let value: String
         
@@ -26,57 +21,36 @@ public final class ListTextFieldItemComponent: Component {
         }
     }
     
-    public let style: Style
     public let theme: PresentationTheme
     public let initialText: String
     public let resetText: ResetText?
     public let placeholder: String
-    public let characterLimit: Int?
     public let autocapitalizationType: UITextAutocapitalizationType
     public let autocorrectionType: UITextAutocorrectionType
-    public let returnKeyType: UIReturnKeyType
-    public let contentInsets: UIEdgeInsets
     public let updated: ((String) -> Void)?
-    public let shouldUpdateText: (String) -> Bool
-    public let onReturn: (() -> Void)?
     public let tag: AnyObject?
     
     public init(
-        style: Style = .legacy,
         theme: PresentationTheme,
         initialText: String,
         resetText: ResetText? = nil,
         placeholder: String,
-        characterLimit: Int? = nil,
         autocapitalizationType: UITextAutocapitalizationType = .sentences,
         autocorrectionType: UITextAutocorrectionType = .default,
-        returnKeyType: UIReturnKeyType = .default,
-        contentInsets: UIEdgeInsets = .zero,
         updated: ((String) -> Void)?,
-        shouldUpdateText: @escaping (String) -> Bool = { _ in return true },
-        onReturn: (() -> Void)? = nil,
         tag: AnyObject? = nil
     ) {
-        self.style = style
         self.theme = theme
         self.initialText = initialText
         self.resetText = resetText
         self.placeholder = placeholder
-        self.characterLimit = characterLimit
         self.autocapitalizationType = autocapitalizationType
         self.autocorrectionType = autocorrectionType
-        self.returnKeyType = returnKeyType
-        self.contentInsets = contentInsets
         self.updated = updated
-        self.shouldUpdateText = shouldUpdateText
-        self.onReturn = onReturn
         self.tag = tag
     }
     
     public static func ==(lhs: ListTextFieldItemComponent, rhs: ListTextFieldItemComponent) -> Bool {
-        if lhs.style != rhs.style {
-            return false
-        }
         if lhs.theme !== rhs.theme {
             return false
         }
@@ -89,19 +63,10 @@ public final class ListTextFieldItemComponent: Component {
         if lhs.placeholder != rhs.placeholder {
             return false
         }
-        if lhs.characterLimit != rhs.characterLimit {
-            return false
-        }
         if lhs.autocapitalizationType != rhs.autocapitalizationType {
             return false
         }
         if lhs.autocorrectionType != rhs.autocorrectionType {
-            return false
-        }
-        if lhs.returnKeyType != rhs.returnKeyType {
-            return false
-        }
-        if lhs.contentInsets != rhs.contentInsets {
             return false
         }
         if (lhs.updated == nil) != (rhs.updated == nil) {
@@ -126,7 +91,6 @@ public final class ListTextFieldItemComponent: Component {
         private let textField: TextField
         private let placeholder = ComponentView<Empty>()
         private let clearButton = ComponentView<Empty>()
-        private let counter = ComponentView<Empty>()
         
         private var component: ListTextFieldItemComponent?
         private weak var state: EmptyComponentState?
@@ -137,7 +101,6 @@ public final class ListTextFieldItemComponent: Component {
         }
         
         public var customUpdateIsHighlighted: ((Bool) -> Void)?
-        public var enumerateSiblings: (((UIView) -> Void) -> Void)?
         public private(set) var separatorInset: CGFloat = 0.0
         
         public override init(frame: CGRect) {
@@ -150,16 +113,7 @@ public final class ListTextFieldItemComponent: Component {
             preconditionFailure()
         }
         
-        public func textField(_ textField: UITextField, shouldChangeCharactersIn range: NSRange, replacementString string: String) -> Bool {
-            guard let component = self.component else {
-                return true
-            }
-            let newText = ((textField.text ?? "") as NSString).replacingCharacters(in: range, with: string)
-            return component.shouldUpdateText(newText)
-        }
-        
         public func textFieldShouldReturn(_ textField: UITextField) -> Bool {
-            self.component?.onReturn?()
             return true
         }
         
@@ -190,26 +144,6 @@ public final class ListTextFieldItemComponent: Component {
             return false
         }
         
-        public func animateError() {
-            self.textField.layer.addShakeAnimation()
-        }
-        
-        public func activateInput() {
-            self.textField.becomeFirstResponder()
-        }
-        
-        public func selectAll() {
-            self.textField.selectAll(nil)
-        }
-        
-        public func textFieldDidBeginEditing(_ textField: UITextField) {
-            self.clearButton.view?.isHidden = false
-        }
-        
-        public func textFieldDidEndEditing(_ textField: UITextField) {
-            self.clearButton.view?.isHidden = true
-        }
-        
         func update(component: ListTextFieldItemComponent, availableSize: CGSize, state: EmptyComponentState, environment: Environment<Empty>, transition: ComponentTransition) -> CGSize {
             self.isUpdating = true
             defer {
@@ -238,9 +172,6 @@ public final class ListTextFieldItemComponent: Component {
             if self.textField.autocorrectionType != component.autocorrectionType {
                 self.textField.autocorrectionType = component.autocorrectionType
             }
-            if self.textField.returnKeyType != component.returnKeyType {
-                self.textField.returnKeyType = component.returnKeyType
-            }
             
             let themeUpdated = component.theme !== previousComponent?.theme
             
@@ -249,10 +180,7 @@ public final class ListTextFieldItemComponent: Component {
                 self.textField.textColor = component.theme.list.itemPrimaryTextColor
             }
             
-            var verticalInset: CGFloat = 12.0
-            if case .glass = component.style {
-                verticalInset = 16.0
-            }
+            let verticalInset: CGFloat = 12.0
             let sideInset: CGFloat = 16.0
             
             self.textField.sideInset = sideInset
@@ -263,10 +191,10 @@ public final class ListTextFieldItemComponent: Component {
                     text: .plain(NSAttributedString(string: component.placeholder.isEmpty ? " " : component.placeholder, font: Font.regular(17.0), textColor: component.theme.list.itemPlaceholderTextColor))
                 )),
                 environment: {},
-                containerSize: CGSize(width: availableSize.width - sideInset * 2.0 - 30.0 - component.contentInsets.left - component.contentInsets.right, height: 100.0)
+                containerSize: CGSize(width: availableSize.width - sideInset * 2.0 - 30.0, height: 100.0)
             )
             let contentHeight: CGFloat = placeholderSize.height + verticalInset * 2.0
-            let placeholderFrame = CGRect(origin: CGPoint(x: sideInset + component.contentInsets.left, y: floor((contentHeight - placeholderSize.height) * 0.5)), size: placeholderSize)
+            let placeholderFrame = CGRect(origin: CGPoint(x: sideInset, y: floor((contentHeight - placeholderSize.height) * 0.5)), size: placeholderSize)
             if let placeholderView = self.placeholder.view {
                 if placeholderView.superview == nil {
                     placeholderView.layer.anchorPoint = CGPoint()
@@ -279,7 +207,7 @@ public final class ListTextFieldItemComponent: Component {
                 placeholderView.isHidden = !self.currentText.isEmpty
             }
             
-            transition.setFrame(view: self.textField, frame: CGRect(origin: CGPoint(x: component.contentInsets.left, y: 0.0), size: CGSize(width: availableSize.width - component.contentInsets.left - component.contentInsets.right, height: contentHeight)))
+            transition.setFrame(view: self.textField, frame: CGRect(origin: CGPoint(x: 0.0, y: 0.0), size: CGSize(width: availableSize.width, height: contentHeight)))
             
             let clearButtonSize = self.clearButton.update(
                 transition: transition,
@@ -306,36 +234,11 @@ public final class ListTextFieldItemComponent: Component {
                 if clearButtonView.superview == nil {
                     self.addSubview(clearButtonView)
                 }
-                transition.setFrame(view: clearButtonView, frame: CGRect(origin: CGPoint(x: availableSize.width - clearButtonSize.width, y: floor((contentHeight - clearButtonSize.height) * 0.5)), size: clearButtonSize))
-                clearButtonView.isHidden = self.currentText.isEmpty || !self.textField.isFirstResponder
+                transition.setFrame(view: clearButtonView, frame: CGRect(origin: CGPoint(x: availableSize.width - 0.0 - clearButtonSize.width, y: floor((contentHeight - clearButtonSize.height) * 0.5)), size: clearButtonSize))
+                clearButtonView.isHidden = self.currentText.isEmpty
             }
             
-            let text = self.textField.text ?? ""
-            if let characterLimit = component.characterLimit, text.count > 0  {
-                let counterSize = self.counter.update(
-                    transition: .immediate,
-                    component: AnyComponent(MultilineTextComponent(
-                        text: .plain(NSAttributedString(string: "\(characterLimit - text.count)", font: Font.with(size: 15.0, traits: .monospacedNumbers), textColor: text.count > characterLimit ? component.theme.list.itemDestructiveColor : component.theme.list.itemSecondaryTextColor)),
-                        horizontalAlignment: .right
-                    )),
-                    environment: {},
-                    containerSize: CGSize(width: availableSize.width - sideInset * 2.0 - 30.0 - component.contentInsets.left - component.contentInsets.right, height: 100.0)
-                )
-                let counterFrame = CGRect(origin: CGPoint(x: availableSize.width - sideInset - component.contentInsets.right - clearButtonSize.width - counterSize.width + 17.0, y: floor((contentHeight - counterSize.height) * 0.5)), size: counterSize)
-                if let counterView = self.counter.view {
-                    if counterView.superview == nil {
-                        counterView.layer.anchorPoint = CGPoint()
-                        counterView.isUserInteractionEnabled = false
-                        self.addSubview(counterView)
-                    }
-                    transition.setPosition(view: counterView, position: counterFrame.origin)
-                    counterView.bounds = CGRect(origin: CGPoint(), size: counterFrame.size)
-                }
-            } else {
-                self.counter.view?.removeFromSuperview()
-            }
-            
-            self.separatorInset = 16.0 + component.contentInsets.left
+            self.separatorInset = 16.0
             
             return CGSize(width: availableSize.width, height: contentHeight)
         }

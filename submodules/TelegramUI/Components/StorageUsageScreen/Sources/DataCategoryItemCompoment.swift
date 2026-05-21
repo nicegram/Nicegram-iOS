@@ -175,7 +175,7 @@ private final class SubItemComponent: Component {
                 containerSize: CGSize(width: availableWidth, height: 100.0)
             )
             
-            let height: CGFloat = 52.0
+            let height: CGFloat = 44.0
             
             let titleFrame = CGRect(origin: CGPoint(x: leftInset, y: floor((height - titleSize.height) / 2.0)), size: titleSize)
             let titleValueFrame = CGRect(origin: CGPoint(x: titleFrame.maxX + 4.0, y: floor((height - titleValueSize.height) / 2.0)), size: titleValueSize)
@@ -375,30 +375,30 @@ final class DataCategoryItemComponent: Component {
             
             
             if themeUpdated {
-                let image: UIImage?
+                let imageName: String
                 switch component.category.key {
                 case .photos:
-                    image = PresentationResourcesSettings.photosLightBlue
+                    imageName = "Settings/Menu/DataPhotos"
                 case .videos:
-                    image = PresentationResourcesSettings.videosBlue
+                    imageName = "Settings/Menu/DataVideo"
                 case .files:
-                    image = PresentationResourcesSettings.filesGreen
+                    imageName = "Settings/Menu/DataFiles"
                 case .music:
-                    image = PresentationResourcesSettings.music
+                    imageName = "Settings/Menu/DataMusic"
                 case .messages:
-                    image = PresentationResourcesSettings.messages
+                    imageName = "Settings/Menu/DataMessages"
                 case .stickers:
-                    image = PresentationResourcesSettings.stickersYellow
+                    imageName = "Settings/Menu/DataStickers"
                 case .voiceMessages:
-                    image = PresentationResourcesSettings.voices
+                    imageName = "Settings/Menu/DataVoice"
                 case .calls:
-                    image = PresentationResourcesSettings.calls
+                    imageName = "Settings/Menu/DataCalls"
                 case .totalIn:
-                    image = PresentationResourcesSettings.download
+                    imageName = "Settings/Menu/DataIn"
                 case .totalOut:
-                    image = PresentationResourcesSettings.upload
+                    imageName = "Settings/Menu/DataOut"
                 }
-                self.iconView.image = image
+                self.iconView.image = UIImage(bundleImageName: imageName)
             }
             
             var leftInset: CGFloat = 62.0
@@ -469,7 +469,7 @@ final class DataCategoryItemComponent: Component {
                 containerSize: CGSize(width: availableWidth, height: 100.0)
             )
             
-            var height: CGFloat = 52.0
+            var height: CGFloat = 44.0
             
             let titleFrame = CGRect(origin: CGPoint(x: leftInset, y: floor((height - titleSize.height) / 2.0)), size: titleSize)
             let titleValueFrame = CGRect(origin: CGPoint(x: titleFrame.maxX + 4.0, y: floor((height - titleValueSize.height) / 2.0)), size: titleValueSize)

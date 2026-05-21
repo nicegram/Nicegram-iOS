@@ -90,7 +90,7 @@ class ChannelDiscussionGroupSetupHeaderItemNode: ListViewItemNode {
         self.labelNode.contentMode = .left
         self.labelNode.contentsScale = UIScreen.main.scale
         
-        super.init(layerBacked: false)
+        super.init(layerBacked: false, dynamicBounce: false)
         
         self.addSubnode(self.imageNode)
         self.addSubnode(self.titleNode)

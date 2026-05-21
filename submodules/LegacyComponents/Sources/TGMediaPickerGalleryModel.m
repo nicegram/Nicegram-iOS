@@ -14,7 +14,6 @@
 #import <LegacyComponents/TGModernGalleryZoomableItemView.h>
 #import <LegacyComponents/TGMediaPickerGalleryPhotoItem.h>
 #import <LegacyComponents/TGMediaPickerGalleryVideoItem.h>
-#import "TGMediaPickerGalleryPhotoItemView.h"
 #import <LegacyComponents/TGMediaPickerGalleryVideoItemView.h>
 
 #import <LegacyComponents/TGModernMediaListItem.h>
@@ -350,14 +349,6 @@
     }
 }
 
-- (void)beginEditingCaption {
-    [_interfaceView beginEditingCaption];
-}
-
-- (void)setupGifEditing {
-    [_interfaceView setupGifEditing];
-}
-
 - (void)presentPhotoEditorForItem:(id<TGModernGalleryEditableItem>)item tab:(TGPhotoEditorTab)tab
 {
     [self presentPhotoEditorForItem:item tab:tab snapshots:@[] fromRect:CGRectZero];
@@ -574,11 +565,9 @@
         
         [strongSelf updateHiddenItem];
         
-        TGModernGalleryItemView *galleryItemView = [strongSelf.controller itemViewForItem:item];
-        if ([galleryItemView isKindOfClass:[TGMediaPickerGalleryVideoItemView class]])
-            [(TGMediaPickerGalleryVideoItemView *)galleryItemView returnFromEditing];
-        else if ([galleryItemView isKindOfClass:[TGMediaPickerGalleryPhotoItemView class]])
-            [(TGMediaPickerGalleryPhotoItemView *)galleryItemView returnFromEditing];
+        UIView *referenceView = [strongSelf referenceViewForItem:item frame:NULL];
+        if ([referenceView isKindOfClass:[TGMediaPickerGalleryVideoItemView class]])
+            [(TGMediaPickerGalleryVideoItemView *)referenceView returnFromEditing];
         
         if (iosMajorVersion() >= 7)
             [strongSelf.controller setNeedsStatusBarAppearanceUpdate];

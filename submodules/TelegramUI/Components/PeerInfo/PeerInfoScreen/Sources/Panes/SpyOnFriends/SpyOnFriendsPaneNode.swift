@@ -182,6 +182,7 @@ final class SpyOnFriendsPaneNode: ASDisplayNode, PeerInfoPaneNode {
     weak var parentController: ViewController?
     
     private let listNode: ListView
+    private let coveringView: UIView
     private var state: SpyOnFriendsState?
     private var currentEntries: [SpyOnFriendsListEntry] = []
     private var enqueuedTransactions: [SpyOnFriendsListTransaction] = []
@@ -218,15 +219,19 @@ final class SpyOnFriendsPaneNode: ASDisplayNode, PeerInfoPaneNode {
         self.spyOnFriendsContext = spyOnFriendsContext
     
         let presentationData = context.sharedContext.currentPresentationData.with { $0 }
-        self.listNode = ListViewImpl()
+        self.listNode = ListView()
         self.listNode.accessibilityPageScrolledString = { row, count in
             presentationData.strings.VoiceOver_ScrollStatus(row, count).string
         }
+        
+        self.listNode.backgroundColor = presentationData.theme.list.blocksBackgroundColor
+        self.coveringView = UIView()
         
         super.init()
         
         self.listNode.preloadPages = true
         self.addSubnode(self.listNode)
+        self.view.addSubview(self.coveringView)
         
         self.disposable = (spyOnFriendsContext.state
         |> deliverOnMainQueue).startStrict(next: { [weak self] state in
@@ -287,6 +292,8 @@ final class SpyOnFriendsPaneNode: ASDisplayNode, PeerInfoPaneNode {
     ) {
         let isFirstLayout = self.currentParams == nil
         self.currentParams = (size, isScrollingLockedAtTop, presentationData)
+        self.coveringView.backgroundColor = presentationData.theme.list.itemBlocksBackgroundColor
+        transition.updateFrame(view: self.coveringView, frame: CGRect(origin: CGPoint(x: 0.0, y: -1.0), size: CGSize(width: size.width, height: topInset + 1.0)))
         
         transition.updateFrame(node: self.listNode, frame: CGRect(origin: CGPoint(), size: size))
         let (duration, curve) = listViewAnimationDurationAndCurve(transition: transition)
@@ -534,16 +541,16 @@ final class SpyOnFriendsPaneNode: ASDisplayNode, PeerInfoPaneNode {
 private extension Api.Chat {
     var peerId: PeerId {
         switch self {
-            case let .chat(chat):
-                return PeerId(namespace: Namespaces.Peer.CloudGroup, id: PeerId.Id._internalFromInt64Value(chat.id))
-            case let .chatEmpty(chatEmpty):
-                return PeerId(namespace: Namespaces.Peer.CloudGroup, id: PeerId.Id._internalFromInt64Value(chatEmpty.id))
-            case let .chatForbidden(chatForbidden):
-                return PeerId(namespace: Namespaces.Peer.CloudGroup, id: PeerId.Id._internalFromInt64Value(chatForbidden.id))
-            case let .channel(channel):
-                return PeerId(namespace: Namespaces.Peer.CloudChannel, id: PeerId.Id._internalFromInt64Value(channel.id))
-            case let .channelForbidden(channelForbidden):
-                return PeerId(namespace: Namespaces.Peer.CloudChannel, id: PeerId.Id._internalFromInt64Value(channelForbidden.id))
+            case let .chat(_, id, _, _, _, _, _, _, _, _):
+                return PeerId(namespace: Namespaces.Peer.CloudGroup, id: PeerId.Id._internalFromInt64Value(id))
+            case let .chatEmpty(id):
+                return PeerId(namespace: Namespaces.Peer.CloudGroup, id: PeerId.Id._internalFromInt64Value(id))
+            case let .chatForbidden(id, _):
+                return PeerId(namespace: Namespaces.Peer.CloudGroup, id: PeerId.Id._internalFromInt64Value(id))
+            case let .channel(_, _, id, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _):
+                return PeerId(namespace: Namespaces.Peer.CloudChannel, id: PeerId.Id._internalFromInt64Value(id))
+            case let .channelForbidden(_, id, _, _, _):
+                return PeerId(namespace: Namespaces.Peer.CloudChannel, id: PeerId.Id._internalFromInt64Value(id))
         }
     }
 }

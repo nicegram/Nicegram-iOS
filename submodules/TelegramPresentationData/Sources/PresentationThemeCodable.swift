@@ -1576,14 +1576,14 @@ extension PresentationThemeChatInputPanel: Codable {
         case panelBgNoWallpaper
         case panelSeparator
         case panelControlAccent
-        case panelControl = "panelControl_v2"
+        case panelControl
         case panelControlDisabled
         case panelControlDestructive
         case inputBg
         case inputStroke
-        case inputPlaceholder = "inputPlaceholder_v2"
-        case inputText = "inputText_v2"
-        case inputControl = "inputControl_v2"
+        case inputPlaceholder
+        case inputText
+        case inputControl
         case actionControlBg
         case actionControlFg
         case primaryText

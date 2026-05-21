@@ -509,7 +509,7 @@ class BotCheckoutTipItemNode: ListViewItemNode, UITextFieldDelegate {
         self.maskNode = ASImageNode()
         self.maskNode.isUserInteractionEnabled = false
         
-        super.init(layerBacked: false)
+        super.init(layerBacked: false, dynamicBounce: false)
 
         self.addSubnode(self.backgroundNode)
         

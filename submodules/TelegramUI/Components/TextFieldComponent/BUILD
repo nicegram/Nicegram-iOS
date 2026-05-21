@@ -7,7 +7,7 @@ swift_library(
         "Sources/**/*.swift",
     ]),
     copts = [
-        "-warnings-as-errors",
+        #"-warnings-as-errors",
     ],
     deps = [
         "//submodules/Display",
@@ -18,6 +18,7 @@ swift_library(
         "//submodules/AccountContext",
         "//submodules/InvisibleInkDustNode",
         "//submodules/TelegramUI/Components/EmojiTextAttachmentView",
+        "//submodules/ChatTextLinkEditUI",
         "//submodules/Pasteboard",
         "//submodules/ImageTransparency",
         "//submodules/TelegramUI/Components/Chat/ChatInputTextNode",

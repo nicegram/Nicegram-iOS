@@ -31,9 +31,6 @@ func applyMediaResourceChanges(from: Media, to: Media, postbox: Postbox, force: 
                 copyOrMoveResourceData(from: fromLargestRepresentation.resource, to: toLargestRepresentation.resource, mediaBox: postbox.mediaBox)
             }
         }
-        if let fromVideo = fromImage.video, let toVideo = toImage.video {
-            applyMediaResourceChanges(from: fromVideo, to: toVideo, postbox: postbox, force: true)
-        }
     } else if let fromFile = from as? TelegramMediaFile, let toFile = to as? TelegramMediaFile {
         if !skipPreviews {
             if let fromPreview = smallestImageRepresentation(fromFile.previewRepresentations), let toPreview = smallestImageRepresentation(toFile.previewRepresentations) {
@@ -70,8 +67,7 @@ func applyUpdateMessage(postbox: Postbox, stateManager: AccountStateManager, mes
         
         for update in result.allUpdates {
             switch update {
-            case let .updateMessageID(updateMessageIDData):
-                let (id, randomId) = (updateMessageIDData.id, updateMessageIDData.randomId)
+            case let .updateMessageID(id, randomId):
                 for attribute in message.attributes {
                     if let attribute = attribute as? OutgoingMessageInfoAttribute {
                         if attribute.uniqueId == randomId {
@@ -108,19 +104,16 @@ func applyUpdateMessage(postbox: Postbox, stateManager: AccountStateManager, mes
         var updatedTimestamp: Int32?
         if let apiMessage = apiMessage {
             switch apiMessage {
-                case let .message(messageData):
-                    let date = messageData.date
+                case let .message(_, _, _, _, _, _, _, _, _, _, _, date, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _):
                     updatedTimestamp = date
                 case .messageEmpty:
                     break
-                case let .messageService(messageServiceData):
-                    let date = messageServiceData.date
+                case let .messageService(_, _, _, _, _, _, date, _, _, _):
                     updatedTimestamp = date
             }
         } else {
             switch result {
-                case let .updateShortSentMessage(updateShortSentMessageData):
-                    let (_, _, _, _, date, _, _, _) = (updateShortSentMessageData.flags, updateShortSentMessageData.id, updateShortSentMessageData.pts, updateShortSentMessageData.ptsCount, updateShortSentMessageData.date, updateShortSentMessageData.media, updateShortSentMessageData.entities, updateShortSentMessageData.ttlPeriod)
+                case let .updateShortSentMessage(_, _, _, _, date, _, _, _):
                     updatedTimestamp = date
                 default:
                     break
@@ -158,8 +151,7 @@ func applyUpdateMessage(postbox: Postbox, stateManager: AccountStateManager, mes
                 text = updatedMessage.text
                 forwardInfo = updatedMessage.forwardInfo
                 threadId = updatedMessage.threadId
-            } else if case let .updateShortSentMessage(updateShortSentMessageData) = result {
-                let (_, _, _, _, _, apiMedia, entities, ttlPeriod) = (updateShortSentMessageData.flags, updateShortSentMessageData.id, updateShortSentMessageData.pts, updateShortSentMessageData.ptsCount, updateShortSentMessageData.date, updateShortSentMessageData.media, updateShortSentMessageData.entities, updateShortSentMessageData.ttlPeriod)
+            } else if case let .updateShortSentMessage(_, _, _, _, _, apiMedia, entities, ttlPeriod) = result {
                 let (mediaValue, _, nonPremium, hasSpoiler, _, _) = textMediaAndExpirationTimerFromApiMedia(apiMedia, currentMessage.id.peerId)
                 if let mediaValue = mediaValue {
                     media = [mediaValue]
@@ -408,7 +400,7 @@ func applyUpdateGroupMessages(postbox: Postbox, stateManager: AccountStateManage
         } else if let message = messages.first, let apiMessage = result.messages.first {
             if message.scheduleTime != nil && message.scheduleTime == apiMessage.timestamp {
                 namespace = Namespaces.Message.ScheduledCloud
-            } else if let apiMessage = result.messages.first, case let .message(messageData) = apiMessage, (messageData.flags2 & (1 << 4)) != 0 {
+            } else if let apiMessage = result.messages.first, case let .message(_, flags2, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _) = apiMessage, (flags2 & (1 << 4)) != 0 {
                 namespace = Namespaces.Message.ScheduledCloud
             }
         }

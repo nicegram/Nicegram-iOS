@@ -100,8 +100,7 @@ func _internal_getChannelBoostStatus(account: Account, peerId: PeerId) -> Signal
                 return nil
             }
             switch result {
-            case let .boostsStatus(boostsStatusData):
-                let (flags, level, currentLevelBoosts, boosts, giftBoosts, nextLevelBoosts, premiumAudience, boostUrl, prepaidGiveaways, myBoostSlots) = (boostsStatusData.flags, boostsStatusData.level, boostsStatusData.currentLevelBoosts, boostsStatusData.boosts, boostsStatusData.giftBoosts, boostsStatusData.nextLevelBoosts, boostsStatusData.premiumAudience, boostsStatusData.boostUrl, boostsStatusData.prepaidGiveaways, boostsStatusData.myBoostSlots)
+            case let .boostsStatus(flags, level, currentLevelBoosts, boosts, giftBoosts, nextLevelBoosts, premiumAudience, boostUrl, prepaidGiveaways, myBoostSlots):
                 let _ = myBoostSlots
                 return ChannelBoostStatus(level: Int(level), boosts: Int(boosts), giftBoosts: giftBoosts.flatMap(Int.init), currentLevelBoosts: Int(currentLevelBoosts), nextLevelBoosts: nextLevelBoosts.flatMap(Int.init), premiumAudience: premiumAudience.flatMap({ StatsPercentValue(apiPercentValue: $0) }), url: boostUrl, prepaidGiveaways: prepaidGiveaways?.map({ PrepaidGiveaway(apiPrepaidGiveaway: $0) }) ?? [], boostedByMe: (flags & (1 << 2)) != 0)
             }
@@ -275,14 +274,12 @@ private final class ChannelBoostersContextImpl {
                             return ([], 0, nil)
                         }
                         switch result {
-                        case let .boostsList(boostsListData):
-                            let (_, count, boosts, nextOffset, users) = (boostsListData.flags, boostsListData.count, boostsListData.boosts, boostsListData.nextOffset, boostsListData.users)
+                        case let .boostsList(_, count, boosts, nextOffset, users):
                             updatePeers(transaction: transaction, accountPeerId: accountPeerId, peers: AccumulatedPeers(users: users))
                             var resultBoosts: [ChannelBoostersContext.State.Boost] = []
                             for boost in boosts {
                                 switch boost {
-                                case let .boost(boostData):
-                                    let (flags, id, userId, giveawayMessageId, date, expires, usedGiftSlug, multiplier, stars) = (boostData.flags, boostData.id, boostData.userId, boostData.giveawayMsgId, boostData.date, boostData.expires, boostData.usedGiftSlug, boostData.multiplier, boostData.stars)
+                                case let .boost(flags, id, userId, giveawayMessageId, date, expires, usedGiftSlug, multiplier, stars):
                                     var boostFlags: ChannelBoostersContext.State.Boost.Flags = []
                                     var boostPeer: EnginePeer?
                                     if let userId = userId {
@@ -549,14 +546,12 @@ extension MyBoostStatus {
     init(apiMyBoostStatus: Api.premium.MyBoosts, accountPeerId: PeerId, transaction: Transaction) {
         var boostsResult: [MyBoostStatus.Boost] = []
         switch apiMyBoostStatus {
-        case let .myBoosts(myBoostsData):
-            let (myBoosts, chats, users) = (myBoostsData.myBoosts, myBoostsData.chats, myBoostsData.users)
+        case let .myBoosts(myBoosts, chats, users):
             let parsedPeers = AccumulatedPeers(transaction: transaction, chats: chats, users: users)
             updatePeers(transaction: transaction, accountPeerId: accountPeerId, peers: parsedPeers)
             for boost in myBoosts {
                 switch boost {
-                case let .myBoost(myBoostData):
-                    let (slot, peer, date, expires, cooldownUntilDate) = (myBoostData.slot, myBoostData.peer, myBoostData.date, myBoostData.expires, myBoostData.cooldownUntilDate)
+                case let .myBoost(_, slot, peer, date, expires, cooldownUntilDate):
                     var boostPeer: EnginePeer?
                     if let peerId = peer?.peerId, let peer = transaction.getPeer(peerId) {
                         boostPeer = EnginePeer(peer)

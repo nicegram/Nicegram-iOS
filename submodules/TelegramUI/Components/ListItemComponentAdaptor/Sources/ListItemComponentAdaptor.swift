@@ -17,13 +17,11 @@ public final class ListItemComponentAdaptor: Component {
     private let itemImpl: () -> ListViewItem
     private let params: ListViewItemLayoutParams
     private let action: (() -> Void)?
-    private let tag: AnyObject?
 
     public init<ItemGeneratorType: ItemGenerator>(
         itemGenerator: ItemGeneratorType,
         params: ListViewItemLayoutParams,
-        action: (() -> Void)? = nil,
-        tag: AnyObject? = nil
+        action: (() -> Void)? = nil
     ) {
         self.itemGenerator = itemGenerator
         self.isEqualImpl = { other in
@@ -38,7 +36,6 @@ public final class ListItemComponentAdaptor: Component {
         }
         self.params = params
         self.action = action
-        self.tag = tag
     }
     
     public static func ==(lhs: ListItemComponentAdaptor, rhs: ListItemComponentAdaptor) -> Bool {
@@ -51,27 +48,14 @@ public final class ListItemComponentAdaptor: Component {
         if (lhs.action == nil) != (rhs.action == nil) {
             return false
         }
-        if lhs.tag !== rhs.tag {
-            return false
-        }
         return true
     }
     
-    public final class View: UIView, ComponentTaggedView {
+    public final class View: UIView {
         private var button: HighlightTrackingButton?
         public var itemNode: ListViewItemNode?
         
         private var component: ListItemComponentAdaptor?
-        
-        public func matches(tag: Any) -> Bool {
-            if let component = self.component, let componentTag = component.tag {
-                let tag = tag as AnyObject
-                if componentTag === tag {
-                    return true
-                }
-            }
-            return false
-        }
         
         @objc private func pressed() {
             guard let component = self.component else {

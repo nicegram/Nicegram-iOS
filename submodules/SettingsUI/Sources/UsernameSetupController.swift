@@ -7,6 +7,7 @@ import TelegramPresentationData
 import ItemListUI
 import PresentationDataUtils
 import AccountContext
+import ShareController
 import UndoUI
 import InviteLinksUI
 import TextFormat
@@ -59,7 +60,7 @@ private enum UsernameSetupEntry: ItemListNodeEntry {
     case publicLinkInfo(PresentationTheme, String)
     
     case additionalLinkHeader(PresentationTheme, String)
-    case additionalLink(PresentationTheme, TelegramPeerUsername, Int32, Bool)
+    case additionalLink(PresentationTheme, TelegramPeerUsername, Int32)
     case additionalLinkInfo(PresentationTheme, String)
     
     var section: ItemListSectionId {
@@ -83,7 +84,7 @@ private enum UsernameSetupEntry: ItemListNodeEntry {
                 return .index(3)
             case .additionalLinkHeader:
                 return .index(4)
-            case let .additionalLink(_, username, _, _):
+            case let .additionalLink(_, username, _):
                 return .username(username.username)
             case .additionalLinkInfo:
                 return .index(5)
@@ -122,8 +123,8 @@ private enum UsernameSetupEntry: ItemListNodeEntry {
                 } else {
                     return false
                 }
-            case let .additionalLink(lhsTheme, lhsAddressName, lhsIndex, lhsCanToggleIsActive):
-                if case let .additionalLink(rhsTheme, rhsAddressName, rhsIndex, rhsCanToggleIsActive) = rhs, lhsTheme === rhsTheme, lhsAddressName == rhsAddressName, lhsIndex == rhsIndex, lhsCanToggleIsActive == rhsCanToggleIsActive {
+            case let .additionalLink(lhsTheme, lhsAddressName, lhsIndex):
+                if case let .additionalLink(rhsTheme, rhsAddressName, rhsIndex) = rhs, lhsTheme === rhsTheme, lhsAddressName == rhsAddressName, lhsIndex == rhsIndex {
                     return true
                 } else {
                     return false
@@ -174,9 +175,9 @@ private enum UsernameSetupEntry: ItemListNodeEntry {
             default:
                 return true
             }
-        case let .additionalLink(_, _, lhsIndex, _):
+        case let .additionalLink(_, _, lhsIndex):
             switch rhs {
-            case let .additionalLink(_, _, rhsIndex, _):
+            case let .additionalLink(_, _, rhsIndex):
                 return lhsIndex < rhsIndex
             case .publicLinkHeader, .editablePublicLink, .publicLinkStatus, .publicLinkInfo, .additionalLinkHeader:
                 return false
@@ -197,7 +198,7 @@ private enum UsernameSetupEntry: ItemListNodeEntry {
             case let .publicLinkHeader(_, text):
                 return ItemListSectionHeaderItem(presentationData: presentationData, text: text, sectionId: self.section)
             case let .editablePublicLink(theme, _, prefix, currentText, text, enabled):
-                return ItemListSingleLineInputItem(presentationData: presentationData, systemStyle: .glass, title: NSAttributedString(string: enabled ? prefix : "", textColor: theme.list.itemPrimaryTextColor), text: text, placeholder: "", type: .username, spacing: 10.0, clearType: enabled ? .always : .none, enabled: enabled, tag: UsernameEntryTag.username, sectionId: self.section, textUpdated: { updatedText in
+                return ItemListSingleLineInputItem(presentationData: presentationData, title: NSAttributedString(string: enabled ? prefix : "", textColor: theme.list.itemPrimaryTextColor), text: text, placeholder: "", type: .username, spacing: 10.0, clearType: enabled ? .always : .none, enabled: enabled, tag: UsernameEntryTag.username, sectionId: self.section, textUpdated: { updatedText in
                     arguments.updatePublicLinkText(currentText, updatedText)
                 }, action: {
                 })
@@ -231,9 +232,9 @@ private enum UsernameSetupEntry: ItemListNodeEntry {
                 }, sectionId: self.section)
             case let .additionalLinkHeader(_, text):
                 return ItemListSectionHeaderItem(presentationData: presentationData, text: text, sectionId: self.section)
-            case let .additionalLink(_, link, _, canToggleIsActive):
-                return AdditionalLinkItem(presentationData: presentationData, systemStyle: .glass, username: link, sectionId: self.section, style: .blocks, tapAction: {
-                    if canToggleIsActive  {
+            case let .additionalLink(_, link, _):
+                return AdditionalLinkItem(presentationData: presentationData, username: link, sectionId: self.section, style: .blocks, tapAction: {
+                    if !link.flags.contains(.isEditable) {
                         if link.isActive {
                             arguments.deactivateLink(link.username)
                         } else {
@@ -347,12 +348,8 @@ private func usernameSetupControllerEntries(presentationData: PresentationData, 
             entries.append(.publicLinkStatus(presentationData.theme, currentUsername, status, statusText, currentUsername))
         }
         
-        var isBot = false
-        
         let otherUsernames = peer.usernames.filter { !$0.flags.contains(.isEditable) }
         if case .bot = mode {
-            isBot = true
-            
             var infoText = presentationData.strings.Username_BotLinkHint
             if otherUsernames.isEmpty {
                 infoText = presentationData.strings.Username_BotLinkHintExtended
@@ -387,11 +384,7 @@ private func usernameSetupControllerEntries(presentationData: PresentationData, 
             }
             var i: Int32 = 0
             for username in usernames {
-                var canToggleIsActive = false
-                if !username.flags.contains(.isEditable) || isBot {
-                    canToggleIsActive = true
-                }
-                entries.append(.additionalLink(presentationData.theme, username, i, canToggleIsActive))
+                entries.append(.additionalLink(presentationData.theme, username, i))
                 i += 1
             }
             
@@ -468,17 +461,10 @@ public func usernameSetupController(context: AccountContext, mode: UsernameSetup
             }))
         }
     }, shareLink: {
-        let _ = (context.engine.data.get(TelegramEngine.EngineData.Item.Peer.Peer(id: peerId))
-        |> mapToSignal { peer -> Signal<EnginePeer, NoError> in
-            if let peer {
-                return .single(peer)
-            } else {
-                return .never()
-            }
-        }
+        let _ = (context.account.postbox.loadedPeerWithId(peerId)
         |> take(1)
         |> deliverOnMainQueue).start(next: { peer in
-            if case let .user(user) = peer, user.botInfo != nil {
+            if let user = peer as? TelegramUser, user.botInfo != nil {
                 context.sharedContext.openExternalUrl(context: context, urlContext: .generic, url: "https://fragment.com/", forceExternal: true, presentationData: context.sharedContext.currentPresentationData.with { $0 }, navigationController: nil, dismissInput: {})
             } else {
                 var currentAddressName: String = peer.addressName ?? ""
@@ -490,10 +476,11 @@ public func usernameSetupController(context: AccountContext, mode: UsernameSetup
                 }
                 if !currentAddressName.isEmpty {
                     dismissInputImpl?()
-                    let shareController = context.sharedContext.makeShareController(context: context, params: ShareControllerParams(subject: .url("https://t.me/\(currentAddressName)"), actionCompleted: {
+                    let shareController = ShareController(context: context, subject: .url("https://t.me/\(currentAddressName)"))
+                    shareController.actionCompleted = {
                         let presentationData = context.sharedContext.currentPresentationData.with { $0 }
                         presentControllerImpl?(UndoOverlayController(presentationData: presentationData, content: .linkCopied(title: nil, text: presentationData.strings.Conversation_LinkCopied), elevatedLayout: false, animateInAsReplacement: false, action: { _ in return false }), nil)
-                    }))
+                    }
                     presentControllerImpl?(shareController, nil)
                 }
             }
@@ -626,7 +613,7 @@ public func usernameSetupController(context: AccountContext, mode: UsernameSetup
     
     controller.setReorderEntry({ (fromIndex: Int, toIndex: Int, entries: [UsernameSetupEntry]) -> Signal<Bool, NoError> in
         let fromEntry = entries[fromIndex]
-        guard case let .additionalLink(_, fromUsername, _, _) = fromEntry else {
+        guard case let .additionalLink(_, fromUsername, _) = fromEntry else {
             return .single(false)
         }
         var referenceId: String?
@@ -639,7 +626,7 @@ public func usernameSetupController(context: AccountContext, mode: UsernameSetup
         var i = 0
         for entry in entries {
             switch entry {
-            case let .additionalLink(_, link, _, _):
+            case let .additionalLink(_, link, _):
                 currentUsernames.append(link.username)
                 if !link.isActive && maxIndex == nil {
                     maxIndex = max(0, i - 1)
@@ -652,7 +639,7 @@ public func usernameSetupController(context: AccountContext, mode: UsernameSetup
         
         if toIndex < entries.count {
             switch entries[toIndex] {
-                case let .additionalLink(_, toUsername, _, _):
+                case let .additionalLink(_, toUsername, _):
                     if toUsername.isActive {
                         referenceId = toUsername.username
                     } else {
@@ -729,7 +716,7 @@ public func usernameSetupController(context: AccountContext, mode: UsernameSetup
         var currentUsernames: [TelegramPeerUsername] = []
         for entry in entries {
             switch entry {
-            case let .additionalLink(_, username, _, _):
+            case let .additionalLink(_, username, _):
                 currentUsernames.append(username)
             default:
                 break

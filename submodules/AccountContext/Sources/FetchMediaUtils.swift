@@ -82,8 +82,7 @@ public func messageMediaFileStatus(context: AccountContext, messageId: MessageId
     
     var thumbnailStatus: Signal<MediaResourceStatus?, NoError> = .single(nil)
     if let videoThumbnail = file.videoThumbnails.first {
-        thumbnailStatus = context.engine.resources.status(resource: EngineMediaResource(videoThumbnail.resource))
-        |> map { $0._asStatus() }
+        thumbnailStatus = context.account.postbox.mediaBox.resourceStatus(videoThumbnail.resource)
         |> map(Optional.init)
     }
     

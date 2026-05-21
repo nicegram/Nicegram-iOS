@@ -18,8 +18,7 @@ import AvatarNode
 public class StatsMessageItem: ListViewItem, ItemListItem {
     let context: AccountContext
     let presentationData: ItemListPresentationData
-    let systemStyle: ItemListSystemStyle
-    let peer: EnginePeer
+    let peer: Peer
     let item: StatsPostItem
     let views: Int32
     let reactions: Int32
@@ -31,10 +30,9 @@ public class StatsMessageItem: ListViewItem, ItemListItem {
     let openStory: (UIView) -> Void
     let contextAction: ((ASDisplayNode, ContextGesture?) -> Void)?
     
-    init(context: AccountContext, presentationData: ItemListPresentationData, systemStyle: ItemListSystemStyle = .glass, peer: EnginePeer, item: StatsPostItem, views: Int32, reactions: Int32, forwards: Int32, isPeer: Bool = false, sectionId: ItemListSectionId, style: ItemListStyle, action: (() -> Void)?, openStory: @escaping (UIView) -> Void, contextAction: ((ASDisplayNode, ContextGesture?) -> Void)?) {
+    init(context: AccountContext, presentationData: ItemListPresentationData, peer: Peer, item: StatsPostItem, views: Int32, reactions: Int32, forwards: Int32, isPeer: Bool = false, sectionId: ItemListSectionId, style: ItemListStyle, action: (() -> Void)?, openStory: @escaping (UIView) -> Void, contextAction: ((ASDisplayNode, ContextGesture?) -> Void)?) {
         self.context = context
         self.presentationData = presentationData
-        self.systemStyle = systemStyle
         self.peer = peer
         self.item = item
         self.views = views
@@ -186,7 +184,7 @@ final class StatsMessageItemNode: ListViewItemNode, ItemListItemNode {
         
         self.activateArea = AccessibilityAreaNode()
         
-        super.init(layerBacked: false)
+        super.init(layerBacked: false, dynamicBounce: false)
         
         self.containerNode.addSubnode(self.contextSourceNode)
         self.containerNode.targetNodeForActivationProgress = self.contextSourceNode.contentNode
@@ -351,7 +349,7 @@ final class StatsMessageItemNode: ListViewItemNode, ItemListItemNode {
             }
             
             if item.isPeer {
-                text = item.peer.displayTitle(strings: item.presentationData.strings, displayOrder: item.presentationData.nameDisplayOrder)
+                text = EnginePeer(item.peer).displayTitle(strings: item.presentationData.strings, displayOrder: item.presentationData.nameDisplayOrder)
             } else {
                 text = foldLineBreaks(text)
             }
@@ -476,7 +474,7 @@ final class StatsMessageItemNode: ListViewItemNode, ItemListItemNode {
                             strongSelf.offsetContainerNode.addSubnode(avatarNode)
                             strongSelf.avatarNode = avatarNode
                         }
-                        avatarNode.setPeer(context: item.context, theme: item.presentationData.theme, peer: item.peer)
+                        avatarNode.setPeer(context: item.context, theme: item.presentationData.theme, peer: EnginePeer(item.peer))
                         
                         if case .story = item.item {
                             contentImageInset += 3.0
@@ -578,7 +576,7 @@ final class StatsMessageItemNode: ListViewItemNode, ItemListItemNode {
                                 strongSelf.bottomStripeNode.isHidden = hasCorners
                         }
                         
-                        strongSelf.maskNode.image = hasCorners ? PresentationResourcesItemList.cornersImage(item.presentationData.theme, top: hasTopCorners, bottom: hasBottomCorners, glass: item.systemStyle == .glass) : nil
+                        strongSelf.maskNode.image = hasCorners ? PresentationResourcesItemList.cornersImage(item.presentationData.theme, top: hasTopCorners, bottom: hasBottomCorners) : nil
                         
                         strongSelf.backgroundNode.frame = CGRect(origin: CGPoint(x: 0.0, y: -min(insets.top, separatorHeight)), size: CGSize(width: params.width, height: contentSize.height + min(insets.top, separatorHeight) + min(insets.bottom, separatorHeight)))
                         strongSelf.maskNode.frame = strongSelf.backgroundNode.frame.insetBy(dx: params.leftInset, dy: 0.0)
@@ -663,7 +661,6 @@ final class StatsMessageItemNode: ListViewItemNode, ItemListItemNode {
                             component: AnyComponent(AvatarStoryIndicatorComponent(
                                 hasUnseen: true,
                                 hasUnseenCloseFriendsItems: false,
-                                hasLiveItems: false,
                                 colors: AvatarStoryIndicatorComponent.Colors(
                                     unseenColors: item.presentationData.theme.chatList.storyUnseenColors.array,
                                     unseenCloseFriendsColors: item.presentationData.theme.chatList.storyUnseenPrivateColors.array,

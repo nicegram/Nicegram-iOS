@@ -76,7 +76,7 @@ class IncreaseLimitHeaderItemNode: ListViewItemNode {
     private var item: BoostLevelHeaderItem?
     
     init() {
-        super.init(layerBacked: false)
+        super.init(layerBacked: false, dynamicBounce: false)
     }
     
     override func didLoad() {

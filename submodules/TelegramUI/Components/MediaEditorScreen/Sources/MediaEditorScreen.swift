@@ -50,8 +50,6 @@ import UIKitRuntimeUtils
 import ImageObjectSeparation
 import SaveProgressScreen
 import TelegramNotices
-import AttachmentFileController
-import SaveToCameraRoll
 
 private let playbackButtonTag = GenericComponentViewTag()
 private let muteButtonTag = GenericComponentViewTag()
@@ -409,7 +407,6 @@ final class MediaEditorScreenComponent: Component {
                         areCustomEmojiEnabled: true,
                         hasSearch: true,
                         hideBackground: true,
-                        maskEdge: .fade,
                         sendGif: nil
                     ) |> map { inputData -> ChatEntityKeyboardInputNode.InputData in
                         return ChatEntityKeyboardInputNode.InputData(
@@ -435,8 +432,6 @@ final class MediaEditorScreenComponent: Component {
                     },
                     sendBotContextResultAsGif: { _, _, _, _, _, _ in
                         return false
-                    },
-                    editGif: { _, _ in
                     },
                     updateChoosingSticker: { _ in },
                     switchToTextInput: { [weak self] in
@@ -893,7 +888,7 @@ final class MediaEditorScreenComponent: Component {
                 transition: transition,
                 component: AnyComponent(PlainButtonComponent(
                     content: AnyComponent(DoneButtonContentComponent(
-                        backgroundColor: UIColor(rgb: 0x0088ff),
+                        backgroundColor: UIColor(rgb: 0x007aff),
                         icon: doneButtonIcon,
                         title: doneButtonTitle)),
                     effectAlignment: .center,
@@ -1246,7 +1241,6 @@ final class MediaEditorScreenComponent: Component {
                 let presentationInterfaceState = ChatPresentationInterfaceState(
                     chatWallpaper: .builtin(WallpaperSettings()),
                     theme: presentationData.theme,
-                    preferredGlassType: .default,
                     strings: presentationData.strings,
                     dateTimeFormat: presentationData.dateTimeFormat,
                     nameDisplayOrder: presentationData.nameDisplayOrder,
@@ -1257,10 +1251,12 @@ final class MediaEditorScreenComponent: Component {
                     mode: .standard(.default),
                     chatLocation: .peer(id: component.context.account.peerId),
                     subject: nil,
+                    peerNearbyData: nil,
                     greetingData: nil,
                     pendingUnpinnedAllMessages: false,
                     activeGroupCallInfo: nil,
                     hasActiveGroupCall: false,
+                    importState: nil,
                     threadData: nil,
                     isGeneralThreadClosed: nil,
                     replyMessage: nil,
@@ -1400,7 +1396,7 @@ final class MediaEditorScreenComponent: Component {
                             }
                             controller.presentInGlobalOverlay(c)
                         },
-                        sendMessageAction: { [weak self] _ in
+                        sendMessageAction: { [weak self] in
                             guard let self else {
                                 return
                             }
@@ -1456,7 +1452,6 @@ final class MediaEditorScreenComponent: Component {
                             controller.presentTimeoutSetup(sourceView: view, gesture: gesture)
                         },
                         forwardAction: nil,
-                        paidMessageAction: nil,
                         moreAction: nil,
                         presentCaptionPositionTooltip: nil,
                         presentVoiceMessagesUnavailableTooltip: nil,
@@ -2860,7 +2855,7 @@ let avatarMaxVideoDuration: Double = 10.0
 public final class MediaEditorScreenImpl: ViewController, MediaEditorScreen, UIDropInteractionDelegate {
     public enum Mode {
         public enum StickerEditorMode {
-            case generic(canSend: Bool)
+            case generic
             case addingToPack
             case editing
             case businessIntro
@@ -3154,7 +3149,7 @@ public final class MediaEditorScreenImpl: ViewController, MediaEditorScreen, UID
             self.previewContainerView = UIView()
             self.previewContainerView.alpha = 0.0
             self.previewContainerView.clipsToBounds = true
-            self.previewContainerView.layer.cornerRadius = 30.0 //12.0
+            self.previewContainerView.layer.cornerRadius = 12.0
             if #available(iOS 13.0, *) {
                 self.previewContainerView.layer.cornerCurve = .continuous
             }
@@ -3735,7 +3730,7 @@ public final class MediaEditorScreenImpl: ViewController, MediaEditorScreen, UID
                     }
                 } else if case let .gift(gift) = subject {
                     isGift = true
-                    let media: [Media] = [TelegramMediaAction(action: .starGiftUnique(gift: .unique(gift), isUpgrade: false, isTransferred: false, savedToProfile: false, canExportDate: nil, transferStars: nil, isRefunded: false, isPrepaidUpgrade: false, peerId: nil, senderId: nil, savedId: nil, resaleAmount: nil, canTransferDate: nil, canResaleDate: nil, dropOriginalDetailsStars: nil, assigned: false, fromOffer: false, canCraftAt: nil, isCrafted: false))]
+                    let media: [Media] = [TelegramMediaAction(action: .starGiftUnique(gift: .unique(gift), isUpgrade: false, isTransferred: false, savedToProfile: false, canExportDate: nil, transferStars: nil, isRefunded: false, isPrepaidUpgrade: false, peerId: nil, senderId: nil, savedId: nil, resaleAmount: nil, canTransferDate: nil, canResaleDate: nil))]
                     let message = Message(stableId: 0, stableVersion: 0, id: MessageId(peerId: self.context.account.peerId, namespace: Namespaces.Message.Cloud, id: -1), globallyUniqueId: nil, groupingKey: nil, groupInfo: nil, threadId: nil, timestamp: 0, flags: [], tags: [], globalTags: [], localTags: [], customTags: [], forwardInfo: nil, author: nil, text: "", attributes: [], media: media, peers: SimpleDictionary(), associatedMessages: SimpleDictionary(), associatedMessageIds: [], associatedMedia: [:], associatedThreadInfo: nil, associatedStories: [:])
                     messages = .single([message])
                 } else {
@@ -3749,7 +3744,7 @@ public final class MediaEditorScreenImpl: ViewController, MediaEditorScreen, UID
                         return
                     }
                     var messageFile: TelegramMediaFile?
-                    if let maybeFile = messages.first?.media.first(where: { $0 is TelegramMediaFile }) as? TelegramMediaFile, maybeFile.isVideo, let _ = self.context.engine.resources.completedResourcePath(id: EngineMediaResource.Id(maybeFile.resource.id), pathExtension: nil) {
+                    if let maybeFile = messages.first?.media.first(where: { $0 is TelegramMediaFile }) as? TelegramMediaFile, maybeFile.isVideo, let _ = self.context.account.postbox.mediaBox.completedResourcePath(maybeFile.resource, pathExtension: nil) {
                         messageFile = maybeFile
                     }
                     if "".isEmpty {
@@ -3957,18 +3952,16 @@ public final class MediaEditorScreenImpl: ViewController, MediaEditorScreen, UID
             self.stickerMaskWrapperView.addSubview(self.stickerMaskPreviewView)
             self.stickerMaskDrawingView = stickerMaskDrawingView
             
-            Queue.mainQueue().justDispatch {
-                let previewSize = self.previewView.bounds.size
-                self.stickerMaskWrapperView.frame = CGRect(origin: .zero, size: previewSize)
-                self.stickerMaskPreviewView.frame = CGRect(origin: .zero, size: previewSize)
-                
-                let maskScale = previewSize.width / min(maskDrawingSize.width, maskDrawingSize.height)
-                self.initialMaskScale = maskScale
-                self.initialMaskPosition = CGPoint(x: previewSize.width / 2.0, y: previewSize.height / 2.0)
-                stickerMaskDrawingView.bounds = CGRect(origin: .zero, size: maskDrawingSize)
-                
-                self.updateMaskDrawingView(position: .zero, scale: 1.0, rotation: 0.0)
-            }
+            let previewSize = self.previewView.bounds.size
+            self.stickerMaskWrapperView.frame = CGRect(origin: .zero, size: previewSize)
+            self.stickerMaskPreviewView.frame = CGRect(origin: .zero, size: previewSize)
+            
+            let maskScale = previewSize.width / min(maskDrawingSize.width, maskDrawingSize.height)
+            self.initialMaskScale = maskScale
+            self.initialMaskPosition = CGPoint(x: previewSize.width / 2.0, y: previewSize.height / 2.0)
+            stickerMaskDrawingView.bounds = CGRect(origin: .zero, size: maskDrawingSize)
+            
+            self.updateMaskDrawingView(position: .zero, scale: 1.0, rotation: 0.0)
         }
         
         private func updateMaskDrawingView(position: CGPoint, scale: CGFloat, rotation: CGFloat) {
@@ -5112,64 +5105,8 @@ public final class MediaEditorScreenImpl: ViewController, MediaEditorScreen, UID
             }
             controller.push(locationController)
         }
-                
-        func presentAudioPicker() {
-            guard let controller = self.controller else {
-                return
-            }
-            
-            let audioController = storyAudioPickerController(
-                context: self.context,
-                selectFromFiles: { [weak self] in
-                    self?.presentAudioFilePicker()
-                },
-                dismissed: { [weak self] in
-                    if let self {
-                        self.mediaEditor?.play()
-                    }
-                },
-                completion: { [weak self] file in
-                    guard let self else {
-                        return
-                    }
-                    let _ = (fetchMediaData(
-                        context: self.context,
-                        userLocation: .other,
-                        mediaReference: file
-                    ) |> deliverOnMainQueue).start(next: { [weak self] state, _ in
-                        guard let self else {
-                            return
-                        }
-                        if case let .data(data) = state {
-                            let path = data.path
-                            
-                            try? FileManager.default.createDirectory(atPath: draftPath(engine: self.context.engine), withIntermediateDirectories: true)
-                            
-                            var originalFileName: String = "audio_\(Int.random(in: 0 ..< .max)).mp3"
-                            if let file = file.media as? TelegramMediaFile {
-                                originalFileName = file.fileName ?? "\(file.fileId.id).mp3"
-                            }
-                            
-                            let fileName = "audio_\(originalFileName)"
-                            let copyPath = fullDraftPath(peerId: self.context.account.peerId, path: fileName)
-                            
-                            try? FileManager.default.removeItem(atPath: copyPath)
-                            do {
-                                try FileManager.default.copyItem(atPath: path, toPath: copyPath)
-                            } catch let e {
-                                Logger.shared.log("MediaEditor", "copy file error \(e)")
-                                return
-                            }
-                            
-                            self.insertAudio(path: copyPath, fileName: fileName, file: file.media as? TelegramMediaFile)
-                        }
-                    })
-                }
-            )
-            controller.push(audioController)
-        }
         
-        func presentAudioFilePicker() {
+        func presentAudioPicker() {
             var isSettingTrack = false
             self.controller?.present(legacyICloudFilePicker(theme: self.presentationData.theme, mode: .import, documentTypes: ["public.mp3", "public.mpeg-4-audio", "public.aac-audio", "org.xiph.flac"], forceDarkTheme: true, dismissed: { [weak self] in
                 if let self {
@@ -5180,7 +5117,7 @@ public final class MediaEditorScreenImpl: ViewController, MediaEditorScreen, UID
                     }
                 }
             }, completion: { [weak self] urls in
-                guard let self, !urls.isEmpty, let url = urls.first else {
+                guard let self, let mediaEditor = self.mediaEditor, !urls.isEmpty, let url = urls.first else {
                     return
                 }
                 isSettingTrack = true
@@ -5193,7 +5130,7 @@ public final class MediaEditorScreenImpl: ViewController, MediaEditorScreen, UID
                 let coordinator = NSFileCoordinator(filePresenter: nil)
                 var error: NSError?
                 coordinator.coordinate(readingItemAt: url, options: .forUploading, error: &error, byAccessor: { sourceUrl in
-                    let fileName = "audio_\(sourceUrl.lastPathComponent)"
+                    let fileName =  "audio_\(sourceUrl.lastPathComponent)"
                     let copyPath = fullDraftPath(peerId: self.context.account.peerId, path: fileName)
                     
                     try? FileManager.default.removeItem(atPath: copyPath)
@@ -5208,9 +5145,92 @@ public final class MediaEditorScreenImpl: ViewController, MediaEditorScreen, UID
                     }
                     
                     Queue.mainQueue().async {
-                        self.insertAudio(path: copyPath, fileName: fileName, dispose: {
-                            if isScopedResource {
-                                url.stopAccessingSecurityScopedResource()
+                        let audioAsset = AVURLAsset(url: URL(fileURLWithPath: copyPath))
+                        
+                        func loadValues(asset: AVAsset, retryCount: Int, completion: @escaping () -> Void) {
+                            asset.loadValuesAsynchronously(forKeys: ["tracks", "duration"], completionHandler: {
+                                if asset.statusOfValue(forKey: "tracks", error: nil) == .loading {
+                                    if retryCount < 2 {
+                                        Queue.mainQueue().after(0.1, {
+                                            loadValues(asset: asset, retryCount: retryCount + 1, completion: completion)
+                                        })
+                                    } else {
+                                        completion()
+                                    }
+                                } else {
+                                    completion()
+                                }
+                            })
+                        }
+                        
+                        loadValues(asset: audioAsset, retryCount: 0, completion: {
+                            var audioDuration: Double = 0.0
+                            guard let track = audioAsset.tracks(withMediaType: .audio).first else {
+                                Logger.shared.log("MediaEditor", "track is nil")
+                                if isScopedResource {
+                                    url.stopAccessingSecurityScopedResource()
+                                }
+                                return
+                            }
+                            
+                            audioDuration = track.timeRange.duration.seconds
+                            if audioDuration.isZero {
+                                Logger.shared.log("MediaEditor", "duration is zero")
+                                if isScopedResource {
+                                    url.stopAccessingSecurityScopedResource()
+                                }
+                                return
+                            }
+                            
+                            func maybeFixMisencodedText(_ text: String) -> String {
+                                let charactersToSearchFor = CharacterSet(charactersIn: "àåèîóûþÿ")
+                                if text.lowercased().rangeOfCharacter(from: charactersToSearchFor) != nil {
+                                    if let data = text.data(using: .windowsCP1252), let string = String(data: data, encoding: .windowsCP1251) {
+                                        return string
+                                    } else {
+                                        return text
+                                    }
+                                } else {
+                                    return text
+                                }
+                            }
+                            
+                            var artist: String?
+                            var title: String?
+                            for data in audioAsset.commonMetadata {
+                                if data.commonKey == .commonKeyArtist, let value = data.stringValue {
+                                    artist = maybeFixMisencodedText(value)
+                                }
+                                if data.commonKey == .commonKeyTitle, let value = data.stringValue {
+                                    title = maybeFixMisencodedText(value)
+                                }
+                            }
+                            
+                            Queue.mainQueue().async {
+                                var audioTrimRange: Range<Double>?
+                                var audioOffset: Double?
+                                
+                                if let videoDuration = mediaEditor.originalCappedDuration {
+                                    if let videoStart = mediaEditor.values.videoTrimRange?.lowerBound {
+                                        audioOffset = -videoStart
+                                    } else if let _ = mediaEditor.values.additionalVideoPath, let videoStart = mediaEditor.values.additionalVideoTrimRange?.lowerBound {
+                                        audioOffset = -videoStart
+                                    }
+                                    audioTrimRange = 0 ..< min(videoDuration, audioDuration)
+                                } else {
+                                    audioTrimRange = 0 ..< min(15, audioDuration)
+                                }
+                                
+                                mediaEditor.setAudioTrack(MediaAudioTrack(path: fileName, artist: artist, title: title, duration: audioDuration), trimRange: audioTrimRange, offset: audioOffset)
+
+                                mediaEditor.seek(mediaEditor.values.videoTrimRange?.lowerBound ?? 0.0, andPlay: true)
+                                
+                                self.requestUpdate(transition: .easeInOut(duration: 0.2))
+                                if isScopedResource {
+                                    url.stopAccessingSecurityScopedResource()
+                                }
+                                
+                                mediaEditor.play()
                             }
                         })
                     }
@@ -5220,102 +5240,6 @@ public final class MediaEditorScreenImpl: ViewController, MediaEditorScreen, UID
                     Logger.shared.log("MediaEditor", "coordinator error \(error)")
                 }
             }), in: .window(.root))
-        }
-        
-        private func insertAudio(path: String, fileName: String, file: TelegramMediaFile? = nil, dispose: (() -> Void)? = nil) {
-            guard let mediaEditor = self.mediaEditor else {
-                return
-            }
-            let audioAsset = AVURLAsset(url: URL(fileURLWithPath: path))
-            
-            func loadValues(asset: AVAsset, retryCount: Int, completion: @escaping () -> Void) {
-                asset.loadValuesAsynchronously(forKeys: ["tracks", "duration"], completionHandler: {
-                    if asset.statusOfValue(forKey: "tracks", error: nil) == .loading {
-                        if retryCount < 2 {
-                            Queue.mainQueue().after(0.1, {
-                                loadValues(asset: asset, retryCount: retryCount + 1, completion: completion)
-                            })
-                        } else {
-                            completion()
-                        }
-                    } else {
-                        completion()
-                    }
-                })
-            }
-            
-            loadValues(asset: audioAsset, retryCount: 0, completion: {
-                var audioDuration: Double = 0.0
-                guard let track = audioAsset.tracks(withMediaType: .audio).first else {
-                    Logger.shared.log("MediaEditor", "track is nil")
-                    dispose?()
-                    return
-                }
-                
-                audioDuration = track.timeRange.duration.seconds
-                if audioDuration.isZero {
-                    Logger.shared.log("MediaEditor", "duration is zero")
-                    dispose?()
-                    return
-                }
-                
-                func maybeFixMisencodedText(_ text: String) -> String {
-                    let charactersToSearchFor = CharacterSet(charactersIn: "àåèîóûþÿ")
-                    if text.lowercased().rangeOfCharacter(from: charactersToSearchFor) != nil {
-                        if let data = text.data(using: .windowsCP1252), let string = String(data: data, encoding: .windowsCP1251) {
-                            return string
-                        } else {
-                            return text
-                        }
-                    } else {
-                        return text
-                    }
-                }
-                
-                var artist: String?
-                var title: String?
-                for data in audioAsset.commonMetadata {
-                    if data.commonKey == .commonKeyArtist, let value = data.stringValue {
-                        artist = maybeFixMisencodedText(value)
-                    }
-                    if data.commonKey == .commonKeyTitle, let value = data.stringValue {
-                        title = maybeFixMisencodedText(value)
-                    }
-                }
-                
-                Queue.mainQueue().async {
-                    var audioTrimRange: Range<Double>?
-                    var audioOffset: Double?
-                    
-                    if let videoDuration = mediaEditor.originalCappedDuration {
-                        if let videoStart = mediaEditor.values.videoTrimRange?.lowerBound {
-                            audioOffset = -videoStart
-                        } else if let _ = mediaEditor.values.additionalVideoPath, let videoStart = mediaEditor.values.additionalVideoTrimRange?.lowerBound {
-                            audioOffset = -videoStart
-                        }
-                        audioTrimRange = 0 ..< min(videoDuration, audioDuration)
-                    } else {
-                        audioTrimRange = 0 ..< min(15, audioDuration)
-                    }
-                    
-                    var passFile = false
-                    if let file {
-                        for attribute in file.attributes {
-                            if case let .Audio(_, _, title, _, _) = attribute, let title, !title.isEmpty {
-                                passFile = true
-                            }
-                        }
-                    }
-                    mediaEditor.setAudioTrack(MediaAudioTrack(path: fileName, artist: artist, title: title, duration: audioDuration, file: passFile ? file : nil), trimRange: audioTrimRange, offset: audioOffset)
-
-                    mediaEditor.seek(mediaEditor.values.videoTrimRange?.lowerBound ?? 0.0, andPlay: true)
-                    
-                    self.requestUpdate(transition: .easeInOut(duration: 0.2))
-                    dispose?()
-                    
-                    mediaEditor.play()
-                }
-            })
         }
         
         func presentVideoRemoveConfirmation() {
@@ -5392,7 +5316,6 @@ public final class MediaEditorScreenImpl: ViewController, MediaEditorScreen, UID
             )
             
             if trackId != 0 && !isCollage {
-                items.append(.separator)
                 items.append(
                     .action(
                         ContextMenuActionItem(
@@ -5418,7 +5341,7 @@ public final class MediaEditorScreenImpl: ViewController, MediaEditorScreen, UID
             }
             
             let presentationData = self.context.sharedContext.currentPresentationData.with { $0 }.withUpdated(theme: defaultDarkPresentationTheme)
-            let contextController = makeContextController(presentationData: presentationData, source: .reference(ReferenceContentSource(sourceView: sourceView, contentArea: UIScreen.main.bounds, customPosition: CGPoint(x: 0.0, y: -3.0))), items: .single(ContextController.Items(content: .list(items))))
+            let contextController = ContextController(presentationData: presentationData, source: .reference(ReferenceContentSource(sourceView: sourceView, contentArea: UIScreen.main.bounds, customPosition: CGPoint(x: 0.0, y: -3.0))), items: .single(ContextController.Items(content: .list(items))))
             self.controller?.present(contextController, in: .window(.root))
         }
         
@@ -6712,7 +6635,6 @@ public final class MediaEditorScreenImpl: ViewController, MediaEditorScreen, UID
         public let coverTimestamp: Double?
         public let options: MediaEditorResultPrivacy
         public let stickers: [TelegramMediaFile]
-        public let music: TelegramMediaFile?
         public let randomId: Int64
         
         init() {
@@ -6722,7 +6644,6 @@ public final class MediaEditorScreenImpl: ViewController, MediaEditorScreen, UID
             self.coverTimestamp = nil
             self.options = MediaEditorResultPrivacy(sendAsPeerId: nil, privacy: EngineStoryPrivacy(base: .everyone, additionallyIncludePeers: []), timeout: 0, isForwardingDisabled: false, pin: false, folderIds: [])
             self.stickers = []
-            self.music = nil
             self.randomId = 0
         }
         
@@ -6733,7 +6654,6 @@ public final class MediaEditorScreenImpl: ViewController, MediaEditorScreen, UID
             coverTimestamp: Double? = nil,
             options: MediaEditorResultPrivacy = MediaEditorResultPrivacy(sendAsPeerId: nil, privacy: EngineStoryPrivacy(base: .everyone, additionallyIncludePeers: []), timeout: 0, isForwardingDisabled: false, pin: false, folderIds: []),
             stickers: [TelegramMediaFile] = [],
-            music: TelegramMediaFile? = nil,
             randomId: Int64 = 0
         ) {
             self.media = media
@@ -6742,7 +6662,6 @@ public final class MediaEditorScreenImpl: ViewController, MediaEditorScreen, UID
             self.coverTimestamp = coverTimestamp
             self.options = options
             self.stickers = stickers
-            self.music = music
             self.randomId = randomId
         }
     }
@@ -6754,16 +6673,6 @@ public final class MediaEditorScreenImpl: ViewController, MediaEditorScreen, UID
     let isEditingStoryCover: Bool
     fileprivate let customTarget: EnginePeer.Id?
     let forwardSource: (EnginePeer, EngineStoryItem)?
-    
-    public weak var customNavigationController: UINavigationController?
-    
-    var effectiveNavigationController: UINavigationController? {
-        if let navigationController = self.navigationController {
-            return navigationController
-        } else {
-            return self.customNavigationController
-        }
-    }
     
     let initialCaption: NSAttributedString?
     let initialPrivacy: EngineStoryPrivacy?
@@ -6781,7 +6690,7 @@ public final class MediaEditorScreenImpl: ViewController, MediaEditorScreen, UID
     public var completion: ([MediaEditorScreenImpl.Result], @escaping (@escaping () -> Void) -> Void) -> Void
     public var dismissed: () -> Void = { }
     public var willDismiss: () -> Void = { }
-    public var sendSticker: ((FileMediaReference, UIView?, CGRect?) -> Bool)?
+    public var sendSticker: ((FileMediaReference, UIView, CGRect) -> Bool)?
     
     private var adminedChannels = Promise<[EnginePeer]>()
     private var closeFriends = Promise<[EnginePeer]>()
@@ -7250,7 +7159,7 @@ public final class MediaEditorScreenImpl: ViewController, MediaEditorScreen, UID
             self?.node.presentAudioPicker()
         })))
         
-        let contextController = makeContextController(presentationData: presentationData, source: .reference(HeaderContextReferenceContentSource(controller: self, sourceView: sourceView)), items: .single(ContextController.Items(content: .list(items))), gesture: gesture)
+        let contextController = ContextController(presentationData: presentationData, source: .reference(HeaderContextReferenceContentSource(controller: self, sourceView: sourceView)), items: .single(ContextController.Items(content: .list(items))), gesture: gesture)
         self.present(contextController, in: .window(.root))
     }
     
@@ -7311,7 +7220,7 @@ public final class MediaEditorScreenImpl: ViewController, MediaEditorScreen, UID
                             color: theme.contextMenu.primaryColor
                         )
                     } else {
-                        return UIImage()
+                        return nil
                     }
                 },
                 action: { [weak self] _, a in
@@ -7326,7 +7235,7 @@ public final class MediaEditorScreenImpl: ViewController, MediaEditorScreen, UID
             )))
         }
     
-        let contextController = makeContextController(presentationData: presentationData, source: .reference(HeaderContextReferenceContentSource(controller: self, sourceView: sourceView)), items: .single(ContextController.Items(content: .list(items))), gesture: gesture)
+        let contextController = ContextController(presentationData: presentationData, source: .reference(HeaderContextReferenceContentSource(controller: self, sourceView: sourceView)), items: .single(ContextController.Items(content: .list(items))), gesture: gesture)
         self.present(contextController, in: .window(.root))
     }
     
@@ -7730,11 +7639,11 @@ public final class MediaEditorScreenImpl: ViewController, MediaEditorScreen, UID
         }
         let imagesReady = ValuePromise<Bool>(false, ignoreRepeated: true)
         Queue.concurrentDefaultQueue().async {
-            if !isVideo, let data = try? WebP.convert(toWebP: image, quality: 90.0) {
-                self.context.engine.resources.storeResourceData(id: EngineMediaResource.Id(isVideo ? thumbnailResource.id : resource.id), data: data, synchronous: true)
+            if !isVideo, let data = try? WebP.convert(toWebP: image, quality: 97.0) {
+                self.context.account.postbox.mediaBox.storeResourceData(isVideo ? thumbnailResource.id : resource.id, data: data, synchronous: true)
             }
             if let thumbnailImage = generateScaledImage(image: image, size: CGSize(width: 320.0, height: 320.0), opaque: false, scale: 1.0), let data = try? WebP.convert(toWebP: thumbnailImage, quality: 90.0) {
-                self.context.engine.resources.storeResourceData(id: EngineMediaResource.Id(thumbnailResource.id), data: data, synchronous: true)
+                self.context.account.postbox.mediaBox.storeResourceData(thumbnailResource.id, data: data, synchronous: true)
             }
             imagesReady.set(true)
         }
@@ -7744,54 +7653,47 @@ public final class MediaEditorScreenImpl: ViewController, MediaEditorScreen, UID
         var hasEmojiSelection = true
         if case let .stickerEditor(mode) = self.mode {
             switch mode {
-            case let .generic(canSend):
-                if canSend {
-                    menuItems.append(.action(ContextMenuActionItem(text: presentationData.strings.StickerPack_Send, icon: { theme in generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Resend"), color: theme.contextMenu.primaryColor) }, action: { [weak self] _, f in
+            case .generic:
+                menuItems.append(.action(ContextMenuActionItem(text: presentationData.strings.StickerPack_Send, icon: { theme in generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Resend"), color: theme.contextMenu.primaryColor) }, action: { [weak self] _, f in
+                    guard let self else {
+                        return
+                    }
+                    
+                    if !isVideo {
+                        self.stickerResultController?.disappeared = nil
+                    }
+                    
+                    let _ = (imagesReady.get()
+                    |> filter { $0 }
+                    |> take(1)
+                    |> deliverOnMainQueue).start(next: { [weak self] _ in
                         guard let self else {
                             return
                         }
-                        
-                        if !isVideo {
-                            self.stickerResultController?.disappeared = nil
-                        }
-                        
-                        if self.node.mediaEditor?.values.hasChanges == true {
-                            print()
-                        }
-                        
-                        let _ = (imagesReady.get()
-                        |> filter { $0 }
-                        |> take(1)
-                        |> deliverOnMainQueue).start(next: { [weak self] _ in
-                            guard let self else {
-                                return
-                            }
-                            if isVideo {
-                                self.uploadSticker(file, action: .send)
-                            } else {
-                                self.completion([MediaEditorScreenImpl.Result(
-                                    media: .sticker(file: file, emoji: self.effectiveStickerEmoji()),
-                                    mediaAreas: [],
-                                    caption: NSAttributedString(),
-                                    coverTimestamp: nil,
-                                    options: MediaEditorResultPrivacy(sendAsPeerId: nil, privacy: EngineStoryPrivacy(base: .everyone, additionallyIncludePeers: []), timeout: 0, isForwardingDisabled: false, pin: false, folderIds: []),
-                                    stickers: [],
-                                    music: nil,
-                                    randomId: 0
-                                )], { [weak self] finished in
-                                    self?.node.animateOut(finished: true, saveDraft: false, completion: { [weak self] in
-                                        self?.dismiss()
-                                        Queue.mainQueue().justDispatch {
-                                            finished()
-                                        }
-                                    })
+                        if isVideo {
+                            self.uploadSticker(file, action: .send)
+                        } else {
+                            self.completion([MediaEditorScreenImpl.Result(
+                                media: .sticker(file: file, emoji: self.effectiveStickerEmoji()),
+                                mediaAreas: [],
+                                caption: NSAttributedString(),
+                                coverTimestamp: nil,
+                                options: MediaEditorResultPrivacy(sendAsPeerId: nil, privacy: EngineStoryPrivacy(base: .everyone, additionallyIncludePeers: []), timeout: 0, isForwardingDisabled: false, pin: false, folderIds: []),
+                                stickers: [],
+                                randomId: 0
+                            )], { [weak self] finished in
+                                self?.node.animateOut(finished: true, saveDraft: false, completion: { [weak self] in
+                                    self?.dismiss()
+                                    Queue.mainQueue().justDispatch {
+                                        finished()
+                                    }
                                 })
-                            }
-                        })
-                        
-                        f(.default)
-                    })))
-                }
+                            })
+                        }
+                    })
+                    
+                    f(.default)
+                })))
                 menuItems.append(.action(ContextMenuActionItem(text: presentationData.strings.Stickers_AddToFavorites, icon: { theme in generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Fave"), color: theme.contextMenu.primaryColor) }, action: { [weak self] _, f in
                     f(.default)
                     guard let self else {
@@ -7834,7 +7736,13 @@ public final class MediaEditorScreenImpl: ViewController, MediaEditorScreen, UID
                             return true
                         }
                         if pack.count >= 120 {
-                            let controller = UndoOverlayController(presentationData: presentationData, content: .info(title: nil, text: presentationData.strings.MediaEditor_StickersTooMuch, timeout: nil, customUndoText: nil), elevatedLayout: false, position: .top, animateInAsReplacement: false, action: { _ in
+                            let controller = UndoOverlayController(presentationData: presentationData, content: .info(title: nil, text: presentationData.strings.MediaEditor_StickersTooMuch, timeout: nil, customUndoText: nil), elevatedLayout: false, position: .top, animateInAsReplacement: false, action: { [weak self] action in
+                                if case .info = action, let self {
+                                    let controller = context.sharedContext.makePremiumIntroController(context: context, source: .stories, forceDark: true, dismissed: {
+                                        
+                                    })
+                                    self.push(controller)
+                                }
                                 return false
                             })
                             self.hapticFeedback.error()
@@ -7943,7 +7851,7 @@ public final class MediaEditorScreenImpl: ViewController, MediaEditorScreen, UID
         portalView.view.layer.rasterizationScale = UIScreenScale
         self.node.previewContentContainerView.addPortal(view: portalView)
         
-        let stickerResultController = makePeekController(
+        let stickerResultController = PeekController(
             presentationData: presentationData,
             content: StickerPreviewPeekContent(
                 context: self.context,
@@ -8093,16 +8001,15 @@ public final class MediaEditorScreenImpl: ViewController, MediaEditorScreen, UID
                     return .single((.progress(progress * 0.5), nil))
                 case let .complete(resource):
                     if let resource = resource as? CloudDocumentMediaResource {
-                        return .single((.progress(1.0), nil)) |> then(.single((.complete(EngineMediaResource(resource), mimeType), nil)))
+                        return .single((.progress(1.0), nil)) |> then(.single((.complete(resource, mimeType), nil)))
                     } else {
-                        return context.engine.stickers.uploadSticker(peer: peer, resource: EngineMediaResource(resource), thumbnail: file.previewRepresentations.first.flatMap { EngineMediaResource($0.resource) }, alt: "", dimensions: dimensions, duration: duration, mimeType: mimeType)
+                        return context.engine.stickers.uploadSticker(peer: peer._asPeer(), resource: resource, thumbnail: file.previewRepresentations.first?.resource, alt: "", dimensions: dimensions, duration: duration, mimeType: mimeType)
                         |> mapToSignal { status -> Signal<(UploadStickerStatus, (StickerPackReference, String)?), UploadStickerError> in
                             switch status {
                             case let .progress(progress):
                                 return .single((.progress(isVideo ? 0.5 + progress * 0.5 : progress), nil))
                             case let .complete(resource, _):
-                                let rawResource = resource._asResource() as! TelegramMediaResource
-                                let file = stickerFile(resource: rawResource, thumbnailResource: file.previewRepresentations.first?.resource, size: file.size ?? 0, dimensions: dimensions, duration: file.duration, isVideo: isVideo)
+                                let file = stickerFile(resource: resource, thumbnailResource: file.previewRepresentations.first?.resource, size: file.size ?? 0, dimensions: dimensions, duration: file.duration, isVideo: isVideo)
                                 switch action {
                                 case .send:
                                     return .single((status, nil))
@@ -8116,7 +8023,7 @@ public final class MediaEditorScreenImpl: ViewController, MediaEditorScreen, UID
                                     }
                                 case let .createStickerPack(title):
                                     let sticker = ImportSticker(
-                                        resource: .standalone(resource: rawResource),
+                                        resource: .standalone(resource: resource),
                                         emojis: emojis,
                                         dimensions: dimensions,
                                         duration: duration,
@@ -8136,7 +8043,7 @@ public final class MediaEditorScreenImpl: ViewController, MediaEditorScreen, UID
                                     }
                                 case let .addToStickerPack(pack, title):
                                     let sticker = ImportSticker(
-                                        resource: .standalone(resource: rawResource),
+                                        resource: .standalone(resource: resource),
                                         emojis: emojis,
                                         dimensions: dimensions,
                                         duration: duration,
@@ -8174,15 +8081,14 @@ public final class MediaEditorScreenImpl: ViewController, MediaEditorScreen, UID
                     self?.stickerUploadDisposable.set(nil)
                 })
             case let .complete(resource, _):
-                let rawResource = resource._asResource() as! TelegramMediaResource
-                let navigationController = self.effectiveNavigationController as? NavigationController
-
+                let navigationController = self.navigationController as? NavigationController
+                
                 let result: MediaEditorScreenImpl.Result
                 switch action {
                 case .update:
                     result = MediaEditorScreenImpl.Result(media: .sticker(file: file, emoji: emojis))
                 case .upload, .send:
-                    let file = stickerFile(resource: rawResource, thumbnailResource: file.previewRepresentations.first?.resource, size: rawResource.size ?? 0, dimensions: dimensions, duration: self.preferredStickerDuration(), isVideo: isVideo)
+                    let file = stickerFile(resource: resource, thumbnailResource: file.previewRepresentations.first?.resource, size: resource.size ?? 0, dimensions: dimensions, duration: self.preferredStickerDuration(), isVideo: isVideo)
                     result = MediaEditorScreenImpl.Result(media: .sticker(file: file, emoji: emojis))
                 default:
                     result = MediaEditorScreenImpl.Result()
@@ -8204,7 +8110,7 @@ public final class MediaEditorScreenImpl: ViewController, MediaEditorScreen, UID
                                     parentController.present(UndoOverlayController(presentationData: presentationData, content: .sticker(context: self.context, file: file, loop: true, title: nil, text: presentationData.strings.Conversation_StickerAddedToFavorites, undoText: nil, customAction: nil), elevatedLayout: false, action: { _ in return false }), in: .current)
                                 }
                             case .addToStickerPack, .createStickerPack:
-                                if let (packReference, packTitle) = packReferenceAndTitle, let navigationController {
+                                if let (packReference, packTitle) = packReferenceAndTitle, let navigationController = self.navigationController as? NavigationController {
                                     Queue.mainQueue().after(0.2) {
                                         let controller = self.context.sharedContext.makeStickerPackScreen(context: self.context, updatedPresentationData: nil, mainStickerPack: packReference, stickerPacks: [packReference], loadedStickerPacks: [], actionTitle: nil, isEditing: false, expandIfNeeded: true, parentNavigationController: navigationController, sendSticker: self.sendSticker, actionPerformed: nil)
                                         (navigationController.viewControllers.last as? ViewController)?.present(controller, in: .window(.root))
@@ -8443,7 +8349,7 @@ public final class MediaEditorScreenImpl: ViewController, MediaEditorScreen, UID
                             self.videoExport = nil
                             if let toStickerResource {
                                 if let data = try? Data(contentsOf: URL(fileURLWithPath: outputPath)) {
-                                    self.context.engine.resources.storeResourceData(id: EngineMediaResource.Id(toStickerResource.id), data: data, synchronous: true)
+                                    self.context.account.postbox.mediaBox.storeResourceData(toStickerResource.id, data: data, synchronous: true)
                                 }
                             } else {
                                 saveToPhotos(outputPath, true)

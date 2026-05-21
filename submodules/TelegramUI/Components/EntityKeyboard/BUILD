@@ -7,7 +7,7 @@ swift_library(
         "Sources/**/*.swift",
     ]),
     copts = [
-        "-warnings-as-errors",
+        #"-warnings-as-errors",
     ],
     deps = [
         "//submodules/SSignalKit/SwiftSignalKit:SwiftSignalKit",
@@ -28,7 +28,6 @@ swift_library(
         "//submodules/TelegramUI/Components/LottieAnimationCache:LottieAnimationCache",
         "//submodules/TelegramUI/Components/VideoAnimationCache:VideoAnimationCache",
         "//submodules/TelegramUI/Components/MultiAnimationRenderer:MultiAnimationRenderer",
-        "//submodules/TelegramUI/Components/DCTMultiAnimationRendererImpl:DCTMultiAnimationRendererImpl",
         "//submodules/TelegramUI/Components/EmojiTextAttachmentView:EmojiTextAttachmentView",
         "//submodules/TelegramUI/Components/EmojiStatusComponent:EmojiStatusComponent",
         "//submodules/TelegramUI/Components/LottieComponent",
@@ -53,10 +52,6 @@ swift_library(
         "//submodules/TelegramCore/FlatSerialization",
         "//submodules/TelegramUI/Components/BatchVideoRendering",
         "//submodules/TelegramUI/Components/GifVideoLayer",
-        "//submodules/TelegramUI/Components/GlassBackgroundComponent",
-        "//submodules/TelegramUI/Components/EdgeEffect",
-        "//submodules/TelegramUI/Components/LiquidLens",
-        "//submodules/TelegramUI/Components/TabSelectionRecognizer",
     ],
     visibility = [
         "//visibility:public",

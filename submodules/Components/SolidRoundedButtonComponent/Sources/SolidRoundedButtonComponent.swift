@@ -19,7 +19,6 @@ public final class SolidRoundedButtonComponent: Component {
     public let height: CGFloat
     public let cornerRadius: CGFloat
     public let gloss: Bool
-    public let glass: Bool
     public let isEnabled: Bool
     public let iconName: String?
     public let animationName: String?
@@ -40,7 +39,6 @@ public final class SolidRoundedButtonComponent: Component {
         height: CGFloat = 48.0,
         cornerRadius: CGFloat = 24.0,
         gloss: Bool = false,
-        glass: Bool = false,
         isEnabled: Bool = true,
         iconName: String? = nil,
         animationName: String? = nil,
@@ -60,7 +58,6 @@ public final class SolidRoundedButtonComponent: Component {
         self.height = height
         self.cornerRadius = cornerRadius
         self.gloss = gloss
-        self.glass = glass
         self.isEnabled = isEnabled
         self.iconName = iconName
         self.animationName = animationName
@@ -102,9 +99,6 @@ public final class SolidRoundedButtonComponent: Component {
             return false
         }
         if lhs.gloss != rhs.gloss {
-            return false
-        }
-        if lhs.glass != rhs.glass {
             return false
         }
         if lhs.isEnabled != rhs.isEnabled {

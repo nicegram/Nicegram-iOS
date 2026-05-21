@@ -5,20 +5,17 @@ import TelegramApi
 extension TelegramExtendedMedia {
     init?(apiExtendedMedia: Api.MessageExtendedMedia, peerId: PeerId) {
         switch apiExtendedMedia {
-        case let .messageExtendedMediaPreview(messageExtendedMediaPreviewData):
-            let (width, height, thumb, videoDuration) = (messageExtendedMediaPreviewData.w, messageExtendedMediaPreviewData.h, messageExtendedMediaPreviewData.thumb, messageExtendedMediaPreviewData.videoDuration)
+        case let .messageExtendedMediaPreview(_, width, height, thumb, videoDuration):
             var dimensions: PixelDimensions?
             if let width = width, let height = height {
                 dimensions = PixelDimensions(width: width, height: height)
             }
             var immediateThumbnailData: Data?
-            if let thumb = thumb, case let .photoStrippedSize(photoStrippedSizeData) = thumb {
-                let bytes = photoStrippedSizeData.bytes
+            if let thumb = thumb, case let .photoStrippedSize(_, bytes) = thumb {
                 immediateThumbnailData = bytes.makeData()
             }
             self = .preview(dimensions: dimensions, immediateThumbnailData: immediateThumbnailData, videoDuration: videoDuration)
-        case let .messageExtendedMedia(messageExtendedMediaData):
-            let apiMedia = messageExtendedMediaData.media
+        case let .messageExtendedMedia(apiMedia):
             if let media = textMediaAndExpirationTimerFromApiMedia(apiMedia, peerId).media {
                 self = .full(media: media)
             } else {

@@ -11,6 +11,7 @@ import TelegramPresentationData
 import TelegramUIPreferences
 import MediaResources
 import AccountContext
+import ShareController
 import GalleryUI
 import HexColor
 import CounterControllerTitleView
@@ -215,7 +216,7 @@ public class WallpaperGalleryController: ViewController {
     private var previousCentralEntryIndex: Int?
     
     private let centralItemSubtitle = Promise<String?>()
-    private let centralItemStatus = Promise<EngineMediaResource.FetchStatus>()
+    private let centralItemStatus = Promise<MediaResourceStatus>()
     private let centralItemAction = Promise<UIBarButtonItem?>()
     private let centralItemAttributesDisposable = DisposableSet();
     
@@ -395,7 +396,7 @@ public class WallpaperGalleryController: ViewController {
             self.title = self.presentationData.strings.WallpaperPreview_Title
         }
         self.statusBar.statusBarStyle = self.presentationData.theme.rootController.statusBarStyle.style
-        self.navigationBar?.updatePresentationData(NavigationBarPresentationData(presentationData: self.presentationData), transition: .immediate)
+        self.navigationBar?.updatePresentationData(NavigationBarPresentationData(presentationData: self.presentationData))
         self.toolbarNode?.updateThemeAndStrings(theme: self.presentationData.theme, strings: self.presentationData.strings)
         self.patternPanelNode?.updateTheme(self.presentationData.theme)
 
@@ -444,10 +445,8 @@ public class WallpaperGalleryController: ViewController {
         }, editMedia: { _ in
         }, controller: { [weak self] in
             return self
-        }, currentItemNode: { [weak self] in
-            return self?.galleryNode.pager.centralItemNode()
         })
-        self.displayNode = WallpaperGalleryControllerNode(context: self.context, controllerInteraction: controllerInteraction, titleView: nil, pageGap: 0.0, disableTapNavigation: true)
+        self.displayNode = WallpaperGalleryControllerNode(context: self.context, controllerInteraction: controllerInteraction, pageGap: 0.0, disableTapNavigation: true)
         self.displayNodeDidLoad()
 
         (self.displayNode as? WallpaperGalleryControllerNode)?.nativeStatusBar = self.statusBar
@@ -565,14 +564,14 @@ public class WallpaperGalleryController: ViewController {
                                 if let resource = resource {
                                     let representation = CachedBlurredWallpaperRepresentation()
                                     var data: Data?
-                                    if let path = strongSelf.context.engine.resources.completedResourcePath(id: EngineMediaResource.Id(resource.id)), let maybeData = try? Data(contentsOf: URL(fileURLWithPath: path), options: .mappedRead) {
+                                    if let path = strongSelf.context.account.postbox.mediaBox.completedResourcePath(resource), let maybeData = try? Data(contentsOf: URL(fileURLWithPath: path), options: .mappedRead) {
                                         data = maybeData
-                                    } else if let path = strongSelf.context.sharedContext.accountManager.resources.completedResourcePath(resource: EngineMediaResource(resource)), let maybeData = try? Data(contentsOf: URL(fileURLWithPath: path), options: .mappedRead) {
+                                    } else if let path = strongSelf.context.sharedContext.accountManager.mediaBox.completedResourcePath(resource), let maybeData = try? Data(contentsOf: URL(fileURLWithPath: path), options: .mappedRead) {
                                         data = maybeData
                                     }
                                     
                                     if let data = data {
-                                        strongSelf.context.sharedContext.accountManager.resources.storeResourceData(id: EngineMediaResource.Id(resource.id), data: data, synchronous: true)
+                                        strongSelf.context.sharedContext.accountManager.mediaBox.storeResourceData(resource.id, data: data, synchronous: true)
                                         let _ = (strongSelf.context.sharedContext.accountManager.mediaBox.cachedResourceRepresentation(resource, representation: representation, complete: true, fetch: true)
                                         |> filter({ $0.complete })
                                         |> take(1)
@@ -654,14 +653,14 @@ public class WallpaperGalleryController: ViewController {
                                         if let resource = resource {
                                             let representation = CachedBlurredWallpaperRepresentation()
                                             var data: Data?
-                                            if let path = strongSelf.context.engine.resources.completedResourcePath(id: EngineMediaResource.Id(resource.id)), let maybeData = try? Data(contentsOf: URL(fileURLWithPath: path), options: .mappedRead) {
+                                            if let path = strongSelf.context.account.postbox.mediaBox.completedResourcePath(resource), let maybeData = try? Data(contentsOf: URL(fileURLWithPath: path), options: .mappedRead) {
                                                 data = maybeData
-                                            } else if let path = strongSelf.context.sharedContext.accountManager.resources.completedResourcePath(resource: EngineMediaResource(resource)), let maybeData = try? Data(contentsOf: URL(fileURLWithPath: path), options: .mappedRead) {
+                                            } else if let path = strongSelf.context.sharedContext.accountManager.mediaBox.completedResourcePath(resource), let maybeData = try? Data(contentsOf: URL(fileURLWithPath: path), options: .mappedRead) {
                                                 data = maybeData
                                             }
                                             
                                             if let data = data {
-                                                strongSelf.context.sharedContext.accountManager.resources.storeResourceData(id: EngineMediaResource.Id(resource.id), data: data, synchronous: true)
+                                                strongSelf.context.sharedContext.accountManager.mediaBox.storeResourceData(resource.id, data: data, synchronous: true)
                                                 let _ = (strongSelf.context.sharedContext.accountManager.mediaBox.cachedResourceRepresentation(resource, representation: representation, complete: true, fetch: true)
                                                 |> filter({ $0.complete })
                                                 |> take(1)
@@ -674,31 +673,31 @@ public class WallpaperGalleryController: ViewController {
                                         if wallpaper.isPattern, !file.settings.colors.isEmpty, let _ = file.settings.intensity {
                                             var data: Data?
                                             var thumbnailData: Data?
-                                            if let path = strongSelf.context.engine.resources.completedResourcePath(id: EngineMediaResource.Id(resource.id)), let maybeData = try? Data(contentsOf: URL(fileURLWithPath: path), options: .mappedRead) {
+                                            if let path = strongSelf.context.account.postbox.mediaBox.completedResourcePath(resource), let maybeData = try? Data(contentsOf: URL(fileURLWithPath: path), options: .mappedRead) {
                                                 data = maybeData
-                                            } else if let path = strongSelf.context.sharedContext.accountManager.resources.completedResourcePath(resource: EngineMediaResource(resource)), let maybeData = try? Data(contentsOf: URL(fileURLWithPath: path), options: .mappedRead) {
+                                            } else if let path = strongSelf.context.sharedContext.accountManager.mediaBox.completedResourcePath(resource), let maybeData = try? Data(contentsOf: URL(fileURLWithPath: path), options: .mappedRead) {
                                                 data = maybeData
                                             }
 
                                             let thumbnailResource = file.file.previewRepresentations.first?.resource
 
                                             if let resource = thumbnailResource {
-                                                if let path = strongSelf.context.engine.resources.completedResourcePath(id: EngineMediaResource.Id(resource.id)), let maybeData = try? Data(contentsOf: URL(fileURLWithPath: path), options: .mappedRead) {
+                                                if let path = strongSelf.context.account.postbox.mediaBox.completedResourcePath(resource), let maybeData = try? Data(contentsOf: URL(fileURLWithPath: path), options: .mappedRead) {
                                                     thumbnailData = maybeData
-                                                } else if let path = strongSelf.context.sharedContext.accountManager.resources.completedResourcePath(resource: EngineMediaResource(resource)), let maybeData = try? Data(contentsOf: URL(fileURLWithPath: path), options: .mappedRead) {
+                                                } else if let path = strongSelf.context.sharedContext.accountManager.mediaBox.completedResourcePath(resource), let maybeData = try? Data(contentsOf: URL(fileURLWithPath: path), options: .mappedRead) {
                                                     thumbnailData = maybeData
                                                 }
                                             }
                                             
                                             if let data = data {
-                                                strongSelf.context.sharedContext.accountManager.resources.storeResourceData(id: EngineMediaResource.Id(resource.id), data: data, synchronous: true)
+                                                strongSelf.context.sharedContext.accountManager.mediaBox.storeResourceData(resource.id, data: data, synchronous: true)
                                                 if let thumbnailResource = thumbnailResource, let thumbnailData = thumbnailData {
-                                                    strongSelf.context.sharedContext.accountManager.resources.storeResourceData(id: EngineMediaResource.Id(thumbnailResource.id), data: thumbnailData, synchronous: true)
+                                                    strongSelf.context.sharedContext.accountManager.mediaBox.storeResourceData(thumbnailResource.id, data: thumbnailData, synchronous: true)
                                                 }
                                                 completion(wallpaper)
                                             }
-                                        } else if let path = strongSelf.context.engine.resources.completedResourcePath(id: EngineMediaResource.Id(file.file.resource.id)), let data = try? Data(contentsOf: URL(fileURLWithPath: path), options: .mappedRead) {
-                                                strongSelf.context.sharedContext.accountManager.resources.storeResourceData(id: EngineMediaResource.Id(file.file.resource.id), data: data)
+                                        } else if let path = strongSelf.context.account.postbox.mediaBox.completedResourcePath(file.file.resource), let data = try? Data(contentsOf: URL(fileURLWithPath: path), options: .mappedRead) {
+                                                strongSelf.context.sharedContext.accountManager.mediaBox.storeResourceData(file.file.resource.id, data: data)
                                                 completion(wallpaper)
                                         }
                                     } else {
@@ -1099,6 +1098,7 @@ public class WallpaperGalleryController: ViewController {
             return
         }
         
+        var controller: ShareController?
         var options: [String] = []
         if (itemNode.options.contains(.blur)) {
             if (itemNode.options.contains(.motion)) {
@@ -1109,13 +1109,8 @@ public class WallpaperGalleryController: ViewController {
         } else if (itemNode.options.contains(.motion)) {
             options.append("mode=motion")
         }
-
+        
         let context = self.context
-        let actionCompleted: () -> Void = { [weak self] in
-            let presentationData = context.sharedContext.currentPresentationData.with { $0 }
-            self?.present(UndoOverlayController(presentationData: presentationData, content: .linkCopied(title: nil, text: presentationData.strings.Conversation_LinkCopied), elevatedLayout: false, animateInAsReplacement: false, action: { _ in return false }), in: .window(.root))
-        }
-
         switch wallpaper {
             case .image:
                 let _ = (context.wallpaperUploadManager!.stateSignal()
@@ -1128,8 +1123,12 @@ public class WallpaperGalleryController: ViewController {
                         if !options.isEmpty {
                             optionsString = "?\(options.joined(separator: "&"))"
                         }
-
-                        let shareController = context.sharedContext.makeShareController(context: context, params: ShareControllerParams(subject: .url("https://t.me/bg/\(file.slug)\(optionsString)"), actionCompleted: actionCompleted))
+                        
+                        let shareController = ShareController(context: context, subject: .url("https://t.me/bg/\(file.slug)\(optionsString)"))
+                        shareController.actionCompleted = { [weak self] in
+                            let presentationData = context.sharedContext.currentPresentationData.with { $0 }
+                            self?.present(UndoOverlayController(presentationData: presentationData, content: .linkCopied(title: nil, text: presentationData.strings.Conversation_LinkCopied), elevatedLayout: false, animateInAsReplacement: false, action: { _ in return false }), in: .window(.root))
+                        }
                         self?.present(shareController, in: .window(.root), blockInteraction: true)
                     }
                 })
@@ -1158,17 +1157,15 @@ public class WallpaperGalleryController: ViewController {
                         options.append("rotation=\(rotation)")
                     }
                 }
-
+                
                 var optionsString = ""
                 if !options.isEmpty {
                     optionsString = "?\(options.joined(separator: "&"))"
                 }
-
-                let controller = context.sharedContext.makeShareController(context: context, params: ShareControllerParams(subject: .url("https://t.me/bg/\(file.slug)\(optionsString)"), actionCompleted: actionCompleted))
-                self.present(controller, in: .window(.root), blockInteraction: true)
+                
+                controller = ShareController(context: context, subject: .url("https://t.me/bg/\(file.slug)\(optionsString)"))
             case let .color(color):
-                let controller = context.sharedContext.makeShareController(context: context, params: ShareControllerParams(subject: .url("https://t.me/bg/\(UIColor(rgb: color).hexString)"), actionCompleted: actionCompleted))
-                self.present(controller, in: .window(.root), blockInteraction: true)
+                controller = ShareController(context: context, subject: .url("https://t.me/bg/\(UIColor(rgb: color).hexString)"))
             case let .gradient(gradient):
                 var colorsString = ""
 
@@ -1183,10 +1180,16 @@ public class WallpaperGalleryController: ViewController {
                     colorsString.append(UIColor(rgb: color).hexString)
                 }
 
-                let controller = context.sharedContext.makeShareController(context: context, params: ShareControllerParams(subject: .url("https://t.me/bg/\(colorsString)"), actionCompleted: actionCompleted))
-                self.present(controller, in: .window(.root), blockInteraction: true)
+                controller = ShareController(context: context, subject: .url("https://t.me/bg/\(colorsString)"))
             default:
                 break
+        }
+        if let controller = controller {
+            controller.actionCompleted = { [weak self] in
+                let presentationData = context.sharedContext.currentPresentationData.with { $0 }
+                self?.present(UndoOverlayController(presentationData: presentationData, content: .linkCopied(title: nil, text: presentationData.strings.Conversation_LinkCopied), elevatedLayout: false, animateInAsReplacement: false, action: { _ in return false }), in: .window(.root))
+            }
+            self.present(controller, in: .window(.root), blockInteraction: true)
         }
     }
 }

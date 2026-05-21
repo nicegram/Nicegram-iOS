@@ -7,16 +7,15 @@ swift_library(
 		"Sources/**/*.swift",
     ]),
     copts = [
-        "-warnings-as-errors",
+        #"-warnings-as-errors",
     ],
     deps = [
-        "//submodules/AsyncDisplayKit",
-        "//submodules/Display",
-        "//submodules/TelegramPresentationData",
-        "//submodules/TelegramStringFormatting",
-        "//submodules/SegmentedControlNode",
-        "//submodules/DirectionalPanGesture",
-        "//submodules/TextFormat",
+        "//submodules/AsyncDisplayKit:AsyncDisplayKit",
+        "//submodules/Display:Display",
+        "//submodules/TelegramPresentationData:TelegramPresentationData",
+        "//submodules/TelegramStringFormatting:TelegramStringFormatting",
+        "//submodules/SegmentedControlNode:SegmentedControlNode",
+        "//submodules/DirectionalPanGesture:DirectionalPanGesture",
     ],
     visibility = [
         "//visibility:public",

@@ -11,6 +11,7 @@ import AccountContext
 import TelegramCore
 import MultilineTextComponent
 import EmojiStatusComponent
+import Postbox
 import TelegramStringFormatting
 import CheckNode
 import AvatarNode
@@ -101,22 +102,35 @@ private let smallExtensionFont = Font.with(size: 12.0, design: .round, weight: .
 private final class FileListItemComponent: Component {
     enum Icon: Equatable {
         case fileExtension(String)
-        case mediaFile(TelegramMediaFile, TelegramMediaImageRepresentation)
-        case mediaImage(TelegramMediaImage, TelegramMediaImageRepresentation)
+        case media(Media, TelegramMediaImageRepresentation)
         case audio
-
+        
         static func ==(lhs: Icon, rhs: Icon) -> Bool {
-            switch (lhs, rhs) {
-            case let (.fileExtension(l), .fileExtension(r)):
-                return l == r
-            case let (.mediaFile(lFile, lRepresentation), .mediaFile(rFile, rRepresentation)):
-                return lFile.fileId == rFile.fileId && lRepresentation == rRepresentation
-            case let (.mediaImage(lImage, lRepresentation), .mediaImage(rImage, rRepresentation)):
-                return lImage.imageId == rImage.imageId && lRepresentation == rRepresentation
-            case (.audio, .audio):
-                return true
-            default:
-                return false
+            switch lhs {
+            case let .fileExtension(value):
+                if case .fileExtension(value) = rhs {
+                    return true
+                } else {
+                    return false
+                }
+            case let .media(media, representation):
+                if case let .media(rhsMedia, rhsRepresentation) = rhs {
+                    if media.id != rhsMedia.id {
+                        return false
+                    }
+                    if representation != rhsRepresentation {
+                        return false
+                    }
+                    return true
+                } else {
+                    return false
+                }
+            case .audio:
+                if case .audio = rhs {
+                    return true
+                } else {
+                    return false
+                }
             }
         }
     }
@@ -431,34 +445,25 @@ private final class FileListItemComponent: Component {
                 }
             }
             
-            let mediaRepresentation: TelegramMediaImageRepresentation?
-            switch component.icon {
-            case let .mediaFile(_, representation), let .mediaImage(_, representation):
-                mediaRepresentation = representation
-            default:
-                mediaRepresentation = nil
-            }
-
-            if let representation = mediaRepresentation {
+            if case let .media(media, representation) = component.icon {
                 var resetImage = false
-
+                
                 let iconImageNode: TransformImageNode
                 if let current = self.iconImageNode {
                     iconImageNode = current
                 } else {
                     resetImage = true
-
+                    
                     iconImageNode = TransformImageNode()
                     self.iconImageNode = iconImageNode
                     self.containerButton.addSubview(iconImageNode.view)
                 }
-
+                
                 let iconSize = CGSize(width: 40.0, height: 40.0)
                 let imageSize: CGSize = representation.dimensions.cgSize
-
+                
                 if resetImage {
-                    switch component.icon {
-                    case let .mediaFile(file, _):
+                    if let file = media as? TelegramMediaFile {
                         iconImageNode.setSignal(chatWebpageSnippetFile(
                             account: component.context.account,
                             userLocation: .peer(component.messageId.peerId),
@@ -466,21 +471,19 @@ private final class FileListItemComponent: Component {
                             representation: representation,
                             automaticFetch: false
                         ))
-                    case let .mediaImage(image, _):
+                    } else if let image = media as? TelegramMediaImage {
                         iconImageNode.setSignal(mediaGridMessagePhoto(
                             account: component.context.account,
                             userLocation: .peer(component.messageId.peerId),
                             photoReference: ImageMediaReference.standalone(media: image),
                             automaticFetch: false
                         ))
-                    default:
-                        break
                     }
                 }
-
+                
                 let iconFrame = CGRect(origin: CGPoint(x: iconLeftInset + floor((leftInset - iconLeftInset - iconSize.width) / 2.0), y: floor((height - verticalInset * 2.0 - iconSize.height) / 2.0)), size: iconSize)
                 transition.setFrame(view: iconImageNode.view, frame: iconFrame)
-
+                
                 let iconImageLayout = iconImageNode.asyncLayout()
                 let iconImageApply = iconImageLayout(TransformImageArguments(
                     corners: ImageCorners(radius: 8.0),
@@ -628,11 +631,11 @@ final class StorageFileListPanelComponent: Component {
     typealias EnvironmentType = StorageUsagePanelEnvironment
     
     final class Item: Equatable {
-        let message: EngineMessage
+        let message: Message
         let size: Int64
-
+        
         init(
-            message: EngineMessage,
+            message: Message,
             size: Int64
         ) {
             self.message = message
@@ -701,46 +704,43 @@ final class StorageFileListPanelComponent: Component {
     private struct ItemLayout: Equatable {
         let containerInsets: UIEdgeInsets
         let containerWidth: CGFloat
-        let sideInset: CGFloat
         let itemHeight: CGFloat
         let itemCount: Int
-
+        
         let contentHeight: CGFloat
-
+        
         init(
             containerInsets: UIEdgeInsets,
             containerWidth: CGFloat,
-            sideInset: CGFloat,
             itemHeight: CGFloat,
             itemCount: Int
         ) {
             self.containerInsets = containerInsets
             self.containerWidth = containerWidth
-            self.sideInset = sideInset
             self.itemHeight = itemHeight
             self.itemCount = itemCount
-
+            
             self.contentHeight = containerInsets.top + containerInsets.bottom + CGFloat(itemCount) * itemHeight
         }
-
+        
         func visibleItems(for rect: CGRect) -> Range<Int>? {
             let offsetRect = rect.offsetBy(dx: -self.containerInsets.left, dy: -self.containerInsets.top)
             var minVisibleRow = Int(floor((offsetRect.minY) / (self.itemHeight)))
             minVisibleRow = max(0, minVisibleRow)
             let maxVisibleRow = Int(ceil((offsetRect.maxY) / (self.itemHeight)))
-
+            
             let minVisibleIndex = minVisibleRow
             let maxVisibleIndex = maxVisibleRow
-
+            
             if maxVisibleIndex >= minVisibleIndex {
                 return minVisibleIndex ..< (maxVisibleIndex + 1)
             } else {
                 return nil
             }
         }
-
+        
         func itemFrame(for index: Int) -> CGRect {
-            return CGRect(origin: CGPoint(x: self.sideInset, y: self.containerInsets.top + CGFloat(index) * self.itemHeight), size: CGSize(width: self.containerWidth - self.sideInset * 2.0, height: self.itemHeight))
+            return CGRect(origin: CGPoint(x: 0.0, y: self.containerInsets.top + CGFloat(index) * self.itemHeight), size: CGSize(width: self.containerWidth, height: self.itemHeight))
         }
     }
     
@@ -752,48 +752,37 @@ final class StorageFileListPanelComponent: Component {
     
     class View: UIView, UIScrollViewDelegate {
         private let scrollView: ScrollViewImpl
-        private let listBackgroundView: UIImageView
-        private let listMaskView: UIImageView
-
+        
         private let measureItem = ComponentView<Empty>()
         private var visibleItems: [EngineMessage.Id: ComponentView<Empty>] = [:]
-
+        
         private var ignoreScrolling: Bool = false
-
+        
         private var component: StorageFileListPanelComponent?
         private var environment: StorageUsagePanelEnvironment?
         private var itemLayout: ItemLayout?
-
+        
         override init(frame: CGRect) {
             self.scrollView = ScrollViewImpl()
-            self.listBackgroundView = UIImageView()
-            self.listBackgroundView.image = generateStretchableFilledCircleImage(diameter: 26.0 * 2.0, color: .white)?.withRenderingMode(.alwaysTemplate)
-            self.listMaskView = UIImageView()
-            self.listMaskView.image = generateImage(CGSize(width: 16.0 + 26.0 * 2.0 + 16.0, height: 26.0 * 2.0), rotatedContext: { size, context in
-                context.clear(CGRect(origin: CGPoint(), size: size))
-                context.setFillColor(UIColor.white.cgColor)
-                context.fill(CGRect(origin: CGPoint(), size: size))
-                context.setFillColor(UIColor.clear.cgColor)
-                context.setBlendMode(.copy)
-                context.fillEllipse(in: CGRect(origin: CGPoint(x: 16.0, y: 0.0), size: CGSize(width: 26.0 * 2.0, height: 26.0 * 2.0)))
-            })?.stretchableImage(withLeftCapWidth: 16 + 26, topCapHeight: 26).withRenderingMode(.alwaysTemplate)
-
+            
             super.init(frame: frame)
-
-            self.addSubview(self.listBackgroundView)
-
+            
             self.scrollView.delaysContentTouches = true
             self.scrollView.canCancelContentTouches = true
-            self.scrollView.contentInsetAdjustmentBehavior = .never
-            self.scrollView.automaticallyAdjustsScrollIndicatorInsets = false
-            self.scrollView.showsVerticalScrollIndicator = false
+            self.scrollView.clipsToBounds = false
+            if #available(iOSApplicationExtension 11.0, iOS 11.0, *) {
+                self.scrollView.contentInsetAdjustmentBehavior = .never
+            }
+            if #available(iOS 13.0, *) {
+                self.scrollView.automaticallyAdjustsScrollIndicatorInsets = false
+            }
+            self.scrollView.showsVerticalScrollIndicator = true
             self.scrollView.showsHorizontalScrollIndicator = false
             self.scrollView.alwaysBounceHorizontal = false
             self.scrollView.scrollsToTop = false
             self.scrollView.delegate = self
             self.scrollView.clipsToBounds = true
             self.addSubview(self.scrollView)
-            self.addSubview(self.listMaskView)
         }
         
         required init?(coder: NSCoder) {
@@ -803,44 +792,13 @@ final class StorageFileListPanelComponent: Component {
         func scrollViewDidScroll(_ scrollView: UIScrollView) {
             if !self.ignoreScrolling {
                 self.updateScrolling(transition: .immediate)
-                self.updateListBackground(transition: .immediate)
             }
         }
-
+        
         func scrollViewWillBeginDragging(_ scrollView: UIScrollView) {
             cancelContextGestures(view: scrollView)
         }
-
-        private func updateListBackground(transition: ComponentTransition) {
-            guard let itemLayout = self.itemLayout else {
-                return
-            }
-            let size = CGSize(width: itemLayout.containerWidth, height: self.scrollView.bounds.height)
-            guard size.width != 0.0 else {
-                return
-            }
-
-            let topInset = itemLayout.containerInsets.top
-
-            var distanceToTop: CGFloat = -100.0
-            var distanceToBottom: CGFloat = -100.0
-
-            let scrollingOffset = self.scrollView.contentOffset.y
-            distanceToTop = -scrollingOffset + topInset
-
-            let itemsContentHeight = self.scrollView.contentSize.height - itemLayout.containerInsets.bottom
-            let contentBottomOffset = itemsContentHeight - scrollingOffset - self.scrollView.bounds.height
-            distanceToBottom = -contentBottomOffset
-
-            distanceToTop = max(-100.0, distanceToTop)
-            distanceToBottom = max(-100.0, distanceToBottom)
-
-            let listBackgroundFrame = CGRect(origin: CGPoint(x: 16.0, y: distanceToTop), size: CGSize(width: max(1.0, size.width - 16.0 * 2.0), height: max(1.0, size.height - distanceToBottom - distanceToTop)))
-            let listMaskFrame = CGRect(origin: CGPoint(x: 0.0, y: listBackgroundFrame.minY), size: CGSize(width: listBackgroundFrame.width + 16.0 * 2.0, height: listBackgroundFrame.height))
-            transition.setFrame(view: self.listBackgroundView, frame: listBackgroundFrame)
-            transition.setFrame(view: self.listMaskView, frame: listMaskFrame)
-        }
-
+        
         private func updateScrolling(transition: ComponentTransition) {
             guard let component = self.component, let environment = self.environment, let items = component.items, let itemLayout = self.itemLayout else {
                 return
@@ -979,14 +937,14 @@ final class StorageFileListPanelComponent: Component {
                                 extensionIconValue = fileExtension
                                 
                                 if let representation = smallestImageRepresentation(file.previewRepresentations) {
-                                    imageIconValue = .mediaFile(file, representation)
+                                    imageIconValue = .media(file, representation)
                                 }
                             }
                         } else if let image = media as? TelegramMediaImage {
                             title = environment.strings.Message_Photo
                             
                             if let representation = largestImageRepresentation(image.representations) {
-                                imageIconValue = .mediaImage(image, representation)
+                                imageIconValue = .media(image, representation)
                             }
                         }
                     }
@@ -1017,7 +975,7 @@ final class StorageFileListPanelComponent: Component {
                             contextAction: component.contextAction
                         )),
                         environment: {},
-                        containerSize: CGSize(width: itemLayout.containerWidth - itemLayout.sideInset * 2.0, height: itemLayout.itemHeight)
+                        containerSize: CGSize(width: itemLayout.containerWidth, height: itemLayout.itemHeight)
                     )
                     let itemFrame = itemLayout.itemFrame(for: index)
                     if let itemComponentView = itemView.view {
@@ -1050,16 +1008,13 @@ final class StorageFileListPanelComponent: Component {
             
             let environment = environment[StorageUsagePanelEnvironment.self].value
             self.environment = environment
-
-            self.listBackgroundView.tintColor = environment.theme.list.itemBlocksBackgroundColor
-            self.listMaskView.tintColor = environment.theme.list.blocksBackgroundColor
             
             let measureItemSize = self.measureItem.update(
                 transition: .immediate,
                 component: AnyComponent(FileListItemComponent(
                     context: component.context,
                     theme: environment.theme,
-                    messageId: EngineMessage.Id(peerId: component.context.account.peerId, namespace: 0, id: 0),
+                    messageId: EngineMessage.Id(peerId: PeerId(namespace: PeerId.Namespace._internalFromInt32Value(0), id: PeerId.Id._internalFromInt64Value(0)), namespace: 0, id: 0),
                     title: "ABCDEF",
                     subtitle: "ABCDEF",
                     label: "1000",
@@ -1079,7 +1034,6 @@ final class StorageFileListPanelComponent: Component {
             let itemLayout = ItemLayout(
                 containerInsets: environment.containerInsets,
                 containerWidth: availableSize.width,
-                sideInset: 16.0,
                 itemHeight: measureItemSize.height,
                 itemCount: component.items?.items.count ?? 0
             )
@@ -1106,8 +1060,7 @@ final class StorageFileListPanelComponent: Component {
             }
             self.ignoreScrolling = false
             self.updateScrolling(transition: transition)
-            self.updateListBackground(transition: transition)
-
+            
             return availableSize
         }
     }

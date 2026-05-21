@@ -11,7 +11,6 @@ import TelegramNotices
 import AnimatedAvatarSetNode
 import AccountContext
 import ChatPresentationInterfaceState
-import LegacyChatHeaderPanelComponent
 
 private final class ChatInfoTitlePanelPeerNearbyInfoNode: ASDisplayNode {
     private var theme: PresentationTheme?

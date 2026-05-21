@@ -59,8 +59,7 @@ public final class SuggestedPostMessageAttribute: Equatable, MessageAttribute {
 extension SuggestedPostMessageAttribute {
     convenience init(apiSuggestedPost: Api.SuggestedPost) {
         switch apiSuggestedPost {
-        case let .suggestedPost(suggestedPostData):
-            let (flags, starsAmount, scheduleDate) = (suggestedPostData.flags, suggestedPostData.price, suggestedPostData.scheduleDate)
+        case let .suggestedPost(flags, starsAmount, scheduleDate):
             var state: State?
             if (flags & (1 << 1)) != 0 {
                 state = .accepted
@@ -96,7 +95,7 @@ extension SuggestedPostMessageAttribute {
             flags |= 1 << 3
             price = amount.apiAmount
         }
-        return .suggestedPost(.init(flags: flags, price: price, scheduleDate: timestamp))
+        return .suggestedPost(flags: flags, price: price, scheduleDate: timestamp)
     }
 }
 

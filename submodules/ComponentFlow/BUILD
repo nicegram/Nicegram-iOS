@@ -7,11 +7,10 @@ swift_library(
         "Source/**/*.swift",
     ]),
     copts = [
-        "-warnings-as-errors",
+        #"-warnings-as-errors",
     ],
     deps = [
-        "//submodules/Display",
-        "//submodules/UIKitRuntimeUtils",
+        "//submodules/Display"
     ],
     visibility = [
         "//visibility:public",

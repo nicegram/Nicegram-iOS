@@ -96,23 +96,16 @@ private func matchPhoneNumbers(_ lhs: String, _ rhs: String) -> Bool {
 func matchingCloudContacts(postbox: Postbox, contacts: [MatchingDeviceContact]) -> Signal<[(String, TelegramUser)], NoError> {
     return postbox.transaction { transaction -> [(String, TelegramUser)] in
         var result: [(String, TelegramUser)] = []
-        var matchingIds = Set<EnginePeer.Id>()
         outer: for peerId in transaction.getContactPeerIds() {
             if let peer = transaction.getPeer(peerId) as? TelegramUser {
                 for contact in contacts {
                     if let contactPeerId = contact.peerId, contactPeerId == peerId {
-                        if !matchingIds.contains(peer.id) {
-                            matchingIds.insert(peer.id)
-                            result.append((contact.stableId, peer))
-                        }
+                        result.append((contact.stableId, peer))
                         continue outer
                     } else if let peerPhoneNumber = peer.phone {
                         for contactPhoneNumber in contact.phoneNumbers {
                             if matchPhoneNumbers(contactPhoneNumber, peerPhoneNumber) {
-                                if !matchingIds.contains(peer.id) {
-                                    matchingIds.insert(peer.id)
-                                    result.append((contact.stableId, peer))
-                                }
+                                result.append((contact.stableId, peer))
                                 continue outer
                             }
                         }
@@ -120,15 +113,6 @@ func matchingCloudContacts(postbox: Postbox, contacts: [MatchingDeviceContact]) 
                 }
             }
         }
-        for contact in contacts {
-            if let peerId = contact.peerId, let peer = transaction.getPeer(peerId) as? TelegramUser {
-                if !matchingIds.contains(peer.id) {
-                    matchingIds.insert(peer.id)
-                    result.append((contact.stableId, peer))
-                }
-            }
-        }
-        
         return result
     }
 }

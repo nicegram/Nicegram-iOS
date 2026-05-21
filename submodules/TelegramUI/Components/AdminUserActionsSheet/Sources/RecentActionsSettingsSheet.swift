@@ -1,22 +1,23 @@
 import Foundation
 import UIKit
 import Display
+import AsyncDisplayKit
 import ComponentFlow
 import SwiftSignalKit
 import ViewControllerComponent
 import ComponentDisplayAdapters
-import ResizableSheetComponent
 import TelegramPresentationData
 import AccountContext
 import TelegramCore
 import MultilineTextComponent
 import ButtonComponent
 import PresentationDataUtils
+import Markdown
+import UndoUI
 import TelegramStringFormatting
 import ListSectionComponent
 import ListActionItemComponent
-import GlassBarButtonComponent
-import BundleIconComponent
+import PlainButtonComponent
 
 private enum ActionTypeSection: Hashable, CaseIterable {
     case members
@@ -160,351 +161,15 @@ private enum ActionType: Hashable {
     }
 }
 
-private struct RecentActionsSettingsSheetState: Equatable {
-    var expandedSections: Set<ActionTypeSection>
-    var selectedMembersActions: Set<MembersActionType>
-    var selectedSettingsActions: Set<SettingsActionType>
-    var selectedMessagesActions: Set<MessagesActionType>
-    var selectedAdmins: Set<EnginePeer.Id>
-}
-
-private final class RecentActionsSettingsContentComponent: Component {
+private final class RecentActionsSettingsSheetComponent: Component {
     typealias EnvironmentType = ViewControllerComponentContainer.Environment
-
-    let context: AccountContext
-    let peer: EnginePeer
-    let adminPeers: [EnginePeer]
-    let theme: PresentationTheme
-    let sheetState: RecentActionsSettingsSheetState
-    let toggleActionTypeSectionSelection: (ActionTypeSection) -> Void
-    let toggleActionTypeSectionExpansion: (ActionTypeSection) -> Void
-    let toggleActionType: (ActionType) -> Void
-    let toggleAdmin: (EnginePeer) -> Void
-    let toggleAllAdmins: () -> Void
-
-    init(
-        context: AccountContext,
-        peer: EnginePeer,
-        adminPeers: [EnginePeer],
-        theme: PresentationTheme,
-        sheetState: RecentActionsSettingsSheetState,
-        toggleActionTypeSectionSelection: @escaping (ActionTypeSection) -> Void,
-        toggleActionTypeSectionExpansion: @escaping (ActionTypeSection) -> Void,
-        toggleActionType: @escaping (ActionType) -> Void,
-        toggleAdmin: @escaping (EnginePeer) -> Void,
-        toggleAllAdmins: @escaping () -> Void
-    ) {
-        self.context = context
-        self.peer = peer
-        self.adminPeers = adminPeers
-        self.theme = theme
-        self.sheetState = sheetState
-        self.toggleActionTypeSectionSelection = toggleActionTypeSectionSelection
-        self.toggleActionTypeSectionExpansion = toggleActionTypeSectionExpansion
-        self.toggleActionType = toggleActionType
-        self.toggleAdmin = toggleAdmin
-        self.toggleAllAdmins = toggleAllAdmins
-    }
-
-    static func ==(lhs: RecentActionsSettingsContentComponent, rhs: RecentActionsSettingsContentComponent) -> Bool {
-        if lhs.context !== rhs.context {
-            return false
-        }
-        if lhs.peer != rhs.peer {
-            return false
-        }
-        if lhs.adminPeers != rhs.adminPeers {
-            return false
-        }
-        if lhs.theme !== rhs.theme {
-            return false
-        }
-        if lhs.sheetState != rhs.sheetState {
-            return false
-        }
-        return true
-    }
-
-    final class View: UIView {
-        private let optionsSection = ComponentView<Empty>()
-        private let adminsSection = ComponentView<Empty>()
-
-        override init(frame: CGRect) {
-            super.init(frame: frame)
-        }
-
-        required init?(coder: NSCoder) {
-            fatalError("init(coder:) has not been implemented")
-        }
-
-        func update(component: RecentActionsSettingsContentComponent, availableSize: CGSize, state: EmptyComponentState, environment: Environment<ViewControllerComponentContainer.Environment>, transition: ComponentTransition) -> CGSize {
-            let environment = environment[ViewControllerComponentContainer.Environment.self].value
-            let presentationData = component.context.sharedContext.currentPresentationData.with({ $0 })
-            let theme = component.theme
-            let sheetState = component.sheetState
-            let sideInset: CGFloat = 16.0
-
-            var isGroup = true
-            if case let .channel(channel) = component.peer, case .broadcast = channel.info {
-                isGroup = false
-            }
-
-            var contentHeight: CGFloat = 76.0 + 15.0
-
-            let actionTypeSectionItem: (ActionTypeSection) -> AnyComponentWithIdentity<Empty> = { actionTypeSection in
-                let totalCount: Int
-                let selectedCount: Int
-                let title: String
-                let isExpanded = sheetState.expandedSections.contains(actionTypeSection)
-
-                switch actionTypeSection {
-                case .members:
-                    totalCount = MembersActionType.allCases.count
-                    selectedCount = sheetState.selectedMembersActions.count
-                    title = isGroup ? environment.strings.Channel_AdminLogFilter_Section_MembersGroup : environment.strings.Channel_AdminLogFilter_Section_MembersChannel
-                case .settings:
-                    totalCount = SettingsActionType.allCases.count
-                    selectedCount = sheetState.selectedSettingsActions.count
-                    title = isGroup ? environment.strings.Channel_AdminLogFilter_Section_SettingsGroup : environment.strings.Channel_AdminLogFilter_Section_SettingsChannel
-                case .messages:
-                    totalCount = MessagesActionType.allCases.count
-                    selectedCount = sheetState.selectedMessagesActions.count
-                    title = environment.strings.Channel_AdminLogFilter_Section_Messages
-                }
-
-                let itemTitle: AnyComponent<Empty> = AnyComponent(HStack([
-                    AnyComponentWithIdentity(id: 0, component: AnyComponent(MultilineTextComponent(
-                        text: .plain(NSAttributedString(
-                            string: title,
-                            font: Font.regular(presentationData.listsFontSize.baseDisplaySize),
-                            textColor: theme.list.itemPrimaryTextColor
-                        )),
-                        maximumNumberOfLines: 1
-                    ))),
-                    AnyComponentWithIdentity(id: 1, component: AnyComponent(MediaSectionExpandIndicatorComponent(
-                        theme: theme,
-                        title: "\(selectedCount)/\(totalCount)",
-                        isExpanded: isExpanded
-                    )))
-                ], spacing: 7.0))
-
-                return AnyComponentWithIdentity(id: actionTypeSection, component: AnyComponent(ListActionItemComponent(
-                    theme: theme,
-                    style: .glass,
-                    title: itemTitle,
-                    leftIcon: .check(ListActionItemComponent.LeftIcon.Check(
-                        isSelected: selectedCount == totalCount,
-                        toggle: {
-                            component.toggleActionTypeSectionSelection(actionTypeSection)
-                        }
-                    )),
-                    icon: .none,
-                    accessory: nil,
-                    action: { _ in
-                        component.toggleActionTypeSectionExpansion(actionTypeSection)
-                    },
-                    highlighting: .disabled
-                )))
-            }
-
-            let expandedActionTypeSectionItem: (ActionTypeSection) -> AnyComponentWithIdentity<Empty> = { actionTypeSection in
-                let sectionId: AnyHashable
-                let selectedActionTypes: Set<ActionType>
-                let actionTypes: [ActionType]
-                switch actionTypeSection {
-                case .members:
-                    sectionId = "members-sub"
-                    actionTypes = MembersActionType.allCases.map(ActionType.members)
-                    selectedActionTypes = Set(sheetState.selectedMembersActions.map(ActionType.members))
-                case .settings:
-                    sectionId = "settings-sub"
-                    actionTypes = SettingsActionType.allCases.map(ActionType.settings)
-                    selectedActionTypes = Set(sheetState.selectedSettingsActions.map(ActionType.settings))
-                case .messages:
-                    sectionId = "messages-sub"
-                    actionTypes = MessagesActionType.allCases.map(ActionType.messages)
-                    selectedActionTypes = Set(sheetState.selectedMessagesActions.map(ActionType.messages))
-                }
-
-                var subItems: [AnyComponentWithIdentity<Empty>] = []
-                for actionType in actionTypes {
-                    let actionItemTitle: String = actionType.title(isGroup: isGroup, strings: environment.strings)
-
-                    subItems.append(AnyComponentWithIdentity(id: actionType, component: AnyComponent(ListActionItemComponent(
-                        theme: theme,
-                        style: .glass,
-                        title: AnyComponent(VStack([
-                            AnyComponentWithIdentity(id: AnyHashable(0), component: AnyComponent(MultilineTextComponent(
-                                text: .plain(NSAttributedString(
-                                    string: actionItemTitle,
-                                    font: Font.regular(presentationData.listsFontSize.baseDisplaySize),
-                                    textColor: theme.list.itemPrimaryTextColor
-                                )),
-                                maximumNumberOfLines: 1
-                            ))),
-                        ], alignment: .left, spacing: 2.0)),
-                        leftIcon: .check(ListActionItemComponent.LeftIcon.Check(
-                            isSelected: selectedActionTypes.contains(actionType),
-                            toggle: {
-                                component.toggleActionType(actionType)
-                            }
-                        )),
-                        icon: .none,
-                        accessory: .none,
-                        action: { _ in
-                            component.toggleActionType(actionType)
-                        },
-                        highlighting: .disabled
-                    ))))
-                }
-
-                return AnyComponentWithIdentity(id: sectionId, component: AnyComponent(ListSubSectionComponent(
-                    theme: theme,
-                    leftInset: 62.0,
-                    items: subItems
-                )))
-            }
-
-            var optionsSectionItems: [AnyComponentWithIdentity<Empty>] = []
-            for actionTypeSection in ActionTypeSection.allCases {
-                optionsSectionItems.append(actionTypeSectionItem(actionTypeSection))
-                if sheetState.expandedSections.contains(actionTypeSection) {
-                    optionsSectionItems.append(expandedActionTypeSectionItem(actionTypeSection))
-                }
-            }
-
-            self.optionsSection.parentState = state
-            let optionsSectionSize = self.optionsSection.update(
-                transition: transition,
-                component: AnyComponent(ListSectionComponent(
-                    theme: theme,
-                    style: .glass,
-                    header: AnyComponent(MultilineTextComponent(
-                        text: .plain(NSAttributedString(
-                            string: environment.strings.Channel_AdminLogFilter_FilterActionsTypeTitle,
-                            font: Font.regular(presentationData.listsFontSize.itemListBaseHeaderFontSize),
-                            textColor: theme.list.freeTextColor
-                        )),
-                        maximumNumberOfLines: 0
-                    )),
-                    footer: nil,
-                    items: optionsSectionItems
-                )),
-                environment: {},
-                containerSize: CGSize(width: availableSize.width - sideInset * 2.0, height: 100000.0)
-            )
-            let optionsSectionFrame = CGRect(origin: CGPoint(x: sideInset, y: contentHeight), size: optionsSectionSize)
-            if let optionsSectionView = self.optionsSection.view {
-                if optionsSectionView.superview == nil {
-                    self.addSubview(optionsSectionView)
-                }
-                transition.setFrame(view: optionsSectionView, frame: optionsSectionFrame)
-            }
-            contentHeight += optionsSectionSize.height
-            contentHeight += 24.0
-
-            var peerItems: [AnyComponentWithIdentity<Empty>] = []
-            for peer in component.adminPeers {
-                peerItems.append(AnyComponentWithIdentity(id: peer.id, component: AnyComponent(AdminUserActionsPeerComponent(
-                    context: component.context,
-                    theme: theme,
-                    strings: environment.strings,
-                    baseFontSize: presentationData.listsFontSize.baseDisplaySize,
-                    sideInset: 0.0,
-                    title: peer.displayTitle(strings: environment.strings, displayOrder: .firstLast),
-                    peer: peer,
-                    selectionState: .editing(isSelected: sheetState.selectedAdmins.contains(peer.id)),
-                    action: { peer in
-                        component.toggleAdmin(peer)
-                    }
-                ))))
-            }
-
-            var adminsSectionItems: [AnyComponentWithIdentity<Empty>] = []
-            adminsSectionItems.append(AnyComponentWithIdentity(id: adminsSectionItems.count, component: AnyComponent(ListActionItemComponent(
-                theme: theme,
-                style: .glass,
-                title: AnyComponent(VStack([
-                    AnyComponentWithIdentity(id: AnyHashable(0), component: AnyComponent(MultilineTextComponent(
-                        text: .plain(NSAttributedString(
-                            string: environment.strings.Channel_AdminLogFilter_ShowAllAdminsActions,
-                            font: Font.regular(presentationData.listsFontSize.baseDisplaySize),
-                            textColor: theme.list.itemPrimaryTextColor
-                        )),
-                        maximumNumberOfLines: 1
-                    ))),
-                ], alignment: .left, spacing: 2.0)),
-                leftIcon: .check(ListActionItemComponent.LeftIcon.Check(
-                    isSelected: sheetState.selectedAdmins.count == component.adminPeers.count,
-                    toggle: {
-                        component.toggleAllAdmins()
-                    }
-                )),
-                icon: .none,
-                accessory: .none,
-                action: { _ in
-                    component.toggleAllAdmins()
-                },
-                highlighting: .disabled
-            ))))
-            adminsSectionItems.append(AnyComponentWithIdentity(id: adminsSectionItems.count, component: AnyComponent(ListSubSectionComponent(
-                theme: theme,
-                leftInset: 62.0,
-                items: peerItems
-            ))))
-
-            self.adminsSection.parentState = state
-            let adminsSectionSize = self.adminsSection.update(
-                transition: transition,
-                component: AnyComponent(ListSectionComponent(
-                    theme: theme,
-                    style: .glass,
-                    header: AnyComponent(MultilineTextComponent(
-                        text: .plain(NSAttributedString(
-                            string: environment.strings.Channel_AdminLogFilter_FilterActionsAdminsTitle,
-                            font: Font.regular(presentationData.listsFontSize.itemListBaseHeaderFontSize),
-                            textColor: theme.list.freeTextColor
-                        )),
-                        maximumNumberOfLines: 0
-                    )),
-                    footer: nil,
-                    items: adminsSectionItems
-                )),
-                environment: {},
-                containerSize: CGSize(width: availableSize.width - sideInset * 2.0, height: 100000.0)
-            )
-            let adminsSectionFrame = CGRect(origin: CGPoint(x: sideInset, y: contentHeight), size: adminsSectionSize)
-            if let adminsSectionView = self.adminsSection.view {
-                if adminsSectionView.superview == nil {
-                    self.addSubview(adminsSectionView)
-                }
-                transition.setFrame(view: adminsSectionView, frame: adminsSectionFrame)
-            }
-            contentHeight += adminsSectionSize.height
-            contentHeight += 106.0
-
-            return CGSize(width: availableSize.width, height: contentHeight)
-        }
-    }
-
-    func makeView() -> View {
-        return View(frame: CGRect())
-    }
-
-    func update(view: View, availableSize: CGSize, state: EmptyComponentState, environment: Environment<ViewControllerComponentContainer.Environment>, transition: ComponentTransition) -> CGSize {
-        return view.update(component: self, availableSize: availableSize, state: state, environment: environment, transition: transition)
-    }
-}
-
-private final class RecentActionsSettingsResizableSheetComponent: Component {
-    typealias EnvironmentType = ViewControllerComponentContainer.Environment
-
+    
     let context: AccountContext
     let peer: EnginePeer
     let adminPeers: [EnginePeer]
     let initialValue: RecentActionsSettingsSheet.Value
     let completion: (RecentActionsSettingsSheet.Value) -> Void
-
+    
     init(
         context: AccountContext,
         peer: EnginePeer,
@@ -518,8 +183,8 @@ private final class RecentActionsSettingsResizableSheetComponent: Component {
         self.initialValue = initialValue
         self.completion = completion
     }
-
-    static func ==(lhs: RecentActionsSettingsResizableSheetComponent, rhs: RecentActionsSettingsResizableSheetComponent) -> Bool {
+    
+    static func ==(lhs: RecentActionsSettingsSheetComponent, rhs: RecentActionsSettingsSheetComponent) -> Bool {
         if lhs.context !== rhs.context {
             return false
         }
@@ -531,29 +196,158 @@ private final class RecentActionsSettingsResizableSheetComponent: Component {
         }
         return true
     }
-
-    final class View: UIView {
-        private let sheet = ComponentView<(ViewControllerComponentContainer.Environment, ResizableSheetComponentEnvironment)>()
-        private let animateOut = ActionSlot<Action<Void>>()
-
-        private var component: RecentActionsSettingsResizableSheetComponent?
+    
+    private struct ItemLayout: Equatable {
+        var containerSize: CGSize
+        var containerInset: CGFloat
+        var bottomInset: CGFloat
+        var topInset: CGFloat
+        
+        init(containerSize: CGSize, containerInset: CGFloat, bottomInset: CGFloat, topInset: CGFloat) {
+            self.containerSize = containerSize
+            self.containerInset = containerInset
+            self.bottomInset = bottomInset
+            self.topInset = topInset
+        }
+    }
+    
+    private final class ScrollView: UIScrollView {
+        override func hitTest(_ point: CGPoint, with event: UIEvent?) -> UIView? {
+            return super.hitTest(point, with: event)
+        }
+    }
+    
+    final class View: UIView, UIScrollViewDelegate {
+        private let dimView: UIView
+        private let backgroundLayer: SimpleLayer
+        private let navigationBarContainer: SparseContainerView
+        private let navigationBackgroundView: BlurredBackgroundView
+        private let navigationBarSeparator: SimpleLayer
+        private let scrollView: ScrollView
+        private let scrollContentClippingView: SparseContainerView
+        private let scrollContentView: UIView
+        
+        private let leftButton = ComponentView<Empty>()
+        
+        private let title = ComponentView<Empty>()
+        private let actionButton = ComponentView<Empty>()
+        
+        private let optionsSection = ComponentView<Empty>()
+        private let adminsSection = ComponentView<Empty>()
+        
+        private let bottomOverscrollLimit: CGFloat
+        
+        private var ignoreScrolling: Bool = false
+        
+        private var component: RecentActionsSettingsSheetComponent?
         private weak var state: EmptyComponentState?
-        private var isDismissing: Bool = false
-
+        private var environment: ViewControllerComponentContainer.Environment?
+        private var isUpdating: Bool = false
+        
+        private var itemLayout: ItemLayout?
+        
+        private var topOffsetDistance: CGFloat?
+        
         private var expandedSections = Set<ActionTypeSection>()
         private var selectedMembersActions = Set<MembersActionType>()
         private var selectedSettingsActions = Set<SettingsActionType>()
         private var selectedMessagesActions = Set<MessagesActionType>()
         private var selectedAdmins = Set<EnginePeer.Id>()
-
+        
         override init(frame: CGRect) {
+            self.bottomOverscrollLimit = 200.0
+            
+            self.dimView = UIView()
+            
+            self.backgroundLayer = SimpleLayer()
+            self.backgroundLayer.maskedCorners = [.layerMinXMinYCorner, .layerMaxXMinYCorner]
+            self.backgroundLayer.cornerRadius = 10.0
+            
+            self.navigationBarContainer = SparseContainerView()
+            
+            self.navigationBackgroundView = BlurredBackgroundView(color: .clear, enableBlur: true)
+            self.navigationBarSeparator = SimpleLayer()
+            
+            self.scrollView = ScrollView()
+            
+            self.scrollContentClippingView = SparseContainerView()
+            self.scrollContentClippingView.clipsToBounds = true
+            
+            self.scrollContentView = UIView()
+            
             super.init(frame: frame)
+            
+            self.addSubview(self.dimView)
+            self.layer.addSublayer(self.backgroundLayer)
+            
+            self.scrollView.delaysContentTouches = true
+            self.scrollView.canCancelContentTouches = true
+            self.scrollView.clipsToBounds = false
+            if #available(iOSApplicationExtension 11.0, iOS 11.0, *) {
+                self.scrollView.contentInsetAdjustmentBehavior = .never
+            }
+            if #available(iOS 13.0, *) {
+                self.scrollView.automaticallyAdjustsScrollIndicatorInsets = false
+            }
+            self.scrollView.showsVerticalScrollIndicator = false
+            self.scrollView.showsHorizontalScrollIndicator = false
+            self.scrollView.alwaysBounceHorizontal = false
+            self.scrollView.alwaysBounceVertical = true
+            self.scrollView.scrollsToTop = false
+            self.scrollView.delegate = self
+            self.scrollView.clipsToBounds = true
+            
+            self.addSubview(self.scrollContentClippingView)
+            self.scrollContentClippingView.addSubview(self.scrollView)
+            
+            self.scrollView.addSubview(self.scrollContentView)
+            
+            self.addSubview(self.navigationBarContainer)
+            
+            self.navigationBarContainer.addSubview(self.navigationBackgroundView)
+            self.navigationBarContainer.layer.addSublayer(self.navigationBarSeparator)
+            
+            self.dimView.addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(self.dimTapGesture(_:))))
         }
-
+        
         required init?(coder: NSCoder) {
             fatalError("init(coder:) has not been implemented")
         }
-
+        
+        func scrollViewDidScroll(_ scrollView: UIScrollView) {
+            if !self.ignoreScrolling {
+                self.updateScrolling(transition: .immediate)
+            }
+        }
+        
+        func scrollViewWillEndDragging(_ scrollView: UIScrollView, withVelocity velocity: CGPoint, targetContentOffset: UnsafeMutablePointer<CGPoint>) {
+        }
+        
+        override func hitTest(_ point: CGPoint, with event: UIEvent?) -> UIView? {
+            if !self.bounds.contains(point) {
+                return nil
+            }
+            if !self.backgroundLayer.frame.contains(point) {
+                return self.dimView
+            }
+            
+            if let result = self.navigationBarContainer.hitTest(self.convert(point, to: self.navigationBarContainer), with: event) {
+                return result
+            }
+            
+            let result = super.hitTest(point, with: event)
+            return result
+        }
+        
+        @objc private func dimTapGesture(_ recognizer: UITapGestureRecognizer) {
+            if case .ended = recognizer.state {
+                guard let environment = self.environment, let controller = environment.controller() else {
+                    return
+                }
+                controller.dismiss()
+            }
+        }
+        
         private func calculateResult() -> RecentActionsSettingsSheet.Value {
             var events: AdminLogEventsFlags = []
             var admins: [EnginePeer.Id] = []
@@ -574,249 +368,582 @@ private final class RecentActionsSettingsResizableSheetComponent: Component {
                 admins: admins
             )
         }
-
-        func update(component: RecentActionsSettingsResizableSheetComponent, availableSize: CGSize, state: EmptyComponentState, environment: Environment<ViewControllerComponentContainer.Environment>, transition: ComponentTransition) -> CGSize {
-            let environmentValue = environment[ViewControllerComponentContainer.Environment.self].value
-            let controller = environmentValue.controller
-            let theme = environmentValue.theme.withModalBlocksBackground()
-
+        
+        private func updateScrolling(isFirstTime: Bool = false, transition: ComponentTransition) {
+            guard let environment = self.environment, let controller = environment.controller(), let itemLayout = self.itemLayout else {
+                return
+            }
+            var topOffset = -self.scrollView.bounds.minY + itemLayout.topInset
+            
+            let navigationAlpha: CGFloat = 1.0 - max(0.0, min(1.0, (topOffset + 20.0) / 20.0))
+            transition.setAlpha(view: self.navigationBackgroundView, alpha: navigationAlpha)
+            transition.setAlpha(layer: self.navigationBarSeparator, alpha: navigationAlpha)
+            
+            topOffset = max(0.0, topOffset)
+            transition.setTransform(layer: self.backgroundLayer, transform: CATransform3DMakeTranslation(0.0, topOffset + itemLayout.containerInset, 0.0))
+            
+            transition.setPosition(view: self.navigationBarContainer, position: CGPoint(x: 0.0, y: topOffset + itemLayout.containerInset))
+            
+            let topOffsetDistance: CGFloat = min(200.0, floor(itemLayout.containerSize.height * 0.25))
+            self.topOffsetDistance = topOffsetDistance
+            var topOffsetFraction = topOffset / topOffsetDistance
+            topOffsetFraction = max(0.0, min(1.0, topOffsetFraction))
+            
+            let modalStyleOverlayTransition: ContainedViewLayoutTransition
+            if isFirstTime {
+                modalStyleOverlayTransition = .animated(duration: 0.4, curve: .spring)
+            } else {
+                modalStyleOverlayTransition = transition.containedViewLayoutTransition
+            }
+            
+            let transitionFactor: CGFloat = 1.0 - topOffsetFraction
+            if self.isUpdating {
+                DispatchQueue.main.async { [weak controller] in
+                    guard let controller else {
+                        return
+                    }
+                    controller.updateModalStyleOverlayTransitionFactor(transitionFactor, transition: modalStyleOverlayTransition)
+                }
+            } else {
+                controller.updateModalStyleOverlayTransitionFactor(transitionFactor, transition: modalStyleOverlayTransition)
+            }
+        }
+        
+        func animateIn() {
+            self.dimView.layer.animateAlpha(from: 0.0, to: 1.0, duration: 0.3)
+            let animateOffset: CGFloat = self.bounds.height - self.backgroundLayer.frame.minY
+            self.scrollContentClippingView.layer.animatePosition(from: CGPoint(x: 0.0, y: animateOffset), to: CGPoint(), duration: 0.5, timingFunction: kCAMediaTimingFunctionSpring, additive: true)
+            self.backgroundLayer.animatePosition(from: CGPoint(x: 0.0, y: animateOffset), to: CGPoint(), duration: 0.5, timingFunction: kCAMediaTimingFunctionSpring, additive: true)
+            self.navigationBarContainer.layer.animatePosition(from: CGPoint(x: 0.0, y: animateOffset), to: CGPoint(), duration: 0.5, timingFunction: kCAMediaTimingFunctionSpring, additive: true)
+            if let actionButtonView = self.actionButton.view {
+                actionButtonView.layer.animatePosition(from: CGPoint(x: 0.0, y: animateOffset), to: CGPoint(), duration: 0.5, timingFunction: kCAMediaTimingFunctionSpring, additive: true)
+            }
+        }
+        
+        func animateOut(completion: @escaping () -> Void) {
+            let animateOffset: CGFloat = self.bounds.height - self.backgroundLayer.frame.minY
+            
+            self.dimView.layer.animateAlpha(from: 1.0, to: 0.0, duration: 0.3, removeOnCompletion: false)
+            self.scrollContentClippingView.layer.animatePosition(from: CGPoint(), to: CGPoint(x: 0.0, y: animateOffset), duration: 0.3, timingFunction: CAMediaTimingFunctionName.easeInEaseOut.rawValue, removeOnCompletion: false, additive: true, completion: { _ in
+                completion()
+            })
+            self.backgroundLayer.animatePosition(from: CGPoint(), to: CGPoint(x: 0.0, y: animateOffset), duration: 0.3, timingFunction: CAMediaTimingFunctionName.easeInEaseOut.rawValue, removeOnCompletion: false, additive: true)
+            self.navigationBarContainer.layer.animatePosition(from: CGPoint(), to: CGPoint(x: 0.0, y: animateOffset), duration: 0.3, timingFunction: CAMediaTimingFunctionName.easeInEaseOut.rawValue, removeOnCompletion: false, additive: true)
+            if let actionButtonView = self.actionButton.view {
+                actionButtonView.layer.animatePosition(from: CGPoint(), to: CGPoint(x: 0.0, y: animateOffset), duration: 0.3, timingFunction: CAMediaTimingFunctionName.easeInEaseOut.rawValue, removeOnCompletion: false, additive: true)
+            }
+            
+            if let environment = self.environment, let controller = environment.controller() {
+                controller.updateModalStyleOverlayTransitionFactor(0.0, transition: .animated(duration: 0.3, curve: .easeInOut))
+            }
+        }
+        
+        func update(component: RecentActionsSettingsSheetComponent, availableSize: CGSize, state: EmptyComponentState, environment: Environment<ViewControllerComponentContainer.Environment>, transition: ComponentTransition) -> CGSize {
+            self.isUpdating = true
+            defer {
+                self.isUpdating = false
+            }
+            
+            let environment = environment[ViewControllerComponentContainer.Environment.self].value
+            let themeUpdated = self.environment?.theme !== environment.theme
+            
+            let resetScrolling = self.scrollView.bounds.width != availableSize.width
+            
+            let sideInset: CGFloat = 16.0 + environment.safeInsets.left
+                     
+            var isFirstTime = false
             if self.component == nil {
+                isFirstTime = true
                 self.selectedMembersActions = Set(MembersActionType.actionTypesFromFlags(component.initialValue.events))
                 self.selectedSettingsActions = Set(SettingsActionType.actionTypesFromFlags(component.initialValue.events))
                 self.selectedMessagesActions = Set(MessagesActionType.actionTypesFromFlags(component.initialValue.events))
                 self.selectedAdmins = component.initialValue.admins.flatMap { Set($0) } ?? Set(component.adminPeers.map(\.id))
             }
-
+            
+            var isGroup = true
+            if case let .channel(channel) = component.peer, case .broadcast = channel.info {
+                isGroup = false
+            }
+            
             self.component = component
             self.state = state
-
-            let dismiss: (Bool) -> Void = { [weak self] animated in
-                guard let self, !self.isDismissing else {
-                    return
-                }
-                self.isDismissing = true
-
-                let performDismiss: () -> Void = {
-                    if let controller = controller() as? RecentActionsSettingsSheet {
-                        controller.completePendingDismiss()
-                        controller.dismiss(animated: false)
-                    }
-                }
-
-                if animated {
-                    self.animateOut.invoke(Action { _ in
-                        performDismiss()
-                    })
-                } else {
-                    performDismiss()
-                }
+            self.environment = environment
+            
+            if themeUpdated {
+                self.dimView.backgroundColor = UIColor(white: 0.0, alpha: 0.5)
+                self.backgroundLayer.backgroundColor = environment.theme.list.blocksBackgroundColor.cgColor
+                
+                self.navigationBackgroundView.updateColor(color: environment.theme.rootController.navigationBar.blurredBackgroundColor, transition: .immediate)
+                self.navigationBarSeparator.backgroundColor = environment.theme.rootController.navigationBar.separatorColor.cgColor
             }
-
-            let currentState = RecentActionsSettingsSheetState(
-                expandedSections: self.expandedSections,
-                selectedMembersActions: self.selectedMembersActions,
-                selectedSettingsActions: self.selectedSettingsActions,
-                selectedMessagesActions: self.selectedMessagesActions,
-                selectedAdmins: self.selectedAdmins
-            )
-
-            let sheetSize = self.sheet.update(
+            let presentationData = component.context.sharedContext.currentPresentationData.with({ $0 })
+            
+            transition.setFrame(view: self.dimView, frame: CGRect(origin: CGPoint(), size: availableSize))
+            
+            var contentHeight: CGFloat = 0.0
+            contentHeight += 54.0
+            contentHeight += 16.0
+            
+            let leftButtonSize = self.leftButton.update(
                 transition: transition,
-                component: AnyComponent(ResizableSheetComponent<ViewControllerComponentContainer.Environment>(
-                    content: AnyComponent<ViewControllerComponentContainer.Environment>(RecentActionsSettingsContentComponent(
-                        context: component.context,
-                        peer: component.peer,
-                        adminPeers: component.adminPeers,
-                        theme: theme,
-                        sheetState: currentState,
-                        toggleActionTypeSectionSelection: { [weak self] actionTypeSection in
-                            guard let self else {
-                                return
-                            }
-
-                            switch actionTypeSection {
-                            case .members:
-                                if self.selectedMembersActions.isEmpty {
-                                    self.selectedMembersActions = Set(MembersActionType.allCases)
-                                } else {
-                                    self.selectedMembersActions.removeAll()
-                                }
-                            case .settings:
-                                if self.selectedSettingsActions.isEmpty {
-                                    self.selectedSettingsActions = Set(SettingsActionType.allCases)
-                                } else {
-                                    self.selectedSettingsActions.removeAll()
-                                }
-                            case .messages:
-                                if self.selectedMessagesActions.isEmpty {
-                                    self.selectedMessagesActions = Set(MessagesActionType.allCases)
-                                } else {
-                                    self.selectedMessagesActions.removeAll()
-                                }
-                            }
-
-                            self.state?.updated(transition: .spring(duration: 0.35))
-                        },
-                        toggleActionTypeSectionExpansion: { [weak self] actionTypeSection in
-                            guard let self else {
-                                return
-                            }
-                            if self.expandedSections.contains(actionTypeSection) {
-                                self.expandedSections.remove(actionTypeSection)
-                            } else {
-                                self.expandedSections.insert(actionTypeSection)
-                            }
-
-                            self.state?.updated(transition: .spring(duration: 0.35))
-                        },
-                        toggleActionType: { [weak self] actionType in
-                            guard let self else {
-                                return
-                            }
-
-                            switch actionType {
-                            case let .members(value):
-                                if self.selectedMembersActions.contains(value) {
-                                    self.selectedMembersActions.remove(value)
-                                } else {
-                                    self.selectedMembersActions.insert(value)
-                                }
-                            case let .settings(value):
-                                if self.selectedSettingsActions.contains(value) {
-                                    self.selectedSettingsActions.remove(value)
-                                } else {
-                                    self.selectedSettingsActions.insert(value)
-                                }
-                            case let .messages(value):
-                                if self.selectedMessagesActions.contains(value) {
-                                    self.selectedMessagesActions.remove(value)
-                                } else {
-                                    self.selectedMessagesActions.insert(value)
-                                }
-                            }
-
-                            self.state?.updated(transition: .spring(duration: 0.35))
-                        },
-                        toggleAdmin: { [weak self] peer in
-                            guard let self else {
-                                return
-                            }
-
-                            if self.selectedAdmins.contains(peer.id) {
-                                self.selectedAdmins.remove(peer.id)
-                            } else {
-                                self.selectedAdmins.insert(peer.id)
-                            }
-
-                            self.state?.updated(transition: ComponentTransition(animation: .curve(duration: 0.35, curve: .easeInOut)))
-                        },
-                        toggleAllAdmins: { [weak self] in
-                            guard let self, let component = self.component else {
-                                return
-                            }
-
-                            if self.selectedAdmins.isEmpty {
-                                self.selectedAdmins = Set(component.adminPeers.map(\.id))
-                            } else {
-                                self.selectedAdmins.removeAll()
-                            }
-
-                            self.state?.updated(transition: ComponentTransition(animation: .curve(duration: 0.35, curve: .easeInOut)))
+                component: AnyComponent(Button(
+                    content: AnyComponent(Text(text: environment.strings.Common_Cancel, font: Font.regular(17.0), color: environment.theme.list.itemAccentColor)),
+                    action: { [weak self] in
+                        guard let self, let controller = self.environment?.controller() else {
+                            return
                         }
-                    )),
-                    titleItem: AnyComponent(MultilineTextComponent(
+                        controller.dismiss()
+                    }
+                ).minSize(CGSize(width: 44.0, height: 56.0))),
+                environment: {},
+                containerSize: CGSize(width: 120.0, height: 100.0)
+            )
+            let leftButtonFrame = CGRect(origin: CGPoint(x: 16.0 + environment.safeInsets.left, y: 0.0), size: leftButtonSize)
+            if let leftButtonView = self.leftButton.view {
+                if leftButtonView.superview == nil {
+                    self.navigationBarContainer.addSubview(leftButtonView)
+                }
+                transition.setFrame(view: leftButtonView, frame: leftButtonFrame)
+            }
+            
+            let containerInset: CGFloat = environment.statusBarHeight + 10.0
+            
+            let clippingY: CGFloat
+            
+            let actionTypeSectionItem: (ActionTypeSection) -> AnyComponentWithIdentity<Empty> = { actionTypeSection in
+                let sectionId: AnyHashable
+                let totalCount: Int
+                let selectedCount: Int
+                let isExpanded: Bool
+                let title: String
+                
+                sectionId = actionTypeSection
+                isExpanded = self.expandedSections.contains(actionTypeSection)
+                
+                switch actionTypeSection {
+                case .members:
+                    totalCount = MembersActionType.allCases.count
+                    selectedCount = self.selectedMembersActions.count
+                    title = isGroup ? environment.strings.Channel_AdminLogFilter_Section_MembersGroup : environment.strings.Channel_AdminLogFilter_Section_MembersChannel
+                case .settings:
+                    totalCount = SettingsActionType.allCases.count
+                    selectedCount = self.selectedSettingsActions.count
+                    title = isGroup ? environment.strings.Channel_AdminLogFilter_Section_SettingsGroup : environment.strings.Channel_AdminLogFilter_Section_SettingsChannel
+                case .messages:
+                    totalCount = MessagesActionType.allCases.count
+                    selectedCount = self.selectedMessagesActions.count
+                    title = environment.strings.Channel_AdminLogFilter_Section_Messages
+                }
+                
+                let itemTitle: AnyComponent<Empty> = AnyComponent(HStack([
+                    AnyComponentWithIdentity(id: 0, component: AnyComponent(MultilineTextComponent(
                         text: .plain(NSAttributedString(
-                            string: environmentValue.strings.Channel_AdminLogFilter_RecentActionsTitle,
-                            font: Font.semibold(17.0),
-                            textColor: theme.list.itemPrimaryTextColor
+                            string: title,
+                            font: Font.regular(presentationData.listsFontSize.baseDisplaySize),
+                            textColor: environment.theme.list.itemPrimaryTextColor
                         )),
                         maximumNumberOfLines: 1
-                    )),
-                    leftItem: AnyComponent(
-                        GlassBarButtonComponent(
-                            size: CGSize(width: 44.0, height: 44.0),
-                            backgroundColor: nil,
-                            isDark: theme.overallDarkAppearance,
-                            state: .glass,
-                            component: AnyComponentWithIdentity(id: "close", component: AnyComponent(
-                                BundleIconComponent(
-                                    name: "Navigation/Close",
-                                    tintColor: theme.chat.inputPanel.panelControlColor
-                                )
-                            )),
-                            action: { _ in
-                                dismiss(true)
-                            }
-                        )
-                    ),
-                    bottomItem: AnyComponent(ButtonComponent(
-                        background: ButtonComponent.Background(
-                            style: .glass,
-                            color: theme.list.itemCheckColors.fillColor,
-                            foreground: theme.list.itemCheckColors.foregroundColor,
-                            pressedColor: theme.list.itemCheckColors.fillColor.withMultipliedAlpha(0.9)
-                        ),
-                        content: AnyComponentWithIdentity(
-                            id: AnyHashable(0),
-                            component: AnyComponent(ButtonTextContentComponent(
-                                text: environmentValue.strings.Channel_AdminLogFilter_ApplyFilter,
-                                badge: 0,
-                                textColor: theme.list.itemCheckColors.foregroundColor,
-                                badgeBackground: theme.list.itemCheckColors.foregroundColor,
-                                badgeForeground: theme.list.itemCheckColors.fillColor
-                            ))
-                        ),
-                        isEnabled: true,
-                        displaysProgress: false,
-                        action: { [weak self] in
-                            guard let self, let component = self.component else {
-                                return
-                            }
-                            let result = self.calculateResult()
-                            dismiss(true)
-                            component.completion(result)
+                    ))),
+                    AnyComponentWithIdentity(id: 1, component: AnyComponent(MediaSectionExpandIndicatorComponent(
+                        theme: environment.theme,
+                        title: "\(selectedCount)/\(totalCount)",
+                        isExpanded: isExpanded
+                    )))
+                ], spacing: 7.0))
+                
+                let toggleAction: () -> Void = { [weak self] in
+                    guard let self else {
+                        return
+                    }
+                    
+                    switch actionTypeSection {
+                    case .members:
+                        if self.selectedMembersActions.isEmpty {
+                            self.selectedMembersActions = Set(MembersActionType.allCases)
+                        } else {
+                            self.selectedMembersActions.removeAll()
                         }
-                    )),
-                    backgroundColor: .color(theme.list.modalBlocksBackgroundColor),
-                    animateOut: self.animateOut
-                )),
-                environment: {
-                    environmentValue
-                    ResizableSheetComponentEnvironment(
-                        theme: theme,
-                        statusBarHeight: environmentValue.statusBarHeight,
-                        safeInsets: environmentValue.safeInsets,
-                        inputHeight: 0.0,
-                        metrics: environmentValue.metrics,
-                        deviceMetrics: environmentValue.deviceMetrics,
-                        isDisplaying: environmentValue.isVisible,
-                        isCentered: environmentValue.metrics.widthClass == .regular,
-                        screenSize: availableSize,
-                        regularMetricsSize: nil,
-                        dismiss: { animated in
-                            dismiss(animated)
+                    case .settings:
+                        if self.selectedSettingsActions.isEmpty {
+                            self.selectedSettingsActions = Set(SettingsActionType.allCases)
+                        } else {
+                            self.selectedSettingsActions.removeAll()
                         }
-                    )
-                },
-                forceUpdate: true,
-                containerSize: availableSize
-            )
-            self.sheet.parentState = state
-            if let sheetView = self.sheet.view {
-                if sheetView.superview == nil {
-                    self.addSubview(sheetView)
+                    case .messages:
+                        if self.selectedMessagesActions.isEmpty {
+                            self.selectedMessagesActions = Set(MessagesActionType.allCases)
+                        } else {
+                            self.selectedMessagesActions.removeAll()
+                        }
+                    }
+                    
+                    self.state?.updated(transition: .spring(duration: 0.35))
                 }
-                transition.setFrame(view: sheetView, frame: CGRect(origin: .zero, size: sheetSize))
+                
+                return AnyComponentWithIdentity(id: sectionId, component: AnyComponent(ListActionItemComponent(
+                    theme: environment.theme,
+                    title: itemTitle,
+                    leftIcon: .check(ListActionItemComponent.LeftIcon.Check(
+                        isSelected: selectedCount == totalCount,
+                        toggle: {
+                            toggleAction()
+                        }
+                    )),
+                    icon: .none,
+                    accessory: nil,
+                    action: { [weak self] _ in
+                        guard let self else {
+                            return
+                        }
+                        if self.expandedSections.contains(actionTypeSection) {
+                            self.expandedSections.remove(actionTypeSection)
+                        } else {
+                            self.expandedSections.insert(actionTypeSection)
+                        }
+                        
+                        self.state?.updated(transition: .spring(duration: 0.35))
+                    },
+                    highlighting: .disabled
+                )))
             }
-
+            
+            let expandedActionTypeSectionItem: (ActionTypeSection) -> AnyComponentWithIdentity<Empty> = { actionTypeSection in
+                let sectionId: AnyHashable
+                let selectedActionTypes: Set<ActionType>
+                let actionTypes: [ActionType]
+                switch actionTypeSection {
+                case .members:
+                    sectionId = "members-sub"
+                    actionTypes = MembersActionType.allCases.map(ActionType.members)
+                    selectedActionTypes = Set(self.selectedMembersActions.map(ActionType.members))
+                case .settings:
+                    sectionId = "settings-sub"
+                    actionTypes = SettingsActionType.allCases.map(ActionType.settings)
+                    selectedActionTypes = Set(self.selectedSettingsActions.map(ActionType.settings))
+                case .messages:
+                    sectionId = "messages-sub"
+                    actionTypes = MessagesActionType.allCases.map(ActionType.messages)
+                    selectedActionTypes = Set(self.selectedMessagesActions.map(ActionType.messages))
+                }
+                
+                var subItems: [AnyComponentWithIdentity<Empty>] = []
+                for actionType in actionTypes {
+                    let actionItemTitle: String = actionType.title(isGroup: isGroup, strings: environment.strings)
+                    
+                    let subItemToggleAction: () -> Void = { [weak self] in
+                        guard let self else {
+                            return
+                        }
+                        
+                        switch actionType {
+                        case let .members(value):
+                            if self.selectedMembersActions.contains(value) {
+                                self.selectedMembersActions.remove(value)
+                            } else {
+                                self.selectedMembersActions.insert(value)
+                            }
+                        case let .settings(value):
+                            if self.selectedSettingsActions.contains(value) {
+                                self.selectedSettingsActions.remove(value)
+                            } else {
+                                self.selectedSettingsActions.insert(value)
+                            }
+                        case let .messages(value):
+                            if self.selectedMessagesActions.contains(value) {
+                                self.selectedMessagesActions.remove(value)
+                            } else {
+                                self.selectedMessagesActions.insert(value)
+                            }
+                        }
+                        
+                        self.state?.updated(transition: .spring(duration: 0.35))
+                    }
+                    
+                    subItems.append(AnyComponentWithIdentity(id: actionType, component: AnyComponent(ListActionItemComponent(
+                        theme: environment.theme,
+                        title: AnyComponent(VStack([
+                            AnyComponentWithIdentity(id: AnyHashable(0), component: AnyComponent(MultilineTextComponent(
+                                text: .plain(NSAttributedString(
+                                    string: actionItemTitle,
+                                    font: Font.regular(presentationData.listsFontSize.baseDisplaySize),
+                                    textColor: environment.theme.list.itemPrimaryTextColor
+                                )),
+                                maximumNumberOfLines: 1
+                            ))),
+                        ], alignment: .left, spacing: 2.0)),
+                        leftIcon: .check(ListActionItemComponent.LeftIcon.Check(
+                            isSelected: selectedActionTypes.contains(actionType),
+                            toggle: {
+                                subItemToggleAction()
+                            }
+                        )),
+                        icon: .none,
+                        accessory: .none,
+                        action: { _ in
+                            subItemToggleAction()
+                        },
+                        highlighting: .disabled
+                    ))))
+                }
+                
+                return AnyComponentWithIdentity(id: sectionId, component: AnyComponent(ListSubSectionComponent(
+                    theme: environment.theme,
+                    leftInset: 62.0,
+                    items: subItems
+                )))
+            }
+            
+            let titleString: String = environment.strings.Channel_AdminLogFilter_RecentActionsTitle
+            let titleSize = self.title.update(
+                transition: .immediate,
+                component: AnyComponent(MultilineTextComponent(
+                    text: .plain(NSAttributedString(string: titleString, font: Font.semibold(17.0), textColor: environment.theme.list.itemPrimaryTextColor))
+                )),
+                environment: {},
+                containerSize: CGSize(width: availableSize.width - leftButtonFrame.maxX * 2.0, height: 100.0)
+            )
+            let titleFrame = CGRect(origin: CGPoint(x: floor((availableSize.width - titleSize.width) * 0.5), y: floor((54.0 - titleSize.height) * 0.5)), size: titleSize)
+            if let titleView = title.view {
+                if titleView.superview == nil {
+                    self.navigationBarContainer.addSubview(titleView)
+                }
+                transition.setFrame(view: titleView, frame: titleFrame)
+            }
+            
+            let navigationBackgroundFrame = CGRect(origin: CGPoint(), size: CGSize(width: availableSize.width, height: 54.0))
+            transition.setFrame(view: self.navigationBackgroundView, frame: navigationBackgroundFrame)
+            self.navigationBackgroundView.update(size: navigationBackgroundFrame.size, cornerRadius: 10.0, maskedCorners: [.layerMinXMinYCorner, .layerMaxXMinYCorner], transition: transition.containedViewLayoutTransition)
+            transition.setFrame(layer: self.navigationBarSeparator, frame: CGRect(origin: CGPoint(x: 0.0, y: 54.0), size: CGSize(width: availableSize.width, height: UIScreenPixel)))
+            
+            var optionsSectionItems: [AnyComponentWithIdentity<Empty>] = []
+            for actionTypeSection in ActionTypeSection.allCases {
+                optionsSectionItems.append(actionTypeSectionItem(actionTypeSection))
+                if self.expandedSections.contains(actionTypeSection) {
+                    optionsSectionItems.append(expandedActionTypeSectionItem(actionTypeSection))
+                }
+            }
+            
+            let optionsSectionTransition = transition
+            let optionsSectionSize = self.optionsSection.update(
+                transition: optionsSectionTransition,
+                component: AnyComponent(ListSectionComponent(
+                    theme: environment.theme,
+                    header: AnyComponent(MultilineTextComponent(
+                        text: .plain(NSAttributedString(
+                            string: environment.strings.Channel_AdminLogFilter_FilterActionsTypeTitle,
+                            font: Font.regular(presentationData.listsFontSize.itemListBaseHeaderFontSize),
+                            textColor: environment.theme.list.freeTextColor
+                        )),
+                        maximumNumberOfLines: 0
+                    )),
+                    footer: nil,
+                    items: optionsSectionItems
+                )),
+                environment: {},
+                containerSize: CGSize(width: availableSize.width - sideInset * 2.0, height: 100000.0)
+            )
+            let optionsSectionFrame = CGRect(origin: CGPoint(x: sideInset, y: contentHeight), size: optionsSectionSize)
+            if let optionsSectionView = self.optionsSection.view {
+                if optionsSectionView.superview == nil {
+                    self.scrollContentView.addSubview(optionsSectionView)
+                    self.optionsSection.parentState = state
+                }
+                transition.setFrame(view: optionsSectionView, frame: optionsSectionFrame)
+            }
+            contentHeight += optionsSectionSize.height
+            contentHeight += 24.0
+            
+            var peerItems: [AnyComponentWithIdentity<Empty>] = []
+            for peer in component.adminPeers {
+                peerItems.append(AnyComponentWithIdentity(id: peer.id, component: AnyComponent(AdminUserActionsPeerComponent(
+                    context: component.context,
+                    theme: environment.theme,
+                    strings: environment.strings,
+                    baseFontSize: presentationData.listsFontSize.baseDisplaySize,
+                    sideInset: 0.0,
+                    title: peer.displayTitle(strings: environment.strings, displayOrder: .firstLast),
+                    peer: peer,
+                    selectionState: .editing(isSelected: self.selectedAdmins.contains(peer.id)),
+                    action: { [weak self] peer in
+                        guard let self else {
+                            return
+                        }
+                        
+                        if self.selectedAdmins.contains(peer.id) {
+                            self.selectedAdmins.remove(peer.id)
+                        } else {
+                            self.selectedAdmins.insert(peer.id)
+                        }
+                        
+                        self.state?.updated(transition: ComponentTransition(animation: .curve(duration: 0.35, curve: .easeInOut)))
+                    }
+                ))))
+            }
+            
+            var adminsSectionItems: [AnyComponentWithIdentity<Empty>] = []
+            let allAdminsToggleAction: () -> Void = { [weak self] in
+                guard let self, let component = self.component else {
+                    return
+                }
+                
+                if self.selectedAdmins.isEmpty {
+                    self.selectedAdmins = Set(component.adminPeers.map(\.id))
+                } else {
+                    self.selectedAdmins.removeAll()
+                }
+                
+                self.state?.updated(transition: ComponentTransition(animation: .curve(duration: 0.35, curve: .easeInOut)))
+            }
+            adminsSectionItems.append(AnyComponentWithIdentity(id: adminsSectionItems.count, component: AnyComponent(ListActionItemComponent(
+                theme: environment.theme,
+                title: AnyComponent(VStack([
+                    AnyComponentWithIdentity(id: AnyHashable(0), component: AnyComponent(MultilineTextComponent(
+                        text: .plain(NSAttributedString(
+                            string: environment.strings.Channel_AdminLogFilter_ShowAllAdminsActions,
+                            font: Font.regular(presentationData.listsFontSize.baseDisplaySize),
+                            textColor: environment.theme.list.itemPrimaryTextColor
+                        )),
+                        maximumNumberOfLines: 1
+                    ))),
+                ], alignment: .left, spacing: 2.0)),
+                leftIcon: .check(ListActionItemComponent.LeftIcon.Check(
+                    isSelected: self.selectedAdmins.count == component.adminPeers.count,
+                    toggle: {
+                        allAdminsToggleAction()
+                    }
+                )),
+                icon: .none,
+                accessory: .none,
+                action: { _ in
+                    allAdminsToggleAction()
+                },
+                highlighting: .disabled
+            ))))
+            adminsSectionItems.append(AnyComponentWithIdentity(id: adminsSectionItems.count, component: AnyComponent(ListSubSectionComponent(
+                theme: environment.theme,
+                leftInset: 62.0,
+                items: peerItems
+            ))))
+            let adminsSectionSize = self.adminsSection.update(
+                transition: transition,
+                component: AnyComponent(ListSectionComponent(
+                    theme: environment.theme,
+                    header: AnyComponent(MultilineTextComponent(
+                        text: .plain(NSAttributedString(
+                            string: environment.strings.Channel_AdminLogFilter_FilterActionsAdminsTitle,
+                            font: Font.regular(presentationData.listsFontSize.itemListBaseHeaderFontSize),
+                            textColor: environment.theme.list.freeTextColor
+                        )),
+                        maximumNumberOfLines: 0
+                    )),
+                    footer: nil,
+                    items: adminsSectionItems
+                )),
+                environment: {},
+                containerSize: CGSize(width: availableSize.width - sideInset * 2.0, height: 100000.0)
+            )
+            let adminsSectionFrame = CGRect(origin: CGPoint(x: sideInset, y: contentHeight), size: adminsSectionSize)
+            if let adminsSectionView = self.adminsSection.view {
+                if adminsSectionView.superview == nil {
+                    self.scrollContentView.addSubview(adminsSectionView)
+                    self.adminsSection.parentState = state
+                }
+                transition.setFrame(view: adminsSectionView, frame: adminsSectionFrame)
+            }
+            contentHeight += adminsSectionSize.height
+            
+            contentHeight += 30.0
+            
+            let actionButtonSize = self.actionButton.update(
+                transition: transition,
+                component: AnyComponent(ButtonComponent(
+                    background: ButtonComponent.Background(
+                        color: environment.theme.list.itemCheckColors.fillColor,
+                        foreground: environment.theme.list.itemCheckColors.foregroundColor,
+                        pressedColor: environment.theme.list.itemCheckColors.fillColor.withMultipliedAlpha(0.9)
+                    ),
+                    content: AnyComponentWithIdentity(
+                        id: AnyHashable(0),
+                        component: AnyComponent(ButtonTextContentComponent(
+                            text: environment.strings.Channel_AdminLogFilter_ApplyFilter,
+                            badge: 0,
+                            textColor: environment.theme.list.itemCheckColors.foregroundColor,
+                            badgeBackground: environment.theme.list.itemCheckColors.foregroundColor,
+                            badgeForeground: environment.theme.list.itemCheckColors.fillColor
+                        ))
+                    ),
+                    isEnabled: true,
+                    displaysProgress: false,
+                    action: { [weak self] in
+                        guard let self, let component = self.component else {
+                            return
+                        }
+                        self.environment?.controller()?.dismiss()
+                        component.completion(self.calculateResult())
+                    }
+                )),
+                environment: {},
+                containerSize: CGSize(width: availableSize.width - sideInset * 2.0, height: 50.0)
+            )
+            let bottomPanelHeight = 8.0 + environment.safeInsets.bottom + actionButtonSize.height
+            let actionButtonFrame = CGRect(origin: CGPoint(x: sideInset, y: availableSize.height - bottomPanelHeight), size: actionButtonSize)
+            if let actionButtonView = actionButton.view {
+                if actionButtonView.superview == nil {
+                    self.addSubview(actionButtonView)
+                }
+                transition.setFrame(view: actionButtonView, frame: actionButtonFrame)
+            }
+            
+            contentHeight += bottomPanelHeight
+            
+            clippingY = actionButtonFrame.minY - 24.0
+            
+            let topInset: CGFloat = max(0.0, availableSize.height - containerInset - contentHeight)
+            
+            let scrollContentHeight = max(topInset + contentHeight + containerInset, availableSize.height - containerInset)
+            
+            self.scrollContentClippingView.layer.cornerRadius = 10.0
+            
+            self.itemLayout = ItemLayout(containerSize: availableSize, containerInset: containerInset, bottomInset: environment.safeInsets.bottom, topInset: topInset)
+            
+            transition.setFrame(view: self.scrollContentView, frame: CGRect(origin: CGPoint(x: 0.0, y: topInset + containerInset), size: CGSize(width: availableSize.width, height: contentHeight)))
+            
+            transition.setPosition(layer: self.backgroundLayer, position: CGPoint(x: availableSize.width / 2.0, y: availableSize.height / 2.0))
+            transition.setBounds(layer: self.backgroundLayer, bounds: CGRect(origin: CGPoint(), size: availableSize))
+            
+            let scrollClippingFrame = CGRect(origin: CGPoint(x: sideInset, y: containerInset), size: CGSize(width: availableSize.width - sideInset * 2.0, height: clippingY - containerInset))
+            transition.setPosition(view: self.scrollContentClippingView, position: scrollClippingFrame.center)
+            transition.setBounds(view: self.scrollContentClippingView, bounds: CGRect(origin: CGPoint(x: scrollClippingFrame.minX, y: scrollClippingFrame.minY), size: scrollClippingFrame.size))
+            
+            self.ignoreScrolling = true
+            let previousBounds = self.scrollView.bounds
+            transition.setFrame(view: self.scrollView, frame: CGRect(origin: CGPoint(x: 0.0, y: 0.0), size: CGSize(width: availableSize.width, height: availableSize.height)))
+            let contentSize = CGSize(width: availableSize.width, height: scrollContentHeight)
+            if contentSize != self.scrollView.contentSize {
+                self.scrollView.contentSize = contentSize
+            }
+            if resetScrolling {
+                self.scrollView.bounds = CGRect(origin: CGPoint(x: 0.0, y: 0.0), size: availableSize)
+            } else {
+                if !previousBounds.isEmpty, !transition.animation.isImmediate {
+                    let bounds = self.scrollView.bounds
+                    if bounds.maxY != previousBounds.maxY {
+                        let offsetY = previousBounds.maxY - bounds.maxY
+                        transition.animateBoundsOrigin(view: self.scrollView, from: CGPoint(x: 0.0, y: offsetY), to: CGPoint(), additive: true)
+                    }
+                }
+            }
+            self.ignoreScrolling = false
+            self.updateScrolling(isFirstTime: isFirstTime, transition: transition)
+            
             return availableSize
         }
     }
-
+    
     func makeView() -> View {
         return View(frame: CGRect())
     }
-
+    
     func update(view: View, availableSize: CGSize, state: EmptyComponentState, environment: Environment<ViewControllerComponentContainer.Environment>, transition: ComponentTransition) -> CGSize {
         return view.update(component: self, availableSize: availableSize, state: state, environment: environment, transition: transition)
     }
@@ -836,12 +963,11 @@ public class RecentActionsSettingsSheet: ViewControllerComponentContainer {
     private let context: AccountContext
     
     private var isDismissed: Bool = false
-    private var dismissCompletion: (() -> Void)?
     
     public init(context: AccountContext, peer: EnginePeer, adminPeers: [EnginePeer], initialValue: Value, completion: @escaping (Value) -> Void) {
         self.context = context
         
-        super.init(context: context, component: RecentActionsSettingsResizableSheetComponent(context: context, peer: peer, adminPeers: adminPeers, initialValue: initialValue, completion: completion), navigationBarAppearance: .none)
+        super.init(context: context, component: RecentActionsSettingsSheetComponent(context: context, peer: peer, adminPeers: adminPeers, initialValue: initialValue, completion: completion), navigationBarAppearance: .none)
         
         self.statusBar.statusBarStyle = .Ignore
         self.navigationPresentation = .flatModal
@@ -859,29 +985,22 @@ public class RecentActionsSettingsSheet: ViewControllerComponentContainer {
         super.viewDidAppear(animated)
         
         self.view.disablesInteractiveModalDismiss = true
-    }
-
-    fileprivate func completePendingDismiss() {
-        let dismissCompletion = self.dismissCompletion
-        self.dismissCompletion = nil
-        dismissCompletion?()
-    }
-
-    public func dismissAnimated() {
-        if let view = self.node.hostView.findTaggedView(tag: ResizableSheetComponent<ViewControllerComponentContainer.Environment>.View.Tag()) as? ResizableSheetComponent<ViewControllerComponentContainer.Environment>.View {
-            view.dismissAnimated()
+        
+        if let componentView = self.node.hostView.componentView as? RecentActionsSettingsSheetComponent.View {
+            componentView.animateIn()
         }
     }
     
     override public func dismiss(completion: (() -> Void)? = nil) {
         if !self.isDismissed {
             self.isDismissed = true
-            self.dismissCompletion = completion
             
-            if let view = self.node.hostView.findTaggedView(tag: ResizableSheetComponent<ViewControllerComponentContainer.Environment>.View.Tag()) as? ResizableSheetComponent<ViewControllerComponentContainer.Environment>.View {
-                view.dismissAnimated()
+            if let componentView = self.node.hostView.componentView as? RecentActionsSettingsSheetComponent.View {
+                componentView.animateOut(completion: { [weak self] in
+                    completion?()
+                    self?.dismiss(animated: false)
+                })
             } else {
-                self.completePendingDismiss()
                 self.dismiss(animated: false)
             }
         }

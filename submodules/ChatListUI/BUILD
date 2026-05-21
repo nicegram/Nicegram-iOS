@@ -2,7 +2,6 @@ load("@build_bazel_rules_swift//swift:swift.bzl", "swift_library")
 
 NGDEPS = [
     "//Nicegram/NGData:NGData",
-    "//Nicegram/NGKeywords",
     "//Nicegram/NGModels:NGModels",
     "//Nicegram/NGUI:NGUI",
     "//Nicegram/NGEnv:NGEnv",
@@ -11,7 +10,6 @@ NGDEPS = [
     "//submodules/SaveToCameraRoll:SaveToCameraRoll",
     "//submodules/AccountUtils:AccountUtils",
     "@swiftpkg_nicegram_assistant_ios//:FeatAssistant",
-    "@swiftpkg_nicegram_assistant_ios//:FeatChatExport",
     "@swiftpkg_nicegram_assistant_ios//:FeatChatListWidget",
     "@swiftpkg_nicegram_assistant_ios//:FeatHiddenChats",
     "@swiftpkg_nicegram_assistant_ios//:FeatPinnedChats",
@@ -19,8 +17,7 @@ NGDEPS = [
     "@swiftpkg_nicegram_assistant_ios//:NGRepoUser",
     "@swiftpkg_nicegram_assistant_ios//:NGSpecialOffer",
     "@swiftpkg_nicegram_assistant_ios//:FeatAiShortcuts",
-    "@swiftpkg_nicegram_assistant_ios//:FeatKeywords",
-    "@swiftpkg_nicegram_assistant_ios//:FeatWhitebridge"
+    "@swiftpkg_nicegram_assistant_ios//:FeatKeywords"
 ]
 
 swift_library(
@@ -30,7 +27,7 @@ swift_library(
         "Sources/**/*.swift",
     ]),
     copts = [
-        "-warnings-as-errors",
+        #"-warnings-as-errors",
     ],
     deps = NGDEPS + [
         "//submodules/SSignalKit/SwiftSignalKit:SwiftSignalKit",
@@ -52,6 +49,7 @@ swift_library(
         "//submodules/ActivityIndicator:ActivityIndicator",
         "//submodules/SearchBarNode:SearchBarNode",
         "//submodules/ChatListSearchRecentPeersNode:ChatListSearchRecentPeersNode",
+        "//submodules/ChatListSearchItemNode:ChatListSearchItemNode",
         "//submodules/ChatListSearchItemHeader:ChatListSearchItemHeader",
         "//submodules/TemporaryCachedPeerDataManager:TemporaryCachedPeerDataManager",
         "//submodules/PeerPresenceStatusManager:PeerPresenceStatusManager",
@@ -117,6 +115,7 @@ swift_library(
         "//submodules/TelegramUI/Components/ActionPanelComponent",
         "//submodules/TelegramUI/Components/Stories/StoryContainerScreen",
         "//submodules/TelegramUI/Components/Stories/StoryPeerListComponent",
+        "//submodules/TelegramUI/Components/FullScreenEffectView",
         "//submodules/TelegramUI/Components/Stories/AvatarStoryIndicatorComponent",
         "//submodules/TelegramUI/Components/PeerInfo/PeerInfoStoryGridScreen",
         "//submodules/TelegramUI/Components/Settings/ArchiveInfoScreen",
@@ -138,19 +137,6 @@ swift_library(
         "//submodules/TelegramUI/Components/Ads/AdsReportScreen",
         "//submodules/TelegramUI/Components/ButtonComponent",
         "//submodules/TelegramUI/Components/AnimatedTextComponent",
-        "//submodules/TelegramUI/Components/EdgeEffect",
-        "//submodules/TelegramUI/Components/ChatList/ChatListFilterTabContainerNode",
-        "//submodules/TelegramUI/Components/HeaderPanelContainerComponent",
-        "//submodules/TelegramUI/Components/HorizontalTabsComponent",
-        "//submodules/TelegramUI/Components/GlobalControlPanelsContext",
-        "//submodules/TelegramUI/Components/MediaPlaybackHeaderPanelComponent",
-        "//submodules/TelegramUI/Components/LiveLocationHeaderPanelComponent",
-        "//submodules/TelegramUI/Components/ChatList/ChatListSearchFiltersContainerNode",
-        "//submodules/TelegramUI/Components/ChatList/ChatListHeaderNoticeComponent",
-        "//submodules/TelegramUI/Components/AlertComponent",
-        "//submodules/TelegramUI/Components/AlertComponent/AlertTransferHeaderComponent",
-        "//submodules/TelegramUI/Components/AvatarComponent",
-        "//submodules/TelegramUI/Components/PeerManagement/OwnershipTransferController",
     ],
     visibility = [
         "//visibility:public",

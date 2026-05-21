@@ -286,7 +286,7 @@ public final class MediaEditor {
     }
     
     public var sourceIsVideo: Bool {
-        return self.player != nil
+        self.player != nil
     }
     
     public var resultIsVideo: Bool {
@@ -560,7 +560,6 @@ public final class MediaEditor {
                 cropOrientation: nil,
                 gradientColors: nil,
                 videoTrimRange: nil,
-                videoBounce: false,
                 videoIsMuted: false,
                 videoIsFullHd: false,
                 videoIsMirrored: false,
@@ -837,7 +836,7 @@ public final class MediaEditor {
             |> mapToSignal { message in
                 var player: AVPlayer?
                 if let message, !"".isEmpty {
-                    if let maybeFile = message.media.first(where: { $0 is TelegramMediaFile }) as? TelegramMediaFile, maybeFile.isVideo, let path = self.context.engine.resources.completedResourcePath(id: EngineMediaResource.Id(maybeFile.resource.id), pathExtension: "mp4") {
+                    if let maybeFile = message.media.first(where: { $0 is TelegramMediaFile }) as? TelegramMediaFile, maybeFile.isVideo, let path = self.context.account.postbox.mediaBox.completedResourcePath(maybeFile.resource, pathExtension: "mp4") {
                         let asset = AVURLAsset(url: URL(fileURLWithPath: path))
                         player = self.makePlayer(asset: asset)
                     }
@@ -975,6 +974,8 @@ public final class MediaEditor {
                 
                 if let _ = textureSourceResult.player {
                     self.updateRenderChain()
+//                    let _ = image
+//                    self.maybeGeneratePersonSegmentation(image)
                 }
                 
                 if let _ = self.values.audioTrack {
@@ -2257,11 +2258,13 @@ public final class MediaEditor {
                     Queue.mainQueue().after(delay - (currentTime - previousUpdateTime)) {
                         self.scheduledUpdate = false
                         self.previousUpdateTime = CACurrentMediaTime()
-                        self.requestRenderFrame()
+                        self.renderer.willRenderFrame()
+                        self.renderer.renderFrame()
                     }
                 } else {
                     self.previousUpdateTime = currentTime
-                    self.requestRenderFrame()
+                    self.renderer.willRenderFrame()
+                    self.renderer.renderFrame()
                 }
             }
         }

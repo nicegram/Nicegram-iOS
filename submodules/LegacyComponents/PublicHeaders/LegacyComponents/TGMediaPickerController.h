@@ -35,7 +35,7 @@
 @property (nonatomic, assign) bool forum;
 @property (nonatomic, assign) bool isSuggesting;
 
-@property (nonatomic, copy) void (^presentScheduleController)(bool, void (^)(int32_t, bool));
+@property (nonatomic, copy) void (^presentScheduleController)(bool, void (^)(int32_t));
 @property (nonatomic, copy) void (^presentTimerController)(void (^)(int32_t));
 
 @property (nonatomic, assign) CGFloat topInset;

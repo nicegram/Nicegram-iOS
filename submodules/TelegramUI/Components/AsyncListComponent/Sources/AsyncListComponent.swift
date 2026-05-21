@@ -165,34 +165,6 @@ public final class AsyncListComponent: Component {
             return nil
         }
     }
-    
-    public final class VisibleItemViews: Sequence, IteratorProtocol {
-        private var index: Int = 0
-        private let itemViews: [UIView]
-        
-        init(view: AsyncListComponent.View) {
-            var itemViews: [(Int, UIView)] = []
-            view.listNode.forEachItemNode { itemNode in
-                if let itemNode = itemNode as? ListItemNodeImpl, let index = itemNode.index {
-                    if let itemContentView = itemNode.contentsView.view {
-                        itemViews.append((index, itemContentView))
-                    }
-                }
-            }
-            itemViews.sort(by: { $0.0 < $1.0 })
-            self.itemViews = itemViews.map(\.1)
-        }
-        
-        public func next() -> UIView? {
-            if self.index >= self.itemViews.count {
-                return nil
-            }
-            let index = self.index
-            self.index += 1
-            
-            return self.itemViews[index]
-        }
-    }
 
     public let externalState: ExternalState
     public let externalStateValue: ExternalState.Value
@@ -224,9 +196,6 @@ public final class AsyncListComponent: Component {
     
     public static func ==(lhs: AsyncListComponent, rhs: AsyncListComponent) -> Bool {
         if lhs.externalState !== rhs.externalState {
-            return false
-        }
-        if lhs.externalStateValue != rhs.externalStateValue {
             return false
         }
         if lhs.items != rhs.items {
@@ -357,13 +326,13 @@ public final class AsyncListComponent: Component {
     
     private final class ListItemNodeImpl: ListViewItemNode {
         private let contentContainer: UIView
-        let contentsView = ComponentView<Empty>()
+        private let contentsView = ComponentView<Empty>()
         private(set) var item: ListItemImpl?
         
         init() {
             self.contentContainer = UIView()
             
-            super.init(layerBacked: false, rotated: false, seeThrough: false)
+            super.init(layerBacked: false, dynamicBounce: false, rotated: false, seeThrough: false)
             
             self.view.addSubview(self.contentContainer)
             
@@ -458,14 +427,14 @@ public final class AsyncListComponent: Component {
         
         private var externalStateValue: ExternalState.Value?
         private var isUpdating: Bool = false
-        public private(set) var component: AsyncListComponent?
+        private(set) var component: AsyncListComponent?
         
         private var currentEntries: [ItemEntry] = []
         
         private var ignoreUpdateVisibleItems: Bool = false
         
         public override init(frame: CGRect) {
-            self.listNode = ListViewImpl()
+            self.listNode = ListView()
             self.listNode.useMainQueueTransactions = true
             self.listNode.scroller.delaysContentTouches = false
             self.listNode.reorderedItemHasShadow = false
@@ -504,37 +473,6 @@ public final class AsyncListComponent: Component {
             if let onVisibleItemsUpdated = component.onVisibleItemsUpdated {
                 onVisibleItemsUpdated(VisibleItems(view: self, direction: component.direction), transition)
             }
-        }
-        
-        public func visibleItems() -> VisibleItems? {
-            guard let component = self.component else {
-                return nil
-            }
-            return VisibleItems(view: self, direction: component.direction)
-        }
-        
-        public func visibleItemView(id: AnyHashable) -> UIView? {
-            guard let component = self.component else {
-                return nil
-            }
-            guard let index = component.items.firstIndex(where: { $0.id == id }) else {
-                return nil
-            }
-            var foundItemNode: ListItemNodeImpl?
-            self.listNode.forEachItemNode { itemNode in
-                if let itemNode = itemNode as? ListItemNodeImpl, itemNode.index == index {
-                    foundItemNode = itemNode
-                }
-            }
-            if let foundItemNode {
-                return foundItemNode.contentsView.view
-            }
-            
-            return nil
-        }
-        
-        public func visibleItemViews() -> VisibleItemViews {
-            return VisibleItemViews(view: self)
         }
         
         func update(component: AsyncListComponent, availableSize: CGSize, state: EmptyComponentState, environment: Environment<Empty>, transition: ComponentTransition) -> CGSize {
@@ -576,15 +514,12 @@ public final class AsyncListComponent: Component {
                 case let .curve(duration, curve):
                     updateSizeAndInsets.duration = duration
                     switch curve {
-                    case .linear, .easeInOut, .easeIn:
+                    case .linear, .easeInOut:
                         updateSizeAndInsets.curve = .Default(duration: duration)
                     case .spring:
                         updateSizeAndInsets.curve = .Spring(duration: duration)
                     case let .custom(a, b, c, d):
                         updateSizeAndInsets.curve = .Custom(duration: duration, a, b, c, d)
-                    case .bounce:
-                        assertionFailure()
-                        updateSizeAndInsets.curve = .Spring(duration: duration)
                     }
                 }
             }

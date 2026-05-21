@@ -3,6 +3,7 @@ import UIKit
 import Display
 import AsyncDisplayKit
 import SwiftSignalKit
+import Postbox
 import TelegramCore
 import TelegramPresentationData
 import TelegramUIPreferences
@@ -19,7 +20,6 @@ import LottieComponent
 import Markdown
 import LocationUI
 import TelegramStringFormatting
-import TextFormat
 import PlainButtonComponent
 import TimeSelectionActionSheet
 
@@ -127,7 +127,8 @@ final class BusinessDaySetupScreenComponent: Component {
                 }
             }
             
-            self.environment?.controller()?.present(textAlertController(context: component.context, title: nil, text: enviroment.strings.BusinessHoursSetup_ErrorIntersectingHours_Text, actions: [
+            let presentationData = component.context.sharedContext.currentPresentationData.with { $0 }
+            self.environment?.controller()?.present(standardTextAlertController(theme: AlertControllerTheme(presentationData: presentationData), title: nil, text: enviroment.strings.BusinessHoursSetup_ErrorIntersectingHours_Text, actions: [
                 TextAlertAction(type: .genericAction, title: enviroment.strings.Common_Cancel, action: {
                 }),
                 TextAlertAction(type: .defaultAction, title: enviroment.strings.BusinessHoursSetup_ErrorIntersectingHours_ResetAction, action: {

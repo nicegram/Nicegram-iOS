@@ -106,8 +106,7 @@ func _internal_getCountriesList(accountManager: AccountManager<TelegramAccountMa
         |> retryRequest
         |> mapToSignal { result -> Signal<[Country], NoError> in
             switch result {
-                case let .countriesList(countriesListData):
-                    let (apiCountries, hash) = (countriesListData.countries, countriesListData.hash)
+                case let .countriesList(apiCountries, hash):
                     let result = apiCountries.compactMap { Country(apiCountry: $0) }
                     if result == current {
                         return .complete()
@@ -146,8 +145,7 @@ func _internal_getCountriesList(accountManager: AccountManager<TelegramAccountMa
 extension Country.CountryCode {
     init(apiCountryCode: Api.help.CountryCode) {
         switch apiCountryCode {
-            case let .countryCode(countryCodeData):
-                let (countryCode, apiPrefixes, apiPatterns) = (countryCodeData.countryCode, countryCodeData.prefixes, countryCodeData.patterns)
+            case let .countryCode(_, countryCode, apiPrefixes, apiPatterns):
                 let prefixes: [String] = apiPrefixes.flatMap { $0 } ?? []
                 let patterns: [String] = apiPatterns.flatMap { $0 } ?? []
                 self.init(code: countryCode, prefixes: prefixes, patterns: patterns)
@@ -158,8 +156,7 @@ extension Country.CountryCode {
 extension Country {
     init(apiCountry: Api.help.Country) {
         switch apiCountry {
-            case let .country(countryData):
-                let (flags, iso2, defaultName, name, countryCodes) = (countryData.flags, countryData.iso2, countryData.defaultName, countryData.name, countryData.countryCodes)
+            case let .country(flags, iso2, defaultName, name, countryCodes):
                 self.init(id: iso2, name: defaultName, localizedName: name, countryCodes: countryCodes.map { Country.CountryCode(apiCountryCode: $0) }, hidden: (flags & 1 << 0) != 0)
         }
     }

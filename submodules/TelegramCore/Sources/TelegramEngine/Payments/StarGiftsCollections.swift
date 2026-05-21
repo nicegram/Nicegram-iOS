@@ -42,13 +42,7 @@ public struct StarGiftCollection: Codable, Equatable {
 extension StarGiftCollection {
     init?(apiStarGiftCollection: Api.StarGiftCollection) {
         switch apiStarGiftCollection {
-        case let .starGiftCollection(starGiftCollectionData):
-            let _ = starGiftCollectionData.flags
-            let collectionId = starGiftCollectionData.collectionId
-            let title = starGiftCollectionData.title
-            let icon = starGiftCollectionData.icon
-            let giftsCount = starGiftCollectionData.giftsCount
-            let hash = starGiftCollectionData.hash
+        case let .starGiftCollection(_, collectionId, title, icon, giftsCount, hash):
             self.id = collectionId
             self.title = title
             self.icon = icon.flatMap { telegramMediaFileFromApiDocument($0, altDocuments: nil) }
@@ -127,9 +121,8 @@ private func _internal_getStarGiftCollections(postbox: Postbox, network: Network
                 }
                 return postbox.transaction { transaction -> [StarGiftCollection]? in
                     switch result {
-                    case let .starGiftCollections(starGiftCollectionsData):
-                        let apiCollections = starGiftCollectionsData.collections
-                        let collections = apiCollections.compactMap { StarGiftCollection(apiStarGiftCollection: $0) }
+                    case let .starGiftCollections(collections):
+                        let collections = collections.compactMap { StarGiftCollection(apiStarGiftCollection: $0) }
                         return collections
                     case .starGiftCollectionsNotModified:
                         return cachedCollections ?? []

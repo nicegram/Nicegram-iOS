@@ -18,7 +18,6 @@ struct ParsedDialogs {
     let readStates: [PeerId: [MessageId.Namespace: PeerReadState]]
     let mentionTagSummaries: [PeerId: MessageHistoryTagNamespaceSummary]
     let reactionTagSummaries: [PeerId: MessageHistoryTagNamespaceSummary]
-    let pollVoteTagSummaries: [PeerId: MessageHistoryTagNamespaceSummary]
     let channelStates: [PeerId: Int32]
     let topMessageIds: [PeerId: MessageId]
     let storeMessages: [StoreMessage]
@@ -31,11 +30,9 @@ struct ParsedDialogs {
 
 private func extractDialogsData(dialogs: Api.messages.Dialogs) -> (apiDialogs: [Api.Dialog], apiMessages: [Api.Message], apiChats: [Api.Chat], apiUsers: [Api.User], apiIsAtLowestBoundary: Bool) {
     switch dialogs {
-        case let .dialogs(dialogsData):
-            let (dialogs, messages, chats, users) = (dialogsData.dialogs, dialogsData.messages, dialogsData.chats, dialogsData.users)
+        case let .dialogs(dialogs, messages, chats, users):
             return (dialogs, messages, chats, users, true)
-        case let .dialogsSlice(dialogsSliceData):
-            let (_, dialogs, messages, chats, users) = (dialogsSliceData.count, dialogsSliceData.dialogs, dialogsSliceData.messages, dialogsSliceData.chats, dialogsSliceData.users)
+        case let .dialogsSlice(_, dialogs, messages, chats, users):
             return (dialogs, messages, chats, users, false)
         case .dialogsNotModified:
             assertionFailure()
@@ -45,8 +42,7 @@ private func extractDialogsData(dialogs: Api.messages.Dialogs) -> (apiDialogs: [
 
 private func extractDialogsData(peerDialogs: Api.messages.PeerDialogs) -> (apiDialogs: [Api.Dialog], apiMessages: [Api.Message], apiChats: [Api.Chat], apiUsers: [Api.User], apiIsAtLowestBoundary: Bool) {
     switch peerDialogs {
-        case let .peerDialogs(peerDialogsData):
-            let (dialogs, messages, chats, users) = (peerDialogsData.dialogs, peerDialogsData.messages, peerDialogsData.chats, peerDialogsData.users)
+        case let .peerDialogs(dialogs, messages, chats, users, _):
             return (dialogs, messages, chats, users, false)
     }
 }
@@ -56,7 +52,6 @@ private func parseDialogs(accountPeerId: PeerId, apiDialogs: [Api.Dialog], apiMe
     var readStates: [PeerId: [MessageId.Namespace: PeerReadState]] = [:]
     var mentionTagSummaries: [PeerId: MessageHistoryTagNamespaceSummary] = [:]
     var reactionTagSummaries: [PeerId: MessageHistoryTagNamespaceSummary] = [:]
-    var pollVoteTagSummaries: [PeerId: MessageHistoryTagNamespaceSummary] = [:]
     var channelStates: [PeerId: Int32] = [:]
     var topMessageIds: [PeerId: MessageId] = [:]
     var ttlPeriods: [PeerId: CachedPeerAutoremoveTimeout] = [:]
@@ -79,12 +74,10 @@ private func parseDialogs(accountPeerId: PeerId, apiDialogs: [Api.Dialog], apiMe
         let apiMarkedUnread: Bool
         let apiUnreadMentionsCount: Int32
         let apiUnreadReactionsCount: Int32
-        let apiUnreadPollVoteCount: Int32
         var apiChannelPts: Int32?
         let apiNotificationSettings: Api.PeerNotifySettings
         switch dialog {
-            case let .dialog(dialogData):
-                let (flags, peer, topMessage, readInboxMaxId, readOutboxMaxId, unreadCount, unreadMentionsCount, unreadReactionsCount, unreadPollVoteCount, peerNotificationSettings, pts, ttlPeriod) = (dialogData.flags, dialogData.peer, dialogData.topMessage, dialogData.readInboxMaxId, dialogData.readOutboxMaxId, dialogData.unreadCount, dialogData.unreadMentionsCount, dialogData.unreadReactionsCount, dialogData.unreadPollVotesCount, dialogData.notifySettings, dialogData.pts, dialogData.ttlPeriod)
+            case let .dialog(flags, peer, topMessage, readInboxMaxId, readOutboxMaxId, unreadCount, unreadMentionsCount, unreadReactionsCount, peerNotificationSettings, pts, _, _, ttlPeriod):
                 if let peer = peers.get(peer.peerId) {
                     var isExluded = false
                     if let group = peer as? TelegramGroup {
@@ -104,7 +97,6 @@ private func parseDialogs(accountPeerId: PeerId, apiDialogs: [Api.Dialog], apiMe
                 apiMarkedUnread = (flags & (1 << 3)) != 0
                 apiUnreadMentionsCount = unreadMentionsCount
                 apiUnreadReactionsCount = unreadReactionsCount
-                apiUnreadPollVoteCount = unreadPollVoteCount
                 apiNotificationSettings = peerNotificationSettings
                 apiChannelPts = pts
             
@@ -117,14 +109,11 @@ private func parseDialogs(accountPeerId: PeerId, apiDialogs: [Api.Dialog], apiMe
                 }
                 let peerId: PeerId
                 switch apiPeer {
-                    case let .peerUser(peerUserData):
-                        let userId = peerUserData.userId
+                    case let .peerUser(userId):
                         peerId = PeerId(namespace: Namespaces.Peer.CloudUser, id: PeerId.Id._internalFromInt64Value(userId))
-                    case let .peerChat(peerChatData):
-                        let chatId = peerChatData.chatId
+                    case let .peerChat(chatId):
                         peerId = PeerId(namespace: Namespaces.Peer.CloudGroup, id: PeerId.Id._internalFromInt64Value(chatId))
-                    case let .peerChannel(peerChannelData):
-                        let channelId = peerChannelData.channelId
+                    case let .peerChannel(channelId):
                         peerId = PeerId(namespace: Namespaces.Peer.CloudChannel, id: PeerId.Id._internalFromInt64Value(channelId))
                 }
                 
@@ -136,7 +125,6 @@ private func parseDialogs(accountPeerId: PeerId, apiDialogs: [Api.Dialog], apiMe
                 if apiTopMessage != 0 {
                     mentionTagSummaries[peerId] = MessageHistoryTagNamespaceSummary(version: 1, count: apiUnreadMentionsCount, range: MessageHistoryTagNamespaceCountValidityRange(maxId: apiTopMessage))
                     reactionTagSummaries[peerId] = MessageHistoryTagNamespaceSummary(version: 1, count: apiUnreadReactionsCount, range: MessageHistoryTagNamespaceCountValidityRange(maxId: apiTopMessage))
-                    pollVoteTagSummaries[peerId] = MessageHistoryTagNamespaceSummary(version: 1, count: apiUnreadPollVoteCount, range: MessageHistoryTagNamespaceCountValidityRange(maxId: apiTopMessage))
                     topMessageIds[peerId] = MessageId(peerId: peerId, namespace: Namespaces.Message.Cloud, id: apiTopMessage)
                 }
                 
@@ -145,11 +133,9 @@ private func parseDialogs(accountPeerId: PeerId, apiDialogs: [Api.Dialog], apiMe
                 }
                 
                 notificationSettings[peerId] = TelegramPeerNotificationSettings(apiSettings: apiNotificationSettings)
-            case let .dialogFolder(dialogFolderData):
-                let (folder, unreadMutedPeersCount, unreadMutedMessagesCount) = (dialogFolderData.folder, dialogFolderData.unreadMutedPeersCount, dialogFolderData.unreadMutedMessagesCount)
+            case let .dialogFolder(_, folder, _, _, unreadMutedPeersCount, _, unreadMutedMessagesCount, _):
                 switch folder {
-                    case let .folder(folderData):
-                        let id = folderData.id
+                    case let .folder(_, id, _, _):
                         referencedFolders[PeerGroupId(rawValue: id)] = PeerGroupUnreadCountersSummary(all: PeerGroupUnreadCounters(messageCount: unreadMutedMessagesCount, chatCount: unreadMutedPeersCount))
                 }
         }
@@ -189,7 +175,6 @@ private func parseDialogs(accountPeerId: PeerId, apiDialogs: [Api.Dialog], apiMe
         readStates: readStates,
         mentionTagSummaries: mentionTagSummaries,
         reactionTagSummaries: reactionTagSummaries,
-        pollVoteTagSummaries: pollVoteTagSummaries,
         channelStates: channelStates,
         topMessageIds: topMessageIds,
         storeMessages: storeMessages,
@@ -210,7 +195,6 @@ struct FetchedChatList {
     var readStates: [PeerId: [MessageId.Namespace: PeerReadState]]
     var mentionTagSummaries: [PeerId: MessageHistoryTagNamespaceSummary]
     var reactionTagSummaries: [PeerId: MessageHistoryTagNamespaceSummary]
-    var pollVoteTagSummaries: [PeerId: MessageHistoryTagNamespaceSummary]
     var channelStates: [PeerId: Int32]
     var storeMessages: [StoreMessage]
     var topMessageIds: [PeerId: MessageId]
@@ -318,7 +302,6 @@ func fetchChatList(accountPeerId: PeerId, postbox: Postbox, network: Network, lo
                     var readStates: [PeerId: [MessageId.Namespace: PeerReadState]] = [:]
                     var mentionTagSummaries: [PeerId: MessageHistoryTagNamespaceSummary] = [:]
                     var reactionTagSummaries: [PeerId: MessageHistoryTagNamespaceSummary] = [:]
-                    var pollVoteTagSummaries: [PeerId: MessageHistoryTagNamespaceSummary] = [:]
                     var channelStates: [PeerId: Int32] = [:]
                     var storeMessages: [StoreMessage] = []
                     var topMessageIds: [PeerId: MessageId] = [:]
@@ -330,7 +313,6 @@ func fetchChatList(accountPeerId: PeerId, postbox: Postbox, network: Network, lo
                     readStates.merge(parsedRemoteChats.readStates, uniquingKeysWith: { _, updated in updated })
                     mentionTagSummaries.merge(parsedRemoteChats.mentionTagSummaries, uniquingKeysWith: { _, updated in updated })
                     reactionTagSummaries.merge(parsedRemoteChats.reactionTagSummaries, uniquingKeysWith: { _, updated in updated })
-                    pollVoteTagSummaries.merge(parsedRemoteChats.pollVoteTagSummaries, uniquingKeysWith: { _, updated in updated })
                     channelStates.merge(parsedRemoteChats.channelStates, uniquingKeysWith: { _, updated in updated })
                     storeMessages.append(contentsOf: parsedRemoteChats.storeMessages)
                     topMessageIds.merge(parsedRemoteChats.topMessageIds, uniquingKeysWith: { _, updated in updated })
@@ -343,7 +325,6 @@ func fetchChatList(accountPeerId: PeerId, postbox: Postbox, network: Network, lo
                         readStates.merge(parsedPinnedChats.readStates, uniquingKeysWith: { _, updated in updated })
                         mentionTagSummaries.merge(parsedPinnedChats.mentionTagSummaries, uniquingKeysWith: { _, updated in updated })
                         reactionTagSummaries.merge(parsedPinnedChats.reactionTagSummaries, uniquingKeysWith: { _, updated in updated })
-                        pollVoteTagSummaries.merge(parsedPinnedChats.pollVoteTagSummaries, uniquingKeysWith: { _, updated in updated })
                         channelStates.merge(parsedPinnedChats.channelStates, uniquingKeysWith: { _, updated in updated })
                         storeMessages.append(contentsOf: parsedPinnedChats.storeMessages)
                         topMessageIds.merge(parsedPinnedChats.topMessageIds, uniquingKeysWith: { _, updated in updated })
@@ -368,7 +349,6 @@ func fetchChatList(accountPeerId: PeerId, postbox: Postbox, network: Network, lo
                         readStates.merge(folderChats.readStates, uniquingKeysWith: { _, updated in updated })
                         mentionTagSummaries.merge(folderChats.mentionTagSummaries, uniquingKeysWith: { _, updated in updated })
                         reactionTagSummaries.merge(folderChats.reactionTagSummaries, uniquingKeysWith: { _, updated in updated })
-                        pollVoteTagSummaries.merge(folderChats.pollVoteTagSummaries, uniquingKeysWith: { _, updated in updated })
                         channelStates.merge(folderChats.channelStates, uniquingKeysWith: { _, updated in updated })
                         storeMessages.append(contentsOf: folderChats.storeMessages)
                     }
@@ -404,7 +384,6 @@ func fetchChatList(accountPeerId: PeerId, postbox: Postbox, network: Network, lo
                         readStates: readStates,
                         mentionTagSummaries: mentionTagSummaries,
                         reactionTagSummaries: reactionTagSummaries,
-                        pollVoteTagSummaries: pollVoteTagSummaries,
                         channelStates: channelStates,
                         storeMessages: storeMessages,
                         topMessageIds: topMessageIds,

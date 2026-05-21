@@ -2,6 +2,7 @@ import Foundation
 import UIKit
 import Display
 import AsyncDisplayKit
+import Postbox
 import TelegramCore
 import SwiftSignalKit
 import AccountContext
@@ -21,7 +22,6 @@ import TelegramAnimatedStickerNode
 import ShimmerEffect
 import AttachmentUI
 import AvatarNode
-import AlertComponent
 
 private struct ThemeSettingsThemeEntry: Comparable, Identifiable {
     let index: Int
@@ -308,7 +308,7 @@ private final class ThemeSettingsThemeItemIconNode : ListViewItemNode {
         
         self.placeholderNode = StickerShimmerEffectNode()
 
-        super.init(layerBacked: false, rotated: false, seeThrough: false)
+        super.init(layerBacked: false, dynamicBounce: false, rotated: false, seeThrough: false)
         
         self.addSubnode(self.containerNode)
         self.containerNode.addSubnode(self.imageNode)
@@ -491,7 +491,7 @@ private final class ThemeSettingsThemeItemIconNode : ListViewItemNode {
                             }
                             strongSelf.animatedStickerNode = animatedStickerNode
                             strongSelf.emojiContainerNode.insertSubnode(animatedStickerNode, belowSubnode: strongSelf.placeholderNode)
-                            let pathPrefix = item.context.engine.resources.shortLivedResourceCachePathPrefix(id: EngineMediaResource.Id(file.resource.id))
+                            let pathPrefix = item.context.account.postbox.mediaBox.shortLivedResourceCachePathPrefix(file.resource.id)
                             animatedStickerNode.setup(source: AnimatedStickerResourceSource(account: item.context.account, resource: file.resource), width: 128, height: 128, playbackMode: .still(.start), mode: .direct(cachePathPrefix: pathPrefix))
                             
                             animatedStickerNode.anchorPoint = CGPoint(x: 0.5, y: 1.0)
@@ -499,7 +499,7 @@ private final class ThemeSettingsThemeItemIconNode : ListViewItemNode {
                         animatedStickerNode.autoplay = true
                         animatedStickerNode.visibility = strongSelf.visibilityStatus
                         
-                        strongSelf.stickerFetchedDisposable.set(item.context.engine.resources.fetch(reference: MediaResourceReference.media(media: .standalone(media: file), resource: file.resource), userLocation: .other, userContentType: .sticker).startStrict())
+                        strongSelf.stickerFetchedDisposable.set(fetchedMediaResource(mediaBox: item.context.account.postbox.mediaBox, userLocation: .other, userContentType: .sticker, reference: MediaResourceReference.media(media: .standalone(media: file), resource: file.resource)).startStrict())
                         
                         let thumbnailDimensions = PixelDimensions(width: 512, height: 512)
                         strongSelf.placeholderNode.update(backgroundColor: nil, foregroundColor: UIColor(rgb: 0xffffff, alpha: 0.2), shimmeringColor: UIColor(rgb: 0xffffff, alpha: 0.3), data: file.immediateThumbnailData, size: emojiFrame.size, enableEffect: item.context.sharedContext.energyUsageSettings.fullTranslucency, imageSize: thumbnailDimensions.cgSize)
@@ -925,11 +925,11 @@ private class ChatThemeScreenNode: ViewControllerTracingNode, ASScrollViewDelega
         self.animationNode = AnimationNode(animation: self.isDarkAppearance ? "anim_sun_reverse" : "anim_sun", colors: iconColors(theme: self.presentationData.theme), scale: 1.0)
         self.animationNode.isUserInteractionEnabled = false
         
-        self.doneButton = SolidRoundedButtonNode(theme: SolidRoundedButtonTheme(theme: self.presentationData.theme), glass: true, height: 52.0, cornerRadius: 26.0)
+        self.doneButton = SolidRoundedButtonNode(theme: SolidRoundedButtonTheme(theme: self.presentationData.theme), height: 50.0, cornerRadius: 11.0, gloss: false)
         
         self.otherButton = HighlightableButtonNode()
         
-        self.listNode = ListViewImpl()
+        self.listNode = ListView()
         self.listNode.transform = CATransform3DMakeRotation(-CGFloat.pi / 2.0, 0.0, 0.0, 1.0)
         
         super.init()
@@ -974,6 +974,11 @@ private class ChatThemeScreenNode: ViewControllerTracingNode, ASScrollViewDelega
             }
         }
         self.otherButton.addTarget(self, action: #selector(self.otherButtonPressed), forControlEvents: .touchUpInside)
+        
+        var ignoreGiftThemes = false
+        if let data = self.context.currentAppConfiguration.with({ $0 }).data, let _ = data["ios_killswitch_disable_gift_themes"] {
+            ignoreGiftThemes = true
+        }
         
         self.disposable.set(combineLatest(
             queue: Queue.mainQueue(),
@@ -1028,11 +1033,15 @@ private class ChatThemeScreenNode: ViewControllerTracingNode, ASScrollViewDelega
             ))
                         
             var giftThemes = uniqueGiftChatThemesState.themes
+            if ignoreGiftThemes {
+                giftThemes = []
+            }
             var existingIds = Set<String>()
             if let initiallySelectedTheme, case .gift = initiallySelectedTheme {
                 let initialThemeIndex = giftThemes.firstIndex(where: { $0.id == initiallySelectedTheme.id })
                 if initialThemeIndex == nil || initialThemeIndex! > 50 {
                     giftThemes.insert(initiallySelectedTheme, at: 0)
+                    existingIds.insert(initiallySelectedTheme.id)
                 }
             }
             
@@ -1044,7 +1053,7 @@ private class ChatThemeScreenNode: ViewControllerTracingNode, ASScrollViewDelega
                 var peer: EnginePeer?
                 if case let .unique(uniqueGift) = gift {
                     for attribute in uniqueGift.attributes {
-                        if case let .model(_, file, _, _) = attribute {
+                        if case let .model(_, file, _) = attribute {
                             emojiFile = file
                         }
                     }
@@ -1073,7 +1082,6 @@ private class ChatThemeScreenNode: ViewControllerTracingNode, ASScrollViewDelega
                     strings: presentationData.strings,
                     wallpaper: wallpaper
                 ))
-                existingIds.insert(theme.id)
             }
             
             if uniqueGiftChatThemesState.themes.count == 0 || uniqueGiftChatThemesState.dataState == .ready(canLoadMore: false) {
@@ -1530,7 +1538,7 @@ private class ChatThemeScreenNode: ViewControllerTracingNode, ASScrollViewDelega
     override func hitTest(_ point: CGPoint, with event: UIEvent?) -> UIView? {
         var presentingAlertController = false
         self.controller?.forEachController({ c in
-            if c is AlertScreen {
+            if c is AlertController {
                 presentingAlertController = true
             }
             return true
@@ -1605,14 +1613,13 @@ private class ChatThemeScreenNode: ViewControllerTracingNode, ASScrollViewDelega
         let cancelFrame = CGRect(origin: CGPoint(x: 16.0, y: 0.0), size: cancelSize)
         transition.updateFrame(node: self.cancelButtonNode, frame: cancelFrame)
 
-        let buttonInsets = ContainerViewLayout.concentricInsets(bottomInset: layout.intrinsicInsets.bottom, innerDiameter: 52.0, sideInset: 30.0)
         let buttonInset: CGFloat = 16.0
-        let doneButtonHeight = self.doneButton.updateLayout(width: contentFrame.width - buttonInsets.left - buttonInsets.right, transition: transition)
+        let doneButtonHeight = self.doneButton.updateLayout(width: contentFrame.width - buttonInset * 2.0, transition: transition)
         var doneY = contentHeight - doneButtonHeight - 2.0 - insets.bottom
         if self.controller?.canResetWallpaper == true {
             doneY = contentHeight - doneButtonHeight - 52.0 - insets.bottom
         }
-        transition.updateFrame(node: self.doneButton, frame: CGRect(x: buttonInsets.left, y: doneY, width: contentFrame.width, height: doneButtonHeight))
+        transition.updateFrame(node: self.doneButton, frame: CGRect(x: buttonInset, y: doneY, width: contentFrame.width, height: doneButtonHeight))
         
         let otherButtonSize = self.otherButton.measure(CGSize(width: contentFrame.width - buttonInset * 2.0, height: .greatestFiniteMagnitude))
         self.otherButton.frame = CGRect(origin: CGPoint(x: floor((contentFrame.width - otherButtonSize.width) / 2.0), y: contentHeight - otherButtonSize.height - insets.bottom - 15.0), size: otherButtonSize)

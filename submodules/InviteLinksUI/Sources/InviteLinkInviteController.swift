@@ -14,7 +14,7 @@ import SectionHeaderItem
 import TelegramStringFormatting
 import MergeLists
 import ContextUI
-
+import ShareController
 import OverlayStatusController
 import PresentationDataUtils
 import DirectionalPanGesture
@@ -362,7 +362,7 @@ public final class InviteLinkInviteController: ViewController {
             
             self.historyBackgroundNode.addSubnode(self.historyBackgroundContentNode)
             
-            self.listNode = ListViewImpl()
+            self.listNode = ListView()
             self.listNode.verticalScrollIndicatorColor = UIColor(white: 0.0, alpha: 0.3)
             self.listNode.verticalScrollIndicatorFollowsOverscroll = true
             self.listNode.accessibilityPageScrolledString = { row, count in
@@ -411,20 +411,13 @@ public final class InviteLinkInviteController: ViewController {
                     
                     if let invite {
                         if case let .groupOrChannel(peerId) = self.mode {
-                            let _ = (context.engine.data.get(TelegramEngine.EngineData.Item.Peer.Peer(id: peerId))
-                            |> mapToSignal { peer -> Signal<EnginePeer, NoError> in
-                                if let peer {
-                                    return .single(peer)
-                                } else {
-                                    return .never()
-                                }
-                            }
+                            let _ = (context.account.postbox.loadedPeerWithId(peerId)
                             |> deliverOnMainQueue).start(next: { [weak self] peer in
                                 guard let strongSelf = self else {
                                     return
                                 }
                                 let isGroup: Bool
-                                if case let .channel(channel) = peer, case .broadcast = channel.info {
+                                if let peer = peer as? TelegramChannel, case .broadcast = peer.info {
                                     isGroup = false
                                 } else {
                                     isGroup = true
@@ -450,17 +443,10 @@ public final class InviteLinkInviteController: ViewController {
                             return
                         }
                         
-                        let _ = (context.engine.data.get(TelegramEngine.EngineData.Item.Peer.Peer(id: peerId))
-                        |> mapToSignal { peer -> Signal<EnginePeer, NoError> in
-                            if let peer {
-                                return .single(peer)
-                            } else {
-                                return .never()
-                            }
-                        }
+                        let _ = (context.account.postbox.loadedPeerWithId(peerId)
                         |> deliverOnMainQueue).start(next: { [weak self] peer in
                             let isGroup: Bool
-                            if case let .channel(channel) = peer, case .broadcast = channel.info {
+                            if let peer = peer as? TelegramChannel, case .broadcast = peer.info {
                                 isGroup = false
                             } else {
                                 isGroup = true
@@ -532,7 +518,7 @@ public final class InviteLinkInviteController: ViewController {
                     })))
                 }
                 
-                let contextController = makeContextController(presentationData: presentationData, source: .reference(InviteLinkContextReferenceContentSource(controller: controller, sourceNode: node)), items: .single(ContextController.Items(content: .list(items))), gesture: gesture)
+                let contextController = ContextController(presentationData: presentationData, source: .reference(InviteLinkContextReferenceContentSource(controller: controller, sourceNode: node)), items: .single(ContextController.Items(content: .list(items))), gesture: gesture)
                 self.controller?.presentInGlobalOverlay(contextController)
             }, copyLink: { [weak self] invite in
                 UIPasteboard.general.string = invite.link
@@ -554,12 +540,8 @@ public final class InviteLinkInviteController: ViewController {
                     return
                 }
                 let updatedPresentationData = (strongSelf.presentationData, strongSelf.presentationDataPromise.get())
-                let shareController = context.sharedContext.makeShareController(context: context, params: ShareControllerParams(subject: .url(inviteLink), updatedPresentationData: updatedPresentationData, actionCompleted: { [weak self] in
-                    if let strongSelf = self {
-                        let presentationData = context.sharedContext.currentPresentationData.with { $0 }
-                        strongSelf.controller?.present(UndoOverlayController(presentationData: presentationData, content: .linkCopied(title: nil, text: presentationData.strings.Conversation_LinkCopied), elevatedLayout: false, animateInAsReplacement: false, action: { _ in return false }), in: .window(.root))
-                    }
-                }, completed: { [weak self] peerIds in
+                let shareController = ShareController(context: context, subject: .url(inviteLink), updatedPresentationData: updatedPresentationData)
+                shareController.completed = { [weak self] peerIds in
                     if let strongSelf = self {
                         let _ = (strongSelf.context.engine.data.get(
                             EngineDataList(
@@ -570,7 +552,7 @@ public final class InviteLinkInviteController: ViewController {
                             if let strongSelf = self {
                                 let peers = peerList.compactMap { $0 }
                                 let presentationData = strongSelf.context.sharedContext.currentPresentationData.with { $0 }
-
+                                
                                 let text: String
                                 var savedMessages = false
                                 if peerIds.count == 1, let peerId = peerIds.first, peerId == strongSelf.context.account.peerId {
@@ -591,7 +573,7 @@ public final class InviteLinkInviteController: ViewController {
                                         text = ""
                                     }
                                 }
-
+                                
                                 strongSelf.controller?.present(UndoOverlayController(presentationData: presentationData, content: .forward(savedMessages: savedMessages, text: text), elevatedLayout: false, animateInAsReplacement: true, action: { action in
                                     if savedMessages, let self, action == .info {
                                         let _ = (self.context.engine.data.get(TelegramEngine.EngineData.Item.Peer.Peer(id: self.context.account.peerId))
@@ -607,12 +589,18 @@ public final class InviteLinkInviteController: ViewController {
                                     }
                                     return false
                                 }), in: .window(.root))
-
+                                
                                 strongSelf.controller?.dismiss()
                             }
                         })
                     }
-                }))
+                }
+                shareController.actionCompleted = { [weak self] in
+                    if let strongSelf = self {
+                        let presentationData = context.sharedContext.currentPresentationData.with { $0 }
+                        strongSelf.controller?.present(UndoOverlayController(presentationData: presentationData, content: .linkCopied(title: nil, text: presentationData.strings.Conversation_LinkCopied), elevatedLayout: false, animateInAsReplacement: false, action: { _ in return false }), in: .window(.root))
+                    }
+                }
                 strongSelf.controller?.present(shareController, in: .window(.root))
             }, manageLinks: { [weak self] in
                 guard let strongSelf = self else {

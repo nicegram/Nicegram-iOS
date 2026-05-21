@@ -107,7 +107,7 @@ private final class KeepMediaDurationPickerItemNode: ListViewItemNode {
         }
         self.textNodes = textNodes
 
-        super.init(layerBacked: false)
+        super.init(layerBacked: false, dynamicBounce: false)
         
         for textNode in textNodes {
             self.addSubnode(textNode)

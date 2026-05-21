@@ -8,9 +8,6 @@ import TelegramStringFormatting
 import SearchBarNode
 import AppBundle
 import TelegramCore
-import ComponentFlow
-import BundleIconComponent
-import GlassBarButtonComponent
 
 private func loadCountryCodes() -> [Country] {
     guard let filePath = getAppBundle().path(forResource: "PhoneCountries", ofType: "txt") else {
@@ -142,7 +139,7 @@ private final class AuthorizationSequenceCountrySelectionNavigationContentNode: 
         
         self.cancel = cancel
         
-        self.searchBar = SearchBarNode(theme: SearchBarNodeTheme(theme: theme), presentationTheme: theme, strings: strings, fieldStyle: .modern)
+        self.searchBar = SearchBarNode(theme: SearchBarNodeTheme(theme: theme), strings: strings, fieldStyle: .modern)
         let placeholderText = strings.Common_Search
         let searchBarFont = Font.regular(17.0)
         
@@ -169,12 +166,10 @@ private final class AuthorizationSequenceCountrySelectionNavigationContentNode: 
         return 54.0
     }
     
-    override func updateLayout(size: CGSize, leftInset: CGFloat, rightInset: CGFloat, transition: ContainedViewLayoutTransition) -> CGSize {
+    override func updateLayout(size: CGSize, leftInset: CGFloat, rightInset: CGFloat, transition: ContainedViewLayoutTransition) {
         let searchBarFrame = CGRect(origin: CGPoint(x: 0.0, y: size.height - self.nominalHeight), size: CGSize(width: size.width, height: 54.0))
         self.searchBar.frame = searchBarFrame
         self.searchBar.updateLayout(boundingSize: searchBarFrame.size, leftInset: leftInset, rightInset: rightInset, transition: transition)
-        
-        return size
     }
     
     func activate() {
@@ -294,31 +289,10 @@ public final class AuthorizationSequenceCountrySelectionController: ViewControll
         return nil
     }
     
-    public static func defaultCountryCode() -> Int32 {
-        let countryId = (Locale.current as NSLocale).object(forKey: .countryCode) as? String
-     
-        var countryCode: Int32 = 1
-        if let countryId = countryId {
-            let normalizedId = countryId.uppercased()
-            for (code, idAndName) in countryCodeToIdAndName {
-                if idAndName.0 == normalizedId {
-                    countryCode = Int32(code)
-                    break
-                }
-            }
-        }
-        
-        return countryCode
-    }
-    
     private let theme: PresentationTheme
     private let strings: PresentationStrings
     private let displayCodes: Bool
-    private let glass: Bool
     
-    
-    private var closeButtonNode: BarComponentHostNode?
-    private var searchButtonNode: BarComponentHostNode?
     private var navigationContentNode: AuthorizationSequenceCountrySelectionNavigationContentNode?
     
     private var controllerNode: AuthorizationSequenceCountrySelectionControllerNode {
@@ -328,36 +302,29 @@ public final class AuthorizationSequenceCountrySelectionController: ViewControll
     public var completeWithCountryCode: ((Int, String) -> Void)?
     public var dismissed: (() -> Void)?
     
-    public init(strings: PresentationStrings, theme: PresentationTheme, displayCodes: Bool = true, glass: Bool = false) {
+    public init(strings: PresentationStrings, theme: PresentationTheme, displayCodes: Bool = true) {
         self.theme = theme
         self.strings = strings
         self.displayCodes = displayCodes
-        self.glass = glass
         
-        super.init(navigationBarPresentationData: NavigationBarPresentationData(theme: NavigationBarTheme(rootControllerTheme: theme, hideBackground: glass, hideSeparator: glass, style: glass ? .glass : .legacy), strings: NavigationBarStrings(presentationStrings: strings)))
-        
-        self._hasGlassStyle = glass
+        super.init(navigationBarPresentationData: NavigationBarPresentationData(theme: NavigationBarTheme(rootControllerTheme: theme), strings: NavigationBarStrings(presentationStrings: strings)))
         
         self.navigationPresentation = .modal
         
         self.statusBar.statusBarStyle = theme.rootController.statusBarStyle.style
         
-        if glass {
-            self.title = strings.Login_SelectCountry
-        } else {
-            let navigationContentNode = AuthorizationSequenceCountrySelectionNavigationContentNode(theme: theme, strings: strings, cancel: { [weak self] in
-                self?.dismissed?()
-                self?.dismiss()
-            })
-            self.navigationContentNode = navigationContentNode
-            navigationContentNode.setQueryUpdated { [weak self] query in
-                guard let strongSelf = self, strongSelf.isNodeLoaded else {
-                    return
-                }
-                strongSelf.controllerNode.updateSearchQuery(query)
+        let navigationContentNode = AuthorizationSequenceCountrySelectionNavigationContentNode(theme: theme, strings: strings, cancel: { [weak self] in
+            self?.dismissed?()
+            self?.dismiss()
+        })
+        self.navigationContentNode = navigationContentNode
+        navigationContentNode.setQueryUpdated { [weak self] query in
+            guard let strongSelf = self, strongSelf.isNodeLoaded else {
+                return
             }
-            self.navigationBar?.setContentNode(navigationContentNode, animated: false)
+            strongSelf.controllerNode.updateSearchQuery(query)
         }
+        self.navigationBar?.setContentNode(navigationContentNode, animated: false)
     }
     
     required public init(coder aDecoder: NSCoder) {
@@ -365,15 +332,11 @@ public final class AuthorizationSequenceCountrySelectionController: ViewControll
     }
     
     override public func loadDisplayNode() {
-        self.displayNode = AuthorizationSequenceCountrySelectionControllerNode(theme: self.theme, strings: self.strings, displayCodes: self.displayCodes, glass: self.glass, itemSelected: { [weak self] args in
+        self.displayNode = AuthorizationSequenceCountrySelectionControllerNode(theme: self.theme, strings: self.strings, displayCodes: self.displayCodes, itemSelected: { [weak self] args in
             let (_, countryId, code) = args
             self?.completeWithCountryCode?(code, countryId)
             self?.dismiss()
         })
-        self.controllerNode.deactivateSearch = { [weak self] in
-            self?.controllerNode.isSearching = false
-            self?.requestLayout(transition: .animated(duration: 0.5, curve: .spring))
-        }
         self.displayNodeDidLoad()
     }
     
@@ -385,82 +348,9 @@ public final class AuthorizationSequenceCountrySelectionController: ViewControll
         }
     }
     
-    private func updateNavigationButtons() {
-        guard self.glass else {
-            return
-        }
-        let barButtonSize = CGSize(width: 40.0, height: 40.0)
-        let closeComponent: AnyComponentWithIdentity<Empty> = AnyComponentWithIdentity(
-            id: "close",
-            component: AnyComponent(GlassBarButtonComponent(
-                size: barButtonSize,
-                backgroundColor: nil,
-                isDark: self.theme.overallDarkAppearance,
-                state: .glass,
-                component: AnyComponentWithIdentity(id: "close", component: AnyComponent(
-                    BundleIconComponent(
-                        name: "Navigation/Close",
-                        tintColor: self.theme.chat.inputPanel.panelControlColor
-                    )
-                )),
-                action: { [weak self] _ in
-                    self?.cancelPressed()
-                }
-            ))
-        )
-        
-        let searchComponent: AnyComponentWithIdentity<Empty>?
-        if !self.controllerNode.isSearching {
-            searchComponent = AnyComponentWithIdentity(
-                id: "search",
-                component: AnyComponent(GlassBarButtonComponent(
-                    size: barButtonSize,
-                    backgroundColor: nil,
-                    isDark: self.theme.overallDarkAppearance,
-                    state: .glass,
-                    component: AnyComponentWithIdentity(id: "search", component: AnyComponent(
-                        BundleIconComponent(
-                            name: "Navigation/Search",
-                            tintColor: self.theme.chat.inputPanel.panelControlColor
-                        )
-                    )),
-                    action: { [weak self] _ in
-                        self?.controllerNode.isSearching = true
-                        self?.requestLayout(transition: .animated(duration: 0.5, curve: .spring))
-                    }
-                ))
-            )
-        } else {
-            searchComponent = nil
-        }
-        
-        let closeButtonNode: BarComponentHostNode
-        if let current = self.closeButtonNode {
-            closeButtonNode = current
-            closeButtonNode.component = closeComponent
-        } else {
-            closeButtonNode = BarComponentHostNode(component: closeComponent, size: barButtonSize)
-            self.closeButtonNode = closeButtonNode
-            self.navigationItem.leftBarButtonItem = UIBarButtonItem(customDisplayNode: closeButtonNode)
-        }
-         
-        if !self.glass {
-            let searchButtonNode: BarComponentHostNode
-            if let current = self.searchButtonNode {
-                searchButtonNode = current
-                searchButtonNode.component = searchComponent
-            } else {
-                searchButtonNode = BarComponentHostNode(component: searchComponent, size: barButtonSize)
-                self.searchButtonNode = searchButtonNode
-                self.navigationItem.rightBarButtonItem = UIBarButtonItem(customDisplayNode: searchButtonNode)
-            }
-        }
-    }
-    
     override public func containerLayoutUpdated(_ layout: ContainerViewLayout, transition: ContainedViewLayoutTransition) {
         super.containerLayoutUpdated(layout, transition: transition)
         
-        self.updateNavigationButtons()
         self.controllerNode.containerLayoutUpdated(layout, navigationBarHeight: self.navigationLayout(layout: layout).navigationFrame.maxY, transition: transition)
     }
     

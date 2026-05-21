@@ -26,7 +26,6 @@ open class NavigationBarContentNode: ASDisplayNode {
         return .replacement
     }
     
-    open func updateLayout(size: CGSize, leftInset: CGFloat, rightInset: CGFloat, transition: ContainedViewLayoutTransition) -> CGSize {
-        return size
+    open func updateLayout(size: CGSize, leftInset: CGFloat, rightInset: CGFloat, transition: ContainedViewLayoutTransition) {
     }
 }

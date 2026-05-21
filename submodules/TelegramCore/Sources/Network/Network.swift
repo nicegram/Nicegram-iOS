@@ -899,12 +899,10 @@ public final class Network: NSObject, MTRequestMessageServiceDelegate {
                     let array = NSMutableArray()
                     if let result = result {
                         switch result {
-                        case let .cdnConfig(cdnConfigData):
-                            let publicKeys = cdnConfigData.publicKeys
+                        case let .cdnConfig(publicKeys):
                             for key in publicKeys {
                                 switch key {
-                                case let .cdnPublicKey(cdnPublicKeyData):
-                                    let (dcId, publicKey) = (cdnPublicKeyData.dcId, cdnPublicKeyData.publicKey)
+                                case let .cdnPublicKey(dcId, publicKey):
                                     if id == Int(dcId) {
                                         let dict = NSMutableDictionary()
                                         dict["key"] = publicKey
@@ -1065,22 +1063,6 @@ public final class Network: NSObject, MTRequestMessageServiceDelegate {
                 let scheme = MTTransportScheme(transport: MTTcpTransport.self, address: address, media: false)
                 self.context.updateTransportSchemeForDatacenter(withId: Int(datacenterId), transportScheme: scheme, media: false, isProxy: false)
             }
-        }
-    }
-    
-    public func getAuthKeyId() -> Signal<Int64, NoError> {
-        let mtContext = self.mtProto.context
-        let datacenterId = self.datacenterId
-        return Signal { subscriber in
-            MTContext.contextQueue().dispatch(onQueue: {
-                var result: Int64 = 0
-                if let authInfo = mtContext?.authInfoForDatacenter(withId: datacenterId, selector: .persistent) {
-                    result = authInfo.authKeyId
-                }
-                subscriber.putNext(result)
-            })
-            
-            return EmptyDisposable
         }
     }
     

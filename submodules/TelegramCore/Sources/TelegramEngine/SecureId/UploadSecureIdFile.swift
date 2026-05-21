@@ -87,24 +87,24 @@ func decryptedSecureIdFile(context: SecureIdAccessContext, encryptedData: Data, 
     return unpaddedFileData
 }
 
-public func uploadSecureIdFile(context: SecureIdAccessContext, engine: TelegramEngine, resource: EngineMediaResource) -> Signal<UploadSecureIdFileResult, UploadSecureIdFileError> {
-    return engine.account.postbox.mediaBox.resourceData(resource._asResource())
+public func uploadSecureIdFile(context: SecureIdAccessContext, postbox: Postbox, network: Network, resource: MediaResource) -> Signal<UploadSecureIdFileResult, UploadSecureIdFileError> {
+    return postbox.mediaBox.resourceData(resource)
     |> mapError { _ -> UploadSecureIdFileError in
     }
     |> mapToSignal { next -> Signal<UploadSecureIdFileResult, UploadSecureIdFileError> in
         if !next.complete {
             return .complete()
         }
-
+        
         guard let data = try? Data(contentsOf: URL(fileURLWithPath: next.path)) else {
             return .fail(.generic)
         }
-
+        
         guard let encryptedData = encryptedSecureIdFile(context: context, data: data) else {
             return .fail(.generic)
         }
-
-        return multipartUpload(network: engine.account.network, postbox: engine.account.postbox, source: .data(encryptedData.data), encrypt: false, tag: TelegramMediaResourceFetchTag(statsCategory: .image, userContentType: .image), hintFileSize: nil, hintFileIsLarge: false, forceNoBigParts: false)
+        
+        return multipartUpload(network: network, postbox: postbox, source: .data(encryptedData.data), encrypt: false, tag: TelegramMediaResourceFetchTag(statsCategory: .image, userContentType: .image), hintFileSize: nil, hintFileIsLarge: false, forceNoBigParts: false)
         |> mapError { _ -> UploadSecureIdFileError in
             return .generic
         }
@@ -112,8 +112,12 @@ public func uploadSecureIdFile(context: SecureIdAccessContext, engine: TelegramE
             switch result {
                 case let .progress(value):
                     return .single(.progress(value))
-                case let .inputFile(.inputFile(fileData)):
-                    return .single(.result(UploadedSecureIdFile(id: fileData.id, parts: fileData.parts, md5Checksum: fileData.md5Checksum, fileHash: encryptedData.hash, encryptedSecret: encryptedData.encryptedSecret), encryptedData.data))
+                case let .inputFile(file):
+                    if case let .inputFile(id, parts, _, md5Checksum) = file {
+                        return .single(.result(UploadedSecureIdFile(id: id, parts: parts, md5Checksum: md5Checksum, fileHash: encryptedData.hash, encryptedSecret: encryptedData.encryptedSecret), encryptedData.data))
+                    } else {
+                        return .fail(.generic)
+                    }
                 default:
                     return .fail(.generic)
             }

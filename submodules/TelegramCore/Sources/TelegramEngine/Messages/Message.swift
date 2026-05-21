@@ -60,9 +60,6 @@ public final class EngineMessage: Equatable {
     public var localTags: LocalTags {
         return self.impl.localTags
     }
-    public var customTags: [CustomTag] {
-        return self.impl.customTags
-    }
     public var forwardInfo: ForwardInfo? {
         return self.impl.forwardInfo
     }

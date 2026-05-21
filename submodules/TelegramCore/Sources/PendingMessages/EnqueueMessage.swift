@@ -9,41 +9,6 @@ public enum EnqueueMessageGrouping {
     case auto
 }
 
-public enum EngineMessageReplyInnerSubject: Codable, Equatable {
-    case todoItem(Int32)
-    case pollOption(Data)
-
-    private enum CodingKeys: String, CodingKey {
-        case type = "t"
-        case value = "v"
-    }
-
-    public init(from decoder: Decoder) throws {
-        let container = try decoder.container(keyedBy: CodingKeys.self)
-        let type = try container.decode(Int32.self, forKey: .type)
-        switch type {
-        case 0:
-            self = .todoItem(try container.decode(Int32.self, forKey: .value))
-        case 1:
-            self = .pollOption(try container.decode(Data.self, forKey: .value))
-        default:
-            self = .todoItem(try container.decode(Int32.self, forKey: .value))
-        }
-    }
-
-    public func encode(to encoder: Encoder) throws {
-        var container = encoder.container(keyedBy: CodingKeys.self)
-        switch self {
-        case let .todoItem(id):
-            try container.encode(Int32(0), forKey: .type)
-            try container.encode(id, forKey: .value)
-        case let .pollOption(data):
-            try container.encode(Int32(1), forKey: .type)
-            try container.encode(data, forKey: .value)
-        }
-    }
-}
-
 public struct EngineMessageReplyQuote: Codable, Equatable {
     private enum CodingKeys: String, CodingKey {
         case text = "t"
@@ -117,12 +82,12 @@ public struct EngineMessageReplyQuote: Codable, Equatable {
 public struct EngineMessageReplySubject: Codable, Equatable {
     public var messageId: EngineMessage.Id
     public var quote: EngineMessageReplyQuote?
-    public var innerSubject: EngineMessageReplyInnerSubject?
+    public var todoItemId: Int32?
     
-    public init(messageId: EngineMessage.Id, quote: EngineMessageReplyQuote?, innerSubject: EngineMessageReplyInnerSubject?) {
+    public init(messageId: EngineMessage.Id, quote: EngineMessageReplyQuote?, todoItemId: Int32?) {
         self.messageId = messageId
         self.quote = quote
-        self.innerSubject = innerSubject
+        self.todoItemId = todoItemId
     }
 }
 
@@ -435,7 +400,7 @@ public func enqueueMessagesToMultiplePeers(account: Account, peerIds: [PeerId], 
             for peerId in peerIds {
                 var replyToMessageId: EngineMessageReplySubject?
                 if let threadIds = threadIds[peerId] {
-                    replyToMessageId = EngineMessageReplySubject(messageId: MessageId(peerId: peerId, namespace: Namespaces.Message.Cloud, id: Int32(clamping: threadIds)), quote: nil, innerSubject: nil)
+                    replyToMessageId = EngineMessageReplySubject(messageId: MessageId(peerId: peerId, namespace: Namespaces.Message.Cloud, id: Int32(clamping: threadIds)), quote: nil, todoItemId: nil)
                 }
                 var messages = messages
                 if let replyToMessageId = replyToMessageId {
@@ -481,7 +446,7 @@ public func resendMessages(account: Account, messageIds: [MessageId]) -> Signal<
                     var forwardSource: MessageId?
                     inner: for attribute in message.attributes {
                         if let attribute = attribute as? ReplyMessageAttribute {
-                            replyToMessageId = EngineMessageReplySubject(messageId: attribute.messageId, quote: attribute.quote, innerSubject: attribute.innerSubject)
+                            replyToMessageId = EngineMessageReplySubject(messageId: attribute.messageId, quote: attribute.quote, todoItemId: attribute.todoItemId)
                         } else if let attribute = attribute as? ReplyStoryAttribute {
                             replyToStoryId = attribute.storyId
                         } else if let attribute = attribute as? OutgoingMessageInfoAttribute {
@@ -576,7 +541,7 @@ func enqueueMessages(transaction: Transaction, account: Account, peerId: PeerId,
                             mediaReference = .standalone(media: media)
                         }
                     }
-                    updatedMessages.append((transformedMedia, .message(text: sourceMessage.text, attributes: sourceMessage.attributes, inlineStickers: [:], mediaReference: mediaReference, threadId: threadId, replyToMessageId: threadId.flatMap { EngineMessageReplySubject(messageId: MessageId(peerId: peerId, namespace: Namespaces.Message.Cloud, id: Int32(clamping: $0)), quote: nil, innerSubject: nil) }, replyToStoryId: nil, localGroupingKey: nil, correlationId: nil, bubbleUpEmojiOrStickersets: [])))
+                    updatedMessages.append((transformedMedia, .message(text: sourceMessage.text, attributes: sourceMessage.attributes, inlineStickers: [:], mediaReference: mediaReference, threadId: threadId, replyToMessageId: threadId.flatMap { EngineMessageReplySubject(messageId: MessageId(peerId: peerId, namespace: Namespaces.Message.Cloud, id: Int32(clamping: $0)), quote: nil, todoItemId: nil) }, replyToStoryId: nil, localGroupingKey: nil, correlationId: nil, bubbleUpEmojiOrStickersets: [])))
                     continue outer
                 }
         }
@@ -714,7 +679,7 @@ func enqueueMessages(transaction: Transaction, account: Account, peerId: PeerId,
                                 quote = EngineMessageReplyQuote(text: replyMessage.text, offset: nil, entities: messageTextEntitiesInRange(entities: replyMessage.textEntitiesAttribute?.entities ?? [], range: NSRange(location: 0, length: nsText.length), onlyQuoteable: true), media: replyMedia)
                             }
                         }
-                        attributes.append(ReplyMessageAttribute(messageId: replyToMessageId.messageId, threadMessageId: threadMessageId, quote: quote, isQuote: isQuote, innerSubject: replyToMessageId.innerSubject))
+                        attributes.append(ReplyMessageAttribute(messageId: replyToMessageId.messageId, threadMessageId: threadMessageId, quote: quote, isQuote: isQuote, todoItemId: replyToMessageId.todoItemId))
                     }
                     if let replyToStoryId = replyToStoryId {
                         attributes.append(ReplyStoryAttribute(storyId: replyToStoryId))
@@ -860,7 +825,7 @@ func enqueueMessages(transaction: Transaction, account: Account, peerId: PeerId,
                             if let message = transaction.getMessage(replyToMessageId.messageId) {
                                 if let threadIdValue = message.threadId {
                                     if threadIdValue == 1 {
-                                        if let peer = transaction.getPeer(message.id.peerId), peer.isForum {
+                                        if let channel = transaction.getPeer(message.id.peerId) as? TelegramChannel, channel.flags.contains(.isForum) {
                                             threadId = threadIdValue
                                         } else {
                                             if let channel = message.peers[message.id.peerId] as? TelegramChannel, case .group = channel.info {
@@ -877,7 +842,7 @@ func enqueueMessages(transaction: Transaction, account: Account, peerId: PeerId,
                         }
                     }
                 
-                    if threadId == nil, let peer = transaction.getPeer(peerId), (peer is TelegramChannel), peer.isForum {
+                    if threadId == nil, let channel = transaction.getPeer(peerId) as? TelegramChannel, channel.flags.contains(.isForum) {
                         threadId = 1
                     }
                     
@@ -980,7 +945,7 @@ func enqueueMessages(transaction: Transaction, account: Account, peerId: PeerId,
                                             buttons.append(button)
                                         } else if case let .switchInline(samePeer, query, peerTypes) = button.action, sourceSentViaBot {
                                             let samePeer = samePeer && peerId == sourceMessage.id.peerId
-                                            let updatedButton = ReplyMarkupButton(title: button.titleWhenForwarded ?? button.title, titleWhenForwarded: button.titleWhenForwarded,  action: .switchInline(samePeer: samePeer, query: query, peerTypes: peerTypes), style: button.style)
+                                            let updatedButton = ReplyMarkupButton(title: button.titleWhenForwarded ?? button.title, titleWhenForwarded: button.titleWhenForwarded,  action: .switchInline(samePeer: samePeer, query: query, peerTypes: peerTypes))
                                             buttons.append(updatedButton)
                                         } else {
                                             rows.removeAll()
@@ -1001,24 +966,35 @@ func enqueueMessages(transaction: Transaction, account: Account, peerId: PeerId,
                                 forwardInfo = StoreMessageForwardInfo(authorId: sourceForwardInfo.author?.id, sourceId: sourceForwardInfo.source?.id, sourceMessageId: sourceForwardInfo.sourceMessageId, date: sourceForwardInfo.date, authorSignature: sourceForwardInfo.authorSignature, psaType: nil, flags: [])
                             } else {
                                 if sourceMessage.id.peerId != account.peerId {
-                                    var sourceId: PeerId? = nil
-                                    var sourceMessageId: MessageId? = nil
-                                    if case let .channel(peer) = messageMainPeer(EngineMessage(sourceMessage)), case .broadcast = peer.info {
-                                        sourceId = peer.id
-                                        sourceMessageId = sourceMessage.id
-                                    }
-
-                                    var authorSignature: String?
-                                    for attribute in sourceMessage.attributes {
-                                        if let attribute = attribute as? AuthorSignatureMessageAttribute {
-                                            authorSignature = attribute.signature
-                                            break
+                                    var hasHiddenForwardMedia = false
+                                    for media in sourceMessage.media {
+                                        if let file = media as? TelegramMediaFile {
+                                            if file.isMusic {
+                                                hasHiddenForwardMedia = true
+                                            }
                                         }
                                     }
-
-                                    let psaType: String? = nil
-
-                                    forwardInfo = StoreMessageForwardInfo(authorId: author.id, sourceId: sourceId, sourceMessageId: sourceMessageId, date: sourceMessage.timestamp, authorSignature: authorSignature, psaType: psaType, flags: [])
+                                    
+                                    if !hasHiddenForwardMedia {
+                                        var sourceId: PeerId? = nil
+                                        var sourceMessageId: MessageId? = nil
+                                        if case let .channel(peer) = messageMainPeer(EngineMessage(sourceMessage)), case .broadcast = peer.info {
+                                            sourceId = peer.id
+                                            sourceMessageId = sourceMessage.id
+                                        }
+                                        
+                                        var authorSignature: String?
+                                        for attribute in sourceMessage.attributes {
+                                            if let attribute = attribute as? AuthorSignatureMessageAttribute {
+                                                authorSignature = attribute.signature
+                                                break
+                                            }
+                                        }
+                                        
+                                        let psaType: String? = nil
+                                        
+                                        forwardInfo = StoreMessageForwardInfo(authorId: author.id, sourceId: sourceId, sourceMessageId: sourceMessageId, date: sourceMessage.timestamp, authorSignature: authorSignature, psaType: psaType, flags: [])
+                                    }
                                 } else {
                                     forwardInfo = nil
                                 }
@@ -1111,7 +1087,7 @@ func enqueueMessages(transaction: Transaction, account: Account, peerId: PeerId,
                             augmentedMediaList = augmentedMediaList.map(convertForwardedMediaForSecretChat)
                         }
                         
-                        if threadId == nil, let peer = transaction.getPeer(peerId), peer.isForum {
+                        if threadId == nil, let channel = transaction.getPeer(peerId) as? TelegramChannel, channel.flags.contains(.isForum) {
                             threadId = 1
                         }
                                                 

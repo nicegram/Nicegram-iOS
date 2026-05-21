@@ -65,8 +65,7 @@ public extension EmojiPagerContentComponent {
         hasRecent: Bool = true,
         forceHasPremium: Bool = false,
         premiumIfSavedMessages: Bool = true,
-        hideBackground: Bool = false,
-        maskEdge: EmojiPagerContentComponent.MaskEdgeMode = .none
+        hideBackground: Bool = false
     ) -> Signal<EmojiPagerContentComponent, NoError> {
         let premiumConfiguration = PremiumConfiguration.with(appConfiguration: context.currentAppConfiguration.with { $0 })
         let isPremiumDisabled = premiumConfiguration.isPremiumDisabled
@@ -1241,9 +1240,6 @@ public extension EmojiPagerContentComponent {
                             tintMode: tintMode
                         )
                     case let .text(text):
-                        if !areUnicodeEmojiEnabled {
-                            continue
-                        }
                         resultItem = EmojiPagerContentComponent.Item(
                             animationData: nil,
                             content: .staticEmoji(text),
@@ -1600,7 +1596,6 @@ public extension EmojiPagerContentComponent {
                 searchState: .empty(hasResults: false),
                 warpContentsOnEdges: warpContentsOnEdges,
                 hideBackground: hideBackground,
-                maskEdge: maskEdge,
                 displaySearchWithPlaceholder: displaySearchWithPlaceholder,
                 searchCategories: searchCategories,
                 searchInitiallyHidden: searchInitiallyHidden,
@@ -1637,8 +1632,7 @@ public extension EmojiPagerContentComponent {
         hasAdd: Bool = false,
         searchIsPlaceholderOnly: Bool = true,
         subject: StickersSubject = .chatStickers,
-        hideBackground: Bool = false,
-        maskEdge: EmojiPagerContentComponent.MaskEdgeMode = .none
+        hideBackground: Bool = false
     ) -> Signal<EmojiPagerContentComponent, NoError> {
         let premiumConfiguration = PremiumConfiguration.with(appConfiguration: context.currentAppConfiguration.with { $0 })
         let isPremiumDisabled = premiumConfiguration.isPremiumDisabled
@@ -2184,7 +2178,6 @@ public extension EmojiPagerContentComponent {
                 searchState: .empty(hasResults: false),
                 warpContentsOnEdges: warpContentsOnEdges,
                 hideBackground: hideBackground,
-                maskEdge: maskEdge,
                 displaySearchWithPlaceholder: hasSearch ? strings.StickersSearch_SearchStickersPlaceholder : nil,
                 searchCategories: searchCategories,
                 searchInitiallyHidden: true,
@@ -2204,8 +2197,7 @@ public extension EmojiPagerContentComponent {
         animationCache: AnimationCache,
         animationRenderer: MultiAnimationRenderer,
         hasSearch: Bool,
-        hideBackground: Bool = false,
-        maskEdge: EmojiPagerContentComponent.MaskEdgeMode = .none
+        hideBackground: Bool = false
     ) -> Signal<EmojiPagerContentComponent, NoError> {
         let premiumConfiguration = PremiumConfiguration.with(appConfiguration: context.currentAppConfiguration.with { $0 })
         let isPremiumDisabled = premiumConfiguration.isPremiumDisabled
@@ -2338,7 +2330,6 @@ public extension EmojiPagerContentComponent {
                 searchState: .empty(hasResults: false),
                 warpContentsOnEdges: warpContentsOnEdges,
                 hideBackground: hideBackground,
-                maskEdge: maskEdge,
                 displaySearchWithPlaceholder: hasSearch ? strings.StickersSearch_SearchStickersPlaceholder : nil,
                 searchCategories: searchCategories,
                 searchInitiallyHidden: true,

@@ -1,4 +1,4 @@
-import CoreAnalytics
+import NGAnalytics
 
 enum CallRecorderAnalyticsEvent: String {
     case startAuto = "call_recorder_start_auto"

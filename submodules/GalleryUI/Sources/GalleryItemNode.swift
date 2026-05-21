@@ -3,6 +3,7 @@ import UIKit
 import AsyncDisplayKit
 import Display
 import SwiftSignalKit
+import Postbox
 
 public enum GalleryItemNodeNavigationStyle {
     case light
@@ -13,7 +14,6 @@ open class GalleryItemNode: ASDisplayNode {
     public enum ActiveEdge {
         case left
         case right
-        case middle
     }
     
     private var _index: Int?
@@ -52,7 +52,7 @@ open class GalleryItemNode: ASDisplayNode {
         return .single("")
     }
     
-    open func titleContent() -> Signal<GalleryTitleView.Content?, NoError> {
+    open func titleView() -> Signal<UIView?, NoError> {
         return .single(nil)
     }
     
@@ -94,7 +94,7 @@ open class GalleryItemNode: ASDisplayNode {
     open func visibilityUpdated(isVisible: Bool) {
     }
     
-    open func controlsVisibilityUpdated(isVisible: Bool, animated: Bool) {
+    open func controlsVisibilityUpdated(isVisible: Bool) {
     }
     
     open func adjustForPreviewing() {

@@ -264,11 +264,14 @@ static NSData *base64_decode(NSString *str) {
 
 - (NSString * _Nonnull)serializeToString {
     NSData *data = [self serialize];
-    NSString *result = [data base64EncodedStringWithOptions:kNilOptions];
-    result = [result stringByReplacingOccurrencesOfString:@"+" withString:@"-"];
-    result = [result stringByReplacingOccurrencesOfString:@"/" withString:@"_"];
-    result = [result stringByReplacingOccurrencesOfString:@"=" withString:@""];
-    return result;
+    if ([data respondsToSelector:@selector(base64EncodedDataWithOptions:)]) {
+        return [[data base64EncodedStringWithOptions:kNilOptions] stringByTrimmingCharactersInSet:[NSCharacterSet characterSetWithCharactersInString:@"="]];
+    } else {
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+    return [self.serialize base64Encoding];
+#pragma clang diagnostic pop
+    }
 }
 
 - (BOOL)isEqual:(id)object {
@@ -541,15 +544,7 @@ NSString *suffix = @"";
         return @"iPhone 16 Pro Max";
     if ([platform isEqualToString:@"iPhone17,5"])
         return @"iPhone 16e";
-    if ([platform isEqualToString:@"iPhone18,3"])
-        return @"iPhone 17";
-    if ([platform isEqualToString:@"iPhone18,1"])
-        return @"iPhone 17 Pro";
-    if ([platform isEqualToString:@"iPhone18,2"])
-        return @"iPhone 17 Pro Max";
-    if ([platform isEqualToString:@"iPhone18,4"])
-        return @"iPhone Air";
-        
+    
     if ([platform hasPrefix:@"iPod1"])
         return @"iPod touch 1G";
     if ([platform hasPrefix:@"iPod2"])
@@ -712,22 +707,6 @@ NSString *suffix = @"";
     if ([platform isEqualToString:@"iPad14,10"] ||
         [platform isEqualToString:@"iPad14,11"])
         return @"iPad Air (7th gen)";
-    
-    if ([platform isEqualToString:@"iPad15,3"] ||
-        [platform isEqualToString:@"iPad15,4"])
-        return @"iPad Air 11 inch (7th gen)";
-    
-    if ([platform isEqualToString:@"iPad15,5"] ||
-        [platform isEqualToString:@"iPad15,6"])
-        return @"iPad Air 13 inch (7th gen)";
-    
-    if ([platform isEqualToString:@"iPad15,7"] ||
-        [platform isEqualToString:@"iPad15,8"])
-        return @"iPad (11th gen)";
-    
-    if ([platform isEqualToString:@"iPad16,1"] ||
-        [platform isEqualToString:@"iPad16,2"])
-        return @"iPad mini (7th gen)";
     
     if ([platform isEqualToString:@"iPad16,3"] ||
         [platform isEqualToString:@"iPad16,4"])

@@ -15,7 +15,6 @@ private enum RevealOptionKey: Int32 {
 
 final class WebBrowserDomainExceptionItem: ListViewItem, ItemListItem {
     let presentationData: ItemListPresentationData
-    let systemStyle: ItemListSystemStyle
     let context: AccountContext
     let title: String
     let label: String
@@ -26,7 +25,6 @@ final class WebBrowserDomainExceptionItem: ListViewItem, ItemListItem {
     
     init(
         presentationData: ItemListPresentationData,
-        systemStyle: ItemListSystemStyle,
         context: AccountContext,
         title: String,
         label: String,
@@ -36,7 +34,6 @@ final class WebBrowserDomainExceptionItem: ListViewItem, ItemListItem {
         deleted: (() -> Void)?
     ) {
         self.presentationData = presentationData
-        self.systemStyle = systemStyle
         self.context = context
         self.title = title
         self.label = label
@@ -132,7 +129,7 @@ final class WebBrowserDomainExceptionItemNode: ItemListRevealOptionsItemNode, It
         
         self.activateArea = AccessibilityAreaNode()
         
-        super.init(layerBacked: false, rotated: false, seeThrough: false)
+        super.init(layerBacked: false, dynamicBounce: false, rotated: false, seeThrough: false)
         
         self.addSubnode(self.iconNode)
         self.addSubnode(self.titleNode)
@@ -156,8 +153,6 @@ final class WebBrowserDomainExceptionItemNode: ItemListRevealOptionsItemNode, It
             let contentSize: CGSize
             let insets: UIEdgeInsets
             let separatorHeight = UIScreenPixel
-            let separatorRightInset: CGFloat = item.systemStyle == .glass ? 16.0 : 0.0
-            
             let itemBackgroundColor: UIColor
             let itemSeparatorColor: UIColor
             
@@ -175,13 +170,7 @@ final class WebBrowserDomainExceptionItemNode: ItemListRevealOptionsItemNode, It
             
             let (labelLayout, labelApply) = makeLabelLayout(TextNodeLayoutArguments(attributedString: NSAttributedString(string: item.label, font: labelFont, textColor: labelColor), backgroundColor: nil, maximumNumberOfLines: 1, truncationType: .end, constrainedSize: CGSize(width: maxTitleWidth, height: CGFloat.greatestFiniteMagnitude), alignment: .natural, cutout: nil, insets: UIEdgeInsets()))
             
-            let verticalInset: CGFloat
-            switch item.systemStyle {
-            case .glass:
-                verticalInset = 11.0
-            case .legacy:
-                verticalInset = 11.0
-            }
+            let verticalInset: CGFloat = 11.0
             let titleSpacing: CGFloat = 1.0
             
             let height: CGFloat = verticalInset * 2.0 + titleLayout.size.height + titleSpacing + labelLayout.size.height
@@ -278,12 +267,12 @@ final class WebBrowserDomainExceptionItemNode: ItemListRevealOptionsItemNode, It
                                 strongSelf.bottomStripeNode.isHidden = hasCorners
                         }
                         
-                        strongSelf.maskNode.image = hasCorners ? PresentationResourcesItemList.cornersImage(item.presentationData.theme, top: hasTopCorners, bottom: hasBottomCorners, glass: item.systemStyle == .glass) : nil
+                        strongSelf.maskNode.image = hasCorners ? PresentationResourcesItemList.cornersImage(item.presentationData.theme, top: hasTopCorners, bottom: hasBottomCorners) : nil
                         
                         strongSelf.backgroundNode.frame = CGRect(origin: CGPoint(x: 0.0, y: -min(insets.top, separatorHeight)), size: CGSize(width: params.width, height: contentSize.height + min(insets.top, separatorHeight) + min(insets.bottom, separatorHeight)))
                         strongSelf.maskNode.frame = strongSelf.backgroundNode.frame.insetBy(dx: params.leftInset, dy: 0.0)
                         strongSelf.topStripeNode.frame = CGRect(origin: CGPoint(x: 0.0, y: -min(insets.top, separatorHeight)), size: CGSize(width: params.width, height: separatorHeight))
-                        strongSelf.bottomStripeNode.frame = CGRect(origin: CGPoint(x: bottomStripeInset, y: contentSize.height - separatorHeight), size: CGSize(width: params.width - bottomStripeInset - params.rightInset - separatorRightInset, height: separatorHeight))
+                        strongSelf.bottomStripeNode.frame = CGRect(origin: CGPoint(x: bottomStripeInset, y: contentSize.height - separatorHeight), size: CGSize(width: params.width - bottomStripeInset, height: separatorHeight))
                     }
                     
                     var centralContentHeight: CGFloat = titleLayout.size.height

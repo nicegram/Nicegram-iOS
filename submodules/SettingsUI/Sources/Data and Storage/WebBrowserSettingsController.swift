@@ -202,15 +202,15 @@ private enum WebBrowserSettingsControllerEntry: ItemListNodeEntry {
             case let .browserHeader(_, text):
                 return ItemListSectionHeaderItem(presentationData: presentationData, text: text, sectionId: self.section)
             case let .browser(_, title, application, identifier, selected, _):
-                return WebBrowserItem(context: arguments.context, presentationData: presentationData, systemStyle: .glass, title: title, application: application, checked: selected, sectionId: self.section) {
+                return WebBrowserItem(context: arguments.context, presentationData: presentationData, title: title, application: application, checked: selected, sectionId: self.section) {
                     arguments.updateDefaultBrowser(identifier)
                 }
             case let .clearCookies(_, text):
-                return ItemListPeerActionItem(presentationData: presentationData, systemStyle: .glass, icon: PresentationResourcesItemList.accentDeleteIconImage(presentationData.theme), title: text, sectionId: self.section, height: .generic, color: .accent, editing: false, action: {
+                return ItemListPeerActionItem(presentationData: presentationData, icon: PresentationResourcesItemList.accentDeleteIconImage(presentationData.theme), title: text, sectionId: self.section, height: .generic, color: .accent, editing: false, action: {
                     arguments.clearCookies()
                 })
             case let .clearCache(_, text):
-                return ItemListPeerActionItem(presentationData: presentationData, systemStyle: .glass, icon: PresentationResourcesItemList.accentDeleteIconImage(presentationData.theme), title: text, sectionId: self.section, height: .generic, color: .accent, editing: false, action: {
+                return ItemListPeerActionItem(presentationData: presentationData, icon: PresentationResourcesItemList.accentDeleteIconImage(presentationData.theme), title: text, sectionId: self.section, height: .generic, color: .accent, editing: false, action: {
                     arguments.clearCache()
                 })
             case let .clearCookiesInfo(_, text):
@@ -218,15 +218,15 @@ private enum WebBrowserSettingsControllerEntry: ItemListNodeEntry {
             case let .exceptionsHeader(_, text):
                 return ItemListSectionHeaderItem(presentationData: presentationData, text: text, sectionId: self.section)
             case let .exception(_, _, exception):
-                return WebBrowserDomainExceptionItem(presentationData: presentationData, systemStyle: .glass, context: arguments.context, title: exception.title, label: exception.domain, icon: exception.icon, sectionId: self.section, style: .blocks, deleted: {
+                return WebBrowserDomainExceptionItem(presentationData: presentationData, context: arguments.context, title: exception.title, label: exception.domain, icon: exception.icon, sectionId: self.section, style: .blocks, deleted: {
                     arguments.removeException(exception.domain)
                 })
             case let .exceptionsAdd(_, text):
-                return ItemListPeerActionItem(presentationData: presentationData, systemStyle: .glass, icon: PresentationResourcesItemList.plusIconImage(presentationData.theme), title: text, sectionId: self.section, height: .generic, color: .accent, editing: false, action: {
+                return ItemListPeerActionItem(presentationData: presentationData, icon: PresentationResourcesItemList.plusIconImage(presentationData.theme), title: text, sectionId: self.section, height: .generic, color: .accent, editing: false, action: {
                     arguments.addException()
                 })
             case let .exceptionsClear(_, text):
-                return ItemListPeerActionItem(presentationData: presentationData, systemStyle: .glass, icon: PresentationResourcesItemList.deleteIconImage(presentationData.theme), title: text, sectionId: self.section, height: .generic, color: .destructive, editing: false, action: {
+                return ItemListPeerActionItem(presentationData: presentationData, icon: PresentationResourcesItemList.deleteIconImage(presentationData.theme), title: text, sectionId: self.section, height: .generic, color: .destructive, editing: false, action: {
                     arguments.clearExceptions()
                 })
             case let .exceptionsInfo(_, text):
@@ -419,7 +419,7 @@ public func webBrowserSettingsController(context: AccountContext) -> ViewControl
         })
         dismissImpl = { [weak linkController] in
             linkController?.view.endEditing(true)
-            linkController?.dismiss(completion: nil)
+            linkController?.dismissAnimated()
         }
         controller?.present(linkController, in: .window(.root))
     }
@@ -465,7 +465,7 @@ private func fetchDomainExceptionInfo(context: AccountContext, url: String) -> S
                     var image: TelegramMediaImage?
                     if let imageData, let parsedImage = UIImage(data: imageData) {
                         let resource = LocalFileMediaResource(fileId: Int64.random(in: Int64.min ... Int64.max))
-                        context.sharedContext.accountManager.resources.storeResourceData(id: EngineMediaResource.Id(resource.id), data: imageData)
+                        context.sharedContext.accountManager.mediaBox.storeResourceData(resource.id, data: imageData)
                         image = TelegramMediaImage(
                             imageId: MediaId(namespace: Namespaces.Media.LocalImage, id: Int64.random(in: Int64.min ... Int64.max)),
                             representations: [

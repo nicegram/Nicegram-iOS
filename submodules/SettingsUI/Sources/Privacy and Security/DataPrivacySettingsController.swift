@@ -2,6 +2,7 @@ import Foundation
 import UIKit
 import Display
 import SwiftSignalKit
+import Postbox
 import TelegramCore
 import TelegramPresentationData
 import TelegramUIPreferences
@@ -35,7 +36,7 @@ private final class DataPrivacyControllerArguments {
     }
 }
 
-private enum DataPrivacySection: Int32 {
+private enum PrivacyAndSecuritySection: Int32 {
     case contacts
     case frequentContacts
     case chats
@@ -44,24 +45,7 @@ private enum DataPrivacySection: Int32 {
     case bots
 }
 
-public enum DataPrivacyEntryTag: ItemListItemTag, Equatable {
-    case deleteSynced
-    case syncContacts
-    case suggestContacts
-    case deleteCloudDrafts
-    case clearPaymentInfo
-    case linkPreviews
-    
-    public func isEqual(to other: ItemListItemTag) -> Bool {
-        if let other = other as? DataPrivacyEntryTag, self == other {
-            return true
-        } else {
-            return false
-        }
-    }
-}
-
-private enum DataPrivacyEntry: ItemListNodeEntry {
+private enum PrivacyAndSecurityEntry: ItemListNodeEntry {
     case contactsHeader(PresentationTheme, String)
     case deleteContacts(PresentationTheme, String, Bool)
     case syncContacts(PresentationTheme, String, Bool)
@@ -86,17 +70,17 @@ private enum DataPrivacyEntry: ItemListNodeEntry {
     var section: ItemListSectionId {
         switch self {
         case .contactsHeader, .deleteContacts, .syncContacts, .syncContactsInfo:
-            return DataPrivacySection.contacts.rawValue
+            return PrivacyAndSecuritySection.contacts.rawValue
         case .frequentContacts, .frequentContactsInfo:
-            return DataPrivacySection.frequentContacts.rawValue
+            return PrivacyAndSecuritySection.frequentContacts.rawValue
         case .chatsHeader, .deleteCloudDrafts:
-            return DataPrivacySection.chats.rawValue
+            return PrivacyAndSecuritySection.chats.rawValue
         case .paymentHeader, .clearPaymentInfo, .paymentInfo:
-            return DataPrivacySection.payments.rawValue
+            return PrivacyAndSecuritySection.payments.rawValue
         case .secretChatLinkPreviewsHeader, .secretChatLinkPreviews, .secretChatLinkPreviewsInfo:
-            return DataPrivacySection.secretChats.rawValue
+            return PrivacyAndSecuritySection.secretChats.rawValue
         case .botList:
-            return DataPrivacySection.bots.rawValue
+            return PrivacyAndSecuritySection.bots.rawValue
         }
     }
     
@@ -140,7 +124,7 @@ private enum DataPrivacyEntry: ItemListNodeEntry {
         }
     }
     
-    static func ==(lhs: DataPrivacyEntry, rhs: DataPrivacyEntry) -> Bool {
+    static func ==(lhs: PrivacyAndSecurityEntry, rhs: PrivacyAndSecurityEntry) -> Bool {
         switch lhs {
         case let .contactsHeader(lhsTheme, lhsText):
             if case let .contactsHeader(rhsTheme, rhsText) = rhs, lhsTheme === rhsTheme, lhsText == rhsText {
@@ -235,7 +219,7 @@ private enum DataPrivacyEntry: ItemListNodeEntry {
         }
     }
     
-    static func <(lhs: DataPrivacyEntry, rhs: DataPrivacyEntry) -> Bool {
+    static func <(lhs: PrivacyAndSecurityEntry, rhs: PrivacyAndSecurityEntry) -> Bool {
         return lhs.stableId < rhs.stableId
     }
     
@@ -245,47 +229,46 @@ private enum DataPrivacyEntry: ItemListNodeEntry {
         case let .contactsHeader(_, text):
             return ItemListSectionHeaderItem(presentationData: presentationData, text: text, sectionId: self.section)
         case let .deleteContacts(_, text, value):
-            return ItemListActionItem(presentationData: presentationData, systemStyle: .glass, title: text, kind: value ? .generic : .disabled, alignment: .natural, sectionId: self.section, style: .blocks, action: {
+            return ItemListActionItem(presentationData: presentationData, title: text, kind: value ? .generic : .disabled, alignment: .natural, sectionId: self.section, style: .blocks, action: {
                 arguments.deleteContacts()
-            }, tag: DataPrivacyEntryTag.deleteSynced)
+            })
         case let .syncContacts(_, text, value):
-            return ItemListSwitchItem(presentationData: presentationData, systemStyle: .glass, title: text, value: value, sectionId: self.section, style: .blocks, updated: { updatedValue in
+            return ItemListSwitchItem(presentationData: presentationData, title: text, value: value, sectionId: self.section, style: .blocks, updated: { updatedValue in
                 arguments.updateSyncContacts(updatedValue)
-            }, tag: DataPrivacyEntryTag.syncContacts)
+            })
         case let .syncContactsInfo(_, text):
             return ItemListTextItem(presentationData: presentationData, text: .plain(text), sectionId: self.section)
         case let .frequentContacts(_, text, value):
-            return ItemListSwitchItem(presentationData: presentationData, systemStyle: .glass, title: text, value: value, enableInteractiveChanges: !value, sectionId: self.section, style: .blocks, updated: { updatedValue in
+            return ItemListSwitchItem(presentationData: presentationData, title: text, value: value, enableInteractiveChanges: !value, sectionId: self.section, style: .blocks, updated: { updatedValue in
                 arguments.updateSuggestFrequentContacts(updatedValue)
-            }, tag: DataPrivacyEntryTag.suggestContacts)
+            })
         case let .frequentContactsInfo(_, text):
             return ItemListTextItem(presentationData: presentationData, text: .plain(text), sectionId: self.section)
         case let .chatsHeader(_, text):
             return ItemListSectionHeaderItem(presentationData: presentationData, text: text, sectionId: self.section)
         case let .deleteCloudDrafts(_, text, value):
-            return ItemListActionItem(presentationData: presentationData, systemStyle: .glass, title: text, kind: value ? .generic : .disabled, alignment: .natural, sectionId: self.section, style: .blocks, action: {
+            return ItemListActionItem(presentationData: presentationData, title: text, kind: value ? .generic : .disabled, alignment: .natural, sectionId: self.section, style: .blocks, action: {
                 arguments.deleteCloudDrafts()
-            }, tag: DataPrivacyEntryTag.deleteCloudDrafts)
+            })
         case let .paymentHeader(_, text):
             return ItemListSectionHeaderItem(presentationData: presentationData, text: text, sectionId: self.section)
         case let .clearPaymentInfo(_, text, enabled):
-            return ItemListActionItem(presentationData: presentationData, systemStyle: .glass, title: text, kind: enabled ? .generic : .disabled, alignment: .natural, sectionId: self.section, style: .blocks, action: {
+            return ItemListActionItem(presentationData: presentationData, title: text, kind: enabled ? .generic : .disabled, alignment: .natural, sectionId: self.section, style: .blocks, action: {
                 arguments.clearPaymentInfo()
-            }, tag: DataPrivacyEntryTag.clearPaymentInfo)
+            })
         case let .paymentInfo(_, text):
             return ItemListTextItem(presentationData: presentationData, text: .plain(text), sectionId: self.section)
         case let .secretChatLinkPreviewsHeader(_, text):
             return ItemListSectionHeaderItem(presentationData: presentationData, text: text, sectionId: self.section)
         case let .secretChatLinkPreviews(_, text, value):
-            return ItemListSwitchItem(presentationData: presentationData, systemStyle: .glass, title: text, value: value, sectionId: self.section, style: .blocks, updated: { updatedValue in
+            return ItemListSwitchItem(presentationData: presentationData, title: text, value: value, sectionId: self.section, style: .blocks, updated: { updatedValue in
                 arguments.updateSecretChatLinkPreviews(updatedValue)
-            }, tag: DataPrivacyEntryTag.linkPreviews)
+            })
         case let .secretChatLinkPreviewsInfo(_, text):
             return ItemListTextItem(presentationData: presentationData, text: .plain(text), sectionId: self.section)
         case .botList:
             return ItemListDisclosureItem(
                 presentationData: presentationData,
-                systemStyle: .glass,
                 title: presentationData.strings.Settings_BotListSettings,
                 label: "",
                 sectionId: self.section,
@@ -305,8 +288,8 @@ private struct DataPrivacyControllerState: Equatable {
     var deletingCloudDrafts: Bool = false
 }
 
-private func dataPrivacyControllerEntries(presentationData: PresentationData, state: DataPrivacyControllerState, secretChatLinkPreviews: Bool?, synchronizeDeviceContacts: Bool, frequentContacts: Bool, hasBotSettings: Bool) -> [DataPrivacyEntry] {
-    var entries: [DataPrivacyEntry] = []
+private func dataPrivacyControllerEntries(presentationData: PresentationData, state: DataPrivacyControllerState, secretChatLinkPreviews: Bool?, synchronizeDeviceContacts: Bool, frequentContacts: Bool, hasBotSettings: Bool) -> [PrivacyAndSecurityEntry] {
+    var entries: [PrivacyAndSecurityEntry] = []
     
     entries.append(.contactsHeader(presentationData.theme, presentationData.strings.Privacy_ContactsTitle))
     entries.append(.deleteContacts(presentationData.theme, presentationData.strings.Privacy_ContactsReset, !state.deletingContacts))
@@ -333,7 +316,7 @@ private func dataPrivacyControllerEntries(presentationData: PresentationData, st
     return entries
 }
 
-public func dataPrivacyController(context: AccountContext, focusOnItemTag: DataPrivacyEntryTag? = nil) -> ViewController {
+public func dataPrivacyController(context: AccountContext) -> ViewController {
     let statePromise = ValuePromise(DataPrivacyControllerState(), ignoreRepeated: true)
     let stateValue = Atomic(value: DataPrivacyControllerState())
     let updateState: ((DataPrivacyControllerState) -> DataPrivacyControllerState) -> Void = { f in
@@ -450,7 +433,7 @@ public func dataPrivacyController(context: AccountContext, focusOnItemTag: DataP
         }
         if canBegin {
             let presentationData = context.sharedContext.currentPresentationData.with { $0 }
-            presentControllerImpl?(textAlertController(context: context, title: nil, text: presentationData.strings.Privacy_ContactsResetConfirmation, actions: [TextAlertAction(type: .genericAction, title: presentationData.strings.Common_Cancel, action: {}), TextAlertAction(type: .defaultDestructiveAction, title: presentationData.strings.Common_Delete, action: {
+            presentControllerImpl?(textAlertController(context: context, title: nil, text: presentationData.strings.Privacy_ContactsResetConfirmation, actions: [TextAlertAction(type: .destructiveAction, title: presentationData.strings.Common_Delete, action: {
                 var begin = false
                 updateState { state in
                     var state = state
@@ -477,7 +460,7 @@ public func dataPrivacyController(context: AccountContext, focusOnItemTag: DataP
                     let presentationData = context.sharedContext.currentPresentationData.with { $0 }
                     presentControllerImpl?(UndoOverlayController(presentationData: presentationData, content: .succeed(text: presentationData.strings.Privacy_ContactsReset_ContactsDeleted, timeout: nil, customUndoText: nil), elevatedLayout: false, action: { _ in return false }))
                 }))
-            })]))
+            }), TextAlertAction(type: .defaultAction, title: presentationData.strings.Common_Cancel, action: {})]))
         }
     }, updateSyncContacts: { value in
         let _ = context.engine.contacts.updateIsContactSynchronizationEnabled(isContactSynchronizationEnabled: value).start()
@@ -546,11 +529,11 @@ public func dataPrivacyController(context: AccountContext, focusOnItemTag: DataP
     }
     |> distinctUntilChanged
     
-    let signal = combineLatest(queue: .mainQueue(), context.sharedContext.presentationData, statePromise.get(), context.sharedContext.accountManager.noticeEntry(key: ApplicationSpecificNotice.secretChatLinkPreviewsKey()), context.sharedContext.accountManager.sharedData(keys: [ApplicationSpecificSharedDataKeys.contactSynchronizationSettings]), context.engine.data.subscribe(TelegramEngine.EngineData.Item.Configuration.ApplicationSpecificPreference(key: PreferencesKeys.contactsSettings)), context.engine.peers.recentPeers(), hasBotSettings)
+    let signal = combineLatest(queue: .mainQueue(), context.sharedContext.presentationData, statePromise.get(), context.sharedContext.accountManager.noticeEntry(key: ApplicationSpecificNotice.secretChatLinkPreviewsKey()), context.sharedContext.accountManager.sharedData(keys: [ApplicationSpecificSharedDataKeys.contactSynchronizationSettings]), context.account.postbox.preferencesView(keys: [PreferencesKeys.contactsSettings]), context.engine.peers.recentPeers(), hasBotSettings)
     |> map { presentationData, state, noticeView, sharedData, preferences, recentPeers, hasBotSettings -> (ItemListControllerState, (ItemListNodeState, Any)) in
         let secretChatLinkPreviews = noticeView.value.flatMap({ ApplicationSpecificNotice.getSecretChatLinkPreviews($0) })
-
-        let settings: ContactsSettings = preferences?.get(ContactsSettings.self) ?? ContactsSettings.defaultSettings
+        
+        let settings: ContactsSettings = preferences.values[PreferencesKeys.contactsSettings]?.get(ContactsSettings.self) ?? ContactsSettings.defaultSettings
         
         let synchronizeDeviceContacts: Bool = settings.synchronizeContacts
         
@@ -572,7 +555,7 @@ public func dataPrivacyController(context: AccountContext, focusOnItemTag: DataP
         
         let animateChanges = false
         
-        let listState = ItemListNodeState(presentationData: ItemListPresentationData(presentationData), entries: dataPrivacyControllerEntries(presentationData: presentationData, state: state, secretChatLinkPreviews: secretChatLinkPreviews, synchronizeDeviceContacts: synchronizeDeviceContacts, frequentContacts: suggestRecentPeers, hasBotSettings: hasBotSettings), style: .blocks, ensureVisibleItemTag: focusOnItemTag, animateChanges: animateChanges)
+        let listState = ItemListNodeState(presentationData: ItemListPresentationData(presentationData), entries: dataPrivacyControllerEntries(presentationData: presentationData, state: state, secretChatLinkPreviews: secretChatLinkPreviews, synchronizeDeviceContacts: synchronizeDeviceContacts, frequentContacts: suggestRecentPeers, hasBotSettings: hasBotSettings), style: .blocks, animateChanges: animateChanges)
         
         return (controllerState, (listState, arguments))
     }
@@ -586,20 +569,6 @@ public func dataPrivacyController(context: AccountContext, focusOnItemTag: DataP
     }
     pushControllerImpl = { [weak controller] c in
         controller?.push(c)
-    }
-    
-    if let focusOnItemTag {
-        var didFocusOnItem = false
-        controller.afterTransactionCompleted = { [weak controller] in
-            if !didFocusOnItem, let controller {
-                controller.forEachItemNode { itemNode in
-                    if let itemNode = itemNode as? ItemListItemNode, let tag = itemNode.tag, tag.isEqual(to: focusOnItemTag) {
-                        didFocusOnItem = true
-                        itemNode.displayHighlight()
-                    }
-                }
-            }
-        }
     }
     
     return controller

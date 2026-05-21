@@ -80,7 +80,7 @@ private final class ToolIconComponent: Component {
             if component.isSelected {
                 iconColor = .black
             } else {
-                iconColor = component.isActive ? UIColor(rgb: 0xffd300) : .white
+                iconColor = component.isActive ? UIColor(rgb: 0xf8d74a) : .white
             }
             
             let iconSize = self.icon.update(

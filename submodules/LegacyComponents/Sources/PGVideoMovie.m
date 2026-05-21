@@ -121,12 +121,7 @@ NSString *const kYUVVideoRangeConversionForLAFragmentShaderString = SHADER_STRIN
 #pragma mark Initialization and teardown
 
 - (GPUImageRotationMode)rotationForTrack:(AVAsset *)asset {
-    NSArray *tracks = [asset tracksWithMediaType:AVMediaTypeVideo];
-    if (tracks.count == 0) {
-        return kGPUImageNoRotation;
-    }
-    
-    AVAssetTrack *videoTrack = [tracks objectAtIndex:0];
+    AVAssetTrack *videoTrack = [[asset tracksWithMediaType:AVMediaTypeVideo] objectAtIndex:0];
     CGAffineTransform t = [videoTrack preferredTransform];
     
     if (t.a == -1 && t.d == -1) {

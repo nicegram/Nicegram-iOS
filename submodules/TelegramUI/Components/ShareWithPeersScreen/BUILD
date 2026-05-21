@@ -7,7 +7,7 @@ swift_library(
         "Sources/**/*.swift",
     ]),
     copts = [
-        "-warnings-as-errors",
+        #"-warnings-as-errors",
     ],
     deps = [
         "//submodules/AsyncDisplayKit",
@@ -25,6 +25,7 @@ swift_library(
         "//submodules/AppBundle",
         "//submodules/TelegramStringFormatting",
         "//submodules/PresentationDataUtils",
+        "//submodules/Components/SolidRoundedButtonComponent",
         "//submodules/TelegramUI/Components/ButtonComponent",
         "//submodules/TelegramUI/Components/PlainButtonComponent",
         "//submodules/TelegramUI/Components/AnimatedCounterComponent",
@@ -41,16 +42,10 @@ swift_library(
         "//submodules/UndoUI",
         "//submodules/TemporaryCachedPeerDataManager",
         "//submodules/CountrySelectionUI",
-        "//submodules/TelegramUI/Components/ListSectionComponent",
         "//submodules/TelegramUI/Components/ListActionItemComponent",
-        "//submodules/TelegramUI/Components/ListItemSliderSelectorComponent",
         "//submodules/ContextUI",
         "//submodules/PromptUI",
         "//submodules/DirectMediaImageCache",
-        "//submodules/TelegramUI/Components/GlassBarButtonComponent",
-        "//submodules/TelegramUI/Components/EdgeEffect",
-        "//submodules/TextFormat",
-        "//submodules/PeerInfoUI/CreateExternalMediaStreamScreen",
     ],
     visibility = [
         "//visibility:public",

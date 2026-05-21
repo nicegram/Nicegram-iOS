@@ -8,6 +8,7 @@ import TelegramCore
 import TelegramPresentationData
 import TelegramUIPreferences
 import AccountContext
+import ShareController
 import CounterControllerTitleView
 import WallpaperResources
 import OverlayStatusController
@@ -156,7 +157,7 @@ public final class ThemePreviewController: ViewController {
                 let titleView = CounterControllerTitleView(theme: strongSelf.previewTheme)
                 titleView.title = CounterControllerTitle(title: themeName, counter: hasInstallsCount ? strongSelf.presentationData.strings.Theme_UsersCount(max(1, theme.installCount ?? 0)) : "")
                 strongSelf.navigationItem.titleView = titleView
-                strongSelf.navigationBar?.updatePresentationData(NavigationBarPresentationData(presentationTheme: presentationTheme, presentationStrings: strongSelf.presentationData.strings), transition: .immediate)
+                strongSelf.navigationBar?.updatePresentationData(NavigationBarPresentationData(presentationTheme: presentationTheme, presentationStrings: strongSelf.presentationData.strings))
             }
         })
         
@@ -267,8 +268,8 @@ public final class ThemePreviewController: ViewController {
             case .media:
                 if let strings = encodePresentationTheme(previewTheme), let data = strings.data(using: .utf8) {
                     let resource = LocalFileMediaResource(fileId: Int64.random(in: Int64.min ... Int64.max))
-                    context.engine.resources.storeResourceData(id: EngineMediaResource.Id(resource.id), data: data)
-                    context.sharedContext.accountManager.resources.storeResourceData(id: EngineMediaResource.Id(resource.id), data: data)
+                    context.account.postbox.mediaBox.storeResourceData(resource.id, data: data)
+                    context.sharedContext.accountManager.mediaBox.storeResourceData(resource.id, data: data)
                     theme = .single(.local(PresentationLocalTheme(title: previewTheme.name.string, resource: resource, resolvedWallpaper: nil)))
                 } else {
                     theme = .single(.builtin(.dayClassic))
@@ -334,7 +335,7 @@ public final class ThemePreviewController: ViewController {
                                         return .single((.local(updatedTheme), true))
                                     }
                                     if case let .result(theme) = result, let file = theme.file {
-                                        context.sharedContext.accountManager.resources.moveResourceData(from: EngineMediaResource.Id(info.resource.id), to: EngineMediaResource.Id(file.resource.id))
+                                        context.sharedContext.accountManager.mediaBox.moveResourceData(from: info.resource.id, to: file.resource.id)
                                         return .single((.cloud(PresentationCloudTheme(theme: theme, resolvedWallpaper: resolvedWallpaper, creatorAccountId: theme.isCreator ? context.account.id : nil)), true))
                                     } else {
                                         return .complete()
@@ -353,7 +354,7 @@ public final class ThemePreviewController: ViewController {
                                         return .single((.local(updatedTheme), true))
                                     }
                                     if case let .result(updatedTheme) = result, let file = updatedTheme.file {
-                                        context.sharedContext.accountManager.resources.moveResourceData(from: EngineMediaResource.Id(info.resource.id), to: EngineMediaResource.Id(file.resource.id))
+                                        context.sharedContext.accountManager.mediaBox.moveResourceData(from: info.resource.id, to: file.resource.id)
                                         return .single((.cloud(PresentationCloudTheme(theme: updatedTheme, resolvedWallpaper: resolvedWallpaper, creatorAccountId: updatedTheme.isCreator ? context.account.id : nil)), true))
                                     } else {
                                         return .complete()
@@ -523,7 +524,7 @@ public final class ThemePreviewController: ViewController {
                 subject = .media(media, nil)
                 preferredAction = .default
         }
-        let controller = self.context.sharedContext.makeShareController(context: self.context, params: ShareControllerParams(subject: subject, preferredAction: preferredAction))
+        let controller = ShareController(context: self.context, subject: subject, preferredAction: preferredAction)
         self.present(controller, in: .window(.root), blockInteraction: true)
     }
 }

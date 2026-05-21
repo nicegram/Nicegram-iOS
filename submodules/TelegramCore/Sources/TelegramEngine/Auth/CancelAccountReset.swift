@@ -18,7 +18,7 @@ public enum RequestCancelAccountResetDataError {
 }
 
 func _internal_requestCancelAccountResetData(network: Network, hash: String) -> Signal<CancelAccountResetData, RequestCancelAccountResetDataError> {
-    return network.request(Api.functions.account.sendConfirmPhoneCode(hash: hash, settings: .codeSettings(.init(flags: 0, logoutTokens: nil, token: nil, appSandbox: nil))), automaticFloodWait: false)
+    return network.request(Api.functions.account.sendConfirmPhoneCode(hash: hash, settings: .codeSettings(flags: 0, logoutTokens: nil, token: nil, appSandbox: nil)), automaticFloodWait: false)
     |> mapError { error -> RequestCancelAccountResetDataError in
         if error.errorDescription.hasPrefix("FLOOD_WAIT") {
             return .limitExceeded
@@ -28,8 +28,7 @@ func _internal_requestCancelAccountResetData(network: Network, hash: String) -> 
     }
     |> mapToSignal { sentCode -> Signal<CancelAccountResetData, RequestCancelAccountResetDataError> in
         switch sentCode {
-        case let .sentCode(sentCodeData):
-            let (type, phoneCodeHash, nextType, timeout) = (sentCodeData.type, sentCodeData.phoneCodeHash, sentCodeData.nextType, sentCodeData.timeout)
+        case let .sentCode(_, type, phoneCodeHash, nextType, timeout):
             var parsedNextType: AuthorizationCodeNextType?
             if let nextType = nextType {
                 parsedNextType = AuthorizationCodeNextType(apiType: nextType)
@@ -52,8 +51,7 @@ func _internal_requestNextCancelAccountResetOption(network: Network, phoneNumber
     }
     |> mapToSignal { sentCode -> Signal<CancelAccountResetData, RequestCancelAccountResetDataError> in
         switch sentCode {
-        case let .sentCode(sentCodeData):
-            let (type, phoneCodeHash, nextType, timeout) = (sentCodeData.type, sentCodeData.phoneCodeHash, sentCodeData.nextType, sentCodeData.timeout)
+        case let .sentCode(_, type, phoneCodeHash, nextType, timeout):
             var parsedNextType: AuthorizationCodeNextType?
             if let nextType = nextType {
                 parsedNextType = AuthorizationCodeNextType(apiType: nextType)

@@ -3,7 +3,6 @@ import NGStrings
 import NGTelegramIntegration
 //
 import Foundation
-import Foundation
 import UIKit
 import Display
 import ComponentFlow
@@ -15,7 +14,6 @@ import PresentationDataUtils
 import ViewControllerComponent
 import AccountContext
 import SolidRoundedButtonComponent
-import ButtonComponent
 import MultilineTextComponent
 import MultilineTextWithEntitiesComponent
 import BundleIconComponent
@@ -41,12 +39,6 @@ import EmojiActionIconComponent
 import ScrollComponent
 import PremiumStarComponent
 import PremiumCoinComponent
-import EdgeEffect
-
-public enum PremiumIntroEntryTag {
-    case doNotHideAds
-}
-private let doNotHideAdsTag = GenericComponentViewTag()
 
 public enum PremiumSource: Equatable {
     public static func == (lhs: PremiumSource, rhs: PremiumSource) -> Bool {
@@ -321,20 +313,8 @@ public enum PremiumSource: Equatable {
             } else {
                 return false
             }
-        case .copyProtection:
-            if case .copyProtection = rhs {
-                return true
-            } else {
-                return false
-            }
-        case .aiTools:
-            if case .aiTools = rhs {
-                return true
-            } else {
-                return false
-            }
-        case let .auth(lhsPrice, lhsDays):
-            if case let .auth(rhsPrice, rhsDays) = rhs, lhsPrice == rhsPrice, lhsDays == rhsDays {
+        case let .auth(lhsPrice):
+            if case let .auth(rhsPrice) = rhs, lhsPrice == rhsPrice {
                 return true
             } else {
                 return false
@@ -393,9 +373,7 @@ public enum PremiumSource: Equatable {
     case folderTags
     case messageEffects
     case todo
-    case copyProtection
-    case aiTools
-    case auth(String, Int32)
+    case auth(String)
     case premiumGift(TelegramMediaFile)
     
     var identifier: String? {
@@ -492,10 +470,6 @@ public enum PremiumSource: Equatable {
             return "effects"
         case .todo:
             return "todo"
-        case .copyProtection:
-            return "pm_noforwards"
-        case .aiTools:
-            return "ai_compose"
         case .auth:
             return "auth"
         case .premiumGift:
@@ -529,8 +503,6 @@ public enum PremiumPerk: CaseIterable {
     case folderTags
     case messageEffects
     case todo
-    case copyProtection
-    case aiTools
     
     case businessLocation
     case businessHours
@@ -566,9 +538,7 @@ public enum PremiumPerk: CaseIterable {
             .folderTags,
             .business,
             .messageEffects,
-            .todo,
-            .copyProtection,
-            .aiTools
+            .todo
         ]
     }
     
@@ -644,10 +614,6 @@ public enum PremiumPerk: CaseIterable {
             return "effects"
         case .todo:
             return "todo"
-        case .copyProtection:
-            return "pm_noforwards"
-        case .aiTools:
-            return "ai_compose"
         case .business:
             return "business"
         case .businessLocation:
@@ -719,10 +685,6 @@ public enum PremiumPerk: CaseIterable {
             return strings.Premium_MessageEffects
         case .todo:
             return strings.Premium_Todo
-        case .copyProtection:
-            return strings.Premium_CopyProtection
-        case .aiTools:
-            return strings.Premium_AiTools
         case .businessLocation:
             return strings.Business_Location
         case .businessHours:
@@ -792,10 +754,6 @@ public enum PremiumPerk: CaseIterable {
             return strings.Premium_MessageEffectsInfo
         case .todo:
             return strings.Premium_TodoInfo
-        case .copyProtection:
-            return strings.Premium_CopyProtectionInfo
-        case .aiTools:
-            return strings.Premium_AiToolsInfo
         case .businessLocation:
             return strings.Business_LocationInfo
         case .businessHours:
@@ -818,73 +776,69 @@ public enum PremiumPerk: CaseIterable {
     var iconName: String {
         switch self {
         case .doubleLimits:
-            return "Item List/Icons/X2"
+            return "Premium/Perk/Limits"
         case .moreUpload:
-            return "Item List/Icons/File"
+            return "Premium/Perk/Upload"
         case .fasterDownload:
-            return "Item List/Icons/Speed"
+            return "Premium/Perk/Speed"
         case .voiceToText:
-            return "Item List/Icons/Microphone"
+            return "Premium/Perk/Voice"
         case .noAds:
-            return "Item List/Icons/NoAds"
+            return "Premium/Perk/NoAds"
         case .uniqueReactions:
-            return "Item List/Icons/Reactions"
+            return "Premium/Perk/Reactions"
         case .premiumStickers:
-            return "Item List/Icons/Sticker"
+            return "Premium/Perk/Stickers"
         case .advancedChatManagement:
-            return "Item List/Icons/Chat"
+            return "Premium/Perk/Chat"
         case .profileBadge:
-            return "Item List/Icons/Premium"
+            return "Premium/Perk/Badge"
         case .animatedUserpics:
-            return "Item List/Icons/Play"
+            return "Premium/Perk/Avatar"
         case .appIcons:
-            return "Item List/Icons/Icons"
+            return "Premium/Perk/AppIcon"
         case .animatedEmoji:
-            return "Item List/Icons/Emoji"
+            return "Premium/Perk/Emoji"
         case .emojiStatus:
-            return "Item List/Icons/Hand"
+            return "Premium/Perk/Status"
         case .translation:
-            return "Item List/Icons/Translation"
+            return "Premium/Perk/Translation"
         case .stories:
-            return "Item List/Icons/Stories"
+            return "Premium/Perk/Stories"
         case .colors:
-            return "Item List/Icons/Brush"
+            return "Premium/Perk/Colors"
         case .wallpapers:
-            return "Item List/Icons/Wallpaper"
+            return "Premium/Perk/Wallpapers"
         case .messageTags:
-            return "Item List/Icons/Tag"
+            return "Premium/Perk/MessageTags"
         case .lastSeen:
-            return "Item List/Icons/LastSeen"
+            return "Premium/Perk/LastSeen"
         case .messagePrivacy:
-            return "Item List/Icons/LockBubble"
+            return "Premium/Perk/MessagePrivacy"
         case .folderTags:
             return "Premium/Perk/MessageTags"
         case .business:
             return "Premium/Perk/Business"
         case .messageEffects:
-            return "Item List/Icons/MessageEffect"
+            return "Premium/Perk/MessageEffects"
         case .todo:
-            return "Item List/Icons/Checkbox"
-        case .copyProtection:
-            return "Item List/Icons/NoForward"
-        case .aiTools:
-            return "Item List/Icons/AITools"
+            return "Premium/Perk/Todo"
         case .businessLocation:
-            return "Item List/Icons/Location"
+            return "Premium/BusinessPerk/Location"
         case .businessHours:
-            return "Item List/Icons/Clock"
+            return "Premium/BusinessPerk/Hours"
         case .businessQuickReplies:
-            return "Item List/Icons/Share"
+            return "Premium/BusinessPerk/Replies"
         case .businessGreetingMessage:
-            return "Item List/Icons/Hand"
+            return "Premium/BusinessPerk/Greetings"
         case .businessAwayMessage:
-            return "Item List/Icons/Away"
+            return "Premium/BusinessPerk/Away"
         case .businessChatBots:
-            return "Item List/Icons/Chatbot"
+            return "Premium/BusinessPerk/Chatbots"
         case .businessIntro:
-            return "Item List/Icons/Intro"
+            return "Premium/BusinessPerk/Intro"
         case .businessLinks:
-            return "Item List/Icons/BusinessLink"
+            return "Premium/BusinessPerk/Links"
         }
     }
 }
@@ -893,13 +847,11 @@ struct PremiumIntroConfiguration {
     static var defaultValue: PremiumIntroConfiguration {
         return PremiumIntroConfiguration(perks: [
             .stories,
-            .aiTools,
             .moreUpload,
             .doubleLimits,
             .lastSeen,
             .voiceToText,
             .fasterDownload,
-            .copyProtection,
             .translation,
             .todo,
             .animatedEmoji,
@@ -956,12 +908,6 @@ struct PremiumIntroConfiguration {
             if perks.count < 4 {
                 perks = PremiumIntroConfiguration.defaultValue.perks
             }
-            
-            #if DEBUG
-            if !perks.contains(.aiTools) {
-                perks.insert(.aiTools, at: 1)
-            }
-            #endif
                         
             var businessPerks: [PremiumPerk] = []
             if let values = data["business_promo_order"] as? [String] {
@@ -1046,18 +992,24 @@ private struct PremiumProduct: Equatable {
 
 final class PerkIconComponent: CombinedComponent {
     let backgroundColor: UIColor
+    let foregroundColor: UIColor
     let iconName: String
     
     init(
         backgroundColor: UIColor,
+        foregroundColor: UIColor,
         iconName: String
     ) {
         self.backgroundColor = backgroundColor
+        self.foregroundColor = foregroundColor
         self.iconName = iconName
     }
     
     static func ==(lhs: PerkIconComponent, rhs: PerkIconComponent) -> Bool {
         if lhs.backgroundColor != rhs.backgroundColor {
+            return false
+        }
+        if lhs.foregroundColor != rhs.foregroundColor {
             return false
         }
         if lhs.iconName != rhs.iconName {
@@ -1067,19 +1019,38 @@ final class PerkIconComponent: CombinedComponent {
     }
     
     static var body: Body {
-        let image = Child(Image.self)
+        let background = Child(RoundedRectangle.self)
+        let icon = Child(BundleIconComponent.self)
+
         return { context in
             let component = context.component
+        
             let iconSize = CGSize(width: 30.0, height: 30.0)
-            let image = image.update(
-                component: Image(image:
-                    renderSettingsIcon(name: component.iconName, backgroundColors: [component.backgroundColor])
+            
+            let background = background.update(
+                component: RoundedRectangle(
+                    color: component.backgroundColor,
+                    cornerRadius: 7.0
                 ),
                 availableSize: iconSize,
                 transition: context.transition
             )
-            context.add(image
-                .position(CGPoint(x: iconSize.width / 2.0, y: iconSize.height / 2.0))
+            
+            let icon = icon.update(
+                component: BundleIconComponent(
+                    name: component.iconName,
+                    tintColor: .white
+                ),
+                availableSize: iconSize,
+                transition: context.transition
+            )
+            
+            let iconPosition = CGPoint(x: background.size.width / 2.0, y: background.size.height / 2.0)
+            context.add(background
+                .position(iconPosition)
+            )
+            context.add(icon
+                .position(iconPosition)
             )
             return iconSize
         }
@@ -1640,8 +1611,6 @@ private final class PremiumIntroScreenContentComponent: CombinedComponent {
             
             super.init()
             
-            self.newPerks = [PremiumPerk.aiTools.identifier, PremiumPerk.copyProtection.identifier]
-            
             let premiumIntroConfiguration: Signal<PremiumIntroConfiguration, NoError>
             let accountPeer: Signal<EnginePeer?, NoError>
             switch screenContext {
@@ -1712,7 +1681,34 @@ private final class PremiumIntroScreenContentComponent: CombinedComponent {
                         }
                     }
                 })
-                                
+                
+                self.newPerksDisposable = combineLatest(
+                    queue: Queue.mainQueue(),
+                    ApplicationSpecificNotice.dismissedBusinessBadge(accountManager: context.sharedContext.accountManager),
+                    ApplicationSpecificNotice.dismissedBusinessLinksBadge(accountManager: context.sharedContext.accountManager),
+                    ApplicationSpecificNotice.dismissedBusinessIntroBadge(accountManager: context.sharedContext.accountManager),
+                    ApplicationSpecificNotice.dismissedBusinessChatbotsBadge(accountManager: context.sharedContext.accountManager)
+                ).startStrict(next: { [weak self] dismissedBusinessBadge, dismissedBusinessLinksBadge, dismissedBusinessIntroBadge, dismissedBusinessChatbotsBadge in
+                    guard let self else {
+                        return
+                    }
+                    var newPerks: [String] = []
+                    if !dismissedBusinessBadge {
+                        newPerks.append(PremiumPerk.business.identifier)
+                    }
+                    if !dismissedBusinessLinksBadge {
+                        newPerks.append(PremiumPerk.businessLinks.identifier)
+                    }
+                    if !dismissedBusinessIntroBadge {
+                        newPerks.append(PremiumPerk.businessIntro.identifier)
+                    }
+                    if !dismissedBusinessChatbotsBadge {
+                        newPerks.append(PremiumPerk.businessChatBots.identifier)
+                    }
+                    self.newPerks = newPerks
+                    self.updated()
+                })
+                
                 self.adsEnabledDisposable = (context.engine.data.subscribe(TelegramEngine.EngineData.Item.Peer.AdsEnabled(id: context.account.peerId))
                 |> deliverOnMainQueue).start(next: { [weak self] adsEnabled in
                     guard let self else {
@@ -1975,7 +1971,6 @@ private final class PremiumIntroScreenContentComponent: CombinedComponent {
                 UIColor(rgb: 0x676bff),
                 UIColor(rgb: 0x6172ff),
                 UIColor(rgb: 0x5b79ff),
-                UIColor(rgb: 0x5b79ff),
                 UIColor(rgb: 0x4492ff),
                 UIColor(rgb: 0x429bd5),
                 UIColor(rgb: 0x41a6a5),
@@ -2054,10 +2049,8 @@ private final class PremiumIntroScreenContentComponent: CombinedComponent {
                                     subtitle = environment.strings.Premium_PricePerYear(subtitle).string
                                     accessibilitySubtitle = environment.strings.Premium_PricePerYear(accessibilitySubtitle).string
                                 }
-                                subtitle = "\(environment.strings.Gift_Options_Premium_Months(product.months)) • \(product.price)"
                             } else {
-                                //subtitle = product.price
-                                subtitle = "\(environment.strings.Gift_Options_Premium_Months(product.months)) • \(product.price)"
+                                subtitle = product.price
                             }
                         }
                         if product.isCurrent {
@@ -2109,7 +2102,7 @@ private final class PremiumIntroScreenContentComponent: CombinedComponent {
                     context.add(optionsSection
                         .position(CGPoint(x: availableWidth / 2.0, y: size.height + optionsSection.size.height / 2.0))
                         .clipsToBounds(true)
-                        .cornerRadius(26.0)
+                        .cornerRadius(10.0)
                     )
                     size.height += optionsSection.size.height
                     
@@ -2170,6 +2163,7 @@ private final class PremiumIntroScreenContentComponent: CombinedComponent {
                         ], alignment: .left, spacing: 2.0)),
                         leftIcon: .custom(AnyComponentWithIdentity(id: 0, component: AnyComponent(PerkIconComponent(
                             backgroundColor: gradientColors[i],
+                            foregroundColor: .white,
                             iconName: perk.iconName
                         ))), false),
                         accessory: accountContext != nil ? .arrow : nil,
@@ -2223,12 +2217,9 @@ private final class PremiumIntroScreenContentComponent: CombinedComponent {
                                 demoSubject = .messageEffects
                             case .todo:
                                 demoSubject = .todo
-                            case .copyProtection:
-                                demoSubject = .copyProtection
-                            case .aiTools:
-                                demoSubject = .aiTools
                             case .business:
                                 demoSubject = .business
+                                let _ = ApplicationSpecificNotice.setDismissedBusinessBadge(accountManager: accountContext.sharedContext.accountManager).startStandalone()
                             default:
                                 demoSubject = .doubleLimits
                             }
@@ -2274,7 +2265,6 @@ private final class PremiumIntroScreenContentComponent: CombinedComponent {
                 let perksSection = perksSection.update(
                     component: ListSectionComponent(
                         theme: environment.theme,
-                        style: .glass,
                         header: AnyComponent(MultilineTextComponent(
                             text: .plain(NSAttributedString(
                                 string: strings.Premium_WhatsIncluded.uppercased(),
@@ -2292,6 +2282,8 @@ private final class PremiumIntroScreenContentComponent: CombinedComponent {
                 )
                 context.add(perksSection
                     .position(CGPoint(x: availableWidth / 2.0, y: size.height + perksSection.size.height / 2.0))
+                    .clipsToBounds(true)
+                    .cornerRadius(10.0)
                     .disappear(.default(alpha: true))
                 )
                 size.height += perksSection.size.height
@@ -2318,7 +2310,7 @@ private final class PremiumIntroScreenContentComponent: CombinedComponent {
                     UIColor(rgb: 0x9b4fed),
                     UIColor(rgb: 0x8958ff),
                     UIColor(rgb: 0x676bff),
-                    UIColor(rgb: 0x0088ff)
+                    UIColor(rgb: 0x007aff)
                 ]
                 
                 var i = 0
@@ -2360,6 +2352,7 @@ private final class PremiumIntroScreenContentComponent: CombinedComponent {
                         ], alignment: .left, spacing: 2.0)),
                         leftIcon: .custom(AnyComponentWithIdentity(id: 0, component: AnyComponent(PerkIconComponent(
                             backgroundColor: gradientColors[min(i, gradientColors.count - 1)],
+                            foregroundColor: .white,
                             iconName: perk.iconName
                         ))), false),
                         action: { [weak state] _ in
@@ -2426,6 +2419,7 @@ private final class PremiumIntroScreenContentComponent: CombinedComponent {
                                         }
                                         push(accountContext.sharedContext.makeChatbotSetupScreen(context: accountContext, initialData: initialData))
                                     })
+                                    let _ = ApplicationSpecificNotice.setDismissedBusinessChatbotsBadge(accountManager: accountContext.sharedContext.accountManager).startStandalone()
                                 case .businessIntro:
                                     let _ = (accountContext.sharedContext.makeBusinessIntroSetupScreenInitialData(context: accountContext)
                                     |> take(1)
@@ -2435,6 +2429,7 @@ private final class PremiumIntroScreenContentComponent: CombinedComponent {
                                         }
                                         push(accountContext.sharedContext.makeBusinessIntroSetupScreen(context: accountContext, initialData: initialData))
                                     })
+                                    let _ = ApplicationSpecificNotice.setDismissedBusinessIntroBadge(accountManager: accountContext.sharedContext.accountManager).startStandalone()
                                 case .businessLinks:
                                     let _ = (accountContext.sharedContext.makeBusinessLinksSetupScreenInitialData(context: accountContext)
                                     |> take(1)
@@ -2444,6 +2439,7 @@ private final class PremiumIntroScreenContentComponent: CombinedComponent {
                                         }
                                         push(accountContext.sharedContext.makeBusinessLinksSetupScreen(context: accountContext, initialData: initialData))
                                     })
+                                    let _ = ApplicationSpecificNotice.setDismissedBusinessLinksBadge(accountManager: accountContext.sharedContext.accountManager).startStandalone()
                                 default:
                                     fatalError()
                                 }
@@ -2462,10 +2458,13 @@ private final class PremiumIntroScreenContentComponent: CombinedComponent {
                                     demoSubject = .businessAwayMessage
                                 case .businessChatBots:
                                     demoSubject = .businessChatBots
+                                    let _ = ApplicationSpecificNotice.setDismissedBusinessChatbotsBadge(accountManager: accountContext.sharedContext.accountManager).startStandalone()
                                 case .businessIntro:
                                     demoSubject = .businessIntro
+                                    let _ = ApplicationSpecificNotice.setDismissedBusinessIntroBadge(accountManager: accountContext.sharedContext.accountManager).startStandalone()
                                 case .businessLinks:
                                     demoSubject = .businessLinks
+                                    let _ = ApplicationSpecificNotice.setDismissedBusinessLinksBadge(accountManager: accountContext.sharedContext.accountManager).startStandalone()
                                 default:
                                     fatalError()
                                 }
@@ -2509,7 +2508,6 @@ private final class PremiumIntroScreenContentComponent: CombinedComponent {
                 let businessSection = businessSection.update(
                     component: ListSectionComponent(
                         theme: environment.theme,
-                        style: .glass,
                         header: nil,
                         footer: nil,
                         items: perksItems
@@ -2520,6 +2518,8 @@ private final class PremiumIntroScreenContentComponent: CombinedComponent {
                 )
                 context.add(businessSection
                     .position(CGPoint(x: availableWidth / 2.0, y: size.height + businessSection.size.height / 2.0))
+                    .clipsToBounds(true)
+                    .cornerRadius(10.0)
                 )
                 size.height += businessSection.size.height
                 size.height += 23.0
@@ -2535,7 +2535,6 @@ private final class PremiumIntroScreenContentComponent: CombinedComponent {
                 if let accountContext = context.component.screenContext.context {
                     perksItems.append(AnyComponentWithIdentity(id: perksItems.count, component: AnyComponent(ListActionItemComponent(
                         theme: environment.theme,
-                        style: .glass,
                         title: AnyComponent(VStack([
                             AnyComponentWithIdentity(id: AnyHashable(0), component: AnyComponent(MultilineTextComponent(
                                 text: .plain(NSAttributedString(
@@ -2557,7 +2556,8 @@ private final class PremiumIntroScreenContentComponent: CombinedComponent {
                         ], alignment: .left, spacing: 2.0)),
                         leftIcon: .custom(AnyComponentWithIdentity(id: 0, component: AnyComponent(PerkIconComponent(
                             backgroundColor: UIColor(rgb: 0x676bff),
-                            iconName: "Item List/Icons/Case"
+                            foregroundColor: .white,
+                            iconName: "Premium/BusinessPerk/Status"
                         ))), false),
                         icon: ListActionItemComponent.Icon(component: AnyComponentWithIdentity(id: 0, component: AnyComponent(EmojiActionIconComponent(
                             context: accountContext,
@@ -2577,7 +2577,6 @@ private final class PremiumIntroScreenContentComponent: CombinedComponent {
                 
                 perksItems.append(AnyComponentWithIdentity(id: perksItems.count, component: AnyComponent(ListActionItemComponent(
                     theme: environment.theme,
-                    style: .glass,
                     title: AnyComponent(VStack([
                         AnyComponentWithIdentity(id: AnyHashable(0), component: AnyComponent(MultilineTextComponent(
                             text: .plain(NSAttributedString(
@@ -2599,7 +2598,8 @@ private final class PremiumIntroScreenContentComponent: CombinedComponent {
                     ], alignment: .left, spacing: 2.0)),
                     leftIcon: .custom(AnyComponentWithIdentity(id: 0, component: AnyComponent(PerkIconComponent(
                         backgroundColor: UIColor(rgb: 0x4492ff),
-                        iconName: "Item List/Icons/Tag"
+                        foregroundColor: .white,
+                        iconName: "Premium/BusinessPerk/Tag"
                     ))), false),
                     action: { _ in
                         guard let accountContext else {
@@ -2611,7 +2611,6 @@ private final class PremiumIntroScreenContentComponent: CombinedComponent {
                 
                 perksItems.append(AnyComponentWithIdentity(id: perksItems.count, component: AnyComponent(ListActionItemComponent(
                     theme: environment.theme,
-                    style: .glass,
                     title: AnyComponent(VStack([
                         AnyComponentWithIdentity(id: AnyHashable(0), component: AnyComponent(MultilineTextComponent(
                             text: .plain(NSAttributedString(
@@ -2633,7 +2632,8 @@ private final class PremiumIntroScreenContentComponent: CombinedComponent {
                     ], alignment: .left, spacing: 2.0)),
                     leftIcon: .custom(AnyComponentWithIdentity(id: 0, component: AnyComponent(PerkIconComponent(
                         backgroundColor: UIColor(rgb: 0x41a6a5),
-                        iconName: "Item List/Icons/Stories"
+                        foregroundColor: .white,
+                        iconName: "Premium/Perk/Stories"
                     ))), false),
                     action: {  _ in
                         guard let accountContext else {
@@ -2646,7 +2646,6 @@ private final class PremiumIntroScreenContentComponent: CombinedComponent {
                 let moreBusinessSection = moreBusinessSection.update(
                     component: ListSectionComponent(
                         theme: environment.theme,
-                        style: .glass,
                         header: AnyComponent(MultilineTextComponent(
                             text: .plain(NSAttributedString(
                                 string: strings.Business_MoreFeaturesTitle.uppercased(),
@@ -2671,6 +2670,8 @@ private final class PremiumIntroScreenContentComponent: CombinedComponent {
                 )
                 context.add(moreBusinessSection
                     .position(CGPoint(x: availableWidth / 2.0, y: size.height + moreBusinessSection.size.height / 2.0))
+                    .clipsToBounds(true)
+                    .cornerRadius(10.0)
                 )
                 size.height += moreBusinessSection.size.height
                 size.height += 23.0
@@ -2692,7 +2693,6 @@ private final class PremiumIntroScreenContentComponent: CombinedComponent {
                 var adsSettingsItems: [AnyComponentWithIdentity<Empty>] = []
                 adsSettingsItems.append(AnyComponentWithIdentity(id: 0, component: AnyComponent(ListActionItemComponent(
                     theme: environment.theme,
-                    style: .glass,
                     title: AnyComponent(VStack([
                         AnyComponentWithIdentity(id: AnyHashable(0), component: AnyComponent(MultilineTextComponent(
                             text: .plain(NSAttributedString(
@@ -2710,8 +2710,7 @@ private final class PremiumIntroScreenContentComponent: CombinedComponent {
                         let _ = accountContext.engine.accountData.updateAdMessagesEnabled(enabled: value).startStandalone()
                         state?.updated(transition: .immediate)
                     })),
-                    action: nil,
-                    tag: doNotHideAdsTag
+                    action: nil
                 ))))
                 
                 let adsInfoString = NSMutableAttributedString(attributedString: parseMarkdownIntoAttributedString(environment.strings.Business_AdsInfo, attributes: termsMarkdownAttributes, textAlignment: .natural
@@ -2731,7 +2730,6 @@ private final class PremiumIntroScreenContentComponent: CombinedComponent {
                 let adsSettingsSection = adsSettingsSection.update(
                     component: ListSectionComponent(
                         theme: environment.theme,
-                        style: .glass,
                         header: AnyComponent(MultilineTextComponent(
                             text: .plain(NSAttributedString(
                                 string: strings.Business_AdsTitle.uppercased(),
@@ -2764,6 +2762,8 @@ private final class PremiumIntroScreenContentComponent: CombinedComponent {
                 )
                 context.add(adsSettingsSection
                     .position(CGPoint(x: availableWidth / 2.0, y: size.height + adsSettingsSection.size.height / 2.0))
+                    .clipsToBounds(true)
+                    .cornerRadius(10.0)
                 )
                 size.height += adsSettingsSection.size.height
                 size.height += 23.0
@@ -2809,7 +2809,7 @@ private final class PremiumIntroScreenContentComponent: CombinedComponent {
                 } else {
                     layoutPerks()
                 
-                    let textPadding: CGFloat = 17.0
+                    let textPadding: CGFloat = 13.0
                     
                     let infoTitle = infoTitle.update(
                         component: MultilineTextComponent(
@@ -2848,7 +2848,7 @@ private final class PremiumIntroScreenContentComponent: CombinedComponent {
                     let infoBackground = infoBackground.update(
                         component: RoundedRectangle(
                             color: environment.theme.list.itemBlocksBackgroundColor,
-                            cornerRadius: 26.0
+                            cornerRadius: 10.0
                         ),
                         environment: {},
                         availableSize: CGSize(width: availableWidth - sideInsets, height: infoText.size.height + textPadding * 2.0),
@@ -2960,7 +2960,6 @@ private final class PremiumIntroScreenContentComponent: CombinedComponent {
 private final class PremiumIntroScreenComponent: CombinedComponent {
     typealias EnvironmentType = ViewControllerComponentContainer.Environment
     
-    let overNavigationContainer: UIView
     let screenContext: PremiumIntroScreen.ScreenContext
     let mode: PremiumIntroScreen.Mode
     let source: PremiumSource
@@ -2973,8 +2972,7 @@ private final class PremiumIntroScreenComponent: CombinedComponent {
     let copyLink: (String) -> Void
     let shareLink: (String) -> Void
     
-    init(overNavigationContainer: UIView, screenContext: PremiumIntroScreen.ScreenContext, mode: PremiumIntroScreen.Mode, source: PremiumSource, forceDark: Bool, forceHasPremium: Bool, updateInProgress: @escaping (Bool) -> Void, present: @escaping (ViewController) -> Void, push: @escaping (ViewController) -> Void, completion: @escaping () -> Void, copyLink: @escaping (String) -> Void, shareLink: @escaping (String) -> Void) {
-        self.overNavigationContainer = overNavigationContainer
+    init(screenContext: PremiumIntroScreen.ScreenContext, mode: PremiumIntroScreen.Mode, source: PremiumSource, forceDark: Bool, forceHasPremium: Bool, updateInProgress: @escaping (Bool) -> Void, present: @escaping (ViewController) -> Void, push: @escaping (ViewController) -> Void, completion: @escaping () -> Void, copyLink: @escaping (String) -> Void, shareLink: @escaping (String) -> Void) {
         self.screenContext = screenContext
         self.mode = mode
         self.source = source
@@ -3438,9 +3436,12 @@ private final class PremiumIntroScreenComponent: CombinedComponent {
         let star = Child(PremiumStarComponent.self)
         let emoji = Child(EmojiHeaderComponent.self)
         let coin = Child(PremiumCoinComponent.self)
+        let topPanel = Child(BlurredBackgroundComponent.self)
+        let topSeparator = Child(Rectangle.self)
         let title = Child(MultilineTextComponent.self)
         let secondaryTitle = Child(MultilineTextWithEntitiesComponent.self)
-        let bottomEdgeEffect = Child(EdgeEffectComponent.self)
+        let bottomPanel = Child(BlurredBackgroundComponent.self)
+        let bottomSeparator = Child(Rectangle.self)
         let button = Child(SolidRoundedButtonComponent.self)
         
         var updatedInstalled: Bool?
@@ -3524,6 +3525,22 @@ private final class PremiumIntroScreenComponent: CombinedComponent {
                     transition: context.transition
                 )
             }
+            
+            let topPanel = topPanel.update(
+                component: BlurredBackgroundComponent(
+                    color: environment.theme.rootController.navigationBar.blurredBackgroundColor
+                ),
+                availableSize: CGSize(width: context.availableSize.width, height: environment.navigationHeight),
+                transition: context.transition
+            )
+            
+            let topSeparator = topSeparator.update(
+                component: Rectangle(
+                    color: environment.theme.rootController.navigationBar.separatorColor
+                ),
+                availableSize: CGSize(width: context.availableSize.width, height: UIScreenPixel),
+                transition: context.transition
+            )
             
             let titleString: String
             if case .premiumGift = context.component.source {
@@ -3684,10 +3701,9 @@ private final class PremiumIntroScreenComponent: CombinedComponent {
                 transition: context.transition
             )
             
-            let buttonInsets = ContainerViewLayout.concentricInsets(bottomInset: environment.safeInsets.bottom, innerDiameter: 52.0, sideInset: 30.0)
             let bottomPanelPadding: CGFloat = 12.0
             let bottomInset: CGFloat = environment.safeInsets.bottom > 0.0 ? environment.safeInsets.bottom + 5.0 : bottomPanelPadding
-            let bottomPanelHeight: CGFloat = state.isPremium == true && !state.canUpgrade ? bottomInset : bottomPanelPadding + 52.0 + bottomInset
+            let bottomPanelHeight: CGFloat = state.isPremium == true && !state.canUpgrade ? bottomInset : bottomPanelPadding + 50.0 + bottomInset
                        
             let scrollContent = scrollContent.update(
                 component: ScrollComponent<EnvironmentType>(
@@ -3748,12 +3764,14 @@ private final class PremiumIntroScreenComponent: CombinedComponent {
                 .position(CGPoint(x: context.availableSize.width / 2.0, y: context.availableSize.height / 2.0))
             )
                         
+            let topPanelAlpha: CGFloat
             let titleOffset: CGFloat
             let titleScale: CGFloat
             let titleOffsetDelta = (topInset + 160.0) - (environment.statusBarHeight + (environment.navigationHeight - environment.statusBarHeight) / 2.0)
             let titleAlpha: CGFloat
             
             if let topContentOffset = state.topContentOffset {
+                topPanelAlpha = min(20.0, max(0.0, topContentOffset - 95.0)) / 20.0
                 let topContentOffset = topContentOffset + max(0.0, min(1.0, topContentOffset / titleOffsetDelta)) * 10.0
                 titleOffset = topContentOffset
                 let fraction = max(0.0, min(1.0, titleOffset / titleOffsetDelta))
@@ -3765,29 +3783,36 @@ private final class PremiumIntroScreenComponent: CombinedComponent {
                     titleAlpha = 1.0
                 }
             } else {
+                topPanelAlpha = 0.0
                 titleScale = 1.0
                 titleOffset = 0.0
                 titleAlpha = state.otherPeerName != nil ? 0.0 : 1.0
             }
             
-            context.addWithExternalContainer(header
+            context.add(header
                 .position(CGPoint(x: context.availableSize.width / 2.0, y: topInset + header.size.height / 2.0 - 30.0 - titleOffset * titleScale))
-                .scale(titleScale),
-                container: context.component.overNavigationContainer
+                .scale(titleScale)
             )
             
-            context.addWithExternalContainer(title
-                .position(CGPoint(x: context.availableSize.width / 2.0, y: max(topInset + 160.0 - titleOffset, environment.statusBarHeight + (environment.navigationHeight - environment.statusBarHeight) / 2.0)))
-                .scale(titleScale)
-                .opacity(titleAlpha),
-                container: context.component.overNavigationContainer
+            context.add(topPanel
+                .position(CGPoint(x: context.availableSize.width / 2.0, y: topPanel.size.height / 2.0))
+                .opacity(topPanelAlpha)
+            )
+            context.add(topSeparator
+                .position(CGPoint(x: context.availableSize.width / 2.0, y: topPanel.size.height))
+                .opacity(topPanelAlpha)
             )
             
-            context.addWithExternalContainer(secondaryTitle
+            context.add(title
                 .position(CGPoint(x: context.availableSize.width / 2.0, y: max(topInset + 160.0 - titleOffset, environment.statusBarHeight + (environment.navigationHeight - environment.statusBarHeight) / 2.0)))
                 .scale(titleScale)
-                .opacity(max(0.0, 1.0 - titleAlpha * 1.8)),
-                container: context.component.overNavigationContainer
+                .opacity(titleAlpha)
+            )
+            
+            context.add(secondaryTitle
+                .position(CGPoint(x: context.availableSize.width / 2.0, y: max(topInset + 160.0 - titleOffset, environment.statusBarHeight + (environment.navigationHeight - environment.statusBarHeight) / 2.0)))
+                .scale(titleScale)
+                .opacity(max(0.0, 1.0 - titleAlpha * 1.8))
             )
             
             var isUnusedGift = false
@@ -3811,26 +3836,13 @@ private final class PremiumIntroScreenComponent: CombinedComponent {
             if !buttonIsHidden {
                 let buttonTitle: String
                 var buttonSubtitle: String?
-                if case let .auth(price, days) = context.component.source {
+                if case let .auth(price) = context.component.source {
                     buttonTitle = environment.strings.Premium_Week_SignUp(price).string
-                    if days == 7 {
-                        buttonSubtitle = environment.strings.Premium_Week_SignUpInfo
-                    } else if days > 0 {
-                        let daysString = environment.strings.Premium_SignUp_SignUpNewInfo_Days(days)
-                        buttonSubtitle = environment.strings.Premium_SignUp_SignUpNewInfo(daysString).string
-                    } else {
-                        buttonSubtitle = environment.strings.Premium_SignUp_SignUpNewInfoNone
-                    }
+                    buttonSubtitle = environment.strings.Premium_Week_SignUpInfo
                 } else if isUnusedGift {
                     buttonTitle = environment.strings.Premium_Gift_ApplyLink
                 } else if state.isPremium == true && state.canUpgrade {
-                    if state.isAnnual {
-                        buttonTitle = environment.strings.Premium_UpgradeForAnnual(state.price ?? "—").string
-                    } else if state.isBiannual {
-                        buttonTitle = environment.strings.Premium_UpgradeForBiannual(state.price ?? "—").string
-                    } else {
-                        buttonTitle = environment.strings.Premium_UpgradeFor(state.price ?? "—").string
-                    }
+                    buttonTitle = state.isAnnual ? environment.strings.Premium_UpgradeForAnnual(state.price ?? "—").string : environment.strings.Premium_UpgradeFor(state.price ?? "—").string
                 } else {
                     if state.isAnnual {
                         buttonTitle = environment.strings.Premium_SubscribeForAnnual(state.price ?? "—").string
@@ -3842,6 +3854,7 @@ private final class PremiumIntroScreenComponent: CombinedComponent {
                 }
                 
                 let controller = environment.controller
+                let sideInset: CGFloat = 16.0
                 let button = button.update(
                     component: SolidRoundedButtonComponent(
                         title: buttonTitle,
@@ -3856,10 +3869,9 @@ private final class PremiumIntroScreenComponent: CombinedComponent {
                             ],
                             foregroundColor: .white
                         ),
-                        height: 52.0,
-                        cornerRadius: 26.0,
+                        height: 50.0,
+                        cornerRadius: 11.0,
                         gloss: true,
-                        glass: true,
                         isLoading: state.inProgress,
                         action: {
                             if let controller = controller() as? PremiumIntroScreen, let customProceed = controller.customProceed {
@@ -3870,42 +3882,66 @@ private final class PremiumIntroScreenComponent: CombinedComponent {
                             }
                         }
                     ),
-                    availableSize: CGSize(width: context.availableSize.width - buttonInsets.left - buttonInsets.right - environment.safeInsets.left - environment.safeInsets.right, height: 52.0),
+                    availableSize: CGSize(width: context.availableSize.width - sideInset * 2.0 - environment.safeInsets.left - environment.safeInsets.right, height: 50.0),
                     transition: context.transition)
                                
-                let bottomEdgeEffectHeight = 13.0 + buttonInsets.bottom + button.size.height
-                let bottomEdgeEffect = bottomEdgeEffect.update(
-                    component: EdgeEffectComponent(
-                        color: environment.theme.list.blocksBackgroundColor,
-                        blur: true,
-                        alpha: 1.0,
-                        size: CGSize(width: context.availableSize.width, height: bottomEdgeEffectHeight),
-                        edge: .bottom,
-                        edgeSize: bottomEdgeEffectHeight
+                let bottomPanel = bottomPanel.update(
+                    component: BlurredBackgroundComponent(
+                        color: environment.theme.rootController.tabBar.backgroundColor
                     ),
-                    availableSize: CGSize(width: context.availableSize.width, height: bottomEdgeEffectHeight),
+                    availableSize: CGSize(width: context.availableSize.width, height: bottomPanelPadding + button.size.height + bottomInset),
                     transition: context.transition
                 )
-                context.add(bottomEdgeEffect
-                    .position(CGPoint(x: context.availableSize.width / 2.0, y: context.availableSize.height - bottomEdgeEffect.size.height / 2.0))
+                
+                let bottomSeparator = bottomSeparator.update(
+                    component: Rectangle(
+                        color: environment.theme.rootController.tabBar.separatorColor
+                    ),
+                    availableSize: CGSize(width: context.availableSize.width, height: UIScreenPixel),
+                    transition: context.transition
+                )
+                
+                let bottomPanelAlpha: CGFloat
+                if let bottomContentOffset = state.bottomContentOffset {
+                    bottomPanelAlpha = min(16.0, bottomContentOffset) / 16.0
+                } else {
+                    bottomPanelAlpha = 1.0
+                }
+                
+                context.add(bottomPanel
+                    .position(CGPoint(x: context.availableSize.width / 2.0, y: context.availableSize.height - bottomPanel.size.height / 2.0))
+                    .opacity(bottomPanelAlpha)
                     .disappear(ComponentTransition.Disappear { view, transition, completion in
                         if case .none = transition.animation {
                             completion()
                             return
                         }
-                        view.layer.animatePosition(from: CGPoint(), to: CGPoint(x: 0.0, y: bottomEdgeEffect.size.height), duration: 0.2, removeOnCompletion: false, additive: true, completion: { _ in
+                        view.layer.animatePosition(from: CGPoint(), to: CGPoint(x: 0.0, y: bottomPanel.size.height), duration: 0.2, removeOnCompletion: false, additive: true, completion: { _ in
+                            completion()
+                        })
+                    })
+                )
+                context.add(bottomSeparator
+                    .position(CGPoint(x: context.availableSize.width / 2.0, y: context.availableSize.height - bottomPanel.size.height))
+                    .opacity(bottomPanelAlpha)
+                    .disappear(ComponentTransition.Disappear { view, transition, completion in
+                        if case .none = transition.animation {
+                            completion()
+                            return
+                        }
+                        view.layer.animatePosition(from: CGPoint(), to: CGPoint(x: 0.0, y: bottomPanel.size.height), duration: 0.2, removeOnCompletion: false, additive: true, completion: { _ in
                             completion()
                         })
                     })
                 )
                 context.add(button
-                    .position(CGPoint(x: context.availableSize.width / 2.0, y: context.availableSize.height - buttonInsets.bottom - button.size.height / 2.0))
+                    .position(CGPoint(x: context.availableSize.width / 2.0, y: context.availableSize.height - bottomPanel.size.height + bottomPanelPadding + button.size.height / 2.0))
                     .disappear(ComponentTransition.Disappear { view, transition, completion in
                         if case .none = transition.animation {
                             completion()
                             return
                         }
-                        view.layer.animatePosition(from: CGPoint(), to: CGPoint(x: 0.0, y: button.size.height + buttonInsets.bottom), duration: 0.2, removeOnCompletion: false, additive: true, completion: { _ in
+                        view.layer.animatePosition(from: CGPoint(), to: CGPoint(x: 0.0, y: bottomPanel.size.height), duration: 0.2, removeOnCompletion: false, additive: true, completion: { _ in
                             completion()
                         })
                     })
@@ -3983,7 +4019,6 @@ public final class PremiumIntroScreen: ViewControllerComponentContainer {
     }
     private let screenContext: ScreenContext
     fileprivate let mode: Mode
-    private let focusOnItemTag: PremiumIntroEntryTag?
     
     private var didSetReady = false
     private let _ready = Promise<Bool>()
@@ -3996,16 +4031,13 @@ public final class PremiumIntroScreen: ViewControllerComponentContainer {
     public weak var containerView: UIView?
     public var animationColor: UIColor?
     
-    private let overNavigationContainer: UIView
-    
-    public convenience init(context: AccountContext, mode: Mode = .premium, source: PremiumSource, modal: Bool = true, forceDark: Bool = false, forceHasPremium: Bool = false, focusOnItemTag: PremiumIntroEntryTag? = nil) {
-        self.init(screenContext: .accountContext(context), mode: mode, source: source, modal: modal, forceDark: forceDark, forceHasPremium: forceHasPremium, focusOnItemTag: focusOnItemTag)
+    public convenience init(context: AccountContext, mode: Mode = .premium, source: PremiumSource, modal: Bool = true, forceDark: Bool = false, forceHasPremium: Bool = false) {
+        self.init(screenContext: .accountContext(context), mode: mode, source: source, modal: modal, forceDark: forceDark, forceHasPremium: forceHasPremium)
     }
     
-    public init(screenContext: ScreenContext, mode: Mode = .premium, source: PremiumSource, modal: Bool = true, forceDark: Bool = false, forceHasPremium: Bool = false, focusOnItemTag: PremiumIntroEntryTag? = nil) {
+    public init(screenContext: ScreenContext, mode: Mode = .premium, source: PremiumSource, modal: Bool = true, forceDark: Bool = false, forceHasPremium: Bool = false) {
         self.screenContext = screenContext
         self.mode = mode
-        self.focusOnItemTag = focusOnItemTag
         
         let presentationData = screenContext.presentationData
         
@@ -4015,16 +4047,7 @@ public final class PremiumIntroScreen: ViewControllerComponentContainer {
         var completionImpl: (() -> Void)?
         var copyLinkImpl: ((String) -> Void)?
         var shareLinkImpl: ((String) -> Void)?
-        
-        self.overNavigationContainer = SparseContainerView()
-        
-        var baseNavigationColors: BaseNavigationColors = .plain
-        if case .emojiStatus = source {
-            baseNavigationColors = .blocks
-        }
-        
         super.init(component: PremiumIntroScreenComponent(
-            overNavigationContainer: self.overNavigationContainer,
             screenContext: screenContext,
             mode: mode,
             source: source,
@@ -4048,11 +4071,11 @@ public final class PremiumIntroScreen: ViewControllerComponentContainer {
             shareLink: { link in
                 shareLinkImpl?(link)
             }
-        ), navigationBarAppearance: .default, presentationMode: modal ? .modal : .default, theme: forceDark ? .dark : .default, updatedPresentationData: screenContext.updatedPresentationData, baseNavigationColors: baseNavigationColors)
-        
-        self._hasGlassStyle = true
+        ), navigationBarAppearance: .transparent, presentationMode: modal ? .modal : .default, theme: forceDark ? .dark : .default, updatedPresentationData: screenContext.updatedPresentationData)
                 
         if modal {
+            let cancelItem = UIBarButtonItem(title: presentationData.strings.Common_Close, style: .plain, target: self, action: #selector(self.cancelPressed))
+            self.navigationItem.setLeftBarButton(cancelItem, animated: false)
             self.navigationPresentation = .modal
         } else {
             self.navigationPresentation = .modalInLargeLayout
@@ -4126,32 +4149,10 @@ public final class PremiumIntroScreen: ViewControllerComponentContainer {
             context.account.viewTracker.keepQuickRepliesApproximatelyUpdated()
             context.account.viewTracker.keepBusinessLinksApproximatelyUpdated()
         }
-        
-        if let navigationBar = self.navigationBar {
-            navigationBar.customOverBackgroundContentView.addSubview(self.overNavigationContainer)
-        }
     }
     
     required public init(coder aDecoder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
-    }
-    
-    override public func viewDidLoad() {
-        super.viewDidLoad()
-
-        if let focusOnItemTag = self.focusOnItemTag {
-            Queue.mainQueue().after(0.1, {
-                switch focusOnItemTag {
-                case .doNotHideAds:
-                    if let view = self.node.hostView.findTaggedView(tag: doNotHideAdsTag) as? ListActionItemComponent.View {
-                        if let scrollView = findParentScrollView(view: view) {
-                            view.displayHighlight()
-                            scrollView.setContentOffset(CGPoint(x: 0.0, y: scrollView.contentSize.height - scrollView.bounds.height), animated: true)
-                        }
-                    }
-                }
-            })
-        }
     }
     
     public override func viewWillDisappear(_ animated: Bool) {
@@ -4186,10 +4187,10 @@ public final class PremiumIntroScreen: ViewControllerComponentContainer {
         super.containerLayoutUpdated(layout, transition: transition)
         
         if !self.didSetReady {
-            if let view = findTaggedComponentViewImpl(view: self.view, tag: PremiumCoinComponent.View.Tag()) as? PremiumCoinComponent.View {
+            if let view = self.node.hostView.findTaggedView(tag: PremiumCoinComponent.View.Tag()) as? PremiumCoinComponent.View {
                 self.didSetReady = true
                 self._ready.set(view.ready)
-            } else if let view = findTaggedComponentViewImpl(view: self.view, tag: PremiumStarComponent.View.Tag()) as? PremiumStarComponent.View {
+            } else if let view = self.node.hostView.findTaggedView(tag: PremiumStarComponent.View.Tag()) as? PremiumStarComponent.View {
                 self.didSetReady = true
                 self._ready.set(view.ready)
                 
@@ -4202,7 +4203,7 @@ public final class PremiumIntroScreen: ViewControllerComponentContainer {
                     self.containerView = nil
                     self.animationColor = nil
                 }
-            } else if let view = findTaggedComponentViewImpl(view: self.view, tag: EmojiHeaderComponent.View.Tag()) as? EmojiHeaderComponent.View {
+            } else if let view = self.node.hostView.findTaggedView(tag: EmojiHeaderComponent.View.Tag()) as? EmojiHeaderComponent.View {
                 self.didSetReady = true
                 self._ready.set(view.ready)
                 

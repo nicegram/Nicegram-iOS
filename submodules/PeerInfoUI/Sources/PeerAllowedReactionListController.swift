@@ -173,7 +173,7 @@ private enum PeerAllowedReactionListControllerEntry: ItemListNodeEntry {
         let arguments = arguments as! PeerAllowedReactionListControllerArguments
         switch self {
         case let .allowSwitch(text, value):
-            return ItemListSwitchItem(presentationData: presentationData, systemStyle: .glass, title: text, value: value, sectionId: self.section, style: .blocks, updated: { value in
+            return ItemListSwitchItem(presentationData: presentationData, title: text, value: value, sectionId: self.section, style: .blocks, updated: { value in
                 if value {
                     arguments.setMode(.some, false)
                 } else {
@@ -185,7 +185,6 @@ private enum PeerAllowedReactionListControllerEntry: ItemListNodeEntry {
         case let .allowAll(text, isEnabled):
             return ItemListCheckboxItem(
                 presentationData: presentationData,
-                systemStyle: .glass,
                 icon: nil,
                 iconSize: nil,
                 iconPlacement: .default,
@@ -205,7 +204,6 @@ private enum PeerAllowedReactionListControllerEntry: ItemListNodeEntry {
         case let .allowSome(text, isEnabled):
             return ItemListCheckboxItem(
                 presentationData: presentationData,
-                systemStyle: .glass,
                 icon: nil,
                 iconSize: nil,
                 iconPlacement: .default,
@@ -225,7 +223,6 @@ private enum PeerAllowedReactionListControllerEntry: ItemListNodeEntry {
         case let .allowNone(text, isEnabled):
             return ItemListCheckboxItem(
                 presentationData: presentationData,
-                systemStyle: .glass,
                 icon: nil,
                 iconSize: nil,
                 iconPlacement: .default,
@@ -250,7 +247,6 @@ private enum PeerAllowedReactionListControllerEntry: ItemListNodeEntry {
             return ItemListReactionItem(
                 context: arguments.context,
                 presentationData: presentationData,
-                systemStyle: .glass,
                 availableReactions: availableReactions,
                 reaction: reaction,
                 title: text,

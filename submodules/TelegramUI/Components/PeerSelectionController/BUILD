@@ -7,7 +7,7 @@ swift_library(
         "Sources/**/*.swift",
     ]),
     copts = [
-        "-warnings-as-errors",
+        #"-warnings-as-errors",
     ],
     deps = [
         "//submodules/SSignalKit/SwiftSignalKit",
@@ -21,7 +21,7 @@ swift_library(
         "//submodules/ChatListUI",
         "//submodules/SearchBarNode",
         "//submodules/ContactListUI",
-        "//submodules/TelegramUI/Components/SegmentControlComponent",
+        "//submodules/SegmentedControlNode",
         "//submodules/AttachmentTextInputPanelNode",
         "//submodules/ChatPresentationInterfaceState",
         "//submodules/ChatSendMessageActionUI",
@@ -35,10 +35,6 @@ swift_library(
         "//submodules/TextFormat",
         "//submodules/TelegramUI/Components/Chat/ForwardAccessoryPanelNode",
         "//submodules/CounterControllerTitleView",
-        "//submodules/TelegramUI/Components/ChatList/ChatListFilterTabContainerNode",
-        "//submodules/ComponentFlow",
-        "//submodules/Components/ComponentDisplayAdapters",
-        "//submodules/TelegramUI/Components/EdgeEffect",
     ],
     visibility = [
         "//visibility:public",

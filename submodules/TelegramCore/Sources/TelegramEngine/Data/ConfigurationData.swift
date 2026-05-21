@@ -63,8 +63,6 @@ public enum EngineConfiguration {
         public let maxGiveawayPeriodSeconds: Int32
         public let maxChannelRecommendationsCount: Int32
         public let maxConferenceParticipantCount: Int32
-        public let maxBotsCreated: Int32
-        public let maxOwnedAITextStyles: Int32
         
         public static var defaultValue: UserLimits {
             return UserLimits(UserLimitsConfiguration.defaultValue)
@@ -97,9 +95,7 @@ public enum EngineConfiguration {
             maxGiveawayCountriesCount: Int32,
             maxGiveawayPeriodSeconds: Int32,
             maxChannelRecommendationsCount: Int32,
-            maxConferenceParticipantCount: Int32,
-            maxBotsCreated: Int32,
-            maxOwnedAITextStyles: Int32
+            maxConferenceParticipantCount: Int32
         ) {
             self.maxPinnedChatCount = maxPinnedChatCount
             self.maxPinnedSavedChatCount = maxPinnedSavedChatCount
@@ -128,8 +124,6 @@ public enum EngineConfiguration {
             self.maxGiveawayPeriodSeconds = maxGiveawayPeriodSeconds
             self.maxChannelRecommendationsCount = maxChannelRecommendationsCount
             self.maxConferenceParticipantCount = maxConferenceParticipantCount
-            self.maxBotsCreated = maxBotsCreated
-            self.maxOwnedAITextStyles = maxOwnedAITextStyles
         }
     }
 }
@@ -193,9 +187,7 @@ public extension EngineConfiguration.UserLimits {
             maxGiveawayCountriesCount: userLimitsConfiguration.maxGiveawayCountriesCount,
             maxGiveawayPeriodSeconds: userLimitsConfiguration.maxGiveawayPeriodSeconds,
             maxChannelRecommendationsCount: userLimitsConfiguration.maxChannelRecommendationsCount,
-            maxConferenceParticipantCount: userLimitsConfiguration.maxConferenceParticipantCount,
-            maxBotsCreated: userLimitsConfiguration.maxBotsCreated,
-            maxOwnedAITextStyles: userLimitsConfiguration.maxOwnedAITextStyles
+            maxConferenceParticipantCount: userLimitsConfiguration.maxConferenceParticipantCount
         )
     }
 }
@@ -577,48 +569,6 @@ public extension TelegramEngine.EngineData.Item {
                     return EngineAvailableColorOptions(hash: 0, options: [])
                 }
                 return value
-            }
-        }
-        
-        public struct ContactsSettings: TelegramEngineDataItem, PostboxViewDataItem {
-            public typealias Result = TelegramCore.ContactsSettings
-
-            public init() {
-            }
-
-            var key: PostboxViewKey {
-                return .preferences(keys: Set([PreferencesKeys.contactsSettings]))
-            }
-
-            func extract(view: PostboxView) -> Result {
-                guard let view = view as? PreferencesView else {
-                    preconditionFailure()
-                }
-                guard let value = view.values[PreferencesKeys.contactsSettings]?.get(TelegramCore.ContactsSettings.self) else {
-                    return TelegramCore.ContactsSettings.defaultSettings
-                }
-                return value
-            }
-        }
-
-        public struct EmojiGame: TelegramEngineDataItem, PostboxViewDataItem {
-            public typealias Result = EmojiGameInfo
-
-            public init() {
-            }
-
-            var key: PostboxViewKey {
-                return .preferences(keys: Set([PreferencesKeys.emojiGameInfo()]))
-            }
-
-            func extract(view: PostboxView) -> Result {
-                guard let view = view as? PreferencesView else {
-                    preconditionFailure()
-                }
-                guard let emojiGameInfo = view.values[PreferencesKeys.emojiGameInfo()]?.get(EmojiGameInfo.self) else {
-                    return .unavailable
-                }
-                return emojiGameInfo
             }
         }
     }
