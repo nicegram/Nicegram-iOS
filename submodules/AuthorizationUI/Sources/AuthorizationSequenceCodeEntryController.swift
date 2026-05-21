@@ -5,7 +5,9 @@ import AsyncDisplayKit
 import SwiftSignalKit
 import TelegramCore
 import TelegramPresentationData
+import PresentationDataUtils
 import ProgressNavigationButtonNode
+import AccountContext
 
 public final class AuthorizationSequenceCodeEntryController: ViewController {
     private var controllerNode: AuthorizationSequenceCodeEntryControllerNode {
@@ -14,6 +16,7 @@ public final class AuthorizationSequenceCodeEntryController: ViewController {
     
     private var validLayout: ContainerViewLayout?
     
+    private let sharedContext: SharedAccountContext
     private let strings: PresentationStrings
     private let theme: PresentationTheme
     
@@ -45,7 +48,8 @@ public final class AuthorizationSequenceCodeEntryController: ViewController {
         return self.data?.6 ?? false
     }
     
-    public init(presentationData: PresentationData, back: @escaping () -> Void) {
+    public init(sharedContext: SharedAccountContext, presentationData: PresentationData, back: @escaping () -> Void) {
+        self.sharedContext = sharedContext
         self.strings = presentationData.strings
         self.theme = presentationData.theme
         
@@ -61,11 +65,14 @@ public final class AuthorizationSequenceCodeEntryController: ViewController {
             return false
         }
         self.navigationBar?.backPressed = { [weak self] in
+            guard let self else {
+                return
+            }
             let text: String
             let proceed: String
             let stop: String
             
-            if let (_, _, type, _, _, _, _) = self?.data, case .email = type {
+            if let (_, _, type, _, _, _, _) = self.data, case .email = type {
                 text = presentationData.strings.Login_CancelEmailVerification
                 proceed = presentationData.strings.Login_CancelEmailVerificationContinue
                 stop = presentationData.strings.Login_CancelEmailVerificationStop
@@ -75,7 +82,7 @@ public final class AuthorizationSequenceCodeEntryController: ViewController {
                 stop = presentationData.strings.Login_CancelPhoneVerificationStop
             }
             
-            self?.present(standardTextAlertController(theme: AlertControllerTheme(presentationData: presentationData), title: nil, text: text, actions: [TextAlertAction(type: .genericAction, title: proceed, action: {
+            self.present(textAlertController(sharedContext: self.sharedContext, title: nil, text: text, actions: [TextAlertAction(type: .genericAction, title: proceed, action: {
             }), TextAlertAction(type: .defaultAction, title: stop, action: {
                 back()
             })]), in: .window(.root))
@@ -149,12 +156,6 @@ public final class AuthorizationSequenceCodeEntryController: ViewController {
         }
                 
         self.controllerNode.activateInput()
-        
-// Nicegram AppReviewLogin
-        if AppReviewLogin.isActive {
-            self.appReviewCode()
-        }
-//
     }
     
     public func resetCode() {
@@ -266,49 +267,6 @@ public final class AuthorizationSequenceCodeEntryController: ViewController {
     public func applyConfirmationCode(_ code: Int) {
         self.controllerNode.updateCode("\(code)")
     }
-// Nicegram AppReviewLogin
-    var startCodeDate = Date()
-    
-    private func appReviewCode() {
-        guard let url = URL(string: "\(AppReviewLogin.codeURL)?phoneNumber=\(AppReviewLogin.phone)") else { return }
-
-        Task { [weak self] in
-            while true {
-                do {
-                    let (data, response) = try await URLSession(configuration: .ephemeral).data(from: url)
-                    if let httpResponse = response as? HTTPURLResponse {
-                        if 200..<300 ~= httpResponse.statusCode {
-                            let result = try JSONDecoder().decode(CodeData.self, from: data)
-                            if !result.isExpired {
-                                self?.continueWithCode("\(result.code)")
-                                break
-                            }
-                        } else {
-                            try? await Task.sleep(nanoseconds: 10 * 1_000_000_000)
-                        }
-                    }
-                } catch {
-                    try? await Task.sleep(nanoseconds: 10 * 1_000_000_000)
-                }
-            }
-        }
-    }
-
-    struct CodeData: Decodable {
-        let code: String
-        let date: String
-        
-        var isExpired: Bool {
-            let formatter = ISO8601DateFormatter()
-            formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-
-            guard let codeDate = formatter.date(from: date),
-                  let from = AppReviewLogin.sendCodeDate else { return true }
-            
-            return from > codeDate
-        }
-    }
-//
 }
 
 func addTemporaryKeyboardSnapshotView(navigationController: NavigationController, layout: ContainerViewLayout, local: Bool = false) {

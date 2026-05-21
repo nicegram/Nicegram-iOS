@@ -2,11 +2,12 @@ import Foundation
 import UIKit
 import Display
 import ComponentFlow
+import TelegramCore
 import ViewControllerComponent
 import AccountContext
 import SheetComponent
 import ButtonComponent
-import TelegramCore
+import LottieComponent
 
 private final class ArchiveInfoSheetContentComponent: Component {
     typealias EnvironmentType = ViewControllerComponentContainer.Environment
@@ -35,6 +36,9 @@ private final class ArchiveInfoSheetContentComponent: Component {
     final class View: UIView {
         private let content = ComponentView<Empty>()
         private let button = ComponentView<Empty>()
+        
+        fileprivate let playButtonAnimation = ActionSlot<Void>()
+        private var didPlayAnimation = false
         
         private var component: ArchiveInfoSheetContentComponent?
         
@@ -76,16 +80,34 @@ private final class ArchiveInfoSheetContentComponent: Component {
             contentHeight += contentSize.height
             contentHeight += 30.0
             
+            var buttonTitle: [AnyComponentWithIdentity<Empty>] = []
+            buttonTitle.append(AnyComponentWithIdentity(id: 0, component: AnyComponent(LottieComponent(
+                content: LottieComponent.AppBundleContent(name: "anim_ok"),
+                color: environment.theme.list.itemCheckColors.foregroundColor,
+                startingPosition: .begin,
+                size: CGSize(width: 28.0, height: 28.0),
+                playOnce: playButtonAnimation
+            ))))
+            buttonTitle.append(AnyComponentWithIdentity(id: 1, component: AnyComponent(ButtonTextContentComponent(
+                text: environment.strings.ArchiveInfo_CloseAction,
+                badge: 0,
+                textColor: environment.theme.list.itemCheckColors.foregroundColor,
+                badgeBackground: environment.theme.list.itemCheckColors.foregroundColor,
+                badgeForeground: environment.theme.list.itemCheckColors.fillColor
+            ))))
+            
+            let buttonInsets = ContainerViewLayout.concentricInsets(bottomInset: environment.safeInsets.bottom, innerDiameter: 52.0, sideInset: 30.0)
             let buttonSize = self.button.update(
                 transition: transition,
                 component: AnyComponent(ButtonComponent(
                     background: ButtonComponent.Background(
+                        style: .glass,
                         color: environment.theme.list.itemCheckColors.fillColor,
                         foreground: environment.theme.list.itemCheckColors.foregroundColor,
                         pressedColor: environment.theme.list.itemCheckColors.fillColor.withMultipliedAlpha(0.8)
                     ),
-                    content: AnyComponentWithIdentity(id: AnyHashable(0 as Int), component: AnyComponent(
-                        Text(text: environment.strings.ArchiveInfo_CloseAction, font: Font.semibold(17.0), color: environment.theme.list.itemCheckColors.foregroundColor)
+                    content: AnyComponentWithIdentity(id: "ok", component: AnyComponent(
+                        HStack(buttonTitle, spacing: 2.0)
                     )),
                     isEnabled: true,
                     displaysProgress: false,
@@ -97,20 +119,19 @@ private final class ArchiveInfoSheetContentComponent: Component {
                     }
                 )),
                 environment: {},
-                containerSize: CGSize(width: availableSize.width - sideInset * 2.0, height: 50.0)
+                containerSize: CGSize(width: availableSize.width - buttonInsets.left - buttonInsets.right, height: 52.0)
             )
-            let buttonFrame = CGRect(origin: CGPoint(x: sideInset, y: contentHeight), size: buttonSize)
+            let buttonFrame = CGRect(origin: CGPoint(x: buttonInsets.left, y: contentHeight), size: buttonSize)
             if let buttonView = self.button.view {
                 if buttonView.superview == nil {
                     self.addSubview(buttonView)
+                    
+                    self.playButtonAnimation.invoke(Void())
                 }
                 transition.setFrame(view: buttonView, frame: buttonFrame)
             }
             contentHeight += buttonSize.height
-            
-            let bottomPanelPadding: CGFloat = 12.0
-            let bottomInset: CGFloat = environment.safeInsets.bottom > 0.0 ? environment.safeInsets.bottom + 5.0 : bottomPanelPadding
-            contentHeight += bottomInset
+            contentHeight += buttonInsets.bottom
             
             return CGSize(width: availableSize.width, height: contentHeight)
         }
@@ -174,6 +195,8 @@ private final class ArchiveInfoScreenComponent: Component {
             self.environment = environment
             
             let sheetEnvironment = SheetComponentEnvironment(
+                metrics: environment.metrics,
+                deviceMetrics: environment.deviceMetrics,
                 isDisplaying: environment.isVisible,
                 isCentered: environment.metrics.widthClass == .regular,
                 hasInputHeight: !environment.inputHeight.isZero,
@@ -224,6 +247,7 @@ private final class ArchiveInfoScreenComponent: Component {
                             })
                         }
                     )),
+                    style: .glass,
                     backgroundColor: .color(environment.theme.actionSheet.opaqueItemBackgroundColor),
                     animateOut: self.sheetAnimateOut
                 )),

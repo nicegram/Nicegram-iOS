@@ -2,7 +2,6 @@ import Foundation
 import UIKit
 import Display
 import AsyncDisplayKit
-import Postbox
 import TelegramCore
 import SwiftSignalKit
 import AccountContext
@@ -208,7 +207,7 @@ public final class MediaGroupsScreen: ViewController, AttachmentContainable {
             self.containerNode = ASDisplayNode()
             self.backgroundNode = NavigationBackgroundNode(color: self.presentationData.theme.rootController.tabBar.backgroundColor)
             
-            self.listNode = ListView()
+            self.listNode = ListViewImpl()
 
             super.init()
             
@@ -233,7 +232,7 @@ public final class MediaGroupsScreen: ViewController, AttachmentContainable {
                 self?.view.window?.endEditing(true)
             }
             
-            self.listNode.visibleContentOffsetChanged = { [weak self] _ in
+            self.listNode.visibleContentOffsetChanged = { [weak self] _, _ in
                 self?.updateNavigation(transition: .immediate)
             }
         }

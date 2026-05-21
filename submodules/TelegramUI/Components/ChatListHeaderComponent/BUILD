@@ -11,7 +11,7 @@ swift_library(
         "Sources/**/*.swift",
     ]),
     copts = [
-        #"-warnings-as-errors",
+        "-warnings-as-errors",
     ],
     deps = NGDEPS + [
         "//submodules/SSignalKit/SwiftSignalKit",
@@ -28,6 +28,8 @@ swift_library(
         "//submodules/Components/ComponentDisplayAdapters",
         "//submodules/SearchUI",
         "//submodules/TelegramUI/Components/MoreHeaderButton",
+        "//submodules/TelegramUI/Components/EdgeEffect",
+        "//submodules/TelegramUI/Components/GlassBackgroundComponent",
     ],
     visibility = [
         "//visibility:public",

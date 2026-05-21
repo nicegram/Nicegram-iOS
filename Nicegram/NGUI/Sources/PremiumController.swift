@@ -21,8 +21,6 @@ import NGData
 import NGStrings
 import NGUtils
 
-private let getSpeech2TextSettingsUseCase = NicegramSettingsModule.shared.getSpeech2TextSettingsUseCase()
-
 private struct SelectionState: Equatable {
 }
 
@@ -49,7 +47,6 @@ private enum premiumControllerSection: Int32 {
     case notifyMissed
     case manageFilters
     case other
-    case speechToText
     case calls
     case test
 }
@@ -62,7 +59,6 @@ private enum PremiumSettingsToggle {
     case syncPins
     case oneTapTr
     case rememberFilterOnExit
-    case useOpenAI
 }
 
 private enum PremiumControllerEntry: ItemListNodeEntry {
@@ -85,7 +81,6 @@ private enum PremiumControllerEntry: ItemListNodeEntry {
     case testButton(PresentationTheme, String)
     case ignoretr(PresentationTheme, String)
     
-    case useOpenAI(PresentationTheme, String, Bool)
     case recordAllCalls(String, Bool)
 
     var section: ItemListSectionId {
@@ -102,8 +97,6 @@ private enum PremiumControllerEntry: ItemListNodeEntry {
             return premiumControllerSection.other.rawValue
         case .testButton:
             return premiumControllerSection.test.rawValue
-        case .useOpenAI:
-            return premiumControllerSection.speechToText.rawValue
         case .recordAllCalls:
             return premiumControllerSection.calls.rawValue
         }
@@ -135,8 +128,6 @@ private enum PremiumControllerEntry: ItemListNodeEntry {
             return 10000
         case .ignoretr:
             return 12000
-        case .useOpenAI:
-            return 13000
         case .recordAllCalls:
             return 14000
         case .testButton:
@@ -225,14 +216,8 @@ private enum PremiumControllerEntry: ItemListNodeEntry {
             } else {
                 return false
             }
-        case let .useOpenAI(_, lhsValue, _):
-            if case let .useOpenAI(_, rhsValue, _) = rhs, lhsValue == rhsValue {
-                return true
-            } else {
-                return false
-            }
         case let .recordAllCalls(lhsText, lhsBool):
-            if case let .recordAllCalls(rhsText, rhsBool) = rhs, lhsText == rhsText, lhsText == rhsText {
+            if case let .recordAllCalls(rhsText, rhsBool) = rhs, lhsText == rhsText, lhsBool == rhsBool {
                 return true
             } else {
                 return false
@@ -273,7 +258,7 @@ private enum PremiumControllerEntry: ItemListNodeEntry {
         case let .otherHeader(_, text):
             return ItemListSectionHeaderItem(presentationData: presentationData, text: text, sectionId: self.section)
 
-        case let .testButton(_, _):
+        case .testButton:
             return ItemListActionItem(presentationData: presentationData, title: "Test Button", kind: .generic, alignment: .natural, sectionId: self.section, style: .blocks, action: {
                 arguments.testAction()
             })
@@ -284,10 +269,6 @@ private enum PremiumControllerEntry: ItemListNodeEntry {
         case let .rememberFolderOnExit(_, text, value):
             return ItemListSwitchItem(presentationData: presentationData, title: text, value: value, enabled: true, sectionId: self.section, style: .blocks, updated: { value in
                 arguments.toggleSetting(value, .rememberFilterOnExit)
-            })
-        case let .useOpenAI(_, text, value):
-            return ItemListSwitchItem(presentationData: presentationData, title: text, value: value, enabled: true, sectionId: self.section, style: .blocks, updated: { value in
-                arguments.toggleSetting(value, .useOpenAI)
             })
         case let .recordAllCalls(title, value):
             return ItemListSwitchItem(presentationData: presentationData, title: title, value: value, enabled: true, sectionId: self.section, style: .blocks, updated: { value in
@@ -312,8 +293,6 @@ private func premiumControllerEntries(
     entries.append(.rememberFolderOnExit(theme, l("Premium.rememberFolderOnExit"), NGSettings.rememberFolderOnExit))
     entries.append(.ignoretr(theme, l("Premium.IgnoreTranslate.Title")))
     
-    let useOpenAI = getSpeech2TextSettingsUseCase.useOpenAI(with: context.account.peerId.id._internalGetInt64Value())
-    entries.append(.useOpenAI(theme, l("SpeechToText.UseOpenAi"), useOpenAI))
     entries.append(.recordAllCalls(l("Premium.RecordAllCalls"), NGSettings.recordAllCalls))
 
     #if DEBUG
@@ -342,10 +321,7 @@ private func stringForShowMissedTimeout(_ strings: PresentationStrings, _ timeou
 
 public func premiumController(context: AccountContext) -> ViewController {
     // let statePromise = ValuePromise(PremiumSelectionState(), ignoreRepeated: true)
-    var dismissImpl: (() -> Void)?
     var presentControllerImpl: ((ViewController, Any?) -> Void)?
-    let presentationData = context.sharedContext.currentPresentationData.with { $0 }
-    var pushControllerImpl: ((ViewController) -> Void)?
 
     //var currentBrowser = Browser(rawValue: "safari")
     let statePromise = ValuePromise(SelectionState(), ignoreRepeated: false)
@@ -360,10 +336,6 @@ public func premiumController(context: AccountContext) -> ViewController {
             NGSettings.oneTapTr = value
         case .rememberFilterOnExit:
             NGSettings.rememberFolderOnExit = value
-        case .useOpenAI:
-            updateNicegramSettings {
-                $0.speechToText.useOpenAI[context.account.peerId.id._internalGetInt64Value()] = value
-            }
         default:
             break
         }
@@ -465,37 +437,17 @@ public func premiumController(context: AccountContext) -> ViewController {
 
     let signal = combineLatest(context.sharedContext.presentationData, statePromise.get())
         |> map { presentationData, state -> (ItemListControllerState, (ItemListNodeState, Any)) in
-
             let entries = premiumControllerEntries(presentationData: presentationData, context: context)
 
-            var _ = 0
-            var scrollToItem: ListViewScrollToItem?
-            // workaround
-            //            let focusOnItemTag: FakeEntryTag? = nil
-            //            if let focusOnItemTag = focusOnItemTag {
-            //                for entry in entries {
-            //                    if entry.tag?.isEqual(to: focusOnItemTag) ?? false {
-            //                        scrollToItem = ListViewScrollToItem(index: index, position: .top(0.0), animated: false, curve: .Default(duration: 0.0), directionHint: .Up)
-            //                    }
-            //                    index += 1
-            //                }
-            //            }
-
             let controllerState = ItemListControllerState(presentationData: ItemListPresentationData(presentationData), title: .text(l("Premium.Title")), leftNavigationButton: nil, rightNavigationButton: nil, backNavigationButton: ItemListBackButton(title: presentationData.strings.Common_Back))
-            let listState = ItemListNodeState(presentationData: ItemListPresentationData(presentationData), entries: entries, style: .blocks, ensureVisibleItemTag: nil, initialScrollToItem: scrollToItem)
+            let listState = ItemListNodeState(presentationData: ItemListPresentationData(presentationData), entries: entries, style: .blocks, ensureVisibleItemTag: nil, initialScrollToItem: nil)
 
             return (controllerState, (listState, arguments))
     }
 
     let controller = ItemListController(context: context, state: signal)
-    dismissImpl = { [weak controller] in
-        controller?.dismiss()
-    }
     presentControllerImpl = { [weak controller] c, a in
         controller?.present(c, in: .window(.root), with: a)
-    }
-    pushControllerImpl = { [weak controller] c in
-        (controller?.navigationController as? NavigationController)?.pushViewController(c)
     }
     return controller
 }

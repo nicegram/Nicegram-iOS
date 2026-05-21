@@ -19,7 +19,7 @@ import AccountContext
 import AppBundle
 import PromptUI
 import SafariServices
-import ShareController
+
 import UndoUI
 import LottieComponent
 import MultilineTextComponent
@@ -29,6 +29,9 @@ import SaveProgressScreen
 import DeviceModel
 import LegacyMediaPickerUI
 import PassKit
+import AlertComponent
+import UIKitRuntimeUtils
+import AuthConfirmationScreen
 
 private final class TonSchemeHandler: NSObject, WKURLSchemeHandler {
     private final class PendingTask {
@@ -155,6 +158,24 @@ final class WebView: WKWebView {
         }
         return result
     }
+    
+    func sendEvent(name: String, data: String?) {
+        let script = "window.Telegram.TelegramGameProxy && window.Telegram.TelegramGameProxy.receiveEvent && window.Telegram.TelegramGameProxy.receiveEvent(\"\(name)\", \(data ?? "null"))"
+        self.evaluateJavaScript(script, completionHandler: { _, _ in
+        })
+    }
+    
+    var origin: String? {
+        guard let url = self.url, let scheme = url.scheme, let host = url.host else {
+            return nil
+        }
+        let port = url.port
+        var origin = "\(scheme)://\(host)"
+        if let port {
+            origin += ":\(port)"
+        }
+        return origin
+    }
 }
 
 private class WeakScriptMessageHandler: NSObject, WKScriptMessageHandler {
@@ -222,6 +243,7 @@ final class BrowserWebContent: UIView, BrowserContent, WKNavigationDelegate, WKU
     var cancelInteractiveTransitionGestures: () -> Void = {}
     
     private var tempFile: TempBoxFile?
+    private var disposeTrustedDomain: (() -> Void)?
     
     // Nicegram Wallet
     private let nicegramWalletJsInjector = WalletJsInjector()
@@ -273,6 +295,30 @@ final class BrowserWebContent: UIView, BrowserContent, WKNavigationDelegate, WKU
             configuration.userContentController = contentController
             configuration.applicationNameForUserAgent = computedUserAgent()
         }
+        
+        if context.sharedContext.immediateExperimentalUISettings.enablePWA {
+            if #available(iOS 17.0, *) {
+                if let parsedUrl = URL(string: url), let host = parsedUrl.host {
+                    let rootPath = context.sharedContext.applicationBindings.containerPath + "/telegram-data"
+                    let pwaPath = rootPath + "/pwa"
+                    let uuidPath = pwaPath + "/uuid_\(host)"
+                    let uuid: UUID
+                    if let value = try? String(contentsOf: URL(fileURLWithPath: uuidPath), encoding: .utf8) {
+                        uuid = UUID(uuidString: value)!
+                    } else {
+                        uuid = UUID()
+                        let _ = try? FileManager.default.createDirectory(at: URL(fileURLWithPath: pwaPath), withIntermediateDirectories: true)
+                        let _ = try? uuid.uuidString.write(to: URL(fileURLWithPath: uuidPath), atomically: true, encoding: .utf8)
+                    }
+                    
+                    configuration.websiteDataStore = WKWebsiteDataStore(forIdentifier: uuid)
+                    
+                    configuration.limitsNavigationsToAppBoundDomains = true
+                    disposeTrustedDomain = WebHelpers.addTrustedDomain(host)
+                    WebHelpers.forceRefreshTrustedDomains(configuration.websiteDataStore)
+                }
+            }
+        }
                 
         self.webView = WebView(frame: CGRect(), configuration: configuration)
         self.webView.allowsLinkPreview = true
@@ -282,18 +328,16 @@ final class BrowserWebContent: UIView, BrowserContent, WKNavigationDelegate, WKU
         }
         
         var title: String = ""
+        var request: URLRequest?
         if url.hasPrefix("file://") {
             var updatedPath = url
             let tempFile = TempBox.shared.file(path: url.replacingOccurrences(of: "file://", with: ""), fileName: "file.xlsx")
             updatedPath = tempFile.path
             self.tempFile = tempFile
             
-            let request = URLRequest(url: URL(fileURLWithPath: updatedPath))
-            self.webView.load(request)
+            request = URLRequest(url: URL(fileURLWithPath: updatedPath))
         } else if let parsedUrl = URL(string: url) {
-            let request = URLRequest(url: parsedUrl)
-            self.webView.load(request)
-            
+            request = URLRequest(url: parsedUrl)
             title = getDisplayUrl(url, hostOnly: true)
         }
         
@@ -307,6 +351,10 @@ final class BrowserWebContent: UIView, BrowserContent, WKNavigationDelegate, WKU
         self.backgroundColor = presentationData.theme.list.plainBackgroundColor
         self.webView.backgroundColor = presentationData.theme.list.plainBackgroundColor
         self.webView.alpha = 0.0
+        
+        if let request {
+            self.webView.load(request)
+        }
         
         self.webView.allowsBackForwardNavigationGestures = true
         self.webView.scrollView.delegate = self
@@ -378,15 +426,110 @@ final class BrowserWebContent: UIView, BrowserContent, WKNavigationDelegate, WKU
         
         self.faviconDisposable.dispose()
         self.instantPageDisposable.dispose()
+        
+        self.disposeTrustedDomain?()
     }
     
     private func handleScriptMessage(_ message: WKScriptMessage) {
         guard let body = message.body as? [String: Any], let eventName = body["eventName"] as? String else {
             return
         }
+        let eventData = (body["eventData"] as? String)?.data(using: .utf8)
+        let json = try? JSONSerialization.jsonObject(with: eventData ?? Data(), options: []) as? [String: Any]
         switch eventName {
         case "cancellingTouch":
             self.cancelInteractiveTransitionGestures()
+        case "oauth_request":
+            let url = json?["url"] as? String
+            if let url {
+                let origin = message.frameInfo.securityOriginString
+                
+                let presentationData = self.context.sharedContext.currentPresentationData.with { $0 }
+                let subject: MessageActionUrlSubject = .url(url: url, inAppOrigin: origin)
+                let _ = (self.context.engine.messages.requestMessageActionUrlAuth(subject: subject)
+                |> deliverOnMainQueue).start(next: { [weak self] result in
+                    guard let self, case .request = result else {
+                        return
+                    }
+                    var dismissImpl: (() -> Void)?
+                    let controller = AuthConfirmationScreen(context: self.context, requestSubject: subject, subject: result, completion: { [weak self] accountContext, accountPeer, authResult, disposable in
+                        guard let self else {
+                            return
+                        }
+                        switch authResult {
+                        case let .accept(allowWriteAccess, sharePhoneNumber, matchCode):
+                            let signal = accountContext.engine.messages.acceptMessageActionUrlAuth(subject: subject, allowWriteAccess: allowWriteAccess, sharePhoneNumber: sharePhoneNumber, matchCode: matchCode)
+                            |> afterDisposed {
+                                disposable.dispose()
+                            }
+                                                        
+                            let _ = (signal
+                            |> deliverOnMainQueue).start(next: { authResult in
+                                dismissImpl?()
+                                
+                                Queue.mainQueue().after(0.3) {
+                                    let text: String
+                                    if case let .request(domain, _, _, flags, _, _) = result {
+                                        if flags.contains(.requestPhoneNumber) && !sharePhoneNumber {
+                                            text = presentationData.strings.AuthConfirmation_LoginSuccess_TextNoNumber(domain).string
+                                        } else {
+                                            text = presentationData.strings.AuthConfirmation_LoginSuccess_Text(domain).string
+                                        }
+                                        let controller = UndoOverlayController(presentationData: presentationData, content: .actionSucceeded(title: presentationData.strings.AuthConfirmation_LoginSuccess_Title, text: text, cancel: nil, destructive: false), action: { _ in return true })
+                                        if let navigationController = self.getNavigationController() {
+                                            (navigationController.topViewController as? ViewController)?.present(controller, in: .window(.root))
+                                        }
+                                    }
+                                    
+                                    if case let .accepted(url) = authResult, let url, let currentOrigin = self.webView.origin, currentOrigin == origin {
+                                        let data: JSON = ["result_url": url]
+                                        self.webView.sendEvent(name: "oauth_result_confirmed", data: data.string)
+                                    } else {
+                                        self.webView.sendEvent(name: "oauth_result_failed", data: nil)
+                                    }
+                                }
+                            }, error: { _ in
+                                guard case let .request(domain, _, _, _, _, _) = result else {
+                                    return
+                                }
+                                let controller = UndoOverlayController(presentationData: presentationData, content: .actionSucceeded(title: presentationData.strings.AuthConfirmation_LoginFail_Title, text: presentationData.strings.AuthConfirmation_LoginFail_Text(domain).string, cancel: nil, destructive: false), action: { _ in return true })
+                                if let navigationController = self.getNavigationController() {
+                                    (navigationController.topViewController as? ViewController)?.present(controller, in: .window(.root))
+                                }
+                                
+                                let _ = self.context.engine.messages.declineUrlAuth(url: url).start()
+                                self.webView.sendEvent(name: "oauth_result_failed", data: nil)
+                                
+                                HapticFeedback().error()
+                            })
+                        case .decline:
+                            let _ = self.context.engine.messages.declineUrlAuth(url: url).start()
+                            self.webView.sendEvent(name: "oauth_result_failed", data: nil)
+                        case .failed:
+                            guard case let .request(domain, _, _, _, _, _) = result else {
+                                return
+                            }
+                            let controller = UndoOverlayController(presentationData: presentationData, content: .actionSucceeded(title: presentationData.strings.AuthConfirmation_LoginFail_Title, text: presentationData.strings.AuthConfirmation_LoginFail_Text(domain).string, cancel: nil, destructive: false), action: { _ in return true })
+                            if let navigationController = self.getNavigationController() {
+                                (navigationController.topViewController as? ViewController)?.present(controller, in: .window(.root))
+                            }
+                            
+                            let _ = self.context.engine.messages.declineUrlAuth(url: url).start()
+                            self.webView.sendEvent(name: "oauth_result_failed", data: nil)
+                            
+                            HapticFeedback().error()
+                        }
+                    })
+                    dismissImpl = { [weak controller] in
+                        controller?.dismissAnimated()
+                    }
+                    if let navigationController = self.getNavigationController() {
+                        navigationController.pushViewController(controller)
+                    }
+                })
+            } else {
+                self.webView.sendEvent(name: "oauth_supported", data: nil)
+            }
         default:
             break
         }
@@ -797,7 +940,7 @@ final class BrowserWebContent: UIView, BrowserContent, WKNavigationDelegate, WKU
             self.ignoreUpdatesUntilScrollingStopped = true
         }
     }
-    
+        
     @available(iOS 13.0, *)
     func webView(_ webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction, preferences: WKWebpagePreferences, decisionHandler: @escaping (WKNavigationActionPolicy, WKWebpagePreferences) -> Void) {
         if #available(iOS 14.5, *), navigationAction.shouldPerformDownload {
@@ -826,13 +969,18 @@ final class BrowserWebContent: UIView, BrowserContent, WKNavigationDelegate, WKU
                 //
                 
                 // Nicegram, added isNicegramDeeplink
-                if (navigationAction.targetFrame == nil || navigationAction.targetFrame?.isMainFrame == true) && (isNicegramDeeplink || isTelegramMeLink(url) || isTelegraPhLink(url) || url.hasPrefix("tg://")) && !url.contains("/auth/push?") && !self._state.url.contains("/auth/push?") {
+                if (navigationAction.targetFrame == nil || navigationAction.targetFrame?.isMainFrame == true) && (isNicegramDeeplink || isTelegramMeLink(url) || url.hasPrefix("tg://")) && !url.contains("/auth/push?") && !self._state.url.contains("/auth/push?") {
                     decisionHandler(.cancel, preferences)
-                    self.minimize()
+                    if !url.contains("domain=oauth") {
+                        self.minimize()
+                    }
                     self.openAppUrl(url)
                 } else {
-                    if let scheme = navigationAction.request.url?.scheme, !["http", "https", "tonsite", "about"].contains(scheme.lowercased()) {
+                    if let scheme = navigationAction.request.url?.scheme?.lowercased(), !["http", "https", "tonsite", "about"].contains(scheme) {
                         decisionHandler(.cancel, preferences)
+                        if ["facetime"].contains(scheme) {
+                            return
+                        }
                         self.context.sharedContext.openExternalUrl(context: self.context, urlContext: .generic, url: url, forceExternal: true, presentationData: self.presentationData, navigationController: nil, dismissInput: {})
                     } else {
                         decisionHandler(.allow, preferences)
@@ -1300,12 +1448,20 @@ final class BrowserWebContent: UIView, BrowserContent, WKNavigationDelegate, WKU
     func webView(_ webView: WKWebView, runJavaScriptAlertPanelWithMessage message: String, initiatedByFrame frame: WKFrameInfo, completionHandler: @escaping () -> Void) {
         let presentationData = self.context.sharedContext.currentPresentationData.with { $0 }
         var completed = false
-        let alertController = textAlertController(context: self.context, updatedPresentationData: nil, title: nil, text: message, actions: [TextAlertAction(type: .defaultAction, title: presentationData.strings.Common_OK, action: {
-            if !completed {
-                completed = true
-                completionHandler()
-            }
-        })])
+        
+        let alertController = AlertScreen(
+            context: self.context,
+            title: nil,
+            text: message,
+            actions: [
+                .init(title: presentationData.strings.Common_OK, type: .default, action: {
+                    if !completed {
+                        completed = true
+                        completionHandler()
+                    }
+                })
+            ]
+        )
         alertController.dismissed = { byOutsideTap in
             if byOutsideTap {
                 if !completed {
@@ -1320,17 +1476,26 @@ final class BrowserWebContent: UIView, BrowserContent, WKNavigationDelegate, WKU
     func webView(_ webView: WKWebView, runJavaScriptConfirmPanelWithMessage message: String, initiatedByFrame frame: WKFrameInfo, completionHandler: @escaping (Bool) -> Void) {
         let presentationData = self.context.sharedContext.currentPresentationData.with { $0 }
         var completed = false
-        let alertController = textAlertController(context: self.context, updatedPresentationData: nil, title: nil, text: message, actions: [TextAlertAction(type: .genericAction, title: presentationData.strings.Common_Cancel, action: {
-            if !completed {
-                completed = true
-                completionHandler(false)
-            }
-        }), TextAlertAction(type: .defaultAction, title: presentationData.strings.Common_OK, action: {
-            if !completed {
-                completed = true
-                completionHandler(true)
-            }
-        })])
+        
+        let alertController = AlertScreen(
+            context: self.context,
+            title: nil,
+            text: message,
+            actions: [
+                .init(title: presentationData.strings.Common_Cancel, action: {
+                    if !completed {
+                        completed = true
+                        completionHandler(false)
+                    }
+                }),
+                .init(title: presentationData.strings.Common_OK, type: .default, action: {
+                    if !completed {
+                        completed = true
+                        completionHandler(true)
+                    }
+                })
+            ]
+        )
         alertController.dismissed = { byOutsideTap in
             if byOutsideTap {
                 if !completed {
@@ -1344,24 +1509,28 @@ final class BrowserWebContent: UIView, BrowserContent, WKNavigationDelegate, WKU
 
     func webView(_ webView: WKWebView, runJavaScriptTextInputPanelWithPrompt prompt: String, defaultText: String?, initiatedByFrame frame: WKFrameInfo, completionHandler: @escaping (String?) -> Void) {
         var completed = false
-        let promptController = promptController(sharedContext: self.context.sharedContext, updatedPresentationData: nil, text: prompt, value: defaultText, apply: { value in
-            if !completed {
-                completed = true
-                if let value = value {
-                    completionHandler(value)
-                } else {
-                    completionHandler(nil)
+        let promptController = promptController(
+            context: self.context,
+            updatedPresentationData: nil,
+            text: prompt,
+            value: defaultText,
+            apply: { value in
+                if !completed {
+                    completed = true
+                    if let value = value {
+                        completionHandler(value)
+                    } else {
+                        completionHandler(nil)
+                    }
                 }
-            }
-        })
-        promptController.dismissed = { byOutsideTap in
-            if byOutsideTap {
+            },
+            dismissed: {
                 if !completed {
                     completed = true
                     completionHandler(nil)
                 }
             }
-        }
+        )
         self.present(promptController, nil)
     }
     
@@ -1398,17 +1567,25 @@ final class BrowserWebContent: UIView, BrowserContent, WKNavigationDelegate, WKU
     private func presentDownloadConfirmation(fileName: String, proceed: @escaping (Bool) -> Void) {
         let presentationData = self.context.sharedContext.currentPresentationData.with { $0 }
         var completed = false
-        let alertController = textAlertController(context: self.context, updatedPresentationData: nil, title: nil, text: presentationData.strings.WebBrowser_Download_Confirmation(fileName).string, actions: [TextAlertAction(type: .genericAction, title: presentationData.strings.Common_Cancel, action: {
-            if !completed {
-                completed = true
-                proceed(false)
-            }
-        }), TextAlertAction(type: .defaultAction, title: presentationData.strings.WebBrowser_Download_Download, action: {
-            if !completed {
-                completed = true
-                proceed(true)
-            }
-        })])
+        let alertController = AlertScreen(
+            context: self.context,
+            title: nil,
+            text: presentationData.strings.WebBrowser_Download_Confirmation(fileName).string,
+            actions: [
+                .init(title: presentationData.strings.Common_Cancel, action: {
+                    if !completed {
+                        completed = true
+                        proceed(false)
+                    }
+                }),
+                .init(title: presentationData.strings.WebBrowser_Download_Download, type: .default, action: {
+                    if !completed {
+                        completed = true
+                        proceed(true)
+                    }
+                })
+            ]
+        )
         alertController.dismissed = { byOutsideTap in
             if byOutsideTap {
                 if !completed {
@@ -1437,10 +1614,9 @@ final class BrowserWebContent: UIView, BrowserContent, WKNavigationDelegate, WKU
     
     private func share(url: String) {
         let presentationData = self.context.sharedContext.currentPresentationData.with { $0 }
-        let shareController = ShareController(context: self.context, subject: .url(url))
-        shareController.actionCompleted = { [weak self] in
+        let shareController = self.context.sharedContext.makeShareController(context: self.context, params: ShareControllerParams(subject: .url(url), actionCompleted: { [weak self] in
             self?.present(UndoOverlayController(presentationData: presentationData, content: .linkCopied(title: nil, text: presentationData.strings.Conversation_LinkCopied), elevatedLayout: false, animateInAsReplacement: false, action: { _ in return false }), nil)
-        }
+        }))
         self.present(shareController, nil)
     }
     
@@ -1467,9 +1643,13 @@ final class BrowserWebContent: UIView, BrowserContent, WKNavigationDelegate, WKU
                 var nodeList = document.getElementsByTagName('link');
                 for (var i = 0; i < nodeList.length; i++)
                 {
-                    if((nodeList[i].getAttribute('rel') == 'icon')||(nodeList[i].getAttribute('rel') == 'shortcut icon')||(nodeList[i].getAttribute('rel').startsWith('apple-touch-icon')))
-                    {
-                        const node = nodeList[i];
+                    var rel = nodeList[i].getAttribute('rel') || '';
+                    if (
+                        rel === 'icon' ||
+                        rel === 'shortcut icon' ||
+                        rel.indexOf('apple-touch-icon') === 0
+                    ) {
+                        var node = nodeList[i];
                         favicons.push({
                             url: node.getAttribute('href'),
                             sizes: node.getAttribute('sizes')
@@ -1535,7 +1715,7 @@ final class BrowserWebContent: UIView, BrowserContent, WKNavigationDelegate, WKU
                         
                         if let favicon, let imageData = favicon.pngData() {
                             let resource = LocalFileMediaResource(fileId: Int64.random(in: Int64.min ... Int64.max))
-                            self.context.account.postbox.mediaBox.storeResourceData(resource.id, data: imageData)
+                            self.context.engine.resources.storeResourceData(id: EngineMediaResource.Id(resource.id), data: imageData)
                             image = TelegramMediaImage(
                                 imageId: MediaId(namespace: Namespaces.Media.LocalImage, id: Int64.random(in: Int64.min ... Int64.max)),
                                 representations: [
@@ -1887,5 +2067,20 @@ private func findScrollView(view: UIView?) -> UIScrollView? {
         return findScrollView(view: view.superview)
     } else {
         return nil
+    }
+}
+
+private extension WKFrameInfo {
+    var securityOriginString: String {
+        let securityOrigin = self.securityOrigin
+        var origin = ""
+        origin.append(securityOrigin.protocol)
+        origin.append("://")
+        origin.append(securityOrigin.host)
+        if securityOrigin.port != 0 {
+            origin.append(":")
+            origin.append("\(securityOrigin.port)")
+        }
+        return origin
     }
 }

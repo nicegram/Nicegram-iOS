@@ -38,6 +38,18 @@ private enum GlobalAutoremoveSection: Int32 {
     case general
 }
 
+public enum GlobalAutoremoveEntryTag: ItemListItemTag, Equatable {
+    case setCustom
+
+    public func isEqual(to other: ItemListItemTag) -> Bool {
+        if let other = other as? GlobalAutoremoveEntryTag, self == other {
+            return true
+        } else {
+            return false
+        }
+    }
+}
+
 private enum GlobalAutoremoveEntry: ItemListNodeEntry {
     case header
     case sectionHeader(String)
@@ -120,13 +132,13 @@ private enum GlobalAutoremoveEntry: ItemListNodeEntry {
         case let .sectionHeader(text):
             return ItemListSectionHeaderItem(presentationData: presentationData, text: text, sectionId: self.section)
         case let .timerOption(value, text, isSelected):
-            return ItemListCheckboxItem(presentationData: presentationData, title: text, style: .right, checked: isSelected, zeroSeparatorInsets: false, sectionId: self.section, action: {
+            return ItemListCheckboxItem(presentationData: presentationData, systemStyle: .glass, title: text, style: .right, checked: isSelected, zeroSeparatorInsets: false, sectionId: self.section, action: {
                 arguments.updateValue(value)
             })
         case let .customAction(text):
-            return ItemListActionItem(presentationData: presentationData, title: text, kind: .generic, alignment: .natural, sectionId: self.section, style: .blocks, action: {
+            return ItemListActionItem(presentationData: presentationData, systemStyle: .glass, title: text, kind: .generic, alignment: .natural, sectionId: self.section, style: .blocks, action: {
                 arguments.openCustomValue()
-            })
+            }, tag: GlobalAutoremoveEntryTag.setCustom)
         case let .info(text):
             return ItemListTextItem(presentationData: presentationData, text: .markdown(text), sectionId: self.section, linkAction: { _ in
                 arguments.infoLinkAction()
@@ -188,7 +200,7 @@ private func globalAutoremoveScreenEntries(presentationData: PresentationData, s
     return entries
 }
 
-public func globalAutoremoveScreen(context: AccountContext, initialValue: Int32, updated: @escaping (Int32) -> Void) -> ViewController {
+public func globalAutoremoveScreen(context: AccountContext, initialValue: Int32, updated: @escaping (Int32) -> Void, focusOnItemTag: GlobalAutoremoveEntryTag? = nil) -> ViewController {
     let initialState = GlobalAutoremoveScreenState(
         additionalValues: Set([initialValue]),
         updatedValue: initialValue
@@ -269,8 +281,8 @@ public func globalAutoremoveScreen(context: AccountContext, initialValue: Int32,
         } else {
             let presentationData = context.sharedContext.currentPresentationData.with { $0 }
             let valueText = timeIntervalString(strings: presentationData.strings, value: timeout, usage: .afterTime)
-            presentControllerImpl?(standardTextAlertController(
-                theme: AlertControllerTheme(presentationData: presentationData),
+            presentControllerImpl?(textAlertController(
+                context: context,
                 title: presentationData.strings.GlobalAutodeleteSettings_SetConfirmTitle,
                 text: presentationData.strings.GlobalAutodeleteSettings_SetConfirmText(valueText).string,
                 actions: [
@@ -291,7 +303,7 @@ public func globalAutoremoveScreen(context: AccountContext, initialValue: Int32,
         },
         openCustomValue: {
             let currentValue = stateValue.with({ $0 }).updatedValue
-            let controller = ChatTimerScreen(context: context, updatedPresentationData: nil, style: .default, mode: .autoremove, currentTime: currentValue == 0 ? nil : currentValue, dismissByTapOutside: true, completion: { value in
+            let controller = ChatTimerScreen(context: context, updatedPresentationData: nil, style: .default, mode: .autoremove, currentTime: currentValue == 0 ? nil : currentValue, completion: { value in
                 updateValue(value)
             })
             presentControllerImpl?(controller, nil)
@@ -350,8 +362,8 @@ public func globalAutoremoveScreen(context: AccountContext, initialValue: Int32,
                         text = presentationData.strings.GlobalAutodeleteSettings_AttemptDisabledGenericSelection
                     }
                     
-                    presentControllerImpl?(standardTextAlertController(
-                        theme: AlertControllerTheme(presentationData: presentationData),
+                    presentControllerImpl?(textAlertController(
+                        context: context,
                         title: nil,
                         text: text,
                         actions: [
@@ -430,7 +442,7 @@ public func globalAutoremoveScreen(context: AccountContext, initialValue: Int32,
         let animateChanges = false
         
         let controllerState = ItemListControllerState(presentationData: ItemListPresentationData(presentationData), title: title, leftNavigationButton: nil, rightNavigationButton: rightNavigationButton, backNavigationButton: ItemListBackButton(title: presentationData.strings.Common_Back), animateChanges: true)
-        let listState = ItemListNodeState(presentationData: ItemListPresentationData(presentationData), entries: entries, style: .blocks, emptyStateItem: nil, crossfadeState: false, animateChanges: animateChanges, scrollEnabled: true)
+        let listState = ItemListNodeState(presentationData: ItemListPresentationData(presentationData), entries: entries, style: .blocks, ensureVisibleItemTag: focusOnItemTag, emptyStateItem: nil, crossfadeState: false, animateChanges: animateChanges, scrollEnabled: true)
         
         return (controllerState, (listState, arguments))
     }
@@ -459,6 +471,20 @@ public func globalAutoremoveScreen(context: AccountContext, initialValue: Int32,
     }
     dismissImpl = { [weak controller] in
         controller?.dismiss()
+    }
+    
+    if let focusOnItemTag {
+        var didFocusOnItem = false
+        controller.afterTransactionCompleted = { [weak controller] in
+            if !didFocusOnItem, let controller {
+                controller.forEachItemNode { itemNode in
+                    if let itemNode = itemNode as? ItemListItemNode, let tag = itemNode.tag, tag.isEqual(to: focusOnItemTag) {
+                        didFocusOnItem = true
+                        itemNode.displayHighlight()
+                    }
+                }
+            }
+        }
     }
     
     return controller

@@ -110,7 +110,13 @@ public class ActionSheetSwitchNode: ActionSheetItemNode {
         let labelSize = self.label.updateLayout(CGSize(width: max(1.0, size.width - 51.0 - 16.0 * 2.0), height: size.height))
         self.label.frame = CGRect(origin: CGPoint(x: 16.0, y: floorToScreenPixels((size.height - labelSize.height) / 2.0)), size: labelSize)
         
-        let switchSize = CGSize(width: 51.0, height: 31.0)
+        var switchSize = CGSize(width: 51.0, height: 31.0)
+        if let switchView = self.switchNode.view as? UISwitch {
+            if self.switchNode.bounds.size.width.isZero {
+                switchView.sizeToFit()
+            }
+            switchSize = switchView.bounds.size
+        }
         self.switchNode.frame = CGRect(origin: CGPoint(x: size.width - 16.0 - switchSize.width, y: floor((size.height - switchSize.height) / 2.0)), size: switchSize)
         
         self.accessibilityArea.frame = CGRect(origin: CGPoint(), size: size)

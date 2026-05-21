@@ -384,15 +384,6 @@ final class ChatListTable: Table {
         for peerId in updatedChatListInclusions.keys {
             changedPeerIds.insert(peerId)
         }
-        for (peerId, update) in updatedPeerCachedData {
-            if let previous = update.previous {
-                if self.seedConfiguration.decodeAssociatedChatListPeerId(previous) != self.seedConfiguration.decodeAssociatedChatListPeerId(update.updated) {
-                    changedPeerIds.insert(peerId)
-                }
-            } else {
-                changedPeerIds.insert(peerId)
-            }
-        }
         var additionalChangedPeerIds = Set<PeerId>()
         for peerId in changedPeerIds {
             //TODO:release move this to seed configuration
@@ -428,18 +419,6 @@ final class ChatListTable: Table {
             } else {
                 topMessageIndex = nil
                 rawTopMessageIndex = nil
-            }
-            
-            if let cachedData = postbox.cachedPeerDataTable.get(peerId), let associatedChatListPeerId = self.seedConfiguration.decodeAssociatedChatListPeerId(cachedData) {
-                if let associatedTopMessage = messageHistoryTable.topIndex(peerId: associatedChatListPeerId) {
-                    if let currentTopMessageIndex = topMessageIndex {
-                        if currentTopMessageIndex.timestamp < associatedTopMessage.timestamp {
-                            topMessageIndex = MessageIndex(id: currentTopMessageIndex.id, timestamp: associatedTopMessage.timestamp)
-                        }
-                    } else {
-                        topMessageIndex = MessageIndex(id: MessageId(peerId: peerId, namespace: 0, id: 1), timestamp: associatedTopMessage.timestamp)
-                    }
-                }
             }
             
             var updatedIndex = self.indexTable.setTopMessageIndex(peerId: peerId, index: topMessageIndex)

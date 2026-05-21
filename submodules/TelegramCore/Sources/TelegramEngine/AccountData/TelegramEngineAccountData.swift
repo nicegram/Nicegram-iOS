@@ -43,8 +43,8 @@ public extension TelegramEngine {
             return _internal_observeAvailableColorOptions(postbox: self.account.postbox, scope: scope)
         }
         
-        public func updateNameColorAndEmoji(nameColor: PeerNameColor, backgroundEmojiId: Int64?, profileColor: PeerNameColor?, profileBackgroundEmojiId: Int64?) -> Signal<Void, UpdateNameColorAndEmojiError> {
-            return _internal_updateNameColorAndEmoji(account: self.account, nameColor: nameColor, backgroundEmojiId: backgroundEmojiId, profileColor: profileColor, profileBackgroundEmojiId: profileBackgroundEmojiId)
+        public func updateNameColorAndEmoji(nameColor: UpdateNameColor, profileColor: PeerNameColor?, profileBackgroundEmojiId: Int64?) -> Signal<Void, UpdateNameColorAndEmojiError> {
+            return _internal_updateNameColorAndEmoji(account: self.account, nameColor: nameColor, profileColor: profileColor, profileBackgroundEmojiId: profileBackgroundEmojiId)
         }
 
         public func unregisterNotificationToken(token: Data, type: NotificationTokenType, otherAccountUserIds: [PeerId.Id]) -> Signal<Never, NoError> {
@@ -55,8 +55,10 @@ public extension TelegramEngine {
             return _internal_registerNotificationToken(account: self.account, token: token, type: type, sandbox: sandbox, otherAccountUserIds: otherAccountUserIds, excludeMutedChats: excludeMutedChats)
         }
 
-        public func updateAccountPhoto(resource: MediaResource?, videoResource: MediaResource?, videoStartTimestamp: Double?, markup: UploadPeerPhotoMarkup?, mapResourceToAvatarSizes: @escaping (MediaResource, [TelegramMediaImageRepresentation]) -> Signal<[Int: Data], NoError>) -> Signal<UpdatePeerPhotoStatus, UploadPeerPhotoError> {
-            return _internal_updateAccountPhoto(account: self.account, resource: resource, videoResource: videoResource, videoStartTimestamp: videoStartTimestamp, markup: markup, fallback: false, mapResourceToAvatarSizes: mapResourceToAvatarSizes)
+        public func updateAccountPhoto(resource: EngineMediaResource?, videoResource: EngineMediaResource?, videoStartTimestamp: Double?, markup: UploadPeerPhotoMarkup?, mapResourceToAvatarSizes: @escaping (EngineMediaResource, [TelegramMediaImageRepresentation]) -> Signal<[Int: Data], NoError>) -> Signal<UpdatePeerPhotoStatus, UploadPeerPhotoError> {
+            return _internal_updateAccountPhoto(account: self.account, resource: resource?._asResource(), videoResource: videoResource?._asResource(), videoStartTimestamp: videoStartTimestamp, markup: markup, fallback: false, mapResourceToAvatarSizes: { rawResource, representations in
+                return mapResourceToAvatarSizes(EngineMediaResource(rawResource), representations)
+            })
         }
 
         public func updatePeerPhotoExisting(reference: TelegramMediaImageReference) -> Signal<TelegramMediaImage?, NoError> {
@@ -67,8 +69,10 @@ public extension TelegramEngine {
             return _internal_removeAccountPhoto(account: self.account, reference: reference, fallback: false)
         }
         
-        public func updateFallbackPhoto(resource: MediaResource?, videoResource: MediaResource?, videoStartTimestamp: Double?, markup: UploadPeerPhotoMarkup?, mapResourceToAvatarSizes: @escaping (MediaResource, [TelegramMediaImageRepresentation]) -> Signal<[Int: Data], NoError>) -> Signal<UpdatePeerPhotoStatus, UploadPeerPhotoError> {
-            return _internal_updateAccountPhoto(account: self.account, resource: resource, videoResource: videoResource, videoStartTimestamp: videoStartTimestamp, markup: markup, fallback: true, mapResourceToAvatarSizes: mapResourceToAvatarSizes)
+        public func updateFallbackPhoto(resource: EngineMediaResource?, videoResource: EngineMediaResource?, videoStartTimestamp: Double?, markup: UploadPeerPhotoMarkup?, mapResourceToAvatarSizes: @escaping (EngineMediaResource, [TelegramMediaImageRepresentation]) -> Signal<[Int: Data], NoError>) -> Signal<UpdatePeerPhotoStatus, UploadPeerPhotoError> {
+            return _internal_updateAccountPhoto(account: self.account, resource: resource?._asResource(), videoResource: videoResource?._asResource(), videoStartTimestamp: videoStartTimestamp, markup: markup, fallback: true, mapResourceToAvatarSizes: { rawResource, representations in
+                return mapResourceToAvatarSizes(EngineMediaResource(rawResource), representations)
+            })
         }
 
         public func removeFallbackPhoto(reference: TelegramMediaImageReference?) -> Signal<Void, NoError> {
@@ -90,7 +94,7 @@ public extension TelegramEngine {
             var textColor: Int32?
             for attribute in starGift.attributes {
                 switch attribute {
-                case let .model(_, fileValue, _):
+                case let .model(_, fileValue, _, _):
                     file = fileValue
                 case let .pattern(_, patternFileValue, _):
                     patternFile = patternFileValue
@@ -106,7 +110,7 @@ public extension TelegramEngine {
             let apiEmojiStatus: Api.EmojiStatus
             var emojiStatus: PeerEmojiStatus?
             if let file, let patternFile, let innerColor, let outerColor, let patternColor, let textColor {
-                apiEmojiStatus = .inputEmojiStatusCollectible(flags: flags, collectibleId: starGift.id, until: expirationDate)
+                apiEmojiStatus = .inputEmojiStatusCollectible(.init(flags: flags, collectibleId: starGift.id, until: expirationDate))
                 emojiStatus = PeerEmojiStatus(content: .starGift(id: starGift.id, fileId: file.fileId.id, title: starGift.title, slug: starGift.slug, patternFileId: patternFile.fileId.id, innerColor: innerColor, outerColor: outerColor, patternColor: patternColor, textColor: textColor), expirationDate: expirationDate)
             } else {
                 apiEmojiStatus = .emojiStatusEmpty
@@ -143,7 +147,7 @@ public extension TelegramEngine {
                 if let _ = expirationDate {
                     flags |= (1 << 0)
                 }
-                return Api.EmojiStatus.emojiStatus(flags: flags, documentId: file.fileId.id, until: expirationDate)
+                return Api.EmojiStatus.emojiStatus(.init(flags: flags, documentId: file.fileId.id, until: expirationDate))
             }) ?? Api.EmojiStatus.emojiStatusEmpty))
             |> `catch` { _ -> Signal<Api.Bool, NoError> in
                 return .single(.boolFalse)

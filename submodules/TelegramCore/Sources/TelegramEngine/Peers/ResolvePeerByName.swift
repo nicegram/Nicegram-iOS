@@ -56,7 +56,8 @@ func _internal_resolvePeerByName(postbox: Postbox, network: Network, accountPeer
                     var peerId: PeerId? = nil
                     
                     switch result {
-                    case let .resolvedPeer(apiPeer, chats, users):
+                    case let .resolvedPeer(resolvedPeerData):
+                        let (apiPeer, chats, users) = (resolvedPeerData.peer, resolvedPeerData.chats, resolvedPeerData.users)
                         let parsedPeers = AccumulatedPeers(transaction: transaction, chats: chats, users: users)
                         
                         if let peer = parsedPeers.get(apiPeer.peerId) {
@@ -105,7 +106,8 @@ func _internal_resolvePeerByPhone(account: Account, phone: String, ageLimit: Int
                     var peerId: PeerId? = nil
                     
                     switch result {
-                        case let .resolvedPeer(apiPeer, chats, users):
+                        case let .resolvedPeer(resolvedPeerData):
+                            let (apiPeer, chats, users) = (resolvedPeerData.peer, resolvedPeerData.chats, resolvedPeerData.users)
                             let parsedPeers = AccumulatedPeers(transaction: transaction, chats: chats, users: users)
                         
                             if let peer = parsedPeers.get(apiPeer.peerId) {

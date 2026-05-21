@@ -20,7 +20,7 @@ public final class ChatRecentActionsController: TelegramBaseController {
     }
     
     private let context: AccountContext
-    private let peer: Peer
+    private let peer: EnginePeer
     private let initialAdminPeerId: PeerId?
     let starsState: StarsRevenueStats?
     
@@ -39,7 +39,7 @@ public final class ChatRecentActionsController: TelegramBaseController {
     
     private var adminsDisposable: Disposable?
     
-    public init(context: AccountContext, peer: Peer, adminPeerId: PeerId?, starsState: StarsRevenueStats?) {
+    public init(context: AccountContext, peer: EnginePeer, adminPeerId: PeerId?, starsState: StarsRevenueStats?) {
         self.context = context
         self.peer = peer
         self.initialAdminPeerId = adminPeerId
@@ -49,15 +49,13 @@ public final class ChatRecentActionsController: TelegramBaseController {
         
         self.titleView = CounterControllerTitleView(theme: self.presentationData.theme)
         
-        super.init(context: context, navigationBarPresentationData: NavigationBarPresentationData(presentationData: self.presentationData), mediaAccessoryPanelVisibility: .specific(size: .compact), locationBroadcastPanelSource: .none, groupCallPanelSource: .none)
+        super.init(context: context, navigationBarPresentationData: NavigationBarPresentationData(presentationData: self.presentationData))
         
         self.automaticallyControlPresentationContextLayout = false
         
         self.statusBar.statusBarStyle = self.presentationData.theme.rootController.statusBarStyle.style
         
-        // Nicegram (cloudMessages + copyForwardMessages + copySelectedMessages)
-        self.panelInteraction = ChatPanelInterfaceInteraction(cloudMessages: { _ in }, copyForwardMessages: { _ in }, copySelectedMessages: {
-        }, setupReplyMessage: { _, _, _ in
+        self.panelInteraction = ChatPanelInterfaceInteraction(setupReplyMessage: { _, _, _ in
         }, setupEditMessage: { _, _ in
         }, beginMessageSelection: { _, _ in
         }, cancelMessageSelection: { _ in
@@ -112,6 +110,7 @@ public final class ChatRecentActionsController: TelegramBaseController {
         }, setupMessageAutoremoveTimeout: {
         }, sendSticker: { _, _, _, _, _, _ in
             return false
+        }, editSticker: { _ in
         }, unblockPeer: {
         }, pinMessage: { _, _ in
         }, unpinMessage: { _, _, _ in
@@ -137,6 +136,7 @@ public final class ChatRecentActionsController: TelegramBaseController {
         }, updateInputLanguage: { _ in
         }, unarchiveChat: {
         }, openLinkEditing: {  
+        }, openDateEditing: {   
         }, displaySlowmodeTooltip: { _, _ in
         }, displaySendMessageOptions: { _, _ in
         }, openScheduledMessages: {
@@ -175,6 +175,14 @@ public final class ChatRecentActionsController: TelegramBaseController {
         }, updateRecordingTrimRange: { _, _, _, _ in
         }, dismissAllTooltips: {
         }, editTodoMessage: { _, _, _ in
+        }, dismissUrlPreview: {
+        }, dismissForwardMessages: {
+        }, dismissSuggestPost: {
+        }, displayUndo: { _ in
+        }, presentInputTextTranslation: { _, _ in
+        }, sendEmoji: { _, _, _ in
+        }, openAICompose: {
+        }, openSetPeerAvatar: {
         }, updateHistoryFilter: { _ in
         }, updateChatLocationThread: { _, _ in
         }, toggleChatSidebarMode: {
@@ -189,7 +197,7 @@ public final class ChatRecentActionsController: TelegramBaseController {
         let rightBarButton = ChatNavigationButton(action: .search(hasTags: false), buttonItem: UIBarButtonItem(image: PresentationResourcesRootController.navigationCompactSearchIcon(self.presentationData.theme), style: .plain, target: self, action: #selector(self.activateSearch)))
         self.rightBarButton = rightBarButton
         
-        self.titleView.title = CounterControllerTitle(title: EnginePeer(peer).compactDisplayTitle, counter: self.presentationData.strings.Channel_AdminLog_TitleAllEvents)
+        self.titleView.title = CounterControllerTitle(title: peer.compactDisplayTitle, counter: self.presentationData.strings.Channel_AdminLog_TitleAllEvents)
         
         let chatTheme = self.context.account.postbox.peerView(id: peer.id)
         |> map { view -> ChatTheme? in
@@ -260,13 +268,13 @@ public final class ChatRecentActionsController: TelegramBaseController {
         self.navigationItem.setRightBarButton(rightButton.buttonItem, animated: false)
         
         self.statusBar.statusBarStyle = self.presentationData.theme.rootController.statusBarStyle.style
-        self.navigationBar?.updatePresentationData(NavigationBarPresentationData(presentationData: self.presentationData))
+        self.navigationBar?.updatePresentationData(NavigationBarPresentationData(presentationData: self.presentationData), transition: .immediate)
         
         self.controllerNode.updatePresentationData(self.presentationData)
     }
     
     override public func loadDisplayNode() {
-        self.displayNode = ChatRecentActionsControllerNode(context: self.context, controller: self, peer: self.peer, presentationData: self.presentationData, pushController: { [weak self] c in
+        self.displayNode = ChatRecentActionsControllerNode(context: self.context, controller: self, peer: self.peer._asPeer(), presentationData: self.presentationData, pushController: { [weak self] c in
             (self?.navigationController as? NavigationController)?.pushViewController(c)
         }, presentController: { [weak self] c, t, a in
             self?.present(c, in: t, with: a, blockInteraction: true)
@@ -348,12 +356,12 @@ public final class ChatRecentActionsController: TelegramBaseController {
             var adminPeers: [EnginePeer] = []
             if let result {
                 for participant in result {
-                    adminPeers.append(EnginePeer(participant.peer))
+                    adminPeers.append(participant.peer)
                 }
             }
             let controller = RecentActionsSettingsSheet(
                 context: self.context,
-                peer: EnginePeer(self.peer),
+                peer: self.peer,
                 adminPeers: adminPeers,
                 initialValue: RecentActionsSettingsSheet.Value(
                     events: self.controllerNode.filter.events,
@@ -372,7 +380,7 @@ public final class ChatRecentActionsController: TelegramBaseController {
     }
     
     private func updateTitle() {
-        let title = EnginePeer(self.peer).compactDisplayTitle
+        let title = self.peer.compactDisplayTitle
         let subtitle: String
         if self.controllerNode.filter.isEmpty {
             subtitle = self.presentationData.strings.Channel_AdminLog_TitleAllEvents

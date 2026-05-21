@@ -65,22 +65,28 @@ public final class AnimatableProperty<T: Interpolatable> {
         guard let animation = self.animation, case let .curve(duration, curve) = animation.animation else {
             return false
         }
+        let effectiveDuration = duration * UIView.animationDurationFactor()
         
         let timeFromStart = timestamp - animation.startTimestamp
-        var t = max(0.0, timeFromStart / duration)
+        var t = max(0.0, timeFromStart / effectiveDuration)
         switch curve {
         case .linear:
             break
         case .easeInOut:
             t = listViewAnimationCurveEaseInOut(t)
+        case .easeIn:
+            t = listViewAnimationCurveEaseIn(t)
         case .spring:
             t = lookupSpringValue(t)
         case let .custom(x1, y1, x2, y2):
             t = bezierPoint(CGFloat(x1), CGFloat(y1), CGFloat(x2), CGFloat(y2), t)
+        case .bounce:
+            assertionFailure()
+            t = lookupSpringValue(t)
         }
         self.presentationValue = animation.valueAt(t) as! T
     
-        if timeFromStart <= duration {
+        if timeFromStart <= effectiveDuration {
             return true
         }
         self.animation = nil

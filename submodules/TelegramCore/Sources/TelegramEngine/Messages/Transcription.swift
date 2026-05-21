@@ -49,7 +49,8 @@ func _internal_transcribeAudio(postbox: Postbox, network: Network, messageId: Me
                 switch result {
                 case let .success(transcribedAudio):
                     switch transcribedAudio {
-                    case let .transcribedAudio(flags, transcriptionId, text, trialRemainingCount, trialUntilDate):
+                    case let .transcribedAudio(transcribedAudioData):
+                        let (flags, transcriptionId, text, trialRemainingCount, trialUntilDate) = (transcribedAudioData.flags, transcribedAudioData.transcriptionId, transcribedAudioData.text, transcribedAudioData.trialRemainsNum, transcribedAudioData.trialRemainsUntilDate)
                         let isPending = (flags & (1 << 0)) != 0
                         updatedAttribute = AudioTranscriptionMessageAttribute(id: transcriptionId, text: text, isPending: isPending, didRate: false, error: nil)
                         

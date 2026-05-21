@@ -61,7 +61,7 @@ swift_library(
 		"Sources/**/*.swift",
     ]),
     copts = [
-        #"-warnings-as-errors",
+        "-warnings-as-errors",
     ],
     data = [
         ":PremiumUIBundle",
@@ -97,7 +97,8 @@ swift_library(
         "//submodules/Components/ViewControllerComponent:ViewControllerComponent",
         "//submodules/Components/MultilineTextComponent:MultilineTextComponent",
         "//submodules/Components/MultilineTextWithEntitiesComponent:MultilineTextWithEntitiesComponent",
-        "//submodules/Components/SheetComponent:SheetComponent",
+        "//submodules/Components/SheetComponent",
+        "//submodules/Components/ResizableSheetComponent",
         "//submodules/Components/BundleIconComponent:BundleIconComponent",
         "//submodules/Components/SolidRoundedButtonComponent:SolidRoundedButtonComponent",
         "//submodules/Components/BlurredBackgroundComponent:BlurredBackgroundComponent",
@@ -127,6 +128,11 @@ swift_library(
         "//submodules/TelegramUI/Components/ScrollComponent",
         "//submodules/TelegramUI/Components/Premium/PremiumStarComponent",
         "//submodules/TelegramUI/Components/Premium/PremiumCoinComponent",
+        "//submodules/TelegramUI/Components/GlassBarButtonComponent",
+        "//submodules/TelegramUI/Components/EdgeEffect",
+        "//submodules/TelegramUI/Components/Gifts/TableComponent",
+        "//submodules/TelegramUI/Components/Gifts/PeerTableCellComponent",
+        "//submodules/TelegramUI/Components/AlertComponent",
     ],
     visibility = [
         "//visibility:public",

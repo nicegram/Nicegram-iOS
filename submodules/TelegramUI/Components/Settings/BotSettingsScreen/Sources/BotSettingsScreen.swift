@@ -61,6 +61,7 @@ private enum BotSettingsEntry: ItemListNodeEntry {
         case let .biometryAccess(value):
             return ItemListSwitchItem(
                 presentationData: presentationData,
+                systemStyle: .glass,
                 title: presentationData.strings.Settings_BotSettings_Biometry,
                 value: value,
                 sectionId: self.section,

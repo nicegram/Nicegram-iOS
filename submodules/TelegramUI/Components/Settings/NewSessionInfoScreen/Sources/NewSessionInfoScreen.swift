@@ -111,10 +111,13 @@ private final class NewSessionInfoSheetContentComponent: Component {
             if transition.animation.isImmediate && previousComponent != nil {
                 buttonTransition = buttonTransition.withAnimation(.curve(duration: 0.2, curve: .easeInOut))
             }
+            
+            let buttonInsets = ContainerViewLayout.concentricInsets(bottomInset: environment.safeInsets.bottom, innerDiameter: 52.0, sideInset: 30.0)
             let buttonSize = self.button.update(
                 transition: buttonTransition,
                 component: AnyComponent(ButtonComponent(
                     background: ButtonComponent.Background(
+                        style: .glass,
                         color: environment.theme.list.itemCheckColors.fillColor,
                         foreground: environment.theme.list.itemCheckColors.foregroundColor,
                         pressedColor: environment.theme.list.itemCheckColors.fillColor.withMultipliedAlpha(0.8)
@@ -133,9 +136,9 @@ private final class NewSessionInfoSheetContentComponent: Component {
                     }
                 )),
                 environment: {},
-                containerSize: CGSize(width: availableSize.width - sideInset * 2.0, height: 50.0)
+                containerSize: CGSize(width: availableSize.width - buttonInsets.left - buttonInsets.right, height: 52.0)
             )
-            let buttonFrame = CGRect(origin: CGPoint(x: sideInset, y: contentHeight), size: buttonSize)
+            let buttonFrame = CGRect(origin: CGPoint(x: buttonInsets.left, y: contentHeight), size: buttonSize)
             if let buttonView = self.button.view {
                 if buttonView.superview == nil {
                     self.addSubview(buttonView)
@@ -143,13 +146,8 @@ private final class NewSessionInfoSheetContentComponent: Component {
                 transition.setFrame(view: buttonView, frame: buttonFrame)
             }
             contentHeight += buttonSize.height
-            
-            if environment.safeInsets.bottom.isZero {
-                contentHeight += 16.0
-            } else {
-                contentHeight += environment.safeInsets.bottom + 14.0
-            }
-            
+            contentHeight += buttonInsets.bottom
+
             return CGSize(width: availableSize.width, height: contentHeight)
         }
     }
@@ -209,6 +207,8 @@ private final class NewSessionInfoScreenComponent: Component {
             self.environment = environment
             
             let sheetEnvironment = SheetComponentEnvironment(
+                metrics: environment.metrics,
+                deviceMetrics: environment.deviceMetrics,
                 isDisplaying: environment.isVisible,
                 isCentered: environment.metrics.widthClass == .regular,
                 hasInputHeight: !environment.inputHeight.isZero,
@@ -246,7 +246,8 @@ private final class NewSessionInfoScreenComponent: Component {
                             })
                         }
                     )),
-                    backgroundColor: .color(environment.theme.list.plainBackgroundColor),
+                    style: .glass,
+                    backgroundColor: .color(environment.theme.list.modalPlainBackgroundColor),
                     animateOut: self.sheetAnimateOut
                 )),
                 environment: {

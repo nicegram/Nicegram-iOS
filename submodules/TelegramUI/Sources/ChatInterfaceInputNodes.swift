@@ -2,7 +2,6 @@ import Foundation
 import UIKit
 import AsyncDisplayKit
 import TelegramCore
-import Postbox
 import AccountContext
 import ChatPresentationInterfaceState
 import ChatControllerInteraction
@@ -10,6 +9,7 @@ import ChatInputNode
 import ChatEntityKeyboardInputNode
 import ChatInputPanelNode
 import ChatButtonKeyboardInputNode
+import ChatTextInputPanelNode
 
 func inputNodeForChatPresentationIntefaceState(_ chatPresentationInterfaceState: ChatPresentationInterfaceState, context: AccountContext, currentNode: ChatInputNode?, interfaceInteraction: ChatPanelInterfaceInteraction?, controllerInteraction: ChatControllerInteraction, inputPanelNode: ChatInputPanelNode?, makeMediaInputNode: () -> ChatInputNode?) -> ChatInputNode? {
     if let inputPanelNode = inputPanelNode, !(inputPanelNode is ChatTextInputPanelNode) {

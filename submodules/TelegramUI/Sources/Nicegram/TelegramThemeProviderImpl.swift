@@ -10,7 +10,15 @@ class TelegramThemeProviderImpl {
 }
 
 extension TelegramThemeProviderImpl: TelegramThemeProvider {
-    func currentTheme() -> AnyPublisher<TelegramTheme, Never> {
+    func get() async -> TelegramTheme {
+        do {
+            return try await publisher().awaitForFirstValue()
+        } catch {
+            return .defaultTheme
+        }
+    }
+    
+    func publisher() -> AnyPublisher<TelegramTheme, Never> {
         let presentationDataSignal = sharedContextProvider.sharedContextSignal()
         |> mapToSignal { $0.presentationData }
 

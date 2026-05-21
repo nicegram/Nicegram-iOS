@@ -623,11 +623,11 @@ private enum ChannelVisibilityEntry: ItemListNodeEntry {
             case let .typeHeader(_, title):
                 return ItemListSectionHeaderItem(presentationData: presentationData, text: title, sectionId: self.section)
             case let .typePublic(_, text, selected):
-                return ItemListCheckboxItem(presentationData: presentationData, title: text, style: .left, checked: selected, zeroSeparatorInsets: false, sectionId: self.section, action: {
+                return ItemListCheckboxItem(presentationData: presentationData, systemStyle: .glass, title: text, style: .left, checked: selected, zeroSeparatorInsets: false, sectionId: self.section, action: {
                     arguments.updateCurrentType(.publicChannel)
                 })
             case let .typePrivate(_, text, selected):
-                return ItemListCheckboxItem(presentationData: presentationData, title: text, style: .left, checked: selected, zeroSeparatorInsets: false, sectionId: self.section, action: {
+                return ItemListCheckboxItem(presentationData: presentationData, systemStyle: .glass, title: text, style: .left, checked: selected, zeroSeparatorInsets: false, sectionId: self.section, action: {
                     arguments.updateCurrentType(.privateChannel)
                 })
             case let .typeInfo(_, text):
@@ -641,7 +641,7 @@ private enum ChannelVisibilityEntry: ItemListNodeEntry {
             case let .privateLinkHeader(_, title):
                 return ItemListSectionHeaderItem(presentationData: presentationData, text: title, sectionId: self.section)
             case let .privateLink(_, invite, peers, importersCount, displayImporters):
-                return ItemListPermanentInviteLinkItem(context: arguments.context, presentationData: presentationData, invite: invite, count: importersCount, peers: peers, displayButton: true, displayImporters: displayImporters, buttonColor: nil, sectionId: self.section, style: .blocks, copyAction: {
+                return ItemListPermanentInviteLinkItem(context: arguments.context, presentationData: presentationData, systemStyle: .glass, invite: invite, count: importersCount, peers: peers, displayButton: true, displayImporters: displayImporters, buttonColor: nil, sectionId: self.section, style: .blocks, copyAction: {
                     if let invite = invite {
                         arguments.copyLink(invite)
                     }
@@ -658,7 +658,7 @@ private enum ChannelVisibilityEntry: ItemListNodeEntry {
                 }, openCallAction: {
                 })
             case let .editablePublicLink(theme, _, placeholder, currentText):
-                return ItemListSingleLineInputItem(presentationData: presentationData, title: NSAttributedString(string: "t.me/", textColor: theme.list.itemPrimaryTextColor), text: currentText, placeholder: placeholder, type: .regular(capitalization: false, autocorrection: false), clearType: .always, tag: ChannelVisibilityEntryTag.publicLink, sectionId: self.section, textUpdated: { updatedText in
+                return ItemListSingleLineInputItem(presentationData: presentationData, systemStyle: .glass, title: NSAttributedString(string: "t.me/", textColor: theme.list.itemPrimaryTextColor), text: currentText, placeholder: placeholder, type: .regular(capitalization: false, autocorrection: false), clearType: .always, tag: ChannelVisibilityEntryTag.publicLink, sectionId: self.section, textUpdated: { updatedText in
                     arguments.updatePublicLinkText(currentText, updatedText)
                 }, updatedFocus: { focus in
                     if focus {
@@ -669,7 +669,7 @@ private enum ChannelVisibilityEntry: ItemListNodeEntry {
             case let .privateLinkInfo(_, text):
                 return ItemListTextItem(presentationData: presentationData, text: .plain(text), sectionId: self.section)
             case let .privateLinkManage(theme, text):
-                return ItemListPeerActionItem(presentationData: presentationData, icon: PresentationResourcesItemList.linkIcon(theme), title: text, sectionId: self.section, editing: false, action: {
+                return ItemListPeerActionItem(presentationData: presentationData, systemStyle: .glass, icon: PresentationResourcesItemList.linkIcon(theme), title: text, sectionId: self.section, editing: false, action: {
                     arguments.manageInviteLinks()
                 })
             case let .privateLinkManageInfo(_, text):
@@ -707,7 +707,7 @@ private enum ChannelVisibilityEntry: ItemListNodeEntry {
                 if let addressName = peer.addressName {
                     label = "t.me/" + addressName
                 }
-                return ItemListPeerItem(presentationData: presentationData, dateTimeFormat: dateTimeFormat, nameDisplayOrder: nameDisplayOrder, context: arguments.context, peer: peer, presence: nil, text: .text(label, .secondary), label: .none, editing: editing, switchValue: nil, enabled: enabled, selectable: true, sectionId: self.section, action: nil, setPeerIdWithRevealedOptions: { previousId, id in
+                return ItemListPeerItem(presentationData: presentationData, systemStyle: .glass, dateTimeFormat: dateTimeFormat, nameDisplayOrder: nameDisplayOrder, context: arguments.context, peer: peer, presence: nil, text: .text(label, .secondary), label: .none, editing: editing, switchValue: nil, enabled: enabled, selectable: true, sectionId: self.section, action: nil, setPeerIdWithRevealedOptions: { previousId, id in
                     arguments.setPeerIdWithRevealedOptions(previousId, id)
                 }, removePeer: { peerId in
                     arguments.revokePeerId(peerId)
@@ -715,7 +715,7 @@ private enum ChannelVisibilityEntry: ItemListNodeEntry {
             case let .additionalLinkHeader(_, text):
                 return ItemListSectionHeaderItem(presentationData: presentationData, text: text, sectionId: self.section)
             case let .additionalLink(_, link, _):
-                return AdditionalLinkItem(presentationData: presentationData, username: link, sectionId: self.section, style: .blocks, tapAction: {
+                return AdditionalLinkItem(presentationData: presentationData, systemStyle: .glass, username: link, sectionId: self.section, style: .blocks, tapAction: {
                     if !link.flags.contains(.isEditable) {
                         if link.flags.contains(.isActive) {
                             arguments.deactivateLink(link.username)
@@ -729,16 +729,16 @@ private enum ChannelVisibilityEntry: ItemListNodeEntry {
             case let .joinToSendHeader(_, title):
                 return ItemListSectionHeaderItem(presentationData: presentationData, text: title, sectionId: self.section)
             case let .joinToSendEveryone(_, text, selected):
-                return ItemListCheckboxItem(presentationData: presentationData, title: text, style: .left, checked: selected, zeroSeparatorInsets: false, sectionId: self.section, action: {
+                return ItemListCheckboxItem(presentationData: presentationData, systemStyle: .glass, title: text, style: .left, checked: selected, zeroSeparatorInsets: false, sectionId: self.section, action: {
                     arguments.updateJoinToSend(.everyone)
                     arguments.toggleApproveMembers(false)
                 })
             case let .joinToSendMembers(_, text, selected):
-                return ItemListCheckboxItem(presentationData: presentationData, title: text, style: .left, checked: selected, zeroSeparatorInsets: false, sectionId: self.section, action: {
+                return ItemListCheckboxItem(presentationData: presentationData, systemStyle: .glass, title: text, style: .left, checked: selected, zeroSeparatorInsets: false, sectionId: self.section, action: {
                     arguments.updateJoinToSend(.members)
                 })
             case let .approveMembers(_, text, selected):
-                return ItemListSwitchItem(presentationData: presentationData, title: text, value: selected, sectionId: self.section, style: .blocks, updated: { value in
+                return ItemListSwitchItem(presentationData: presentationData, systemStyle: .glass, title: text, value: selected, sectionId: self.section, style: .blocks, updated: { value in
                     arguments.toggleApproveMembers(value)
                 })
             case let .approveMembersInfo(_, text):
@@ -746,7 +746,7 @@ private enum ChannelVisibilityEntry: ItemListNodeEntry {
             case let .forwardingHeader(_, title):
                 return ItemListSectionHeaderItem(presentationData: presentationData, text: title, sectionId: self.section)
             case let .forwardingDisabled(_, text, selected):
-                return ItemListSwitchItem(presentationData: presentationData, title: text, value: selected, sectionId: self.section, style: .blocks, updated: { value in
+                return ItemListSwitchItem(presentationData: presentationData, systemStyle: .glass, title: text, value: selected, sectionId: self.section, style: .blocks, updated: { value in
                     arguments.toggleForwarding(!value)
                 })
             case let .forwardingInfo(_, text):
@@ -1475,7 +1475,7 @@ public func channelVisibilityController(context: AccountContext, updatedPresenta
                 let (limits, premiumLimits) = data
                 let isPremium = accountPeer?.isPremium ?? false
                 
-                let hasAdditionalUsernames = (peer?._asPeer().usernames.firstIndex(where: { !$0.flags.contains(.isEditable) }) ?? nil) != nil
+                let hasAdditionalUsernames = (peer?.usernames.firstIndex(where: { !$0.flags.contains(.isEditable) }) ?? nil) != nil
                 
                 if let peers = peers {
                     let count = Int32(peers.count)
@@ -1562,11 +1562,10 @@ public func channelVisibilityController(context: AccountContext, updatedPresenta
         guard let inviteLink = invite.link else {
             return
         }
-        let shareController = ShareController(context: context, subject: .url(inviteLink), updatedPresentationData: updatedPresentationData)
-        shareController.actionCompleted = {
+        let shareController = context.sharedContext.makeShareController(context: context, params: ShareControllerParams(subject: .url(inviteLink), updatedPresentationData: updatedPresentationData, actionCompleted: {
             let presentationData = context.sharedContext.currentPresentationData.with { $0 }
             presentControllerImpl?(UndoOverlayController(presentationData: presentationData, content: .linkCopied(title: nil, text: presentationData.strings.InviteLink_InviteLinkCopiedText), elevatedLayout: false, animateInAsReplacement: false, action: { _ in return false }), nil)
-        }
+        }))
         presentControllerImpl?(shareController, nil)
     }, linkContextAction: { node, gesture in
         guard let node = node as? ContextReferenceContentNode, let controller = getControllerImpl?() else {
@@ -1601,10 +1600,17 @@ public func channelVisibilityController(context: AccountContext, updatedPresenta
             let _ = (context.engine.data.get(TelegramEngine.EngineData.Item.Peer.ExportedInvitation(id: peerId))
             |> deliverOnMainQueue).start(next: { invite in
                 if let invite = invite {
-                    let _ = (context.account.postbox.loadedPeerWithId(peerId)
+                    let _ = (context.engine.data.get(TelegramEngine.EngineData.Item.Peer.Peer(id: peerId))
+                    |> mapToSignal { peer -> Signal<EnginePeer, NoError> in
+                        if let peer {
+                            return .single(peer)
+                        } else {
+                            return .never()
+                        }
+                    }
                     |> deliverOnMainQueue).start(next: { peer in
                         let isGroup: Bool
-                        if let peer = peer as? TelegramChannel, case .broadcast = peer.info {
+                        if case let .channel(channel) = peer, case .broadcast = channel.info {
                             isGroup = false
                         } else {
                             isGroup = true
@@ -1620,10 +1626,17 @@ public func channelVisibilityController(context: AccountContext, updatedPresenta
         }, action: { _, f in
             f(.dismissWithoutContent)
         
-            let _ = (context.account.postbox.loadedPeerWithId(peerId)
+            let _ = (context.engine.data.get(TelegramEngine.EngineData.Item.Peer.Peer(id: peerId))
+            |> mapToSignal { peer -> Signal<EnginePeer, NoError> in
+                if let peer {
+                    return .single(peer)
+                } else {
+                    return .never()
+                }
+            }
             |> deliverOnMainQueue).start(next: { peer in
                 let isGroup: Bool
-                if let peer = peer as? TelegramChannel, case .broadcast = peer.info {
+                if case let .channel(channel) = peer, case .broadcast = channel.info {
                     isGroup = false
                 } else {
                     isGroup = true
@@ -1668,7 +1681,7 @@ public func channelVisibilityController(context: AccountContext, updatedPresenta
             })
         })))
 
-        let contextController = ContextController(presentationData: presentationData, source: .reference(InviteLinkContextReferenceContentSource(controller: controller, sourceNode: node)), items: .single(ContextController.Items(content: .list(items))), gesture: gesture)
+        let contextController = makeContextController(presentationData: presentationData, source: .reference(InviteLinkContextReferenceContentSource(controller: controller, sourceNode: node)), items: .single(ContextController.Items(content: .list(items))), gesture: gesture)
         presentInGlobalOverlayImpl?(contextController)
     }, manageInviteLinks: {
         let controller = inviteLinkListController(context: context, updatedPresentationData: updatedPresentationData, peerId: peerId, admin: nil)

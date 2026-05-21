@@ -1,6 +1,7 @@
 load("@build_bazel_rules_swift//swift:swift.bzl", "swift_library")
 
 NGDEPS = [
+    "@swiftpkg_nicegram_assistant_ios//:TelegramBridge",
     "@swiftpkg_nicegram_wallet_ios//:NicegramWallet",
 ]
 
@@ -11,7 +12,7 @@ swift_library(
 		"Sources/**/*.swift",
     ]),
     copts = [
-        #"-warnings-as-errors",
+        "-warnings-as-errors",
     ],
     deps = NGDEPS + [
         "//submodules/SSignalKit/SwiftSignalKit:SwiftSignalKit",
@@ -58,6 +59,13 @@ swift_library(
         "//submodules/DeviceAccess",
         "//submodules/TelegramUI/Components/Utils/GenerateStickerPlaceholderImage",
         "//submodules/AvatarNode",
+        "//submodules/TelegramUI/Components/GlassBarButtonComponent",
+        "//submodules/Components/BundleIconComponent",
+        "//submodules/TelegramUI/Components/LottieComponent",
+        "//submodules/TelegramUI/Components/AlertComponent",
+        "//submodules/TelegramUI/Components/AvatarComponent",
+        "//submodules/TelegramUI/Components/AlertComponent/AlertCheckComponent",
+        "//submodules/TelegramUI/Components/AlertComponent/AlertTransferHeaderComponent",
     ],
     visibility = [
         "//visibility:public",

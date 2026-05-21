@@ -85,7 +85,7 @@ final class ChatListEmptyNode: ASDisplayNode {
             gloss = false
         }
         
-        self.buttonNode = SolidRoundedButtonNode(theme: SolidRoundedButtonTheme(theme: theme), cornerRadius: 11.0, gloss: gloss)
+        self.buttonNode = SolidRoundedButtonNode(theme: SolidRoundedButtonTheme(theme: theme), cornerRadius: 11.0, isShimmering: gloss)
         
         self.secondaryButtonNode = HighlightableButtonNode()
         

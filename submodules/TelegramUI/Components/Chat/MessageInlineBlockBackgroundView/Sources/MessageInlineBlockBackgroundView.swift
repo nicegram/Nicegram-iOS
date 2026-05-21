@@ -2,7 +2,6 @@ import Foundation
 import UIKit
 import Display
 import HierarchyTrackingLayer
-import Postbox
 import TelegramCore
 import AnimationCache
 import MultiAnimationRenderer
@@ -426,11 +425,13 @@ public final class MessageInlineBlockBackgroundView: UIView {
         public let context: AccountContext
         public let fileId: Int64
         public let file: TelegramMediaFile?
+        public let emptyCorner: Bool
         
-        public init(context: AccountContext, fileId: Int64, file: TelegramMediaFile?) {
+        public init(context: AccountContext, fileId: Int64, file: TelegramMediaFile?, emptyCorner: Bool = false) {
             self.context = context
             self.fileId = fileId
             self.file = file
+            self.emptyCorner = emptyCorner
         }
         
         public static func ==(lhs: Pattern, rhs: Pattern) -> Bool {
@@ -446,7 +447,9 @@ public final class MessageInlineBlockBackgroundView: UIView {
             if lhs.file?.fileId != rhs.file?.fileId {
                 return false
             }
-            
+            if lhs.emptyCorner != rhs.emptyCorner {
+                return false
+            }
             return true
         }
     }
@@ -502,6 +505,8 @@ public final class MessageInlineBlockBackgroundView: UIView {
                         thirdColor: params.thirdColor,
                         backgroundColor: params.backgroundColor,
                         pattern: params.pattern,
+                        patternTopRightPosition: params.patternTopRightPosition,
+                        patternAlpha: params.patternAlpha,
                         animation: .None
                     )
                 }
@@ -771,8 +776,13 @@ public final class MessageInlineBlockBackgroundView: UIView {
                 patternContentLayer.frame = CGRect(origin: CGPoint(x: patternOrigin.x - placement.position.x / 3.0 - itemSize.width * 0.5, y: patternOrigin.y + placement.position.y / 3.0 - itemSize.height * 0.5), size: itemSize)
                 var alphaFraction = abs(placement.position.x / 3.0) / min(500.0, size.width)
                 alphaFraction = min(1.0, max(0.0, alphaFraction))
-                patternContentLayer.opacity = 0.3 * Float(1.0 - alphaFraction) * Float(patternAlpha)
                 
+                if maxIndex == 1 && params.pattern?.emptyCorner == true {
+                    patternContentLayer.opacity = 0.0
+                } else {
+                    patternContentLayer.opacity = 0.3 * Float(1.0 - alphaFraction) * Float(patternAlpha)
+                }
+
                 maxIndex += 1
             }
             

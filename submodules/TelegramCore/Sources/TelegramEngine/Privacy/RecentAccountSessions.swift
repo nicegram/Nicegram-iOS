@@ -13,7 +13,8 @@ func requestRecentAccountSessions(account: Account) -> Signal<([RecentAccountSes
         var sessions: [RecentAccountSession] = []
         var ttlDays: Int32 = 1
         switch result {
-            case let .authorizations(authorizationTtlDays, authorizations):
+            case let .authorizations(authorizationsData):
+                let (authorizationTtlDays, authorizations) = (authorizationsData.authorizationTtlDays, authorizationsData.authorizations)
                 for authorization in authorizations {
                     sessions.append(RecentAccountSession(apiAuthorization: authorization))
                 }

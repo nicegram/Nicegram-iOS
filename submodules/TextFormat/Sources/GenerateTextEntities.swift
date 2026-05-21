@@ -15,6 +15,7 @@ private let whitelistedHosts: Set<String> = Set([
 private let dataDetector = try? NSDataDetector(types: NSTextCheckingResult.CheckingType([.link]).rawValue)
 private let dataAndPhoneNumberDetector = try? NSDataDetector(types: NSTextCheckingResult.CheckingType([.link, .phoneNumber]).rawValue)
 private let phoneNumberDetector = try? NSDataDetector(types: NSTextCheckingResult.CheckingType([.phoneNumber]).rawValue)
+
 private let validHashtagSet: CharacterSet = {
     var set = CharacterSet.alphanumerics
     set.insert("_")
@@ -164,6 +165,8 @@ public func generateChatInputTextEntities(_ text: NSAttributedString, maxAnimate
                 entities.append(MessageTextEntity(range: range.lowerBound ..< range.upperBound, type: .TextMention(peerId: value.peerId)))
             } else if key == ChatTextInputAttributes.textUrl, let value = value as? ChatTextInputTextUrlAttribute {
                 entities.append(MessageTextEntity(range: range.lowerBound ..< range.upperBound, type: .TextUrl(url: value.url)))
+            } else if key == ChatTextInputAttributes.date, let value = value as? ChatTextInputTextDateAttribute {
+                entities.append(MessageTextEntity(range: range.lowerBound ..< range.upperBound, type: .FormattedDate(format: nil, date: value.date)))
             } else if key == ChatTextInputAttributes.spoiler {
                 entities.append(MessageTextEntity(range: range.lowerBound ..< range.upperBound, type: .Spoiler))
             } else if key == ChatTextInputAttributes.customEmoji, let value = value as? ChatTextInputTextCustomEmojiAttribute {
@@ -267,7 +270,7 @@ public func generateTextEntities(_ text: String, enabledTypes: EnabledEntityType
     if let detector = detector {
         detector.enumerateMatches(in: text, options: [], range: NSMakeRange(0, utf16.count), using: { result, _, _ in
             if let result = result {
-                if result.resultType == NSTextCheckingResult.CheckingType.link || result.resultType == NSTextCheckingResult.CheckingType.phoneNumber {
+                if [NSTextCheckingResult.CheckingType.link, NSTextCheckingResult.CheckingType.phoneNumber].contains(result.resultType) {
                     let lowerBound = utf16.index(utf16.startIndex, offsetBy: result.range.location).samePosition(in: text)
                     let upperBound = utf16.index(utf16.startIndex, offsetBy: result.range.location + result.range.length).samePosition(in: text)
                     if let lowerBound = lowerBound, let upperBound = upperBound {

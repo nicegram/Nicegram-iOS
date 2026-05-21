@@ -7,11 +7,12 @@ swift_library(
 		"Sources/**/*.swift",
     ]),
     copts = [
-        #"-warnings-as-errors",
+        "-warnings-as-errors",
     ],
     deps = [
         "//submodules/Display:Display",
         "//submodules/SSignalKit/SwiftSignalKit:SwiftSignalKit",
+        "//submodules/TelegramCore:TelegramCore",
         "//submodules/AccountContext:AccountContext",
         "//submodules/TelegramPresentationData:TelegramPresentationData",
         "//submodules/AlertUI:AlertUI",
@@ -19,6 +20,8 @@ swift_library(
         "//submodules/SolidRoundedButtonNode:SolidRoundedButtonNode",
         "//submodules/OverlayStatusController:OverlayStatusController",
         "//submodules/UrlWhitelist:UrlWhitelist",
+        "//submodules/TelegramUI/Components/AlertComponent",
+        "//submodules/UrlHandling",
     ],
     visibility = [
         "//visibility:public",

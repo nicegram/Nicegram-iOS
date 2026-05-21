@@ -86,6 +86,8 @@ const NSTimeInterval TGVideoEditMaximumGifDuration = 30.5;
     }
     if (dictionary[@"sendAsGif"])
         adjustments->_sendAsGif = [dictionary[@"sendAsGif"] boolValue];
+    if (dictionary[@"bounce"])
+        adjustments->_bounce = [dictionary[@"bounce"] boolValue];
     if (dictionary[@"preset"])
         adjustments->_preset = (TGMediaVideoConversionPreset)[dictionary[@"preset"] integerValue];
     if (dictionary[@"tools"]) {
@@ -126,7 +128,22 @@ const NSTimeInterval TGVideoEditMaximumGifDuration = 30.5;
     return adjustments;
 }
 
++ (instancetype)editAdjustmentsWithOriginalSize:(CGSize)originalSize preset:(TGMediaVideoConversionPreset)preset bounce:(bool)bounce
+{
+    TGVideoEditAdjustments *adjustments = [[[self class] alloc] init];
+    adjustments->_originalSize = originalSize;
+    adjustments->_preset = preset;
+    adjustments->_sendAsGif = true;
+    adjustments->_bounce = bounce;
+    
+    return adjustments;
+}
+
 + (instancetype)editAdjustmentsWithPhotoEditorValues:(PGPhotoEditorValues *)values preset:(TGMediaVideoConversionPreset)preset {
+    return [self editAdjustmentsWithPhotoEditorValues:values preset:preset bounce:false sendAsGif:true];
+}
+
++ (instancetype)editAdjustmentsWithPhotoEditorValues:(PGPhotoEditorValues *)values preset:(TGMediaVideoConversionPreset)preset bounce:(bool)bounce sendAsGif:(bool)sendAsGif {
     TGVideoEditAdjustments *adjustments = [[[self class] alloc] init];
     adjustments->_originalSize = values.originalSize;
     CGRect cropRect = values.cropRect;
@@ -139,8 +156,10 @@ const NSTimeInterval TGVideoEditMaximumGifDuration = 30.5;
     adjustments->_cropLockedAspectRatio = values.cropLockedAspectRatio;
     adjustments->_cropMirrored = values.cropMirrored;
     adjustments->_paintingData = [values.paintingData dataForAnimation];
-    adjustments->_sendAsGif = true;
+    adjustments->_sendAsGif = sendAsGif;
     adjustments->_preset = preset;
+    adjustments->_bounce = bounce;
+    adjustments->_toolValues = [values toolValues];
     
     return adjustments;
 }
@@ -285,6 +304,7 @@ const NSTimeInterval TGVideoEditMaximumGifDuration = 30.5;
     }
     
     dict[@"sendAsGif"] = @(self.sendAsGif);
+    dict[@"bounce"] = @(self.bounce);
     
     if (self.preset != TGMediaVideoConversionPresetCompressedDefault)
         dict[@"preset"] = @(self.preset);
@@ -412,6 +432,11 @@ const NSTimeInterval TGVideoEditMaximumGifDuration = 30.5;
 - (bool)isDefaultValuesForAvatar:(bool)forAvatar
 {
     return ![self cropAppliedForAvatar:forAvatar] && ![self toolsApplied] && ![self hasPainting] && !_sendAsGif && _preset == TGMediaVideoConversionPresetCompressedDefault;
+}
+
+- (bool)isDefaultValuesForGif
+{
+    return ![self cropAppliedForAvatar:false] && ![self toolsApplied] && ![self hasPainting];
 }
 
 - (bool)isCropEqualWith:(id<TGMediaEditAdjustments>)adjusments

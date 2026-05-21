@@ -14,7 +14,7 @@ func _internal_updateGroupSpecificStickerset(postbox: Postbox, network: Network,
     |> mapToSignal { peer -> Signal<Void, UpdateGroupSpecificStickersetError> in
         let inputStickerset: Api.InputStickerSet
         if let info = info {
-            inputStickerset = Api.InputStickerSet.inputStickerSetShortName(shortName: info.shortName)
+            inputStickerset = Api.InputStickerSet.inputStickerSetShortName(.init(shortName: info.shortName))
         } else {
             inputStickerset = Api.InputStickerSet.inputStickerSetEmpty
         }
@@ -52,7 +52,7 @@ func _internal_updateGroupSpecificEmojiset(postbox: Postbox, network: Network, p
     |> mapToSignal { peer -> Signal<Void, UpdateGroupSpecificEmojisetError> in
         let inputStickerset: Api.InputStickerSet
         if let info = info {
-            inputStickerset = Api.InputStickerSet.inputStickerSetShortName(shortName: info.shortName)
+            inputStickerset = Api.InputStickerSet.inputStickerSetShortName(.init(shortName: info.shortName))
         } else {
             inputStickerset = Api.InputStickerSet.inputStickerSetEmpty
         }

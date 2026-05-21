@@ -227,6 +227,8 @@ final class VideoChatParticipantAvatarComponent: Component {
                 self.isUpdating = false
             }
             
+            self.isUserInteractionEnabled = false
+            
             let previousComponent = self.component
             self.component = component
             

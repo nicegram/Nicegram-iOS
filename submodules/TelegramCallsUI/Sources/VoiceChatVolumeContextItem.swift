@@ -41,6 +41,8 @@ private final class VoiceChatVolumeContextItemNode: ASDisplayNode, ContextMenuCu
         }
     }
     
+    let needsPadding: Bool = false
+    
     private let valueChanged: (CGFloat, Bool) -> Void
     
     private let hapticFeedback = HapticFeedback()
@@ -134,7 +136,7 @@ private final class VoiceChatVolumeContextItemNode: ASDisplayNode, ContextMenuCu
         textSize.width = valueWidth
         
         return (CGSize(width: height * 3.0, height: height), { size, transition in
-            let leftInset: CGFloat = 17.0
+            let leftInset: CGFloat = 25.0
             
             let textFrame = CGRect(origin: CGPoint(x: leftInset, y: floor((size.height - textSize.height) / 2.0)), size: textSize)
             transition.updateFrameAdditive(node: self.backgroundTextNode, frame: textFrame)

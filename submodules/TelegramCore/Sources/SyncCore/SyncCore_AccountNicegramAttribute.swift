@@ -71,7 +71,7 @@ public extension [TelegramAccountManagerTypes.Attribute] {
             
             var found = false
             for (index, attribute) in self.enumerated() {
-                if case let .sortOrder(sortOrder) = attribute {
+                if case .sortOrder = attribute {
                     self[index] = newAttr
                     found = true
                 }

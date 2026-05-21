@@ -34,7 +34,7 @@ private func blurredAvatarImage(_ dataImage: UIImage) -> UIImage? {
 }
 
 private let activityBorderImage: UIImage = {
-    return generateStretchableFilledCircleImage(diameter: 20.0, color: nil, strokeColor: .white, strokeWidth: 2.0)!.withRenderingMode(.alwaysTemplate)
+    return generateStretchableFilledCircleImage(diameter: 32.0, color: nil, strokeColor: .white, strokeWidth: 2.0)!.withRenderingMode(.alwaysTemplate)
 }()
 
 final class VideoChatParticipantVideoComponent: Component {
@@ -213,6 +213,10 @@ final class VideoChatParticipantVideoComponent: Component {
         private var referenceLocation: ReferenceLocation?
         private var loadingEffectView: VideoChatVideoLoadingEffectView?
         
+        public var isPinchToZoomActive: Bool {
+            return self.pinchContainerNode.isActive
+        }
+        
         override init(frame: CGRect) {
             self.backgroundGradientView = UIImageView()
             self.pinchContainerNode = PinchSourceContainerNode()
@@ -227,7 +231,7 @@ final class VideoChatParticipantVideoComponent: Component {
             self.pinchContainerNode.contentNode.view.addSubview(self.backgroundGradientView)
             
             //TODO:release optimize
-            self.pinchContainerNode.contentNode.view.layer.cornerRadius = 10.0
+            self.pinchContainerNode.contentNode.view.layer.cornerRadius = 16.0
             self.pinchContainerNode.contentNode.view.clipsToBounds = true
             
             self.addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(self.tapGesture(_:))))
@@ -346,7 +350,7 @@ final class VideoChatParticipantVideoComponent: Component {
                 
                 if self.blurredAvatarDisposable == nil {
                     //TODO:release synchronous
-                    if let participantPeer = component.participant.peer, let imageCache = component.call.accountContext.imageCache as? DirectMediaImageCache, let peerReference = PeerReference(participantPeer._asPeer()) {
+                    if let participantPeer = component.participant.peer, let imageCache = component.call.accountContext.imageCache as? DirectMediaImageCache, let peerReference = PeerReference(participantPeer) {
                         if let result = imageCache.getAvatarImage(peer: peerReference, resource: MediaResourceReference.avatar(peer: peerReference, resource: smallProfileImage.resource), immediateThumbnail: participantPeer.profileImageRepresentations.first?.immediateThumbnailData, size: 64, synchronous: false) {
                             if let image = result.image {
                                 blurredAvatarView.image = blurredAvatarImage(image)
@@ -680,7 +684,7 @@ final class VideoChatParticipantVideoComponent: Component {
             
             if videoDescription != nil && self.videoSpec == nil && !isEffectivelyPaused {
                 if self.loadingEffectView == nil {
-                    let loadingEffectView = VideoChatVideoLoadingEffectView(effectAlpha: 0.1, borderAlpha: 0.2, cornerRadius: 10.0, duration: 1.0)
+                    let loadingEffectView = VideoChatVideoLoadingEffectView(effectAlpha: 0.1, borderAlpha: 0.2, cornerRadius: 16.0, duration: 1.0)
                     self.loadingEffectView = loadingEffectView
                     loadingEffectView.alpha = 0.0
                     loadingEffectView.isUserInteractionEnabled = false

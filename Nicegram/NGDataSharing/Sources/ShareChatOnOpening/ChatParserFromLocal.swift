@@ -54,13 +54,13 @@ private extension ChatParserFromLocal {
         cachedData: CachedPeerData?
     ) async throws -> Channel {
         let cachedData = cachedData as? CachedChannelData
-        
-        async let icon = getIcon(channel)
-        async let inviteLinks = getInviteLinks(channel.id)
-        async let messages = getMessages(channel.id)
-        async let similarChannels = getSimilarChannels(channel.id)
-        
-        return try await Channel.build(
+
+        let icon = await getIcon(channel)
+        let inviteLinks = await getInviteLinks(channel.id)
+        let messages = await getMessages(channel.id)
+        let similarChannels = await getSimilarChannels(channel.id)
+
+        return try Channel.build(
             peer: channel,
             channelFull: .init(cachedData),
             icon: icon,

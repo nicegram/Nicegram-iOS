@@ -66,10 +66,16 @@ public func isRoundEqualCorners(_ corners: ImageCorners) -> Bool {
 }
 
 public struct ImageCorners: Equatable {
+    public enum Curve {
+        case circular
+        case continuous
+    }
+    
     public let topLeft: ImageCorner
     public let topRight: ImageCorner
     public let bottomLeft: ImageCorner
     public let bottomRight: ImageCorner
+    public let curve: Curve
     
     public var isEmpty: Bool {
         if self.topLeft != .Corner(0.0) {
@@ -87,22 +93,24 @@ public struct ImageCorners: Equatable {
         return true
     }
     
-    public init(radius: CGFloat) {
+    public init(radius: CGFloat, curve: Curve = .circular) {
         self.topLeft = .Corner(radius)
         self.topRight = .Corner(radius)
         self.bottomLeft = .Corner(radius)
         self.bottomRight = .Corner(radius)
+        self.curve = curve
     }
     
-    public init(topLeft: ImageCorner, topRight: ImageCorner, bottomLeft: ImageCorner, bottomRight: ImageCorner) {
+    public init(topLeft: ImageCorner, topRight: ImageCorner, bottomLeft: ImageCorner, bottomRight: ImageCorner, curve: Curve = .circular) {
         self.topLeft = topLeft
         self.topRight = topRight
         self.bottomLeft = bottomLeft
         self.bottomRight = bottomRight
+        self.curve = curve
     }
     
     public init() {
-        self.init(topLeft: .Corner(0.0), topRight: .Corner(0.0), bottomLeft: .Corner(0.0), bottomRight: .Corner(0.0))
+        self.init(topLeft: .Corner(0.0), topRight: .Corner(0.0), bottomLeft: .Corner(0.0), bottomRight: .Corner(0.0), curve: .circular)
     }
     
     public var extendedEdges: UIEdgeInsets {
@@ -113,12 +121,12 @@ public struct ImageCorners: Equatable {
     }
     
     public func withRemovedTails() -> ImageCorners {
-        return ImageCorners(topLeft: self.topLeft.withoutTail, topRight: self.topRight.withoutTail, bottomLeft: self.bottomLeft.withoutTail, bottomRight: self.bottomRight.withoutTail)
+        return ImageCorners(topLeft: self.topLeft.withoutTail, topRight: self.topRight.withoutTail, bottomLeft: self.bottomLeft.withoutTail, bottomRight: self.bottomRight.withoutTail, curve: self.curve)
     }
 }
 
 public func ==(lhs: ImageCorners, rhs: ImageCorners) -> Bool {
-    return lhs.topLeft == rhs.topLeft && lhs.topRight == rhs.topRight && lhs.bottomLeft == rhs.bottomLeft && lhs.bottomRight == rhs.bottomRight
+    return lhs.topLeft == rhs.topLeft && lhs.topRight == rhs.topRight && lhs.bottomLeft == rhs.bottomLeft && lhs.bottomRight == rhs.bottomRight && lhs.curve == rhs.curve
 }
 
 public class ImageNode: ASDisplayNode {

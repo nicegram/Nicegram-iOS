@@ -1,16 +1,44 @@
 import Postbox
 import TelegramCore
 
+private let namespacePrefixes = [
+    (Namespaces.Peer.CloudChannel, "-100"),
+    (Namespaces.Peer.CloudGroup, "-"),
+]
+
 public extension PeerId {
-    func ng_toInt64() -> Int64 {
-        let originalId = id._internalGetInt64Value()
-        
-        var stringId = "\(originalId)"
-        if namespace == Namespaces.Peer.CloudChannel {
-            stringId = "-100\(stringId)"
+    static func ng_fromInt64(_ id: Int64) -> PeerId {
+        let stringId = String(id)
+        for (namespace, prefix) in namespacePrefixes {
+            if stringId.hasPrefix(prefix) {
+                let id = Int64(stringId.removing(prefix: prefix)) ?? id
+                return PeerId(
+                    namespace: namespace,
+                    id: ._internalFromInt64Value(id)
+                )
+            }
         }
         
-        return Int64(stringId) ?? originalId
+        return PeerId(
+            namespace: Namespaces.Peer.CloudUser,
+            id: ._internalFromInt64Value(id)
+        )
+    }
+    
+    func ng_toInt64() -> Int64 {
+        let id = id._internalGetInt64Value()
+        
+        let prefix = namespacePrefixes.first { $0.0 == namespace }?.1
+        if let prefix {
+            let stringId = "\(prefix)\(id)"
+            return Int64(stringId) ?? id
+        } else {
+            return id
+        }
+    }
+    
+    func ng_toInt64Text() -> String {
+        String(ng_toInt64())
     }
 }
 

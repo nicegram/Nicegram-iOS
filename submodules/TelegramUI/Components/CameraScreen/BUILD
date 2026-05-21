@@ -47,7 +47,7 @@ swift_library(
         "Sources/**/*.swift",
     ]),
     copts = [
-        #"-warnings-as-errors",
+        "-warnings-as-errors",
     ],
     data = [
         ":CameraScreenBundle",
@@ -86,7 +86,17 @@ swift_library(
         "//submodules/UndoUI",
         "//submodules/ContextUI",
         "//submodules/AvatarNode",
+        "//submodules/ActivityIndicator",
         "//submodules/TelegramUI/Components/Utils/AnimatableProperty",
+        "//submodules/TelegramUI/Components/GlassBackgroundComponent",
+        "//submodules/TelegramUI/Components/GlassBarButtonComponent",
+        "//submodules/TelegramUI/Components/ShareWithPeersScreen",
+        "//submodules/TelegramUI/Components/PlainButtonComponent",
+        "//submodules/TelegramCallsUI",
+        "//submodules/TelegramUI/Components/Stories/StoryContainerScreen",
+        "//submodules/TelegramUI/Components/ChatEntityKeyboardInputNode",
+        "//submodules/TelegramUI/Components/LiquidLens",
+        "//submodules/TelegramUI/Components/TabSelectionRecognizer",
     ],
     visibility = [
         "//visibility:public",

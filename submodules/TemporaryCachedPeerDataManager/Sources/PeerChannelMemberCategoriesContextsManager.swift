@@ -388,6 +388,25 @@ public final class PeerChannelMemberCategoriesContextsManager {
         }
     }
     
+    public func updateMemberRank(engine: TelegramEngine, peerId: PeerId, memberId: PeerId, rank: String?) -> Signal<Void, UpdateChatRankError> {
+        return engine.peers.updateChatRank(peerId: peerId, userId: memberId, rank: rank)
+        |> deliverOnMainQueue
+        |> beforeNext { [weak self] result in
+            if let strongSelf = self, let (previous, updated) = result {
+                strongSelf.impl.with { impl in
+                    for (contextPeerId, context) in impl.contexts {
+                        if peerId == contextPeerId {
+                            context.replayUpdates([(previous, updated, true)])
+                        }
+                    }
+                }
+            }
+        }
+        |> mapToSignal { _ -> Signal<Void, UpdateChatRankError> in
+            return .complete()
+        }
+    }
+    
     public func updateMemberAdminRights(engine: TelegramEngine, peerId: PeerId, memberId: PeerId, adminRights: TelegramChatAdminRights?, rank: String?) -> Signal<Void, UpdateChannelAdminRightsError> {
         return engine.peers.updateChannelAdminRights(peerId: peerId, adminId: memberId, rights: adminRights, rank: rank)
         |> map(Optional.init)
@@ -408,8 +427,8 @@ public final class PeerChannelMemberCategoriesContextsManager {
         }
     }
     
-    public func transferOwnership(engine: TelegramEngine, peerId: PeerId, memberId: PeerId, password: String) -> Signal<Void, ChannelOwnershipTransferError> {
-        return engine.peers.updateChannelOwnership(channelId: peerId, memberId: memberId, password: password)
+    public func transferOwnership(engine: TelegramEngine, peerId: PeerId, memberId: PeerId, password: String) -> Signal<Void, ChatOwnershipTransferError> {
+        return engine.peers.updateChatOwnership(peerId: peerId, memberId: memberId, password: password)
         |> map(Optional.init)
         |> deliverOnMainQueue
         |> beforeNext { [weak self] results in
@@ -423,7 +442,7 @@ public final class PeerChannelMemberCategoriesContextsManager {
                 }
             }
         }
-        |> mapToSignal { _ -> Signal<Void, ChannelOwnershipTransferError> in
+        |> mapToSignal { _ -> Signal<Void, ChatOwnershipTransferError> in
             return .complete()
         }
     }

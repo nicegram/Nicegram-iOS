@@ -12,6 +12,16 @@ import PlainButtonComponent
 import AccountContext
 
 public final class ListMultilineTextFieldItemComponent: Component {
+    public enum Style {
+        case glass
+        case legacy
+    }
+    
+    public final class Tag {
+        public init() {
+        }
+    }
+    
     public final class ExternalState {
         public fileprivate(set) var hasText: Bool = false
         public fileprivate(set) var text: NSAttributedString = NSAttributedString()
@@ -21,6 +31,8 @@ public final class ListMultilineTextFieldItemComponent: Component {
         
         public var currentEmojiSuggestion: TextFieldComponent.EmojiSuggestion?
         public var dismissedEmojiSuggestionPosition: TextFieldComponent.EmojiSuggestion.Position?
+        
+        public var updated: (() -> Void)?
         
         public init() {
         }
@@ -49,18 +61,44 @@ public final class ListMultilineTextFieldItemComponent: Component {
         case notAllowed
     }
     
+    public final class RightAccessory: Equatable {
+        public let component: AnyComponentWithIdentity<Empty>
+        public let insets: UIEdgeInsets
+        
+        public init(component: AnyComponentWithIdentity<Empty>, insets: UIEdgeInsets) {
+            self.component = component
+            self.insets = insets
+        }
+        
+        public static func ==(lhs: RightAccessory, rhs: RightAccessory) -> Bool {
+            if lhs.component != rhs.component {
+                return false
+            }
+            if lhs.insets != rhs.insets {
+                return false
+            }
+            return true
+        }
+    }
+    
     public let externalState: ExternalState?
+    public let style: Style
     public let context: AccountContext
     public let theme: PresentationTheme
     public let strings: PresentationStrings
     public let initialText: String
     public let resetText: ResetText?
     public let placeholder: String
+    public let placeholderDefinesMinHeight: Bool
     public let autocapitalizationType: UITextAutocapitalizationType
     public let autocorrectionType: UITextAutocorrectionType
+    public let keyboardType: UIKeyboardType
     public let returnKeyType: UIReturnKeyType
     public let characterLimit: Int?
     public let displayCharacterLimit: Bool
+    public let prefix: NSAttributedString?
+    public let suffix: NSAttributedString?
+    public let rightAccessory: RightAccessory?
     public let emptyLineHandling: EmptyLineHandling
     public let formatMenuAvailability: TextFieldComponent.FormatMenuAvailability
     public let updated: ((String) -> Void)?
@@ -73,17 +111,23 @@ public final class ListMultilineTextFieldItemComponent: Component {
     
     public init(
         externalState: ExternalState? = nil,
+        style: Style = .legacy,
         context: AccountContext,
         theme: PresentationTheme,
         strings: PresentationStrings,
         initialText: String,
         resetText: ResetText? = nil,
         placeholder: String,
+        placeholderDefinesMinHeight: Bool = false,
         autocapitalizationType: UITextAutocapitalizationType = .sentences,
         autocorrectionType: UITextAutocorrectionType = .default,
+        keyboardType: UIKeyboardType = .default,
         returnKeyType: UIReturnKeyType = .default,
         characterLimit: Int? = nil,
         displayCharacterLimit: Bool = false,
+        prefix: NSAttributedString? = nil,
+        suffix: NSAttributedString? = nil,
+        rightAccessory: RightAccessory? = nil,
         emptyLineHandling: EmptyLineHandling = .allowed,
         formatMenuAvailability: TextFieldComponent.FormatMenuAvailability = .none,
         updated: ((String) -> Void)? = nil,
@@ -95,17 +139,23 @@ public final class ListMultilineTextFieldItemComponent: Component {
         tag: AnyObject? = nil
     ) {
         self.externalState = externalState
+        self.style = style
         self.context = context
         self.theme = theme
         self.strings = strings
         self.initialText = initialText
         self.resetText = resetText
         self.placeholder = placeholder
+        self.placeholderDefinesMinHeight = placeholderDefinesMinHeight
         self.autocapitalizationType = autocapitalizationType
         self.autocorrectionType = autocorrectionType
+        self.keyboardType = keyboardType
         self.returnKeyType = returnKeyType
         self.characterLimit = characterLimit
         self.displayCharacterLimit = displayCharacterLimit
+        self.prefix = prefix
+        self.suffix = suffix
+        self.rightAccessory = rightAccessory
         self.emptyLineHandling = emptyLineHandling
         self.formatMenuAvailability = formatMenuAvailability
         self.updated = updated
@@ -139,10 +189,16 @@ public final class ListMultilineTextFieldItemComponent: Component {
         if lhs.placeholder != rhs.placeholder {
             return false
         }
+        if lhs.placeholderDefinesMinHeight != rhs.placeholderDefinesMinHeight {
+            return false
+        }
         if lhs.autocapitalizationType != rhs.autocapitalizationType {
             return false
         }
         if lhs.autocorrectionType != rhs.autocorrectionType {
+            return false
+        }
+        if lhs.keyboardType != rhs.keyboardType {
             return false
         }
         if lhs.returnKeyType != rhs.returnKeyType {
@@ -152,6 +208,15 @@ public final class ListMultilineTextFieldItemComponent: Component {
             return false
         }
         if lhs.displayCharacterLimit != rhs.displayCharacterLimit {
+            return false
+        }
+        if lhs.prefix != rhs.prefix {
+            return false
+        }
+        if lhs.suffix != rhs.suffix {
+            return false
+        }
+        if lhs.rightAccessory != rhs.rightAccessory {
             return false
         }
         if lhs.emptyLineHandling != rhs.emptyLineHandling {
@@ -172,6 +237,8 @@ public final class ListMultilineTextFieldItemComponent: Component {
     public final class View: UIView, ListSectionComponent.ChildView, ComponentTaggedView {
         private let textField = ComponentView<Empty>()
         private let textFieldExternalState = TextFieldComponent.ExternalState()
+        
+        private var rightAccessory: ComponentView<Empty>?
         
         private var modeSelector: ComponentView<Empty>?
         
@@ -194,10 +261,19 @@ public final class ListMultilineTextFieldItemComponent: Component {
         }
         
         public var customUpdateIsHighlighted: ((Bool) -> Void)?
+        public var enumerateSiblings: (((UIView) -> Void) -> Void)?
         public private(set) var separatorInset: CGFloat = 0.0
         
         public override init(frame: CGRect) {
             super.init(frame: CGRect())
+            
+            self.textFieldExternalState.updated = { [weak self] in
+                guard let self, let component = self.component else {
+                    return
+                }
+                component.externalState?.text = self.textFieldExternalState.text
+                component.externalState?.updated?()
+            }
         }
         
         required public init?(coder: NSCoder) {
@@ -273,7 +349,14 @@ public final class ListMultilineTextFieldItemComponent: Component {
             self.component = component
             self.state = state
             
-            let verticalInset: CGFloat = 12.0
+            let verticalInset: CGFloat
+            switch component.style {
+            case .glass:
+                verticalInset = 16.0
+            case .legacy:
+                verticalInset = 12.0
+            }
+            
             let leftInset: CGFloat = 16.0
             var rightInset: CGFloat = 16.0
             let modeSelectorSize = CGSize(width: 32.0, height: 32.0)
@@ -315,6 +398,34 @@ public final class ListMultilineTextFieldItemComponent: Component {
                 mappedEmptyLineHandling = .notAllowed
             }
             
+            var textFieldRightInset: CGFloat = 0.0
+            var rightAccessorySize: CGSize?
+            if component.rightAccessory?.component.id != previousComponent?.rightAccessory?.component.id {
+                if let rightAccessory = self.rightAccessory {
+                    self.rightAccessory = nil
+                    rightAccessory.view?.removeFromSuperview()
+                }
+            }
+            if let rightAccessoryValue = component.rightAccessory {
+                let rightAccessory: ComponentView<Empty>
+                var rightAccessoryTransition = transition
+                if let current = self.rightAccessory {
+                    rightAccessory = current
+                } else {
+                    rightAccessoryTransition = rightAccessoryTransition.withAnimation(.none)
+                    rightAccessory = ComponentView()
+                    self.rightAccessory = rightAccessory
+                }
+                let rightAccessorySizeValue = rightAccessory.update(
+                    transition: rightAccessoryTransition,
+                    component: rightAccessoryValue.component.component,
+                    environment: {},
+                    containerSize: CGSize(width: availableSize.width - rightAccessoryValue.insets.left - rightAccessoryValue.insets.right, height: availableSize.height - rightAccessoryValue.insets.top - rightAccessoryValue.insets.bottom)
+                )
+                rightAccessorySize = rightAccessorySizeValue
+                textFieldRightInset = rightAccessorySizeValue.width + rightAccessoryValue.insets.left + rightAccessoryValue.insets.right
+            }
+            
             let textFieldSize = self.textField.update(
                 transition: transition,
                 component: AnyComponent(TextFieldComponent(
@@ -328,6 +439,8 @@ public final class ListMultilineTextFieldItemComponent: Component {
                     insets: UIEdgeInsets(top: verticalInset, left: leftInset - 8.0, bottom: verticalInset, right: rightInset - 8.0 + measureTextLimitInset),
                     hideKeyboard: component.inputMode == .emoji,
                     customInputView: nil,
+                    prefix: component.prefix,
+                    suffix: component.suffix,
                     resetText: component.resetText.flatMap { resetText in
                         return NSAttributedString(string: resetText.value, font: Font.regular(17.0), textColor: component.theme.list.itemPrimaryTextColor)
                     },
@@ -336,6 +449,9 @@ public final class ListMultilineTextFieldItemComponent: Component {
                     emptyLineHandling: mappedEmptyLineHandling,
                     formatMenuAvailability: component.formatMenuAvailability,
                     returnKeyType: component.returnKeyType,
+                    keyboardType: component.keyboardType,
+                    autocapitalizationType: component.autocapitalizationType,
+                    autocorrectionType: component.autocorrectionType,
                     lockedFormatAction: {
                     },
                     present: { _ in
@@ -356,10 +472,23 @@ public final class ListMultilineTextFieldItemComponent: Component {
                     }
                 )),
                 environment: {},
-                containerSize: availableSize
+                containerSize: CGSize(width: availableSize.width - textFieldRightInset, height: availableSize.height)
             )
             
-            let size = CGSize(width: textFieldSize.width, height: textFieldSize.height - 1.0)
+            let placeholderSize = self.placeholder.update(
+                transition: .immediate,
+                component: AnyComponent(MultilineTextComponent(
+                    text: .plain(NSAttributedString(string: component.placeholder.isEmpty ? " " : component.placeholder, font: Font.regular(17.0), textColor: component.theme.list.itemPlaceholderTextColor)),
+                    maximumNumberOfLines: component.placeholderDefinesMinHeight ? 0 : 1
+                )),
+                environment: {},
+                containerSize: CGSize(width: availableSize.width - leftInset - rightInset, height: 100.0)
+            )
+            
+            var size = CGSize(width: availableSize.width, height: textFieldSize.height - 1.0)
+            if component.placeholderDefinesMinHeight {
+                size.height = max(size.height, placeholderSize.height + verticalInset * 2.0 - 1.0)
+            }
             let textFieldFrame = CGRect(origin: CGPoint(), size: textFieldSize)
             
             if let textFieldView = self.textField.view {
@@ -370,14 +499,6 @@ public final class ListMultilineTextFieldItemComponent: Component {
                 transition.setFrame(view: textFieldView, frame: textFieldFrame)
             }
             
-            let placeholderSize = self.placeholder.update(
-                transition: .immediate,
-                component: AnyComponent(MultilineTextComponent(
-                    text: .plain(NSAttributedString(string: component.placeholder.isEmpty ? " " : component.placeholder, font: Font.regular(17.0), textColor: component.theme.list.itemPlaceholderTextColor))
-                )),
-                environment: {},
-                containerSize: CGSize(width: availableSize.width - leftInset - rightInset, height: 100.0)
-            )
             let placeholderFrame = CGRect(origin: CGPoint(x: leftInset, y: verticalInset), size: placeholderSize)
             if let placeholderView = self.placeholder.view {
                 if placeholderView.superview == nil {
@@ -391,10 +512,25 @@ public final class ListMultilineTextFieldItemComponent: Component {
                 placeholderView.isHidden = self.textFieldExternalState.hasText
             }
             
+            if let rightAccessoryValue = component.rightAccessory, let rightAccessoryView = self.rightAccessory?.view, let rightAccessorySize {
+                let rightAccessoryFrame = CGRect(origin: CGPoint(x: availableSize.width - rightAccessoryValue.insets.right - rightAccessorySize.width, y: rightAccessoryValue.insets.top + floorToScreenPixels((size.height - rightAccessoryValue.insets.top - rightAccessoryValue.insets.bottom - rightAccessorySize.height) * 0.5)), size: rightAccessorySize)
+                var rightAccessoryTransition = transition
+                if rightAccessoryView.superview == nil {
+                    rightAccessoryTransition = rightAccessoryTransition.withAnimation(.none)
+                    self.addSubview(rightAccessoryView)
+                }
+                rightAccessoryTransition.setFrame(view: rightAccessoryView, frame: rightAccessoryFrame)
+            }
+            
             self.separatorInset = 16.0
             
-            component.externalState?.hasText = self.textFieldExternalState.hasText
-            component.externalState?.text = self.textFieldExternalState.text
+            if let resetText = component.resetText {
+                component.externalState?.hasText = !resetText.value.isEmpty
+                component.externalState?.text = NSAttributedString(string: resetText.value)
+            } else {
+                component.externalState?.hasText = self.textFieldExternalState.hasText
+                component.externalState?.text = self.textFieldExternalState.text
+            }
             component.externalState?.isEditing = self.textFieldExternalState.isEditing
             component.externalState?.currentEmojiSuggestion = self.textFieldExternalState.currentEmojiSuggestion
             component.externalState?.dismissedEmojiSuggestionPosition = self.textFieldExternalState.dismissedEmojiSuggestionPosition

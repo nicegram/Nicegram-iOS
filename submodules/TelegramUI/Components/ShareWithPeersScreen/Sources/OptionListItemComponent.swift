@@ -92,7 +92,7 @@ final class OptionListItemComponent: Component {
             self.component = component
             self.state = state
                         
-            let height: CGFloat = 44.0
+            let height: CGFloat = 52.0
             let verticalInset: CGFloat = 0.0
             let leftInset: CGFloat = 16.0
             let rightInset: CGFloat = 16.0

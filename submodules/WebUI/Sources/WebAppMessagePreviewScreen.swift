@@ -23,6 +23,7 @@ import ListItemComponentAdaptor
 import TelegramStringFormatting
 import UndoUI
 import ChatMessagePaymentAlertController
+import GlassBarButtonComponent
 
 private final class SheetContent: CombinedComponent {
     typealias EnvironmentType = ViewControllerComponentContainer.Environment
@@ -55,9 +56,9 @@ private final class SheetContent: CombinedComponent {
     }
     
     static var body: Body {
-        let closeButton = Child(Button.self)
+        let closeButton = Child(GlassBarButtonComponent.self)
         let title = Child(Text.self)
-        let amountSection = Child(ListSectionComponent.self)
+        let previewSection = Child(ListSectionComponent.self)
         let button = Child(ButtonComponent.self)
         
         return { context in
@@ -71,22 +72,31 @@ private final class SheetContent: CombinedComponent {
             let presentationData = component.context.sharedContext.currentPresentationData.with { $0 }
             
             let sideInset: CGFloat = 16.0
-            var contentSize = CGSize(width: context.availableSize.width, height: 18.0)
+            var contentSize = CGSize(width: context.availableSize.width, height: 38.0)
             
             let constrainedTitleWidth = context.availableSize.width - 16.0 * 2.0
             
             let closeButton = closeButton.update(
-                component: Button(
-                    content: AnyComponent(Text(text: environment.strings.Common_Cancel, font: Font.regular(17.0), color: theme.actionSheet.controlAccentColor)),
-                    action: {
+                component: GlassBarButtonComponent(
+                    size: CGSize(width: 44.0, height: 44.0),
+                    backgroundColor: nil,
+                    isDark: theme.overallDarkAppearance,
+                    state: .glass,
+                    component: AnyComponentWithIdentity(id: "close", component: AnyComponent(
+                        BundleIconComponent(
+                            name: "Navigation/Close",
+                            tintColor: theme.rootController.navigationBar.glassBarButtonForegroundColor
+                        )
+                    )),
+                    action: { _ in
                         component.dismiss()
                     }
                 ),
-                availableSize: CGSize(width: 120.0, height: 30.0),
+                availableSize: CGSize(width: 44.0, height: 44.0),
                 transition: .immediate
             )
             context.add(closeButton
-                .position(CGPoint(x: closeButton.size.width / 2.0 + sideInset, y: 28.0))
+                .position(CGPoint(x: 16.0 + closeButton.size.width / 2.0, y: 16.0 + closeButton.size.height / 2.0))
             )
                     
             let title = title.update(
@@ -95,7 +105,7 @@ private final class SheetContent: CombinedComponent {
                 transition: .immediate
             )
             context.add(title
-                .position(CGPoint(x: context.availableSize.width / 2.0, y: contentSize.height + title.size.height / 2.0))
+                .position(CGPoint(x: context.availableSize.width / 2.0, y: contentSize.height))
             )
             contentSize.height += title.size.height
             contentSize.height += 40.0
@@ -107,7 +117,7 @@ private final class SheetContent: CombinedComponent {
             })
 
             let amountInfoString = NSMutableAttributedString(attributedString: parseMarkdownIntoAttributedString(environment.strings.WebApp_ShareMessage_Info(component.botName).string, attributes: amountMarkdownAttributes, textAlignment: .natural))
-            let amountFooter = AnyComponent(MultilineTextComponent(
+            let previewFooter = AnyComponent(MultilineTextComponent(
                 text: .plain(amountInfoString),
                 maximumNumberOfLines: 0,
                 highlightColor: environment.theme.list.itemAccentColor.withAlphaComponent(0.1),
@@ -158,8 +168,10 @@ private final class SheetContent: CombinedComponent {
                 case let .invoice(invoice, replyMarkupValue):
                     media = [invoice]
                     replyMarkup = replyMarkupValue
-                default:
-                    break
+                case let .webpage(textValue, entitiesValue, _, _, replyMarkupValue):
+                    text = textValue
+                    entities = entitiesValue
+                    replyMarkup = replyMarkupValue
                 }
             case let .externalReference(reference):
                 switch reference.message {
@@ -185,8 +197,10 @@ private final class SheetContent: CombinedComponent {
                 case let .invoice(invoice, replyMarkupValue):
                     media = [invoice]
                     replyMarkup = replyMarkupValue
-                default:
-                    break
+                case let .webpage(textValue, entitiesValue, _, _, replyMarkupValue):
+                    text = textValue
+                    entities = entitiesValue
+                    replyMarkup = replyMarkupValue
                 }
             }
             
@@ -200,7 +214,7 @@ private final class SheetContent: CombinedComponent {
                      
             let listItemParams = ListViewItemLayoutParams(width: context.availableSize.width - sideInset * 2.0, leftInset: 0.0, rightInset: 0.0, availableHeight: 10000.0, isStandalone: true)
             
-            let amountSection = amountSection.update(
+            let previewSection = previewSection.update(
                 component: ListSectionComponent(
                     theme: theme,
                     header: AnyComponent(MultilineTextComponent(
@@ -211,7 +225,7 @@ private final class SheetContent: CombinedComponent {
                         )),
                         maximumNumberOfLines: 0
                     )),
-                    footer: amountFooter,
+                    footer: previewFooter,
                     items: [
                         AnyComponentWithIdentity(id: 0, component: AnyComponent(ListItemComponentAdaptor(
                             itemGenerator: PeerNameColorChatPreviewItem(
@@ -235,24 +249,25 @@ private final class SheetContent: CombinedComponent {
                 availableSize: CGSize(width: context.availableSize.width - sideInset * 2.0, height: .greatestFiniteMagnitude),
                 transition: context.transition
             )
-            context.add(amountSection
-                .position(CGPoint(x: context.availableSize.width / 2.0, y: contentSize.height + amountSection.size.height / 2.0))
+            context.add(previewSection
+                .position(CGPoint(x: context.availableSize.width / 2.0, y: contentSize.height + previewSection.size.height / 2.0))
                 .clipsToBounds(true)
                 .cornerRadius(10.0)
             )
-            contentSize.height += amountSection.size.height
+            contentSize.height += previewSection.size.height
             contentSize.height += 32.0
             
             let buttonString: String = environment.strings.WebApp_ShareMessage_Share
             let buttonAttributedString = NSMutableAttributedString(string: buttonString, font: Font.semibold(17.0), textColor: theme.list.itemCheckColors.foregroundColor, paragraphAlignment: .center)
             
+            let buttonInsets = ContainerViewLayout.concentricInsets(bottomInset: environment.safeInsets.bottom, innerDiameter: 52.0, sideInset: 30.0)
             let button = button.update(
                 component: ButtonComponent(
                     background: ButtonComponent.Background(
+                        style: .glass,
                         color: theme.list.itemCheckColors.fillColor,
                         foreground: theme.list.itemCheckColors.foregroundColor,
                         pressedColor: theme.list.itemCheckColors.fillColor.withMultipliedAlpha(0.9),
-                        cornerRadius: 10.0
                     ),
                     content: AnyComponentWithIdentity(
                         id: AnyHashable(0),
@@ -266,19 +281,15 @@ private final class SheetContent: CombinedComponent {
                         }
                     }
                 ),
-                availableSize: CGSize(width: context.availableSize.width - sideInset * 2.0, height: 50),
+                availableSize: CGSize(width: context.availableSize.width - buttonInsets.left - buttonInsets.right, height: 52.0),
                 transition: .immediate
             )
             context.add(button
-                .clipsToBounds(true)
-                .cornerRadius(10.0)
                 .position(CGPoint(x: context.availableSize.width / 2.0, y: contentSize.height + button.size.height / 2.0))
             )
             contentSize.height += button.size.height
-            contentSize.height += 15.0
+            contentSize.height += buttonInsets.bottom
             
-            contentSize.height += max(environment.inputHeight, environment.safeInsets.bottom)
-
             return contentSize
         }
     }
@@ -328,6 +339,7 @@ private final class WebAppMessagePreviewSheetComponent: CombinedComponent {
             
             let controller = environment.controller
             
+            let theme = environment.theme.withModalBlocksBackground()
             let sheet = sheet.update(
                 component: SheetComponent<EnvironmentType>(
                     content: AnyComponent<EnvironmentType>(SheetContent(
@@ -344,7 +356,8 @@ private final class WebAppMessagePreviewSheetComponent: CombinedComponent {
                             })
                         }
                     )),
-                    backgroundColor: .color(environment.theme.list.blocksBackgroundColor),
+                    style: .glass,
+                    backgroundColor: .color(theme.list.blocksBackgroundColor),
                     followContentSizeChanges: false,
                     clipsContent: true,
                     isScrollEnabled: false,
@@ -353,6 +366,8 @@ private final class WebAppMessagePreviewSheetComponent: CombinedComponent {
                 environment: {
                     environment
                     SheetComponentEnvironment(
+                        metrics: environment.metrics,
+                        deviceMetrics: environment.deviceMetrics,
                         isDisplaying: environment.value.isVisible,
                         isCentered: environment.metrics.widthClass == .regular,
                         hasInputHeight: !environment.inputHeight.isZero,

@@ -3,7 +3,6 @@ import UIKit
 import Display
 import AsyncDisplayKit
 import SwiftSignalKit
-import Postbox
 import TelegramCore
 import TelegramPresentationData
 import TextFormat
@@ -80,7 +79,7 @@ public final class ChatNewThreadInfoItemNode: ListViewItemNode, ASGestureRecogni
     public let offsetContainer: ASDisplayNode
     public let titleNode: TextNode
     public let subtitleNode: TextNode
-    let arrowView: UIImageView
+    var arrowView: UIImageView?
     let iconBackground: SimpleLayer
     var icon = ComponentView<Empty>()
     
@@ -106,9 +105,7 @@ public final class ChatNewThreadInfoItemNode: ListViewItemNode, ASGestureRecogni
         self.subtitleNode.isUserInteractionEnabled = false
         self.subtitleNode.displaysAsynchronously = false
         
-        self.arrowView = UIImageView()
-        
-        super.init(layerBacked: false, dynamicBounce: true, rotated: true)
+        super.init(layerBacked: false, rotated: true)
         
         self.transform = CATransform3DMakeRotation(CGFloat.pi, 0.0, 0.0, 1.0)
         
@@ -187,9 +184,8 @@ public final class ChatNewThreadInfoItemNode: ListViewItemNode, ASGestureRecogni
             
             let constrainedWidth = params.width - (horizontalInset + horizontalContentInset) * 2.0
             
-            //TODO:localize
-            let titleString = "New Thread"
-            let subtitleString = "Type any message to\ncreate a new thread."
+            let titleString = item.presentationData.strings.Chat_NewThreadInfo_Title
+            let subtitleString = item.presentationData.strings.Chat_NewThreadInfo_Text
             
             backgroundSize.height += iconBackgroundSize
             backgroundSize.height += iconTextSpacing
@@ -232,8 +228,14 @@ public final class ChatNewThreadInfoItemNode: ListViewItemNode, ASGestureRecogni
                     if strongSelf.iconBackground.superlayer == nil {
                         strongSelf.offsetContainer.layer.addSublayer(strongSelf.iconBackground)
                     }
-                    if strongSelf.arrowView.superview == nil {
-                        strongSelf.offsetContainer.view.addSubview(strongSelf.arrowView)
+                    
+                    let arrowView: UIImageView
+                    if let current = self?.arrowView {
+                        arrowView = current
+                    } else {
+                        arrowView = UIImageView()
+                        strongSelf.arrowView = arrowView
+                        strongSelf.offsetContainer.view.addSubview(arrowView)
                     }
                     
                     let iconComponent = AnyComponent(BundleIconComponent(
@@ -266,15 +268,15 @@ public final class ChatNewThreadInfoItemNode: ListViewItemNode, ASGestureRecogni
                     contentOriginY += subtitleLayout.size.height
                     contentOriginY += 20.0
                     
-                    if strongSelf.arrowView.image == nil {
-                        strongSelf.arrowView.image = generateTintedImage(image: UIImage(bundleImageName: "Chat/Input/Search/DownButton"), color: .white)?.withRenderingMode(.alwaysTemplate)
+                    if arrowView.image == nil {
+                        arrowView.image = generateTintedImage(image: UIImage(bundleImageName: "Chat/Input/Search/DownButton"), color: .white)?.withRenderingMode(.alwaysTemplate)
                     }
-                    strongSelf.arrowView.tintColor = primaryTextColor.withMultipliedAlpha(0.5)
-                    if let image = strongSelf.arrowView.image {
+                    arrowView.tintColor = primaryTextColor.withMultipliedAlpha(0.5)
+                    if let image = arrowView.image {
                         let scaleFactor: CGFloat = 0.8
                         let imageSize = CGSize(width: floor(image.size.width * scaleFactor), height: floor(image.size.height * scaleFactor))
                         let arrowFrame = CGRect(origin: CGPoint(x: backgroundFrame.origin.x + floor((backgroundSize.width - imageSize.width) / 2.0), y: backgroundFrame.minY + backgroundFrame.height - 8.0 - imageSize.height), size: imageSize)
-                        strongSelf.arrowView.frame = arrowFrame
+                        arrowView.frame = arrowFrame
                     }
                     
                     if strongSelf.backgroundContent == nil, let backgroundContent = item.controllerInteraction.presentationContext.backgroundNode?.makeBubbleBackground(for: .free) {

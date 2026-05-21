@@ -56,7 +56,7 @@ public final class NewSessionInfoContentComponent: Component {
             self.scrollView = UIScrollView()
             
             self.noticeBackground = SimpleLayer()
-            self.noticeBackground.cornerRadius = 10.0
+            self.noticeBackground.cornerRadius = 22.0
             
             self.iconBackground = UIImageView()
             

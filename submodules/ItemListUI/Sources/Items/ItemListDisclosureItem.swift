@@ -49,6 +49,7 @@ public enum ItemListDisclosureItemDetailLabelColor {
 
 public class ItemListDisclosureItem: ListViewItem, ItemListItem, ListItemComponentAdaptor.ItemGenerator {
     let presentationData: ItemListPresentationData
+    let systemStyle: ItemListSystemStyle
     let icon: UIImage?
     let context: AccountContext?
     let iconPeer: EnginePeer?
@@ -73,8 +74,9 @@ public class ItemListDisclosureItem: ListViewItem, ItemListItem, ListItemCompone
     public let tag: ItemListItemTag?
     public let shimmeringIndex: Int?
     
-    public init(presentationData: ItemListPresentationData, icon: UIImage? = nil, context: AccountContext? = nil, iconPeer: EnginePeer? = nil, title: String, attributedTitle: NSAttributedString? = nil, enabled: Bool = true, titleColor: ItemListDisclosureItemTitleColor = .primary, titleFont: ItemListDisclosureItemTitleFont = .regular, titleIcon: UIImage? = nil, titleBadge: String? = nil, label: String, attributedLabel: NSAttributedString? = nil, labelStyle: ItemListDisclosureLabelStyle = .text, additionalDetailLabel: String? = nil, additionalDetailLabelColor: ItemListDisclosureItemDetailLabelColor = .generic, sectionId: ItemListSectionId, style: ItemListStyle, disclosureStyle: ItemListDisclosureStyle = .arrow, noInsets: Bool = false, action: (() -> Void)?, clearHighlightAutomatically: Bool = true, tag: ItemListItemTag? = nil, shimmeringIndex: Int? = nil) {
+    public init(presentationData: ItemListPresentationData, systemStyle: ItemListSystemStyle = .legacy, icon: UIImage? = nil, context: AccountContext? = nil, iconPeer: EnginePeer? = nil, title: String, attributedTitle: NSAttributedString? = nil, enabled: Bool = true, titleColor: ItemListDisclosureItemTitleColor = .primary, titleFont: ItemListDisclosureItemTitleFont = .regular, titleIcon: UIImage? = nil, titleBadge: String? = nil, label: String, attributedLabel: NSAttributedString? = nil, labelStyle: ItemListDisclosureLabelStyle = .text, additionalDetailLabel: String? = nil, additionalDetailLabelColor: ItemListDisclosureItemDetailLabelColor = .generic, sectionId: ItemListSectionId, style: ItemListStyle, disclosureStyle: ItemListDisclosureStyle = .arrow, noInsets: Bool = false, action: (() -> Void)?, clearHighlightAutomatically: Bool = true, tag: ItemListItemTag? = nil, shimmeringIndex: Int? = nil) {
         self.presentationData = presentationData
+        self.systemStyle = systemStyle
         self.icon = icon
         self.context = context
         self.iconPeer = iconPeer
@@ -171,6 +173,7 @@ private let boldBadgeFont = Font.semibold(14.0)
 
 public class ItemListDisclosureItemNode: ListViewItemNode, ItemListItemNode {
     private let backgroundNode: ASDisplayNode
+    private let highlightNode: ASDisplayNode
     private let topStripeNode: ASDisplayNode
     private let bottomStripeNode: ASDisplayNode
     private let highlightedBackgroundNode: ASDisplayNode
@@ -213,6 +216,9 @@ public class ItemListDisclosureItemNode: ListViewItemNode, ItemListItemNode {
         self.backgroundNode.isLayerBacked = true
         self.backgroundNode.backgroundColor = .white
         
+        self.highlightNode = ASDisplayNode()
+        self.highlightNode.isLayerBacked = true
+        
         self.maskNode = ASImageNode()
         self.maskNode.isUserInteractionEnabled = false
         
@@ -252,7 +258,7 @@ public class ItemListDisclosureItemNode: ListViewItemNode, ItemListItemNode {
         
         self.activateArea = AccessibilityAreaNode()
         
-        super.init(layerBacked: false, dynamicBounce: false)
+        super.init(layerBacked: false)
         
         self.addSubnode(self.titleNode.textNode)
         self.addSubnode(self.labelNode)
@@ -279,6 +285,20 @@ public class ItemListDisclosureItemNode: ListViewItemNode, ItemListItemNode {
         }
         transition.updateAlpha(node: self.labelNode, alpha: hasContextMenu ? 0.5 : 1.0)
         transition.updateAlpha(node: self.arrowNode, alpha: hasContextMenu ? 0.5 : 1.0)
+    }
+    
+    public func displayHighlight() {
+        if self.backgroundNode.supernode != nil {
+            self.insertSubnode(self.highlightNode, aboveSubnode: self.backgroundNode)
+        } else {
+            self.insertSubnode(self.highlightNode, at: 0)
+        }
+        
+        Queue.mainQueue().after(1.2, {
+            self.highlightNode.layer.animateAlpha(from: 1.0, to: 0.0, duration: 0.3, removeOnCompletion: false, completion: { _ in
+                self.highlightNode.removeFromSupernode()
+            })
+        })
     }
     
     public func asyncLayout() -> (_ item: ItemListDisclosureItem, _ params: ListViewItemLayoutParams, _ insets: ItemListNeighbors) -> (ListViewItemNodeLayout, () -> Void) {
@@ -364,6 +384,8 @@ public class ItemListDisclosureItemNode: ListViewItemNode, ItemListItemNode {
             let contentSize: CGSize
             var insets: UIEdgeInsets
             let separatorHeight = UIScreenPixel
+            let separatorRightInset: CGFloat = item.systemStyle == .glass ? 16.0 : 0.0
+            
             let itemBackgroundColor: UIColor
             let itemSeparatorColor: UIColor
             
@@ -472,16 +494,34 @@ public class ItemListDisclosureItemNode: ListViewItemNode, ItemListItemNode {
             if item.iconPeer != nil {
                 verticalInset = 6.0
             } else {
-                verticalInset = 11.0
+                switch item.systemStyle {
+                case .glass:
+                    if !item.label.isEmpty {
+                        switch item.labelStyle {
+                        case .detailText, .multilineDetailText:
+                            verticalInset = 13.0
+                        default:
+                            if let additionalDetailLabel = item.additionalDetailLabel, !additionalDetailLabel.isEmpty {
+                                verticalInset = 13.0
+                            } else {
+                                verticalInset = 15.0
+                            }
+                        }
+                    } else if let additionalDetailLabel = item.additionalDetailLabel, !additionalDetailLabel.isEmpty {
+                        verticalInset = 13.0
+                    } else {
+                        verticalInset = 15.0
+                    }
+                case .legacy:
+                    verticalInset = 11.0
+                }
             }
             
             let titleSpacing: CGFloat = 1.0
             
             var height: CGFloat
             switch item.labelStyle {
-            case .detailText:
-                height = verticalInset * 2.0 + titleLayout.size.height + titleSpacing + labelLayout.size.height
-            case .multilineDetailText:
+            case .detailText, .multilineDetailText:
                 height = verticalInset * 2.0 + titleLayout.size.height + titleSpacing + labelLayout.size.height
             default:
                 height = verticalInset * 2.0 + titleLayout.size.height
@@ -578,6 +618,7 @@ public class ItemListDisclosureItemNode: ListViewItemNode, ItemListItemNode {
                         strongSelf.bottomStripeNode.backgroundColor = itemSeparatorColor
                         strongSelf.backgroundNode.backgroundColor = itemBackgroundColor
                         strongSelf.highlightedBackgroundNode.backgroundColor = item.presentationData.theme.list.itemHighlightedBackgroundColor
+                        strongSelf.highlightNode.backgroundColor = item.presentationData.theme.list.itemSearchHighlightColor
                     }
                                         
                     if let titleWithEntitiesApply = titleWithEntitiesLayoutAndApply?.1, let context = item.context {
@@ -646,12 +687,13 @@ public class ItemListDisclosureItemNode: ListViewItemNode, ItemListItemNode {
                                 strongSelf.bottomStripeNode.isHidden = hasCorners
                         }
                         
-                        strongSelf.maskNode.image = hasCorners ? PresentationResourcesItemList.cornersImage(item.presentationData.theme, top: hasTopCorners, bottom: hasBottomCorners) : nil
+                        strongSelf.maskNode.image = hasCorners ? PresentationResourcesItemList.cornersImage(item.presentationData.theme, top: hasTopCorners, bottom: hasBottomCorners, glass: item.systemStyle == .glass) : nil
                         
                         strongSelf.backgroundNode.frame = CGRect(origin: CGPoint(x: 0.0, y: -min(insets.top, separatorHeight)), size: CGSize(width: params.width, height: contentSize.height + min(insets.top, separatorHeight) + min(insets.bottom, separatorHeight)))
+                        strongSelf.highlightNode.frame = CGRect(origin: CGPoint(x: 0.0, y: -min(insets.top, separatorHeight)), size: CGSize(width: params.width, height: contentSize.height + min(insets.top, separatorHeight) + min(insets.bottom, separatorHeight)))
                         strongSelf.maskNode.frame = strongSelf.backgroundNode.frame.insetBy(dx: params.leftInset, dy: 0.0)
                         strongSelf.topStripeNode.frame = CGRect(origin: CGPoint(x: 0.0, y: -min(insets.top, separatorHeight)), size: CGSize(width: params.width, height: separatorHeight))
-                        strongSelf.bottomStripeNode.frame = CGRect(origin: CGPoint(x: bottomStripeInset, y: contentSize.height - separatorHeight), size: CGSize(width: params.width - bottomStripeInset, height: separatorHeight))
+                        strongSelf.bottomStripeNode.frame = CGRect(origin: CGPoint(x: bottomStripeInset, y: contentSize.height - separatorHeight), size: CGSize(width: params.width - params.rightInset - bottomStripeInset - separatorRightInset, height: separatorHeight))
                     }
                     
                     var centralContentHeight: CGFloat = titleLayout.size.height

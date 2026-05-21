@@ -36,7 +36,7 @@ public final class LocationOptionsNode: ASDisplayNode {
                 case 0:
                     updateMapMode(.map)
                 case 1:
-                    updateMapMode(.sattelite)
+                    updateMapMode(.satellite)
                 case 2:
                     updateMapMode(.hybrid)
                 default:

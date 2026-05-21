@@ -124,7 +124,7 @@ private func synchronizeSavedStickers(transaction: Transaction, accountPeerId: P
             }
             
             let saveSticker: (Data) -> Signal<Api.Bool, SaveStickerError> = { fileReference in
-                return network.request(Api.functions.messages.faveSticker(id: .inputDocument(id: id, accessHash: accessHash, fileReference: Buffer(data: fileReference)), unfave: .boolFalse))
+                return network.request(Api.functions.messages.faveSticker(id: .inputDocument(.init(id: id, accessHash: accessHash, fileReference: Buffer(data: fileReference))), unfave: .boolFalse))
                 |> mapError { error -> SaveStickerError in
                     if error.errorDescription.hasPrefix("FILEREF_INVALID") || error.errorDescription.hasPrefix("FILE_REFERENCE_") {
                         return .invalidReference
@@ -166,7 +166,7 @@ private func synchronizeSavedStickers(transaction: Transaction, accountPeerId: P
                 return .complete()
             }
         case let .remove(id, accessHash):
-            return network.request(Api.functions.messages.faveSticker(id: .inputDocument(id: id, accessHash: accessHash, fileReference: Buffer()), unfave: .boolTrue))
+            return network.request(Api.functions.messages.faveSticker(id: .inputDocument(.init(id: id, accessHash: accessHash, fileReference: Buffer())), unfave: .boolTrue))
                 |> `catch` { _ -> Signal<Api.Bool, NoError> in
                     return .single(.boolFalse)
                 }

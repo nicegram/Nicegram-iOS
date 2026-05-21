@@ -34,7 +34,9 @@ union InstantPageBlock_Value {
     InstantPageBlock_Table,
     InstantPageBlock_Details,
     InstantPageBlock_RelatedArticles,
-    InstantPageBlock_Map
+    InstantPageBlock_Map,
+    InstantPageBlock_Heading,
+    InstantPageBlock_Formula
 }
 
 table InstantPageBlock {
@@ -70,6 +72,7 @@ table InstantPageBlock_Paragraph {
 
 table InstantPageBlock_Preformatted {
     text:RichText (id: 0, required);
+    language:string (id: 1);
 }
 
 table InstantPageBlock_Footer {
@@ -182,6 +185,15 @@ table InstantPageBlock_Map {
     zoom:int32 (id: 2);
     dimensions:PixelDimensions (id: 3, required);
     caption:InstantPageCaption (id: 4, required);
+}
+
+table InstantPageBlock_Heading {
+    text:RichText (id: 0, required);
+    level:int32 (id: 1);
+}
+
+table InstantPageBlock_Formula {
+    latex:string (id: 0, required);
 }
 
 table InstantPageCaption {

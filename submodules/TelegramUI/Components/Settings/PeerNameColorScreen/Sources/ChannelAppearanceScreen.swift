@@ -39,6 +39,7 @@ import Markdown
 import GroupStickerPackSetupController
 import PeerNameColorItem
 import EmojiActionIconComponent
+import EdgeEffect
 
 final class ChannelAppearanceScreenComponent: Component {
     typealias EnvironmentType = ViewControllerComponentContainer.Environment
@@ -169,13 +170,11 @@ final class ChannelAppearanceScreenComponent: Component {
     }
     
     final class View: UIView, UIScrollViewDelegate {
+        private let edgeEffectView: EdgeEffectView
         private let topOverscrollLayer = SimpleLayer()
         private let scrollView: ScrollView
         private let actionButton = ComponentView<Empty>()
-        private let bottomPanelBackgroundView: BlurredBackgroundView
-        private let bottomPanelSeparator: SimpleLayer
         
-        private let backButton = PeerInfoHeaderNavigationButton()
         private let navigationTitle = ComponentView<Empty>()
         
         private let previewSection = ComponentView<Empty>()
@@ -227,6 +226,8 @@ final class ChannelAppearanceScreenComponent: Component {
         private weak var emojiStatusSelectionController: ViewController?
         
         override init(frame: CGRect) {
+            self.edgeEffectView = EdgeEffectView()
+            
             self.scrollView = ScrollView()
             self.scrollView.showsVerticalScrollIndicator = true
             self.scrollView.showsHorizontalScrollIndicator = false
@@ -239,9 +240,6 @@ final class ChannelAppearanceScreenComponent: Component {
             }
             self.scrollView.alwaysBounceVertical = true
             
-            self.bottomPanelBackgroundView = BlurredBackgroundView(color: .clear, enableBlur: true)
-            self.bottomPanelSeparator = SimpleLayer()
-            
             super.init(frame: frame)
             
             self.scrollView.delegate = self
@@ -249,14 +247,7 @@ final class ChannelAppearanceScreenComponent: Component {
             
             self.scrollView.layer.addSublayer(self.topOverscrollLayer)
             
-            self.addSubview(self.bottomPanelBackgroundView)
-            self.layer.addSublayer(self.bottomPanelSeparator)
-            
-            self.backButton.action = { [weak self] _, _ in
-                if let self, let controller = self.environment?.controller() {
-                    controller.navigationController?.popViewController(animated: true)
-                }
-            }
+            self.addSubview(self.edgeEffectView)
         }
         
         required init?(coder: NSCoder) {
@@ -291,20 +282,26 @@ final class ChannelAppearanceScreenComponent: Component {
                 }
                 
                 let presentationData = component.context.sharedContext.currentPresentationData.with { $0 }
-                self.environment?.controller()?.present(standardTextAlertController(theme: AlertControllerTheme(presentationData: presentationData), title: presentationData.strings.Channel_Appearance_UnsavedChangesAlertTitle, text: presentationData.strings.Channel_Appearance_UnsavedChangesAlertText, actions: [
-                    TextAlertAction(type: .genericAction, title: presentationData.strings.Channel_Appearance_UnsavedChangesAlertDiscard, action: { [weak self] in
-                        guard let self else {
-                            return
-                        }
-                        self.environment?.controller()?.dismiss()
-                    }),
-                    TextAlertAction(type: .defaultAction, title: presentationData.strings.Channel_Appearance_UnsavedChangesAlertApply, action: { [weak self] in
-                        guard let self else {
-                            return
-                        }
-                        self.applySettings()
-                    })
-                ]), in: .window(.root))
+                let alertController = textAlertController(
+                    context: component.context,
+                    title: presentationData.strings.Channel_Appearance_UnsavedChangesAlertTitle,
+                    text: presentationData.strings.Channel_Appearance_UnsavedChangesAlertText,
+                    actions: [
+                        TextAlertAction(type: .genericAction, title: presentationData.strings.Channel_Appearance_UnsavedChangesAlertDiscard, action: { [weak self] in
+                            guard let self else {
+                                return
+                            }
+                            self.environment?.controller()?.dismiss()
+                        }),
+                        TextAlertAction(type: .defaultAction, title: presentationData.strings.Channel_Appearance_UnsavedChangesAlertApply, action: { [weak self] in
+                            guard let self else {
+                                return
+                            }
+                            self.applySettings()
+                        })
+                    ]
+                )
+                self.environment?.controller()?.present(alertController, in: .window(.root))
                 
                 return false
             }
@@ -343,11 +340,7 @@ final class ChannelAppearanceScreenComponent: Component {
                 transition.setAlpha(view: navigationTitleView, alpha: navigationAlpha)
             }
             
-            let bottomNavigationAlphaDistance: CGFloat = 16.0
-            let bottomNavigationAlpha: CGFloat = max(0.0, min(1.0, (self.scrollView.contentSize.height - self.scrollView.bounds.maxY) / bottomNavigationAlphaDistance))
-            
-            transition.setAlpha(view: self.bottomPanelBackgroundView, alpha: bottomNavigationAlpha)
-            transition.setAlpha(layer: self.bottomPanelSeparator, alpha: bottomNavigationAlpha)
+            //transition.setAlpha(view: self.edgeEffectView, alpha: navigationAlpha)
         }
         
         private func resolveState() -> ResolvedState? {
@@ -360,24 +353,24 @@ final class ChannelAppearanceScreenComponent: Component {
             let nameColor: PeerNameColor
             if let updatedPeerNameColor = self.updatedPeerNameColor {
                 nameColor = updatedPeerNameColor
-            } else if let peerNameColor = peer.nameColor {
-                nameColor = peerNameColor
+            } else if let peerNameColor = peer.nameColor, case let .preset(nameColorValue) = peerNameColor {
+                nameColor = nameColorValue
             } else {
                 nameColor = .blue
             }
-            if nameColor != peer.nameColor {
+            if .preset(nameColor) != peer.nameColor {
                 changes.insert(.nameColor)
             }
             
             let profileColor: PeerNameColor?
             if case let .some(value) = self.updatedPeerProfileColor {
                 profileColor = value
-            } else if let peerProfileColor = peer.profileColor {
+            } else if let peerProfileColor = peer.effectiveProfileColor {
                 profileColor = peerProfileColor
             } else {
                 profileColor = nil
             }
-            if profileColor != peer.profileColor {
+            if profileColor != peer.effectiveProfileColor {
                 changes.insert(.profileColor)
             }
             
@@ -534,7 +527,15 @@ final class ChannelAppearanceScreenComponent: Component {
                 }
                 
                 let presentationData = component.context.sharedContext.currentPresentationData.with { $0 }
-                self.environment?.controller()?.present(standardTextAlertController(theme: AlertControllerTheme(presentationData: presentationData), title: nil, text: presentationData.strings.Login_UnknownError, actions: [TextAlertAction(type: .defaultAction, title: presentationData.strings.Common_OK, action: {})]), in: .window(.root))
+                let alertController = textAlertController(
+                    context: component.context,
+                    title: nil,
+                    text: presentationData.strings.Login_UnknownError,
+                    actions: [
+                        TextAlertAction(type: .defaultAction, title: presentationData.strings.Common_OK, action: {})
+                    ]
+                )
+                self.environment?.controller()?.present(alertController, in: .window(.root))
                 
                 self.isApplyingSettings = false
                 self.state?.updated(transition: .immediate)
@@ -962,7 +963,7 @@ final class ChannelAppearanceScreenComponent: Component {
             
             if case let .user(user) = peer {
                 peer = .user(user
-                    .withUpdatedNameColor(resolvedState.nameColor)
+                    .withUpdatedNameColor(.preset(resolvedState.nameColor))
                     .withUpdatedProfileColor(profileColor)
                     .withUpdatedEmojiStatus(emojiStatus)
                     .withUpdatedBackgroundEmojiId(replyFileId)
@@ -992,7 +993,6 @@ final class ChannelAppearanceScreenComponent: Component {
             }
             self.requiredBoostSubject = requiredBoostSubject
             
-            
             let headerColor: UIColor
             if let profileColor {
                 let headerBackgroundColors = component.context.peerNameColors.getProfile(profileColor, dark: environment.theme.overallDarkAppearance, subject: .background)
@@ -1002,7 +1002,6 @@ final class ChannelAppearanceScreenComponent: Component {
             }
             self.topOverscrollLayer.backgroundColor = headerColor.cgColor
             
-            let backSize = self.backButton.update(key: .back, presentationData: component.context.sharedContext.currentPresentationData.with { $0 }, height: 44.0)
             var scrolledUp = self.scrolledUp
             if profileColor == nil {
                 scrolledUp = false
@@ -1010,14 +1009,6 @@ final class ChannelAppearanceScreenComponent: Component {
             
             if let controller = self.environment?.controller() as? ChannelAppearanceScreen {
                 controller.statusBar.updateStatusBarStyle(scrolledUp ? .White : .Ignore, animated: true)
-            }
-
-            self.backButton.updateContentsColor(backgroundColor: scrolledUp ? UIColor(white: 0.0, alpha: 0.1) : .clear, contentsColor: scrolledUp ? .white : environment.theme.rootController.navigationBar.accentTextColor, canBeExpanded: !scrolledUp, transition: .animated(duration: 0.2, curve: .easeInOut))
-            self.backButton.frame = CGRect(origin: CGPoint(x: environment.safeInsets.left + 16.0, y: environment.navigationHeight - 44.0), size: backSize)
-            if self.backButton.view.superview == nil {
-                if let controller = self.environment?.controller(), let navigationBar = controller.navigationBar {
-                    navigationBar.view.addSubview(self.backButton.view)
-                }
             }
             
             let navigationTitleSize = self.navigationTitle.update(
@@ -1054,6 +1045,7 @@ final class ChannelAppearanceScreenComponent: Component {
                 transition: transition,
                 component: AnyComponent(ListSectionComponent(
                     theme: environment.theme,
+                    style: .glass,
                     background: .none(clipped: false),
                     header: nil,
                     footer: nil,
@@ -1065,6 +1057,7 @@ final class ChannelAppearanceScreenComponent: Component {
                                 componentTheme: environment.theme,
                                 strings: environment.strings,
                                 topInset: environment.statusBarHeight,
+                                bottomInset: 0.0,
                                 sectionId: 0,
                                 peer: peer,
                                 subtitleString: contentsData.subscriberCount.flatMap {
@@ -1116,12 +1109,14 @@ final class ChannelAppearanceScreenComponent: Component {
                 transition: transition,
                 component: AnyComponent(ListSectionComponent(
                     theme: environment.theme,
+                    style: .glass,
                     background: .all,
                     header: nil,
                     footer: nil,
                     items: [
                         AnyComponentWithIdentity(id: 0, component: AnyComponent(ListActionItemComponent(
                             theme: environment.theme,
+                            style: .glass,
                             title: AnyComponent(HStack(boostContents, spacing: 12.0)),
                             icon: nil,
                             action: { [weak self] _ in
@@ -1164,6 +1159,7 @@ final class ChannelAppearanceScreenComponent: Component {
                 transition: transition,
                 component: AnyComponent(ListSectionComponent(
                     theme: environment.theme,
+                    style: .glass,
                     background: .all,
                     header: nil,
                     footer: AnyComponent(MultilineTextComponent(
@@ -1178,6 +1174,7 @@ final class ChannelAppearanceScreenComponent: Component {
                         AnyComponentWithIdentity(id: 1, component: AnyComponent(ListItemComponentAdaptor(
                             itemGenerator: PeerNameColorItem(
                                 theme: environment.theme,
+                                systemStyle: .glass,
                                 colors: component.context.peerNameColors,
                                 mode: .profile,
                                 currentColor: profileColor,
@@ -1194,6 +1191,7 @@ final class ChannelAppearanceScreenComponent: Component {
                         ))),
                         AnyComponentWithIdentity(id: 2, component: AnyComponent(ListActionItemComponent(
                             theme: environment.theme,
+                            style: .glass,
                             title: AnyComponent(HStack(profileLogoContents, spacing: 6.0)),
                             icon: ListActionItemComponent.Icon(component: AnyComponentWithIdentity(id: 0, component: AnyComponent(EmojiActionIconComponent(
                                 context: component.context,
@@ -1234,11 +1232,13 @@ final class ChannelAppearanceScreenComponent: Component {
                 transition: transition,
                 component: AnyComponent(ListSectionComponent(
                     theme: environment.theme,
+                    style: .glass,
                     header: nil,
                     footer: nil,
                     items: [
                         AnyComponentWithIdentity(id: 0, component: AnyComponent(ListActionItemComponent(
                             theme: environment.theme,
+                            style: .glass,
                             title: AnyComponent(MultilineTextComponent(
                                 text: .plain(NSAttributedString(
                                     string: environment.strings.Channel_Appearance_ResetProfileColor,
@@ -1310,6 +1310,7 @@ final class ChannelAppearanceScreenComponent: Component {
                     transition: transition,
                     component: AnyComponent(ListSectionComponent(
                         theme: environment.theme,
+                        style: .glass,
                         header: nil,
                         footer: AnyComponent(MultilineTextComponent(
                             text: .plain(NSAttributedString(
@@ -1322,6 +1323,7 @@ final class ChannelAppearanceScreenComponent: Component {
                         items: [
                             AnyComponentWithIdentity(id: 0, component: AnyComponent(ListActionItemComponent(
                                 theme: environment.theme,
+                                style: .glass,
                                 title: AnyComponent(HStack(emojiPackContents, spacing: 6.0)),
                                 icon: ListActionItemComponent.Icon(component: AnyComponentWithIdentity(id: 0, component: AnyComponent(EmojiActionIconComponent(
                                     context: component.context,
@@ -1374,6 +1376,7 @@ final class ChannelAppearanceScreenComponent: Component {
                 transition: transition,
                 component: AnyComponent(ListSectionComponent(
                     theme: environment.theme,
+                    style: .glass,
                     header: nil,
                     footer: AnyComponent(MultilineTextComponent(
                         text: .plain(NSAttributedString(
@@ -1386,6 +1389,7 @@ final class ChannelAppearanceScreenComponent: Component {
                     items: [
                         AnyComponentWithIdentity(id: 0, component: AnyComponent(ListActionItemComponent(
                             theme: environment.theme,
+                            style: .glass,
                             title: AnyComponent(HStack(emojiStatusContents, spacing: 6.0)),
                             icon: ListActionItemComponent.Icon(component: AnyComponentWithIdentity(id: 0, component: AnyComponent(EmojiActionIconComponent(
                                 context: component.context,
@@ -1438,6 +1442,7 @@ final class ChannelAppearanceScreenComponent: Component {
                     transition: transition,
                     component: AnyComponent(ListSectionComponent(
                         theme: environment.theme,
+                        style: .glass,
                         header: nil,
                         footer: AnyComponent(MultilineTextComponent(
                             text: .plain(NSAttributedString(
@@ -1450,6 +1455,7 @@ final class ChannelAppearanceScreenComponent: Component {
                         items: [
                             AnyComponentWithIdentity(id: 0, component: AnyComponent(ListActionItemComponent(
                                 theme: environment.theme,
+                                style: .glass,
                                 title: AnyComponent(HStack(stickerPackContents, spacing: 6.0)),
                                 icon: ListActionItemComponent.Icon(component: AnyComponentWithIdentity(id: 0, component: AnyComponent(EmojiActionIconComponent(
                                     context: component.context,
@@ -1502,9 +1508,9 @@ final class ChannelAppearanceScreenComponent: Component {
                     peerId: EnginePeer.Id(namespace: peer.id.namespace, id: PeerId.Id._internalFromInt64Value(0)),
                     author: peer.compactDisplayTitle,
                     photo: peer.profileImageRepresentations,
-                    nameColor: resolvedState.nameColor,
+                    nameColor: .preset(resolvedState.nameColor),
                     backgroundEmojiId: replyFileId,
-                    reply: (peer.compactDisplayTitle, environment.strings.Channel_Appearance_ExampleReplyText, resolvedState.nameColor),
+                    reply: (peer.compactDisplayTitle, environment.strings.Channel_Appearance_ExampleReplyText, .preset(resolvedState.nameColor)),
                     linkPreview: (environment.strings.Channel_Appearance_ExampleLinkWebsite, environment.strings.Channel_Appearance_ExampleLinkTitle, environment.strings.Channel_Appearance_ExampleLinkText),
                     text: environment.strings.Channel_Appearance_ExampleText
                 )
@@ -1558,6 +1564,7 @@ final class ChannelAppearanceScreenComponent: Component {
                             AnyComponentWithIdentity(id: 1, component: AnyComponent(ListItemComponentAdaptor(
                                 itemGenerator: PeerNameColorItem(
                                     theme: environment.theme,
+                                    systemStyle: .glass,
                                     colors: component.context.peerNameColors,
                                     mode: .name,
                                     currentColor: resolvedState.nameColor,
@@ -1574,6 +1581,7 @@ final class ChannelAppearanceScreenComponent: Component {
                             ))),
                             AnyComponentWithIdentity(id: 2, component: AnyComponent(ListActionItemComponent(
                                 theme: environment.theme,
+                                style: .glass,
                                 title: AnyComponent(HStack(replyLogoContents, spacing: 6.0)),
                                 icon: ListActionItemComponent.Icon(component: AnyComponentWithIdentity(id: 0, component: AnyComponent(EmojiActionIconComponent(
                                     context: component.context,
@@ -1639,9 +1647,9 @@ final class ChannelAppearanceScreenComponent: Component {
                         peerId: EnginePeer.Id(namespace: Namespaces.Peer.CloudUser, id: PeerId.Id._internalFromInt64Value(0)),
                         author: environment.strings.Group_Appearance_PreviewAuthor,
                         photo: [],
-                        nameColor: .red,
+                        nameColor: .preset(.red),
                         backgroundEmojiId: 5301072507598550489,
-                        reply: (environment.strings.Appearance_PreviewReplyAuthor, environment.strings.Appearance_PreviewReplyText, .violet),
+                        reply: (environment.strings.Appearance_PreviewReplyAuthor, environment.strings.Appearance_PreviewReplyText, .preset(.violet)),
                         linkPreview: nil,
                         text: environment.strings.Appearance_PreviewIncomingText
                     )
@@ -1651,7 +1659,7 @@ final class ChannelAppearanceScreenComponent: Component {
                         peerId: EnginePeer.Id(namespace: Namespaces.Peer.CloudUser, id: PeerId.Id._internalFromInt64Value(1)),
                         author: peer.compactDisplayTitle,
                         photo: peer.profileImageRepresentations,
-                        nameColor: .blue,
+                        nameColor: .preset(.blue),
                         backgroundEmojiId: nil,
                         reply: nil,
                         linkPreview: nil,
@@ -1730,6 +1738,7 @@ final class ChannelAppearanceScreenComponent: Component {
                     transition: transition,
                     component: AnyComponent(ListSectionComponent(
                         theme: environment.theme,
+                        style: .glass,
                         header: nil,
                         footer: AnyComponent(MultilineTextComponent(
                             text: .plain(NSAttributedString(
@@ -1773,10 +1782,12 @@ final class ChannelAppearanceScreenComponent: Component {
                 ))))
             }
             
+            let buttonSideInset: CGFloat = 36.0
             let buttonSize = self.actionButton.update(
                 transition: transition,
                 component: AnyComponent(ButtonComponent(
                     background: ButtonComponent.Background(
+                        style: .glass,
                         color: environment.theme.list.itemCheckColors.fillColor,
                         foreground: environment.theme.list.itemCheckColors.foregroundColor,
                         pressedColor: environment.theme.list.itemCheckColors.fillColor.withMultipliedAlpha(0.8)
@@ -1795,7 +1806,7 @@ final class ChannelAppearanceScreenComponent: Component {
                     }
                 )),
                 environment: {},
-                containerSize: CGSize(width: availableSize.width - sideInset * 2.0, height: 50.0)
+                containerSize: CGSize(width: availableSize.width - buttonSideInset * 2.0, height: 52.0)
             )
             contentHeight += buttonSize.height
             
@@ -1804,7 +1815,7 @@ final class ChannelAppearanceScreenComponent: Component {
             
             let buttonY = availableSize.height - bottomInset - environment.safeInsets.bottom - buttonSize.height
             
-            let buttonFrame = CGRect(origin: CGPoint(x: sideInset, y: buttonY), size: buttonSize)
+            let buttonFrame = CGRect(origin: CGPoint(x: buttonSideInset, y: buttonY), size: buttonSize)
             if let buttonView = self.actionButton.view {
                 if buttonView.superview == nil {
                     self.addSubview(buttonView)
@@ -1813,13 +1824,10 @@ final class ChannelAppearanceScreenComponent: Component {
                 transition.setAlpha(view: buttonView, alpha: 1.0)
             }
             
-            let bottomPanelFrame = CGRect(origin: CGPoint(x: 0.0, y: buttonY - 8.0), size: CGSize(width: availableSize.width, height: availableSize.height - buttonY + 8.0))
-            transition.setFrame(view: self.bottomPanelBackgroundView, frame: bottomPanelFrame)
-            self.bottomPanelBackgroundView.updateColor(color: environment.theme.rootController.navigationBar.blurredBackgroundColor, transition: .immediate)
-            self.bottomPanelBackgroundView.update(size: bottomPanelFrame.size, transition: transition.containedViewLayoutTransition)
-            
-            self.bottomPanelSeparator.backgroundColor = environment.theme.rootController.navigationBar.separatorColor.cgColor
-            transition.setFrame(layer: self.bottomPanelSeparator, frame: CGRect(origin: CGPoint(x: bottomPanelFrame.minX, y: bottomPanelFrame.minY), size: CGSize(width: bottomPanelFrame.width, height: UIScreenPixel)))
+            let edgeEffectHeight: CGFloat = availableSize.height - buttonY + 36.0
+            let edgeEffectFrame = CGRect(origin: CGPoint(x: 0.0, y: availableSize.height - edgeEffectHeight), size: CGSize(width: availableSize.width, height: edgeEffectHeight))
+            transition.setFrame(view: self.edgeEffectView, frame: edgeEffectFrame)
+            self.edgeEffectView.update(content: environment.theme.list.blocksBackgroundColor, alpha: 1.0, rect: edgeEffectFrame, edge: .bottom, edgeSize: edgeEffectFrame.height, transition: transition)
             
             let previousBounds = self.scrollView.bounds
             
@@ -1829,10 +1837,6 @@ final class ChannelAppearanceScreenComponent: Component {
             }
             if self.scrollView.contentSize != contentSize {
                 self.scrollView.contentSize = contentSize
-            }
-            let scrollInsets = UIEdgeInsets(top: environment.navigationHeight, left: 0.0, bottom: availableSize.height - bottomPanelFrame.minY, right: 0.0)
-            if self.scrollView.verticalScrollIndicatorInsets != scrollInsets {
-                self.scrollView.verticalScrollIndicatorInsets = scrollInsets
             }
                         
             if !previousBounds.isEmpty, !transition.animation.isImmediate {
@@ -1877,12 +1881,11 @@ public class ChannelAppearanceScreen: ViewControllerComponentContainer {
             context: context,
             peerId: peerId,
             boostStatus: boostStatus
-        ), navigationBarAppearance: .default, theme: .default, updatedPresentationData: updatedPresentationData)
+        ), navigationBarAppearance: .transparent, theme: .default, updatedPresentationData: updatedPresentationData)
         
         let presentationData = context.sharedContext.currentPresentationData.with { $0 }
         self.title = ""
         self.navigationItem.backBarButtonItem = UIBarButtonItem(title: presentationData.strings.Common_Back, style: .plain, target: nil, action: nil)
-        self.navigationItem.leftBarButtonItem = UIBarButtonItem(customView: UIView())
         
         self.ready.set(.never())
         

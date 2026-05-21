@@ -28,8 +28,6 @@
 
 "NiceFeatures.Folders.Header" = "ORDNER";
 "NiceFeatures.Account.Header" = "Datenschutzeinstellungen";
-"NiceFeatures.Folders.TgFolders" = "Ordner - unten";
-"NiceFeatures.Folders.TgFolders.Notice" = "Ordnerliste im iOS-Stil";
 
 "NiceFeatures.RoundVideos.Header" = "RUNDE VIDEOS";
 "NiceFeatures.RoundVideos.UseRearCamera" = "Starte mit umgedrehter Kamera";
@@ -50,8 +48,6 @@
 /*Common*/
 "Common.ExitNow" = "Jetzt verlassen";
 "Common.Later" = "Später";
-"Common.RestartRequired" = "Neustart erforderlich!";
-"NiceFeatures.Tabs.ShowNames" = "Tabnamen anzeigen";
 "Chat.ForwardAsCopy" = "Als Kopie weiterleiten";
 
 /*Folder*/
@@ -156,23 +152,10 @@
 "NicegramSettings.Other.hidePhoneInSettingsNotice" = "Deine Nummer wird nur in der Benutzeroberfläche versteckt. Um sie vor anderen zu verbergen, verwende bitte die Privatsphäre-Einstellungen.";
 "NicegramSettings.Other.showProfileId" = "Profil-ID anzeigen";
 "NicegramSettings.Other.showRegDate" = "Registrierungsdatum anzeigen";
-"NicegramSettings.Unblock.Header" = "Blockierung aufheben";
-"NicegramSettings.Unblock.Button" = "Anleitung zum Aufheben einer Blockierung";
-"NicegramSettings.Other.hideReactions" = "Reaktionen verbergen";
-"NicegramSettings.Other.hideReactionsToYourMessages" = "Reaktionen auf Ihre Nachrichten verbergen";
 "NicegramSettings.RoundVideos.DownloadVideos" = "Videos in die Galerie herunterladen";
 "Premium.OnetapTranslate.UseIgnoreLanguages" = "Sprachen ignorieren";
 "Premium.OnetapTranslate.UseIgnoreLanguages.Note" = "Die App erkennt die Sprache jeder Nachricht auf deinem Gerät. Das ist eine Aufgabe mit hoher Priorität, die sich auf die Akkulaufzeit auswirken kann.";
 "Premium.rememberFolderOnExit" = "Aktuellen Ordner beim Beenden merken";
-"NicegramSettings.HideStories" = "Stories verbergen";
-"NicegramSettings.HideBadgeCounters" = "Reaktionsbenachrichtigungen ausblenden";
-"NicegramSettings.HideUnreadCounters" = "Ungelesene Zähler verbergen";
-"NicegramSettings.HideMentionNotification" = "Erwähnungsbenachrichtigungen verbergen";
-"NicegramSettings.EnableAnimationsInChatList" = "Animationen in der Chatliste";
-"NicegramSettings.EnableGrayscaleAll" = "Vollbild-Graustufen";
-"NicegramSettings.EnableGrayscaleInChatList" = "Graustufen in der Chatliste";
-"NicegramSettings.EnableGrayscaleInChat" = "Graustufen im Chat";
-"NicegramSettings.EnableAppleSpeech2Text" = "Apple Speech2Text aktivieren";
 "NicegramSettings.ShowKeywords" = "Ordner für Stichwörter anzeigen";
 
 /*Registration Date*/
@@ -202,10 +185,6 @@
 "RoundedVideos.MoreButtonTooltip" = "Quadratische Videos mit einem Tippen in Kreise umwandeln und senden.";
 "RoundedVideos.SendButtonTooltip" = "Lange drücken, um Ihr Video als stilvollen Kreis zu senden.";
 
-/*Speech to text*/
-"SpeechToText.UseOpenAi" = "OpenAI Sprache zu Text";
-"SpeechToText.Toast" = "[Abonnieren Sie Nicegram Premium]() für schnellere und bessere OpenAI Sprache zu Text-Technologien!";
-
 /*Confirm Call*/
 "ConfirmCall.Desc" = "Sind Sie sicher, dass Sie einen Anruf tätigen möchten?";
 
@@ -227,7 +206,6 @@
 "NicegramCallRecord.StopAlertDescription" = "Möchten Sie die Aufnahme dieses Anrufs stoppen?";
 "NicegramCallRecord.StopAlertButtonStop" = "Stopp";
 "NicegramCallRecord.StopAlertButtonCancel" = "Abbrechen";
-"NicegramCallRecord.SavedMessage" = "Aufgezeichneter Anruf in **Gespeicherte Nachrichten** gespeichert.";
 
 /*Feed*/
 "NicegramFeed.Title" = "Feed";
@@ -236,7 +214,6 @@
 
 /*SpeechToText*/
 "NicegramSpeechToText.Language.Title" = "Speеch-2-Text";
-"NicegramSpeechToText.Language.Whisper" = "⚠️ Wählen Sie die Sprache Ihrer Sprachnachricht, um die Genauigkeit zu erhöhen, oder [aktivieren Sie Whisper](https://my.nicegram.app/) für eine mühelose automatische Erkennung";
 "NicegramSpeechToText.Language.Choose" = "Wählen Sie eine Sprache zur Erkennung";
 "NicegramSpeechToText.SelectLanguage" = "Sprache auswählen";
 "NicegramSpeechToText.NotAvailable" = "Sprach-zu-Text-Erkennung ist derzeit nicht verfügbar";
@@ -267,3 +244,15 @@
 "AccountsBackup.ImportFromFile" = "Aus Datei importieren";
 "AccountsBackup.ExportAsFile" = "Als Datei exportieren";
 "AccountsBackup.DeleteSessions" = "Sitzungen löschen";
+
+/*Privacy Settings Recommendation*/
+"NicegramSettings.AccountPrivacy.Button" = "Kontoprivatsphäre Aktualisieren";
+"NicegramSettings.AccountPrivacy.Alert.Title" = "Empfohlene Datenschutzeinstellungen Übernehmen?";
+"NicegramSettings.AccountPrivacy.Alert.Body" = "Wenden Sie empfohlene Datenschutz- und Sicherheitseinstellungen auf Ihr Konto an. Sie können diese später in Einstellungen → Datenschutz & Sicherheit ändern";
+"NicegramSettings.AccountPrivacy.Alert.Apply" = "Anwenden";
+"NicegramSettings.AccountPrivacy.Alert.Cancel" = "Abbrechen";
+
+/*WhiteBridge*/
+"whitebridge.profile.button" = "WhiteBridge";
+"whitebridge.profile.hint" = "Erhalte einen strukturierten Überblick über öffentliche Informationen aus dem Internet – Profile, Hintergrund, soziale Aktivitäten und mehr!";
+"whitebridge.chats.quick.action" = "WhiteBridge-Bericht ansehen";

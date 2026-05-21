@@ -17,7 +17,7 @@ final class ChatListSearchMessageSelectionPanelNode: ASDisplayNode {
     private let deleteMessages: () -> Void
     private let shareMessages: () -> Void
     private let forwardMessages: () -> Void
-    private let displayCopyProtectionTip: (ASDisplayNode, Bool) -> Void
+    private let displayCopyProtectionTip: (UIView, Bool) -> Void
     
     private let separatorNode: ASDisplayNode
     private let backgroundNode: NavigationBackgroundNode
@@ -61,7 +61,7 @@ final class ChatListSearchMessageSelectionPanelNode: ASDisplayNode {
         }
     }
     
-    init(context: AccountContext, deleteMessages: @escaping () -> Void, shareMessages: @escaping () -> Void, forwardMessages: @escaping () -> Void, displayCopyProtectionTip: @escaping (ASDisplayNode, Bool) -> Void) {
+    init(context: AccountContext, deleteMessages: @escaping () -> Void, shareMessages: @escaping () -> Void, forwardMessages: @escaping () -> Void, displayCopyProtectionTip: @escaping (UIView, Bool) -> Void) {
         self.context = context
         self.deleteMessages = deleteMessages
         self.shareMessages = shareMessages
@@ -176,7 +176,7 @@ final class ChatListSearchMessageSelectionPanelNode: ASDisplayNode {
     
     @objc func forwardButtonPressed() {
         if let actions = self.actions, actions.isCopyProtected {
-            self.displayCopyProtectionTip(self.forwardButton, false)
+            self.displayCopyProtectionTip(self.forwardButton.view, false)
         } else {
             self.forwardMessages()
         }
@@ -184,7 +184,7 @@ final class ChatListSearchMessageSelectionPanelNode: ASDisplayNode {
     
     @objc func shareButtonPressed() {
         if let actions = self.actions, actions.isCopyProtected {
-            self.displayCopyProtectionTip(self.shareButton, true)
+            self.displayCopyProtectionTip(self.shareButton.view, true)
         } else {
             self.shareMessages()
         }

@@ -331,7 +331,7 @@ public class ChatMessageInstantVideoItemNode: ChatMessageItemView, ASGestureReco
             }
             
             if hasAvatar {
-                avatarInset = layoutConstants.avatarDiameter
+                avatarInset = layoutConstants.avatarInset
             } else {
                 avatarInset = 0.0
             }
@@ -464,7 +464,7 @@ public class ChatMessageInstantVideoItemNode: ChatMessageItemView, ASGestureReco
             var replyMessage: Message?
             var replyForward: QuotedReplyMessageAttribute?
             var replyQuote: (quote: EngineMessageReplyQuote, isQuote: Bool)?
-            var replyTodoItemId: Int32?
+            var replyInnerSubject: EngineMessageReplyInnerSubject?
             var replyStory: StoryId?
             for attribute in item.message.attributes {
                 if let attribute = attribute as? InlineBotMessageAttribute {
@@ -508,7 +508,7 @@ public class ChatMessageInstantVideoItemNode: ChatMessageItemView, ASGestureReco
                         replyMessage = item.message.associatedMessages[replyAttribute.messageId]
                     }
                     replyQuote = replyAttribute.quote.flatMap { ($0, replyAttribute.isQuote) }
-                    replyTodoItemId = replyAttribute.todoItemId
+                    replyInnerSubject = replyAttribute.innerSubject
                 } else if let attribute = attribute as? QuotedReplyMessageAttribute {
                     replyForward = attribute
                 } else if let attribute = attribute as? ReplyStoryAttribute {
@@ -528,8 +528,9 @@ public class ChatMessageInstantVideoItemNode: ChatMessageItemView, ASGestureReco
                     message: replyMessage,
                     replyForward: replyForward,
                     quote: replyQuote,
-                    todoItemId: replyTodoItemId,
+                    innerSubject: replyInnerSubject,
                     story: replyStory,
+                    isSummarized: false,
                     parentMessage: item.message,
                     constrainedSize: CGSize(width: max(0, availableWidth), height: CGFloat.greatestFiniteMagnitude),
                     animationCache: item.controllerInteraction.presentationContext.animationCache,
@@ -1343,7 +1344,7 @@ public class ChatMessageInstantVideoItemNode: ChatMessageItemView, ASGestureReco
         
         let avatarInset: CGFloat
         if self.appliedHasAvatar {
-            avatarInset = layoutConstants.avatarDiameter
+            avatarInset = layoutConstants.avatarInset
         } else {
             avatarInset = 0.0
         }

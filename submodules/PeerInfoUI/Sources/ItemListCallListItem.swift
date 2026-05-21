@@ -9,6 +9,7 @@ import TelegramPresentationData
 import ItemListUI
 import PresentationDataUtils
 import TelegramStringFormatting
+import TextFormat
 
 public class ItemListCallListItem: ListViewItem, ItemListItem {
     let presentationData: ItemListPresentationData
@@ -174,7 +175,7 @@ public class ItemListCallListItemNode: ListViewItemNode {
         
         self.accessibilityArea = AccessibilityAreaNode()
         
-        super.init(layerBacked: false, dynamicBounce: false)
+        super.init(layerBacked: false)
         
         self.addSubnode(self.titleNode)
         self.addSubnode(self.accessibilityArea)

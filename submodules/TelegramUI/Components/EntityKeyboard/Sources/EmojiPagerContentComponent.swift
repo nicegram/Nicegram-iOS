@@ -126,7 +126,7 @@ public final class EntityKeyboardAnimationData: Equatable {
         var file: TelegramMediaFile?
         var color: UIColor?
         for attribute in gift.attributes {
-            if case let .model(_, fileValue, _) = attribute {
+            if case let .model(_, fileValue, _, _) = attribute {
                 file = fileValue
             } else if case let .backdrop(_, _, innerColor, outerColor, _, _, _) = attribute {
                 color = UIColor(rgb: UInt32(bitPattern: innerColor))
@@ -266,6 +266,7 @@ public final class EmojiPagerContentComponent: Component {
         public let updateScrollingToItemGroup: () -> Void
         public let externalCancel: (() -> Void)?
         public let onScroll: () -> Void
+        public let loadMore: (() -> Void)?
         public let chatPeerId: PeerId?
         public let peekBehavior: EmojiContentPeekBehavior?
         public let customLayout: CustomLayout?
@@ -296,6 +297,7 @@ public final class EmojiPagerContentComponent: Component {
             updateScrollingToItemGroup: @escaping () -> Void,
             externalCancel: (() -> Void)? = nil,
             onScroll: @escaping () -> Void,
+            loadMore: (() -> Void)? = nil,
             chatPeerId: PeerId?,
             peekBehavior: EmojiContentPeekBehavior?,
             customLayout: CustomLayout?,
@@ -324,6 +326,7 @@ public final class EmojiPagerContentComponent: Component {
             self.updateScrollingToItemGroup = updateScrollingToItemGroup
             self.externalCancel = externalCancel
             self.onScroll = onScroll
+            self.loadMore = loadMore
             self.chatPeerId = chatPeerId
             self.peekBehavior = peekBehavior
             self.customLayout = customLayout
@@ -610,6 +613,12 @@ public final class EmojiPagerContentComponent: Component {
         }
     }
     
+    public enum MaskEdgeMode {
+        case none
+        case fade
+        case clip
+    }
+    
     public let id: AnyHashable
     public let context: AccountContext
     public let avatarPeer: EnginePeer?
@@ -620,9 +629,11 @@ public final class EmojiPagerContentComponent: Component {
     public let contentItemGroups: [ItemGroup]
     public let itemLayoutType: ItemLayoutType
     public let itemContentUniqueId: ContentId?
+    public let canLoadMore: Bool
     public let searchState: SearchState
     public let warpContentsOnEdges: Bool
     public let hideBackground: Bool
+    public let maskEdge: MaskEdgeMode
     public let displaySearchWithPlaceholder: String?
     public let searchCategories: EmojiSearchCategories?
     public let searchInitiallyHidden: Bool
@@ -645,9 +656,11 @@ public final class EmojiPagerContentComponent: Component {
         contentItemGroups: [ItemGroup],
         itemLayoutType: ItemLayoutType,
         itemContentUniqueId: ContentId?,
+        canLoadMore: Bool = false,
         searchState: SearchState,
         warpContentsOnEdges: Bool,
         hideBackground: Bool,
+        maskEdge: MaskEdgeMode,
         displaySearchWithPlaceholder: String?,
         searchCategories: EmojiSearchCategories?,
         searchInitiallyHidden: Bool,
@@ -669,9 +682,11 @@ public final class EmojiPagerContentComponent: Component {
         self.contentItemGroups = contentItemGroups
         self.itemLayoutType = itemLayoutType
         self.itemContentUniqueId = itemContentUniqueId
+        self.canLoadMore = canLoadMore
         self.searchState = searchState
         self.warpContentsOnEdges = warpContentsOnEdges
         self.hideBackground = hideBackground
+        self.maskEdge = maskEdge
         self.displaySearchWithPlaceholder = displaySearchWithPlaceholder
         self.searchCategories = searchCategories
         self.searchInitiallyHidden = searchInitiallyHidden
@@ -684,7 +699,7 @@ public final class EmojiPagerContentComponent: Component {
         self.customTintColor = customTintColor
     }
     
-    public func withUpdatedItemGroups(panelItemGroups: [ItemGroup], contentItemGroups: [ItemGroup], itemContentUniqueId: ContentId?, emptySearchResults: EmptySearchResults?, searchState: SearchState) -> EmojiPagerContentComponent {
+    public func withUpdatedItemGroups(panelItemGroups: [ItemGroup], contentItemGroups: [ItemGroup], itemContentUniqueId: ContentId?, emptySearchResults: EmptySearchResults?, searchState: SearchState, canLoadMore: Bool? = nil) -> EmojiPagerContentComponent {
         return EmojiPagerContentComponent(
             id: self.id,
             context: self.context,
@@ -696,9 +711,11 @@ public final class EmojiPagerContentComponent: Component {
             contentItemGroups: contentItemGroups,
             itemLayoutType: self.itemLayoutType,
             itemContentUniqueId: itemContentUniqueId,
+            canLoadMore: canLoadMore ?? self.canLoadMore,
             searchState: searchState,
             warpContentsOnEdges: self.warpContentsOnEdges,
             hideBackground: self.hideBackground,
+            maskEdge: self.maskEdge,
             displaySearchWithPlaceholder: self.displaySearchWithPlaceholder,
             searchCategories: self.searchCategories,
             searchInitiallyHidden: self.searchInitiallyHidden,
@@ -724,9 +741,11 @@ public final class EmojiPagerContentComponent: Component {
             contentItemGroups: contentItemGroups,
             itemLayoutType: self.itemLayoutType,
             itemContentUniqueId: itemContentUniqueId,
+            canLoadMore: self.canLoadMore,
             searchState: searchState,
             warpContentsOnEdges: self.warpContentsOnEdges,
             hideBackground: self.hideBackground,
+            maskEdge: self.maskEdge,
             displaySearchWithPlaceholder: self.displaySearchWithPlaceholder,
             searchCategories: self.searchCategories,
             searchInitiallyHidden: self.searchInitiallyHidden,
@@ -752,9 +771,11 @@ public final class EmojiPagerContentComponent: Component {
             contentItemGroups: contentItemGroups,
             itemLayoutType: self.itemLayoutType,
             itemContentUniqueId: itemContentUniqueId,
+            canLoadMore: self.canLoadMore,
             searchState: searchState,
             warpContentsOnEdges: self.warpContentsOnEdges,
             hideBackground: self.hideBackground,
+            maskEdge: self.maskEdge,
             displaySearchWithPlaceholder: self.displaySearchWithPlaceholder,
             searchCategories: self.searchCategories,
             searchInitiallyHidden: self.searchInitiallyHidden,
@@ -802,6 +823,9 @@ public final class EmojiPagerContentComponent: Component {
         if lhs.itemContentUniqueId != rhs.itemContentUniqueId {
             return false
         }
+        if lhs.canLoadMore != rhs.canLoadMore {
+            return false
+        }
         if lhs.searchState != rhs.searchState {
             return false
         }
@@ -809,6 +833,9 @@ public final class EmojiPagerContentComponent: Component {
             return false
         }
         if lhs.hideBackground != rhs.hideBackground {
+            return false
+        }
+        if lhs.maskEdge != rhs.maskEdge {
             return false
         }
         if lhs.displaySearchWithPlaceholder != rhs.displaySearchWithPlaceholder {
@@ -1374,9 +1401,13 @@ public final class EmojiPagerContentComponent: Component {
         private let backgroundView: BlurredBackgroundView
         private let backgroundTintView: UIView
         private var fadingMaskLayer: FadingMaskLayer?
+        private var tintFadingMaskLayer: FadingMaskLayer?
+        private var topPanelSeparator: (colorLayer: SimpleLayer, tintLayer: SimpleLayer)?
+        private var topPanelHeight: CGFloat = 0.0
         private var vibrancyClippingView: UIView
         private var vibrancyEffectView: UIView?
         public private(set) var mirrorContentClippingView: UIView?
+        private let mirrorScrollViewClippingView: UIView
         private let mirrorContentScrollView: UIView
         private var warpView: WarpView?
         private var mirrorContentWarpView: WarpView?
@@ -1400,6 +1431,7 @@ public final class EmojiPagerContentComponent: Component {
         private var visibleGroupPremiumButtons: [AnyHashable: ComponentView<Empty>] = [:]
         private var visibleGroupExpandActionButtons: [AnyHashable: GroupExpandActionButton] = [:]
         private var expandedGroupIds: Set<AnyHashable> = Set()
+        private var requestedLoadMoreContentId: ContentId?
         private var ignoreScrolling: Bool = false
         private var keepTopPanelVisibleUntilScrollingInput: Bool = false
         
@@ -1427,6 +1459,13 @@ public final class EmojiPagerContentComponent: Component {
         private var tapRecognizer: UITapGestureRecognizer?
         private var longTapRecognizer: UILongPressGestureRecognizer?
         
+        private func hasSameContentId(_ lhs: ContentId?, _ rhs: ContentId?) -> Bool {
+            if let rhs, rhs.version < 2 {
+                return false
+            }
+            return lhs?.id == rhs?.id
+        }
+        
         override init(frame: CGRect) {
             self.backgroundView = BlurredBackgroundView(color: nil)
             self.backgroundTintView = UIView()
@@ -1444,6 +1483,9 @@ public final class EmojiPagerContentComponent: Component {
             
             self.scrollViewClippingView = UIView()
             self.scrollViewClippingView.clipsToBounds = true
+            
+            self.mirrorScrollViewClippingView = UIView()
+            self.mirrorScrollViewClippingView.clipsToBounds = true
             
             self.mirrorContentScrollView = UIView()
             self.mirrorContentScrollView.layer.anchorPoint = CGPoint()
@@ -1483,6 +1525,8 @@ public final class EmojiPagerContentComponent: Component {
             self.scrollView.scrollsToTop = false
             self.addSubview(self.scrollViewClippingView)
             self.scrollViewClippingView.addSubview(self.scrollView)
+            
+            self.mirrorScrollViewClippingView.addSubview(self.mirrorContentScrollView)
             
             self.scrollView.addSubview(self.placeholdersContainerView)
             
@@ -1623,6 +1667,16 @@ public final class EmojiPagerContentComponent: Component {
             fatalError("init(coder:) has not been implemented")
         }
         
+        private var mirrorOverlayContainerView: UIView? {
+            if let mirrorContentClippingView = self.mirrorContentClippingView {
+                return mirrorContentClippingView
+            } else if let vibrancyEffectView = self.vibrancyEffectView {
+                return vibrancyEffectView
+            } else {
+                return nil
+            }
+        }
+        
         func updateIsWarpEnabled(isEnabled: Bool) {
             if isEnabled {
                 if self.warpView == nil {
@@ -1636,6 +1690,7 @@ public final class EmojiPagerContentComponent: Component {
                     let mirrorContentWarpView = WarpView(frame: CGRect())
                     self.mirrorContentWarpView = mirrorContentWarpView
                     
+                    self.mirrorScrollViewClippingView.addSubview(mirrorContentWarpView)
                     mirrorContentWarpView.contentView.addSubview(self.mirrorContentScrollView)
                 }
             } else {
@@ -1648,12 +1703,7 @@ public final class EmojiPagerContentComponent: Component {
                 if let mirrorContentWarpView = self.mirrorContentWarpView {
                     self.mirrorContentWarpView = nil
                     
-                    if let mirrorContentClippingView = self.mirrorContentClippingView {
-                        mirrorContentClippingView.addSubview(self.mirrorContentScrollView)
-                    } else if let vibrancyEffectView = self.vibrancyEffectView {
-                        vibrancyEffectView.addSubview(self.mirrorContentScrollView)
-                    }
-                    
+                    self.mirrorScrollViewClippingView.addSubview(self.mirrorContentScrollView)
                     mirrorContentWarpView.removeFromSuperview()
                 }
             }
@@ -2985,6 +3035,8 @@ public final class EmojiPagerContentComponent: Component {
             if let stateContext = self.component?.inputInteractionHolder.inputInteraction?.stateContext {
                 stateContext.scrollPosition = scrollView.bounds.minY
             }
+            
+            self.maybeLoadMore()
         }
         
         public func scrollViewWillEndDragging(_ scrollView: UIScrollView, withVelocity velocity: CGPoint, targetContentOffset: UnsafeMutablePointer<CGPoint>) {
@@ -3155,7 +3207,7 @@ public final class EmojiPagerContentComponent: Component {
                     let (groupHeaderSize, centralContentWidth) = groupHeaderView.update(
                         context: component.context,
                         theme: keyboardChildEnvironment.theme,
-                        forceNeedsVibrancy: component.inputInteractionHolder.inputInteraction?.externalBackground != nil,
+                        forceNeedsVibrancy: false,
                         layoutType: itemLayout.layoutType,
                         hasTopSeparator: hasTopSeparator,
                         actionButtonTitle: actionButtonTitle,
@@ -3200,7 +3252,7 @@ public final class EmojiPagerContentComponent: Component {
                         self.mirrorContentScrollView.layer.addSublayer(groupBorderLayer.tintContainerLayer)
                         
                         let borderColor: UIColor
-                        if keyboardChildEnvironment.theme.overallDarkAppearance && component.inputInteractionHolder.inputInteraction?.externalBackground != nil {
+                        if keyboardChildEnvironment.theme.overallDarkAppearance {
                             borderColor = keyboardChildEnvironment.theme.chat.inputMediaPanel.panelContentVibrantOverlayColor.withMultipliedAlpha(0.2)
                         } else {
                             borderColor = keyboardChildEnvironment.theme.chat.inputMediaPanel.panelContentVibrantOverlayColor
@@ -3998,6 +4050,26 @@ public final class EmojiPagerContentComponent: Component {
             if let fadingMaskLayer = self.fadingMaskLayer {
                 fadingMaskLayer.internalAlpha = max(0.0, min(1.0, self.scrollView.contentOffset.y / 30.0))
             }
+            if let tintFadingMaskLayer = self.tintFadingMaskLayer {
+                tintFadingMaskLayer.internalAlpha = max(0.0, min(1.0, self.scrollView.contentOffset.y / 30.0))
+                
+                self.updateTopPanelSeparator(transition: transition)
+            }
+        }
+        
+        private func updateTopPanelSeparator(transition: ComponentTransition) {
+            if let topPanelSeparator = self.topPanelSeparator {
+                var offset = self.scrollView.contentOffset.y
+                let startOffset: CGFloat = 46.0 - self.topPanelHeight
+                let endOffset: CGFloat = startOffset + 10.0
+                
+                offset = min(max(offset, startOffset), endOffset)
+                offset = (endOffset - offset) / (endOffset - startOffset)
+                let alpha = 1.0 - offset
+                
+                transition.setAlpha(layer: topPanelSeparator.colorLayer, alpha: alpha)
+                transition.setAlpha(layer: topPanelSeparator.tintLayer, alpha: alpha)
+            }
         }
         
         private func updateShimmerIfNeeded() {
@@ -4010,31 +4082,61 @@ public final class EmojiPagerContentComponent: Component {
             }
         }
         
+        private func maybeLoadMore() {
+            guard let component = self.component, !self.isUpdating else {
+                return
+            }
+            guard component.canLoadMore, let contentId = component.itemContentUniqueId else {
+                self.requestedLoadMoreContentId = nil
+                return
+            }
+            guard let loadMore = component.inputInteractionHolder.inputInteraction?.loadMore else {
+                return
+            }
+            
+            let loadMoreBoundary: CGFloat
+            if component.contentItemGroups.first?.groupId == AnyHashable("search"), let itemLayout = self.itemLayout, itemLayout.itemGroupLayouts.count > 1 {
+                loadMoreBoundary = itemLayout.itemGroupLayouts[1].frame.minY
+            } else {
+                loadMoreBoundary = self.scrollView.contentSize.height
+            }
+            
+            let remainingDistance = loadMoreBoundary - self.scrollView.bounds.maxY
+            if remainingDistance > 200.0 {
+                return
+            }
+            if self.requestedLoadMoreContentId == contentId {
+                return
+            }
+            
+            self.requestedLoadMoreContentId = contentId
+            loadMore()
+        }
+        
         private func expandGroup(groupId: AnyHashable) {
             self.expandedGroupIds.insert(groupId)
             
             self.state?.updated(transition: ComponentTransition(animation: .curve(duration: 0.4, curve: .spring)).withUserData(ContentAnimation(type: .groupExpanded(id: groupId))))
         }
         
-        public func pagerUpdateBackground(backgroundFrame: CGRect, topPanelHeight: CGFloat, transition: ComponentTransition) {
+        public func pagerUpdateBackground(backgroundFrame: CGRect, topPanelHeight: CGFloat, bottomPanelHeight: CGFloat, externalTintMaskContainer: UIView?, transition: ComponentTransition) {
             guard let component = self.component, let keyboardChildEnvironment = self.keyboardChildEnvironment, let pagerEnvironment = self.pagerEnvironment else {
                 return
             }
             
-            if let externalBackground = component.inputInteractionHolder.inputInteraction?.externalBackground, let effectContainerView = externalBackground.effectContainerView {
+            if let effectContainerView = externalTintMaskContainer ?? component.inputInteractionHolder.inputInteraction?.externalBackground?.effectContainerView {
                 let mirrorContentClippingView: UIView
                 if let current = self.mirrorContentClippingView {
                     mirrorContentClippingView = current
                 } else {
                     mirrorContentClippingView = UIView()
-                    mirrorContentClippingView.clipsToBounds = true
+                    mirrorContentClippingView.clipsToBounds = false
                     self.mirrorContentClippingView = mirrorContentClippingView
-                    
-                    if let mirrorContentWarpView = self.mirrorContentWarpView {
-                        mirrorContentClippingView.addSubview(mirrorContentWarpView)
-                    } else {
-                        mirrorContentClippingView.addSubview(self.mirrorContentScrollView)
-                    }
+                }
+                if self.mirrorScrollViewClippingView.superview !== mirrorContentClippingView {
+                    mirrorContentClippingView.insertSubview(self.mirrorScrollViewClippingView, at: 0)
+                } else {
+                    mirrorContentClippingView.sendSubviewToBack(self.mirrorScrollViewClippingView)
                 }
                 
                 let clippingFrame = CGRect(origin: CGPoint(x: 0.0, y: pagerEnvironment.containerInsets.top), size: CGSize(width: backgroundFrame.width, height: backgroundFrame.height))
@@ -4058,25 +4160,71 @@ public final class EmojiPagerContentComponent: Component {
                     }
                     self.vibrancyEffectView = vibrancyEffectView
                     self.backgroundTintView.mask = vibrancyEffectView
-                    self.vibrancyClippingView.addSubview(self.mirrorContentScrollView)
                     vibrancyEffectView.addSubview(self.vibrancyClippingView)
+                }
+                if self.mirrorScrollViewClippingView.superview !== self.vibrancyClippingView {
+                    self.vibrancyClippingView.insertSubview(self.mirrorScrollViewClippingView, at: 0)
+                } else {
+                    self.vibrancyClippingView.sendSubviewToBack(self.mirrorScrollViewClippingView)
                 }
             }
             
             if component.hideBackground {
                 self.backgroundView.isHidden = true
                 
-                let maskLayer: FadingMaskLayer
-                if let current = self.fadingMaskLayer {
-                    maskLayer = current
-                } else {
-                    maskLayer = FadingMaskLayer()
-                    self.fadingMaskLayer = maskLayer
+                if component.maskEdge != .none {
+                    let maskLayer: FadingMaskLayer
+                    if let current = self.fadingMaskLayer {
+                        maskLayer = current
+                    } else {
+                        maskLayer = FadingMaskLayer(isHard: component.maskEdge == .clip)
+                        self.fadingMaskLayer = maskLayer
+                    }
+                    
+                    let tintFadingMaskLayer: FadingMaskLayer
+                    if let current = self.tintFadingMaskLayer {
+                        tintFadingMaskLayer = current
+                    } else {
+                        tintFadingMaskLayer = FadingMaskLayer(isHard: component.maskEdge == .clip)
+                        self.tintFadingMaskLayer = tintFadingMaskLayer
+                    }
+                    
+                    if case .clip = component.maskEdge {
+                        let topPanelSeparator: (colorLayer: SimpleLayer, tintLayer: SimpleLayer)
+                        if let current = self.topPanelSeparator {
+                            topPanelSeparator = current
+                        } else {
+                            topPanelSeparator = (SimpleLayer(), SimpleLayer())
+                            self.topPanelSeparator = topPanelSeparator
+                            self.layer.addSublayer(topPanelSeparator.colorLayer)
+                            if let effectContainerView = externalTintMaskContainer ?? component.inputInteractionHolder.inputInteraction?.externalBackground?.effectContainerView {
+                                effectContainerView.layer.addSublayer(topPanelSeparator.tintLayer)
+                            }
+                        }
+                        
+                        topPanelSeparator.colorLayer.backgroundColor = keyboardChildEnvironment.theme.list.itemPlainSeparatorColor.withMultipliedAlpha(0.5).cgColor
+                        topPanelSeparator.tintLayer.backgroundColor = UIColor(white: 0.0, alpha: 0.7).cgColor
+                        
+                        let separatorFrame = CGRect(origin: CGPoint(x: 0.0, y: topPanelHeight - UIScreenPixel), size: CGSize(width: backgroundFrame.width, height: UIScreenPixel))
+                        transition.setFrame(layer: topPanelSeparator.colorLayer, frame: separatorFrame)
+                        transition.setFrame(layer: topPanelSeparator.tintLayer, frame: separatorFrame)
+                        
+                        self.topPanelHeight = topPanelHeight
+                        self.updateTopPanelSeparator(transition: transition)
+                    }
+                    
+                    if self.layer.mask == nil {
+                        self.layer.mask = maskLayer
+                    }
+                    if self.mirrorContentClippingView?.layer.mask != tintFadingMaskLayer {
+                        self.mirrorContentClippingView?.layer.mask = tintFadingMaskLayer
+                    }
+                    let maskFrame = CGRect(origin: CGPoint(x: 0.0, y: 0.0), size: backgroundFrame.size)
+                    transition.setFrame(layer: maskLayer, frame: maskFrame)
+                    transition.setFrame(layer: tintFadingMaskLayer, frame: maskLayer.frame)
+                    maskLayer.update(size: maskFrame.size, topPanelHeight: topPanelHeight, bottomPanelHeight: bottomPanelHeight, transition: transition)
+                    tintFadingMaskLayer.update(size: maskFrame.size, topPanelHeight: topPanelHeight, bottomPanelHeight: bottomPanelHeight, transition: transition)
                 }
-                if self.layer.mask == nil {
-                    self.layer.mask = maskLayer
-                }
-                maskLayer.frame = CGRect(origin: CGPoint(x: 0.0, y: floorToScreenPixels((topPanelHeight - 34.0) * 0.75)), size: backgroundFrame.size)
             } else if component.warpContentsOnEdges {
                 self.backgroundView.isHidden = true
             } else {
@@ -4203,7 +4351,7 @@ public final class EmojiPagerContentComponent: Component {
             var previousAbsoluteItemPositions: [VisualItemKey: CGPoint] = [:]
             
             var anchorItems: [EmojiKeyboardItemLayer.Key: CGRect] = [:]
-            if let previousComponent = previousComponent, let previousItemLayout = self.itemLayout, previousComponent.contentItemGroups != component.contentItemGroups, previousComponent.itemContentUniqueId == component.itemContentUniqueId {
+            if let previousComponent = previousComponent, let previousItemLayout = self.itemLayout, previousComponent.contentItemGroups != component.contentItemGroups, self.hasSameContentId(previousComponent.itemContentUniqueId, component.itemContentUniqueId) {
                 if !transition.animation.isImmediate {
                     var previousItemPositionsValue: [VisualItemKey: CGPoint] = [:]
                     for groupIndex in 0 ..< previousComponent.contentItemGroups.count {
@@ -4325,7 +4473,7 @@ public final class EmojiPagerContentComponent: Component {
             if previousComponent == nil {
                 isFirstUpdate = true
             }
-            if previousComponent?.itemContentUniqueId != component.itemContentUniqueId {
+            if !self.hasSameContentId(previousComponent?.itemContentUniqueId, component.itemContentUniqueId) {
                 resetScrolling = true
             }
             if resetScrolling {
@@ -4333,8 +4481,8 @@ public final class EmojiPagerContentComponent: Component {
             }
             
             var animateContentCrossfade = false
-            if let previousComponent, previousComponent.itemContentUniqueId != component.itemContentUniqueId, itemTransition.animation.isImmediate {
-                if !(previousComponent.contentItemGroups.contains(where: { $0.fillWithLoadingPlaceholders }) && component.contentItemGroups.contains(where: { $0.fillWithLoadingPlaceholders })) && previousComponent.itemContentUniqueId?.id != component.itemContentUniqueId?.id {
+            if let previousComponent, !self.hasSameContentId(previousComponent.itemContentUniqueId, component.itemContentUniqueId), itemTransition.animation.isImmediate {
+                if !(previousComponent.contentItemGroups.contains(where: { $0.fillWithLoadingPlaceholders }) && component.contentItemGroups.contains(where: { $0.fillWithLoadingPlaceholders })) {
                     animateContentCrossfade = true
                 }
             }
@@ -4420,6 +4568,9 @@ public final class EmojiPagerContentComponent: Component {
             
             transition.setFrame(view: self.vibrancyClippingView, frame: CGRect(origin: CGPoint(x: 0.0, y: self.isSearchActivated ? clippingTopInset : 0.0), size: availableSize))
             transition.setBounds(view: self.vibrancyClippingView, bounds: CGRect(origin: CGPoint(x: 0.0, y: self.isSearchActivated ? clippingTopInset : 0.0), size: availableSize))
+            
+            transition.setFrame(view: self.mirrorScrollViewClippingView, frame: CGRect(origin: CGPoint(x: 0.0, y: self.isSearchActivated ? clippingTopInset : 0.0), size: availableSize))
+            transition.setBounds(view: self.mirrorScrollViewClippingView, bounds: CGRect(origin: CGPoint(x: 0.0, y: self.isSearchActivated ? clippingTopInset : 0.0), size: availableSize))
             
             let previousSize = self.scrollView.bounds.size
             self.scrollView.bounds = CGRect(origin: self.scrollView.bounds.origin, size: scrollSize)
@@ -4510,10 +4661,12 @@ public final class EmojiPagerContentComponent: Component {
                                 }
                                 
                                 let previousBounds = self.scrollView.bounds
-                                self.scrollView.setContentOffset(CGPoint(x: 0.0, y: contentOffsetY), animated: false)
                                 let scrollOffset = previousBounds.minY - contentOffsetY
-                                transition.animateBoundsOrigin(view: self.scrollView, from: CGPoint(x: 0.0, y: scrollOffset), to: CGPoint(), additive: true)
-                                animatedScrollOffset = scrollOffset
+                                if abs(scrollOffset) > 0.5 {
+                                    self.scrollView.setContentOffset(CGPoint(x: 0.0, y: contentOffsetY), animated: false)
+                                    transition.animateBoundsOrigin(view: self.scrollView, from: CGPoint(x: 0.0, y: scrollOffset), to: CGPoint(), additive: true)
+                                    animatedScrollOffset = scrollOffset
+                                }
                                 
                                 break outer
                             }
@@ -4582,11 +4735,9 @@ public final class EmojiPagerContentComponent: Component {
                     if self.isSearchActivated {
                         if visibleSearchHeader.superview != self {
                             self.addSubview(visibleSearchHeader)
-                            if self.mirrorContentClippingView != nil {
-                                self.mirrorContentClippingView?.addSubview(visibleSearchHeader.tintContainerView)
-                            } else {
-                                self.mirrorContentScrollView.superview?.superview?.addSubview(visibleSearchHeader.tintContainerView)
-                            }
+                        }
+                        if let mirrorOverlayContainerView = self.mirrorOverlayContainerView, visibleSearchHeader.tintContainerView.superview !== mirrorOverlayContainerView {
+                            mirrorOverlayContainerView.addSubview(visibleSearchHeader.tintContainerView)
                         }
                     } else {
                         /*if useOpaqueTheme {
@@ -4647,7 +4798,7 @@ public final class EmojiPagerContentComponent: Component {
                     self.visibleSearchHeader = visibleSearchHeader
                     if self.isSearchActivated {
                         self.addSubview(visibleSearchHeader)
-                        self.mirrorContentClippingView?.addSubview(visibleSearchHeader.tintContainerView)
+                        self.mirrorOverlayContainerView?.addSubview(visibleSearchHeader.tintContainerView)
                     } else {
                         self.scrollView.addSubview(visibleSearchHeader)
                         self.mirrorContentScrollView.addSubview(visibleSearchHeader.tintContainerView)
@@ -4655,7 +4806,7 @@ public final class EmojiPagerContentComponent: Component {
                 }
                 
                 let searchHeaderFrame = CGRect(origin: CGPoint(x: itemLayout.searchInsets.left, y: itemLayout.searchInsets.top), size: CGSize(width: itemLayout.width - itemLayout.searchInsets.left - itemLayout.searchInsets.right, height: itemLayout.searchHeight))
-                visibleSearchHeader.update(context: component.context, theme: keyboardChildEnvironment.theme, forceNeedsVibrancy: component.inputInteractionHolder.inputInteraction?.externalBackground != nil, strings: keyboardChildEnvironment.strings, text: displaySearchWithPlaceholder, useOpaqueTheme: useOpaqueTheme, isActive: self.isSearchActivated, size: searchHeaderFrame.size, canFocus: !component.searchIsPlaceholderOnly, searchCategories: component.searchCategories, searchState: component.searchState, transition: transition)
+                visibleSearchHeader.update(context: component.context, theme: keyboardChildEnvironment.theme, forceNeedsVibrancy: false, strings: keyboardChildEnvironment.strings, text: displaySearchWithPlaceholder, useOpaqueTheme: useOpaqueTheme, isActive: self.isSearchActivated, size: searchHeaderFrame.size, canFocus: !component.searchIsPlaceholderOnly, searchCategories: component.searchCategories, searchState: component.searchState, transition: transition)
        
                 transition.setFrame(view: visibleSearchHeader, frame: searchHeaderFrame)
                 // Temporary workaround for status selection; use a separate search container (see GIF)
@@ -4899,18 +5050,38 @@ private final class FadingMaskLayer: SimpleLayer {
     let fillLayer = SimpleLayer()
     let gradientFillLayer = SimpleLayer()
     
+    private let isHard: Bool
+    
     var internalAlpha: CGFloat = 1.0 {
         didSet {
             self.gradientFillLayer.opacity = Float(1.0 - self.internalAlpha)
         }
     }
     
-    override func layoutSublayers() {
+    init(isHard: Bool) {
+        self.isHard = isHard
+        super.init()
+    }
+    
+    override init(layer: Any) {
+        self.isHard = false
+        super.init(layer: layer)
+    }
+    
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+    
+    func update(size: CGSize, topPanelHeight: CGFloat, bottomPanelHeight: CGFloat, transition: ComponentTransition) {
         let gradientHeight: CGFloat = 66.0
         if self.gradientLayer.contents == nil {
-            self.addSublayer(self.gradientLayer)
+            if !self.isHard {
+                self.addSublayer(self.gradientLayer)
+            }
             self.addSublayer(self.fillLayer)
-            self.addSublayer(self.gradientFillLayer)
+            if !self.isHard {
+                self.addSublayer(self.gradientFillLayer)
+            }
             
             let gradientImage = generateGradientImage(size: CGSize(width: 1.0, height: gradientHeight), colors: [UIColor.white.withAlphaComponent(0.0), UIColor.white.withAlphaComponent(0.0), UIColor.white, UIColor.white], locations: [0.0, 0.4, 0.9, 1.0], direction: .vertical)
             self.gradientLayer.contents = gradientImage?.cgImage
@@ -4919,9 +5090,13 @@ private final class FadingMaskLayer: SimpleLayer {
             self.gradientFillLayer.backgroundColor = UIColor.white.cgColor
         }
         
-        self.gradientLayer.frame = CGRect(origin: .zero, size: CGSize(width: self.bounds.width, height: gradientHeight))
-        self.gradientFillLayer.frame = self.gradientLayer.frame
-        self.fillLayer.frame = CGRect(origin: CGPoint(x: 0.0, y: gradientHeight), size: CGSize(width: self.bounds.width, height: self.bounds.height - gradientHeight))
+        transition.setFrame(layer: self.gradientLayer, frame: CGRect(origin: .zero, size: CGSize(width: size.width, height: gradientHeight)))
+        transition.setFrame(layer: self.gradientFillLayer, frame: self.gradientLayer.frame)
+        if self.isHard {
+            transition.setFrame(layer: self.fillLayer, frame: CGRect(origin: CGPoint(x: 0.0, y: topPanelHeight), size: CGSize(width: size.width, height: size.height - topPanelHeight - bottomPanelHeight)))
+        } else {
+            transition.setFrame(layer: self.fillLayer, frame: CGRect(origin: CGPoint(x: 0.0, y: gradientHeight + topPanelHeight - 40.0), size: CGSize(width: size.width, height: size.height - gradientHeight)))
+        }
     }
 }
 

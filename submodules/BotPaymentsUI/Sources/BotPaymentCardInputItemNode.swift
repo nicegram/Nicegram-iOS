@@ -45,9 +45,9 @@ final class BotPaymentCardInputItemNode: BotPaymentItemNode, STPPaymentCardTextF
             self.cardField.keyboardAppearance = theme.rootController.keyboardColor.keyboardAppearance
         }
         
-        self.cardField.frame = CGRect(origin: CGPoint(x: 5.0 + sideInset, y: 0.0), size: CGSize(width: width - 10.0 - sideInset * 2.0, height: 44.0))
+        self.cardField.frame = CGRect(origin: CGPoint(x: 5.0 + sideInset, y: 4.0), size: CGSize(width: width - 10.0 - sideInset * 2.0, height: 44.0))
         
-        return 44.0
+        return 52.0
     }
     
     func paymentCardTextFieldDidChange(_ textField: STPPaymentCardTextField) {

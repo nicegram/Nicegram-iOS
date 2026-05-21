@@ -1,27 +1,18 @@
-import FeatAttentionEconomy
-
-import AccountContext
 import ChatControllerInteraction
 import Display
+import FeatAdsgram
 import Foundation
+import MemberwiseInit
 import SwiftSignalKit
 import TelegramPresentationData
 
-@available(iOS 15.0, *)
+@available(iOS 16.0, *)
+@MemberwiseInit(.public)
 public final class ChatMessageNicegramAdItem: ListViewItem {
-    public let ad: AttAd
-    public let chatLocation: ChatLocation
-    public let context: AccountContext
     public let controllerInteraction: ChatControllerInteraction
     public let presentationData: ChatPresentationData
-    
-    public init(ad: AttAd, chatLocation: ChatLocation, context: AccountContext, controllerInteraction: ChatControllerInteraction, presentationData: ChatPresentationData) {
-        self.ad = ad
-        self.chatLocation = chatLocation
-        self.context = context
-        self.controllerInteraction = controllerInteraction
-        self.presentationData = presentationData
-    }
+    public let viewModel: ChatMessageAdViewModel
+    public let viewState: PlacementViewState
     
     public func nodeConfiguredForParams(
         async: @escaping (@escaping () -> Void) -> Void,
@@ -33,6 +24,7 @@ public final class ChatMessageNicegramAdItem: ListViewItem {
     ) {
         let configure = { () -> Void in
             let node = ChatMessageNicegramAdNode(rotated: self.controllerInteraction.chatIsRotated)
+
             node.setupItem(self)
             
             let nodeLayout = node.asyncLayout()
@@ -56,7 +48,7 @@ public final class ChatMessageNicegramAdItem: ListViewItem {
         Queue.mainQueue().async {
             if let nodeValue = node() as? ChatMessageNicegramAdNode {
                 nodeValue.setupItem(self)
-                
+
                 let nodeLayout = nodeValue.asyncLayout()
                 
                 let (layout, apply) = nodeLayout(self, params, false, false, false)

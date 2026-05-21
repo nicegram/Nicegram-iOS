@@ -1,7 +1,6 @@
 import Foundation
 import UIKit
 import AsyncDisplayKit
-import Postbox
 import TelegramCore
 import TelegramPresentationData
 import AccountContext
@@ -47,10 +46,14 @@ func leftNavigationButtonForChatInterfaceState(_ presentationInterfaceState: Cha
             }
             
             if canClear {
-                return ChatNavigationButton(action: .clearHistory, buttonItem: UIBarButtonItem(title: title, style: .plain, target: target, action: selector))
+                let buttonItem = UIBarButtonItem(title: strings.Conversation_ClearAll, style: .plain, target: target, action: selector)
+                buttonItem.accessibilityLabel = title
+                return ChatNavigationButton(action: .clearHistory, buttonItem: buttonItem)
             } else {
                 title = strings.Conversation_ClearCache
-                return ChatNavigationButton(action: .clearCache, buttonItem: UIBarButtonItem(title: title, style: .plain, target: target, action: selector))
+                let buttonItem = UIBarButtonItem(title: strings.Conversation_ClearCache, style: .plain, target: target, action: selector)
+                buttonItem.accessibilityLabel = title
+                return ChatNavigationButton(action: .clearCache, buttonItem: buttonItem)
             }
         }
     }
@@ -74,6 +77,9 @@ func leftNavigationButtonForChatInterfaceState(_ presentationInterfaceState: Cha
 }
 
 func rightNavigationButtonForChatInterfaceState(context: AccountContext, presentationInterfaceState: ChatPresentationInterfaceState, strings: PresentationStrings, currentButton: ChatNavigationButton?, target: Any?, selector: Selector?, chatInfoNavigationButton: ChatNavigationButton?, moreInfoNavigationButton: ChatNavigationButton?) -> ChatNavigationButton? {
+    if case .standard(.previewing) = presentationInterfaceState.mode {
+        return nil
+    }
     var hasMessages = false
     if let chatHistoryState = presentationInterfaceState.chatHistoryState {
         if case .loaded(false, _) = chatHistoryState {
@@ -88,7 +94,7 @@ func rightNavigationButtonForChatInterfaceState(context: AccountContext, present
         if let currentButton = currentButton, currentButton.action == .cancelMessageSelection {
             return currentButton
         } else {
-            let buttonItem = UIBarButtonItem(title: strings.Common_Cancel, style: .plain, target: target, action: selector)
+            let buttonItem = UIBarButtonItem(title: "___done", style: .plain, target: target, action: selector)
             buttonItem.accessibilityLabel = strings.Common_Cancel
             return ChatNavigationButton(action: .cancelMessageSelection, buttonItem: buttonItem)
         }
@@ -122,7 +128,7 @@ func rightNavigationButtonForChatInterfaceState(context: AccountContext, present
         }
     }
     
-    if let channel = presentationInterfaceState.renderedPeer?.peer as? TelegramChannel, channel.isForum, channel.linkedBotId != nil, case .peer = presentationInterfaceState.chatLocation {
+    if let user = presentationInterfaceState.renderedPeer?.peer as? TelegramUser, user.isForum, case .peer = presentationInterfaceState.chatLocation {
         let displaySearch = hasMessages
         
         if displaySearch {

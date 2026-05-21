@@ -3,8 +3,9 @@
 
 double animationDurationFactorImpl();
 
-CABasicAnimation * _Nonnull makeSpringAnimationImpl(NSString * _Nonnull keyPath);
-CABasicAnimation * _Nonnull makeSpringBounceAnimationImpl(NSString * _Nonnull keyPath, CGFloat initialVelocity, CGFloat damping);
+CABasicAnimation * _Nonnull makeSpringAnimationImpl(NSString * _Nonnull keyPath, double duration);
+CABasicAnimation * _Nonnull make26SpringAnimationImpl(NSString * _Nonnull keyPath, double duration);
+CASpringAnimation * _Nonnull makeSpringBounceAnimationImpl(NSString * _Nonnull keyPath, CGFloat initialVelocity, CGFloat damping);
 CGFloat springAnimationValueAtImpl(CABasicAnimation * _Nonnull animation, CGFloat t);
 
 UIBlurEffect * _Nonnull makeCustomZoomBlurEffectImpl(bool isLight);
@@ -28,11 +29,16 @@ bool isViewPortalView(UIView * _Nonnull view);
 UIView * _Nullable getPortalViewSourceView(UIView * _Nonnull portalView);
 
 NSObject * _Nullable makeBlurFilter();
+NSObject * _Nullable makeVariableBlurFilter();
 NSObject * _Nullable makeLuminanceToAlphaFilter();
 NSObject * _Nullable makeColorInvertFilter();
 NSObject * _Nullable makeMonochromeFilter();
+NSObject * _Nullable makeDisplacementMapFilter();
+NSObject * _Nullable makeColorMatrixFilter();
 
 void setLayerDisableScreenshots(CALayer * _Nonnull layer, bool disableScreenshots);
 bool getLayerDisableScreenshots(CALayer * _Nonnull layer);
 
 void setLayerContentsMaskMode(CALayer * _Nonnull layer, bool maskMode);
+
+void setMonochromaticEffectImpl(UIView * _Nonnull view, bool isEnabled);

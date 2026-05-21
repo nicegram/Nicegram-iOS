@@ -113,19 +113,22 @@ final class PeerInfoHeaderSingleLineTextFieldNode: ASDisplayNode, PeerInfoHeader
             self.textNode.textField.text = updateText
         }
         
+        let separatorRightInset: CGFloat = 16.0
+        
         if !hasPrevious {
             self.topSeparator.isHidden = true
         }
         self.topSeparator.backgroundColor = presentationData.theme.list.itemBlocksSeparatorColor
         let separatorX = safeInset + (hasPrevious ? 16.0 : 0.0)
-        self.topSeparator.frame = CGRect(origin: CGPoint(x: separatorX, y: 0.0), size: CGSize(width: width - separatorX - safeInset, height: UIScreenPixel))
+        self.topSeparator.frame = CGRect(origin: CGPoint(x: separatorX, y: 0.0), size: CGSize(width: width - separatorX - safeInset - separatorRightInset, height: UIScreenPixel))
         
         let measureText = "|"
         let attributedMeasureText = NSAttributedString(string: measureText, font: titleFont, textColor: .black)
         self.measureTextNode.attributedText = attributedMeasureText
         let measureTextSize = self.measureTextNode.updateLayout(CGSize(width: width - safeInset * 2.0 - 16.0 * 2.0 - 38.0, height: .greatestFiniteMagnitude))
         
-        let height = measureTextSize.height + 22.0
+        let verticalInset: CGFloat = 15.0
+        let height = measureTextSize.height + verticalInset * 2.0
         
         let buttonSize = CGSize(width: 38.0, height: height)
         self.clearButtonNode.frame = CGRect(origin: CGPoint(x: width - safeInset - buttonSize.width, y: 0.0), size: buttonSize)
@@ -140,7 +143,7 @@ final class PeerInfoHeaderSingleLineTextFieldNode: ASDisplayNode, PeerInfoHeader
         let hasTopCorners = hasCorners && !hasPrevious
         let hasBottomCorners = hasCorners && !hasNext
         
-        self.maskNode.image = hasCorners ? PresentationResourcesItemList.cornersImage(presentationData.theme, top: hasTopCorners, bottom: hasBottomCorners) : nil
+        self.maskNode.image = hasCorners ? PresentationResourcesItemList.cornersImage(presentationData.theme, top: hasTopCorners, bottom: hasBottomCorners, glass: true) : nil
         self.maskNode.frame = CGRect(origin: CGPoint(x: safeInset, y: 0.0), size: CGSize(width: width - safeInset - safeInset, height: height))
         
         self.textNode.isUserInteractionEnabled = isEnabled

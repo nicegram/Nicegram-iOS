@@ -35,7 +35,7 @@ private final class LegacyDataImportSplashImpl: WindowCoveringView, LegacyDataIm
                     self.updateLayout(size)
                 }
             }
-            self.progressNode.transitionToState(.progress(color: self.theme?.list.itemAccentColor ?? UIColor(rgb: 0x007aff), lineWidth: 2.0, value: CGFloat(max(0.025, self.progress.1)), cancelEnabled: false, animateRotation: true), animated: false, completion: {})
+            self.progressNode.transitionToState(.progress(color: self.theme?.list.itemAccentColor ?? UIColor(rgb: 0x0088ff), lineWidth: 2.0, value: CGFloat(max(0.025, self.progress.1)), cancelEnabled: false, animateRotation: true), animated: false, completion: {})
         }
     }
     

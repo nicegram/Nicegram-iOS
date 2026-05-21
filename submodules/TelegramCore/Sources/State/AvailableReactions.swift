@@ -314,7 +314,8 @@ public final class AvailableReactions: Equatable, Codable {
 private extension AvailableReactions.Reaction {
     convenience init?(apiReaction: Api.AvailableReaction) {
         switch apiReaction {
-        case let .availableReaction(flags, reaction, title, staticIcon, appearAnimation, selectAnimation, activateAnimation, effectAnimation, aroundAnimation, centerIcon):
+        case let .availableReaction(availableReactionData):
+            let (flags, reaction, title, staticIcon, appearAnimation, selectAnimation, activateAnimation, effectAnimation, aroundAnimation, centerIcon) = (availableReactionData.flags, availableReactionData.reaction, availableReactionData.title, availableReactionData.staticIcon, availableReactionData.appearAnimation, availableReactionData.selectAnimation, availableReactionData.activateAnimation, availableReactionData.effectAnimation, availableReactionData.aroundAnimation, availableReactionData.centerIcon)
             guard let staticIconFile = telegramMediaFileFromApiDocument(staticIcon, altDocuments: []) else {
                 return nil
             }
@@ -419,7 +420,8 @@ func managedSynchronizeAvailableReactions(postbox: Postbox, network: Network) ->
                     }
                     
                     switch result {
-                    case let .availableReactions(hash, reactions):
+                    case let .availableReactions(availableReactionsData):
+                        let (hash, reactions) = (availableReactionsData.hash, availableReactionsData.reactions)
                         let availableReactions = AvailableReactions(
                             hash: hash,
                             reactions: reactions.compactMap(AvailableReactions.Reaction.init(apiReaction:))

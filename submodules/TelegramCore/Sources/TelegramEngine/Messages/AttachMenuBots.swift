@@ -298,17 +298,20 @@ func managedSynchronizeAttachMenuBots(accountPeerId: PeerId, postbox: Postbox, n
                 }
                 return postbox.transaction { transaction -> Void in
                     switch result {
-                        case let .attachMenuBots(hash, bots, users):
+                        case let .attachMenuBots(attachMenuBotsData):
+                            let (hash, bots, users) = (attachMenuBotsData.hash, attachMenuBotsData.bots, attachMenuBotsData.users)
                         updatePeers(transaction: transaction, accountPeerId: accountPeerId, peers: AccumulatedPeers(users: users))
 
                             var resultBots: [AttachMenuBots.Bot] = []
                             for bot in bots {
                                 switch bot {
-                                    case let .attachMenuBot(apiFlags, botId, name, apiPeerTypes, botIcons):
+                                    case let .attachMenuBot(attachMenuBotData):
+                                        let (apiFlags, botId, name, apiPeerTypes, botIcons) = (attachMenuBotData.flags, attachMenuBotData.botId, attachMenuBotData.shortName, attachMenuBotData.peerTypes, attachMenuBotData.icons)
                                         var icons: [AttachMenuBots.Bot.IconName: TelegramMediaFile] = [:]
                                         for icon in botIcons {
                                             switch icon {
-                                                case let .attachMenuBotIcon(_, name, icon, _):
+                                                case let .attachMenuBotIcon(attachMenuBotIconData):
+                                                    let (_, name, icon, _) = (attachMenuBotIconData.flags, attachMenuBotIconData.name, attachMenuBotIconData.icon, attachMenuBotIconData.colors)
                                                     if let iconName = AttachMenuBots.Bot.IconName(string: name), let icon = telegramMediaFileFromApiDocument(icon, altDocuments: []) {
                                                         icons[iconName] = icon
                                                     }
@@ -524,7 +527,8 @@ func _internal_getAttachMenuBot(accountPeerId: PeerId, postbox: Postbox, network
         |> mapToSignal { result -> Signal<AttachMenuBot, GetAttachMenuBotError> in
             return postbox.transaction { transaction -> Signal<AttachMenuBot, GetAttachMenuBotError> in
                 switch result {
-                    case let .attachMenuBotsBot(bot, users):
+                    case let .attachMenuBotsBot(attachMenuBotsBotData):
+                        let (bot, users) = (attachMenuBotsBotData.bot, attachMenuBotsBotData.users)
                         var peer: Peer?
                         for user in users {
                             let telegramUser = TelegramUser(user: user)
@@ -539,11 +543,13 @@ func _internal_getAttachMenuBot(accountPeerId: PeerId, postbox: Postbox, network
                         }
                     
                         switch bot {
-                            case let .attachMenuBot(apiFlags, _, name, apiPeerTypes, botIcons):
+                            case let .attachMenuBot(attachMenuBotData):
+                                let (apiFlags, _, name, apiPeerTypes, botIcons) = (attachMenuBotData.flags, attachMenuBotData.botId, attachMenuBotData.shortName, attachMenuBotData.peerTypes, attachMenuBotData.icons)
                                 var icons: [AttachMenuBots.Bot.IconName: TelegramMediaFile] = [:]
                                 for icon in botIcons {
                                     switch icon {
-                                        case let .attachMenuBotIcon(_, name, icon, _):
+                                        case let .attachMenuBotIcon(attachMenuBotIconData):
+                                            let (_, name, icon, _) = (attachMenuBotIconData.flags, attachMenuBotIconData.name, attachMenuBotIconData.icon, attachMenuBotIconData.colors)
                                             if let iconName = AttachMenuBots.Bot.IconName(string: name), let icon = telegramMediaFileFromApiDocument(icon, altDocuments: []) {
                                                 icons[iconName] = icon
                                             }
@@ -727,12 +733,12 @@ func _internal_getBotApp(account: Account, reference: BotAppReference) -> Signal
         let app: Api.InputBotApp
         switch reference {
         case let .id(id, accessHash):
-            app = .inputBotAppID(id: id, accessHash: accessHash)
+            app = .inputBotAppID(.init(id: id, accessHash: accessHash))
         case let .shortName(peerId, shortName):
             guard let bot = transaction.getPeer(peerId), let inputBot = apiInputUser(bot) else {
                 return .fail(.generic)
             }
-            app = .inputBotAppShortName(botId: inputBot, shortName: shortName)
+            app = .inputBotAppShortName(.init(botId: inputBot, shortName: shortName))
         }
         
         return account.network.request(Api.functions.messages.getBotApp(app: app, hash: 0))
@@ -741,9 +747,11 @@ func _internal_getBotApp(account: Account, reference: BotAppReference) -> Signal
         }
         |> mapToSignal { result -> Signal<BotApp, GetBotAppError> in
             switch result {
-            case let .botApp(botAppFlags, app):
+            case let .botApp(botAppData):
+                let (botAppFlags, app) = (botAppData.flags, botAppData.app)
                 switch app {
-                case let .botApp(flags, id, accessHash, shortName, title, description, photo, document, hash):
+                case let .botApp(botAppData):
+                    let (flags, id, accessHash, shortName, title, description, photo, document, hash) = (botAppData.flags, botAppData.id, botAppData.accessHash, botAppData.shortName, botAppData.title, botAppData.description, botAppData.photo, botAppData.document, botAppData.hash)
                     let _ = flags
                     var appFlags = BotApp.Flags()
                     if (botAppFlags & (1 << 0)) != 0 {
@@ -769,7 +777,8 @@ func _internal_getBotApp(account: Account, reference: BotAppReference) -> Signal
 extension BotApp {
     convenience init?(apiBotApp: Api.BotApp) {
         switch apiBotApp {
-        case let .botApp(_, id, accessHash, shortName, title, description, photo, document, hash):
+        case let .botApp(botAppData):
+            let (id, accessHash, shortName, title, description, photo, document, hash) = (botAppData.id, botAppData.accessHash, botAppData.shortName, botAppData.title, botAppData.description, botAppData.photo, botAppData.document, botAppData.hash)
             self.init(id: id, accessHash: accessHash, shortName: shortName, title: title, description: description, photo: telegramMediaImageFromApiPhoto(photo), document: document.flatMap { telegramMediaFileFromApiDocument($0, altDocuments: []) }, hash: hash, flags: [])
         case .botAppNotModified:
             return nil

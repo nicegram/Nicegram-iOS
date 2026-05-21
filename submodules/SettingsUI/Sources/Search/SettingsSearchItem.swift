@@ -2,7 +2,6 @@ import Foundation
 import UIKit
 import Display
 import AsyncDisplayKit
-import Postbox
 import TelegramCore
 import SwiftSignalKit
 import TelegramPresentationData
@@ -13,12 +12,15 @@ import AccountContext
 import SearchBarNode
 import SearchUI
 import ChatListSearchItemHeader
+import EdgeEffect
+import ComponentFlow
+import ComponentDisplayAdapters
 
 extension SettingsSearchableItemIcon {
     func image() -> UIImage? {
         switch self {
             case .profile:
-                return PresentationResourcesSettings.editProfile
+                return PresentationResourcesSettings.privateChats
             case .proxy:
                 return PresentationResourcesSettings.proxy
             case .savedMessages:
@@ -45,139 +47,52 @@ extension SettingsSearchableItemIcon {
                 return PresentationResourcesSettings.support
             case .faq:
                 return PresentationResourcesSettings.faq
+            case .tips:
+                return PresentationResourcesSettings.tips
             case .chatFolders:
                 return PresentationResourcesSettings.chatFolders
             case .deleteAccount:
-                return PresentationResourcesSettings.deleteAccount
+                return PresentationResourcesSettings.block
             case .devices:
                 return PresentationResourcesSettings.devices
             case .premium:
                 return PresentationResourcesSettings.premium
+            case .business:
+                return PresentationResourcesSettings.business
+            case .stars:
+                return PresentationResourcesSettings.stars
+            case .ton:
+                return PresentationResourcesSettings.ton
             case .stories:
                 return PresentationResourcesSettings.stories
-        }
-    }
-}
-
-final class SettingsSearchItem: ItemListControllerSearch {
-    let context: AccountContext
-    let theme: PresentationTheme
-    let placeholder: String
-    let activated: Bool
-    let updateActivated: (Bool) -> Void
-    let presentController: (ViewController, Any?) -> Void
-    let pushController: (ViewController) -> Void
-    let getNavigationController: (() -> NavigationController?)?
-    let resolvedFaqUrl: Signal<ResolvedUrl?, NoError>
-    let exceptionsList: Signal<NotificationExceptionsList?, NoError>
-    let archivedStickerPacks: Signal<[ArchivedStickerPackItem]?, NoError>
-    let privacySettings: Signal<AccountPrivacySettings?, NoError>
-    let hasTwoStepAuth: Signal<Bool?, NoError>
-    let twoStepAuthData: Signal<TwoStepVerificationAccessConfiguration?, NoError>
-    let activeSessionsContext: Signal<ActiveSessionsContext?, NoError>
-    let webSessionsContext: Signal<WebSessionsContext?, NoError>
-    
-    private var updateActivity: ((Bool) -> Void)?
-    private var activity: ValuePromise<Bool> = ValuePromise(ignoreRepeated: false)
-    private let activityDisposable = MetaDisposable()
-    
-    init(context: AccountContext, theme: PresentationTheme, placeholder: String, activated: Bool, updateActivated: @escaping (Bool) -> Void, presentController: @escaping (ViewController, Any?) -> Void, pushController: @escaping (ViewController) -> Void, getNavigationController: (() -> NavigationController?)?, resolvedFaqUrl: Signal<ResolvedUrl?, NoError>, exceptionsList: Signal<NotificationExceptionsList?, NoError>, archivedStickerPacks: Signal<[ArchivedStickerPackItem]?, NoError>, privacySettings: Signal<AccountPrivacySettings?, NoError>, hasTwoStepAuth: Signal<Bool?, NoError>, twoStepAuthData: Signal<TwoStepVerificationAccessConfiguration?, NoError>, activeSessionsContext: Signal<ActiveSessionsContext?, NoError>, webSessionsContext: Signal<WebSessionsContext?, NoError>) {
-        self.context = context
-        self.theme = theme
-        self.placeholder = placeholder
-        self.activated = activated
-        self.updateActivated = updateActivated
-        self.presentController = presentController
-        self.pushController = pushController
-        self.getNavigationController = getNavigationController
-        self.resolvedFaqUrl = resolvedFaqUrl
-        self.exceptionsList = exceptionsList
-        self.archivedStickerPacks = archivedStickerPacks
-        self.privacySettings = privacySettings
-        self.hasTwoStepAuth = hasTwoStepAuth
-        self.twoStepAuthData = twoStepAuthData
-        self.activeSessionsContext = activeSessionsContext
-        self.webSessionsContext = webSessionsContext
-        self.activityDisposable.set((activity.get() |> mapToSignal { value -> Signal<Bool, NoError> in
-            if value {
-                return .single(value) |> delay(0.2, queue: Queue.mainQueue())
-            } else {
-                return .single(value)
-            }
-        }).start(next: { [weak self] value in
-            self?.updateActivity?(value)
-        }))
-    }
-    
-    deinit {
-        self.activityDisposable.dispose()
-    }
-    
-    func isEqual(to: ItemListControllerSearch) -> Bool {
-        if let to = to as? SettingsSearchItem {
-            if self.context !== to.context || self.theme !== to.theme || self.placeholder != to.placeholder || self.activated != to.activated {
-                return false
-            }
-            return true
-        } else {
-            return false
-        }
-    }
-    
-    func titleContentNode(current: (NavigationBarContentNode & ItemListControllerSearchNavigationContentNode)?) -> NavigationBarContentNode & ItemListControllerSearchNavigationContentNode {
-        let updateActivated: (Bool) -> Void = self.updateActivated
-        if let current = current as? NavigationBarSearchContentNode {
-            current.updateThemeAndPlaceholder(theme: self.theme, placeholder: self.placeholder)
-            return current
-        } else {
-            let presentationData = self.context.sharedContext.currentPresentationData.with { $0 }
-            return NavigationBarSearchContentNode(theme: presentationData.theme, placeholder: presentationData.strings.Settings_Search, activate: {
-                updateActivated(true)
-            })
-        }
-    }
-    
-    func node(current: ItemListControllerSearchNode?, titleContentNode: (NavigationBarContentNode & ItemListControllerSearchNavigationContentNode)?) -> ItemListControllerSearchNode {
-        let updateActivated: (Bool) -> Void = self.updateActivated
-        let presentController: (ViewController, Any?) -> Void = self.presentController
-        let pushController: (ViewController) -> Void = self.pushController
-        
-        if let current = current as? SettingsSearchItemNode, let titleContentNode = titleContentNode as? NavigationBarSearchContentNode {
-            current.updatePresentationData(self.context.sharedContext.currentPresentationData.with { $0 })
-            if current.isSearching != self.activated {
-                if self.activated {
-                    current.activateSearch(placeholderNode: titleContentNode.placeholderNode)
-                } else {
-                    current.deactivateSearch(placeholderNode: titleContentNode.placeholderNode)
-                }
-            }
-            return current
-        } else {
-            return SettingsSearchItemNode(context: self.context, cancel: {
-                updateActivated(false)
-            }, updateActivity: { [weak self] value in
-                self?.activity.set(value)
-            }, pushController: { c in
-                pushController(c)
-            }, presentController: { c, a in
-                presentController(c, a)
-            }, getNavigationController: self.getNavigationController, resolvedFaqUrl: self.resolvedFaqUrl, exceptionsList: self.exceptionsList, archivedStickerPacks: self.archivedStickerPacks, privacySettings: self.privacySettings, hasTwoStepAuth: self.hasTwoStepAuth, twoStepAuthData: self.twoStepAuthData, activeSessionsContext: self.activeSessionsContext, webSessionsContext: self.webSessionsContext)
+            case .myProfile:
+                return PresentationResourcesSettings.myProfile
+            case .gift:
+                return PresentationResourcesSettings.premiumGift
+            case .powerSaving:
+                return PresentationResourcesSettings.powerSaving
         }
     }
 }
 
 final class SettingsSearchInteraction {
     let openItem: (SettingsSearchableItem) -> Void
-    let deleteRecentItem: (SettingsSearchableItemId) -> Void
+    let openItemContextMenu: (SettingsSearchableItem, ContextExtractedContentContainingNode, CGRect, UIGestureRecognizer?) -> Void
+    let deleteRecentItem: (AnyHashable) -> Void
     
-    init(openItem: @escaping (SettingsSearchableItem) -> Void, deleteRecentItem: @escaping (SettingsSearchableItemId) -> Void) {
+    init(
+        openItem: @escaping (SettingsSearchableItem) -> Void,
+        openItemContextMenu: @escaping (SettingsSearchableItem, ContextExtractedContentContainingNode, CGRect, UIGestureRecognizer?) -> Void,
+        deleteRecentItem: @escaping (AnyHashable) -> Void
+    ) {
         self.openItem = openItem
+        self.openItemContextMenu = openItemContextMenu
         self.deleteRecentItem = deleteRecentItem
     }
 }
 
 private enum SettingsSearchEntryStableId: Hashable {
-    case result(SettingsSearchableItemId)
+    case result(AnyHashable)
 }
 
 private enum SettingsSearchEntry: Comparable, Identifiable {
@@ -236,7 +151,7 @@ private func preparedSettingsSearchContainerTransition(theme: PresentationTheme,
 }
 
 private enum SettingsSearchRecentEntryStableId: Hashable {
-    case recent(SettingsSearchableItemId)
+    case recent(AnyHashable)
 }
 
 private enum SettingsSearchRecentEntry: Comparable, Identifiable {
@@ -296,7 +211,11 @@ private enum SettingsSearchRecentEntry: Comparable, Identifiable {
     func item(account: Account, theme: PresentationTheme, strings: PresentationStrings, interaction: SettingsSearchInteraction) -> ListViewItem {
         switch self {
             case let .recent(_, item, header):
-                return SettingsSearchRecentItem(account: account, theme: theme, strings: strings, title: item.title, breadcrumbs: item.breadcrumbs, isFaq: false, action: {
+                var title = item.title
+                if title.isEmpty, let id = item.id.base as? String {
+                    title = id
+                }
+                return SettingsSearchRecentItem(account: account, theme: theme, strings: strings, title: title, breadcrumbs: item.breadcrumbs, isFaq: false, action: {
                     interaction.openItem(item)
                 }, deleted: {
                     interaction.deleteRecentItem(item.id)
@@ -333,6 +252,8 @@ public final class SettingsSearchContainerNode: SearchDisplayControllerContentNo
     private let listNode: ListView
     private let recentListNode: ListView
     
+    private let edgeEffectView: EdgeEffectView
+    
     private var enqueuedTransitions: [SettingsSearchContainerTransition] = []
     private var enqueuedRecentTransitions: [(SettingsSearchContainerRecentTransition, Bool)] = []
     private var hasValidLayout = false
@@ -346,24 +267,38 @@ public final class SettingsSearchContainerNode: SearchDisplayControllerContentNo
     private var presentationDataDisposable: Disposable?
     private let presentationDataPromise: Promise<PresentationData>
     
-    public init(context: AccountContext, openResult: @escaping (SettingsSearchableItem) -> Void, resolvedFaqUrl: Signal<ResolvedUrl?, NoError>, exceptionsList: Signal<NotificationExceptionsList?, NoError>, archivedStickerPacks: Signal<[ArchivedStickerPackItem]?, NoError>, privacySettings: Signal<AccountPrivacySettings?, NoError>, hasTwoStepAuth: Signal<Bool?, NoError>, twoStepAuthData: Signal<TwoStepVerificationAccessConfiguration?, NoError>, activeSessionsContext: Signal<ActiveSessionsContext?, NoError>, webSessionsContext: Signal<WebSessionsContext?, NoError>) {
+    public init(
+        context: AccountContext,
+        openResult: @escaping (SettingsSearchableItem) -> Void,
+        openContextMenu: @escaping (SettingsSearchableItem, ContextExtractedContentContainingNode, CGRect, UIGestureRecognizer?) -> Void,
+        resolvedFaqUrl: Signal<ResolvedUrl?, NoError>,
+        exceptionsList: Signal<NotificationExceptionsList?, NoError>,
+        archivedStickerPacks: Signal<[ArchivedStickerPackItem]?, NoError>,
+        privacySettings: Signal<AccountPrivacySettings?, NoError>,
+        hasTwoStepAuth: Signal<Bool?, NoError>,
+        twoStepAuthData: Signal<TwoStepVerificationAccessConfiguration?, NoError>,
+        activeSessionsContext: Signal<ActiveSessionsContext?, NoError>,
+        webSessionsContext: Signal<WebSessionsContext?, NoError>
+    ) {
         let presentationData = context.sharedContext.currentPresentationData.with { $0 }
         self.presentationData = presentationData
         self.presentationDataPromise = Promise(self.presentationData)
         
-        self.listNode = ListView()
+        self.listNode = ListViewImpl()
         self.listNode.backgroundColor = self.presentationData.theme.chatList.backgroundColor
         self.listNode.isHidden = true
         self.listNode.accessibilityPageScrolledString = { row, count in
             return presentationData.strings.VoiceOver_ScrollStatus(row, count).string
         }
         
-        self.recentListNode = ListView()
+        self.recentListNode = ListViewImpl()
         self.recentListNode.backgroundColor = self.presentationData.theme.chatList.backgroundColor
         self.recentListNode.verticalScrollIndicatorColor = self.presentationData.theme.list.scrollIndicatorColor
         self.recentListNode.accessibilityPageScrolledString = { row, count in
             return presentationData.strings.VoiceOver_ScrollStatus(row, count).string
         }
+        
+        self.edgeEffectView = EdgeEffectView()
         
         super.init()
         
@@ -371,16 +306,32 @@ public final class SettingsSearchContainerNode: SearchDisplayControllerContentNo
         
         self.addSubnode(self.recentListNode)
         self.addSubnode(self.listNode)
+        self.view.addSubview(self.edgeEffectView)
         
-        let interaction = SettingsSearchInteraction(openItem: { result in
-            addRecentSettingsSearchItem(engine: context.engine, item: result.id)
-            openResult(result)
-        }, deleteRecentItem: { id in
-            removeRecentSettingsSearchItem(engine: context.engine, item: id)
-        })
+        let interaction = SettingsSearchInteraction(
+            openItem: { item in
+                addRecentSettingsSearchItem(engine: context.engine, item: item.id)
+                openResult(item)
+            },
+            openItemContextMenu: { item, node, rect, gesture in
+                openContextMenu(item, node, rect, gesture)
+            },
+            deleteRecentItem: { id in
+                removeRecentSettingsSearchItem(engine: context.engine, item: id)
+            }
+        )
         
         let searchableItems = Promise<[SettingsSearchableItem]>()
-        searchableItems.set(settingsSearchableItems(context: context, notificationExceptionsList: exceptionsList, archivedStickerPacks: archivedStickerPacks, privacySettings: privacySettings, hasTwoStepAuth: hasTwoStepAuth, twoStepAuthData: twoStepAuthData, activeSessionsContext: activeSessionsContext, webSessionsContext: webSessionsContext))
+        searchableItems.set(settingsSearchableItems(
+            context: context,
+            notificationExceptionsList: exceptionsList,
+            archivedStickerPacks: archivedStickerPacks,
+            privacySettings: privacySettings,
+            hasTwoStepAuth: hasTwoStepAuth,
+            twoStepAuthData: twoStepAuthData,
+            activeSessionsContext: activeSessionsContext,
+            webSessionsContext: webSessionsContext
+        ))
         
         let faqItems = Promise<[SettingsSearchableItem]>()
         faqItems.set(faqSearchableItems(context: context, resolvedUrl: resolvedFaqUrl, suggestAccountDeletion: false))
@@ -393,11 +344,11 @@ public final class SettingsSearchContainerNode: SearchDisplayControllerContentNo
                     let results = searchSettingsItems(items: searchableItems, query: query)
                     let faqResults = searchSettingsItems(items: faqSearchableItems, query: query)
                     let finalResults: [SettingsSearchableItem]
-                    if faqResults.first?.id == .faq(1) {
-                        finalResults = faqResults + results
-                    } else {
+                    //if faqResults.first?.id == .faq(1) {
+                    //    finalResults = faqResults + results
+                    //} else {
                         finalResults = results + faqResults
-                    }
+                    //}
                     return .single((query, finalResults))
                 } else {
                     return .single(nil)
@@ -407,12 +358,12 @@ public final class SettingsSearchContainerNode: SearchDisplayControllerContentNo
         
         self.recentListNode.isHidden = false
         
-        let previousRecentlySearchedItemOrder = Atomic<[SettingsSearchableItemId]>(value: [])
+        let previousRecentlySearchedItemOrder = Atomic<[AnyHashable]>(value: [])
         let fixedRecentlySearchedItems = settingsSearchRecentItems(engine: context.engine)
-        |> map { recentIds -> [SettingsSearchableItemId] in
-            var result: [SettingsSearchableItemId] = []
+        |> map { recentIds -> [AnyHashable] in
+            var result: [AnyHashable] = []
             let _ = previousRecentlySearchedItemOrder.modify { current in
-                var updated: [SettingsSearchableItemId] = []
+                var updated: [AnyHashable] = []
                 for id in current {
                     inner: for recentId in recentIds {
                         if recentId == id {
@@ -435,7 +386,7 @@ public final class SettingsSearchContainerNode: SearchDisplayControllerContentNo
         
         let recentSearchItems = combineLatest(searchableItems.get(), fixedRecentlySearchedItems)
         |> map { searchableItems, recentItems -> [SettingsSearchableItem] in
-            let searchableItemsMap = searchableItems.reduce([SettingsSearchableItemId : SettingsSearchableItem]()) { (map, item) -> [SettingsSearchableItemId: SettingsSearchableItem] in
+            let searchableItemsMap = searchableItems.reduce([AnyHashable : SettingsSearchableItem]()) { (map, item) -> [AnyHashable: SettingsSearchableItem] in
                 var map = map
                 map[item.id] = item
                 return map
@@ -443,10 +394,10 @@ public final class SettingsSearchContainerNode: SearchDisplayControllerContentNo
             var result: [SettingsSearchableItem] = []
             for itemId in recentItems {
                 if let searchItem = searchableItemsMap[itemId] {
-                    if case let .language(id) = searchItem.id, id > 0 {
-                    } else {
+                    //if case let .language(id) = searchItem.id, id > 0 {
+                    //} else {
                         result.append(searchItem)
-                    }
+                    //}
                 }
             }
             return result
@@ -620,6 +571,12 @@ public final class SettingsSearchContainerNode: SearchDisplayControllerContentNo
                 self.dequeueTransition()
             }
         }
+        
+        let edgeEffectHeight: CGFloat = insets.bottom + 8.0
+        let edgeEffectFrame = CGRect(origin: CGPoint(x: 0.0, y: layout.size.height - edgeEffectHeight), size: CGSize(width: layout.size.width, height: edgeEffectHeight))
+        transition.updateFrame(view: self.edgeEffectView, frame: edgeEffectFrame)
+        self.edgeEffectView.update(content: self.presentationData.theme.list.plainBackgroundColor, rect: edgeEffectFrame, edge: .bottom, edgeSize: min(edgeEffectHeight, 50.0), transition: ComponentTransition(transition))
+        transition.updateAlpha(layer: self.edgeEffectView.layer, alpha: edgeEffectHeight > 21.0 ? 1.0 : 0.0)
     }
     
     public override func scrollToTop() {
@@ -713,9 +670,9 @@ private final class SettingsSearchItemNode: ItemListControllerSearchNode {
                     }
                 })
             }
-        }, resolvedFaqUrl: self.resolvedFaqUrl, exceptionsList: self.exceptionsList, archivedStickerPacks: self.archivedStickerPacks, privacySettings: self.privacySettings, hasTwoStepAuth: self.hasTwoStepAuth, twoStepAuthData: self.twoStepAuthData, activeSessionsContext: self.activeSessionsContext, webSessionsContext: self.webSessionsContext), cancel: { [weak self] in
+        }, openContextMenu: { _, _, _, _ in }, resolvedFaqUrl: self.resolvedFaqUrl, exceptionsList: self.exceptionsList, archivedStickerPacks: self.archivedStickerPacks, privacySettings: self.privacySettings, hasTwoStepAuth: self.hasTwoStepAuth, twoStepAuthData: self.twoStepAuthData, activeSessionsContext: self.activeSessionsContext, webSessionsContext: self.webSessionsContext), cancel: { [weak self] in
             self?.cancel()
-        })
+        }, fieldStyle: placeholderNode.fieldStyle)
         
         self.searchDisplayController?.containerLayoutUpdated(containerLayout, navigationBarHeight: navigationBarHeight, transition: .immediate)
         self.searchDisplayController?.activate(insertSubnode: { [weak self, weak placeholderNode] subnode, isSearchBar in

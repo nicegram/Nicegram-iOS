@@ -18,7 +18,7 @@ import ContextUI
 import ItemListPeerItem
 import InviteLinksUI
 import UndoUI
-import ShareController
+
 import ItemListPeerActionItem
 import PremiumUI
 import StoryContainerScreen
@@ -205,7 +205,7 @@ private enum StatsEntry: ItemListNodeEntry {
     case instantPageInteractionsGraph(PresentationTheme, PresentationStrings, PresentationDateTimeFormat, StatsGraph, ChartType)
     
     case postsTitle(PresentationTheme, String)
-    case post(Int32, PresentationTheme, PresentationStrings, PresentationDateTimeFormat, Peer, StatsPostItem, ChannelStatsPostInteractions)
+    case post(Int32, PresentationTheme, PresentationStrings, PresentationDateTimeFormat, EnginePeer, StatsPostItem, ChannelStatsPostInteractions)
 
     case boostLevel(PresentationTheme, Int32, Int32, CGFloat)
     
@@ -636,7 +636,7 @@ private enum StatsEntry: ItemListNodeEntry {
                     return false
                 }
             case let .post(lhsIndex, lhsTheme, lhsStrings, lhsDateTimeFormat, lhsPeer, lhsPost, lhsInteractions):
-                if case let .post(rhsIndex, rhsTheme, rhsStrings, rhsDateTimeFormat, rhsPeer, rhsPost, rhsInteractions) = rhs, lhsIndex == rhsIndex, lhsTheme === rhsTheme, lhsStrings === rhsStrings, lhsDateTimeFormat == rhsDateTimeFormat, arePeersEqual(lhsPeer, rhsPeer), lhsPost == rhsPost, lhsInteractions == rhsInteractions {
+                if case let .post(rhsIndex, rhsTheme, rhsStrings, rhsDateTimeFormat, rhsPeer, rhsPost, rhsInteractions) = rhs, lhsIndex == rhsIndex, lhsTheme === rhsTheme, lhsStrings === rhsStrings, lhsDateTimeFormat == rhsDateTimeFormat, lhsPeer == rhsPeer, lhsPost == rhsPost, lhsInteractions == rhsInteractions {
                     return true
                 } else {
                     return false
@@ -932,7 +932,7 @@ private enum StatsEntry: ItemListNodeEntry {
                  let .adsProceedsInfo(_, text):
                 return ItemListTextItem(presentationData: presentationData, text: .markdown(text), sectionId: self.section)
             case let .overview(_, stats):
-                return StatsOverviewItem(context: arguments.context, presentationData: presentationData, isGroup: false, stats: stats, sectionId: self.section, style: .blocks)
+                return StatsOverviewItem(context: arguments.context, presentationData: presentationData, systemStyle: .glass, isGroup: false, stats: stats, sectionId: self.section, style: .blocks)
             case let .growthGraph(_, _, _, graph, type),
                  let .followersGraph(_, _, _, graph, type),
                  let .notificationsGraph(_, _, _, graph, type),
@@ -943,15 +943,15 @@ private enum StatsEntry: ItemListNodeEntry {
                  let .reactionsByEmotionGraph(_, _, _, graph, type),
                  let .storyReactionsByEmotionGraph(_, _, _, graph, type),
                  let .adsImpressionsGraph(_, _, _, graph, type):
-                return StatsGraphItem(presentationData: presentationData, graph: graph, type: type, sectionId: self.section, style: .blocks)
+                return StatsGraphItem(presentationData: presentationData, systemStyle: .glass, graph: graph, type: type, sectionId: self.section, style: .blocks)
             case let .adsTonRevenueGraph(_, _, _, graph, type, rate):
-                return StatsGraphItem(presentationData: presentationData, graph: graph, type: type, conversionRate: rate, sectionId: self.section, style: .blocks)
+                return StatsGraphItem(presentationData: presentationData, systemStyle: .glass, graph: graph, type: type, conversionRate: rate, sectionId: self.section, style: .blocks)
             case let .adsStarsRevenueGraph(_, _, _, graph, type, rate):
-                return StatsGraphItem(presentationData: presentationData, graph: graph, type: type, conversionRate: rate, sectionId: self.section, style: .blocks)
+                return StatsGraphItem(presentationData: presentationData, systemStyle: .glass, graph: graph, type: type, conversionRate: rate, sectionId: self.section, style: .blocks)
             case let .postInteractionsGraph(_, _, _, graph, type),
                  let .instantPageInteractionsGraph(_, _, _, graph, type),
                  let .storyInteractionsGraph(_, _, _, graph, type):
-                return StatsGraphItem(presentationData: presentationData, graph: graph, type: type, getDetailsData: { date, completion in
+                return StatsGraphItem(presentationData: presentationData, systemStyle: .glass, graph: graph, type: type, getDetailsData: { date, completion in
                     let _ = arguments.loadDetailedGraph(graph, Int64(date.timeIntervalSince1970) * 1000).start(next: { graph in
                         if let graph = graph, case let .Loaded(_, data) = graph {
                             completion(data)
@@ -960,7 +960,7 @@ private enum StatsEntry: ItemListNodeEntry {
                 }, sectionId: self.section, style: .blocks)
             case let .post(_, _, _, _, peer, post, interactions):
                 return StatsMessageItem(context: arguments.context, presentationData: presentationData, peer: peer, item: post, views: interactions.views, reactions: interactions.reactions, forwards: interactions.forwards, sectionId: self.section, style: .blocks, action: {
-                    arguments.openPostStats(EnginePeer(peer), post)
+                    arguments.openPostStats(peer, post)
                 }, openStory: { sourceView in
                     if case let .story(_, story) = post {
                         arguments.openStory(story, sourceView)
@@ -1035,7 +1035,7 @@ private enum StatsEntry: ItemListNodeEntry {
                     arguments.openBoost(boost)
                 })
             case let .boostersExpand(theme, title):
-                return ItemListPeerActionItem(presentationData: presentationData, icon: PresentationResourcesItemList.downArrowImage(theme), title: title, sectionId: self.section, editing: false, action: {
+                return ItemListPeerActionItem(presentationData: presentationData, systemStyle: .glass, icon: PresentationResourcesItemList.downArrowImage(theme), title: title, sectionId: self.section, editing: false, action: {
                     arguments.expandBoosters()
                 })
             case let .boostLevel(_, count, level, position):
@@ -1046,15 +1046,15 @@ private enum StatsEntry: ItemListNodeEntry {
                 return StatsOverviewItem(context: arguments.context, presentationData: presentationData, isGroup: isGroup, stats: stats, sectionId: self.section, style: .blocks)
             case let .boostLink(_, link):
                 let invite: ExportedInvitation = .link(link: link, title: nil, isPermanent: false, requestApproval: false, isRevoked: false, adminId: PeerId(0), date: 0, startDate: nil, expireDate: nil, usageLimit: nil, count: nil, requestedCount: nil, pricing: nil)
-                return ItemListPermanentInviteLinkItem(context: arguments.context, presentationData: presentationData, invite: invite, count: 0, peers: [], displayButton: true, displayImporters: false, buttonColor: nil, sectionId: self.section, style: .blocks, copyAction: {
+                return ItemListPermanentInviteLinkItem(context: arguments.context, presentationData: presentationData, systemStyle: .glass, invite: invite, count: 0, peers: [], displayButton: true, displayImporters: false, buttonColor: nil, sectionId: self.section, style: .blocks, copyAction: {
                     arguments.copyBoostLink(link)
                 }, shareAction: {
                     arguments.shareBoostLink(link)
                 }, contextAction: nil, viewAction: nil, openCallAction: nil, tag: nil)
             case let .boostersPlaceholder(_, text):
-                return ItemListPlaceholderItem(theme: presentationData.theme, text: text, sectionId: self.section, style: .blocks)
+                return ItemListPlaceholderItem(theme: presentationData.theme, systemStyle: .glass, text: text, sectionId: self.section, style: .blocks)
             case let .boostGifts(theme, title):
-                return ItemListPeerActionItem(presentationData: presentationData, icon: PresentationResourcesItemList.addBoostsIcon(theme), title: title, sectionId: self.section, editing: false, action: {
+                return ItemListPeerActionItem(presentationData: presentationData, systemStyle: .glass, icon: PresentationResourcesItemList.addBoostsIcon(theme), title: title, sectionId: self.section, editing: false, action: {
                     arguments.openGifts()
                 })
             case let .boostPrepaid(_, _, title, subtitle, prepaidGiveaway):
@@ -1200,7 +1200,7 @@ private enum StatsEntry: ItemListNodeEntry {
                     label.addAttribute(.baselineOffset, value: 1.0, range: NSRange(range, in: label.string))
                 }
                 
-                return ItemListDisclosureItem(presentationData: presentationData, title: "", attributedTitle: title, label: "", attributedLabel: label, labelStyle: .coloredText(labelColor), additionalDetailLabel: detailText, additionalDetailLabelColor: detailColor, sectionId: self.section, style: .blocks, disclosureStyle: .none, action: {
+                return ItemListDisclosureItem(presentationData: presentationData, systemStyle: .glass, title: "", attributedTitle: title, label: "", attributedLabel: label, labelStyle: .coloredText(labelColor), additionalDetailLabel: detailText, additionalDetailLabelColor: detailColor, sectionId: self.section, style: .blocks, disclosureStyle: .none, action: {
                     arguments.openTonTransaction(transaction)
                 })
             case let .adsStarsTransaction(_, _, transaction):
@@ -1208,7 +1208,7 @@ private enum StatsEntry: ItemListNodeEntry {
                     arguments.openStarsTransaction(transaction)
                 }, sectionId: self.section, style: .blocks)
             case let .adsTransactionsExpand(theme, title, stars):
-                return ItemListPeerActionItem(presentationData: presentationData, icon: PresentationResourcesItemList.downArrowImage(theme), title: title, sectionId: self.section, editing: false, action: {
+                return ItemListPeerActionItem(presentationData: presentationData, systemStyle: .glass, icon: PresentationResourcesItemList.downArrowImage(theme), title: title, sectionId: self.section, editing: false, action: {
                     arguments.expandTransactions(stars)
                 })
             case let .adsCpmToggle(_, title, minLevel, value):
@@ -1219,7 +1219,7 @@ private enum StatsEntry: ItemListNodeEntry {
                         level: Int(minLevel)
                     ))
                 }
-                return ItemListSwitchItem(presentationData: presentationData, title: title, titleBadgeComponent: badgeComponent, value: value == true, enableInteractiveChanges: value != nil, enabled: true, displayLocked: value == nil, sectionId: self.section, style: .blocks, updated: { updatedValue in
+                return ItemListSwitchItem(presentationData: presentationData, systemStyle: .glass, title: title, titleBadgeComponent: badgeComponent, value: value == true, enableInteractiveChanges: value != nil, enabled: true, displayLocked: value == nil, sectionId: self.section, style: .blocks, updated: { updatedValue in
                     if value != nil {
                         arguments.updateCpmEnabled(updatedValue)
                     } else {
@@ -1229,7 +1229,7 @@ private enum StatsEntry: ItemListNodeEntry {
                     arguments.presentCpmLocked()
                 })
             case .earnStarsInfo:
-                return ItemListDisclosureItem(presentationData: presentationData, icon: PresentationResourcesSettings.earnStars, title: presentationData.strings.Monetization_EarnStarsInfo_Title, titleBadge: presentationData.strings.Settings_New, label: presentationData.strings.Monetization_EarnStarsInfo_Text, labelStyle: .multilineDetailText, sectionId: self.section, style: .blocks, action: {
+                return ItemListDisclosureItem(presentationData: presentationData, systemStyle: .glass, icon: PresentationResourcesSettings.earnStars, title: presentationData.strings.Monetization_EarnStarsInfo_Title, titleBadge: nil, label: presentationData.strings.Monetization_EarnStarsInfo_Text, labelStyle: .multilineDetailText, sectionId: self.section, style: .blocks, action: {
                     arguments.openEarnStars()
                 })
         }
@@ -1426,11 +1426,11 @@ private func statsEntries(
                 switch post {
                 case let .message(message):
                     if let interactions = interactions[.message(id: message.id)] {
-                        entries.append(.post(index, presentationData.theme, presentationData.strings, presentationData.dateTimeFormat, peer._asPeer(), post, interactions))
+                        entries.append(.post(index, presentationData.theme, presentationData.strings, presentationData.dateTimeFormat, peer, post, interactions))
                     }
                 case let .story(_, story):
                     if let interactions = interactions[.story(peerId: peer.id, id: story.id)] {
-                        entries.append(.post(index, presentationData.theme, presentationData.strings, presentationData.dateTimeFormat, peer._asPeer(), post, interactions))
+                        entries.append(.post(index, presentationData.theme, presentationData.strings, presentationData.dateTimeFormat, peer, post, interactions))
                     }
                 }
                 index += 1
@@ -1940,8 +1940,10 @@ public func channelStatsController(
         let presentationData = context.sharedContext.currentPresentationData.with { $0 }
         presentImpl?(UndoOverlayController(presentationData: presentationData, content: .linkCopied(title: nil, text: presentationData.strings.ChannelBoost_BoostLinkCopied), elevatedLayout: false, animateInAsReplacement: false, action: { _ in return false }))
     }, shareBoostLink: { link in        
-        let shareController = ShareController(context: context, subject: .url(link), updatedPresentationData: updatedPresentationData)
-        shareController.completed = {  peerIds in
+        let shareController = context.sharedContext.makeShareController(context: context, params: ShareControllerParams(subject: .url(link), updatedPresentationData: updatedPresentationData, actionCompleted: {
+            let presentationData = context.sharedContext.currentPresentationData.with { $0 }
+            presentImpl?(UndoOverlayController(presentationData: presentationData, content: .linkCopied(title: nil, text: presentationData.strings.ChannelBoost_BoostLinkCopied), elevatedLayout: false, animateInAsReplacement: false, action: { _ in return false }))
+        }, completed: { peerIds in
             let _ = (context.engine.data.get(
                 EngineDataList(
                     peerIds.map(TelegramEngine.EngineData.Item.Peer.Peer.init)
@@ -1950,7 +1952,7 @@ public func channelStatsController(
             |> deliverOnMainQueue).start(next: { peerList in
                 let peers = peerList.compactMap { $0 }
                 let presentationData = context.sharedContext.currentPresentationData.with { $0 }
-                
+
                 let text: String
                 var savedMessages = false
                 if peerIds.count == 1, let peerId = peerIds.first, peerId == context.account.peerId {
@@ -1971,7 +1973,7 @@ public func channelStatsController(
                         text = ""
                     }
                 }
-                
+
                 presentImpl?(UndoOverlayController(presentationData: presentationData, content: .forward(savedMessages: savedMessages, text: text), elevatedLayout: false, animateInAsReplacement: true, action: { action in
                     if savedMessages, action == .info {
                         let _ = (context.engine.data.get(TelegramEngine.EngineData.Item.Peer.Peer(id: context.account.peerId))
@@ -1985,11 +1987,7 @@ public func channelStatsController(
                     return false
                 }))
             })
-        }
-        shareController.actionCompleted = {
-            let presentationData = context.sharedContext.currentPresentationData.with { $0 }
-            presentImpl?(UndoOverlayController(presentationData: presentationData, content: .linkCopied(title: nil, text: presentationData.strings.ChannelBoost_BoostLinkCopied), elevatedLayout: false, animateInAsReplacement: false, action: { _ in return false }))
-        }
+        }))
         presentImpl?(shareController)
     },
     openBoost: { boost in
@@ -2440,7 +2438,7 @@ public func channelStatsController(
             })
         })))
         
-        let contextController = ContextController(presentationData: presentationData, source: .extracted(ChannelStatsContextExtractedContentSource(controller: controller, sourceNode: sourceNode, keepInPlace: false)), items: .single(ContextController.Items(content: .list(items))), gesture: gesture)
+        let contextController = makeContextController(presentationData: presentationData, source: .extracted(ChannelStatsContextExtractedContentSource(controller: controller, sourceNode: sourceNode, keepInPlace: false)), items: .single(ContextController.Items(content: .list(items))), gesture: gesture)
         controller.presentInGlobalOverlay(contextController)
     }
     dismissAllTooltipsImpl = { [weak controller] in

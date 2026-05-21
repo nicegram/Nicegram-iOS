@@ -189,29 +189,29 @@ private enum AutodownloadMediaCategoryEntry: ItemListNodeEntry {
             case let .peerHeader(_, text):
                 return ItemListSectionHeaderItem(presentationData: presentationData, text: text, sectionId: self.section)
             case let .peerContacts(_, text, value):
-                return ItemListSwitchItem(presentationData: presentationData, title: text, value: value, enableInteractiveChanges: true, enabled: true, sectionId: self.section, style: .blocks, updated: { value in
+                return ItemListSwitchItem(presentationData: presentationData, systemStyle: .glass, title: text, value: value, enableInteractiveChanges: true, enabled: true, sectionId: self.section, style: .blocks, updated: { value in
                     arguments.togglePeer(.contact)
                 })
             case let .peerOtherPrivate(_, text, value):
-                return ItemListSwitchItem(presentationData: presentationData, title: text, value: value, enableInteractiveChanges: true, enabled: true, sectionId: self.section, style: .blocks, updated: { value in
+                return ItemListSwitchItem(presentationData: presentationData, systemStyle: .glass, title: text, value: value, enableInteractiveChanges: true, enabled: true, sectionId: self.section, style: .blocks, updated: { value in
                     arguments.togglePeer(.otherPrivate)
                 })
             case let .peerGroups(_, text, value):
-                return ItemListSwitchItem(presentationData: presentationData, title: text, value: value, enableInteractiveChanges: true, enabled: true, sectionId: self.section, style: .blocks, updated: { value in
+                return ItemListSwitchItem(presentationData: presentationData, systemStyle: .glass, title: text, value: value, enableInteractiveChanges: true, enabled: true, sectionId: self.section, style: .blocks, updated: { value in
                     arguments.togglePeer(.group)
                 })
             case let .peerChannels(_, text, value):
-                return ItemListSwitchItem(presentationData: presentationData, title: text, value: value, enableInteractiveChanges: true, enabled: true, sectionId: self.section, style: .blocks, updated: { value in
+                return ItemListSwitchItem(presentationData: presentationData, systemStyle: .glass, title: text, value: value, enableInteractiveChanges: true, enabled: true, sectionId: self.section, style: .blocks, updated: { value in
                     arguments.togglePeer(.channel)
                 })
             case let .sizeHeader(_, text):
                 return ItemListSectionHeaderItem(presentationData: presentationData, text: text, sectionId: self.section)
             case let .sizeItem(theme, strings, decimalSeparator, text, value):
-                return AutodownloadSizeLimitItem(theme: theme, strings: strings, decimalSeparator: decimalSeparator, text: text, value: value, range: nil, sectionId: self.section, updated: { value in
+                return AutodownloadSizeLimitItem(theme: theme, strings: strings, systemStyle: .glass, decimalSeparator: decimalSeparator, text: text, value: value, range: nil, sectionId: self.section, updated: { value in
                     arguments.adjustSize(value)
                 })
             case let .sizePreload(_, text, value, enabled):
-                return ItemListSwitchItem(presentationData: presentationData, title: text, value: value && enabled, enableInteractiveChanges: true, enabled: enabled, sectionId: self.section, style: .blocks, updated: { value in
+                return ItemListSwitchItem(presentationData: presentationData, systemStyle: .glass, title: text, value: value && enabled, enableInteractiveChanges: true, enabled: enabled, sectionId: self.section, style: .blocks, updated: { value in
                     arguments.toggleVideoPreload()
                 })
             case let .sizePreloadInfo(_, text):

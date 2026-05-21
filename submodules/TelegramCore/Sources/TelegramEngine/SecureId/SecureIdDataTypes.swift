@@ -38,7 +38,8 @@ public enum SecureIdGender {
 extension SecureIdFileReference {
     init?(apiFile: Api.SecureFile) {
         switch apiFile {
-            case let .secureFile(id, accessHash, size, dcId, date, fileHash, secret):
+            case let .secureFile(secureFileData):
+                let (id, accessHash, size, dcId, date, fileHash, secret) = (secureFileData.id, secureFileData.accessHash, secureFileData.size, secureFileData.dcId, secureFileData.date, secureFileData.fileHash, secureFileData.secret)
                 self.init(id: id, accessHash: accessHash, size: size, datacenterId: dcId, timestamp: date, fileHash: fileHash.makeData(), encryptedSecret: secret.makeData())
             case .secureFileEmpty:
                 return nil

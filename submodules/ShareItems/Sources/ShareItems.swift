@@ -51,11 +51,17 @@ public enum PreparedShareItemError {
 }
 
 private func preparedShareItem(postbox: Postbox, network: Network, to peerId: PeerId, value: [String: Any]) -> Signal<PreparedShareItem, PreparedShareItemError> {
+    // Nicegram, fixed screenshot sharing on iOS 26
+    var value = value
+    if let imageData = value["image"] as? Data {
+        value["data"] = imageData
+    }
+    //
     if let imageData = value["scaledImageData"] as? Data, let dimensions = value["scaledImageDimensions"] as? NSValue {
         let diminsionsSize = dimensions.cgSizeValue
         return .single(.preparing(false))
         |> then(
-            standaloneUploadedImage(postbox: postbox, network: network, peerId: peerId, text: "", data: imageData, dimensions: PixelDimensions(width: Int32(diminsionsSize.width), height: Int32(diminsionsSize.height)))
+            standaloneUploadedImage(postbox: postbox, network: network, peerId: peerId, text: "", source: .data(imageData), dimensions: PixelDimensions(width: Int32(diminsionsSize.width), height: Int32(diminsionsSize.height)))
             |> mapError { _ -> PreparedShareItemError in
                 return .generic
             }
@@ -74,7 +80,7 @@ private func preparedShareItem(postbox: Postbox, network: Network, to peerId: Pe
         if let scaledImage = scalePhotoImage(image, dimensions: dimensions), let imageData = scaledImage.jpegData(compressionQuality: 0.52) {
             return .single(.preparing(false))
             |> then(
-                standaloneUploadedImage(postbox: postbox, network: network, peerId: peerId, text: "", data: imageData, dimensions: PixelDimensions(width: Int32(dimensions.width), height: Int32(dimensions.height)))
+                standaloneUploadedImage(postbox: postbox, network: network, peerId: peerId, text: "", source: .data(imageData), dimensions: PixelDimensions(width: Int32(dimensions.width), height: Int32(dimensions.height)))
                 |> mapError { _ -> PreparedShareItemError in
                     return .generic
                 }
@@ -265,7 +271,7 @@ private func preparedShareItem(postbox: Postbox, network: Network, to peerId: Pe
                 let imageData = scaledImage.jpegData(compressionQuality: 0.54)!
                 return .single(.preparing(false))
                 |> then(
-                    standaloneUploadedImage(postbox: postbox, network: network, peerId: peerId, text: "", data: imageData, dimensions: PixelDimensions(width: Int32(scaledImage.size.width), height: Int32(scaledImage.size.height)))
+                    standaloneUploadedImage(postbox: postbox, network: network, peerId: peerId, text: "", source: .data(imageData), dimensions: PixelDimensions(width: Int32(scaledImage.size.width), height: Int32(scaledImage.size.height)))
                     |> mapError { _ -> PreparedShareItemError in
                         return .generic
                     }
@@ -478,6 +484,7 @@ public func sentShareItems(accountPeerId: PeerId, postbox: Postbox, network: Net
     
     var mediaMessageCount = 0
     var consumedText = false
+    var captionAssigned = false
     for item in items {
         switch item {
         case let .text(text):
@@ -493,11 +500,22 @@ public func sentShareItems(accountPeerId: PeerId, postbox: Postbox, network: Net
         case let .media(media):
             switch media {
             case let .media(reference):
+                let captionText: String
+                if !captionAssigned {
+                    if let file = reference.media as? TelegramMediaFile, file.isInstantVideo {
+                        captionText = ""
+                    } else {
+                        captionText = additionalText
+                        captionAssigned = true
+                    }
+                } else {
+                    captionText = ""
+                }
                 var message = StandaloneSendEnqueueMessage(
                     content: .arbitraryMedia(
                         media: reference,
                         text: StandaloneSendEnqueueMessage.Text(
-                            string: additionalText,
+                            string: captionText,
                             entities: []
                         )
                     ),

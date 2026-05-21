@@ -65,22 +65,12 @@ final class LockView: UIButton, TGModernConversationInputMicButtonLock {
     }
     
     func updateTheme(_ theme: PresentationTheme) {
-//        [
-//            "Rectangle.Заливка 1": theme.chat.inputPanel.panelBackgroundColor,
-//            "Rectangle.Rectangle.Обводка 1": theme.chat.inputPanel.panelControlAccentColor,
-//            "Rectangle 2.Rectangle.Обводка 1": theme.chat.inputPanel.panelControlAccentColor,
-//            "Path.Path.Обводка 1": theme.chat.inputPanel.panelControlAccentColor,
-//            "Path 4.Path 4.Обводка 1": theme.chat.inputPanel.panelControlAccentColor
-//        ].forEach { key, value in
-//            idleView.setValueProvider(ColorValueProvider(value.lottieColorValue), keypath: AnimationKeypath(keypath: "\(key).Color"))
-//        }
-//        
         for keypath in idleView.allKeypaths(predicate: { $0.keys.last == "Color" }) {
-            idleView.setValueProvider(ColorValueProvider(theme.chat.inputPanel.panelControlAccentColor.lottieColorValue), keypath: AnimationKeypath(keypath: keypath))
+            idleView.setValueProvider(ColorValueProvider(theme.chat.inputPanel.panelControlColor.lottieColorValue), keypath: AnimationKeypath(keypath: keypath))
         }
         
         for keypath in lockingView.allKeypaths(predicate: { $0.keys.last == "Color" }) {
-            lockingView.setValueProvider(ColorValueProvider(theme.chat.inputPanel.panelControlAccentColor.lottieColorValue), keypath: AnimationKeypath(keypath: keypath))
+            lockingView.setValueProvider(ColorValueProvider(theme.chat.inputPanel.panelControlColor.lottieColorValue), keypath: AnimationKeypath(keypath: keypath))
         }
 //        
 //        [

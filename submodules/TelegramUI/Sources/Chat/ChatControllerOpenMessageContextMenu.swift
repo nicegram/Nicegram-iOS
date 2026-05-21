@@ -20,6 +20,8 @@ import PremiumUI
 import TooltipUI
 import TopMessageReactions
 import TelegramNotices
+import PresentationDataUtils
+import ChatPresentationInterfaceState
 
 extension ChatControllerImpl {
     func openMessageContextMenu(message: Message, selectAll: Bool, node: ASDisplayNode, frame: CGRect, anyRecognizer: UIGestureRecognizer?, location: CGPoint?) -> Void {
@@ -47,13 +49,15 @@ extension ChatControllerImpl {
             guard let topMessage = messages.first else {
                 return
             }
-            
+
+            let canBypassReactionRestrictions = canBypassRestrictions(chatPresentationInterfaceState: self.presentationInterfaceState)
+
             let _ = combineLatest(queue: .mainQueue(),
                 self.context.engine.data.get(TelegramEngine.EngineData.Item.Peer.Peer(id: self.context.account.peerId)),
                 contextMenuForChatPresentationInterfaceState(chatPresentationInterfaceState: self.presentationInterfaceState, context: self.context, messages: updatedMessages, controllerInteraction: self.controllerInteraction, selectAll: selectAll, interfaceInteraction: self.interfaceInteraction, messageNode: node as? ChatMessageItemView),
-                peerMessageAllowedReactions(context: self.context, message: topMessage),
+                peerMessageAllowedReactions(context: self.context, message: topMessage, ignoreDefault: canBypassReactionRestrictions),
                 peerMessageSelectedReactions(context: self.context, message: topMessage),
-                topMessageReactions(context: self.context, message: topMessage, subPeerId: self.chatLocation.threadId.flatMap(EnginePeer.Id.init)),
+                topMessageReactions(context: self.context, message: topMessage, subPeerId: self.chatLocation.threadId.flatMap(EnginePeer.Id.init), ignoreDefault: canBypassReactionRestrictions),
                 ApplicationSpecificNotice.getChatTextSelectionTips(accountManager: self.context.sharedContext.accountManager)
             ).startStandalone(next: { [weak self] peer, actions, allowedReactionsAndStars, selectedReactions, topReactions, chatTextSelectionTips in
                 guard let self else {
@@ -90,14 +94,22 @@ extension ChatControllerImpl {
                             break
                         }
                     }
-                    if self.presentationInterfaceState.copyProtectionEnabled && !isAction && !isAd {
+                    if self.presentationInterfaceState.myCopyProtectionEnabled && !isAction && !isAd {
+                        tip = .messageCopyProtection(text: self.presentationData.strings.Conversation_CopyProtectionInfoPrivateYou)
+                    } else if self.presentationInterfaceState.copyProtectionEnabled && !isAction && !isAd {
                         if case .scheduledMessages = self.subject {
                         } else {
-                            var isChannel = false
-                            if let channel = self.presentationInterfaceState.renderedPeer?.peer as? TelegramChannel, case .broadcast = channel.info {
-                                isChannel = true
+                            if let peer = self.presentationInterfaceState.renderedPeer?.peer {
+                                if peer is TelegramUser {
+                                    tip = .messageCopyProtection(text: self.presentationData.strings.Conversation_CopyProtectionInfoPrivate(EnginePeer(peer).compactDisplayTitle).string)
+                                } else {
+                                    var isChannel = false
+                                    if let channel = self.presentationInterfaceState.renderedPeer?.peer as? TelegramChannel, case .broadcast = channel.info {
+                                        isChannel = true
+                                    }
+                                    tip = .messageCopyProtection(text: isChannel ? self.presentationData.strings.Conversation_CopyProtectionInfoChannel : self.presentationData.strings.Conversation_CopyProtectionInfoGroup)
+                                }
                             }
-                            tip = .messageCopyProtection(isChannel: isChannel)
                         }
                     } else {
                         let numberOfComponents = message.text.components(separatedBy: CharacterSet.whitespacesAndNewlines).count
@@ -120,8 +132,7 @@ extension ChatControllerImpl {
                 actions.context = self.context
                 actions.animationCache = self.controllerInteraction?.presentationContext.animationCache
                                         
-                // Nicegram HideReactions, account added
-                if canAddMessageReactions(message: topMessage, account: context.account), let allowedReactions = allowedReactions, !topReactions.isEmpty {
+                if canAddMessageReactions(message: topMessage), let allowedReactions = allowedReactions, !topReactions.isEmpty {
                     actions.reactionItems = topReactions.map { ReactionContextItem.reaction(item: $0, icon: .none) }
                     actions.selectedReactionItems = selectedReactions.reactions
                     if message.areReactionsTags(accountPeerId: self.context.account.peerId) {
@@ -328,18 +339,12 @@ extension ChatControllerImpl {
                     }
                 }
                 
-                let isSecret = self.presentationInterfaceState.copyProtectionEnabled || self.chatLocation.peerId?.namespace == Namespaces.Peer.SecretChat
-                let controller = ContextController(presentationData: self.presentationData, source: source, items: actionsSignal, recognizer: recognizer, gesture: gesture, disableScreenshots: isSecret, hideReactionPanelTail: hideReactionPanelTail)
+                let isSecret = self.presentationInterfaceState.copyProtectionEnabled || self.presentationInterfaceState.myCopyProtectionEnabled || self.chatLocation.peerId?.namespace == Namespaces.Peer.SecretChat
+                let controller = makeContextController(presentationData: self.presentationData, source: source, items: actionsSignal, recognizer: recognizer, gesture: gesture, disableScreenshots: isSecret, hideReactionPanelTail: hideReactionPanelTail)
                 controller.dismissed = { [weak self] in
                     self?.canReadHistory.set(true)
                 }
                 controller.immediateItemsTransitionAnimation = disableTransitionAnimations
-                controller.getOverlayViews = { [weak self] in
-                    guard let self else {
-                        return []
-                    }
-                    return [self.chatDisplayNode.navigateButtons.view]
-                }
                 self.currentContextController = controller
                 
                 controller.premiumReactionsSelected = { [weak self, weak controller] in
@@ -371,6 +376,17 @@ extension ChatControllerImpl {
                     controller?.view.endEditing(true)
                     
                     if case .stars = chosenUpdatedReaction.reaction {
+                        if !canSendReactionsToChat(self.presentationInterfaceState) {
+                            if let controller {
+                                controller.dismiss(completion: { [weak self] in
+                                    self?.displaySendReactionRestrictedToast()
+                                })
+                            } else {
+                                self.displaySendReactionRestrictedToast()
+                            }
+                            return
+                        }
+
                         if isLarge {
                             if let controller {
                                 controller.dismiss(completion: { [weak self] in
@@ -443,9 +459,15 @@ extension ChatControllerImpl {
                             
                             if case let .known(reactionSettings) = reactionSettings, let starsAllowed = reactionSettings.starsAllowed, !starsAllowed {
                                 if let peer = strongSelf.presentationInterfaceState.renderedPeer?.chatMainPeer {
-                                    strongSelf.present(standardTextAlertController(theme: AlertControllerTheme(presentationData: strongSelf.presentationData), title: nil, text: strongSelf.presentationData.strings.Chat_ToastStarsReactionsDisabled(peer.debugDisplayTitle).string, actions: [
-                                        TextAlertAction(type: .genericAction, title: strongSelf.presentationData.strings.Common_OK, action: {})
-                                    ]), in: .window(.root))
+                                    let alertController = textAlertController(
+                                        context: strongSelf.context,
+                                        title: nil,
+                                        text: strongSelf.presentationData.strings.Chat_ToastStarsReactionsDisabled(peer.debugDisplayTitle).string,
+                                        actions: [
+                                            TextAlertAction(type: .genericAction, title: strongSelf.presentationData.strings.Common_OK, action: {})
+                                        ]
+                                    )
+                                    strongSelf.present(alertController, in: .window(.root))
                                 }
                                 return
                             }
@@ -466,7 +488,7 @@ extension ChatControllerImpl {
                                             return
                                         }
                                         
-                                        let purchaseScreen = strongSelf.context.sharedContext.makeStarsPurchaseScreen(context: strongSelf.context, starsContext: starsContext, options: options, purpose: .reactions(peerId: message.id.peerId, requiredStars: 1), completion: { result in
+                                        let purchaseScreen = strongSelf.context.sharedContext.makeStarsPurchaseScreen(context: strongSelf.context, starsContext: starsContext, options: options, purpose: .reactions(peerId: message.id.peerId, requiredStars: 1), targetPeerId: nil, customTheme: nil, completion: { result in
                                             let _ = result
                                         })
                                         strongSelf.push(purchaseScreen)
@@ -500,6 +522,17 @@ extension ChatControllerImpl {
                             isFirst = !currentReactions.contains(where: { $0.value == chosenReaction })
                         }
                         
+                        if removedReaction == nil && !canSendReactionsToChat(self.presentationInterfaceState) {
+                            if let controller {
+                                controller.dismiss(completion: { [weak self] in
+                                    self?.displaySendReactionRestrictedToast()
+                                })
+                            } else {
+                                self.displaySendReactionRestrictedToast()
+                            }
+                            return
+                        }
+
                         if message.areReactionsTags(accountPeerId: self.context.account.peerId) {
                             if removedReaction == nil, !topReactions.contains(where: { $0.reaction.rawValue == chosenReaction }) {
                                 if !self.presentationInterfaceState.isPremium {

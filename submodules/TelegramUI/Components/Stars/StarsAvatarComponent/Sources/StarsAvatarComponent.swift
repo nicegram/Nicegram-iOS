@@ -24,7 +24,7 @@ public final class StarsAvatarComponent: Component {
     let peer: StarsAvatarComponent.Peer?
     let photo: TelegramMediaWebFile?
     let media: [Media]
-    let uniqueGift: StarGift.UniqueGift?
+    let gift: StarGift?
     let backgroundColor: UIColor
     let size: CGSize?
 
@@ -34,7 +34,7 @@ public final class StarsAvatarComponent: Component {
         peer: StarsAvatarComponent.Peer?,
         photo: TelegramMediaWebFile?,
         media: [Media],
-        uniqueGift: StarGift.UniqueGift?,
+        gift: StarGift?,
         backgroundColor: UIColor,
         size: CGSize? = nil
     ) {
@@ -43,7 +43,7 @@ public final class StarsAvatarComponent: Component {
         self.peer = peer
         self.photo = photo
         self.media = media
-        self.uniqueGift = uniqueGift
+        self.gift = gift
         self.backgroundColor = backgroundColor
         self.size = size
     }
@@ -64,7 +64,7 @@ public final class StarsAvatarComponent: Component {
         if !areMediaArraysEqual(lhs.media, rhs.media) {
             return false
         }
-        if lhs.uniqueGift != rhs.uniqueGift {
+        if lhs.gift != rhs.gift {
             return false
         }
         if lhs.backgroundColor != rhs.backgroundColor {
@@ -121,8 +121,17 @@ public final class StarsAvatarComponent: Component {
             var dimensions = size
             
             var didSetup = false
-            if let gift = component.uniqueGift {
+            if let gift = component.gift {
                 let giftFrame = CGRect(origin: .zero, size: size)
+                
+                var subject: GiftItemComponent.Subject
+                switch gift {
+                case let .generic(gift):
+                    subject = .starGift(gift: gift, price: "")
+                case let .unique(gift):
+                    subject = .uniqueGift(gift: gift, price: nil)
+                }
+                
                 let _ = self.giftView.update(
                     transition: .immediate,
                     component: AnyComponent(
@@ -131,7 +140,7 @@ public final class StarsAvatarComponent: Component {
                             theme: component.theme,
                             strings: component.context.sharedContext.currentPresentationData.with { $0 }.strings,
                             peer: nil,
-                            subject: .uniqueGift(gift: gift, price: nil),
+                            subject: subject,
                             mode: .thumbnail
                         )
                     ),

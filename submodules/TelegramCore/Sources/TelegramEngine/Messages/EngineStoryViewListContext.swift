@@ -465,17 +465,19 @@ public final class EngineStoryViewListContext {
                     |> mapToSignal { result -> Signal<InternalState, NoError> in
                         return account.postbox.transaction { transaction -> InternalState in
                             switch result {
-                            case let .storyViewsList(_, count, viewsCount, forwardsCount, reactionsCount, views, chats, users, nextOffset):
+                            case let .storyViewsList(storyViewsListData):
+                                let (count, viewsCount, forwardsCount, reactionsCount, views, chats, users, nextOffset) = (storyViewsListData.count, storyViewsListData.viewsCount, storyViewsListData.forwardsCount, storyViewsListData.reactionsCount, storyViewsListData.views, storyViewsListData.chats, storyViewsListData.users, storyViewsListData.nextOffset)
                                 let peers = AccumulatedPeers(chats: chats, users: users)
                                 updatePeers(transaction: transaction, accountPeerId: accountPeerId, peers: peers)
                                 
                                 var items: [Item] = []
                                 for view in views {
                                     switch view {
-                                    case let .storyView(flags, userId, date, reaction):
+                                    case let .storyView(storyViewData):
+                                        let (flags, userId, date, reaction) = (storyViewData.flags, storyViewData.userId, storyViewData.date, storyViewData.reaction)
                                         let isBlocked = (flags & (1 << 0)) != 0
                                         let isBlockedFromStories = (flags & (1 << 1)) != 0
-                                        
+
                                         let peerId = PeerId(namespace: Namespaces.Peer.CloudUser, id: PeerId.Id._internalFromInt64Value(userId))
                                         transaction.updatePeerCachedData(peerIds: Set([peerId]), update: { _, cachedData in
                                             let previousData: CachedUserData
@@ -511,7 +513,8 @@ public final class EngineStoryViewListContext {
                                                 }
                                             )))
                                         }
-                                    case let .storyViewPublicForward(flags, message):
+                                    case let .storyViewPublicForward(storyViewPublicForwardData):
+                                        let (flags, message) = (storyViewPublicForwardData.flags, storyViewPublicForwardData.message)
                                         let _ = flags
                                         if let storeMessage = StoreMessage(apiMessage: message, accountPeerId: accountPeerId, peerIsForum: false), let message = locallyRenderedMessage(message: storeMessage, peers: peers.peers) {
                                             items.append(.forward(Item.Forward(
@@ -519,7 +522,8 @@ public final class EngineStoryViewListContext {
                                                 storyStats: transaction.getPeerStoryStats(peerId: message.id.peerId)
                                             )))
                                         }
-                                    case let .storyViewPublicRepost(flags, peerId, story):
+                                    case let .storyViewPublicRepost(storyViewPublicRepostData):
+                                        let (flags, peerId, story) = (storyViewPublicRepostData.flags, storyViewPublicRepostData.peerId, storyViewPublicRepostData.story)
                                         let _ = flags
                                         if let peer = transaction.getPeer(peerId.peerId) {
                                             if let storedItem = Stories.StoredItem(apiStoryItem: story, peerId: peer.id, transaction: transaction), case let .item(item) = storedItem, let media = item.media {
@@ -559,6 +563,7 @@ public final class EngineStoryViewListContext {
                                                         isMy: item.isMy,
                                                         myReaction: item.myReaction,
                                                         forwardInfo: item.forwardInfo.flatMap { EngineStoryItem.ForwardInfo($0, transaction: transaction) },
+                                                        music: item.music.flatMap(EngineMedia.init),
                                                         author: item.authorId.flatMap { transaction.getPeer($0).flatMap(EnginePeer.init) },
                                                         folderIds: item.folderIds
                                                     ),
@@ -600,6 +605,7 @@ public final class EngineStoryViewListContext {
                                             isMy: item.isMy,
                                             myReaction: item.myReaction,
                                             forwardInfo: item.forwardInfo,
+                                            music: item.music,
                                             authorId: item.authorId,
                                             folderIds: item.folderIds
                                         ))
@@ -641,11 +647,12 @@ public final class EngineStoryViewListContext {
                                                     isMy: item.isMy,
                                                     myReaction: item.myReaction,
                                                     forwardInfo: item.forwardInfo,
+                                                    music: item.music,
                                                     authorId: item.authorId,
                                                     folderIds: item.folderIds
                                                 ))
                                                 if let entry = CodableEntry(updatedItem) {
-                                                    currentItems[i] = StoryItemsTableEntry(value: entry, id: updatedItem.id, expirationTimestamp: updatedItem.expirationTimestamp, isCloseFriends: updatedItem.isCloseFriends)
+                                                    currentItems[i] = StoryItemsTableEntry(value: entry, id: updatedItem.id, expirationTimestamp: updatedItem.expirationTimestamp, isCloseFriends: updatedItem.isCloseFriends, isLiveStream: updatedItem.isLiveStream)
                                                 }
                                             }
                                         }
@@ -685,14 +692,16 @@ public final class EngineStoryViewListContext {
                     |> mapToSignal { result -> Signal<InternalState, NoError> in
                         return account.postbox.transaction { transaction -> InternalState in
                             switch result {
-                            case let .storyReactionsList(_, count, reactions, chats, users, nextOffset):
+                            case let .storyReactionsList(storyReactionsListData):
+                                let (count, reactions, chats, users, nextOffset) = (storyReactionsListData.count, storyReactionsListData.reactions, storyReactionsListData.chats, storyReactionsListData.users, storyReactionsListData.nextOffset)
                                 let peers = AccumulatedPeers(chats: chats, users: users)
                                 updatePeers(transaction: transaction, accountPeerId: accountPeerId, peers: peers)
                                 
                                 var items: [Item] = []
                                 for reaction in reactions {
                                     switch reaction {
-                                    case let .storyReaction(peerId, date, reaction):
+                                    case let .storyReaction(storyReactionData):
+                                        let (peerId, date, reaction) = (storyReactionData.peerId, storyReactionData.date, storyReactionData.reaction)
                                         if let peer = transaction.getPeer(peerId.peerId) {
                                             if let parsedReaction = MessageReaction.Reaction(apiReaction: reaction) {
                                                 let reactionFile: TelegramMediaFile?
@@ -713,14 +722,16 @@ public final class EngineStoryViewListContext {
                                                 )))
                                             }
                                         }
-                                    case let .storyReactionPublicForward(message):
+                                    case let .storyReactionPublicForward(storyReactionPublicForwardData):
+                                        let message = storyReactionPublicForwardData.message
                                         if let storeMessage = StoreMessage(apiMessage: message, accountPeerId: accountPeerId, peerIsForum: false), let message = locallyRenderedMessage(message: storeMessage, peers: peers.peers) {
                                             items.append(.forward(Item.Forward(
                                                 message: EngineMessage(message),
                                                 storyStats: transaction.getPeerStoryStats(peerId: message.id.peerId)
                                             )))
                                         }
-                                    case let .storyReactionPublicRepost(peerId, story):
+                                    case let .storyReactionPublicRepost(storyReactionPublicRepostData):
+                                        let (peerId, story) = (storyReactionPublicRepostData.peerId, storyReactionPublicRepostData.story)
                                         if let peer = transaction.getPeer(peerId.peerId) {
                                             if let storedItem = Stories.StoredItem(apiStoryItem: story, peerId: peer.id, transaction: transaction), case let .item(item) = storedItem, let media = item.media {
                                                 items.append(.repost(Item.Repost(
@@ -759,6 +770,7 @@ public final class EngineStoryViewListContext {
                                                         isMy: item.isMy,
                                                         myReaction: item.myReaction,
                                                         forwardInfo: item.forwardInfo.flatMap { EngineStoryItem.ForwardInfo($0, transaction: transaction) },
+                                                        music: item.music.flatMap(EngineMedia.init),
                                                         author: item.authorId.flatMap { transaction.getPeer($0).flatMap(EnginePeer.init) },
                                                         folderIds: item.folderIds
                                                     ),

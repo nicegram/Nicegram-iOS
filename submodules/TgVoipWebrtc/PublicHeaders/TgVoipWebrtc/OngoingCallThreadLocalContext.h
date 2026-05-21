@@ -327,6 +327,7 @@ typedef NS_ENUM(int32_t, OngoingCallDataSavingWebrtc) {
 typedef struct {
     bool isConnected;
     bool isTransitioningFromBroadcastToRtc;
+    bool isBroadcast;
 } GroupCallNetworkState;
 
 typedef NS_ENUM(int32_t, OngoingGroupCallMediaChannelType) {

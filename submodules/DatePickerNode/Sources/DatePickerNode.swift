@@ -4,6 +4,7 @@ import UIKit
 import AsyncDisplayKit
 import TelegramPresentationData
 import TelegramStringFormatting
+import TextFormat
 import SegmentedControlNode
 import DirectionalPanGesture
 
@@ -63,17 +64,17 @@ public final class DatePickerTheme: Equatable {
 
 public extension DatePickerTheme {
     convenience init(theme: PresentationTheme) {
-        self.init(backgroundColor: theme.list.itemBlocksBackgroundColor, textColor: theme.list.itemPrimaryTextColor, secondaryTextColor: theme.list.itemSecondaryTextColor, accentColor: theme.list.itemAccentColor, disabledColor: theme.list.itemDisabledTextColor, selectionColor: theme.list.itemCheckColors.fillColor, selectionTextColor: theme.list.itemCheckColors.foregroundColor, separatorColor: theme.list.itemBlocksSeparatorColor, segmentedControlTheme: SegmentedControlTheme(theme: theme), overallDarkAppearance: theme.overallDarkAppearance)
+        self.init(backgroundColor: theme.list.itemBlocksBackgroundColor, textColor: theme.list.itemPrimaryTextColor, secondaryTextColor: theme.list.itemSecondaryTextColor, accentColor: theme.list.itemAccentColor, disabledColor: theme.list.itemSecondaryTextColor, selectionColor: theme.list.itemCheckColors.fillColor, selectionTextColor: theme.list.itemCheckColors.foregroundColor, separatorColor: theme.list.itemBlocksSeparatorColor, segmentedControlTheme: SegmentedControlTheme(theme: theme), overallDarkAppearance: theme.overallDarkAppearance)
     }
 }
 
 private let telegramReleaseDate = Date(timeIntervalSince1970: 1376438400.0)
 private let upperLimitDate = Date(timeIntervalSince1970: Double(Int32.max - 1))
 
-private let controlFont = Font.regular(17.0)
-private let dayFont = Font.regular(13.0)
-private let dateFont = Font.with(size: 17.0, design: .regular, traits: .monospacedNumbers)
-private let selectedDateFont = Font.with(size: 17.0, design: .regular, weight: .bold, traits: .monospacedNumbers)
+private let controlFont = Font.semibold(17.0)
+private let dayFont = Font.medium(13.0)
+private let dateFont = Font.with(size: 19.0, design: .regular, traits: .monospacedNumbers)
+private let selectedDateFont = Font.with(size: 19.0, design: .regular, weight: .bold, traits: .monospacedNumbers)
 
 private var calendar: Calendar = {
     var calendar = Calendar(identifier: .gregorian)
@@ -136,7 +137,7 @@ public final class DatePickerNode: ASDisplayNode {
             didSet {
                 self.selectionNode.image = generateStretchableFilledCircleImage(diameter: 44.0, color: self.theme.selectionColor)
                 if let size = self.validSize {
-                    self.updateLayout(size: size)
+                    let _ = self.updateLayout(size: size)
                 }
             }
         }
@@ -196,7 +197,7 @@ public final class DatePickerNode: ASDisplayNode {
             return nil
         }
         
-        func updateLayout(size: CGSize) {
+        func updateLayout(size: CGSize) -> CGFloat {
             var weekday = self.firstWeekday
             var started = false
             var ended = false
@@ -204,6 +205,8 @@ public final class DatePickerNode: ASDisplayNode {
             
             let sideInset: CGFloat = 12.0
             let cellSize: CGFloat = floor((size.width - sideInset * 2.0) / 7.0)
+            
+            var maxY = 0.0
             
             self.selectionNode.isHidden = true
             for i in 0 ..< 42 {
@@ -270,11 +273,13 @@ public final class DatePickerNode: ASDisplayNode {
                     
                     if count == self.numberOfDays {
                         ended = true
+                        maxY = cellFrame.maxY
                     }
                 } else {
                     textNode.isHidden = true
                 }
             }
+            return maxY
         }
     }
     
@@ -295,6 +300,7 @@ public final class DatePickerNode: ASDisplayNode {
     private let strings: PresentationStrings
     private let dateTimeFormat: PresentationDateTimeFormat
     private let title: String
+    private let hasValueRow: Bool
     
     private let timeTitleNode: ImmediateTextNode
     
@@ -387,10 +393,11 @@ public final class DatePickerNode: ASDisplayNode {
         }
     }
     
-    public init(theme: DatePickerTheme, strings: PresentationStrings, dateTimeFormat: PresentationDateTimeFormat, title: String) {
+    public init(theme: DatePickerTheme, strings: PresentationStrings, dateTimeFormat: PresentationDateTimeFormat, title: String = "", hasValueRow: Bool = true) {
         self.theme = theme
         self.strings = strings
         self.dateTimeFormat = dateTimeFormat
+        self.hasValueRow = hasValueRow
         
         self.state = State(minDate: telegramReleaseDate, maxDate: upperLimitDate, date: nil, displayingMonthSelection: false, displayingDateSelection: false, displayingTimeSelection: false, selectedMonth: monthForDate(Date()))
         self.title = title
@@ -453,12 +460,12 @@ public final class DatePickerNode: ASDisplayNode {
         self.dateButtonNode = HighlightableButtonNode()
         self.dateButtonNode.clipsToBounds = true
         self.dateButtonNode.backgroundColor = theme.segmentedControlTheme.backgroundColor
-        self.dateButtonNode.cornerRadius = 9.0
+        self.dateButtonNode.cornerRadius = 18.0
         
         self.timeButtonNode = HighlightableButtonNode()
         self.timeButtonNode.clipsToBounds = true
         self.timeButtonNode.backgroundColor = theme.segmentedControlTheme.backgroundColor
-        self.timeButtonNode.cornerRadius = 9.0
+        self.timeButtonNode.cornerRadius = 18.0
         
         super.init()
         
@@ -483,10 +490,11 @@ public final class DatePickerNode: ASDisplayNode {
         self.addSubnode(self.timePickerBackgroundNode)
         self.timePickerBackgroundNode.addSubnode(self.timePickerNode)
         
-        self.addSubnode(self.timeTitleNode)
-        
-        self.addSubnode(self.dateButtonNode)
-        self.addSubnode(self.timeButtonNode)
+        if hasValueRow {
+            self.addSubnode(self.timeTitleNode)
+            self.addSubnode(self.dateButtonNode)
+            self.addSubnode(self.timeButtonNode)
+        }
         
         self.monthArrowNode.image = generateSmallArrowImage(color: theme.accentColor)
         self.previousButtonNode.setImage(generateNavigationArrowImage(color: theme.accentColor, mirror: true), for: .normal)
@@ -497,21 +505,6 @@ public final class DatePickerNode: ASDisplayNode {
         self.setupItems()
         
         self.monthButtonNode.addTarget(self, action: #selector(self.monthButtonPressed), forControlEvents: .touchUpInside)
-        self.monthButtonNode.highligthedChanged = { [weak self] highlighted in
-            if let strongSelf = self {
-                if highlighted {
-                    strongSelf.monthTextNode.layer.removeAnimation(forKey: "opacity")
-                    strongSelf.monthTextNode.alpha = 0.4
-                    strongSelf.monthArrowNode.layer.removeAnimation(forKey: "opacity")
-                    strongSelf.monthArrowNode.alpha = 0.4
-                } else {
-                    strongSelf.monthTextNode.alpha = 1.0
-                    strongSelf.monthTextNode.layer.animateAlpha(from: 0.4, to: 1.0, duration: 0.2)
-                    strongSelf.monthArrowNode.alpha = 1.0
-                    strongSelf.monthArrowNode.layer.animateAlpha(from: 0.4, to: 1.0, duration: 0.2)
-                }
-            }
-        }
         
         self.previousButtonNode.addTarget(self, action: #selector(self.previousButtonPressed), forControlEvents: .touchUpInside)
         self.nextButtonNode.addTarget(self, action: #selector(self.nextButtonPressed), forControlEvents: .touchUpInside)
@@ -618,7 +611,12 @@ public final class DatePickerNode: ASDisplayNode {
         }
         self.theme = theme
         
-        self.backgroundColor = self.theme.backgroundColor
+        self.backgroundColor = theme.backgroundColor
+        
+        self.datePickerBackgroundNode.backgroundColor = theme.backgroundColor
+        self.monthPickerBackgroundNode.backgroundColor = theme.backgroundColor
+        self.timePickerBackgroundNode.backgroundColor = theme.backgroundColor
+        
         self.monthArrowNode.image = generateSmallArrowImage(color: theme.accentColor)
         self.previousButtonNode.setImage(generateNavigationArrowImage(color: theme.accentColor, mirror: true), for: .normal)
         self.nextButtonNode.setImage(generateNavigationArrowImage(color: theme.accentColor, mirror: false), for: .normal)
@@ -697,9 +695,9 @@ public final class DatePickerNode: ASDisplayNode {
             }
             self.transitionFraction = transitionFraction
             if let size = self.validLayout {
-                let topInset: CGFloat = 78.0 + 44.0
-                let containerSize = CGSize(width: size.width, height: size.height - topInset)
-                self.updateItems(size: containerSize, transition: .animated(duration: 0.3, curve: .spring))
+                let topInset: CGFloat = self.hasValueRow ? 78.0 + 44.0 : 65.0
+                let constrainedSize = CGSize(width: min(390.0, size.width), height: size.height - topInset)
+                self.updateItems(size: constrainedSize, transition: .animated(duration: 0.3, curve: .spring))
             }
         case .cancelled, .ended:
             let velocity = recognizer.velocity(in: self.view)
@@ -727,6 +725,7 @@ public final class DatePickerNode: ASDisplayNode {
         }
     }
     
+    public var heightUpdated: ((CGFloat) -> Void)?
     private func updateItems(size: CGSize, update: Bool = false, transition: ContainedViewLayoutTransition) {
         var validIds: [Date] = []
         
@@ -741,7 +740,6 @@ public final class DatePickerNode: ASDisplayNode {
                     current.minimumDate = self.state.minDate
                     current.maximumDate = self.state.maxDate
                     current.date = self.state.date
-                    current.updateLayout(size: size)
                 } else {
                     wasAdded = true
                     let addedItemNode = MonthNode(theme: self.theme, month: self.months[i], minimumDate: self.state.minDate, maximumDate: self.state.maxDate, date: self.state.date)
@@ -749,16 +747,21 @@ public final class DatePickerNode: ASDisplayNode {
                     self.monthNodes[self.months[i]] = addedItemNode
                     self.contentNode.addSubnode(addedItemNode)
                 }
-                if let itemNode = itemNode {
+                if let itemNode {
                     let indexOffset = CGFloat(i - self.currentIndex)
                     let itemFrame = CGRect(origin: CGPoint(x: indexOffset * size.width + self.transitionFraction * size.width, y: 0.0), size: size)
                     
+                    var itemHeight = size.height
                     if wasAdded {
                         itemNode.frame = itemFrame
-                        itemNode.updateLayout(size: size)
+                        itemHeight = itemNode.updateLayout(size: size)
                     } else {
                         transition.updateFrame(node: itemNode, frame: itemFrame)
-                        itemNode.updateLayout(size: size)
+                        itemHeight = itemNode.updateLayout(size: size)
+                    }
+                    
+                    if i == self.currentIndex {
+                        self.heightUpdated?(itemHeight)
                     }
                 }
             }
@@ -783,7 +786,7 @@ public final class DatePickerNode: ASDisplayNode {
         let constrainedSize = CGSize(width: min(390.0, size.width), height: size.height)
         
         let timeHeight: CGFloat = 50.0
-        let topInset: CGFloat = 78.0 + timeHeight
+        let topInset: CGFloat = self.hasValueRow ? 78.0 + timeHeight : 65.0
         let sideInset: CGFloat = 16.0
         
         let month = monthForDate(self.state.selectedMonth)
@@ -798,7 +801,7 @@ public final class DatePickerNode: ASDisplayNode {
         self.monthTextNode.attributedText = NSAttributedString(string: stringForMonth(strings: self.strings, month: components.month.flatMap { Int32($0) - 1 } ?? 0, ofYear: components.year.flatMap { Int32($0) - 1900 } ?? 100), font: controlFont, textColor: self.state.displayingMonthSelection ? self.theme.accentColor : self.theme.textColor)
         let monthSize = self.monthTextNode.updateLayout(size)
         
-        let monthTextFrame = CGRect(x: sideInset, y: 11.0 + timeHeight, width: monthSize.width, height: monthSize.height)
+        let monthTextFrame = CGRect(x: sideInset, y: self.hasValueRow ? 11.0 + timeHeight : 0.0, width: monthSize.width, height: monthSize.height)
         self.monthTextNode.frame = monthTextFrame
         
         let monthArrowFrame = CGRect(x: monthTextFrame.maxX + 10.0, y: monthTextFrame.minY + 4.0, width: 7.0, height: 12.0)
@@ -825,7 +828,7 @@ public final class DatePickerNode: ASDisplayNode {
         var timeSize = self.timeButtonNode.measure(size)
         timeSize.width += 24.0
         timeSize.height = 36.0
-        self.timeButtonNode.frame = CGRect(x: size.width - timeSize.width - 4.0, y: 4.0, width: timeSize.width, height: timeSize.height)
+        self.timeButtonNode.frame = CGRect(x: size.width - timeSize.width - 10.0, y: 4.0, width: timeSize.width, height: timeSize.height)
         
         let dateString = stringForMediumDate(timestamp: Int32(date.timeIntervalSince1970), strings: self.strings, dateTimeFormat: self.dateTimeFormat, withTime: false)
         self.dateButtonNode.setTitle(dateString, with: Font.with(size: 17.0, traits: .monospacedNumbers), with: self.state.displayingDateSelection ? self.theme.accentColor : self.theme.textColor, for: .normal)
@@ -833,7 +836,7 @@ public final class DatePickerNode: ASDisplayNode {
         var dateSize = self.dateButtonNode.measure(size)
         dateSize.width += 24.0
         dateSize.height = 36.0
-        self.dateButtonNode.frame = CGRect(x: size.width - timeSize.width - 4.0 - 4.0 - dateSize.width, y: 4.0, width: dateSize.width, height: dateSize.height)
+        self.dateButtonNode.frame = CGRect(x: size.width - timeSize.width - 10.0 - 4.0 - dateSize.width, y: 4.0, width: dateSize.width, height: dateSize.height)
         
         let daysSideInset: CGFloat = 12.0
         let cellSize: CGFloat = floor((constrainedSize.width - daysSideInset * 2.0) / 7.0)
@@ -856,7 +859,7 @@ public final class DatePickerNode: ASDisplayNode {
         
         self.updateItems(size: containerSize, transition: transition)
         
-        let monthInset: CGFloat = timeHeight + 30.0
+        let monthInset: CGFloat = self.hasValueRow ? timeHeight + 30.0 : 30.0
         self.monthPickerBackgroundNode.frame = CGRect(origin: CGPoint(x: 0.0, y: monthInset), size: size)
         self.monthPickerBackgroundNode.isUserInteractionEnabled = self.state.displayingMonthSelection
         transition.updateAlpha(node: self.monthPickerBackgroundNode, alpha: self.state.displayingMonthSelection ? 1.0 : 0.0)
@@ -872,7 +875,7 @@ public final class DatePickerNode: ASDisplayNode {
         self.datePickerBackgroundNode.isUserInteractionEnabled = self.state.displayingDateSelection
         transition.updateAlpha(node: self.datePickerBackgroundNode, alpha: self.state.displayingDateSelection ? 1.0 : 0.0)
         
-        self.monthPickerNode.frame = CGRect(x: sideInset, y: topInset - monthInset, width: size.width - sideInset * 2.0, height: 180.0)
+        self.monthPickerNode.frame = CGRect(x: sideInset, y: topInset - monthInset, width: size.width - sideInset * 2.0, height: 260.0)
     }
     
     public var toggleDateSelection: () -> Void = {}
@@ -1018,7 +1021,7 @@ private final class MonthPickerNode: ASDisplayNode, UIPickerViewDelegate, UIPick
         if component == 1 {
             string = "\(self.yearRange.startIndex + row)"
         } else {
-            string = stringForMonth(strings: self.strings, month: Int32(row))
+            string = stringForNominativeMonth(strings: self.strings, month: Int32(row))
         }
         return NSAttributedString(string: string, font: Font.medium(15.0), textColor: self.theme.textColor)
     }

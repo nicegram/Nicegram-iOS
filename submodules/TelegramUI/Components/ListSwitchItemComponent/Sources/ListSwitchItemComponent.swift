@@ -57,9 +57,9 @@ public final class ListSwitchItemComponent: Component {
             self.state = state
             
             self.backgroundColor = component.theme.list.itemBlocksBackgroundColor
-            self.layer.cornerRadius = 12.0
+            self.layer.cornerRadius = 26.0
             
-            let size = CGSize(width: availableSize.width, height: 44.0)
+            let size = CGSize(width: availableSize.width, height: 52.0)
             let rightInset: CGFloat = 16.0
             let leftInset: CGFloat = 16.0
             let spacing: CGFloat = 8.0

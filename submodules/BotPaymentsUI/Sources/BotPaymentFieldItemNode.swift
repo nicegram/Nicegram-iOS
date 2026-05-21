@@ -108,11 +108,12 @@ final class BotPaymentFieldItemNode: BotPaymentItemNode, UITextFieldDelegate {
             self.textField.textField.tintColor = theme.list.itemAccentColor
         }
         
+        let height: CGFloat = 52.0
         let leftInset: CGFloat = 16.0
         
         let titleSize = self.titleNode.measure(CGSize(width: width - leftInset - 70.0 - sideInset * 2.0, height: CGFloat.greatestFiniteMagnitude))
         
-        transition.updateFrame(node: self.titleNode, frame: CGRect(origin: CGPoint(x: leftInset + sideInset, y: 11.0), size: titleSize))
+        transition.updateFrame(node: self.titleNode, frame: CGRect(origin: CGPoint(x: leftInset + sideInset, y: 16.0), size: titleSize))
         
         var textInset = leftInset
         if !titleSize.width.isZero {
@@ -121,9 +122,9 @@ final class BotPaymentFieldItemNode: BotPaymentItemNode, UITextFieldDelegate {
         
         textInset = max(measuredInset, textInset)
         
-        transition.updateFrame(node: self.textField, frame: CGRect(origin: CGPoint(x: textInset + sideInset, y: 0.0), size: CGSize(width: max(1.0, width - textInset - 8.0), height: 40.0)))
+        transition.updateFrame(node: self.textField, frame: CGRect(origin: CGPoint(x: textInset + sideInset, y: 5.0), size: CGSize(width: max(1.0, width - textInset - 8.0), height: 40.0)))
         
-        return 44.0
+        return height
     }
     
     func activateInput() {

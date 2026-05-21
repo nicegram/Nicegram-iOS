@@ -7,7 +7,7 @@ swift_library(
 		"Sources/**/*.swift",
     ]),
     copts = [
-        #"-warnings-as-errors",
+        "-warnings-as-errors",
     ],
     deps = [
         "//submodules/SSignalKit/SwiftSignalKit:SwiftSignalKit",
@@ -40,8 +40,10 @@ swift_library(
         "//submodules/StickerPeekUI:StickerPeekUI",
         "//submodules/Pasteboard:Pasteboard",
         "//submodules/TelegramUI/Components/Stickers/StickerPackEditTitleController",
-        "//submodules/TelegramUI/Components/CameraScreen",
         "//submodules/TelegramUI/Components/EmojiStatusComponent",
+        "//submodules/TelegramUI/Components/EdgeEffect",
+        "//submodules/TelegramUI/Components/GlassBarButtonComponent",
+        "//submodules/TelegramUI/Components/ButtonComponent",
     ],
     visibility = [
         "//visibility:public",

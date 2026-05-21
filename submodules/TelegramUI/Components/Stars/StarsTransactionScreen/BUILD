@@ -7,7 +7,7 @@ swift_library(
         "Sources/**/*.swift",
     ]),
     copts = [
-        #"-warnings-as-errors",
+        "-warnings-as-errors",
     ],
     deps = [
         "//submodules/AsyncDisplayKit",
@@ -30,7 +30,7 @@ swift_library(
         "//submodules/UndoUI",
         "//submodules/TextFormat",
         "//submodules/Components/BundleIconComponent",
-        "//submodules/Components/SolidRoundedButtonComponent",
+        "//submodules/TelegramUI/Components/ButtonComponent",
         "//submodules/AvatarNode",
         "//submodules/TelegramUI/Components/Stars/StarsImageComponent",
         "//submodules/TelegramUI/Components/Stars/StarsAvatarComponent",
@@ -38,6 +38,9 @@ swift_library(
         "//submodules/TelegramUI/Components/MiniAppListScreen",
         "//submodules/TelegramUI/Components/Premium/PremiumStarComponent",
         "//submodules/TelegramUI/Components/Gifts/GiftAnimationComponent",
+        "//submodules/TelegramUI/Components/GlassBarButtonComponent",
+        "//submodules/TelegramUI/Components/Gifts/TableComponent",
+        "//submodules/TelegramUI/Components/Gifts/PeerTableCellComponent",
     ],
     visibility = [
         "//visibility:public",

@@ -657,7 +657,7 @@
         
         [UIView animateWithDuration:0.2 delay:0.0 options:7 << 16 animations:^{
             CGFloat offset = hidden ? 19 : 18 + 43;
-            _zoomModeView.frame = CGRectMake(floor((self.bounds.size.width - 129.0) / 2.0), self.bounds.size.height - _bottomPanelHeight - _bottomPanelOffset - offset, 129, 43);
+            _zoomModeView.frame = CGRectMake(floor((self.bounds.size.width - 172.0) / 2.0), self.bounds.size.height - _bottomPanelHeight - _bottomPanelOffset - offset, 172, 43);
         } completion:nil];
         
         [UIView animateWithDuration:0.25 animations:^

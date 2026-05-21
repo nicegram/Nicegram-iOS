@@ -89,9 +89,9 @@ func decryptedSecureValueData(context: SecureIdValueAccessContext, encryptedData
 private func apiInputSecretFile(_ file: SecureIdVerificationDocumentReference) -> Api.InputSecureFile {
     switch file {
         case let .remote(file):
-            return Api.InputSecureFile.inputSecureFile(id: file.id, accessHash: file.accessHash)
+            return Api.InputSecureFile.inputSecureFile(.init(id: file.id, accessHash: file.accessHash))
         case let .uploaded(file):
-            return Api.InputSecureFile.inputSecureFileUploaded(id: file.id, parts: file.parts, md5Checksum: file.md5Checksum, fileHash: Buffer(data: file.fileHash), secret: Buffer(data: file.encryptedSecret))
+            return Api.InputSecureFile.inputSecureFileUploaded(.init(id: file.id, parts: file.parts, md5Checksum: file.md5Checksum, fileHash: Buffer(data: file.fileHash), secret: Buffer(data: file.encryptedSecret)))
     }
 }
 
@@ -142,9 +142,9 @@ private func inputSecureIdValueData(value: SecureIdValue) -> InputSecureIdValueD
             let (dict, fileReferences, translations) = rentalAgreement.serialize()
             return InputSecureIdValueData(type: .secureValueTypeRentalAgreement, dict: dict, fileReferences: fileReferences, translationReferences: translations, frontSideReference: nil, backSideReference: nil, selfieReference: nil, publicData: nil)
         case let .phone(phone):
-            return InputSecureIdValueData(type: .secureValueTypePhone, dict: nil, fileReferences: [], translationReferences: [], frontSideReference: nil, backSideReference: nil, selfieReference: nil, publicData: .securePlainPhone(phone: phone.phone))
+            return InputSecureIdValueData(type: .secureValueTypePhone, dict: nil, fileReferences: [], translationReferences: [], frontSideReference: nil, backSideReference: nil, selfieReference: nil, publicData: .securePlainPhone(.init(phone: phone.phone)))
         case let .email(email):
-            return InputSecureIdValueData(type: .secureValueTypeEmail, dict: nil, fileReferences: [], translationReferences: [], frontSideReference: nil, backSideReference: nil, selfieReference: nil, publicData: .securePlainEmail(email: email.email))
+            return InputSecureIdValueData(type: .secureValueTypeEmail, dict: nil, fileReferences: [], translationReferences: [], frontSideReference: nil, backSideReference: nil, selfieReference: nil, publicData: .securePlainEmail(.init(email: email.email)))
     }
 }
 
@@ -175,7 +175,7 @@ private func makeInputSecureValue(context: SecureIdAccessContext, value: SecureI
         } else {
             return nil
         }
-        secureData = .secureData(data: Buffer(data: encryptedData.data), dataHash: Buffer(data: encryptedData.dataHash), secret: Buffer(data: encryptedData.encryptedSecret))
+        secureData = .secureData(.init(data: Buffer(data: encryptedData.data), dataHash: Buffer(data: encryptedData.dataHash), secret: Buffer(data: encryptedData.encryptedSecret)))
     }
     
     var flags: Int32 = 0
@@ -205,7 +205,7 @@ private func makeInputSecureValue(context: SecureIdAccessContext, value: SecureI
         flags |= 1 << 5
     }
     
-    return Api.InputSecureValue.inputSecureValue(flags: flags, type: inputData.type, data: secureData, frontSide: inputData.frontSideReference.flatMap(apiInputSecretFile), reverseSide: inputData.backSideReference.flatMap(apiInputSecretFile), selfie: inputData.selfieReference.flatMap(apiInputSecretFile), translation: translations, files: files, plainData: inputData.publicData)
+    return Api.InputSecureValue.inputSecureValue(.init(flags: flags, type: inputData.type, data: secureData, frontSide: inputData.frontSideReference.flatMap(apiInputSecretFile), reverseSide: inputData.backSideReference.flatMap(apiInputSecretFile), selfie: inputData.selfieReference.flatMap(apiInputSecretFile), translation: translations, files: files, plainData: inputData.publicData))
 }
 
 public func saveSecureIdValue(postbox: Postbox, network: Network, context: SecureIdAccessContext, value: SecureIdValue, uploadedFiles: [Data: Data]) -> Signal<SecureIdValueWithContext, SaveSecureIdValueError> {
@@ -286,7 +286,7 @@ public func dropSecureId(network: Network, currentPassword: String) -> Signal<Vo
         if let currentPasswordDerivation = authData.currentPasswordDerivation, let srpSessionData = authData.srpSessionData {
             let kdfResult = passwordKDF(encryptionProvider: network.encryptionProvider, password: currentPassword, derivation: currentPasswordDerivation, srpSessionData: srpSessionData)
             if let kdfResult = kdfResult {
-                checkPassword = .inputCheckPasswordSRP(srpId: kdfResult.id, A: Buffer(data: kdfResult.A), M1: Buffer(data: kdfResult.M1))
+                checkPassword = .inputCheckPasswordSRP(.init(srpId: kdfResult.id, A: Buffer(data: kdfResult.A), M1: Buffer(data: kdfResult.M1)))
             } else {
                 return .fail(.generic)
             }
@@ -305,7 +305,7 @@ public func dropSecureId(network: Network, currentPassword: String) -> Signal<Vo
             case .passwordSettings:
                 var flags: Int32 = 0
                 flags |= (1 << 2)
-                return network.request(Api.functions.account.updatePasswordSettings(password: .inputCheckPasswordEmpty, newSettings: .passwordInputSettings(flags: flags, newAlgo: nil, newPasswordHash: nil, hint: nil, email: nil, newSecureSettings: nil)), automaticFloodWait: false)
+                return network.request(Api.functions.account.updatePasswordSettings(password: .inputCheckPasswordEmpty, newSettings: .passwordInputSettings(.init(flags: flags, newAlgo: nil, newPasswordHash: nil, hint: nil, email: nil, newSecureSettings: nil))), automaticFloodWait: false)
                 |> map { _ in }
                 |> mapError { _ in
                     return AuthorizationPasswordVerificationError.generic

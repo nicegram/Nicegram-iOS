@@ -5,7 +5,8 @@ import TelegramApi
 extension TelegramChatBannedRights {
     init(apiBannedRights: Api.ChatBannedRights) {
         switch apiBannedRights {
-            case let .chatBannedRights(flags, untilDate):
+            case let .chatBannedRights(chatBannedRightsData):
+                let (flags, untilDate) = (chatBannedRightsData.flags, chatBannedRightsData.untilDate)
                 var effectiveFlags = TelegramChatBannedRightsFlags(rawValue: flags)
                 effectiveFlags.remove(.banSendMedia)
                 effectiveFlags.remove(TelegramChatBannedRightsFlags(rawValue: 1 << 1))
@@ -18,6 +19,6 @@ extension TelegramChatBannedRights {
         effectiveFlags.remove(.banSendMedia)
         effectiveFlags.remove(TelegramChatBannedRightsFlags(rawValue: 1 << 1))
         
-        return .chatBannedRights(flags: effectiveFlags.rawValue, untilDate: self.untilDate)
+        return .chatBannedRights(.init(flags: effectiveFlags.rawValue, untilDate: self.untilDate))
     }
 }

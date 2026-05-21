@@ -2,7 +2,6 @@ import Foundation
 import UIKit
 import Display
 import AsyncDisplayKit
-import Postbox
 import TelegramCore
 import SwiftSignalKit
 import AccountContext
@@ -14,23 +13,18 @@ import SheetComponent
 import MultilineTextComponent
 import MultilineTextWithEntitiesComponent
 import BundleIconComponent
-import ButtonComponent
 import Markdown
 import BalancedTextComponent
-import AvatarNode
 import TextFormat
 import TelegramStringFormatting
 import StarsAvatarComponent
-import EmojiTextAttachmentView
-import EmojiStatusComponent
-import UndoUI
 import PlainButtonComponent
 import TooltipUI
 import GiftAnimationComponent
-import LottieComponent
 import ContextUI
-import TelegramNotices
 import GiftItemComponent
+import GlassBarButtonComponent
+import TableComponent
 
 private final class GiftValueSheetContent: CombinedComponent {
     typealias EnvironmentType = ViewControllerComponentContainer.Environment
@@ -179,7 +173,7 @@ private final class GiftValueSheetContent: CombinedComponent {
     }
     
     static var body: Body {
-        let buttons = Child(ButtonsComponent.self)
+        let closeButton = Child(GlassBarButtonComponent.self)
         let animation = Child(GiftCompositionComponent.self)
         
         let titleBackground = Child(RoundedRectangle.self)
@@ -219,7 +213,7 @@ private final class GiftValueSheetContent: CombinedComponent {
                 giftIconSubject = .starGift(gift: gift, price: "")
             case let .unique(gift):
                 for attribute in gift.attributes {
-                    if case let .model(_, file, _) = attribute {
+                    if case let .model(_, file, _, _) = attribute {
                         animationFile = file
                     }
                 }
@@ -231,25 +225,7 @@ private final class GiftValueSheetContent: CombinedComponent {
                     genericGift = gift
                 }
             }
-       
-            let buttons = buttons.update(
-                component: ButtonsComponent(
-                    theme: theme,
-                    isOverlay: false,
-                    showMoreButton: false,
-                    closePressed: { [weak state] in
-                        guard let state else {
-                            return
-                        }
-                        state.dismiss(animated: true)
-                    },
-                    morePressed: { _, _ in
-                    }
-                ),
-                availableSize: CGSize(width: 30.0, height: 30.0),
-                transition: context.transition
-            )
-                                                            
+                 
             var originY: CGFloat = 0.0
                         
             let headerHeight: CGFloat = 210.0
@@ -394,7 +370,7 @@ private final class GiftValueSheetContent: CombinedComponent {
                 )
             ))
                                     
-            let valueString = "⭐️\(formatStarsAmountText(StarsAmount(value: component.valueInfo.initialSaleStars, nanos: 0), dateTimeFormat: dateTimeFormat)) (≈\(formatCurrencyAmount(component.valueInfo.initialSalePrice, currency: component.valueInfo.currency)))"
+            let valueString = "⭐️\(formatStarsAmountText(StarsAmount(value: component.valueInfo.initialSaleStars, nanos: 0), dateTimeFormat: dateTimeFormat)) (~\(formatCurrencyAmount(component.valueInfo.initialSalePrice, currency: component.valueInfo.currency)))"
             let valueAttributedString = NSMutableAttributedString(string: valueString, font: tableFont, textColor: tableTextColor)
             let range = (valueAttributedString.string as NSString).range(of: "⭐️")
             if range.location != NSNotFound {
@@ -655,8 +631,30 @@ private final class GiftValueSheetContent: CombinedComponent {
                 originY += 12.0
             }
             
-            context.add(buttons
-                .position(CGPoint(x: context.availableSize.width - environment.safeInsets.left - 16.0 - buttons.size.width / 2.0, y: 28.0))
+            let closeButton = closeButton.update(
+                component: GlassBarButtonComponent(
+                    size: CGSize(width: 44.0, height: 44.0),
+                    backgroundColor: nil,
+                    isDark: theme.overallDarkAppearance,
+                    state: .glass,
+                    component: AnyComponentWithIdentity(id: "close", component: AnyComponent(
+                        BundleIconComponent(
+                            name: "Navigation/Close",
+                            tintColor: theme.chat.inputPanel.panelControlColor
+                        )
+                    )),
+                    action: { [weak state] _ in
+                        guard let state else {
+                            return
+                        }
+                        state.dismiss(animated: true)
+                    }
+                ),
+                availableSize: CGSize(width: 44.0, height: 44.0),
+                transition: .immediate
+            )
+            context.add(closeButton
+                .position(CGPoint(x: 16.0 + closeButton.size.width / 2.0, y: 16.0 + closeButton.size.height / 2.0))
             )
             
             let effectiveBottomInset: CGFloat = environment.metrics.isTablet ? 0.0 : environment.safeInsets.bottom
@@ -714,6 +712,7 @@ final class GiftValueSheetComponent: CombinedComponent {
                         animateOut: animateOut,
                         getController: controller
                     )),
+                    style: .glass,
                     backgroundColor: .color(environment.theme.actionSheet.opaqueItemBackgroundColor),
                     followContentSizeChanges: true,
                     clipsContent: true,
@@ -731,6 +730,8 @@ final class GiftValueSheetComponent: CombinedComponent {
                 environment: {
                     environment
                     SheetComponentEnvironment(
+                        metrics: environment.metrics,
+                        deviceMetrics: environment.deviceMetrics,
                         isDisplaying: environment.value.isVisible,
                         isCentered: environment.metrics.widthClass == .regular,
                         hasInputHeight: !environment.inputHeight.isZero,
@@ -849,16 +850,10 @@ final class GiftValueScreen: ViewControllerComponentContainer {
             if let controller = controller as? TooltipScreen {
                 controller.dismiss(inPlace: false)
             }
-            if let controller = controller as? UndoOverlayController {
-                controller.dismiss()
-            }
         })
         self.forEachController({ controller in
             if let controller = controller as? TooltipScreen {
                 controller.dismiss(inPlace: false)
-            }
-            if let controller = controller as? UndoOverlayController {
-                controller.dismiss()
             }
             return true
         })

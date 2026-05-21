@@ -3,7 +3,6 @@ import UIKit
 import AsyncDisplayKit
 import Display
 import SwiftSignalKit
-import Postbox
 import TelegramCore
 import AvatarNode
 import ContextUI
@@ -30,7 +29,7 @@ public final class ChatAvatarNavigationNode: ASDisplayNode {
     private var avatarVideoNode: AvatarVideoNode?
     
     public private(set) var avatarStoryView: ComponentView<Empty>?
-    public var storyData: (hasUnseen: Bool, hasUnseenCloseFriends: Bool)?
+    public var storyData: (hasUnseen: Bool, hasUnseenCloseFriends: Bool, hasLiveItems: Bool)?
     
     public var statusView: ComponentView<Empty>
     private var starView: StarView?
@@ -75,12 +74,8 @@ public final class ChatAvatarNavigationNode: ASDisplayNode {
             strongSelf.contextAction?(strongSelf.containerNode, gesture)
         }
         
-        self.containerNode.frame = CGRect(origin: CGPoint(), size: CGSize(width: 37.0, height: 37.0)).offsetBy(dx: 10.0, dy: 1.0)
-        self.avatarNode.frame = self.containerNode.bounds
-        
-        #if DEBUG
-        //self.hasUnseenStories = true
-        #endif
+        self.containerNode.frame = CGRect(origin: CGPoint(), size: CGSize(width: 44.0, height: 44.0))
+        self.avatarNode.frame = self.containerNode.bounds.insetBy(dx: 3.0, dy: 3.0)
     }
     
     deinit {
@@ -117,7 +112,18 @@ public final class ChatAvatarNavigationNode: ASDisplayNode {
         self.avatarNode.isHidden = true
     }
     
-    public func setPeer(context: AccountContext, theme: PresentationTheme, peer: EnginePeer?, authorOfMessage: MessageReference? = nil, overrideImage: AvatarNodeImageOverride? = nil, emptyColor: UIColor? = nil, clipStyle: AvatarNodeClipStyle = .round, synchronousLoad: Bool = false, displayDimensions: CGSize = CGSize(width: 60.0, height: 60.0), storeUnrounded: Bool = false) {
+    public func setPeer(
+        context: AccountContext,
+        theme: PresentationTheme,
+        peer: EnginePeer?,
+        authorOfMessage: MessageReference? = nil,
+        overrideImage: AvatarNodeImageOverride? = nil,
+        emptyColor: UIColor? = nil,
+        clipStyle: AvatarNodeClipStyle = .round,
+        synchronousLoad: Bool = false,
+        displayDimensions: CGSize = CGSize(width: 60.0, height: 60.0),
+        storeUnrounded: Bool = false
+    ) {
         self.context = context
         
         if let statusComponentView = self.statusView.view {
@@ -164,6 +170,10 @@ public final class ChatAvatarNavigationNode: ASDisplayNode {
                         isKnown = true
                     }
                     if case let .known(maybePhoto) = cachedPeerData.photo {
+                        profilePhoto = maybePhoto
+                        isKnown = true
+                    }
+                    if profilePhoto == nil, case let .known(maybePhoto) = cachedPeerData.fallbackPhoto {
                         profilePhoto = maybePhoto
                         isKnown = true
                     }
@@ -241,6 +251,7 @@ public final class ChatAvatarNavigationNode: ASDisplayNode {
                 component: AnyComponent(AvatarStoryIndicatorComponent(
                     hasUnseen: storyData.hasUnseen,
                     hasUnseenCloseFriendsItems: storyData.hasUnseenCloseFriends,
+                    hasLiveItems: storyData.hasLiveItems,
                     colors: AvatarStoryIndicatorComponent.Colors(theme: theme),
                     activeLineWidth: 1.0,
                     inactiveLineWidth: 1.0,
@@ -264,7 +275,7 @@ public final class ChatAvatarNavigationNode: ASDisplayNode {
     }
     
     override public func calculateSizeThatFits(_ constrainedSize: CGSize) -> CGSize {
-        return CGSize(width: 37.0, height: 37.0)
+        return CGSize(width: 44.0, height: 44.0)
     }
     
     public func onLayout() {

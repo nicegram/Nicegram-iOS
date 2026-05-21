@@ -258,7 +258,7 @@ class LocationDistancePickerScreenNode: ViewControllerTracingNode, ASScrollViewD
         self.cancelButton = HighlightableButtonNode()
         self.cancelButton.setTitle(self.presentationData.strings.Common_Cancel, with: Font.regular(17.0), with: accentColor, for: .normal)
         
-        self.doneButton = SolidRoundedButtonNode(theme: SolidRoundedButtonTheme(theme: self.presentationData.theme), height: 52.0, cornerRadius: 11.0, gloss: false)
+        self.doneButton = SolidRoundedButtonNode(theme: SolidRoundedButtonTheme(theme: self.presentationData.theme), height: 52.0, cornerRadius: 11.0)
         self.doneButton.title = self.presentationData.strings.Conversation_Timer_Send
         
         self.unitLabelNode = ImmediateTextNode()

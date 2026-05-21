@@ -40,6 +40,7 @@ struct Particle {
 
 kernel void dustEffectInitializeParticle(
     device Particle *particles [[ buffer(0) ]],
+    const device float &verticalDirection [[ buffer(1) ]],
     uint gid [[ thread_position_in_grid ]]
 ) {
     Loki rng = Loki(gid);
@@ -49,7 +50,9 @@ kernel void dustEffectInitializeParticle(
     
     float direction = rng.rand() * (3.14159265 * 2.0);
     float velocity = (0.1 + rng.rand() * (0.2 - 0.1)) * 420.0;
-    particle.velocity = packed_float2(cos(direction) * velocity, sin(direction) * velocity);
+    float2 initialVelocity = float2(cos(direction) * velocity, sin(direction) * velocity);
+    initialVelocity.y *= verticalDirection;
+    particle.velocity = packed_float2(initialVelocity);
     
     particle.lifetime = 0.7 + rng.rand() * (1.5 - 0.7);
     
@@ -107,6 +110,7 @@ kernel void dustEffectUpdateParticle(
     const device uint2 &size [[ buffer(1) ]],
     const device float &phase [[ buffer(2) ]],
     const device float &timeStep [[ buffer(3) ]],
+    const device float &verticalDirection [[ buffer(4) ]],
     uint gid [[ thread_position_in_grid ]]
 ) {
     uint count = size.x * size.y;
@@ -124,7 +128,7 @@ kernel void dustEffectUpdateParticle(
     Particle particle = particles[gid];
     particle.offsetFromBasePosition += (particle.velocity * timeStep) * particleFraction;
     
-    particle.velocity += float2(0.0, timeStep * 120.0) * particleFraction;
+    particle.velocity += float2(0.0, timeStep * 120.0 * verticalDirection) * particleFraction;
     particle.lifetime = max(0.0, particle.lifetime - timeStep * particleFraction);
     particles[gid] = particle;
 }

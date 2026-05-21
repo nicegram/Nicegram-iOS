@@ -2,7 +2,6 @@ import Foundation
 import UIKit
 import Display
 import ComponentFlow
-import Postbox
 import TelegramCore
 import AccountContext
 import PlainButtonComponent
@@ -693,7 +692,7 @@ final class VideoChatParticipantsComponent: Component {
         
         private var appliedGridIsEmpty: Bool = true
         
-        private var isPinchToZoomActive: Bool = false
+        private(set) var isPinchToZoomActive: Bool = false
         
         private var stopRequestingNonCentralVideo: Bool = false
         private var stopRequestingNonCentralVideoTimer: Foundation.Timer?
@@ -1112,7 +1111,7 @@ final class VideoChatParticipantsComponent: Component {
                             }
                             self.isPinchToZoomActive = true
                             self.state?.updated(transition: .immediate, isLocal: true)
-                            let pinchController = PinchController(sourceNode: sourceNode, getContentAreaInScreenSpace: {
+                            let pinchController = makePinchController(sourceNode: sourceNode, getContentAreaInScreenSpace: {
                                 return UIScreen.main.bounds
                             })
                             component.call.accountContext.sharedContext.mainWindow?.presentInGlobalOverlay(pinchController)
@@ -1463,7 +1462,7 @@ final class VideoChatParticipantsComponent: Component {
             transition.setFrame(layer: self.listItemViewSeparatorContainer, frame: CGRect(origin: CGPoint(), size: itemLayout.listItemContainerFrame().size))
             
             if self.expandedGridItemContainer.frame != expandedGridItemContainerFrame {
-                self.expandedGridItemContainer.layer.cornerRadius = 10.0
+                self.expandedGridItemContainer.layer.cornerRadius = 16.0
                 
                 transition.setFrame(view: self.expandedGridItemContainer, frame: expandedGridItemContainerFrame, completion: { [weak self] completed in
                     guard let self, completed else {
@@ -1934,7 +1933,7 @@ final class VideoChatParticipantsComponent: Component {
                 transition: transition,
                 component: AnyComponent(RoundedRectangle(
                     color: UIColor(white: 0.1, alpha: 1.0),
-                    cornerRadius: 10.0
+                    cornerRadius: 16.0
                 )),
                 environment: {},
                 containerSize: CGSize(width: itemLayout.listFrame.width - itemLayout.layout.mainColumn.insets.left - itemLayout.layout.mainColumn.insets.right, height: itemLayout.list.contentHeight())
@@ -2018,7 +2017,7 @@ final class VideoChatParticipantsComponent: Component {
             self.scrollViewClippingContainer.update(params: SolidRoundedCornersContainer.Params(
                 size: itemLayout.scrollClippingFrame.size,
                 color: .black,
-                cornerRadius: 10.0,
+                cornerRadius: 16.0,
                 smoothCorners: false
             ), transition: transition)
             
@@ -2059,7 +2058,7 @@ final class VideoChatParticipantsComponent: Component {
             self.separateVideoScrollViewClippingContainer.update(params: SolidRoundedCornersContainer.Params(
                 size: itemLayout.separateVideoScrollClippingFrame.size,
                 color: .black,
-                cornerRadius: 10.0,
+                cornerRadius: 16.0,
                 smoothCorners: false
             ), transition: transition)
             

@@ -2,7 +2,6 @@ import Foundation
 import UIKit
 import Display
 import AsyncDisplayKit
-import Postbox
 import TelegramCore
 import SwiftSignalKit
 import StickerResources
@@ -366,7 +365,7 @@ final class PremiumStickerPackAccessoryNode: SparseNode, PeekControllerAccessory
             UIColor(rgb: 0x6b93ff),
             UIColor(rgb: 0x8878ff),
             UIColor(rgb: 0xe46ace)
-        ], foregroundColor: .white), height: 50.0, cornerRadius: 11.0, gloss: true)
+        ], foregroundColor: .white), height: 50.0, cornerRadius: 11.0, isShimmering: true)
         self.proceedButton.iconPosition = .right
         self.proceedButton.iconSpacing = 4.0
         self.proceedButton.animation = "premium_unlock"

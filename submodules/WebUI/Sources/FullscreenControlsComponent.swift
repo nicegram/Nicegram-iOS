@@ -18,6 +18,9 @@ final class FullscreenControlsComponent: Component {
     let insets: UIEdgeInsets
     let statusBarStyle: StatusBarStyle
     var hasBack: Bool
+    // Nicegram
+    let hideControls: Bool
+    //
     let backPressed: () -> Void
     let minimizePressed: () -> Void
     let morePressed: (ASDisplayNode, ContextGesture?) -> Void
@@ -30,6 +33,9 @@ final class FullscreenControlsComponent: Component {
         insets: UIEdgeInsets,
         statusBarStyle: StatusBarStyle,
         hasBack: Bool,
+        // Nicegram
+        hideControls: Bool,
+        //
         backPressed: @escaping () -> Void,
         minimizePressed: @escaping () -> Void,
         morePressed: @escaping (ASDisplayNode, ContextGesture?) -> Void
@@ -41,6 +47,9 @@ final class FullscreenControlsComponent: Component {
         self.insets = insets
         self.statusBarStyle = statusBarStyle
         self.hasBack = hasBack
+        // Nicegram
+        self.hideControls = hideControls
+        //
         self.backPressed = backPressed
         self.minimizePressed = minimizePressed
         self.morePressed = morePressed
@@ -65,6 +74,11 @@ final class FullscreenControlsComponent: Component {
         if lhs.hasBack != rhs.hasBack {
             return false
         }
+        // Nicegram
+        if lhs.hideControls != rhs.hideControls {
+            return false
+        }
+        //
         return true
     }
 
@@ -350,6 +364,21 @@ final class FullscreenControlsComponent: Component {
                 self.timer = timer
                 RunLoop.main.add(timer, forMode: .common)
             }
+            
+            // Nicegram
+            let controls = [
+                leftBackgroundView,
+                closeIcon.view,
+                titleClippingView,
+                leftButton,
+                rightBackgroundView,
+                minimizeButton.view,
+                moreNode.view
+            ].compactMap { $0 }
+            
+            let controlsAlpha: CGFloat = component.hideControls ? 0 : 1
+            controls.forEach { $0.alpha = controlsAlpha }
+            //
 
             return CGSize(width: availableSize.width, height: leftBackgroundSize.height)
         }

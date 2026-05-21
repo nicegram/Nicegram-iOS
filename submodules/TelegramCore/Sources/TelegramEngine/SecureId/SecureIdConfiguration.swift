@@ -27,9 +27,11 @@ public func secureIdConfiguration(postbox: Postbox, network: Network) -> Signal<
                         assertionFailure()
                         return .complete()
                     }
-                case let .passportConfig(hash, countriesLangs):
+                case let .passportConfig(passportConfigData):
+                    let (hash, countriesLangs) = (passportConfigData.hash, passportConfigData.countriesLangs)
                     switch countriesLangs {
-                        case let .dataJSON(data):
+                        case let .dataJSON(dataJSONData):
+                            let data = dataJSONData.data
                             let value = SecureIdConfiguration(jsonString: data)
                             parsed = CachedSecureIdConfiguration(value: value, hash: hash)
                     }

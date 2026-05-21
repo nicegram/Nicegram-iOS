@@ -103,7 +103,9 @@ final class StoryItemLoadingEffectView: UIView {
     }
     
     func update(size: CGSize, transition: ComponentTransition) {
-        if self.backgroundView.bounds.size != size {
+        let backgroundSize = CGSize(width: self.gradientWidth, height: size.height)
+        
+        if self.backgroundView.bounds.size != backgroundSize {
             self.backgroundView.layer.removeAllAnimations()
             
             if !self.hasCustomBorder {
@@ -115,7 +117,7 @@ final class StoryItemLoadingEffectView: UIView {
             }
         }
         
-        transition.setFrame(view: self.backgroundView, frame: CGRect(origin: CGPoint(x: -self.gradientWidth, y: 0.0), size: CGSize(width: self.gradientWidth, height: size.height)))
+        transition.setFrame(view: self.backgroundView, frame: CGRect(origin: CGPoint(x: -self.gradientWidth, y: 0.0), size: backgroundSize))
         
         transition.setFrame(view: self.borderContainerView, frame: CGRect(origin: CGPoint(), size: size))
         transition.setFrame(view: self.borderGradientView, frame: CGRect(origin: CGPoint(x: -self.gradientWidth, y: 0.0), size: CGSize(width: self.gradientWidth, height: size.height)))

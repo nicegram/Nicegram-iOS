@@ -14,7 +14,7 @@ import SheetComponent
 import MultilineTextComponent
 import MultilineTextWithEntitiesComponent
 import BundleIconComponent
-import SolidRoundedButtonComponent
+import ButtonComponent
 import Markdown
 import BalancedTextComponent
 import AvatarNode
@@ -27,6 +27,9 @@ import StarsAvatarComponent
 import MiniAppListScreen
 import PremiumStarComponent
 import GiftAnimationComponent
+import GlassBarButtonComponent
+import TableComponent
+import PeerTableCellComponent
 
 private final class StarsTransactionSheetContent: CombinedComponent {
     typealias EnvironmentType = ViewControllerComponentContainer.Environment
@@ -86,8 +89,6 @@ private final class StarsTransactionSheetContent: CombinedComponent {
         
         var peerMap: [EnginePeer.Id: EnginePeer] = [:]
         
-        var cachedCloseImage: (UIImage, PresentationTheme)?
-        var cachedOverlayCloseImage: UIImage?
         var cachedChevronImage: (UIImage, PresentationTheme)?
         
         var inProgress = false
@@ -153,7 +154,7 @@ private final class StarsTransactionSheetContent: CombinedComponent {
     }
     
     static var body: Body {
-        let closeButton = Child(Button.self)
+        let closeButton = Child(GlassBarButtonComponent.self)
         let title = Child(MultilineTextComponent.self)
         let star = Child(StarsImageComponent.self)
         let activeStar = Child(PremiumStarComponent.self)
@@ -165,8 +166,8 @@ private final class StarsTransactionSheetContent: CombinedComponent {
         let table = Child(TableComponent.self)
         let additional = Child(BalancedTextComponent.self)
         let status = Child(BalancedTextComponent.self)
-        let cancelButton = Child(SolidRoundedButtonComponent.self)
-        let button = Child(SolidRoundedButtonComponent.self)
+        let cancelButton = Child(ButtonComponent.self)
+        let button = Child(ButtonComponent.self)
         
         let transactionStatusBackgound = Child(RoundedRectangle.self)
         let transactionStatusText = Child(MultilineTextComponent.self)
@@ -189,23 +190,7 @@ private final class StarsTransactionSheetContent: CombinedComponent {
             
             let sideInset: CGFloat = 16.0 + environment.safeInsets.left
             let textSideInset: CGFloat = 32.0 + environment.safeInsets.left
-            
-            let closeImage: UIImage
-            if let (image, theme) = state.cachedCloseImage, theme === environment.theme {
-                closeImage = image
-            } else {
-                closeImage = generateCloseButtonImage(backgroundColor: UIColor(rgb: 0x808084, alpha: 0.1), foregroundColor: theme.actionSheet.inputClearButtonColor)!
-                state.cachedCloseImage = (closeImage, theme)
-            }
-            
-            let closeOverlayImage: UIImage
-            if let image = state.cachedOverlayCloseImage {
-                closeOverlayImage = image
-            } else {
-                closeOverlayImage = generateCloseButtonImage(backgroundColor: UIColor(rgb: 0xffffff, alpha: 0.1), foregroundColor: .white)!
-                state.cachedOverlayCloseImage = closeOverlayImage
-            }
-                        
+                                    
             let titleText: String
             let amountText: String
             var descriptionText: String
@@ -231,6 +216,7 @@ private final class StarsTransactionSheetContent: CombinedComponent {
             var photo: TelegramMediaWebFile?
             var transactionStatus: (String, UIColor)? = nil
             var isGift = false
+            var isGiftAuctionBid = false
             var isSubscription = false
             var isSubscriber = false
             var isSubscriptionFee = false
@@ -291,8 +277,8 @@ private final class StarsTransactionSheetContent: CombinedComponent {
                 descriptionText = ""
                 count = CurrencyAmount(amount: subscription.pricing.amount, currency: .stars)
                 date = subscription.untilDate
-                if let creationDate = (subscription.peer._asPeer() as? TelegramChannel)?.creationDate, creationDate > 0 {
-                    additionalDate = creationDate
+                if case let .channel(channel) = subscription.peer, channel.creationDate > 0 {
+                    additionalDate = channel.creationDate
                 } else {
                     additionalDate = nil
                 }
@@ -371,7 +357,12 @@ private final class StarsTransactionSheetContent: CombinedComponent {
                 if let starGift = transaction.starGift {
                     switch starGift {
                     case .generic:
-                        titleText = strings.Stars_Transaction_Gift_Title
+                        if transaction.flags.contains(.isStarGiftAuctionBid) {
+                            titleText = strings.Stars_Transaction_GiftAuctionBid
+                            isGiftAuctionBid = true
+                        } else {
+                            titleText = strings.Stars_Transaction_Gift_Title
+                        }
                         descriptionText = ""
                     case let .unique(gift):
                         titleText = gift.title
@@ -435,7 +426,24 @@ private final class StarsTransactionSheetContent: CombinedComponent {
                     isGift = true
                 } else if let starrefCommissionPermille = transaction.starrefCommissionPermille {
                     isRefProgram = true
-                    if transaction.flags.contains(.isPaidMessage) {
+                    if transaction.flags.contains(.isLiveStreamPaidMessage) {
+                        isPaidMessage = true
+                        if transaction.flags.contains(.isReaction) {
+                            titleText = strings.Stars_Transaction_LiveStreamReaction
+                        } else {
+                            titleText = strings.Stars_Transaction_LiveStreamPaidMessage(transaction.paidMessageCount ?? 1)
+                        }
+                        if !transaction.flags.contains(.isRefund) {
+                            countOnTop = true
+                            if transaction.flags.contains(.isReaction) {
+                                descriptionText = strings.Stars_Transaction_LiveStreamReaction_Text(formatPermille(1000 - starrefCommissionPermille)).string
+                            } else {
+                                descriptionText = strings.Stars_Transaction_LiveStreamPaidMessage_Text(formatPermille(1000 - starrefCommissionPermille)).string
+                            }
+                        } else {
+                            descriptionText = ""
+                        }
+                    } else if transaction.flags.contains(.isPaidMessage) {
                         isPaidMessage = true
                         titleText = strings.Stars_Transaction_PaidMessage(transaction.paidMessageCount ?? 1)
                         if !transaction.flags.contains(.isRefund) {
@@ -485,6 +493,13 @@ private final class StarsTransactionSheetContent: CombinedComponent {
                         if let months = transaction.premiumGiftMonths {
                             premiumGiftMonths = months
                             titleText = strings.Stars_Transaction_TelegramPremium(months)
+                        } else if transaction.flags.contains(.isLiveStreamPaidMessage) {
+                            isPaidMessage = true
+                            if transaction.flags.contains(.isReaction) {
+                                titleText = strings.Stars_Transaction_LiveStreamReaction
+                            } else {
+                                titleText = strings.Stars_Transaction_LiveStreamPaidMessage(transaction.paidMessageCount ?? 1)
+                            }
                         } else if transaction.flags.contains(.isPaidMessage) {
                             isPaidMessage = true
                             titleText = strings.Stars_Transaction_PaidMessage(transaction.paidMessageCount ?? 1)
@@ -655,18 +670,23 @@ private final class StarsTransactionSheetContent: CombinedComponent {
                 descriptionText = modifiedString
             }
             
-            var closeButtonImage = closeImage
-            if case .unique = giftAnimationSubject {
-                closeButtonImage = closeOverlayImage
-            }
             let closeButton = closeButton.update(
-                component: Button(
-                    content: AnyComponent(Image(image: closeButtonImage)),
-                    action: { [weak component] in
-                        component?.cancel(true)
+                component: GlassBarButtonComponent(
+                    size: CGSize(width: 44.0, height: 44.0),
+                    backgroundColor: nil,
+                    isDark: theme.overallDarkAppearance,
+                    state: .glass,
+                    component: AnyComponentWithIdentity(id: "close", component: AnyComponent(
+                        BundleIconComponent(
+                            name: "Navigation/Close",
+                            tintColor: theme.chat.inputPanel.panelControlColor
+                        )
+                    )),
+                    action: { _ in
+                        component.cancel(true)
                     }
                 ),
-                availableSize: CGSize(width: 30.0, height: 30.0),
+                availableSize: CGSize(width: 44.0, height: 44.0),
                 transition: .immediate
             )
             
@@ -911,16 +931,17 @@ private final class StarsTransactionSheetContent: CombinedComponent {
                 ))
             }
             
-            if isGift, toPeer == nil {
+            if isGift && !isGiftAuctionBid, toPeer == nil {
                 tableItems.append(.init(
                     id: "from",
                     title: strings.Stars_Transaction_From,
                     component: AnyComponent(
                         Button(
                             content: AnyComponent(
-                                PeerCellComponent(
+                                PeerTableCellComponent(
                                     context: component.context,
                                     theme: theme,
+                                    strings: strings,
                                     peer: nil
                                 )
                             ),
@@ -934,7 +955,7 @@ private final class StarsTransactionSheetContent: CombinedComponent {
                         )
                     )
                 ))
-            } else if let toPeer, !isRefProgram {
+            } else if let toPeer, !isRefProgram && !isGiftAuctionBid {
                 let title: String
                 if isGiftUpgrade {
                     title = strings.Stars_Transaction_GiftFrom
@@ -965,9 +986,10 @@ private final class StarsTransactionSheetContent: CombinedComponent {
                                 id: AnyHashable(0),
                                 component: AnyComponent(Button(
                                     content: AnyComponent(
-                                        PeerCellComponent(
+                                        PeerTableCellComponent(
                                             context: component.context,
                                             theme: theme,
+                                            strings: strings,
                                             peer: toPeer
                                         )
                                     ),
@@ -1008,9 +1030,10 @@ private final class StarsTransactionSheetContent: CombinedComponent {
                     toComponent = AnyComponent(
                         Button(
                             content: AnyComponent(
-                                PeerCellComponent(
+                                PeerTableCellComponent(
                                     context: component.context,
                                     theme: theme,
+                                    strings: strings,
                                     peer: toPeer
                                 )
                             ),
@@ -1146,9 +1169,10 @@ private final class StarsTransactionSheetContent: CombinedComponent {
                             component: AnyComponent(
                                 Button(
                                     content: AnyComponent(
-                                        PeerCellComponent(
+                                        PeerTableCellComponent(
                                             context: component.context,
                                             theme: theme,
+                                            strings: strings,
                                             peer: toPeer
                                         )
                                     ),
@@ -1178,9 +1202,10 @@ private final class StarsTransactionSheetContent: CombinedComponent {
                             component: AnyComponent(
                                 Button(
                                     content: AnyComponent(
-                                        PeerCellComponent(
+                                        PeerTableCellComponent(
                                             context: component.context,
                                             theme: theme,
+                                            strings: strings,
                                             peer: starRefPeer
                                         )
                                     ),
@@ -1209,9 +1234,10 @@ private final class StarsTransactionSheetContent: CombinedComponent {
                             component: AnyComponent(
                                 Button(
                                     content: AnyComponent(
-                                        PeerCellComponent(
+                                        PeerTableCellComponent(
                                             context: component.context,
                                             theme: theme,
+                                            strings: strings,
                                             peer: toPeer
                                         )
                                     ),
@@ -1615,18 +1641,19 @@ private final class StarsTransactionSheetContent: CombinedComponent {
             
             if let cancelButtonText {
                 let cancelButton = cancelButton.update(
-                    component: SolidRoundedButtonComponent(
-                        title: cancelButtonText,
-                        theme: SolidRoundedButtonComponent.Theme(backgroundColor: .clear, foregroundColor: linkColor),
-                        font: .regular,
-                        fontSize: 17.0,
-                        height: 50.0,
-                        cornerRadius: 10.0,
-                        gloss: false,
-                        iconName: nil,
-                        animationName: nil,
-                        iconPosition: .left,
-                        isLoading: state.inProgress,
+                    component: ButtonComponent(
+                        background: ButtonComponent.Background(
+                            style: .glass,
+                            color: theme.list.itemCheckColors.fillColor.withMultipliedAlpha(0.1),
+                            foreground: theme.list.itemCheckColors.fillColor,
+                            pressedColor: theme.list.itemCheckColors.fillColor.withMultipliedAlpha(0.8)
+                        ),
+                        content: AnyComponentWithIdentity(
+                            id: AnyHashable(0),
+                            component: AnyComponent(MultilineTextComponent(text: .plain(NSMutableAttributedString(string: cancelButtonText, font: Font.semibold(17.0), textColor: theme.list.itemCheckColors.fillColor, paragraphAlignment: .center))))
+                        ),
+                        isEnabled: true,
+                        displaysProgress: state.inProgress,
                         action: {
                             component.cancel(true)
                             if isSubscription {
@@ -1634,13 +1661,12 @@ private final class StarsTransactionSheetContent: CombinedComponent {
                             }
                         }
                     ),
-                    availableSize: CGSize(width: context.availableSize.width - sideInset * 2.0, height: 50.0),
+                    availableSize: CGSize(width: context.availableSize.width - 30.0 * 2.0, height: 52.0),
                     transition: context.transition
                 )
                 
-                let cancelButtonFrame = CGRect(origin: CGPoint(x: sideInset, y: originY), size: cancelButton.size)
                 context.add(cancelButton
-                    .position(CGPoint(x: cancelButtonFrame.midX, y: cancelButtonFrame.midY))
+                    .position(CGPoint(x: context.availableSize.width / 2.0, y: originY + cancelButton.size.height / 2.0))
                 )
                 originY += cancelButton.size.height
                 originY += 8.0
@@ -1648,18 +1674,19 @@ private final class StarsTransactionSheetContent: CombinedComponent {
             
             if let buttonText {
                 let button = button.update(
-                    component: SolidRoundedButtonComponent(
-                        title: buttonText,
-                        theme: SolidRoundedButtonComponent.Theme(theme: theme),
-                        font: .bold,
-                        fontSize: 17.0,
-                        height: 50.0,
-                        cornerRadius: 10.0,
-                        gloss: false,
-                        iconName: nil,
-                        animationName: nil,
-                        iconPosition: .left,
-                        isLoading: state.inProgress,
+                    component: ButtonComponent(
+                        background: ButtonComponent.Background(
+                            style: .glass,
+                            color: theme.list.itemCheckColors.fillColor,
+                            foreground: theme.list.itemCheckColors.foregroundColor,
+                            pressedColor: theme.list.itemCheckColors.fillColor.withMultipliedAlpha(0.9),
+                        ),
+                        content: AnyComponentWithIdentity(
+                            id: AnyHashable(0),
+                            component: AnyComponent(MultilineTextComponent(text: .plain(NSMutableAttributedString(string: buttonText, font: Font.semibold(17.0), textColor: theme.list.itemCheckColors.foregroundColor, paragraphAlignment: .center))))
+                        ),
+                        isEnabled: true,
+                        displaysProgress: state.inProgress,
                         action: {
                             component.cancel(true)
                             if isSubscription && cancelButtonText == nil {
@@ -1667,20 +1694,19 @@ private final class StarsTransactionSheetContent: CombinedComponent {
                             }
                         }
                     ),
-                    availableSize: CGSize(width: context.availableSize.width - sideInset * 2.0, height: 50.0),
+                    availableSize: CGSize(width: context.availableSize.width - 30.0 * 2.0, height: 52.0),
                     transition: context.transition
                 )
                 
-                let buttonFrame = CGRect(origin: CGPoint(x: sideInset, y: originY), size: button.size)
                 context.add(button
-                    .position(CGPoint(x: buttonFrame.midX, y: buttonFrame.midY))
+                    .position(CGPoint(x: context.availableSize.width / 2.0, y: originY + button.size.height / 2.0))
                 )
                 originY += button.size.height
                 originY += 7.0
             }
             
             context.add(closeButton
-                .position(CGPoint(x: context.availableSize.width - environment.safeInsets.left - closeButton.size.width, y: 28.0))
+                .position(CGPoint(x: 16.0 + closeButton.size.width / 2.0, y: 16.0 + closeButton.size.height / 2.0))
             )
             
             let effectiveBottomInset: CGFloat = environment.metrics.isTablet ? 0.0 : environment.safeInsets.bottom
@@ -1773,6 +1799,7 @@ private final class StarsTransactionSheetComponent: CombinedComponent {
                         updateSubscription: context.component.updateSubscription,
                         sendGift: context.component.sendGift
                     )),
+                    style: .glass,
                     backgroundColor: .color(environment.theme.actionSheet.opaqueItemBackgroundColor),
                     followContentSizeChanges: true,
                     clipsContent: true,
@@ -1787,6 +1814,8 @@ private final class StarsTransactionSheetComponent: CombinedComponent {
                 environment: {
                     environment
                     SheetComponentEnvironment(
+                        metrics: environment.metrics,
+                        deviceMetrics: environment.deviceMetrics,
                         isDisplaying: environment.value.isVisible,
                         isCentered: environment.metrics.widthClass == .regular,
                         hasInputHeight: !environment.inputHeight.isZero,
@@ -1926,7 +1955,7 @@ public class StarsTransactionScreen: ViewControllerComponentContainer {
                     return
                 }
                 if isProfile {
-                    if let controller = context.sharedContext.makePeerInfoController(context: context, updatedPresentationData: nil, peer: peer._asPeer(), mode: .generic, avatarInitiallyExpanded: false, fromChat: false, requestsContext: nil) {
+                    if let controller = context.sharedContext.makePeerInfoController(context: context, updatedPresentationData: nil, peer: peer, mode: .generic, avatarInitiallyExpanded: false, fromChat: false, requestsContext: nil) {
                         navigationController.pushViewController(controller)
                     }
                 } else {
@@ -1983,7 +2012,7 @@ public class StarsTransactionScreen: ViewControllerComponentContainer {
                 associatedThreadInfo: nil,
                 associatedStories: [:]
             )
-            let gallery = GalleryController(context: self.context, source: .standaloneMessage(message, 0), replaceRootController: { _, _ in
+            let gallery = GalleryController(context: self.context, source: .standaloneMessage(message, .paidMediaIndex(0)), replaceRootController: { _, _ in
             }, baseNavigationController: nil)
             self.present(gallery, in: .window(.root), with: GalleryControllerPresentationArguments(transitionArguments: { messageId, media in
                 if let transitionNode = transitionNode(media) {
@@ -2127,224 +2156,6 @@ public class StarsTransactionScreen: ViewControllerComponentContainer {
     }
 }
 
-private final class TableComponent: CombinedComponent {
-    class Item: Equatable {
-        public let id: AnyHashable
-        public let title: String
-        public let component: AnyComponent<Empty>
-        public let insets: UIEdgeInsets?
-
-        public init<IdType: Hashable>(id: IdType, title: String, component: AnyComponent<Empty>, insets: UIEdgeInsets? = nil) {
-            self.id = AnyHashable(id)
-            self.title = title
-            self.component = component
-            self.insets = insets
-        }
-
-        public static func == (lhs: Item, rhs: Item) -> Bool {
-            if lhs.id != rhs.id {
-                return false
-            }
-            if lhs.title != rhs.title {
-                return false
-            }
-            if lhs.component != rhs.component {
-                return false
-            }
-            if lhs.insets != rhs.insets {
-                return false
-            }
-            return true
-        }
-    }
-    
-    private let theme: PresentationTheme
-    private let items: [Item]
-
-    public init(theme: PresentationTheme, items: [Item]) {
-        self.theme = theme
-        self.items = items
-    }
-
-    public static func ==(lhs: TableComponent, rhs: TableComponent) -> Bool {
-        if lhs.theme !== rhs.theme {
-            return false
-        }
-        if lhs.items != rhs.items {
-            return false
-        }
-        return true
-    }
-    
-    final class State: ComponentState {
-        var cachedBorderImage: (UIImage, PresentationTheme)?
-    }
-    
-    func makeState() -> State {
-        return State()
-    }
-
-    public static var body: Body {
-        let leftColumnBackground = Child(Rectangle.self)
-        let verticalBorder = Child(Rectangle.self)
-        let titleChildren = ChildMap(environment: Empty.self, keyedBy: AnyHashable.self)
-        let valueChildren = ChildMap(environment: Empty.self, keyedBy: AnyHashable.self)
-        let borderChildren = ChildMap(environment: Empty.self, keyedBy: AnyHashable.self)
-        let outerBorder = Child(Image.self)
-
-        return { context in
-            let verticalPadding: CGFloat = 11.0
-            let horizontalPadding: CGFloat = 12.0
-            let borderWidth: CGFloat = 1.0
-            
-            let backgroundColor = context.component.theme.actionSheet.opaqueItemBackgroundColor
-            let borderColor = backgroundColor.mixedWith(context.component.theme.list.itemBlocksSeparatorColor, alpha: 0.6)
-            
-            var leftColumnWidth: CGFloat = 0.0
-            
-            var updatedTitleChildren: [_UpdatedChildComponent] = []
-            var updatedValueChildren: [(_UpdatedChildComponent, UIEdgeInsets)] = []
-            var updatedBorderChildren: [_UpdatedChildComponent] = []
-            
-            for item in context.component.items {
-                let titleChild = titleChildren[item.id].update(
-                    component: AnyComponent(MultilineTextComponent(
-                        text: .plain(NSAttributedString(string: item.title, font: Font.regular(15.0), textColor: context.component.theme.list.itemPrimaryTextColor))
-                    )),
-                    availableSize: context.availableSize,
-                    transition: context.transition
-                )
-                updatedTitleChildren.append(titleChild)
-                
-                if titleChild.size.width > leftColumnWidth {
-                    leftColumnWidth = titleChild.size.width
-                }
-            }
-            
-            leftColumnWidth = max(100.0, leftColumnWidth + horizontalPadding * 2.0)
-            let rightColumnWidth = context.availableSize.width - leftColumnWidth
-            
-            var i = 0
-            var rowHeights: [Int: CGFloat] = [:]
-            var totalHeight: CGFloat = 0.0
-            
-            for item in context.component.items {
-                let titleChild = updatedTitleChildren[i]
-                
-                let insets: UIEdgeInsets
-                if let customInsets = item.insets {
-                    insets = customInsets
-                } else {
-                    insets = UIEdgeInsets(top: 0.0, left: horizontalPadding, bottom: 0.0, right: horizontalPadding)
-                }
-                let valueChild = valueChildren[item.id].update(
-                    component: item.component,
-                    availableSize: CGSize(width: rightColumnWidth - insets.left - insets.right, height: context.availableSize.height),
-                    transition: context.transition
-                )
-                updatedValueChildren.append((valueChild, insets))
-                
-                let rowHeight = max(40.0, max(titleChild.size.height, valueChild.size.height) + verticalPadding * 2.0)
-                rowHeights[i] = rowHeight
-                totalHeight += rowHeight
-                
-                if i < context.component.items.count - 1 {
-                    let borderChild = borderChildren[item.id].update(
-                        component: AnyComponent(Rectangle(color: borderColor)),
-                        availableSize: CGSize(width: context.availableSize.width, height: borderWidth),
-                        transition: context.transition
-                    )
-                    updatedBorderChildren.append(borderChild)
-                }
-                
-                i += 1
-            }
-            
-            let leftColumnBackground = leftColumnBackground.update(
-                component: Rectangle(color: context.component.theme.list.itemInputField.backgroundColor),
-                availableSize: CGSize(width: leftColumnWidth, height: totalHeight),
-                transition: context.transition
-            )
-            context.add(
-                leftColumnBackground
-                    .position(CGPoint(x: leftColumnWidth / 2.0, y: totalHeight / 2.0))
-            )
-            
-            let borderImage: UIImage
-            if let (currentImage, theme) = context.state.cachedBorderImage, theme === context.component.theme {
-                borderImage = currentImage
-            } else {
-                let borderRadius: CGFloat = 5.0
-                borderImage = generateImage(CGSize(width: 16.0, height: 16.0), rotatedContext: { size, context in
-                    let bounds = CGRect(origin: .zero, size: size)
-                    context.setFillColor(backgroundColor.cgColor)
-                    context.fill(bounds)
-                    
-                    let path = CGPath(roundedRect: bounds.insetBy(dx: borderWidth / 2.0, dy: borderWidth / 2.0), cornerWidth: borderRadius, cornerHeight: borderRadius, transform: nil)
-                    context.setBlendMode(.clear)
-                    context.addPath(path)
-                    context.fillPath()
-                    
-                    context.setBlendMode(.normal)
-                    context.setStrokeColor(borderColor.cgColor)
-                    context.setLineWidth(borderWidth)
-                    context.addPath(path)
-                    context.strokePath()
-                })!.stretchableImage(withLeftCapWidth: 5, topCapHeight: 5)
-                context.state.cachedBorderImage = (borderImage, context.component.theme)
-            }
-            
-            let outerBorder = outerBorder.update(
-                component: Image(image: borderImage),
-                availableSize: CGSize(width: context.availableSize.width, height: totalHeight),
-                transition: context.transition
-            )
-            context.add(outerBorder
-                .position(CGPoint(x: context.availableSize.width / 2.0, y: totalHeight / 2.0))
-            )
-            
-            let verticalBorder = verticalBorder.update(
-                component: Rectangle(color: borderColor),
-                availableSize: CGSize(width: borderWidth, height: totalHeight),
-                transition: context.transition
-            )
-            context.add(
-                verticalBorder
-                    .position(CGPoint(x: leftColumnWidth - borderWidth / 2.0, y: totalHeight / 2.0))
-            )
-            
-            i = 0
-            var originY: CGFloat = 0.0
-            for (titleChild, (valueChild, valueInsets)) in zip(updatedTitleChildren, updatedValueChildren) {
-                let rowHeight = rowHeights[i] ?? 0.0
-                
-                let titleFrame = CGRect(origin: CGPoint(x: horizontalPadding, y: originY + verticalPadding), size: titleChild.size)
-                let valueFrame = CGRect(origin: CGPoint(x: leftColumnWidth + valueInsets.left, y: originY + verticalPadding), size: valueChild.size)
-                
-                context.add(titleChild
-                    .position(titleFrame.center)
-                )
-                
-                context.add(valueChild
-                    .position(valueFrame.center)
-                )
-                
-                if i < updatedBorderChildren.count {
-                    let borderChild = updatedBorderChildren[i]
-                    context.add(borderChild
-                        .position(CGPoint(x: context.availableSize.width / 2.0, y: originY + rowHeight - borderWidth / 2.0))
-                    )
-                }
-                
-                originY += rowHeight
-                i += 1
-            }
-            
-            return CGSize(width: context.availableSize.width, height: totalHeight)
-        }
-    }
-}
-
 private final class PeerCellComponent: Component {
     let context: AccountContext
     let theme: PresentationTheme
@@ -2404,7 +2215,7 @@ private final class PeerCellComponent: Component {
             let avatarNaturalSize = self.avatar.update(
                 transition: .immediate,
                 component: AnyComponent(
-                    StarsAvatarComponent(context: component.context, theme: component.theme, peer: .transactionPeer(peer), photo: nil, media: [], uniqueGift: nil, backgroundColor: .clear)
+                    StarsAvatarComponent(context: component.context, theme: component.theme, peer: .transactionPeer(peer), photo: nil, media: [], gift: nil, backgroundColor: .clear)
                 ),
                 environment: {},
                 containerSize: CGSize(width: 40.0, height: 40.0)

@@ -27,6 +27,9 @@ import MediaEditor
 import AvatarBackground
 import LottieComponent
 import UndoUI
+import PremiumAlertController
+import GlassBarButtonComponent
+import BundleIconComponent
 
 public struct AvatarKeyboardInputData: Equatable {
     var emoji: EmojiPagerContentComponent
@@ -162,6 +165,7 @@ final class AvatarEditorScreenComponent: Component {
         var id: AnyHashable
         var version: Int
         var isPreset: Bool
+        var canLoadMore: Bool
     }
     
     private struct EmojiSearchState {
@@ -208,6 +212,7 @@ final class AvatarEditorScreenComponent: Component {
         private var data: AvatarKeyboardInputData?
 
         private let emojiSearchDisposable = MetaDisposable()
+        private var stickerSearchContext: StickerSearchContext?
         private let emojiSearchState = Promise<EmojiSearchState>(EmojiSearchState(result: nil, isSearching: false))
         private var emojiSearchStateValue = EmojiSearchState(result: nil, isSearching: false) {
             didSet {
@@ -226,11 +231,11 @@ final class AvatarEditorScreenComponent: Component {
             
             self.backgroundContainerView = UIView()
             self.backgroundContainerView.clipsToBounds = true
-            self.backgroundContainerView.layer.cornerRadius = 10.0
+            self.backgroundContainerView.layer.cornerRadius = 26.0
             
             self.keyboardContainerView = UIView()
             self.keyboardContainerView.clipsToBounds = true
-            self.keyboardContainerView.layer.cornerRadius = 10.0
+            self.keyboardContainerView.layer.cornerRadius = 26.0
             
             self.panelBackgroundView = BlurredBackgroundView(color: .white)
             self.panelHostView = PagerExternalTopPanelContainer()
@@ -270,156 +275,173 @@ final class AvatarEditorScreenComponent: Component {
                 
                 switch query {
                 case .none:
+                    self.stickerSearchContext = nil
                     self.emojiSearchDisposable.set(nil)
-                    self.emojiSearchState.set(.single(EmojiSearchState(result: nil, isSearching: false)))
+                    self.emojiSearchStateValue = EmojiSearchState(result: nil, isSearching: false)
                 case let .text(rawQuery, languageCode):
                     let query = rawQuery.trimmingCharacters(in: .whitespacesAndNewlines)
                     
                     if query.isEmpty {
+                        self.stickerSearchContext = nil
                         self.emojiSearchDisposable.set(nil)
-                        self.emojiSearchState.set(.single(EmojiSearchState(result: nil, isSearching: false)))
+                        self.emojiSearchStateValue = EmojiSearchState(result: nil, isSearching: false)
                     } else {
-                        var signal = context.engine.stickers.searchEmojiKeywords(inputLanguageCode: languageCode, query: query, completeMatch: false)
-                        if !languageCode.lowercased().hasPrefix("en") {
-                            signal = signal
-                            |> mapToSignal { keywords in
-                                return .single(keywords)
-                                |> then(
-                                    context.engine.stickers.searchEmojiKeywords(inputLanguageCode: "en-US", query: query, completeMatch: query.count < 3)
-                                    |> map { englishKeywords in
-                                        return keywords + englishKeywords
+                        self.stickerSearchContext = nil
+                        
+                        let emojiItemsSignal = context.account.postbox.itemCollectionsView(orderedItemListCollectionIds: [], namespaces: [Namespaces.ItemCollection.CloudEmojiPacks], aroundIndex: nil, count: 10000000)
+                        |> take(1)
+                        
+                        let buildGroups: (ItemCollectionsView, [String: String], StickerSearchContext.State, StickerSearchContext?) -> (groups: [EmojiPagerContentComponent.ItemGroup], canLoadMore: Bool, isSearching: Bool, searchContext: StickerSearchContext?) = { view, allEmoticons, stickerState, searchContext in
+                            let hasPremium = true
+                            
+                            var emoji: [(String, TelegramMediaFile.Accessor?, String)] = []
+                            for entry in view.entries {
+                                guard let item = entry.item as? StickerPackItem else {
+                                    continue
+                                }
+                                if let alt = item.file.customEmojiAlt {
+                                    if !item.file.isPremiumEmoji || hasPremium {
+                                        if !alt.isEmpty, let keyword = allEmoticons[alt] {
+                                            emoji.append((alt, item.file, keyword))
+                                        } else if alt == query {
+                                            emoji.append((alt, item.file, alt))
+                                        }
                                     }
+                                }
+                            }
+                            
+                            var emojiItems: [EmojiPagerContentComponent.Item] = []
+                            var existingIds = Set<MediaId>()
+                            for item in emoji {
+                                if let itemFile = item.1 {
+                                    if existingIds.contains(itemFile.fileId) {
+                                        continue
+                                    }
+                                    existingIds.insert(itemFile.fileId)
+                                    let animationData = EntityKeyboardAnimationData(file: itemFile)
+                                    let item = EmojiPagerContentComponent.Item(
+                                        animationData: animationData,
+                                        content: .animation(animationData),
+                                        itemFile: itemFile,
+                                        subgroupId: nil,
+                                        icon: .none,
+                                        tintMode: animationData.isTemplate ? .primary : .none
+                                    )
+                                    emojiItems.append(item)
+                                }
+                            }
+                            
+                            var stickerItems: [EmojiPagerContentComponent.Item] = []
+                            for sticker in stickerState.items {
+                                if existingIds.contains(sticker.file.fileId) {
+                                    continue
+                                }
+                                existingIds.insert(sticker.file.fileId)
+                                let animationData = EntityKeyboardAnimationData(file: TelegramMediaFile.Accessor(sticker.file))
+                                let item = EmojiPagerContentComponent.Item(
+                                    animationData: animationData,
+                                    content: .animation(animationData),
+                                    itemFile: TelegramMediaFile.Accessor(sticker.file),
+                                    subgroupId: nil,
+                                    icon: .none,
+                                    tintMode: .none
+                                )
+                                stickerItems.append(item)
+                            }
+                            
+                            var result: [EmojiPagerContentComponent.ItemGroup] = []
+                            if !emojiItems.isEmpty {
+                                result.append(
+                                    EmojiPagerContentComponent.ItemGroup(
+                                        supergroupId: "search",
+                                        groupId: "emoji",
+                                        title: "Emoji",
+                                        subtitle: nil,
+                                        badge: nil,
+                                        actionButtonTitle: nil,
+                                        isFeatured: false,
+                                        isPremiumLocked: false,
+                                        isEmbedded: false,
+                                        hasClear: false,
+                                        hasEdit: false,
+                                        collapsedLineCount: nil,
+                                        displayPremiumBadges: false,
+                                        headerItem: nil,
+                                        fillWithLoadingPlaceholders: false,
+                                        items: emojiItems
+                                    )
                                 )
                             }
+                            if !stickerItems.isEmpty {
+                                result.append(
+                                    EmojiPagerContentComponent.ItemGroup(
+                                        supergroupId: "search",
+                                        groupId: "stickers",
+                                        title: "Stickers",
+                                        subtitle: nil,
+                                        badge: nil,
+                                        actionButtonTitle: nil,
+                                        isFeatured: false,
+                                        isPremiumLocked: false,
+                                        isEmbedded: false,
+                                        hasClear: false,
+                                        hasEdit: false,
+                                        collapsedLineCount: nil,
+                                        displayPremiumBadges: false,
+                                        headerItem: nil,
+                                        fillWithLoadingPlaceholders: false,
+                                        items: stickerItems
+                                    )
+                                )
+                            }
+                            return (result, stickerState.canLoadMore, stickerState.items.isEmpty && stickerState.isLoadingMore, searchContext)
                         }
-                                            
-                        let resultSignal = signal
-                        |> mapToSignal { keywords -> Signal<[EmojiPagerContentComponent.ItemGroup], NoError> in
-                            return combineLatest(
-                                context.account.postbox.itemCollectionsView(orderedItemListCollectionIds: [], namespaces: [Namespaces.ItemCollection.CloudEmojiPacks], aroundIndex: nil, count: 10000000) |> take(1),
-                                combineLatest(keywords.map { context.engine.stickers.searchStickers(query: query, emoticon: $0.emoticons, inputLanguageCode: languageCode)
-                                |> map { items -> [FoundStickerItem] in
-                                    return items.items
+                        
+                        let resultSignal: Signal<(groups: [EmojiPagerContentComponent.ItemGroup], canLoadMore: Bool, isSearching: Bool, searchContext: StickerSearchContext?), NoError>
+                        if query.isSingleEmoji {
+                            let allEmoticons = [query.basicEmoji.0: query.basicEmoji.0]
+                            let searchContext = context.engine.stickers.stickerSearchContext(query: nil, emoticon: [query.basicEmoji.0], inputLanguageCode: languageCode)
+                            resultSignal = combineLatest(emojiItemsSignal, searchContext.state)
+                            |> map { view, stickerState in
+                                return buildGroups(view, allEmoticons, stickerState, searchContext)
+                            }
+                        } else {
+                            var keywordsSignal = context.engine.stickers.searchEmojiKeywords(inputLanguageCode: languageCode, query: query, completeMatch: false)
+                            if !languageCode.lowercased().hasPrefix("en") {
+                                keywordsSignal = keywordsSignal
+                                |> mapToSignal { keywords in
+                                    return .single(keywords)
+                                    |> then(
+                                        context.engine.stickers.searchEmojiKeywords(inputLanguageCode: "en-US", query: query, completeMatch: query.count < 3)
+                                        |> map { englishKeywords in
+                                            return keywords + englishKeywords
+                                        }
+                                    )
                                 }
-                                })
-                            )
-                            |> map { view, stickers -> [EmojiPagerContentComponent.ItemGroup] in
-                                let hasPremium = true
-                                
-                                var emoji: [(String, TelegramMediaFile.Accessor?, String)] = []
-                                
-                                var existingEmoticons = Set<String>()
+                            }
+                            
+                            resultSignal = keywordsSignal
+                            |> mapToSignal { keywords -> Signal<(groups: [EmojiPagerContentComponent.ItemGroup], canLoadMore: Bool, isSearching: Bool, searchContext: StickerSearchContext?), NoError> in
                                 var allEmoticons: [String: String] = [:]
                                 for keyword in keywords {
                                     for emoticon in keyword.emoticons {
                                         allEmoticons[emoticon] = keyword.keyword
-                                        existingEmoticons.insert(emoticon)
                                     }
                                 }
                                 
-                                for entry in view.entries {
-                                    guard let item = entry.item as? StickerPackItem else {
-                                        continue
-                                    }
-                                    if let alt = item.file.customEmojiAlt {
-                                        if !item.file.isPremiumEmoji || hasPremium {
-                                            if !alt.isEmpty, let keyword = allEmoticons[alt] {
-                                                emoji.append((alt, item.file, keyword))
-                                            } else if alt == query {
-                                                emoji.append((alt, item.file, alt))
-                                            }
-                                        }
+                                let emoticon = Array(allEmoticons.keys)
+                                guard !emoticon.isEmpty else {
+                                    return combineLatest(emojiItemsSignal, .single(StickerSearchContext.State(items: [], canLoadMore: false, isLoadingMore: false)))
+                                    |> map { view, stickerState in
+                                        return buildGroups(view, allEmoticons, stickerState, nil)
                                     }
                                 }
                                 
-                                var emojiItems: [EmojiPagerContentComponent.Item] = []
-                                
-                                var existingIds = Set<MediaId>()
-                                for item in emoji {
-                                    if let itemFile = item.1 {
-                                        if existingIds.contains(itemFile.fileId) {
-                                            continue
-                                        }
-                                        existingIds.insert(itemFile.fileId)
-                                        let animationData = EntityKeyboardAnimationData(file: itemFile)
-                                        let item = EmojiPagerContentComponent.Item(
-                                            animationData: animationData,
-                                            content: .animation(animationData),
-                                            itemFile: itemFile, subgroupId: nil,
-                                            icon: .none,
-                                            tintMode: animationData.isTemplate ? .primary : .none
-                                        )
-                                        emojiItems.append(item)
-                                    }
+                                let searchContext = context.engine.stickers.stickerSearchContext(query: query, emoticon: emoticon, inputLanguageCode: languageCode)
+                                return combineLatest(emojiItemsSignal, searchContext.state)
+                                |> map { view, stickerState in
+                                    return buildGroups(view, allEmoticons, stickerState, searchContext)
                                 }
-                                
-                                var stickerItems: [EmojiPagerContentComponent.Item] = []
-                                for stickerResult in stickers {
-                                    for sticker in stickerResult {
-                                        if existingIds.contains(sticker.file.fileId) {
-                                            continue
-                                        }
-                                        
-                                        existingIds.insert(sticker.file.fileId)
-                                        let animationData = EntityKeyboardAnimationData(file: TelegramMediaFile.Accessor(sticker.file))
-                                        let item = EmojiPagerContentComponent.Item(
-                                            animationData: animationData,
-                                            content: .animation(animationData),
-                                            itemFile: TelegramMediaFile.Accessor(sticker.file),
-                                            subgroupId: nil,
-                                            icon: .none,
-                                            tintMode: .none
-                                        )
-                                        stickerItems.append(item)
-                                    }
-                                }
-                                
-                                var result: [EmojiPagerContentComponent.ItemGroup] = []
-                                if !emojiItems.isEmpty {
-                                    result.append(
-                                        EmojiPagerContentComponent.ItemGroup(
-                                            supergroupId: "search",
-                                            groupId: "emoji",
-                                            title: "Emoji",
-                                            subtitle: nil,
-                                            badge: nil,
-                                            actionButtonTitle: nil,
-                                            isFeatured: false,
-                                            isPremiumLocked: false,
-                                            isEmbedded: false,
-                                            hasClear: false,
-                                            hasEdit: false,
-                                            collapsedLineCount: nil,
-                                            displayPremiumBadges: false,
-                                            headerItem: nil,
-                                            fillWithLoadingPlaceholders: false,
-                                            items: emojiItems
-                                        )
-                                    )
-                                }
-                                if !stickerItems.isEmpty {
-                                    result.append(
-                                        EmojiPagerContentComponent.ItemGroup(
-                                            supergroupId: "search",
-                                            groupId: "stickers",
-                                            title: "Stickers",
-                                            subtitle: nil,
-                                            badge: nil,
-                                            actionButtonTitle: nil,
-                                            isFeatured: false,
-                                            isPremiumLocked: false,
-                                            isEmbedded: false,
-                                            hasClear: false,
-                                            hasEdit: false,
-                                            collapsedLineCount: nil,
-                                            displayPremiumBadges: false,
-                                            headerItem: nil,
-                                            fillWithLoadingPlaceholders: false,
-                                            items: stickerItems
-                                        )
-                                    )
-                                }
-                                return result
                             }
                         }
                         
@@ -432,11 +454,13 @@ final class AvatarEditorScreenComponent: Component {
                                 return
                             }
                             
-                            self.emojiSearchStateValue = EmojiSearchState(result: EmojiSearchResult(groups: result, id: AnyHashable(query), version: version, isPreset: false), isSearching: false)
+                            self.stickerSearchContext = result.searchContext
+                            self.emojiSearchStateValue = EmojiSearchState(result: EmojiSearchResult(groups: result.groups, id: AnyHashable(query), version: version, isPreset: false, canLoadMore: result.canLoadMore), isSearching: result.isSearching)
                             version += 1
                         }))
                     }
                 case let .category(value):
+                    self.stickerSearchContext = nil
                     let resultSignal = context.engine.stickers.searchEmoji(category: value)
                     |> mapToSignal { files, isFinalResult -> Signal<(items: [EmojiPagerContentComponent.ItemGroup], isFinalResult: Bool), NoError> in
                         var items: [EmojiPagerContentComponent.Item] = []
@@ -512,11 +536,11 @@ final class AvatarEditorScreenComponent: Component {
                                     fillWithLoadingPlaceholders: true,
                                     items: []
                                 )
-                            ], id: AnyHashable(value.id), version: version, isPreset: true), isSearching: false)
+                            ], id: AnyHashable(value.id), version: version, isPreset: true, canLoadMore: false), isSearching: false)
                             return
                         }
                         
-                        self.emojiSearchStateValue = EmojiSearchState(result: EmojiSearchResult(groups: result.items, id: AnyHashable(value.id), version: version, isPreset: true), isSearching: false)
+                        self.emojiSearchStateValue = EmojiSearchState(result: EmojiSearchResult(groups: result.items, id: AnyHashable(value.id), version: version, isPreset: true, canLoadMore: false), isSearching: false)
                         version += 1
                     }))
                 }
@@ -556,7 +580,7 @@ final class AvatarEditorScreenComponent: Component {
                                         if installed {
                                             return .complete()
                                         } else {
-                                            return context.engine.stickers.addStickerPackInteractively(info: info._parse(), items: items)
+                                            return context.engine.stickers.addStickerPackInteractively(info: info._parse(), items: items) |> map { _ in return Void() }
                                         }
                                     case .fetching:
                                         break
@@ -645,6 +669,9 @@ final class AvatarEditorScreenComponent: Component {
                         }
                     }
                 },
+                loadMore: { [weak self] in
+                    self?.stickerSearchContext?.loadMore()
+                },
                 chatPeerId: nil,
                 peekBehavior: nil,
                 customLayout: nil,
@@ -691,7 +718,7 @@ final class AvatarEditorScreenComponent: Component {
                                         if installed {
                                             return .complete()
                                         } else {
-                                            return context.engine.stickers.addStickerPackInteractively(info: info._parse(), items: items)
+                                            return context.engine.stickers.addStickerPackInteractively(info: info._parse(), items: items) |> map { _ in return Void() }
                                         }
                                     case .fetching:
                                         break
@@ -776,6 +803,9 @@ final class AvatarEditorScreenComponent: Component {
                         }
                     }
                 },
+                loadMore: { [weak self] in
+                    self?.stickerSearchContext?.loadMore()
+                },
                 chatPeerId: nil,
                 peekBehavior: nil,
                 customLayout: nil,
@@ -836,50 +866,63 @@ final class AvatarEditorScreenComponent: Component {
                 }
             }
             
-            let backgroundIsBright = UIColor(rgb: state.selectedBackground.colors.first ?? 0).lightness > 0.8
+            //let backgroundIsBright = UIColor(rgb: state.selectedBackground.colors.first ?? 0).lightness > 0.8
             
+            //state.expanded && !backgroundIsBright ? .white : environment.theme.rootController.navigationBar.accentTextColor
             let navigationCancelButtonSize = self.navigationCancelButton.update(
                 transition: transition,
-                component: AnyComponent(Button(
-                    content: AnyComponent(Text(text: environment.strings.Common_Cancel, font: Font.regular(17.0), color: state.expanded && !backgroundIsBright ? .white : environment.theme.rootController.navigationBar.accentTextColor)),
-                    action: { [weak self] in
-                        guard let self else {
-                            return
+                component: AnyComponent(
+                    GlassBarButtonComponent(
+                        size: CGSize(width: 44.0, height: 44.0),
+                        backgroundColor: nil,
+                        isDark: environment.theme.overallDarkAppearance,
+                        state: .glass,
+                        component: AnyComponentWithIdentity(id: "close", component: AnyComponent(BundleIconComponent(name: "Navigation/Close", tintColor: environment.theme.chat.inputPanel.panelControlColor))),
+                        action: { [weak self] _ in
+                            guard let self else {
+                                return
+                            }
+                            self.controller?()?.dismiss()
                         }
-                        self.controller?()?.dismiss()
-                    }
-                ).minSize(CGSize(width: 16.0, height: environment.navigationHeight - environment.statusBarHeight))),
+                    )
+                ),
                 environment: {},
-                containerSize: CGSize(width: 150.0, height: environment.navigationHeight - environment.statusBarHeight)
+                containerSize: CGSize(width: 44.0, height: 44.0)
             )
             if let navigationCancelButtonView = self.navigationCancelButton.view {
                 if navigationCancelButtonView.superview == nil {
                     self.addSubview(navigationCancelButtonView)
                 }
-                transition.setFrame(view: navigationCancelButtonView, frame: CGRect(origin: CGPoint(x: 16.0 + environment.safeInsets.left, y: environment.statusBarHeight), size: navigationCancelButtonSize))
+                transition.setFrame(view: navigationCancelButtonView, frame: CGRect(origin: CGPoint(x: 16.0 + environment.safeInsets.left, y: 16.0), size: navigationCancelButtonSize))
                 transition.setAlpha(view: navigationCancelButtonView, alpha: !state.editingColor ? 1.0 : 0.0)
             }
             
             let navigationDoneButtonSize = self.navigationDoneButton.update(
                 transition: transition,
-                component: AnyComponent(Button(
-                    content: AnyComponent(Text(text: component.peerType == .suggest ? strings.AvatarEditor_Suggest : strings.AvatarEditor_Set, font: Font.semibold(17.0), color: state.expanded && !backgroundIsBright ? .white : environment.theme.rootController.navigationBar.accentTextColor)),
-                    action: { [weak self] in
-                        guard let self else {
-                            return
+                component: AnyComponent(
+                    GlassBarButtonComponent(
+                        size: CGSize(width: 44.0, height: 44.0),
+                        backgroundColor: environment.theme.list.itemCheckColors.fillColor,
+                        isDark: environment.theme.overallDarkAppearance,
+                        state: .tintedGlass,
+                        component: AnyComponentWithIdentity(id: "done", component: AnyComponent(BundleIconComponent(name: "Navigation/Done", tintColor: environment.theme.list.itemCheckColors.foregroundColor))),
+                        action: { [weak self] _ in
+                            guard let self else {
+                                return
+                            }
+                            self.complete()
                         }
-                        self.complete()
-                    }
-                ).minSize(CGSize(width: 16.0, height: environment.navigationHeight - environment.statusBarHeight))),
+                    )
+                ),
                 environment: {},
-                containerSize: CGSize(width: 150.0, height: environment.navigationHeight - environment.statusBarHeight)
+                containerSize: CGSize(width: 44.0, height: 44.0)
             )
             if let navigationDoneButtonView = self.navigationDoneButton.view {
                 if navigationDoneButtonView.superview == nil {
                     self.addSubview(navigationDoneButtonView)
                 }
                 
-                transition.setFrame(view: navigationDoneButtonView, frame: CGRect(origin: CGPoint(x: availableSize.width - 16.0 - environment.safeInsets.right - navigationDoneButtonSize.width, y: environment.statusBarHeight), size: navigationDoneButtonSize))
+                transition.setFrame(view: navigationDoneButtonView, frame: CGRect(origin: CGPoint(x: availableSize.width - 16.0 - environment.safeInsets.right - navigationDoneButtonSize.width, y: 16.0), size: navigationDoneButtonSize))
                 transition.setAlpha(view: navigationDoneButtonView, alpha: (state.expanded || environment.inputHeight > 0.0) && !state.editingColor ? 1.0 : 0.0)
             }
                         
@@ -903,17 +946,24 @@ final class AvatarEditorScreenComponent: Component {
                         if let searchResult = emojiSearchState.result {
                             let presentationData = context.sharedContext.currentPresentationData.with { $0 }
                             var emptySearchResults: EmojiPagerContentComponent.EmptySearchResults?
-                            if !searchResult.groups.contains(where: { !$0.items.isEmpty || $0.fillWithLoadingPlaceholders }) {
+                            if !emojiSearchState.isSearching && !searchResult.groups.contains(where: { !$0.items.isEmpty || $0.fillWithLoadingPlaceholders }) {
                                 emptySearchResults = EmojiPagerContentComponent.EmptySearchResults(
                                     text: presentationData.strings.EmojiSearch_SearchEmojiEmptyResult,
                                     iconFile: nil
                                 )
                             }
                             
+                            let searchState: EmojiPagerContentComponent.SearchState = emojiSearchState.isSearching ? .searching : .active
                             if state?.keyboardContentId == AnyHashable("emoji") {
-                                data.emoji = data.emoji.withUpdatedItemGroups(panelItemGroups: data.emoji.panelItemGroups, contentItemGroups: searchResult.groups, itemContentUniqueId: EmojiPagerContentComponent.ContentId(id: searchResult.id, version: searchResult.version), emptySearchResults: emptySearchResults, searchState: .active)
+                                data.emoji = data.emoji.withUpdatedItemGroups(panelItemGroups: data.emoji.panelItemGroups, contentItemGroups: searchResult.groups, itemContentUniqueId: EmojiPagerContentComponent.ContentId(id: searchResult.id, version: searchResult.version), emptySearchResults: emptySearchResults, searchState: searchState, canLoadMore: searchResult.canLoadMore)
                             } else {
-                                data.stickers = data.stickers?.withUpdatedItemGroups(panelItemGroups: data.stickers?.panelItemGroups ?? searchResult.groups, contentItemGroups: searchResult.groups, itemContentUniqueId: EmojiPagerContentComponent.ContentId(id: searchResult.id, version: searchResult.version), emptySearchResults: emptySearchResults, searchState: .active)
+                                data.stickers = data.stickers?.withUpdatedItemGroups(panelItemGroups: data.stickers?.panelItemGroups ?? searchResult.groups, contentItemGroups: searchResult.groups, itemContentUniqueId: EmojiPagerContentComponent.ContentId(id: searchResult.id, version: searchResult.version), emptySearchResults: emptySearchResults, searchState: searchState, canLoadMore: searchResult.canLoadMore)
+                            }
+                        } else if emojiSearchState.isSearching {
+                            if state?.keyboardContentId == AnyHashable("emoji") {
+                                data.emoji = data.emoji.withUpdatedItemGroups(panelItemGroups: data.emoji.panelItemGroups, contentItemGroups: data.emoji.contentItemGroups, itemContentUniqueId: data.emoji.itemContentUniqueId, emptySearchResults: data.emoji.emptySearchResults, searchState: .searching)
+                            } else {
+                                data.stickers = data.stickers?.withUpdatedItemGroups(panelItemGroups: data.stickers?.panelItemGroups ?? [], contentItemGroups: data.stickers?.contentItemGroups ?? [], itemContentUniqueId: data.stickers?.itemContentUniqueId, emptySearchResults: data.stickers?.emptySearchResults, searchState: .searching)
                             }
                         }
                         
@@ -1189,9 +1239,10 @@ final class AvatarEditorScreenComponent: Component {
             contentHeight += keyboardTitleSize.height
             contentHeight += 8.0
             
-            var bottomInset: CGFloat = environment.safeInsets.bottom > 0.0 ? environment.safeInsets.bottom : 16.0
+            let buttonInsets = ContainerViewLayout.concentricInsets(bottomInset: environment.safeInsets.bottom, innerDiameter: 52.0, sideInset: 30.0)
+            var bottomInset: CGFloat = buttonInsets.bottom
             if !effectiveIsExpanded {
-                bottomInset += 50.0 + 16.0
+                bottomInset += 52.0 + buttonInsets.bottom - 14.0
             }
             
             let keyboardContainerFrame = CGRect(origin: CGPoint(x: sideInset, y: contentHeight), size: CGSize(width: availableSize.width - sideInset * 2.0, height: availableSize.height - contentHeight - bottomInset))
@@ -1219,6 +1270,7 @@ final class AvatarEditorScreenComponent: Component {
                         defaultToEmojiTab: true,
                         externalTopPanelContainer: self.panelHostView,
                         externalBottomPanelContainer: nil,
+                        externalTintMaskContainer: nil,
                         displayTopPanelBackground: .blur,
                         topPanelExtensionUpdated: { _, _ in },
                         topPanelScrollingOffset: { _, _ in },
@@ -1321,6 +1373,7 @@ final class AvatarEditorScreenComponent: Component {
                 component: AnyComponent(
                     ButtonComponent(
                         background: ButtonComponent.Background(
+                            style: .glass,
                             color: theme.list.itemCheckColors.fillColor,
                             foreground: theme.list.itemCheckColors.foregroundColor,
                             pressedColor: theme.list.itemCheckColors.fillColor.withMultipliedAlpha(0.8)
@@ -1336,13 +1389,13 @@ final class AvatarEditorScreenComponent: Component {
                     )
                 ),
                 environment: {},
-                containerSize: CGSize(width: availableSize.width - sideInset * 2.0, height: 50.0)
+                containerSize: CGSize(width: availableSize.width - buttonInsets.left - buttonInsets.right, height: 52.0)
             )
             if let buttonView = self.buttonView.view {
                 if buttonView.superview == nil {
                     self.addSubview(buttonView)
                 }
-                transition.setFrame(view: buttonView, frame: CGRect(origin: CGPoint(x: sideInset, y: contentHeight), size: buttonSize))
+                transition.setFrame(view: buttonView, frame: CGRect(origin: CGPoint(x: buttonInsets.left, y: contentHeight), size: buttonSize))
             }
             
             let bottomPanelFrame = CGRect(origin: CGPoint(x: 0.0, y: contentHeight - 4.0), size: CGSize(width: availableSize.width, height: availableSize.height - contentHeight + 4.0))
@@ -1492,6 +1545,7 @@ final class AvatarEditorScreenComponent: Component {
                         cropOrientation: nil,
                         gradientColors: nil,
                         videoTrimRange: nil,
+                        videoBounce: false,
                         videoIsMuted: false,
                         videoIsFullHd: false,
                         videoIsMirrored: false,

@@ -104,10 +104,12 @@ func _internal_requestRecommendedChannels(account: Account, peerId: EnginePeer.I
                 let parsedPeers: AccumulatedPeers
                 var count: Int32
                 switch result {
-                case let .chats(apiChats):
+                case let .chats(chatsData):
+                    let apiChats = chatsData.chats
                     chats = apiChats
                     count = Int32(apiChats.count)
-                case let .chatsSlice(apiCount, apiChats):
+                case let .chatsSlice(chatsSliceData):
+                    let (apiCount, apiChats) = (chatsSliceData.count, chatsSliceData.chats)
                     chats = apiChats
                     count = apiCount
                 }
@@ -117,7 +119,7 @@ func _internal_requestRecommendedChannels(account: Account, peerId: EnginePeer.I
                 for chat in chats {
                     if let peer = transaction.getPeer(chat.peerId) {
                         peers.append(EnginePeer(peer))
-                        if case let .channel(_, _, _, _, _, _, _, _, _, _, _, _, participantsCount, _, _, _, _, _, _, _, _, _, _) = chat, let participantsCount = participantsCount {
+                        if case let .channel(channelData) = chat, let participantsCount = channelData.participantsCount {
                             transaction.updatePeerCachedData(peerIds: Set([peer.id]), update: { _, current in
                                 var current = current as? CachedChannelData ?? CachedChannelData()
                                 var participantsSummary = current.participantsSummary
@@ -167,7 +169,8 @@ func _internal_requestRecommendedApps(account: Account, forceUpdate: Bool) -> Si
                 let users: [Api.User]
                 let parsedPeers: AccumulatedPeers
                 switch result {
-                case let .popularAppBots(_, nextOffset, apiUsers):
+                case let .popularAppBots(popularAppBotsData):
+                    let (nextOffset, apiUsers) = (popularAppBotsData.nextOffset, popularAppBotsData.users)
                     let _ = nextOffset
                     users = apiUsers
                 }

@@ -36,6 +36,7 @@ final class ChatGiftPreviewItem: ListViewItem, ItemListItem, ListItemComponentAd
     let entities: [MessageTextEntity]
     let upgradeStars: Int64?
     let chargeStars: Int64?
+    let bottomInset: CGFloat
     
     init(
         context: AccountContext,
@@ -54,7 +55,8 @@ final class ChatGiftPreviewItem: ListViewItem, ItemListItem, ListItemComponentAd
         text: String,
         entities: [MessageTextEntity],
         upgradeStars: Int64?,
-        chargeStars: Int64?
+        chargeStars: Int64?,
+        bottomInset: CGFloat = 0.0
     ) {
         self.context = context
         self.theme = theme
@@ -73,6 +75,7 @@ final class ChatGiftPreviewItem: ListViewItem, ItemListItem, ListItemComponentAd
         self.entities = entities
         self.upgradeStars = upgradeStars
         self.chargeStars = chargeStars
+        self.bottomInset = bottomInset
     }
     
     func nodeConfiguredForParams(async: @escaping (@escaping () -> Void) -> Void, params: ListViewItemLayoutParams, synchronousLoads: Bool, previousItem: ListViewItem?, nextItem: ListViewItem?, completion: @escaping (ListViewItemNode, @escaping () -> (Signal<Void, NoError>?, (ListViewItemApply) -> Void)) -> Void) {
@@ -155,6 +158,9 @@ final class ChatGiftPreviewItem: ListViewItem, ItemListItem, ListItemComponentAd
         if lhs.upgradeStars != rhs.upgradeStars {
             return false
         }
+        if lhs.bottomInset != rhs.bottomInset {
+            return false
+        }
         return true
     }
 }
@@ -187,7 +193,7 @@ final class ChatGiftPreviewItemNode: ListViewItemNode {
         self.containerNode = ASDisplayNode()
         self.containerNode.subnodeTransform = CATransform3DMakeRotation(CGFloat.pi, 0.0, 0.0, 1.0)
         
-        super.init(layerBacked: false, dynamicBounce: false)
+        super.init(layerBacked: false)
         
         self.clipsToBounds = true
         self.isUserInteractionEnabled = false
@@ -233,19 +239,19 @@ final class ChatGiftPreviewItemNode: ListViewItemNode {
                 case let .premium(months, amount, currency):
                     media = [
                         TelegramMediaAction(
-                            action: .giftPremium(currency: currency, amount: amount, months: months, cryptoCurrency: nil, cryptoAmount: nil, text: item.text, entities: item.entities)
+                            action: .giftPremium(currency: currency, amount: amount, days: months * 30, cryptoCurrency: nil, cryptoAmount: nil, text: item.text, entities: item.entities)
                         )
                     ]
                 case let .starGift(gift):
                     media = [
                         TelegramMediaAction(
-                            action: .starGift(gift: .generic(gift), convertStars: gift.convertStars, text: item.text, entities: item.entities, nameHidden: false, savedToProfile: false, converted: false, upgraded: false, canUpgrade: gift.upgradeStars != nil, upgradeStars: item.upgradeStars, isRefunded: false, isPrepaidUpgrade: false, upgradeMessageId: nil, peerId: nil, senderId: nil, savedId: nil, prepaidUpgradeHash: nil, giftMessageId: nil, upgradeSeparate: false)
+                            action: .starGift(gift: .generic(gift), convertStars: gift.convertStars, text: item.text, entities: item.entities, nameHidden: false, savedToProfile: false, converted: false, upgraded: false, canUpgrade: gift.upgradeStars != nil, upgradeStars: item.upgradeStars, isRefunded: false, isPrepaidUpgrade: false, upgradeMessageId: nil, peerId: nil, senderId: nil, savedId: nil, prepaidUpgradeHash: nil, giftMessageId: nil, upgradeSeparate: false, isAuctionAcquired: false, toPeerId: nil, number: nil)
                         )
                     ]
                 }
                 
                 let message = Message(stableId: 1, stableVersion: 0, id: MessageId(peerId: chatPeerId, namespace: 0, id: 1), globallyUniqueId: nil, groupingKey: nil, groupInfo: nil, threadId: nil, timestamp: 66000, flags: [.Incoming], tags: [], globalTags: [], localTags: [], customTags: [], forwardInfo: nil, author: peers[authorPeerId], text: "", attributes: [], media: media, peers: peers, associatedMessages: messages, associatedMessageIds: [], associatedMedia: [:], associatedThreadInfo: nil, associatedStories: [:])
-                items.append(item.context.sharedContext.makeChatMessagePreviewItem(context: item.context, messages: [message], theme: item.componentTheme, strings: item.strings, wallpaper: item.wallpaper, fontSize: item.fontSize, chatBubbleCorners: item.chatBubbleCorners, dateTimeFormat: item.dateTimeFormat, nameOrder: item.nameDisplayOrder, forcedResourceStatus: nil, tapMessage: nil, clickThroughMessage: nil, backgroundNode: currentBackgroundNode, availableReactions: nil, accountPeer: nil, isCentered: false, isPreview: true, isStandalone: false))
+                items.append(item.context.sharedContext.makeChatMessagePreviewItem(context: item.context, messages: [message], theme: item.componentTheme, strings: item.strings, wallpaper: item.wallpaper, fontSize: item.fontSize, chatBubbleCorners: item.chatBubbleCorners, dateTimeFormat: item.dateTimeFormat, nameOrder: item.nameDisplayOrder, forcedResourceStatus: nil, tapMessage: nil, clickThroughMessage: nil, backgroundNode: currentBackgroundNode, availableReactions: nil, accountPeer: nil, isCentered: false, isPreview: true, isStandalone: false, rank: nil, rankRole: nil))
             }
             
             var nodes: [ListViewItemNode] = []
@@ -293,8 +299,9 @@ final class ChatGiftPreviewItemNode: ListViewItemNode {
                 nodes = messageNodes
             }
             
+            let baseContentHeight: CGFloat = 370.0
             var contentSize = CGSize(width: params.width, height: 4.0 + 4.0)
-            contentSize.height = 370.0
+            contentSize.height = baseContentHeight + item.bottomInset
             insets = itemListNeighborsGroupedInsets(neighbors, params)
             if params.width <= 320.0 {
                 insets.top = 0.0
@@ -326,7 +333,8 @@ final class ChatGiftPreviewItemNode: ListViewItemNode {
                         totalHeight += bubbleHeight
                     }
                     
-                    var originY: CGFloat = floor((contentSize.height - totalHeight) / 2.0)
+                    var originY: CGFloat = floor((baseContentHeight - totalHeight) / 2.0)
+                    originY = contentSize.height - originY - totalHeight
                     for node in nodes {
                         if node.supernode == nil {
                             strongSelf.containerNode.addSubnode(node)

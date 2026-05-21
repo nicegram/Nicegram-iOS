@@ -3,7 +3,6 @@ import UIKit
 import Display
 import AccountContext
 import TelegramCore
-import Postbox
 import SwiftSignalKit
 import TelegramPresentationData
 import ComponentFlow
@@ -29,22 +28,27 @@ import TextFieldComponent
 import ListComposePollOptionComponent
 import Markdown
 import PresentationDataUtils
+import GlassBarButtonComponent
+import EdgeEffect
 
 final class ComposeTodoScreenComponent: Component {
     typealias EnvironmentType = ViewControllerComponentContainer.Environment
     
     let context: AccountContext
+    let overNavigationContainer: UIView
     let peer: EnginePeer
     let initialData: ComposeTodoScreen.InitialData
     let completion: (TelegramMediaTodo) -> Void
 
     init(
         context: AccountContext,
+        overNavigationContainer: UIView,
         peer: EnginePeer,
         initialData: ComposeTodoScreen.InitialData,
         completion: @escaping (TelegramMediaTodo) -> Void
     ) {
         self.context = context
+        self.overNavigationContainer = overNavigationContainer
         self.peer = peer
         self.initialData = initialData
         self.completion = completion
@@ -67,7 +71,10 @@ final class ComposeTodoScreenComponent: Component {
     
     final class View: UIView, UIScrollViewDelegate {
         private let scrollView: UIScrollView
-
+        
+        private var topEdgeEffectView: EdgeEffectView
+        private var bottomEdgeEffectView: EdgeEffectView
+        
         private let todoTextSection = ComponentView<Empty>()
         
         private let todoItemsSectionHeader = ComponentView<Empty>()
@@ -76,10 +83,12 @@ final class ComposeTodoScreenComponent: Component {
         private var todoItemsSectionContainer: ListSectionContentView
         
         private let todoSettingsSection = ComponentView<Empty>()
-        private let actionButton = ComponentView<Empty>()
+        
+        private let title = ComponentView<Empty>()
+        private let cancelButton = ComponentView<Empty>()
+        private let doneButton = ComponentView<Empty>()
                 
         private var isUpdating: Bool = false
-        private var ignoreScrolling: Bool = false
         private var previousHadInputHeight: Bool = false
         
         private var component: ComposeTodoScreenComponent?
@@ -126,6 +135,9 @@ final class ComposeTodoScreenComponent: Component {
             self.scrollView.contentInsetAdjustmentBehavior = .never
             self.scrollView.alwaysBounceVertical = true
             
+            self.topEdgeEffectView = EdgeEffectView()
+            self.bottomEdgeEffectView = EdgeEffectView()
+            
             self.todoItemsSectionContainer = ListSectionContentView(frame: CGRect())
             self.todoItemsSectionContainer.automaticallyLayoutExternalContentBackgroundView = false
             
@@ -133,6 +145,9 @@ final class ComposeTodoScreenComponent: Component {
             
             self.scrollView.delegate = self
             self.addSubview(self.scrollView)
+            
+            self.addSubview(self.topEdgeEffectView)
+            self.addSubview(self.bottomEdgeEffectView)
             
             let reorderRecognizer = ReorderGestureRecognizer(
                 shouldBegin: { [weak self] point in
@@ -189,7 +204,7 @@ final class ComposeTodoScreenComponent: Component {
             for (id, itemView) in self.todoItemsSectionContainer.itemViews {
                 if let view = itemView.contents.view as? ListComposePollOptionComponent.View, !view.isRevealed && !view.currentText.isEmpty {
                     let viewFrame = view.convert(view.bounds, to: self.todoItemsSectionContainer)
-                    let iconFrame = CGRect(origin: CGPoint(x: viewFrame.maxX - 40.0, y: viewFrame.minY), size: CGSize(width: viewFrame.height, height: viewFrame.height))
+                    let iconFrame = CGRect(origin: CGPoint(x: viewFrame.minX, y: viewFrame.minY), size: CGSize(width: 50.0, height: viewFrame.height))
                     if iconFrame.contains(localPoint) {
                         return (id, itemView.contents)
                     }
@@ -219,7 +234,7 @@ final class ComposeTodoScreenComponent: Component {
                     
                     let theme = environment.theme.withModalBlocksBackground()
                     let backgroundView = UIImageView(image: generateReorderingBackgroundImage(backgroundColor: theme.list.itemBlocksBackgroundColor))
-                    backgroundView.frame = wrapperView.bounds.insetBy(dx: -10.0, dy: -10.0)
+                    backgroundView.frame = wrapperView.bounds.insetBy(dx: -16.0, dy: -16.0)
                     snapshotView.frame = snapshotView.bounds
                     
                     wrapperView.addSubview(backgroundView)
@@ -371,23 +386,8 @@ final class ComposeTodoScreenComponent: Component {
             return true
         }
         
-        func scrollViewDidScroll(_ scrollView: UIScrollView) {
-            if !self.ignoreScrolling {
-                self.updateScrolling(transition: .immediate)
-            }
-        }
-        
         func scrollViewWillBeginDragging(_ scrollView: UIScrollView) {
             self.endEditing(true)
-        }
-        
-        private func updateScrolling(transition: ComponentTransition) {
-            let navigationAlphaDistance: CGFloat = 16.0
-            let navigationAlpha: CGFloat = max(0.0, min(1.0, self.scrollView.contentOffset.y / navigationAlphaDistance))
-            if let controller = self.environment?.controller(), let navigationBar = controller.navigationBar {
-                transition.setAlpha(layer: navigationBar.backgroundNode.layer, alpha: navigationAlpha)
-                transition.setAlpha(layer: navigationBar.stripeNode.layer, alpha: navigationAlpha)
-            }
         }
         
         func isPanGestureEnabled() -> Bool {
@@ -459,6 +459,7 @@ final class ComposeTodoScreenComponent: Component {
                 let presentationInterfaceState = ChatPresentationInterfaceState(
                     chatWallpaper: .builtin(WallpaperSettings()),
                     theme: presentationData.theme,
+                    preferredGlassType: .default,
                     strings: presentationData.strings,
                     dateTimeFormat: presentationData.dateTimeFormat,
                     nameDisplayOrder: presentationData.nameDisplayOrder,
@@ -469,12 +470,10 @@ final class ComposeTodoScreenComponent: Component {
                     mode: .standard(.default),
                     chatLocation: .peer(id: component.context.account.peerId),
                     subject: nil,
-                    peerNearbyData: nil,
                     greetingData: nil,
                     pendingUnpinnedAllMessages: false,
                     activeGroupCallInfo: nil,
                     hasActiveGroupCall: false,
-                    importState: nil,
                     threadData: nil,
                     isGeneralThreadClosed: nil,
                     replyMessage: nil,
@@ -659,6 +658,8 @@ final class ComposeTodoScreenComponent: Component {
                     sendBotContextResultAsGif: { _, _ , _, _, _, _ in
                         return false
                     },
+                    editGif: { _, _ in
+                    },
                     updateChoosingSticker: { _ in
                     },
                     switchToTextInput: { [weak self] in
@@ -759,10 +760,10 @@ final class ComposeTodoScreenComponent: Component {
             self.component = component
             self.state = state
             
-            let topInset: CGFloat = 24.0
+            let topInset: CGFloat = 8.0
             let bottomInset: CGFloat = 8.0
             let sideInset: CGFloat = 16.0 + environment.safeInsets.left
-            let sectionSpacing: CGFloat = 24.0
+            let sectionSpacing: CGFloat = 30.0
             
             if themeUpdated {
                 self.backgroundColor = theme.list.blocksBackgroundColor
@@ -827,6 +828,7 @@ final class ComposeTodoScreenComponent: Component {
                 transition: transition,
                 component: AnyComponent(ListSectionComponent(
                     theme: theme,
+                    style: .glass,
                     header: nil,
                     footer: nil,
                     items: todoTextSectionItems
@@ -879,7 +881,9 @@ final class ComposeTodoScreenComponent: Component {
                     },
                     assumeIsEditing: self.inputMediaNodeTargetTag === todoItem.textFieldTag,
                     characterLimit: component.initialData.maxTodoItemLength,
+                    hasLeftInset: true,
                     canReorder: isEnabled,
+                    canAdd: isEnabled && i != 0 && i < component.initialData.maxTodoItemsCount,
                     emptyLineHandling: .notAllowed,
                     returnKeyAction: { [weak self] in
                         guard let self else {
@@ -967,6 +971,12 @@ final class ComposeTodoScreenComponent: Component {
                                 self.state?.updated()
                             }
                         }
+                    },
+                    present: { [weak self] c in
+                        guard let controller = self?.environment?.controller() else {
+                            return
+                        }
+                        controller.present(c, in: .window(.root))
                     },
                     tag: todoItem.textFieldTag
                 ))))
@@ -1062,6 +1072,7 @@ final class ComposeTodoScreenComponent: Component {
             let todoItemsSectionUpdateResult = self.todoItemsSectionContainer.update(
                 configuration: ListSectionContentView.Configuration(
                     theme: theme,
+                    style: .glass,
                     displaySeparators: true,
                     extendsItemHighlightToSection: false,
                     background: .all
@@ -1230,6 +1241,7 @@ final class ComposeTodoScreenComponent: Component {
             if canEdit {
                 todoSettingsSectionItems.append(AnyComponentWithIdentity(id: "completable", component: AnyComponent(ListActionItemComponent(
                     theme: theme,
+                    style: .glass,
                     title: AnyComponent(VStack([
                         AnyComponentWithIdentity(id: AnyHashable(0), component: AnyComponent(MultilineTextComponent(
                             text: .plain(NSAttributedString(
@@ -1253,6 +1265,7 @@ final class ComposeTodoScreenComponent: Component {
                 if self.isCompletableByOthers {
                     todoSettingsSectionItems.append(AnyComponentWithIdentity(id: "editable", component: AnyComponent(ListActionItemComponent(
                         theme: theme,
+                        style: .glass,
                         title: AnyComponent(VStack([
                             AnyComponentWithIdentity(id: AnyHashable(0), component: AnyComponent(MultilineTextComponent(
                                 text: .plain(NSAttributedString(
@@ -1280,6 +1293,7 @@ final class ComposeTodoScreenComponent: Component {
                     transition: transition,
                     component: AnyComponent(ListSectionComponent(
                         theme: theme,
+                        style: .glass,
                         header: nil,
                         footer: nil,
                         items: todoSettingsSectionItems
@@ -1494,7 +1508,6 @@ final class ComposeTodoScreenComponent: Component {
             }
             self.previousHadInputHeight = (inputHeight > 0.0)
             
-            self.ignoreScrolling = true
             let previousBounds = self.scrollView.bounds
             let contentSize = CGSize(width: availableSize.width, height: contentHeight)
             if self.scrollView.frame != CGRect(origin: CGPoint(), size: availableSize) {
@@ -1531,9 +1544,6 @@ final class ComposeTodoScreenComponent: Component {
                     transition.animateBoundsOrigin(view: self.scrollView, from: CGPoint(x: 0.0, y: offsetY), to: CGPoint(), additive: true)
                 }
             }
-            self.ignoreScrolling = false
-            
-            self.updateScrolling(transition: transition)
             
             if isEditing {
                 if let controller = environment.controller() as? ComposeTodoScreen {
@@ -1543,11 +1553,103 @@ final class ComposeTodoScreenComponent: Component {
                 }
             }
             
-            let isValid = self.validatedInput() != nil
-            if let controller = environment.controller() as? ComposeTodoScreen, let sendButtonItem = controller.sendButtonItem {
-                if sendButtonItem.isEnabled != isValid {
-                    sendButtonItem.isEnabled = isValid
+            let title: String
+            if !component.initialData.canEdit && component.initialData.existingTodo != nil {
+                title = environment.strings.CreateTodo_AddTitle
+            } else {
+                title = component.initialData.existingTodo != nil ? environment.strings.CreateTodo_EditTitle : environment.strings.CreateTodo_Title
+            }
+            
+            let titleSize = self.title.update(
+                transition: transition,
+                component: AnyComponent(
+                    MultilineTextComponent(
+                        text: .plain(
+                            NSAttributedString(
+                                string: title,
+                                font: Font.semibold(17.0),
+                                textColor: environment.theme.rootController.navigationBar.primaryTextColor
+                            )
+                        )
+                    )
+                ),
+                environment: {},
+                containerSize: CGSize(width: 200.0, height: 40.0)
+            )
+            let titleFrame = CGRect(origin: CGPoint(x: floorToScreenPixels((availableSize.width - titleSize.width) / 2.0), y: floorToScreenPixels((environment.navigationHeight - titleSize.height) / 2.0) + 3.0), size: titleSize)
+            if let titleView = self.title.view {
+                if titleView.superview == nil {
+                    component.overNavigationContainer.addSubview(titleView)
                 }
+                transition.setFrame(view: titleView, frame: titleFrame)
+            }
+            
+            let barButtonSize = CGSize(width: 44.0, height: 44.0)
+            let cancelButtonSize = self.cancelButton.update(
+                transition: transition,
+                component: AnyComponent(GlassBarButtonComponent(
+                    size: barButtonSize,
+                    backgroundColor: nil,
+                    isDark: environment.theme.overallDarkAppearance,
+                    state: .glass,
+                    component: AnyComponentWithIdentity(id: "close", component: AnyComponent(
+                        BundleIconComponent(
+                            name: "Navigation/Close",
+                            tintColor: environment.theme.chat.inputPanel.panelControlColor
+                        )
+                    )),
+                    action: { [weak self] _ in
+                        guard let self, let controller = self.environment?.controller() as? ComposeTodoScreen else {
+                            return
+                        }
+                        controller.dismiss()
+                    }
+                )),
+                environment: {},
+                containerSize: barButtonSize
+            )
+            let cancelButtonFrame = CGRect(origin: CGPoint(x: environment.safeInsets.left + 16.0, y: 16.0), size: cancelButtonSize)
+            if let cancelButtonView = self.cancelButton.view {
+                if cancelButtonView.superview == nil {
+                    component.overNavigationContainer.addSubview(cancelButtonView)
+                }
+                transition.setFrame(view: cancelButtonView, frame: cancelButtonFrame)
+            }
+            
+            let isValid = self.validatedInput() != nil
+            let doneButtonSize = self.doneButton.update(
+                transition: transition,
+                component: AnyComponent(GlassBarButtonComponent(
+                    size: barButtonSize,
+                    backgroundColor: isValid ? environment.theme.list.itemCheckColors.fillColor : environment.theme.list.itemCheckColors.fillColor.desaturated().withMultipliedAlpha(0.5),
+                    isDark: environment.theme.overallDarkAppearance,
+                    state: .tintedGlass,
+                    isEnabled: isValid,
+                    component: AnyComponentWithIdentity(id: "done", component: AnyComponent(
+                        BundleIconComponent(
+                            name: "Navigation/Done",
+                            tintColor: environment.theme.list.itemCheckColors.foregroundColor
+                        )
+                    )),
+                    action: { [weak self] _ in
+                        guard let self, let controller = self.environment?.controller() as? ComposeTodoScreen else {
+                            return
+                        }
+                        if let input = self.validatedInput() {
+                            controller.completion(input)
+                            controller.dismiss()
+                        }
+                    }
+                )),
+                environment: {},
+                containerSize: barButtonSize
+            )
+            let doneButtonFrame = CGRect(origin: CGPoint(x: availableSize.width - environment.safeInsets.right - 16.0 - doneButtonSize.width, y: 16.0), size: doneButtonSize)
+            if let doneButtonView = self.doneButton.view {
+                if doneButtonView.superview == nil {
+                    component.overNavigationContainer.addSubview(doneButtonView)
+                }
+                transition.setFrame(view: doneButtonView, frame: doneButtonFrame)
             }
             
             if let currentEditingTag = self.currentEditingTag, previousEditingTag !== currentEditingTag, self.currentInputMode != .keyboard {
@@ -1563,6 +1665,15 @@ final class ComposeTodoScreenComponent: Component {
             for i in 0 ..< self.todoItems.count {
                 self.todoItems[i].resetText = nil
             }
+            
+            let edgeEffectHeight: CGFloat = 88.0
+            let topEdgeEffectFrame = CGRect(origin: .zero, size: CGSize(width: availableSize.width, height: edgeEffectHeight))
+            transition.setFrame(view: self.topEdgeEffectView, frame: topEdgeEffectFrame)
+            self.topEdgeEffectView.update(content: theme.list.blocksBackgroundColor, blur: true, alpha: 1.0, rect: topEdgeEffectFrame, edge: .top, edgeSize: topEdgeEffectFrame.height, transition: transition)
+            
+            let bottomEdgeEffectFrame = CGRect(origin: CGPoint(x: 0.0, y: availableSize.height - edgeEffectHeight - environment.additionalInsets.bottom), size: CGSize(width: availableSize.width, height: edgeEffectHeight))
+            transition.setFrame(view: self.bottomEdgeEffectView, frame: bottomEdgeEffectFrame)
+            self.bottomEdgeEffectView.update(content: theme.list.blocksBackgroundColor, blur: true, alpha: 1.0, rect: bottomEdgeEffectFrame, edge: .bottom, edgeSize: bottomEdgeEffectFrame.height, transition: transition)
             
             return availableSize
         }
@@ -1607,8 +1718,10 @@ public class ComposeTodoScreen: ViewControllerComponentContainer, AttachmentCont
     }
     
     private let context: AccountContext
-    private let completion: (TelegramMediaTodo) -> Void
+    fileprivate let completion: (TelegramMediaTodo) -> Void
     private var isDismissed: Bool = false
+    
+    private let overNavigationContainer: UIView
     
     fileprivate private(set) var sendButtonItem: UIBarButtonItem?
     
@@ -1653,27 +1766,34 @@ public class ComposeTodoScreen: ViewControllerComponentContainer, AttachmentCont
         self.context = context
         self.completion = completion
         
+        self.overNavigationContainer = SparseContainerView()
+        
         super.init(context: context, component: ComposeTodoScreenComponent(
             context: context,
+            overNavigationContainer: self.overNavigationContainer,
             peer: peer,
             initialData: initialData,
             completion: completion
-        ), navigationBarAppearance: .default, theme: .default)
+        ), navigationBarAppearance: .transparent, theme: .default)
+        
+        self._hasGlassStyle = true
         
         let presentationData = context.sharedContext.currentPresentationData.with { $0 }
         
-        if !initialData.canEdit && initialData.existingTodo != nil {
-            self.title = presentationData.strings.CreateTodo_AddTitle
+        if self._hasGlassStyle {
+            self.navigationItem.setLeftBarButton(UIBarButtonItem(customView: UIView()), animated: false)
         } else {
-            self.title = initialData.existingTodo != nil ? presentationData.strings.CreateTodo_EditTitle : presentationData.strings.CreateTodo_Title
+            self.navigationItem.setLeftBarButton(UIBarButtonItem(title: presentationData.strings.Common_Cancel, style: .plain, target: self, action: #selector(self.cancelPressed)), animated: false)
         }
-        
-        self.navigationItem.setLeftBarButton(UIBarButtonItem(title: presentationData.strings.Common_Cancel, style: .plain, target: self, action: #selector(self.cancelPressed)), animated: false)
         
         let sendButtonItem = UIBarButtonItem(title: initialData.existingTodo != nil ? presentationData.strings.CreateTodo_Save : presentationData.strings.CreateTodo_Send, style: .done, target: self, action: #selector(self.sendPressed))
         self.sendButtonItem = sendButtonItem
-        self.navigationItem.setRightBarButton(sendButtonItem, animated: false)
-        sendButtonItem.isEnabled = false
+        if self._hasGlassStyle {
+        
+        } else {
+            self.navigationItem.setRightBarButton(sendButtonItem, animated: false)
+            sendButtonItem.isEnabled = false
+        }
         
         self.scrollToTop = { [weak self] in
             guard let self, let componentView = self.node.hostView.componentView as? ComposeTodoScreenComponent.View else {
@@ -1688,6 +1808,10 @@ public class ComposeTodoScreen: ViewControllerComponentContainer, AttachmentCont
             }
             
             return componentView.attemptNavigation(complete: complete)
+        }
+        
+        if let navigationBar = self.navigationBar {
+            navigationBar.customOverBackgroundContentView.insertSubview(self.overNavigationContainer, at: 0)
         }
     }
     

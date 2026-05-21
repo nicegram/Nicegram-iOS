@@ -130,7 +130,7 @@ public final class ToolbarNode: ASDisplayNode {
         self.backgroundNode.update(size: size, transition: transition)
         transition.updateFrame(node: self.separatorNode, frame: CGRect(origin: CGPoint(x: 0.0, y: 0.0), size: CGSize(width: size.width, height: UIScreenPixel)))
         
-        var sideInset: CGFloat = 16.0
+        var sideInset: CGFloat = 16.0 + 8.0
         
         self.leftTitle.attributedText = NSAttributedString(string: toolbar.leftAction?.title ?? "", font: Font.regular(17.0), textColor: (toolbar.leftAction?.isEnabled ?? false) ? self.theme.barSelectedTextColor : self.theme.barTextColor)
         self.leftButton.accessibilityLabel = toolbar.leftAction?.title

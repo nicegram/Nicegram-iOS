@@ -18,9 +18,17 @@ import TelegramStringFormatting
 import WallpaperResources
 import UrlEscaping
 
-private let iconFont = Font.with(size: 30.0, design: .round, weight: .bold)
+private let iconFont = Font.with(size: 28.0, design: .round, weight: .bold)
 
 private let iconTextBackgroundImage = generateStretchableFilledCircleImage(radius: 6.0, color: UIColor(rgb: 0xFF9500))
+private let iconTextGlassBackgroundImage = generateImage(CGSize(width: 40.0, height: 40.0), contextGenerator: { size, context in
+    context.clear(CGRect(origin: CGPoint(), size: size))
+    context.setFillColor(UIColor(rgb: 0xFF9500).cgColor)
+    
+    let path = UIBezierPath(roundedRect: CGRect(origin: .zero, size: size), cornerRadius: 12.0)
+    context.addPath(path.cgPath)
+    context.fillPath()
+})
 
 public final class ListMessageSnippetItemNode: ListMessageNode {
     private let contextSourceNode: ContextExtractedContentContainingNode
@@ -258,12 +266,19 @@ public final class ListMessageSnippetItemNode: ListMessageNode {
             let leftInset: CGFloat = 65.0 + params.leftInset
             
             var leftOffset: CGFloat = 0.0
+            var rightOffset: CGFloat = 0.0
             var selectionNodeWidthAndApply: (CGFloat, (CGSize, Bool) -> ItemListSelectableControlNode)?
-            if case let .selectable(selected) = item.selection {
-                let (selectionWidth, selectionApply) = selectionNodeLayout(item.presentationData.theme.theme.list.itemCheckColors.strokeColor, item.presentationData.theme.theme.list.itemCheckColors.fillColor, item.presentationData.theme.theme.list.itemCheckColors.foregroundColor, selected, .regular)
+            if case let .selectable(selected, num) = item.selection {
+                let (selectionWidth, selectionApply) = selectionNodeLayout(item.presentationData.theme.theme.list.itemCheckColors.strokeColor, item.presentationData.theme.theme.list.itemCheckColors.fillColor, item.presentationData.theme.theme.list.itemCheckColors.foregroundColor, selected, .regular, num.flatMap { $0 + 1 })
                 selectionNodeWidthAndApply = (selectionWidth, selectionApply)
-                leftOffset += selectionWidth
+                switch item.selectionSide {
+                case .left:
+                    leftOffset += selectionWidth
+                case .right:
+                    rightOffset += selectionWidth
+                }
             }
+            let contentRightInset = params.rightInset + rightOffset
             
             var title: NSAttributedString?
             var descriptionText: NSAttributedString?
@@ -273,7 +288,7 @@ public final class ListMessageSnippetItemNode: ListMessageNode {
             var iconImageReferenceAndRepresentation: (AnyMediaReference, TelegramMediaImageRepresentation)?
             var updateIconImageSignal: Signal<(TransformImageArguments) -> DrawingContext?, NoError>?
             
-            let applyIconTextBackgroundImage = iconTextBackgroundImage
+            let applyIconTextBackgroundImage = item.systemStyle == .glass ? iconTextGlassBackgroundImage : iconTextBackgroundImage
             
             var primaryUrl: String?
             
@@ -620,13 +635,13 @@ public final class ListMessageSnippetItemNode: ListMessageNode {
             let dateText = stringForRelativeTimestamp(strings: item.presentationData.strings, relativeTimestamp: item.message?.timestamp ?? 0, relativeTo: timestamp, dateTimeFormat: item.presentationData.dateTimeFormat)
             let dateAttributedString = NSAttributedString(string: dateText, font: dateFont, textColor: item.presentationData.theme.theme.list.itemSecondaryTextColor)
             
-            let (dateNodeLayout, dateNodeApply) = dateNodeMakeLayout(TextNodeLayoutArguments(attributedString: dateAttributedString, backgroundColor: nil, maximumNumberOfLines: 1, truncationType: .end, constrainedSize: CGSize(width: params.width - leftInset - params.rightInset - 12.0, height: CGFloat.greatestFiniteMagnitude), alignment: .natural, cutout: nil, insets: UIEdgeInsets()))
+            let (dateNodeLayout, dateNodeApply) = dateNodeMakeLayout(TextNodeLayoutArguments(attributedString: dateAttributedString, backgroundColor: nil, maximumNumberOfLines: 1, truncationType: .end, constrainedSize: CGSize(width: params.width - leftInset - leftOffset - contentRightInset - 12.0, height: CGFloat.greatestFiniteMagnitude), alignment: .natural, cutout: nil, insets: UIEdgeInsets()))
             
-            let (titleNodeLayout, titleNodeApply) = titleNodeMakeLayout(TextNodeLayoutArguments(attributedString: title, backgroundColor: nil, maximumNumberOfLines: 2, truncationType: .middle, constrainedSize: CGSize(width: params.width - leftInset - leftOffset - 8.0 - params.rightInset - 16.0 - dateNodeLayout.size.width, height: CGFloat.infinity), alignment: .natural, cutout: nil, insets: UIEdgeInsets()))
+            let (titleNodeLayout, titleNodeApply) = titleNodeMakeLayout(TextNodeLayoutArguments(attributedString: title, backgroundColor: nil, maximumNumberOfLines: 2, truncationType: .middle, constrainedSize: CGSize(width: params.width - leftInset - leftOffset - 8.0 - contentRightInset - 16.0 - dateNodeLayout.size.width, height: CGFloat.infinity), alignment: .natural, cutout: nil, insets: UIEdgeInsets()))
             
-            let (descriptionNodeLayout, descriptionNodeApply) = descriptionNodeMakeLayout(TextNodeLayoutArguments(attributedString: descriptionText, backgroundColor: nil, maximumNumberOfLines: descriptionMaxNumberOfLines, truncationType: .end, constrainedSize: CGSize(width: params.width - leftInset - 8.0 - params.rightInset - 16.0 - 8.0, height: CGFloat.infinity), alignment: .natural, lineSpacing: 0.3, cutout: nil, insets: UIEdgeInsets(top: 1.0, left: 1.0, bottom: 1.0, right: 1.0)))
+            let (descriptionNodeLayout, descriptionNodeApply) = descriptionNodeMakeLayout(TextNodeLayoutArguments(attributedString: descriptionText, backgroundColor: nil, maximumNumberOfLines: descriptionMaxNumberOfLines, truncationType: .end, constrainedSize: CGSize(width: params.width - leftInset - leftOffset - 8.0 - contentRightInset - 16.0 - 8.0, height: CGFloat.infinity), alignment: .natural, lineSpacing: 0.3, cutout: nil, insets: UIEdgeInsets(top: 1.0, left: 1.0, bottom: 1.0, right: 1.0)))
             
-            let (linkNodeLayout, linkNodeApply) = linkNodeMakeLayout(TextNodeLayoutArguments(attributedString: linkText, backgroundColor: nil, maximumNumberOfLines: 4, truncationType: .end, constrainedSize: CGSize(width: params.width - leftInset - 8.0 - params.rightInset - 16.0 - 8.0, height: CGFloat.infinity), alignment: .natural, lineSpacing: 0.3, cutout: isInstantView ? TextNodeCutout(topLeft: CGSize(width: 14.0, height: 8.0)) : nil, insets: UIEdgeInsets(top: 1.0, left: 1.0, bottom: 1.0, right: 1.0)))
+            let (linkNodeLayout, linkNodeApply) = linkNodeMakeLayout(TextNodeLayoutArguments(attributedString: linkText, backgroundColor: nil, maximumNumberOfLines: 4, truncationType: .end, constrainedSize: CGSize(width: params.width - leftInset - leftOffset - 8.0 - contentRightInset - 16.0 - 8.0, height: CGFloat.infinity), alignment: .natural, lineSpacing: 0.3, cutout: isInstantView ? TextNodeCutout(topLeft: CGSize(width: 14.0, height: 8.0)) : nil, insets: UIEdgeInsets(top: 1.0, left: 1.0, bottom: 1.0, right: 1.0)))
             var instantViewImage: UIImage?
             if isInstantView {
                  instantViewImage = PresentationResourcesChat.sharedMediaInstantViewIcon(item.presentationData.theme.theme)
@@ -637,7 +652,7 @@ public final class ListMessageSnippetItemNode: ListMessageNode {
             var iconImageApply: (() -> Void)?
             if let iconImageReferenceAndRepresentation = iconImageReferenceAndRepresentation {
                 let iconSize = CGSize(width: 40.0, height: 40.0)
-                let imageCorners = ImageCorners(radius: 6.0)
+                let imageCorners = ImageCorners(radius: item.systemStyle == .glass ? 12.0 : 6.0, curve: item.systemStyle == .glass ? .continuous : .circular)
                 let arguments = TransformImageArguments(corners: imageCorners, imageSize: iconImageReferenceAndRepresentation.1.dimensions.cgSize.aspectFilled(iconSize), boundingSize: iconSize, intrinsicInsets: UIEdgeInsets(), emptyColor: item.presentationData.theme.theme.list.mediaPlaceholderColor)
                 iconImageApply = iconImageLayout(arguments)
             }
@@ -657,7 +672,7 @@ public final class ListMessageSnippetItemNode: ListMessageNode {
             }
                         
             let authorText = NSAttributedString(string: authorString, font: authorFont, textColor: item.presentationData.theme.theme.list.itemSecondaryTextColor)
-            let (authorNodeLayout, authorNodeApply) = authorNodeMakeLayout(item.context, params.width - leftInset - params.rightInset - 30.0, item.presentationData.theme.theme, authorText, forumThreadTitle)
+            let (authorNodeLayout, authorNodeApply) = authorNodeMakeLayout(item.context, params.width - leftInset - leftOffset - contentRightInset - 30.0, item.presentationData.theme.theme, authorText, .middle, forumThreadTitle)
             
             var contentHeight = 9.0 + titleNodeLayout.size.height + 10.0 + descriptionNodeLayout.size.height + linkNodeLayout.size.height
             if !authorString.isEmpty {
@@ -707,26 +722,42 @@ public final class ListMessageSnippetItemNode: ListMessageNode {
                     }
                     
                     if let (selectionWidth, selectionApply) = selectionNodeWidthAndApply {
-                        let selectionFrame = CGRect(origin: CGPoint(x: params.leftInset, y: 0.0), size: CGSize(width: selectionWidth, height: contentHeight))
+                        let selectionFrame: CGRect
+                        let sidePosition: CGPoint
+                        switch item.selectionSide {
+                        case .left:
+                            selectionFrame = CGRect(origin: CGPoint(x: params.leftInset, y: 0.0), size: CGSize(width: selectionWidth, height: contentHeight))
+                            sidePosition = CGPoint(x: -selectionFrame.size.width / 2.0, y: selectionFrame.midY)
+                        case .right:
+                            selectionFrame = CGRect(origin: CGPoint(x: params.width - params.rightInset - selectionWidth - 7.0, y: 0.0), size: CGSize(width: selectionWidth, height: contentHeight))
+                            sidePosition = CGPoint(x: params.width + selectionFrame.size.width / 2.0, y: selectionFrame.midY)
+                        }
                         let selectionNode = selectionApply(selectionFrame.size, transition.isAnimated)
                         if selectionNode !== strongSelf.selectionNode {
                             strongSelf.selectionNode?.removeFromSupernode()
                             strongSelf.selectionNode = selectionNode
                             strongSelf.addSubnode(selectionNode)
                             selectionNode.frame = selectionFrame
-                            transition.animatePosition(node: selectionNode, from: CGPoint(x: -selectionFrame.size.width / 2.0, y: selectionFrame.midY))
+                            transition.animatePosition(node: selectionNode, from: sidePosition)
                         } else {
                             transition.updateFrame(node: selectionNode, frame: selectionFrame)
                         }
                     } else if let selectionNode = strongSelf.selectionNode {
                         strongSelf.selectionNode = nil
                         let selectionFrame = selectionNode.frame
-                        transition.updatePosition(node: selectionNode, position: CGPoint(x: -selectionFrame.size.width / 2.0, y: selectionFrame.midY), completion: { [weak selectionNode] _ in
+                        let sidePosition: CGPoint
+                        switch item.selectionSide {
+                        case .left:
+                            sidePosition = CGPoint(x: -selectionFrame.size.width / 2.0, y: selectionFrame.midY)
+                        case .right:
+                            sidePosition = CGPoint(x: params.width + selectionFrame.size.width / 2.0, y: selectionFrame.midY)
+                        }
+                        transition.updatePosition(node: selectionNode, position: sidePosition, completion: { [weak selectionNode] _ in
                             selectionNode?.removeFromSupernode()
                         })
                     }
                     
-                    transition.updateFrame(node: strongSelf.separatorNode, frame: CGRect(origin: CGPoint(x: leftOffset + leftInset, y: contentHeight - UIScreenPixel), size: CGSize(width: params.width - leftInset - leftOffset, height: UIScreenPixel)))
+                    transition.updateFrame(node: strongSelf.separatorNode, frame: CGRect(origin: CGPoint(x: leftOffset + leftInset, y: contentHeight - UIScreenPixel), size: CGSize(width: params.width - leftInset - leftOffset - rightOffset, height: UIScreenPixel)))
                     strongSelf.highlightedBackgroundNode.frame = CGRect(origin: CGPoint(x: 0.0, y: -UIScreenPixel), size: CGSize(width: params.width, height: contentHeight + UIScreenPixel))
                     
                     transition.updateFrame(node: strongSelf.titleNode, frame: CGRect(origin: CGPoint(x: leftOffset + leftInset, y: 9.0), size: titleNodeLayout.size))
@@ -737,7 +768,7 @@ public final class ListMessageSnippetItemNode: ListMessageNode {
                     let _ = descriptionNodeApply()
                     
                     let _ = dateNodeApply()
-                    transition.updateFrame(node: strongSelf.dateNode, frame: CGRect(origin: CGPoint(x: params.width - params.rightInset - dateNodeLayout.size.width - 8.0, y: 11.0), size: dateNodeLayout.size))
+                    transition.updateFrame(node: strongSelf.dateNode, frame: CGRect(origin: CGPoint(x: params.width - contentRightInset - dateNodeLayout.size.width - 8.0, y: 11.0), size: dateNodeLayout.size))
                     strongSelf.dateNode.isHidden = !item.isGlobalSearchResult
                     
                     let linkFrame = CGRect(origin: CGPoint(x: leftOffset + leftInset - 1.0, y: descriptionFrame.maxY), size: linkNodeLayout.size)
@@ -754,7 +785,7 @@ public final class ListMessageSnippetItemNode: ListMessageNode {
                     }
                     
                     let iconFrame = CGRect(origin: CGPoint(x: params.leftInset + leftOffset + 12.0, y: 12.0), size: CGSize(width: 40.0, height: 40.0))
-                    transition.updateFrame(node: strongSelf.iconTextNode, frame: CGRect(origin: CGPoint(x: iconFrame.minX + floorToScreenPixels((iconFrame.width - iconTextLayout.size.width) / 2.0), y: iconFrame.minY + floorToScreenPixels((iconFrame.height - iconTextLayout.size.height) / 2.0) + 2.0), size: iconTextLayout.size))
+                    transition.updateFrame(node: strongSelf.iconTextNode, frame: CGRect(origin: CGPoint(x: iconFrame.minX + floorToScreenPixels((iconFrame.width - iconTextLayout.size.width) / 2.0) + 1.0 - UIScreenPixel, y: iconFrame.minY + floorToScreenPixels((iconFrame.height - iconTextLayout.size.height) / 2.0) + 2.0), size: iconTextLayout.size))
                     
                     let _ = iconTextApply()
                     

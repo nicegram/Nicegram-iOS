@@ -17,6 +17,7 @@ import AccountContext
 import PresentationDataUtils
 import PremiumPeerShortcutComponent
 import GiftAnimationComponent
+import GlassBarButtonComponent
 
 private final class SheetContent: CombinedComponent {
     typealias EnvironmentType = ViewControllerComponentContainer.Environment
@@ -58,7 +59,6 @@ private final class SheetContent: CombinedComponent {
     }
     
     final class State: ComponentState {
-        var cachedCloseImage: (UIImage, PresentationTheme)?
     }
     
     func makeState() -> State {
@@ -68,7 +68,7 @@ private final class SheetContent: CombinedComponent {
     static var body: Body {
         let background = Child(RoundedRectangle.self)
         let animation = Child(GiftAnimationComponent.self)
-        let closeButton = Child(Button.self)
+        let closeButton = Child(GlassBarButtonComponent.self)
         let title = Child(Text.self)
         let text = Child(BalancedTextComponent.self)
         
@@ -78,7 +78,6 @@ private final class SheetContent: CombinedComponent {
         return { context in
             let environment = context.environment[EnvironmentType.self]
             let component = context.component
-            let state = context.state
             
             let presentationData = component.context.sharedContext.currentPresentationData.with { $0 }
             let theme = presentationData.theme
@@ -108,25 +107,27 @@ private final class SheetContent: CombinedComponent {
                 .position(CGPoint(x: context.availableSize.width / 2.0, y: animation.size.height / 2.0 + 12.0))
             )
             
-            let closeImage: UIImage
-            if let (image, cacheTheme) = state.cachedCloseImage, theme === cacheTheme {
-                closeImage = image
-            } else {
-                closeImage = generateCloseButtonImage(backgroundColor: UIColor(rgb: 0x808084, alpha: 0.1), foregroundColor: theme.actionSheet.inputClearButtonColor)!
-                state.cachedCloseImage = (closeImage, theme)
-            }
             let closeButton = closeButton.update(
-                component: Button(
-                    content: AnyComponent(Image(image: closeImage)),
-                    action: {
+                component: GlassBarButtonComponent(
+                    size: CGSize(width: 44.0, height: 44.0),
+                    backgroundColor: nil,
+                    isDark: theme.overallDarkAppearance,
+                    state: .glass,
+                    component: AnyComponentWithIdentity(id: "close", component: AnyComponent(
+                        BundleIconComponent(
+                            name: "Navigation/Close",
+                            tintColor: theme.chat.inputPanel.panelControlColor
+                        )
+                    )),
+                    action: { _ in
                         component.dismiss()
                     }
                 ),
-                availableSize: CGSize(width: 30.0, height: 30.0),
+                availableSize: CGSize(width: 44.0, height: 44.0),
                 transition: .immediate
             )
             context.add(closeButton
-                .position(CGPoint(x: context.availableSize.width - closeButton.size.width, y: 28.0))
+                .position(CGPoint(x: 16.0 + closeButton.size.width / 2.0, y: 16.0 + closeButton.size.height / 2.0))
             )
             
             let constrainedTitleWidth = context.availableSize.width - 16.0 * 2.0
@@ -197,13 +198,14 @@ private final class SheetContent: CombinedComponent {
             
             let controller = environment.controller() as? WebAppSetEmojiStatusScreen
                         
+            let buttonInsets = ContainerViewLayout.concentricInsets(bottomInset: environment.safeInsets.bottom, innerDiameter: 52.0, sideInset: 30.0)
             let button = button.update(
                 component: ButtonComponent(
                     background: ButtonComponent.Background(
+                        style: .glass,
                         color: theme.list.itemCheckColors.fillColor,
                         foreground: theme.list.itemCheckColors.foregroundColor,
                         pressedColor: theme.list.itemCheckColors.fillColor.withMultipliedAlpha(0.9),
-                        cornerRadius: 10.0
                     ),
                     content: AnyComponentWithIdentity(
                         id: AnyHashable(0),
@@ -216,7 +218,7 @@ private final class SheetContent: CombinedComponent {
                         controller?.dismissAnimated()
                     }
                 ),
-                availableSize: CGSize(width: context.availableSize.width - 16.0 * 2.0, height: 50),
+                availableSize: CGSize(width: context.availableSize.width - buttonInsets.left - buttonInsets.right, height: 52.0),
                 transition: .immediate
             )
             context.add(button
@@ -225,8 +227,7 @@ private final class SheetContent: CombinedComponent {
                 .position(CGPoint(x: context.availableSize.width / 2.0, y: contentSize.height + button.size.height / 2.0))
             )
             contentSize.height += button.size.height
- 
-            contentSize.height += 48.0
+            contentSize.height += buttonInsets.bottom
             
             return contentSize
         }
@@ -298,6 +299,7 @@ private final class WebAppSetEmojiStatusSheetComponent: CombinedComponent {
                             })
                         }
                     )),
+                    style: .glass,
                     backgroundColor: .color(environment.theme.list.modalBlocksBackgroundColor),
                     followContentSizeChanges: true,
                     clipsContent: true,
@@ -306,6 +308,8 @@ private final class WebAppSetEmojiStatusSheetComponent: CombinedComponent {
                 environment: {
                     environment
                     SheetComponentEnvironment(
+                        metrics: environment.metrics,
+                        deviceMetrics: environment.deviceMetrics,
                         isDisplaying: environment.value.isVisible,
                         isCentered: environment.metrics.widthClass == .regular,
                         hasInputHeight: !environment.inputHeight.isZero,

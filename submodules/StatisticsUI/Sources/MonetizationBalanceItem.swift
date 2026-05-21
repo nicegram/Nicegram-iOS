@@ -140,7 +140,7 @@ final class MonetizationBalanceItemNode: ListViewItemNode, ItemListItemNode {
     
         self.activateArea = AccessibilityAreaNode()
         
-        super.init(layerBacked: false, dynamicBounce: false)
+        super.init(layerBacked: false)
         
         self.addSubnode(self.iconNode)
         self.addSubnode(self.balanceTextNode)
@@ -180,10 +180,10 @@ final class MonetizationBalanceItemNode: ListViewItemNode, ItemListItemNode {
                 case .ton:
                     let cryptoValue = formatTonAmountText(stats.balances.availableBalance.amount.value, dateTimeFormat: item.presentationData.dateTimeFormat)
                     amountString = tonAmountAttributedString(cryptoValue, integralFont: integralFont, fractionalFont: fractionalFont, color: item.presentationData.theme.list.itemPrimaryTextColor, decimalSeparator: item.presentationData.dateTimeFormat.decimalSeparator)
-                    value = stats.balances.availableBalance.amount == StarsAmount.zero ? "" : "≈\(formatTonUsdValue(stats.balances.availableBalance.amount.value, rate: stats.usdRate, dateTimeFormat: item.presentationData.dateTimeFormat))"
+                    value = stats.balances.availableBalance.amount == StarsAmount.zero ? "" : "~\(formatTonUsdValue(stats.balances.availableBalance.amount.value, rate: stats.usdRate, dateTimeFormat: item.presentationData.dateTimeFormat))"
                 case .stars:
                     amountString = NSAttributedString(string: presentationStringsFormattedNumber(stats.balances.availableBalance.amount, item.presentationData.dateTimeFormat.groupingSeparator), font: integralFont, textColor: item.presentationData.theme.list.itemPrimaryTextColor)
-                    value = stats.balances.availableBalance.amount == StarsAmount.zero ? "" : "≈\(formatTonUsdValue(stats.balances.availableBalance.amount.value, divide: false, rate: stats.usdRate, dateTimeFormat: item.presentationData.dateTimeFormat))"
+                    value = stats.balances.availableBalance.amount == StarsAmount.zero ? "" : "~\(formatTonUsdValue(stats.balances.availableBalance.amount.value, divide: false, rate: stats.usdRate, dateTimeFormat: item.presentationData.dateTimeFormat))"
                     isStars = true
                 }
             } else {
@@ -290,7 +290,7 @@ final class MonetizationBalanceItemNode: ListViewItemNode, ItemListItemNode {
                                 strongSelf.bottomStripeNode.isHidden = hasCorners
                         }
                         
-                        strongSelf.maskNode.image = hasCorners ? PresentationResourcesItemList.cornersImage(item.presentationData.theme, top: hasTopCorners, bottom: hasBottomCorners) : nil
+                        strongSelf.maskNode.image = hasCorners ? PresentationResourcesItemList.cornersImage(item.presentationData.theme, top: hasTopCorners, bottom: hasBottomCorners, glass: true) : nil
                         
                         strongSelf.backgroundNode.frame = CGRect(origin: CGPoint(x: 0.0, y: -min(insets.top, separatorHeight)), size: CGSize(width: params.width, height: contentSize.height + min(insets.top, separatorHeight) + min(insets.bottom, separatorHeight)))
                         strongSelf.maskNode.frame = strongSelf.backgroundNode.frame.insetBy(dx: params.leftInset, dy: 0.0)

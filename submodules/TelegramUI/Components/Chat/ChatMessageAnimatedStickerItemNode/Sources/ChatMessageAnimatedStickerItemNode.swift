@@ -47,6 +47,7 @@ import ManagedDiceAnimationNode
 import MessageHaptics
 import ChatMessageTransitionNode
 import ChatMessageSuggestedPostInfoNode
+import TelegramStringFormatting
 
 private let nameFont = Font.medium(14.0)
 private let inlineBotPrefixFont = Font.regular(14.0)
@@ -98,6 +99,11 @@ public class ChatMessageAnimatedStickerItemNode: ChatMessageItemView {
   
     private var swipeToReplyNode: ChatMessageSwipeToReplyNode?
     private var swipeToReplyFeedback: HapticFeedback?
+    
+    private let labelNode: TextNodeWithEntities
+    private var labelBackgroundNode: WallpaperBubbleBackgroundNode?
+    private let labelBackgroundMaskNode: ASImageNode
+    private var cachedMaskLabelBackgroundImage: (CGPoint, UIImage, [CGRect])?
     
     private var selectionNode: ChatMessageSelectionNode?
     private var deliveryFailedNode: ChatMessageDeliveryFailedNode?
@@ -160,6 +166,12 @@ public class ChatMessageAnimatedStickerItemNode: ChatMessageItemView {
         self.textNode = TextNodeWithEntities()
         self.textNode.textNode.displaysAsynchronously = false
         self.textNode.textNode.isUserInteractionEnabled = false
+        
+        self.labelNode = TextNodeWithEntities()
+        self.labelNode.textNode.isUserInteractionEnabled = false
+        self.labelNode.textNode.displaysAsynchronously = false
+        
+        self.labelBackgroundMaskNode = ASImageNode()
         
         super.init(rotated: rotated)
         
@@ -469,9 +481,24 @@ public class ChatMessageAnimatedStickerItemNode: ChatMessageItemView {
             }
         } else if let telegramDice = self.telegramDice, let diceNode = self.animationNode as? ManagedDiceAnimationNode {
             if let value = telegramDice.value {
+                let wasRolling = diceNode.isRolling
                 diceNode.setState(value == 0 ? .rolling : .value(value, true))
+                
+                if wasRolling && !diceNode.isRolling {
+                    Queue.mainQueue().after(3.0, {
+                        self.labelNode.textNode.alpha = 1.0
+                        self.labelBackgroundNode?.alpha = 1.0
+                        self.labelNode.textNode.layer.animateScale(from: 0.01, to: 1.0, duration: 0.25)
+                        self.labelBackgroundNode?.layer.animateScale(from: 0.01, to: 1.0, duration: 0.25)
+                        self.labelNode.textNode.layer.animateAlpha(from: 0.0, to: 1.0, duration: 0.25)
+                        self.labelBackgroundNode?.layer.animateAlpha(from: 0.0, to: 1.0, duration: 0.25)
+                    })
+                }
             } else {
                 diceNode.setState(.rolling)
+                
+                self.labelNode.textNode.alpha = 0.0
+                self.labelBackgroundNode?.alpha = 0.0
             }
         } else if self.telegramFile == nil && self.telegramDice == nil {
             let (emoji, fitz) = item.message.text.basicEmoji
@@ -633,7 +660,7 @@ public class ChatMessageAnimatedStickerItemNode: ChatMessageItemView {
                         }
                         let fittedSize = isEmoji ? dimensions.cgSize.aspectFilled(CGSize(width: 384.0, height: 384.0)) : dimensions.cgSize.aspectFitted(CGSize(width: 384.0, height: 384.0))
                         
-                        let pathPrefix = item.context.account.postbox.mediaBox.shortLivedResourceCachePathPrefix(file.resource.id)
+                        let pathPrefix = item.context.engine.resources.shortLivedResourceCachePathPrefix(id: EngineMediaResource.Id(file.resource.id))
                         let mode: AnimatedStickerMode = .direct(cachePathPrefix: pathPrefix)
                         self.animationSize = fittedSize
                         animationNode.setup(source: AnimatedStickerResourceSource(account: item.context.account, resource: file.resource, fitzModifier: fitzModifier, isVideo: file.mimeType == "video/webm"), width: Int(fittedSize.width), height: Int(fittedSize.height), playbackMode: playbackMode, mode: mode)
@@ -816,6 +843,9 @@ public class ChatMessageAnimatedStickerItemNode: ChatMessageItemView {
         let actionButtonsLayout = ChatMessageActionButtonsNode.asyncLayout(self.actionButtonsNode)
         let reactionButtonsLayout = ChatMessageReactionButtonsNode.asyncLayout(self.reactionButtonsNode)
         
+        let makeLabelLayout = TextNodeWithEntities.asyncLayout(self.labelNode)
+        let cachedMaskLabelBackgroundImage = self.cachedMaskLabelBackgroundImage
+        
         let makeForwardInfoLayout = ChatMessageForwardInfoNode.asyncLayout(self.forwardInfoNode)
         
         let viaBotLayout = TextNode.asyncLayout(self.viaBotNode)
@@ -849,6 +879,44 @@ public class ChatMessageAnimatedStickerItemNode: ChatMessageItemView {
             
             let avatarInset: CGFloat
             var hasAvatar = false
+            
+            let labelAttributedText = universalServiceMessageString(presentationData: (item.presentationData.theme.theme, item.presentationData.theme.wallpaper), strings: item.presentationData.strings, nameDisplayOrder: item.presentationData.nameDisplayOrder, dateTimeFormat: item.presentationData.dateTimeFormat, message: EngineMessage(item.message), accountPeerId: item.context.account.peerId, forChatList: false, forForumOverview: false, forAdditionalServiceMessage: true)
+            
+            let (labelLayout, labelApply) = makeLabelLayout(TextNodeLayoutArguments(attributedString: labelAttributedText, backgroundColor: nil, maximumNumberOfLines: 0, truncationType: .end, constrainedSize: CGSize(width: params.width - 32.0, height: CGFloat.greatestFiniteMagnitude), alignment: .center, cutout: nil, insets: UIEdgeInsets()))
+            
+            var labelRects = labelLayout.linesRects()
+            if labelRects.count > 1 {
+                let sortedIndices = (0 ..< labelRects.count).sorted(by: { labelRects[$0].width > labelRects[$1].width })
+                for i in 0 ..< sortedIndices.count {
+                    let index = sortedIndices[i]
+                    for j in -1 ... 1 {
+                        if j != 0 && index + j >= 0 && index + j < sortedIndices.count {
+                            if abs(labelRects[index + j].width - labelRects[index].width) < 40.0 {
+                                labelRects[index + j].size.width = max(labelRects[index + j].width, labelRects[index].width)
+                                labelRects[index].size.width = labelRects[index + j].size.width
+                            }
+                        }
+                    }
+                }
+            }
+            for i in 0 ..< labelRects.count {
+                labelRects[i] = labelRects[i].insetBy(dx: -7.0, dy: floor((labelRects[i].height - 22.0) / 2.0))
+                labelRects[i].size.height = 22.0
+                labelRects[i].origin.x = floor((labelLayout.size.width - labelRects[i].width) / 2.0)
+            }
+            
+            let backgroundMaskImage: (CGPoint, UIImage)?
+            var backgroundMaskUpdated = false
+            if labelLayout.size.height > 0.0 {
+                if let (currentOffset, currentImage, currentRects) = cachedMaskLabelBackgroundImage, currentRects == labelRects {
+                    backgroundMaskImage = (currentOffset, currentImage)
+                } else {
+                    backgroundMaskImage = LinkHighlightingNode.generateImage(color: .black, inset: 0.0, innerRadius: 11.0, outerRadius: 11.0, rects: labelRects, useModernPathCalculation: false)
+                    backgroundMaskUpdated = true
+                }
+            } else {
+                backgroundMaskImage = nil
+            }
             
             switch item.chatLocation {
             case let .peer(peerId):
@@ -893,7 +961,7 @@ public class ChatMessageAnimatedStickerItemNode: ChatMessageItemView {
             }
             
             if hasAvatar {
-                avatarInset = layoutConstants.avatarDiameter
+                avatarInset = layoutConstants.avatarInset
             } else {
                 avatarInset = 0.0
             }
@@ -1061,6 +1129,7 @@ public class ChatMessageAnimatedStickerItemNode: ChatMessageItemView {
             var viewCount: Int? = nil
             var dateReplies = 0
             var starsCount: Int64?
+            var tonAmount: Int64?
             var dateReactionsAndPeers = mergedMessageReactionsAndPeers(accountPeerId: item.context.account.peerId, accountPeer: item.associatedData.accountPeer, message: item.message)
             if item.message.isRestricted(platform: "ios", contentSettings: item.context.currentContentSettings.with { $0 }) {
                 dateReactionsAndPeers = ([], [])
@@ -1077,6 +1146,10 @@ public class ChatMessageAnimatedStickerItemNode: ChatMessageItemView {
                 } else if let attribute = attribute as? PaidStarsMessageAttribute, item.message.id.peerId.namespace == Namespaces.Peer.CloudChannel {
                     starsCount = attribute.stars.value
                 }
+            }
+            
+            if let stakeTonAmount = telegramDice?.tonAmount {
+                tonAmount = stakeTonAmount
             }
             
             let dateText = stringForMessageTimestampStatus(accountPeerId: item.context.account.peerId, message: item.message, dateTimeFormat: item.presentationData.dateTimeFormat, nameDisplayOrder: item.presentationData.nameDisplayOrder, strings: item.presentationData.strings, format: .regular, associatedData: item.associatedData)
@@ -1107,6 +1180,7 @@ public class ChatMessageAnimatedStickerItemNode: ChatMessageItemView {
                 messageEffect: messageEffect,
                 replyCount: dateReplies,
                 starsCount: starsCount,
+                tonAmount: tonAmount,
                 isPinned: item.message.tags.contains(.pinned) && !item.associatedData.isInPinnedListMode && !isReplyThread,
                 hasAutoremove: item.message.isSelfExpiring,
                 canViewReactionList: canViewMessageReactionList(message: item.message),
@@ -1141,7 +1215,7 @@ public class ChatMessageAnimatedStickerItemNode: ChatMessageItemView {
             var replyMessage: Message?
             var replyForward: QuotedReplyMessageAttribute?
             var replyQuote: (quote: EngineMessageReplyQuote, isQuote: Bool)?
-            var replyTodoItemId: Int32?
+            var replyInnerSubject: EngineMessageReplyInnerSubject?
             var replyStory: StoryId?
             for attribute in item.message.attributes {
                 if let attribute = attribute as? InlineBotMessageAttribute {
@@ -1169,7 +1243,7 @@ public class ChatMessageAnimatedStickerItemNode: ChatMessageItemView {
                         replyMessage = item.message.associatedMessages[replyAttribute.messageId]
                     }
                     replyQuote = replyAttribute.quote.flatMap { ($0, replyAttribute.isQuote) }
-                    replyTodoItemId = replyAttribute.todoItemId
+                    replyInnerSubject = replyAttribute.innerSubject
                 } else if let quoteReplyAttribute = attribute as? QuotedReplyMessageAttribute {
                     replyForward = quoteReplyAttribute
                 } else if let attribute = attribute as? ReplyStoryAttribute {
@@ -1180,7 +1254,7 @@ public class ChatMessageAnimatedStickerItemNode: ChatMessageItemView {
             }
             
             var hasReply = replyMessage != nil || replyForward != nil || replyStory != nil
-            if case let .peer(peerId) = item.chatLocation, (peerId == replyMessage?.id.peerId || item.message.threadId == 1), let channel = item.message.peers[item.message.id.peerId] as? TelegramChannel, channel.isForumOrMonoForum, item.message.associatedThreadInfo != nil {
+            if case let .peer(peerId) = item.chatLocation, (peerId == replyMessage?.id.peerId || item.message.threadId == 1), let peer = item.message.peers[item.message.id.peerId], peer.isForumOrMonoForum, item.message.associatedThreadInfo != nil {
                 if let threadId = item.message.threadId, let replyMessage = replyMessage, Int64(replyMessage.id.id) == threadId {
                     hasReply = false
                 }
@@ -1209,8 +1283,9 @@ public class ChatMessageAnimatedStickerItemNode: ChatMessageItemView {
                     message: replyMessage,
                     replyForward: replyForward,
                     quote: replyQuote,
-                    todoItemId: replyTodoItemId,
+                    innerSubject: replyInnerSubject,
                     story: replyStory,
+                    isSummarized: false,
                     parentMessage: item.message,
                     constrainedSize: CGSize(width: availableContentWidth, height: CGFloat.greatestFiniteMagnitude),
                     animationCache: item.controllerInteraction.presentationContext.animationCache,
@@ -1335,11 +1410,11 @@ public class ChatMessageAnimatedStickerItemNode: ChatMessageItemView {
                     ReplyMarkupMessageAttribute(
                         rows: [
                             ReplyMarkupRow(buttons: [
-                                ReplyMarkupButton(title: item.presentationData.strings.Chat_PostApproval_Message_ActionReject, titleWhenForwarded: nil, action: .callback(requiresPassword: false, data: buttonDecline)),
-                                ReplyMarkupButton(title: item.presentationData.strings.Chat_PostApproval_Message_ActionApprove, titleWhenForwarded: nil, action: .callback(requiresPassword: false, data: buttonApprove))
+                                ReplyMarkupButton(title: item.presentationData.strings.Chat_PostApproval_Message_ActionReject, titleWhenForwarded: nil, action: .callback(requiresPassword: false, data: buttonDecline), style: ReplyMarkupButton.Style(color: .danger, iconFileId: nil)),
+                                ReplyMarkupButton(title: item.presentationData.strings.Chat_PostApproval_Message_ActionApprove, titleWhenForwarded: nil, action: .callback(requiresPassword: false, data: buttonApprove), style: ReplyMarkupButton.Style(color: .success, iconFileId: nil))
                             ]),
                             ReplyMarkupRow(buttons: [
-                                ReplyMarkupButton(title: item.presentationData.strings.Chat_PostApproval_Message_ActionSuggestChanges, titleWhenForwarded: nil, action: .callback(requiresPassword: false, data: buttonSuggestChanges))
+                                ReplyMarkupButton(title: item.presentationData.strings.Chat_PostApproval_Message_ActionSuggestChanges, titleWhenForwarded: nil, action: .callback(requiresPassword: false, data: buttonSuggestChanges), style: nil)
                             ])
                         ],
                         flags: [],
@@ -1501,11 +1576,60 @@ public class ChatMessageAnimatedStickerItemNode: ChatMessageItemView {
                     } else {
                         updatedImageFrame = imageFrame.offsetBy(dx: 0.0, dy: floor((contentHeight - imageSize.height) / 2.0))
                         contextContentFrame = updatedImageFrame
+                        
+                        if let telegramDice, let _ = telegramDice.tonAmount {
+                            updatedImageFrame = updatedImageFrame.offsetBy(dx: 0.0, dy: -30.0)
+                        }
                     }
                     var updatedContentFrame = updatedImageFrame
                     if isEmoji && emojiString == nil {
                         updatedContentFrame = updatedContentFrame.insetBy(dx: -imageInset, dy: -imageInset)
                         contextContentFrame = updatedContentFrame
+                    }
+                    
+                    let labelFrame = CGRect(origin: CGPoint(x: floorToScreenPixels((params.width - labelLayout.size.width) / 2.0), y: updatedImageFrame.maxY + 6.0), size: labelLayout.size)
+                    strongSelf.labelNode.textNode.frame = labelFrame
+                    if strongSelf.labelNode.textNode.supernode == nil, labelLayout.size.height > 0.0 {
+                        strongSelf.addSubnode(strongSelf.labelNode.textNode)
+                    }
+                    
+                    let _ = labelApply(TextNodeWithEntities.Arguments(
+                        context: item.context,
+                        cache: item.controllerInteraction.presentationContext.animationCache,
+                        renderer: item.controllerInteraction.presentationContext.animationRenderer,
+                        placeholderColor: item.presentationData.theme.theme.chat.message.freeform.withWallpaper.reactionInactiveBackground,
+                        attemptSynchronous: synchronousLoads
+                    ))
+                    
+                    let baseBackgroundFrame = labelFrame.offsetBy(dx: 0.0, dy: -11.0)
+                    if let (offset, image) = backgroundMaskImage {
+                        if strongSelf.labelBackgroundNode == nil {
+                            if let backgroundNode = item.controllerInteraction.presentationContext.backgroundNode?.makeBubbleBackground(for: .free) {
+                                backgroundNode.alpha = strongSelf.labelNode.textNode.alpha
+                                strongSelf.labelBackgroundNode = backgroundNode
+                                strongSelf.insertSubnode(backgroundNode, at: 0)
+                            }
+                        }
+
+                        if backgroundMaskUpdated, let backgroundNode = strongSelf.labelBackgroundNode {
+                            if labelRects.count == 1 {
+                                backgroundNode.clipsToBounds = true
+                                backgroundNode.cornerRadius = labelRects[0].height / 2.0
+                                backgroundNode.view.mask = nil
+                            } else {
+                                backgroundNode.clipsToBounds = false
+                                backgroundNode.cornerRadius = 0.0
+                                backgroundNode.view.mask = strongSelf.labelBackgroundMaskNode.view
+                            }
+                        }
+
+                        if let backgroundNode = strongSelf.labelBackgroundNode {
+                            backgroundNode.layer.frame = CGRect(origin: CGPoint(x: baseBackgroundFrame.minX + offset.x, y: baseBackgroundFrame.minY + offset.y), size: image.size)
+                        }
+                        strongSelf.labelBackgroundMaskNode.image = image
+                        strongSelf.labelBackgroundMaskNode.frame = CGRect(origin: CGPoint(), size: image.size)
+
+                        strongSelf.cachedMaskLabelBackgroundImage = (offset, image, labelRects)
                     }
                     
                     if let (_, textApply) = textLayoutAndApply {
@@ -1952,8 +2076,7 @@ public class ChatMessageAnimatedStickerItemNode: ChatMessageItemView {
                     case let .optionalAction(f):
                         f()
                     case let .openContextMenu(openContextMenu):
-                        // Nicegram HideReactions, account added
-                        if canAddMessageReactions(message: item.message, account: item.context.account) {
+                        if canAddMessageReactions(message: item.message) {
                             item.controllerInteraction.updateMessageReaction(item.message, .default, false, nil)
                         } else {
                             item.controllerInteraction.openMessageContextMenu(openContextMenu.tapMessage, openContextMenu.selectAll, self, openContextMenu.subFrame, nil, nil)
@@ -1962,8 +2085,7 @@ public class ChatMessageAnimatedStickerItemNode: ChatMessageItemView {
                 } else if case .tap = gesture {
                     item.controllerInteraction.clickThroughMessage(self.view, location)
                 } else if case .doubleTap = gesture {
-                    // Nicegram HideReactions, account added
-                    if canAddMessageReactions(message: item.message, account: item.context.account) {
+                    if canAddMessageReactions(message: item.message) {
                         item.controllerInteraction.updateMessageReaction(item.message, .default, false, nil)
                     }
                 }
@@ -2135,7 +2257,7 @@ public class ChatMessageAnimatedStickerItemNode: ChatMessageItemView {
         let incomingMessage = item.message.effectivelyIncoming(item.context.account.peerId)
 
         do {
-            let pathPrefix = item.context.account.postbox.mediaBox.shortLivedResourceCachePathPrefix(resource.id)
+            let pathPrefix = item.context.engine.resources.shortLivedResourceCachePathPrefix(id: EngineMediaResource.Id(resource.id))
             let additionalAnimationNode = DefaultAnimatedStickerNodeImpl()
             additionalAnimationNode.setup(source: source, width: Int(animationSize.width * 1.6), height: Int(animationSize.height * 1.6), playbackMode: .once, mode: .direct(cachePathPrefix: pathPrefix))
             var animationFrame: CGRect
@@ -2282,10 +2404,10 @@ public class ChatMessageAnimatedStickerItemNode: ChatMessageItemView {
                     let peach = 0x1F351
                     let coffin = 0x26B0
                     
-                    let appConfiguration = item.context.account.postbox.preferencesView(keys: [PreferencesKeys.appConfiguration])
+                    let appConfiguration = item.context.engine.data.subscribe(TelegramEngine.EngineData.Item.Configuration.ApplicationSpecificPreference(key: PreferencesKeys.appConfiguration))
                     |> take(1)
                     |> map { view in
-                        return view.values[PreferencesKeys.appConfiguration]?.get(AppConfiguration.self) ?? .defaultValue
+                        return view?.get(AppConfiguration.self) ?? .defaultValue
                     }
                     
                     let text = item.message.text
@@ -3046,18 +3168,18 @@ public class ChatMessageAnimatedStickerItemNode: ChatMessageItemView {
     }
     
     public final class AnimationTransitionReplyPanel {
-        public let titleNode: ASDisplayNode
-        public let textNode: ASDisplayNode
-        public let lineNode: ASDisplayNode
-        public let imageNode: ASDisplayNode
+        public let titleView: UIView
+        public let textView: UIView
+        public let lineView: UIView
+        public let imageView: UIView?
         public let relativeSourceRect: CGRect
         public let relativeTargetRect: CGRect
 
-        public init(titleNode: ASDisplayNode, textNode: ASDisplayNode, lineNode: ASDisplayNode, imageNode: ASDisplayNode, relativeSourceRect: CGRect, relativeTargetRect: CGRect) {
-            self.titleNode = titleNode
-            self.textNode = textNode
-            self.lineNode = lineNode
-            self.imageNode = imageNode
+        public init(titleView: UIView, textView: UIView, lineView: UIView, imageView: UIView?, relativeSourceRect: CGRect, relativeTargetRect: CGRect) {
+            self.titleView = titleView
+            self.textView = textView
+            self.lineView = lineView
+            self.imageView = imageView
             self.relativeSourceRect = relativeSourceRect
             self.relativeTargetRect = relativeTargetRect
         }
@@ -3068,10 +3190,10 @@ public class ChatMessageAnimatedStickerItemNode: ChatMessageItemView {
             let localRect = self.contextSourceNode.contentNode.view.convert(sourceReplyPanel.relativeSourceRect, to: replyInfoNode.view)
 
             let mappedPanel = ChatMessageReplyInfoNode.TransitionReplyPanel(
-                titleNode: sourceReplyPanel.titleNode,
-                textNode: sourceReplyPanel.textNode,
-                lineNode: sourceReplyPanel.lineNode,
-                imageNode: sourceReplyPanel.imageNode,
+                titleView: sourceReplyPanel.titleView,
+                textView: sourceReplyPanel.textView,
+                lineView: sourceReplyPanel.lineView,
+                imageView: sourceReplyPanel.imageView,
                 relativeSourceRect: sourceReplyPanel.relativeSourceRect,
                 relativeTargetRect: sourceReplyPanel.relativeTargetRect
             )

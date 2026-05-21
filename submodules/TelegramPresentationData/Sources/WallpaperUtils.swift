@@ -22,6 +22,25 @@ public extension TelegramWallpaper {
         }
     }
     
+    var singleColor: UIColor? {
+        switch self {
+        case .image:
+            return nil
+        case .emoticon:
+            return nil
+        case let .file(file):
+            if self.isPattern, file.settings.colors.count == 1 {
+                return UIColor(rgb: file.settings.colors[0])
+            } else {
+                return nil
+            }
+        case let .color(color):
+            return UIColor(rgb: color)
+        default:
+            return nil
+        }
+    }
+    
     var isColorOrGradient: Bool {
         switch self {
         case .color, .gradient:

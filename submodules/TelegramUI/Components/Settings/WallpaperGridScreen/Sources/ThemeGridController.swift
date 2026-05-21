@@ -2,7 +2,6 @@ import Foundation
 import UIKit
 import Display
 import AsyncDisplayKit
-import Postbox
 import TelegramCore
 import SwiftSignalKit
 import LegacyComponents
@@ -10,7 +9,6 @@ import TelegramPresentationData
 import TelegramUIPreferences
 import OverlayStatusController
 import AccountContext
-import ShareController
 import SearchUI
 import HexColor
 import PresentationDataUtils
@@ -40,12 +38,11 @@ public final class ThemeGridController: ViewController {
     
     private let context: AccountContext
     private let mode: Mode
+    private let forceEdit: Bool
     
     private var presentationData: PresentationData
     private let presentationDataPromise = Promise<PresentationData>()
     private var presentationDataDisposable: Disposable?
-    
-    private var searchContentNode: NavigationBarSearchContentNode?
     
     private var isEmpty: Bool?
     private var editingMode: Bool = false
@@ -60,14 +57,15 @@ public final class ThemeGridController: ViewController {
     
     public var completion: (WallpaperSelectionResult) -> Void = { _ in }
     
-    public init(context: AccountContext, mode: Mode = .generic) {
+    public init(context: AccountContext, mode: Mode = .generic, forceEdit: Bool = false) {
         self.context = context
         self.mode = mode
+        self.forceEdit = forceEdit
         
         self.presentationData = context.sharedContext.currentPresentationData.with { $0 }
         self.presentationDataPromise.set(.single(self.presentationData))
         
-        super.init(navigationBarPresentationData: NavigationBarPresentationData(presentationData: self.presentationData))
+        super.init(navigationBarPresentationData: NavigationBarPresentationData(presentationData: self.presentationData, style: .glass))
         
         switch mode {
         case .generic:
@@ -81,9 +79,6 @@ public final class ThemeGridController: ViewController {
         
         self.scrollToTop = { [weak self] in
             if let strongSelf = self {
-                if let searchContentNode = strongSelf.searchContentNode {
-                    searchContentNode.updateExpansionProgress(1.0, animated: true)
-                }
                 strongSelf.controllerNode.scrollToTop()
             }
         }
@@ -128,8 +123,7 @@ public final class ThemeGridController: ViewController {
         }
         
         self.statusBar.statusBarStyle = self.presentationData.theme.rootController.statusBarStyle.style
-        self.navigationBar?.updatePresentationData(NavigationBarPresentationData(presentationData: self.presentationData))
-        self.searchContentNode?.updateThemeAndPlaceholder(theme: self.presentationData.theme, placeholder: self.presentationData.strings.Wallpaper_Search)
+        self.navigationBar?.updatePresentationData(NavigationBarPresentationData(presentationData: self.presentationData, style: .glass), transition: .immediate)
         
         if self.isNodeLoaded {
             self.controllerNode.updatePresentationData(self.presentationData)
@@ -182,7 +176,6 @@ public final class ThemeGridController: ViewController {
                         } else {
                             uploadCustomWallpaper(context: strongSelf.context, wallpaper: wallpaper, mode: options, editedImage: editedImage, cropRect: cropRect, brightness: brightness, completion: { [weak self, weak controller] in
                                 if let strongSelf = self {
-                                    strongSelf.deactivateSearch(animated: false)
                                     strongSelf.controllerNode.scrollToTop(animated: false)
                                 }
                                 if let controller = controller {
@@ -392,9 +385,6 @@ public final class ThemeGridController: ViewController {
             }
         })
         self.controllerNode.navigationBar = self.navigationBar
-        self.controllerNode.requestDeactivateSearch = { [weak self] in
-            self?.deactivateSearch(animated: true)
-        }
         self.controllerNode.requestWallpaperRemoval = { [weak self] in
             if let self {
                 self.completion(.remove)
@@ -403,10 +393,6 @@ public final class ThemeGridController: ViewController {
         }
         self.controllerNode.gridNode.visibleContentOffsetChanged = { [weak self] offset in
             if let strongSelf = self {
-                if let searchContentNode = strongSelf.searchContentNode {
-                    searchContentNode.updateGridVisibleContentOffset(offset)
-                }
-                
                 var previousContentOffsetValue: CGFloat?
                 if let previousContentOffset = strongSelf.previousContentOffset, case let .known(value) = previousContentOffset {
                     previousContentOffsetValue = value
@@ -427,18 +413,16 @@ public final class ThemeGridController: ViewController {
                 strongSelf.previousContentOffset = offset
             }
         }
-
-        self.controllerNode.gridNode.scrollingCompleted = { [weak self] in
-            if let strongSelf = self, let searchContentNode = strongSelf.searchContentNode {
-                let _ = strongSelf.controllerNode.fixNavigationSearchableGridNodeScrolling(searchNode: searchContentNode)
-            }
-        }
         
         self._ready.set(self.controllerNode.ready.get())
         
         self.navigationBar?.updateBackgroundAlpha(0.0, transition: .immediate)
         
         self.displayNodeDidLoad()
+        
+        if self.forceEdit {
+            self.editPressed()
+        }
     }
     
     private func shareWallpapers(_ wallpapers: [TelegramWallpaper]) {
@@ -480,7 +464,7 @@ public final class ThemeGridController: ViewController {
         } else {
             subject = .text(string)
         }
-        let shareController = ShareController(context: context, subject: subject)
+        let shareController = context.sharedContext.makeShareController(context: context, params: ShareControllerParams(subject: subject))
         self.present(shareController, in: .window(.root), blockInteraction: true)
         
         self.donePressed()
@@ -492,38 +476,9 @@ public final class ThemeGridController: ViewController {
         self.controllerNode.containerLayoutUpdated(layout, navigationBarHeight: self.cleanNavigationHeight, transition: transition)
     }
     
-    func activateSearch() {
-        if self.displayNavigationBar {
-            let _ = (self.controllerNode.ready.get()
-            |> take(1)
-            |> deliverOnMainQueue).start(completed: { [weak self] in
-                guard let strongSelf = self else {
-                    return
-                }
-                if let scrollToTop = strongSelf.scrollToTop {
-                    scrollToTop()
-                }
-                if let searchContentNode = strongSelf.searchContentNode {
-                    strongSelf.controllerNode.activateSearch(placeholderNode: searchContentNode.placeholderNode)
-                }
-                strongSelf.setDisplayNavigationBar(false, transition: .animated(duration: 0.5, curve: .spring))
-            })
-        }
-    }
-    
-    func deactivateSearch(animated: Bool) {
-        if !self.displayNavigationBar {
-            self.setDisplayNavigationBar(true, transition: animated ? .animated(duration: 0.5, curve: .spring) : .immediate)
-            if let searchContentNode = self.searchContentNode {
-                self.controllerNode.deactivateSearch(placeholderNode: searchContentNode.placeholderNode, animated: animated)
-            }
-        }
-    }
-    
     @objc func editPressed() {
         self.editingMode = true
         self.navigationItem.rightBarButtonItem = UIBarButtonItem(title: self.presentationData.strings.Common_Done, style: .done, target: self, action: #selector(self.donePressed))
-        self.searchContentNode?.setIsEnabled(false, animated: true)
         self.controllerNode.updateState { state in
             var state = state
             state.editing = true
@@ -534,7 +489,6 @@ public final class ThemeGridController: ViewController {
     @objc func donePressed() {
         self.editingMode = false
         self.navigationItem.rightBarButtonItem = UIBarButtonItem(title: self.presentationData.strings.Common_Edit, style: .plain, target: self, action: #selector(self.editPressed))
-        self.searchContentNode?.setIsEnabled(true, animated: true)
         self.controllerNode.updateState { state in
             var state = state
             state.editing = false

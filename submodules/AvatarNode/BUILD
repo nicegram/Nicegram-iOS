@@ -1,7 +1,5 @@
 load("@build_bazel_rules_swift//swift:swift.bzl", "swift_library")
 
-NGDEPS = ["//Nicegram/NGWebUtils:NGWebUtils"]
-
 swift_library(
     name = "AvatarNode",
     module_name = "AvatarNode",
@@ -9,9 +7,9 @@ swift_library(
         "Sources/**/*.swift",
     ]),
     copts = [
-        #"-warnings-as-errors",
+        "-warnings-as-errors",
     ],
-    deps = NGDEPS + [
+    deps = [
         "//submodules/AsyncDisplayKit:AsyncDisplayKit",
         "//submodules/Display:Display",
         "//submodules/TelegramCore:TelegramCore",

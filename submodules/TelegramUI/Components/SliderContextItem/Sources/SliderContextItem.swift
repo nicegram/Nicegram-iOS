@@ -47,10 +47,15 @@ private final class SliderContextItemNode: ASDisplayNode, ContextMenuCustomNode,
     let title: String?
     let minValue: CGFloat
     let maxValue: CGFloat
+    var suppressAnimation = false
     var value: CGFloat = 1.0 {
         didSet {
-            self.updateValue(transition: .animated(duration: 0.2, curve: .spring))
+            self.updateValue(transition: self.suppressAnimation ? .immediate :.animated(duration: 0.2, curve: .spring))
         }
+    }
+    
+    public var needsPadding: Bool {
+        return true
     }
     
     private let valueChanged: (CGFloat, Bool) -> Void
@@ -167,11 +172,21 @@ private final class SliderContextItemNode: ASDisplayNode, ContextMenuCustomNode,
     }
     
     private func updateValue(transition: ContainedViewLayoutTransition = .immediate) {
-        let width = self.frame.width
+        let sideInset: CGFloat = 10.0
+        let width = self.frame.width - sideInset * 2.0
         
         let range = self.maxValue - self.minValue
         let value = (self.value - self.minValue) / range
-        transition.updateFrameAdditive(node: self.foregroundNode, frame: CGRect(origin: CGPoint(), size: CGSize(width: value * width, height: self.frame.height)))
+        var foregroundFrame = CGRect(origin: CGPoint(x: sideInset, y: 0.0), size: CGSize(width: value * width, height: self.frame.height))
+        var foregroundOffset: CGFloat = 0.0
+        if foregroundFrame.width < 40.0 {
+            foregroundOffset = (40.0 - foregroundFrame.width) * 0.5
+            foregroundFrame = foregroundFrame.insetBy(dx: 0.0, dy: foregroundOffset)
+        }
+        transition.updateFrameAdditive(node: self.foregroundNode, frame: foregroundFrame)
+        transition.updateSublayerTransformOffset(layer: self.foregroundNode.layer, offset: CGPoint(x: 0.0, y: -foregroundOffset))
+        
+        transition.updateCornerRadius(node: self.foregroundNode, cornerRadius: min(20.0, foregroundFrame.width * 0.5))
         
         let stringValue = String(format: "%.1fx", self.value)
         
@@ -221,9 +236,10 @@ private final class SliderContextItemNode: ASDisplayNode, ContextMenuCustomNode,
         let _ = self.foregroundTitleNode.updateLayout(CGSize(width: 120.0, height: 100.0))
         
         return (CGSize(width: height * 3.0, height: height), { size, transition in
-            let leftInset: CGFloat = 17.0
+            let leftInset: CGFloat = 10.0
+            let sideInset: CGFloat = 10.0
             
-            self.vibrancyEffectView?.frame = CGRect(origin: .zero, size: size)
+            self.vibrancyEffectView?.frame = CGRect(origin: CGPoint(x: sideInset, y: 0.0), size: CGSize(width: size.width - sideInset * 2.0, height: size.height))
             
             let backgroundTextWidth = self.backgroundTextNode.updateLayout(size: CGSize(width: 70.0, height: .greatestFiniteMagnitude), animated: true).width
             
@@ -235,18 +251,18 @@ private final class SliderContextItemNode: ASDisplayNode, ContextMenuCustomNode,
             titleFrame = CGRect(origin: CGPoint(x: leftInset, y: floor((height - backgroundTitleSize.height) / 2.0)), size: backgroundTitleSize)
             
             if self.title != nil {
-                textFrame = CGRect(origin: CGPoint(x: size.width - leftInset - backgroundTextWidth, y: floor((height - backgroundTextSize.height) / 2.0)), size: backgroundTextSize)
+                textFrame = CGRect(origin: CGPoint(x: size.width - sideInset - leftInset - backgroundTextWidth, y: floor((height - backgroundTextSize.height) / 2.0)), size: backgroundTextSize)
             } else {
-                textFrame = CGRect(origin: CGPoint(x: leftInset, y: floor((height - backgroundTextSize.height) / 2.0)), size: backgroundTextSize)
+                textFrame = CGRect(origin: CGPoint(x: leftInset + sideInset, y: floor((height - backgroundTextSize.height) / 2.0)), size: backgroundTextSize)
             }
             
             transition.updateFrameAdditive(node: self.dimBackgroundTitleNode, frame: titleFrame)
-            transition.updateFrameAdditive(node: self.backgroundTitleNode, frame: titleFrame)
+            transition.updateFrameAdditive(node: self.backgroundTitleNode, frame: titleFrame.offsetBy(dx: sideInset, dy: 0.0))
             transition.updateFrameAdditive(node: self.foregroundTitleNode, frame: titleFrame)
             
             transition.updateFrameAdditive(node: self.dimBackgroundTextNode, frame: textFrame)
             transition.updateFrameAdditive(node: self.backgroundTextNode, frame: textFrame)
-            transition.updateFrameAdditive(node: self.foregroundTextNode, frame: textFrame)
+            transition.updateFrameAdditive(node: self.foregroundTextNode, frame: textFrame.offsetBy(dx: -sideInset, dy: 0.0))
         })
     }
         
@@ -260,7 +276,9 @@ private final class SliderContextItemNode: ASDisplayNode, ContextMenuCustomNode,
                 
                 let translation: CGFloat = gestureRecognizer.translation(in: gestureRecognizer.view).x
                 let delta = translation / self.bounds.width * range
+                self.suppressAnimation = true
                 self.value = max(self.minValue, min(self.maxValue, self.value + delta))
+                self.suppressAnimation = false
                 gestureRecognizer.setTranslation(CGPoint(), in: gestureRecognizer.view)
                 
                 if self.value == 2.0 && previousValue != 2.0 {

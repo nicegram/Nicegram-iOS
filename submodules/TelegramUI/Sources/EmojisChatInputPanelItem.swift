@@ -4,7 +4,6 @@ import AsyncDisplayKit
 import Display
 import TelegramCore
 import SwiftSignalKit
-import Postbox
 import TelegramPresentationData
 import AnimationCache
 import MultiAnimationRenderer
@@ -100,7 +99,7 @@ final class EmojisChatInputPanelItemNode: ListViewItemNode {
         self.symbolNode = TextNode()
         self.symbolNode.transform = CATransform3DMakeRotation(CGFloat.pi / 2.0, 0.0, 0.0, 1.0)
         
-        super.init(layerBacked: false, dynamicBounce: false)
+        super.init(layerBacked: false)
         
         self.addSubnode(self.symbolNode)
     }

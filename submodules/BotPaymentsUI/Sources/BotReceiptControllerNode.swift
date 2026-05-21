@@ -335,7 +335,7 @@ final class BotReceiptControllerNode: ItemListControllerNode {
     override func containerLayoutUpdated(_ layout: ContainerViewLayout, navigationBarHeight: CGFloat, transition: ContainedViewLayoutTransition, additionalInsets: UIEdgeInsets) {
         var updatedInsets = layout.intrinsicInsets
 
-        let bottomPanelHorizontalInset: CGFloat = 16.0
+        let bottomPanelHorizontalInset: CGFloat = 30.0
         let bottomPanelVerticalInset: CGFloat = 16.0
         let bottomPanelHeight = max(updatedInsets.bottom, layout.inputHeight ?? 0.0) + bottomPanelVerticalInset * 2.0 + BotCheckoutActionButton.height
 

@@ -36,7 +36,7 @@ private func cancelContextGestures(view: UIView) {
     }
 }
 
-final class StoryItemSetViewListComponent: Component {
+public final class StoryItemSetViewListComponent: Component {
     final class AnimationHint {
         let synchronous: Bool
         
@@ -45,10 +45,10 @@ final class StoryItemSetViewListComponent: Component {
         }
     }
     
-    final class SharedListsContext {
+    public final class SharedListsContext {
         var viewLists: [StoryId: EngineStoryViewListContext] = [:]
         
-        init() {
+        public init() {
         }
     }
     
@@ -129,7 +129,7 @@ final class StoryItemSetViewListComponent: Component {
         self.controller = controller
     }
 
-    static func ==(lhs: StoryItemSetViewListComponent, rhs: StoryItemSetViewListComponent) -> Bool {
+    public static func ==(lhs: StoryItemSetViewListComponent, rhs: StoryItemSetViewListComponent) -> Bool {
         if lhs.theme !== rhs.theme {
             return false
         }
@@ -1285,7 +1285,7 @@ final class StoryItemSetViewListComponent: Component {
         }
     }
 
-    final class View: UIView, UIScrollViewDelegate {
+    public final class View: UIView, UIScrollViewDelegate {
         private let navigationBarBackground: BlurredBackgroundView
         private let navigationSearch = ComponentView<Empty>()
         private let navigationSeparator: SimpleLayer
@@ -1344,7 +1344,7 @@ final class StoryItemSetViewListComponent: Component {
             self.mainViewListDisposable?.dispose()
         }
         
-        override func hitTest(_ point: CGPoint, with event: UIEvent?) -> UIView? {
+        public override func hitTest(_ point: CGPoint, with event: UIEvent?) -> UIView? {
             if !self.backgroundView.frame.contains(point) && !self.navigationContainerView.frame.contains(point) {
                 return nil
             }
@@ -1397,7 +1397,7 @@ final class StoryItemSetViewListComponent: Component {
                     return generateTintedImage(image: UIImage(bundleImageName: "Stories/Context Menu/Repost"), color: theme.contextMenu.primaryColor)
                 }, additionalLeftIcon: { theme in
                     if sortMode != .repostsFirst {
-                        return nil
+                        return UIImage()
                     }
                     return generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Check"), color: theme.contextMenu.primaryColor)
                 }, action: { [weak self] _, a in
@@ -1416,7 +1416,7 @@ final class StoryItemSetViewListComponent: Component {
                     return generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Reactions"), color: theme.contextMenu.primaryColor)
                 }, additionalLeftIcon: { theme in
                     if sortMode != .reactionsFirst {
-                        return nil
+                        return UIImage()
                     }
                     return generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Check"), color: theme.contextMenu.primaryColor)
                 }, action: { [weak self] _, a in
@@ -1435,7 +1435,7 @@ final class StoryItemSetViewListComponent: Component {
                 return generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Time"), color: theme.contextMenu.primaryColor)
             }, additionalLeftIcon: { theme in
                 if sortMode != .recentFirst {
-                    return nil
+                    return UIImage()
                 }
                 return generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Check"), color: theme.contextMenu.primaryColor)
             }, action: { [weak self] _, a in
@@ -1458,7 +1458,7 @@ final class StoryItemSetViewListComponent: Component {
             
             let contextItems = ContextController.Items(content: .list(items))
             
-            let contextController = ContextController(presentationData: presentationData, source: .reference(HeaderContextReferenceContentSource(controller: controller, sourceView: sourceView, position: .bottom)), items: .single(contextItems), gesture: nil)
+            let contextController = makeContextController(presentationData: presentationData, source: .reference(HeaderContextReferenceContentSource(controller: controller, sourceView: sourceView, position: .bottom)), items: .single(contextItems), gesture: nil)
             
             sourceView.alpha = 0.5
             contextController.dismissed = { [weak self, weak sourceView] in
@@ -1907,11 +1907,11 @@ final class StoryItemSetViewListComponent: Component {
         }
     }
 
-    func makeView() -> View {
+    public func makeView() -> View {
         return View(frame: CGRect())
     }
     
-    func update(view: View, availableSize: CGSize, state: EmptyComponentState, environment: Environment<Empty>, transition: ComponentTransition) -> CGSize {
+    public func update(view: View, availableSize: CGSize, state: EmptyComponentState, environment: Environment<Empty>, transition: ComponentTransition) -> CGSize {
         return view.update(component: self, availableSize: availableSize, state: state, environment: environment, transition: transition)
     }
 }

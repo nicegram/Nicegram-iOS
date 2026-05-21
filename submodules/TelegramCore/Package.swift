@@ -45,6 +45,7 @@ let package = Package(
                            .product(name: "FlatBuffers", package: "FlatBuffers", condition: nil),
                            .product(name: "FlatSerialization", package: "FlatSerialization", condition: nil),
                            .product(name: "EncryptionProvider", package: "EncryptionProvider", condition: nil)],
-            path: "Sources"),
+            path: "Sources",
+            swiftSettings: [.unsafeFlags(["-warnings-as-errors"])]),
     ]
 )

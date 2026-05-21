@@ -1,7 +1,6 @@
 import Foundation
 import TelegramPresentationData
 import AccountContext
-import Postbox
 import TelegramCore
 import SwiftSignalKit
 import Display
@@ -9,12 +8,13 @@ import TelegramPresentationData
 import PresentationDataUtils
 import QuickReplyNameAlertController
 import BusinessLinkNameAlertController
+import ChatTitleView
 
 extension ChatControllerImpl {
     func editChat() {
         if case let .customChatContents(customChatContents) = self.subject, case let .quickReplyMessageInput(currentValue, shortcutType) = customChatContents.kind, case .generic = shortcutType {
             var completion: ((String?) -> Void)?
-            let alertController = quickReplyNameAlertController(
+            let (alertController, displayError) = quickReplyNameAlertController(
                 context: self.context,
                 text: self.presentationData.strings.QuickReply_EditShortcutTitle,
                 subtext: self.presentationData.strings.QuickReply_EditShortcutText,
@@ -26,12 +26,12 @@ extension ChatControllerImpl {
             )
             completion = { [weak self, weak alertController] value in
                 guard let self else {
-                    alertController?.dismissAnimated()
+                    alertController?.dismiss(animated: true, completion: nil)
                     return
                 }
                 if let value, !value.isEmpty {
                     if value == currentValue {
-                        alertController?.dismissAnimated()
+                        alertController?.dismiss(animated: true, completion: nil)
                         return
                     }
                     
@@ -39,18 +39,26 @@ extension ChatControllerImpl {
                     |> take(1)
                     |> deliverOnMainQueue).start(next: { [weak self] shortcutMessageList in
                         guard let self else {
-                            alertController?.dismissAnimated()
+                            alertController?.dismiss(animated: true, completion: nil)
                             return
                         }
                         
                         if shortcutMessageList.items.contains(where: { $0.shortcut.lowercased() == value.lowercased() }) {
-                            if let contentNode = alertController?.contentNode as? QuickReplyNameAlertContentNode {
-                                contentNode.setErrorText(errorText: self.presentationData.strings.QuickReply_ShortcutExistsInlineError)
-                            }
+                            displayError(self.presentationData.strings.QuickReply_ShortcutExistsInlineError)
                         } else {
-                            self.chatTitleView?.titleContent = .custom("\(value)", nil, false)
-                            alertController?.view.endEditing(true)
-                            alertController?.dismissAnimated()
+                            let _ = self.chatTitleView?.update(
+                                context: self.context,
+                                theme: self.presentationData.theme,
+                                preferClearGlass: self.presentationInterfaceState.preferredGlassType == .clear,
+                                wallpaper: self.presentationInterfaceState.chatWallpaper,
+                                strings: self.presentationData.strings,
+                                dateTimeFormat: self.presentationData.dateTimeFormat,
+                                nameDisplayOrder: self.presentationData.nameDisplayOrder,
+                                content: .custom(title: [ChatTitleContent.TitleTextItem(id: AnyHashable(0), content: .text("\(value)"))], subtitle: nil, isEnabled: false),
+                                transition: .immediate
+                            )
+                            
+                            alertController?.dismiss(animated: true, completion: nil)
                             
                             if case let .customChatContents(customChatContents) = self.subject {
                                 customChatContents.quickReplyUpdateShortcut(value: value)
@@ -66,22 +74,19 @@ extension ChatControllerImpl {
             var completion: ((String?) -> Void)?
             let alertController = businessLinkNameAlertController(
                 context: self.context,
-                text: self.presentationData.strings.Business_Links_LinkNameTitle,
-                subtext: self.presentationData.strings.Business_Links_LinkNameText,
                 value: currentValue,
-                characterLimit: 32,
                 apply: { value in
                     completion?(value)
                 }
             )
             completion = { [weak self, weak alertController] value in
                 guard let self else {
-                    alertController?.dismissAnimated()
+                    alertController?.dismiss(completion: nil)
                     return
                 }
                 if let value {
                     if value == currentValue {
-                        alertController?.dismissAnimated()
+                        alertController?.dismiss(completion: nil)
                         return
                     }
                     
@@ -93,13 +98,23 @@ extension ChatControllerImpl {
                     } else {
                         linkUrl = link.url
                     }
-                    self.chatTitleView?.titleContent = .custom(value.isEmpty ? self.presentationData.strings.Business_Links_EditLinkTitle : value, linkUrl, false)
+                    let _ = self.chatTitleView?.update(
+                        context: self.context,
+                        theme: self.presentationData.theme,
+                        preferClearGlass: self.presentationInterfaceState.preferredGlassType == .clear,
+                        wallpaper: self.presentationInterfaceState.chatWallpaper,
+                        strings: self.presentationData.strings,
+                        dateTimeFormat: self.presentationData.dateTimeFormat,
+                        nameDisplayOrder: self.presentationData.nameDisplayOrder,
+                        content: .custom(title: [ChatTitleContent.TitleTextItem(id: AnyHashable(0), content: .text(value.isEmpty ? self.presentationData.strings.Business_Links_EditLinkTitle : value))], subtitle: linkUrl, isEnabled: false),
+                        transition: .immediate
+                    )
                     if case let .customChatContents(customChatContents) = self.subject {
                         customChatContents.businessLinkUpdate(message: link.message, entities: link.entities, title: value.isEmpty ? nil : value)
                     }
                     
                     alertController?.view.endEditing(true)
-                    alertController?.dismissAnimated()
+                    alertController?.dismiss(completion: nil)
                 }
             }
             self.present(alertController, in: .window(.root))

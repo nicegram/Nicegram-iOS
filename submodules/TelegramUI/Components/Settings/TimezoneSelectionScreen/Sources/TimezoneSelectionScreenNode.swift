@@ -2,7 +2,6 @@ import Foundation
 import UIKit
 import Display
 import AsyncDisplayKit
-import Postbox
 import TelegramCore
 import SwiftSignalKit
 import TelegramPresentationData
@@ -109,9 +108,9 @@ private final class TimezoneListSearchContainerNode: SearchDisplayControllerCont
         self.presentationDataPromise = Promise(self.presentationData)
         
         self.dimNode = ASDisplayNode()
-        self.dimNode.backgroundColor = UIColor.black.withAlphaComponent(0.5)
+        self.dimNode.backgroundColor = .clear
         
-        self.listNode = ListView()
+        self.listNode = ListViewImpl()
         self.listNode.accessibilityPageScrolledString = { row, count in
             return presentationData.strings.VoiceOver_ScrollStatus(row, count).string
         }
@@ -392,7 +391,7 @@ final class TimezoneSelectionScreenNode: ViewControllerTracingNode {
         self.present = present
         self.push = push
 
-        self.listNode = ListView()
+        self.listNode = ListViewImpl()
         self.listNode.accessibilityPageScrolledString = { row, count in
             return presentationData.strings.VoiceOver_ScrollStatus(row, count).string
         }
@@ -523,7 +522,7 @@ final class TimezoneSelectionScreenNode: ViewControllerTracingNode {
         
         self.searchDisplayController = SearchDisplayController(presentationData: self.presentationData, contentNode: TimezoneListSearchContainerNode(context: self.context, timeZoneList: timeZoneList, action: self.action), inline: true, cancel: { [weak self] in
             self?.requestDeactivateSearch()
-        })
+        }, fieldStyle: placeholderNode.fieldStyle)
         
         self.searchDisplayController?.containerLayoutUpdated(containerLayout, navigationBarHeight: navigationBarHeight, transition: .immediate)
         self.searchDisplayController?.activate(insertSubnode: { [weak self, weak placeholderNode] subnode, isSearchBar in

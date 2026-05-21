@@ -22,10 +22,12 @@ public struct TermsOfServiceUpdate: Equatable {
 extension TermsOfServiceUpdate {
     init?(apiTermsOfService: Api.help.TermsOfService) {
         switch apiTermsOfService {
-            case let .termsOfService(_, id, text, entities, minAgeConfirm):
+            case let .termsOfService(termsOfServiceData):
+                let (_, id, text, entities, minAgeConfirm) = (termsOfServiceData.flags, termsOfServiceData.id, termsOfServiceData.text, termsOfServiceData.entities, termsOfServiceData.minAgeConfirm)
                 let idData: String
                 switch id {
-                case let .dataJSON(data):
+                case let .dataJSON(dataJSONData):
+                    let data = dataJSONData.data
                     idData = data
                 }
                 self.init(id: idData, text: text, entities: messageTextEntitiesFromApiEntities(entities), ageConfirmation: minAgeConfirm)
@@ -34,7 +36,7 @@ extension TermsOfServiceUpdate {
 }
 
 func _internal_acceptTermsOfService(account: Account, id: String) -> Signal<Void, NoError> {
-    return account.network.request(Api.functions.help.acceptTermsOfService(id: .dataJSON(data: id)))
+    return account.network.request(Api.functions.help.acceptTermsOfService(id: .dataJSON(.init(data: id))))
     |> `catch` { _ -> Signal<Api.Bool, NoError> in
         return .complete()
     }
@@ -50,7 +52,8 @@ func managedTermsOfServiceUpdates(postbox: Postbox, network: Network, stateManag
     |> mapToSignal { [weak stateManager] result -> Signal<Void, NoError> in
         var updated: TermsOfServiceUpdate?
         switch result {
-            case let .termsOfServiceUpdate(_, termsOfService):
+            case let .termsOfServiceUpdate(termsOfServiceUpdateData):
+                let (_, termsOfService) = (termsOfServiceUpdateData.expires, termsOfServiceUpdateData.termsOfService)
                 updated = TermsOfServiceUpdate(apiTermsOfService: termsOfService)
             case .termsOfServiceUpdateEmpty:
                 break

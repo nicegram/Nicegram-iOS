@@ -121,6 +121,7 @@ open class ItemListController: ViewController, KeyShortcutResponder, Presentable
     private var tabsNavigationContentNode: ItemListControllerTabsContentNode?
     
     private var presentationData: ItemListPresentationData
+    private let hideNavigationBarBackground: Bool
     
     private var validLayout: ContainerViewLayout?
     
@@ -265,19 +266,27 @@ open class ItemListController: ViewController, KeyShortcutResponder, Presentable
         }
     }
     
-    public init<ItemGenerationArguments>(presentationData: ItemListPresentationData, updatedPresentationData: Signal<ItemListPresentationData, NoError>, state: Signal<(ItemListControllerState, (ItemListNodeState, ItemGenerationArguments)), NoError>, tabBarItem: Signal<ItemListControllerTabBarItem, NoError>?) {
+    public init<ItemGenerationArguments>(
+        presentationData: ItemListPresentationData,
+        updatedPresentationData: Signal<ItemListPresentationData, NoError>,
+        state: Signal<(ItemListControllerState, (ItemListNodeState, ItemGenerationArguments)), NoError>,
+        tabBarItem: Signal<ItemListControllerTabBarItem, NoError>?,
+        hideNavigationBarBackground: Bool = false
+    ) {
         self.state = state
         |> map { controllerState, nodeStateAndArgument -> (ItemListControllerState, (ItemListNodeState, Any)) in
             return (controllerState, (nodeStateAndArgument.0, nodeStateAndArgument.1))
         }
         
         self.presentationData = presentationData
+        self.hideNavigationBarBackground = hideNavigationBarBackground
         
-        super.init(navigationBarPresentationData: NavigationBarPresentationData(theme: NavigationBarTheme(rootControllerTheme: presentationData.theme), strings: NavigationBarStrings(presentationStrings: presentationData.strings)))
+        super.init(navigationBarPresentationData: NavigationBarPresentationData(theme: NavigationBarTheme(rootControllerTheme: presentationData.theme, hideBackground: hideNavigationBarBackground, hideSeparator: hideNavigationBarBackground, style: .glass), strings: NavigationBarStrings(presentationStrings: presentationData.strings)))
         
         self.isOpaqueWhenInOverlay = true
         self.blocksBackgroundWhenInOverlay = true
         self.automaticallyControlPresentationContextLayout = false
+        self._hasGlassStyle = true
         
         self.statusBar.statusBarStyle = presentationData.theme.rootController.statusBarStyle.style
         
@@ -318,13 +327,23 @@ open class ItemListController: ViewController, KeyShortcutResponder, Presentable
             Queue.mainQueue().async {
                 if let strongSelf = self {
                     let previousState = previousControllerState.swap(controllerState)
+                    let isFirstTime = previousState == nil
                     if previousState?.title != controllerState.title {
+                        var previousHadContentNode = false
+                        switch previousState?.title {
+                        case .textWithTabs:
+                            previousHadContentNode = true
+                        default:
+                            break
+                        }
                         switch controllerState.title {
                             case let .text(text):
                                 strongSelf.title = text
                                 strongSelf.navigationItem.titleView = nil
                                 strongSelf.segmentedTitleView = nil
-                                strongSelf.navigationBar?.setContentNode(nil, animated: false)
+                                if previousHadContentNode {
+                                    strongSelf.navigationBar?.setContentNode(nil, animated: false)
+                                }
                                 if strongSelf.isNodeLoaded {
                                     strongSelf.controllerNode.panRecognizer?.isEnabled = false
                                 }
@@ -332,7 +351,9 @@ open class ItemListController: ViewController, KeyShortcutResponder, Presentable
                                 strongSelf.title = ""
                                 strongSelf.navigationItem.titleView = ItemListTextWithSubtitleTitleView(theme: controllerState.presentationData.theme, title: title, subtitle: subtitle)
                                 strongSelf.segmentedTitleView = nil
-                                strongSelf.navigationBar?.setContentNode(nil, animated: false)
+                                if previousHadContentNode {
+                                    strongSelf.navigationBar?.setContentNode(nil, animated: false)
+                                }
                                 if strongSelf.isNodeLoaded {
                                     strongSelf.controllerNode.panRecognizer?.isEnabled = false
                                 }
@@ -350,7 +371,9 @@ open class ItemListController: ViewController, KeyShortcutResponder, Presentable
                                         }
                                     }
                                 }
-                                strongSelf.navigationBar?.setContentNode(nil, animated: false)
+                                if previousHadContentNode {
+                                    strongSelf.navigationBar?.setContentNode(nil, animated: false)
+                                }
                                 if strongSelf.isNodeLoaded {
                                     strongSelf.controllerNode.panRecognizer?.isEnabled = false
                                 }
@@ -392,7 +415,7 @@ open class ItemListController: ViewController, KeyShortcutResponder, Presentable
                         }
                     }
                     strongSelf.navigationButtonActions = (left: controllerState.leftNavigationButton?.action, right: controllerState.rightNavigationButton?.action, secondaryRight: controllerState.secondaryRightNavigationButton?.action)
-                    
+                                        
                     let themeUpdated = strongSelf.presentationData != controllerState.presentationData
                     if strongSelf.leftNavigationButtonTitleAndStyle?.0 != controllerState.leftNavigationButton?.content || strongSelf.leftNavigationButtonTitleAndStyle?.1 != controllerState.leftNavigationButton?.style || themeUpdated {
                         if let leftNavigationButton = controllerState.leftNavigationButton {
@@ -507,10 +530,10 @@ open class ItemListController: ViewController, KeyShortcutResponder, Presentable
                         }
                     }
                     
-                    if strongSelf.presentationData != controllerState.presentationData {
+                    if strongSelf.presentationData != controllerState.presentationData || isFirstTime {
                         strongSelf.presentationData = controllerState.presentationData
                         
-                        strongSelf.navigationBar?.updatePresentationData(NavigationBarPresentationData(theme: NavigationBarTheme(rootControllerTheme: strongSelf.presentationData.theme), strings: NavigationBarStrings(presentationStrings: strongSelf.presentationData.strings)))
+                        strongSelf.navigationBar?.updatePresentationData(NavigationBarPresentationData(theme: NavigationBarTheme(rootControllerTheme: strongSelf.presentationData.theme, hideBackground: strongSelf.hideNavigationBarBackground, hideSeparator: strongSelf.hideNavigationBarBackground, edgeEffectColor: state.0.style == .blocks ? strongSelf.presentationData.theme.list.blocksBackgroundColor : strongSelf.presentationData.theme.list.plainBackgroundColor, style: .glass), strings: NavigationBarStrings(presentationStrings: strongSelf.presentationData.strings)), transition: .immediate)
                         strongSelf.statusBar.updateStatusBarStyle(strongSelf.presentationData.theme.rootController.statusBarStyle.style, animated: true)
                         
                         strongSelf.segmentedTitleView?.theme = controllerState.presentationData.theme
@@ -667,7 +690,8 @@ private final class ItemListTextWithSubtitleTitleView: UIView, NavigationBarTitl
     private let titleNode: ImmediateTextNode
     private let subtitleNode: ImmediateTextNode
     
-    private var validLayout: (CGSize, CGRect)?
+    private var validLayout: CGSize?
+    var requestUpdate: ((ContainedViewLayoutTransition) -> Void)?
     
     init(theme: PresentationTheme, title: String, subtitle: String) {
         self.titleNode = ImmediateTextNode()
@@ -675,14 +699,14 @@ private final class ItemListTextWithSubtitleTitleView: UIView, NavigationBarTitl
         self.titleNode.maximumNumberOfLines = 1
         self.titleNode.isOpaque = false
         
-        self.titleNode.attributedText = NSAttributedString(string: title, font: Font.medium(17.0), textColor: theme.rootController.navigationBar.primaryTextColor)
+        self.titleNode.attributedText = NSAttributedString(string: title, font: Font.semibold(17.0), textColor: theme.rootController.navigationBar.primaryTextColor)
         
         self.subtitleNode = ImmediateTextNode()
         self.subtitleNode.displaysAsynchronously = false
         self.subtitleNode.maximumNumberOfLines = 1
         self.subtitleNode.isOpaque = false
         
-        self.subtitleNode.attributedText = NSAttributedString(string: subtitle, font: Font.regular(13.0), textColor: theme.rootController.navigationBar.secondaryTextColor)
+        self.subtitleNode.attributedText = NSAttributedString(string: subtitle, font: Font.regular(12.0), textColor: theme.rootController.navigationBar.secondaryTextColor)
         
         super.init(frame: CGRect())
         
@@ -695,27 +719,29 @@ private final class ItemListTextWithSubtitleTitleView: UIView, NavigationBarTitl
     }
     
     func updateTheme(theme: PresentationTheme) {
-        self.titleNode.attributedText = NSAttributedString(string: self.titleNode.attributedText?.string ?? "", font: Font.medium(17.0), textColor: theme.rootController.navigationBar.primaryTextColor)
-        self.subtitleNode.attributedText = NSAttributedString(string: self.subtitleNode.attributedText?.string ?? "", font: Font.regular(13.0), textColor: theme.rootController.navigationBar.secondaryTextColor)
-        if let (size, clearBounds) = self.validLayout {
-            let _ = self.updateLayout(size: size, clearBounds: clearBounds, transition: .immediate)
+        self.titleNode.attributedText = NSAttributedString(string: self.titleNode.attributedText?.string ?? "", font: Font.semibold(17.0), textColor: theme.rootController.navigationBar.primaryTextColor)
+        self.subtitleNode.attributedText = NSAttributedString(string: self.subtitleNode.attributedText?.string ?? "", font: Font.regular(12.0), textColor: theme.rootController.navigationBar.secondaryTextColor)
+        if let size = self.validLayout {
+            let _ = self.updateLayout(availableSize: size, transition: .immediate)
         }
     }
     
     override func layoutSubviews() {
         super.layoutSubviews()
         
-        if let (size, clearBounds) = self.validLayout {
-            let _ = self.updateLayout(size: size, clearBounds: clearBounds, transition: .immediate)
+        if let size = self.validLayout {
+            let _ = self.updateLayout(availableSize: size, transition: .immediate)
         }
     }
     
-    func updateLayout(size: CGSize, clearBounds: CGRect, transition: ContainedViewLayoutTransition) -> CGRect {
-        self.validLayout = (size, clearBounds)
+    func updateLayout(availableSize: CGSize, transition: ContainedViewLayoutTransition) -> CGSize {
+        let size = availableSize
+        
+        self.validLayout = size
         
         let titleSize = self.titleNode.updateLayout(size)
         let subtitleSize = self.subtitleNode.updateLayout(size)
-        let spacing: CGFloat = 0.0
+        let spacing: CGFloat = 1.0
         let contentHeight = titleSize.height + spacing + subtitleSize.height
         let titleFrame = CGRect(origin: CGPoint(x: floor((size.width - titleSize.width) / 2.0), y: floor((size.height - contentHeight) / 2.0)), size: titleSize)
         let subtitleFrame = CGRect(origin: CGPoint(x: floor((size.width - subtitleSize.width) / 2.0), y: titleFrame.maxY + spacing), size: subtitleSize)
@@ -723,7 +749,7 @@ private final class ItemListTextWithSubtitleTitleView: UIView, NavigationBarTitl
         self.titleNode.frame = titleFrame
         self.subtitleNode.frame = subtitleFrame
         
-        return titleFrame
+        return availableSize
     }
     
     func animateLayoutTransition() {

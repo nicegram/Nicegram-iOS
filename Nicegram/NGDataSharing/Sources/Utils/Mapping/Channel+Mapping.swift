@@ -62,7 +62,7 @@ struct ChannelFull {
 }
 
 extension ChannelFull {
-    init(_ api: ApiChatFullWrapped.ChannelFull) {
+    init(_ api: Api.ChatFull.Cons_channelFull) {
         self.init(
             about: api.about,
             geoLocation: .init(api.location),
@@ -70,7 +70,7 @@ extension ChannelFull {
         )
     }
     
-    init?(_ api: ApiChatFullWrapped.ChannelFull?) {
+    init?(_ api: Api.ChatFull.Cons_channelFull?) {
         guard let api else { return nil }
         self.init(api)
     }

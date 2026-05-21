@@ -1,5 +1,5 @@
+import CoreAnalytics
 import Foundation
-import NGAnalytics
 
 public enum KeywordsAnalyticsEvent: String {
     case tooltipShow = "keywords_folder_tooltip_show"

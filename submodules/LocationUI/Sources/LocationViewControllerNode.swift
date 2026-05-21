@@ -17,9 +17,18 @@ import CoreLocation
 import Geocoding
 import DeviceAccess
 import TooltipUI
+import ComponentFlow
+import GlassControls
+import BundleIconComponent
+import EdgeEffect
+import MultilineTextComponent
 
 func getLocation(from message: EngineMessage) -> TelegramMediaMap? {
-    return message.media.first(where: { $0 is TelegramMediaMap } ) as? TelegramMediaMap
+    if let poll = message.media.first(where: { $0 is TelegramMediaPoll } ) as? TelegramMediaPoll, let map = poll.attachedMedia as? TelegramMediaMap {
+        return map
+    } else {
+        return message.media.first(where: { $0 is TelegramMediaMap } ) as? TelegramMediaMap
+    }
 }
 
 private func areMessagesEqual(_ lhsMessage: EngineMessage, _ rhsMessage: EngineMessage) -> Bool {
@@ -208,6 +217,12 @@ private func preparedTransition(from fromEntries: [LocationViewEntry], to toEntr
     return LocationViewTransaction(deletions: deletions, insertions: insertions, updates: updates, gotTravelTimes: gotTravelTimes, count: toEntries.count, animated: animated)
 }
 
+enum LocationViewRightBarButton {
+    case none
+    case share
+    case showAll
+}
+
 public enum LocationViewLocation: Equatable {
     case initial
     case user
@@ -264,16 +279,23 @@ public struct LocationViewState {
 
 final class LocationViewControllerNode: ViewControllerTracingNode, CLLocationManagerDelegate {
     private let context: AccountContext
+    private weak var controller: LocationViewController?
     private var presentationData: PresentationData
     private let presentationDataPromise: Promise<PresentationData>
     private var subject: EngineMessage
     private let interaction: LocationViewInteraction
     private let locationManager: LocationManager
     private let isStoryLocation: Bool
+    private let isPreview: Bool
+    
+    private var rightBarButtonAction: LocationViewRightBarButton = .none
+    
+    private let topEdgeEffectView = EdgeEffectView()
+    private let buttons = ComponentView<Empty>()
+    private let title = ComponentView<Empty>()
     
     private let listNode: ListView
     let headerNode: LocationMapHeaderNode
-    private let optionsNode: LocationOptionsNode
     
     private var enqueuedTransitions: [LocationViewTransaction] = []
     
@@ -297,20 +319,22 @@ final class LocationViewControllerNode: ViewControllerTracingNode, CLLocationMan
     }
     private let travelTimesPromise = Promise<[EngineMessage.Id: (Double, ExpectedTravelTime, ExpectedTravelTime, ExpectedTravelTime)]>([:])
 
-    init(context: AccountContext, presentationData: PresentationData, subject: EngineMessage, interaction: LocationViewInteraction, locationManager: LocationManager, isStoryLocation: Bool) {
+    init(context: AccountContext, controller: LocationViewController, presentationData: PresentationData, subject: EngineMessage, interaction: LocationViewInteraction, locationManager: LocationManager, isStoryLocation: Bool, isPreview: Bool) {
         self.context = context
+        self.controller = controller
         self.presentationData = presentationData
         self.presentationDataPromise = Promise(presentationData)
         self.subject = subject
         self.interaction = interaction
         self.locationManager = locationManager
         self.isStoryLocation = isStoryLocation
+        self.isPreview = isPreview
         
         self.state = LocationViewState()
         self.statePromise = Promise(self.state)
         
-        self.listNode = ListView()
-        self.listNode.backgroundColor = self.presentationData.theme.list.plainBackgroundColor
+        self.listNode = ListViewImpl()
+        self.listNode.backgroundColor = .clear //self.presentationData.theme.list.plainBackgroundColor
         self.listNode.verticalScrollIndicatorColor = UIColor(white: 0.0, alpha: 0.3)
         self.listNode.verticalScrollIndicatorFollowsOverscroll = true
         self.listNode.accessibilityPageScrolledString = { row, count in
@@ -318,20 +342,26 @@ final class LocationViewControllerNode: ViewControllerTracingNode, CLLocationMan
         }
         
         var setupProximityNotificationImpl: ((Bool) -> Void)?
-        self.headerNode = LocationMapHeaderNode(presentationData: presentationData, toggleMapModeSelection: interaction.toggleMapModeSelection, goToUserLocation: interaction.toggleTrackingMode, setupProximityNotification: { reset in
-            setupProximityNotificationImpl?(reset)
-        })
-        //self.headerNode.mapNode.isRotateEnabled = false
-        
-        self.optionsNode = LocationOptionsNode(presentationData: presentationData, updateMapMode: interaction.updateMapMode)
-        
+        self.headerNode = LocationMapHeaderNode(
+            presentationData: presentationData,
+            glass: true,
+            isPreview: self.isPreview,
+            toggleMapModeSelection: interaction.toggleMapModeSelection,
+            updateMapMode: interaction.updateMapMode,
+            goToUserLocation: interaction.toggleTrackingMode,
+            setupProximityNotification: { reset in
+                setupProximityNotificationImpl?(reset)
+            }
+        )
+    
         super.init()
         
         self.backgroundColor = self.presentationData.theme.list.plainBackgroundColor
         
-        self.addSubnode(self.listNode)
+        if !self.isPreview {
+            self.addSubnode(self.listNode)
+        }
         self.addSubnode(self.headerNode)
-        self.addSubnode(self.optionsNode)
         
         let userLocation: Signal<CLLocation?, NoError> = .single(nil)
         |> then(
@@ -374,7 +404,7 @@ final class LocationViewControllerNode: ViewControllerTracingNode, CLLocationMan
         
         let liveLocations = context.engine.messages.topPeerActiveLiveLocationMessages(peerId: subject.id.peerId)
         |> map { _, messages -> [EngineMessage] in
-            return messages.map(EngineMessage.init)
+            return messages
         }
         
         setupProximityNotificationImpl = { reset in
@@ -626,7 +656,7 @@ final class LocationViewControllerNode: ViewControllerTracingNode, CLLocationMan
                 let transition = preparedTransition(from: previousEntries ?? [], to: entries, context: context, presentationData: presentationData, interaction: strongSelf.interaction, gotTravelTimes: !travelTimes.isEmpty && !previousHadTravelTimes, animated: animated)
                 strongSelf.enqueueTransition(transition)
                 
-                strongSelf.headerNode.updateState(mapMode: state.mapMode, trackingMode: state.trackingMode, displayingMapModeOptions: state.displayingMapModeOptions, displayingPlacesButton: false, proximityNotification: proximityNotification, animated: false)
+                strongSelf.headerNode.updateState(mapMode: state.mapMode, trackingMode: state.trackingMode, displayingMapModeOptions: state.displayingMapModeOptions, displayingPlacesButton: false, proximityNotification: proximityNotification, animated: true)
                 
                 if let proximityNotification = proximityNotification, !proximityNotification && !strongSelf.displayedProximityAlertTooltip {
                     strongSelf.displayedProximityAlertTooltip = true
@@ -690,7 +720,7 @@ final class LocationViewControllerNode: ViewControllerTracingNode, CLLocationMan
                 } else {
                     rightBarButtonAction = .share
                 }
-                strongSelf.interaction.updateRightBarButton(rightBarButtonAction)
+                strongSelf.rightBarButtonAction = rightBarButtonAction
                 
                 if let (layout, navigationBarHeight) = strongSelf.validLayout {
                     var updateLayout = false
@@ -706,15 +736,17 @@ final class LocationViewControllerNode: ViewControllerTracingNode, CLLocationMan
             }
         })
         
-        self.listNode.updateFloatingHeaderOffset = { [weak self] offset, listTransition in
-            guard let strongSelf = self, let (layout, navigationBarHeight) = strongSelf.validLayout, strongSelf.listNode.scrollEnabled else {
-                return
+        if !isPreview {
+            self.listNode.updateFloatingHeaderOffset = { [weak self] offset, listTransition in
+                guard let strongSelf = self, let (layout, navigationBarHeight) = strongSelf.validLayout, strongSelf.listNode.scrollEnabled else {
+                    return
+                }
+                let overlap: CGFloat = 0.0
+                strongSelf.listOffset = max(0.0, offset)
+                let headerFrame = CGRect(origin: CGPoint(), size: CGSize(width: layout.size.width, height: max(0.0, offset + overlap)))
+                listTransition.updateFrame(node: strongSelf.headerNode, frame: headerFrame)
+                strongSelf.headerNode.updateLayout(layout: layout, navigationBarHeight: navigationBarHeight, topPadding: strongSelf.state.displayingMapModeOptions ? 38.0 : 0.0, controlsTopPadding: strongSelf.state.displayingMapModeOptions ? 38.0 : 0.0, controlsBottomPadding: 0.0, offset: 0.0, size: headerFrame.size, transition: listTransition)
             }
-            let overlap: CGFloat = 6.0
-            strongSelf.listOffset = max(0.0, offset)
-            let headerFrame = CGRect(origin: CGPoint(), size: CGSize(width: layout.size.width, height: max(0.0, offset + overlap)))
-            listTransition.updateFrame(node: strongSelf.headerNode, frame: headerFrame)
-            strongSelf.headerNode.updateLayout(layout: layout, navigationBarHeight: navigationBarHeight, topPadding: strongSelf.state.displayingMapModeOptions ? 38.0 : 0.0, controlsTopPadding: strongSelf.state.displayingMapModeOptions ? 38.0 : 0.0, offset: 0.0, size: headerFrame.size, transition: listTransition)
         }
         
         self.listNode.beganInteractiveDragging = { [weak self] _ in
@@ -782,9 +814,8 @@ final class LocationViewControllerNode: ViewControllerTracingNode, CLLocationMan
         self.presentationDataPromise.set(.single(presentationData))
         
         self.backgroundColor = self.presentationData.theme.list.plainBackgroundColor
-        self.listNode.backgroundColor = self.presentationData.theme.list.plainBackgroundColor
+        self.listNode.backgroundColor = .clear // self.presentationData.theme.list.plainBackgroundColor
         self.headerNode.updatePresentationData(self.presentationData)
-        self.optionsNode.updatePresentationData(self.presentationData)
     }
     
     func updateState(_ f: (LocationViewState) -> LocationViewState) {
@@ -903,15 +934,22 @@ final class LocationViewControllerNode: ViewControllerTracingNode, CLLocationMan
             return
         }
         
-        let _ = (self.context.account.postbox.loadedPeerWithId(self.subject.id.peerId)
+        let _ = (self.context.engine.data.get(TelegramEngine.EngineData.Item.Peer.Peer(id: self.subject.id.peerId))
+        |> mapToSignal { peer -> Signal<EnginePeer, NoError> in
+            if let peer {
+                return .single(peer)
+            } else {
+                return .never()
+            }
+        }
         |> deliverOnMainQueue).start(next: { [weak self] peer in
             guard let strongSelf = self else {
                 return
             }
-          
+
             var text: String = strongSelf.presentationData.strings.Location_ProximityGroupTip
             if peer.id.namespace == Namespaces.Peer.CloudUser {
-                text = strongSelf.presentationData.strings.Location_ProximityTip(EnginePeer(peer).compactDisplayTitle).string
+                text = strongSelf.presentationData.strings.Location_ProximityTip(peer.compactDisplayTitle).string
             }
             
             strongSelf.interaction.present(TooltipScreen(account: strongSelf.context.account, sharedContext: strongSelf.context.sharedContext, text: .plain(text: text), icon: nil, location: .point(location.offsetBy(dx: -9.0, dy: 0.0), .right), displayDuration: .custom(3.0), shouldDismissOnTouch: { _, _ in
@@ -934,7 +972,7 @@ final class LocationViewControllerNode: ViewControllerTracingNode, CLLocationMan
             }
         }
         
-        let overlap: CGFloat = 6.0
+        let overlap: CGFloat = 0.0
         var topInset: CGFloat = layout.size.height - layout.intrinsicInsets.bottom - overlap
         if !self.isStoryLocation {
             topInset -= 100.0
@@ -944,15 +982,17 @@ final class LocationViewControllerNode: ViewControllerTracingNode, CLLocationMan
         }
         
         let headerHeight: CGFloat
-        if let listOffset = self.listOffset {
+        if self.isPreview {
+            headerHeight = layout.size.height
+        } else if let listOffset = self.listOffset {
             headerHeight = max(0.0, listOffset + overlap)
         } else {
             headerHeight = topInset + overlap
         }
-        let headerFrame = CGRect(origin: CGPoint(), size: CGSize(width: layout.size.width, height: headerHeight))
+        let headerFrame = CGRect(origin: CGPoint(), size: CGSize(width: layout.size.width, height: layout.size.height))
         transition.updateFrame(node: self.headerNode, frame: headerFrame)
         
-        self.headerNode.updateLayout(layout: layout, navigationBarHeight: navigationHeight, topPadding: self.state.displayingMapModeOptions ? optionsHeight : 0.0, controlsTopPadding: self.state.displayingMapModeOptions ? optionsHeight : 0.0, offset: 0.0, size: headerFrame.size, transition: transition)
+        self.headerNode.updateLayout(layout: layout, navigationBarHeight: navigationHeight, topPadding: self.state.displayingMapModeOptions ? optionsHeight : 0.0, controlsTopPadding: 0.0, controlsBottomPadding: 0.0, offset: 0.0, size: CGSize(width: headerFrame.width, height: headerHeight), transition: transition)
         
         let (duration, curve) = listViewAnimationDurationAndCurve(transition: transition)
         
@@ -961,18 +1001,118 @@ final class LocationViewControllerNode: ViewControllerTracingNode, CLLocationMan
         
         let listFrame: CGRect = CGRect(origin: CGPoint(), size: layout.size)
         transition.updateFrame(node: self.listNode, frame: listFrame)
+                
+        if !self.isPreview {
+            let topEdgeEffectFrame = CGRect(origin: .zero, size: CGSize(width: layout.size.width, height: 80.0))
+            transition.updateFrame(view: self.topEdgeEffectView, frame: topEdgeEffectFrame)
+            self.topEdgeEffectView.update(content: self.headerNode.mapNode.mapMode == .map ? self.presentationData.theme.list.plainBackgroundColor : .clear, blur: true, alpha: 0.65, rect: topEdgeEffectFrame, edge: .top, edgeSize: topEdgeEffectFrame.height, transition: ComponentTransition(transition))
+            if self.topEdgeEffectView.superview == nil {
+                self.view.addSubview(self.topEdgeEffectView)
+            }
+        
+            let leftControlItems: [GlassControlGroupComponent.Item] = [
+                GlassControlGroupComponent.Item(
+                    id: AnyHashable("close"),
+                    content: .icon("Navigation/Close"),
+                    action: { [weak self] in
+                        guard let self else {
+                            return
+                        }
+                        self.controller?.dismiss()
+                    }
+                )
+            ]
+            var rightControlItems: [GlassControlGroupComponent.Item] = []
+            switch self.rightBarButtonAction {
+            case .none:
+                break
+            case .share:
+                rightControlItems.append(
+                    GlassControlGroupComponent.Item(
+                        id: AnyHashable("share"),
+                        content: .icon("Navigation/Share"),
+                        action: { [weak self] in
+                            guard let self else {
+                                return
+                            }
+                            self.interaction.share()
+                        }
+                    )
+                )
+            case .showAll:
+                rightControlItems.append(
+                    GlassControlGroupComponent.Item(
+                        id: AnyHashable("share"),
+                        content: .text(self.presentationData.strings.Map_LiveLocationShowAll),
+                        action: { [weak self] in
+                            guard let self else {
+                                return
+                            }
+                            self.showAll()
+                        }
+                    )
+                )
+            }
+                
+            let barButtonSideInset: CGFloat = 16.0
+            let buttonsSize = self.buttons.update(
+                transition: ComponentTransition(transition),
+                component: AnyComponent(GlassControlPanelComponent(
+                    theme: self.presentationData.theme,
+                    leftItem: GlassControlPanelComponent.Item(
+                        items: leftControlItems,
+                        background: .panel
+                    ),
+                    centralItem: nil,
+                    rightItem: rightControlItems.isEmpty ? nil : GlassControlPanelComponent.Item(
+                        items: rightControlItems,
+                        background: .panel
+                    ),
+                    centerAlignmentIfPossible: true,
+                    isDark: self.presentationData.theme.overallDarkAppearance
+                )),
+                environment: {},
+                containerSize: CGSize(width: layout.size.width - barButtonSideInset * 2.0 - layout.safeInsets.left - layout.safeInsets.right, height: 44.0)
+            )
+            let buttonsFrame = CGRect(origin: CGPoint(x: barButtonSideInset + layout.safeInsets.left, y: barButtonSideInset), size: buttonsSize)
+            if let view = self.buttons.view {
+                if view.superview == nil {
+                    self.view.addSubview(view)
+                }
+                view.bounds = CGRect(origin: .zero, size: buttonsFrame.size)
+                view.center = buttonsFrame.center
+            }
+            
+            let titleSize = self.title.update(
+                transition: ComponentTransition(transition),
+                component: AnyComponent(
+                    MultilineTextComponent(
+                        text: .plain(
+                            NSAttributedString(
+                                string: self.presentationData.strings.Map_LocationTitle,
+                                font: Font.semibold(17.0),
+                                textColor: self.headerNode.mapNode.mapMode == .map ? self.presentationData.theme.rootController.navigationBar.primaryTextColor : .white
+                            )
+                        )
+                    )
+                ),
+                environment: {},
+                containerSize: CGSize(width: 200.0, height: 40.0)
+            )
+            let titleFrame = CGRect(origin: CGPoint(x: floorToScreenPixels((layout.size.width - titleSize.width) / 2.0), y: floorToScreenPixels((navigationHeight - titleSize.height) / 2.0) + 3.0), size: titleSize)
+            if let titleView = self.title.view {
+                if titleView.superview == nil {
+                    self.view.addSubview(titleView)
+                }
+                transition.updateFrame(view: titleView, frame: titleFrame)
+            }
+        }
         
         if isFirstLayout {
             while !self.enqueuedTransitions.isEmpty {
                 self.dequeueTransition()
             }
         }
-        
-        let optionsOffset: CGFloat = self.state.displayingMapModeOptions ? navigationHeight : navigationHeight - optionsHeight
-        let optionsFrame = CGRect(x: 0.0, y: optionsOffset, width: layout.size.width, height: optionsHeight)
-        transition.updateFrame(node: self.optionsNode, frame: optionsFrame)
-        self.optionsNode.updateLayout(size: optionsFrame.size, leftInset: layout.safeInsets.left, rightInset: layout.safeInsets.right, transition: transition)
-        self.optionsNode.isUserInteractionEnabled = self.state.displayingMapModeOptions
     }
     
     var coordinate: Signal<CLLocationCoordinate2D, NoError> {

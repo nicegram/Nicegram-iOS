@@ -113,7 +113,7 @@ final class MiniAppListScreenComponent: Component {
         }
     }
     
-    private final class ContentListNode: ListView {
+    private final class ContentListNode: ListViewImpl {
         weak var parentView: View?
         let context: AccountContext
         var presentationData: PresentationData
@@ -227,7 +227,7 @@ final class MiniAppListScreenComponent: Component {
                 return
             }
             
-            if let peerInfoScreen = component.context.sharedContext.makePeerInfoController(context: component.context, updatedPresentationData: nil, peer: peer._asPeer(), mode: .generic, avatarInitiallyExpanded: false, fromChat: false, requestsContext: nil) {
+            if let peerInfoScreen = component.context.sharedContext.makePeerInfoController(context: component.context, updatedPresentationData: nil, peer: peer, mode: .generic, avatarInitiallyExpanded: false, fromChat: false, requestsContext: nil) {
                 peerInfoScreen.navigationPresentation = .modal
                 controller.push(peerInfoScreen)
             }
@@ -266,8 +266,7 @@ final class MiniAppListScreenComponent: Component {
                     }
                 ))) : nil,
                 rightButtons: rightButtons,
-                backTitle: isModal ? nil : strings.Common_Back,
-                backPressed: { [weak self] in
+                backPressed: isModal ? nil : { [weak self] in
                     guard let self else {
                         return
                     }
@@ -286,14 +285,15 @@ final class MiniAppListScreenComponent: Component {
                     strings: strings,
                     statusBarHeight: statusBarHeight,
                     sideInset: insets.left,
-                    isSearchActive: self.isSearchDisplayControllerActive,
-                    isSearchEnabled: true,
+                    search: ChatListNavigationBar.Search(isEnabled: true),
+                    activeSearch: self.isSearchDisplayControllerActive ? ChatListNavigationBar.ActiveSearch(isExternal: false) : nil,
                     primaryContent: headerContent,
                     secondaryContent: nil,
                     secondaryTransition: 0.0,
                     storySubscriptions: nil,
                     storiesIncludeHidden: false,
                     uploadProgress: [:],
+                    headerPanels: nil,
                     tabsNode: nil,
                     tabsNodeIsSearch: false,
                     accessoryPanelContainer: nil,
@@ -460,6 +460,7 @@ final class MiniAppListScreenComponent: Component {
                     let searchBarTheme = SearchBarNodeTheme(theme: environment.theme, hasSeparator: false)
                     searchBarNode = SearchBarNode(
                         theme: searchBarTheme,
+                        presentationTheme: environment.theme,
                         strings: environment.strings,
                         fieldStyle: .modern,
                         displayBackground: false
@@ -503,12 +504,16 @@ final class MiniAppListScreenComponent: Component {
                         let timingFunction: String
                         switch curve {
                         case .easeInOut:
-                            timingFunction = CAMediaTimingFunctionName.easeOut.rawValue
+                            timingFunction = CAMediaTimingFunctionName.easeInEaseOut.rawValue
+                        case .easeIn:
+                            timingFunction = CAMediaTimingFunctionName.easeIn.rawValue
                         case .linear:
                             timingFunction = CAMediaTimingFunctionName.linear.rawValue
                         case .spring:
                             timingFunction = kCAMediaTimingFunctionSpring
                         case .custom:
+                            timingFunction = kCAMediaTimingFunctionSpring
+                        case .bounce:
                             timingFunction = kCAMediaTimingFunctionSpring
                         }
                         
@@ -530,7 +535,7 @@ final class MiniAppListScreenComponent: Component {
                 contentListNode = ContentListNode(parentView: self, context: component.context)
                 self.contentListNode = contentListNode
                 
-                contentListNode.visibleContentOffsetChanged = { [weak self] offset in
+                contentListNode.visibleContentOffsetChanged = { [weak self] offset, _ in
                     guard let self else {
                         return
                     }

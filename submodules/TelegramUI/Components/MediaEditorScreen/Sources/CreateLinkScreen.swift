@@ -21,6 +21,7 @@ import ListSectionComponent
 import TelegramStringFormatting
 import MediaEditor
 import UrlEscaping
+import GlassBarButtonComponent
 
 private let linkTag = GenericComponentViewTag()
 private let nameTag = GenericComponentViewTag()
@@ -69,8 +70,8 @@ private final class SheetContent: CombinedComponent {
     
     static var body: Body {
         let background = Child(RoundedRectangle.self)
-        let cancelButton = Child(Button.self)
-        let doneButton = Child(Button.self)
+        let cancelButton = Child(GlassBarButtonComponent.self)
+        let doneButton = Child(GlassBarButtonComponent.self)
         let title = Child(Text.self)
         let urlSection = Child(ListSectionComponent.self)
         let nameSection = Child(ListSectionComponent.self)
@@ -85,7 +86,7 @@ private final class SheetContent: CombinedComponent {
             let presentationData = component.context.sharedContext.currentPresentationData.with { $0 }
             
             let sideInset: CGFloat = 16.0
-            var contentSize = CGSize(width: context.availableSize.width, height: 18.0)
+            var contentSize = CGSize(width: context.availableSize.width, height: 36.0)
                         
             let background = background.update(
                 component: RoundedRectangle(color: theme.list.blocksBackgroundColor, cornerRadius: 8.0),
@@ -98,16 +99,20 @@ private final class SheetContent: CombinedComponent {
             
             let constrainedTitleWidth = context.availableSize.width - 16.0 * 2.0
             
+            let barButtonSize = CGSize(width: 44.0, height: 44.0)
             let cancelButton = cancelButton.update(
-                component: Button(
-                    content: AnyComponent(
-                        Text(
-                            text: strings.Common_Cancel,
-                            font: Font.regular(17.0),
-                            color: theme.actionSheet.controlAccentColor
+                component: GlassBarButtonComponent(
+                    size: barButtonSize,
+                    backgroundColor: nil,
+                    isDark: theme.overallDarkAppearance,
+                    state: .glass,
+                    component: AnyComponentWithIdentity(id: "close", component: AnyComponent(
+                        BundleIconComponent(
+                            name: "Navigation/Close",
+                            tintColor: theme.chat.inputPanel.panelControlColor
                         )
-                    ),
-                    action: {
+                    )),
+                    action: { _ in
                         component.dismiss()
                     }
                 ),
@@ -115,7 +120,7 @@ private final class SheetContent: CombinedComponent {
                 transition: .immediate
             )
             context.add(cancelButton
-                .position(CGPoint(x: sideInset + cancelButton.size.width / 2.0, y: contentSize.height + cancelButton.size.height / 2.0))
+                .position(CGPoint(x: sideInset + cancelButton.size.width / 2.0, y: 16.0 + cancelButton.size.height / 2.0))
             )
             
             let explicitLink = explicitUrl(context.component.link)
@@ -126,16 +131,19 @@ private final class SheetContent: CombinedComponent {
             
             let controller = environment.controller
             let doneButton = doneButton.update(
-                component: Button(
-                    content: AnyComponent(
-                        Text(
-                            text: strings.Common_Done,
-                            font: Font.bold(17.0),
-                            color: isValidLink ? theme.actionSheet.controlAccentColor : theme.actionSheet.secondaryTextColor
-                        )
-                    ),
+                component: GlassBarButtonComponent(
+                    size: barButtonSize,
+                    backgroundColor: isValidLink ? environment.theme.list.itemCheckColors.fillColor : environment.theme.list.itemCheckColors.fillColor.desaturated().withMultipliedAlpha(0.5),
+                    isDark: environment.theme.overallDarkAppearance,
+                    state: .tintedGlass,
                     isEnabled: isValidLink,
-                    action: { [weak state] in
+                    component: AnyComponentWithIdentity(id: "done", component: AnyComponent(
+                        BundleIconComponent(
+                            name: "Navigation/Done",
+                            tintColor: environment.theme.list.itemCheckColors.foregroundColor
+                        )
+                    )),
+                    action: { [weak state] _ in
                         if let controller = controller() as? CreateLinkScreen, let state {
                             if state.complete(controller: controller) {
                                 component.dismiss()
@@ -147,9 +155,8 @@ private final class SheetContent: CombinedComponent {
                 transition: .immediate
             )
             context.add(doneButton
-                .position(CGPoint(x: context.availableSize.width - sideInset - doneButton.size.width / 2.0, y: contentSize.height + doneButton.size.height / 2.0))
+                .position(CGPoint(x: context.availableSize.width - sideInset - doneButton.size.width / 2.0, y: 16.0 + doneButton.size.height / 2.0))
             )
-            
             
             let title = title.update(
                 component: Text(text: component.isEdit ? strings.MediaEditor_Link_EditTitle : strings.MediaEditor_Link_CreateTitle, font: Font.bold(17.0), color: theme.list.itemPrimaryTextColor),
@@ -157,7 +164,7 @@ private final class SheetContent: CombinedComponent {
                 transition: .immediate
             )
             context.add(title
-                .position(CGPoint(x: context.availableSize.width / 2.0, y: contentSize.height + title.size.height / 2.0))
+                .position(CGPoint(x: context.availableSize.width / 2.0, y: contentSize.height))
             )
             contentSize.height += title.size.height
             contentSize.height += 40.0
@@ -222,6 +229,7 @@ private final class SheetContent: CombinedComponent {
             let urlSection = urlSection.update(
                 component: ListSectionComponent(
                     theme: theme,
+                    style: .glass,
                     header: AnyComponent(MultilineTextComponent(
                         text: .plain(NSAttributedString(
                             string: strings.MediaEditor_Link_LinkTo_Title.uppercased(),
@@ -249,6 +257,7 @@ private final class SheetContent: CombinedComponent {
             let nameSection = nameSection.update(
                 component: ListSectionComponent(
                     theme: theme,
+                    style: .glass,
                     header: AnyComponent(MultilineTextComponent(
                         text: .plain(NSAttributedString(
                             string: strings.MediaEditor_Link_LinkName_Title.uppercased(),
@@ -542,6 +551,7 @@ private final class CreateLinkSheetComponent: CombinedComponent {
                             })
                         }
                     )),
+                    style: .glass,
                     backgroundColor: .blur(.dark),
                     followContentSizeChanges: true,
                     clipsContent: true,
@@ -551,6 +561,8 @@ private final class CreateLinkSheetComponent: CombinedComponent {
                 environment: {
                     environment
                     SheetComponentEnvironment(
+                        metrics: environment.metrics,
+                        deviceMetrics: environment.deviceMetrics,
                         isDisplaying: environment.value.isVisible,
                         isCentered: environment.metrics.widthClass == .regular,
                         hasInputHeight: !environment.inputHeight.isZero,
@@ -816,7 +828,7 @@ private final class LinkFieldComponent: Component {
                 containerSize: availableSize
             )
             
-            let size = CGSize(width: availableSize.width, height: 44.0)
+            let size = CGSize(width: availableSize.width, height: 52.0)
             if let placeholderComponentView = self.placeholderView.view {
                 if placeholderComponentView.superview == nil {
                     self.insertSubview(placeholderComponentView, at: 0)
@@ -827,7 +839,7 @@ private final class LinkFieldComponent: Component {
                 placeholderComponentView.isHidden = !component.text.isEmpty
             }
             
-            self.textField.frame = CGRect(x: 15.0, y: 0.0, width: size.width - 30.0, height: 44.0)
+            self.textField.frame = CGRect(x: 15.0, y: 4.0, width: size.width - 30.0, height: 44.0)
                         
             return size
         }

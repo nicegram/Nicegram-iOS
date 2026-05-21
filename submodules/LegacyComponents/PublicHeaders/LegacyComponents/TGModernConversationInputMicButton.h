@@ -65,6 +65,12 @@
 
 @end
 
+@protocol TGModernConversationInputMicButtonLockPanelView <NSObject>
+
+- (void)updateSize:(CGSize)size;
+
+@end
+
 @interface TGModernConversationInputMicButton : UIButton
 
 @property (nonatomic, weak) id<TGModernConversationInputMicButtonDelegate> delegate;
@@ -88,6 +94,6 @@
 - (void)_commitLocked;
 
 - (void)setHidesPanelOnLock;
-- (UIView *)createLockPanelView;
+- (UIView<TGModernConversationInputMicButtonLockPanelView> *)createLockPanelView;
 
 @end

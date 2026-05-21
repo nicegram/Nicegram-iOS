@@ -25,7 +25,7 @@ private let leftShadowImage: UIImage = {
         context.clear(CGRect(origin: CGPoint(), size: size))
         
         context.translateBy(x: size.width / 2.0, y: size.height / 2.0)
-        context.scaleBy(x: -1.0, y: 1.0)
+        context.scaleBy(x: -1.0, y: -1.0)
         context.translateBy(x: -size.width / 2.0, y: -size.height / 2.0)
         
         UIGraphicsPushContext(context)
@@ -111,6 +111,7 @@ final class MediaPickerGridItemNode: GridItemNode {
     var currentMediaState: (TGMediaSelectableItem, Int)?
     var currentAssetState: (PHFetchResult<PHAsset>, Int)?
     var currentAsset: PHAsset?
+    var isLivePhoto = false
     
     var currentDraftState: (MediaEditorDraft, Int)?
     var enableAnimations: Bool = true
@@ -175,6 +176,7 @@ final class MediaPickerGridItemNode: GridItemNode {
         self.typeIconNode.displaysAsynchronously = false
         self.typeIconNode.displayWithoutProcessing = true
         self.typeIconNode.isLayerBacked = true
+        self.typeIconNode.contentMode = .center
         
         self.durationNode = ImmediateTextNode()
         self.durationNode.isLayerBacked = true
@@ -547,6 +549,27 @@ final class MediaPickerGridItemNode: GridItemNode {
             }
             self.imageNode.setSignal(imageSignal)
 
+            if self.currentDraftState != nil {
+                self.currentDraftState = nil
+            }
+            
+            var typeIcon: UIImage?
+            var duration: String?
+            if asset.mediaType == .video {
+                if asset.mediaSubtypes.contains(.videoHighFrameRate) {
+                    typeIcon = UIImage(bundleImageName: "Media Editor/MediaSlomo")
+                } else if asset.mediaSubtypes.contains(.videoTimelapse) {
+                    typeIcon = UIImage(bundleImageName: "Media Editor/MediaTimelapse")
+                } else {
+                    typeIcon = UIImage(bundleImageName: "Media Editor/MediaVideo")
+                }
+                duration = stringForDuration(Int32(asset.duration))
+            } else {
+                if asset.mediaSubtypes.contains(.photoLive), self.interaction?.displayLivePhotoIcon == true {
+                    self.isLivePhoto = true
+                }
+            }
+            
             let spoilerSignal = Signal<Bool, NoError> { subscriber in
                 if let signal = editingContext.spoilerSignal(forIdentifier: asset.localIdentifier) {
                     let disposable = signal.start(next: { next in
@@ -579,30 +602,55 @@ final class MediaPickerGridItemNode: GridItemNode {
                 }
             }
             
-            self.spoilerDisposable.set((combineLatest(spoilerSignal, priceSignal, self.selectionPromise.get())
-            |> deliverOnMainQueue).start(next: { [weak self] hasSpoiler, price, selectionState in
-                guard let strongSelf = self else {
+            let livePhotoModeSignal: Signal<TGMediaLivePhotoMode?, NoError>
+            if self.isLivePhoto {
+                let itemSignal = Signal<TGMediaLivePhotoMode?, NoError> { subscriber in
+                    if let signal = editingContext.livePhotoMode(forIdentifier: asset.localIdentifier) {
+                        let disposable = signal.start(next: { next in
+                            subscriber.putNext((next as? UInt).flatMap { TGMediaLivePhotoMode(rawValue: $0) })
+                        }, error: { _ in
+                        }, completed: nil)!
+                        
+                        return ActionDisposable {
+                            disposable.dispose()
+                        }
+                    } else {
+                        return EmptyDisposable
+                    }
+                }
+                
+                let forceSignal = Signal<Bool?, NoError> { subscriber in
+                    if let signal = editingContext.forceLivePhotoEnabled() {
+                        let disposable = signal.start(next: { next in
+                            subscriber.putNext((next as? Bool) ?? false)
+                        }, error: { _ in
+                        }, completed: nil)!
+                        
+                        return ActionDisposable {
+                            disposable.dispose()
+                        }
+                    } else {
+                        return EmptyDisposable
+                    }
+                }
+                
+                livePhotoModeSignal = combineLatest(itemSignal, forceSignal)
+                |> map { item, _ in
+                    return item
+                }
+            } else {
+                livePhotoModeSignal = .single(nil)
+            }
+            
+            self.spoilerDisposable.set((combineLatest(spoilerSignal, priceSignal, livePhotoModeSignal, self.selectionPromise.get())
+            |> deliverOnMainQueue).start(next: { [weak self] hasSpoiler, price, livePhotoMode, selectionState in
+                guard let self else {
                     return
                 }
-                strongSelf.updateHasSpoiler(hasSpoiler, price: selectionState.selected ? price : nil, isSingle: selectionState.count == 1 || selectionState.index == 1)
+                self.updateHasSpoiler(hasSpoiler, price: selectionState.selected ? price : nil, isSingle: selectionState.count == 1 || selectionState.index == 1)
+                self.updateLivePhotoMode(livePhotoMode)
             }))
-            
-            if self.currentDraftState != nil {
-                self.currentDraftState = nil
-            }
-            
-            var typeIcon: UIImage?
-            var duration: String?
-            if asset.mediaType == .video {
-                if asset.mediaSubtypes.contains(.videoHighFrameRate) {
-                    typeIcon = UIImage(bundleImageName: "Media Editor/MediaSlomo")
-                } else if asset.mediaSubtypes.contains(.videoTimelapse) {
-                    typeIcon = UIImage(bundleImageName: "Media Editor/MediaTimelapse")
-                } else {
-                    typeIcon = UIImage(bundleImageName: "Media Editor/MediaVideo")
-                }
-                duration = stringForDuration(Int32(asset.duration))
-            }
+                            
             if asset.isFavorite {
                 typeIcon = generateTintedImage(image: UIImage(bundleImageName: "Media Grid/Favorite"), color: .white)
             }
@@ -611,7 +659,7 @@ final class MediaPickerGridItemNode: GridItemNode {
                 if self.leftShadowNode.supernode == nil {
                     self.addSubnode(self.leftShadowNode)
                 }
-            } else if self.leftShadowNode.supernode != nil {
+            } else if !self.isLivePhoto, self.leftShadowNode.supernode != nil {
                 self.leftShadowNode.removeFromSupernode()
             }
             
@@ -628,7 +676,7 @@ final class MediaPickerGridItemNode: GridItemNode {
                 if self.typeIconNode.supernode == nil {
                     self.addSubnode(self.typeIconNode)
                 }
-            } else if self.typeIconNode.supernode != nil {
+            } else if !self.isLivePhoto, self.typeIconNode.supernode != nil {
                 self.typeIconNode.removeFromSupernode()
             }
             
@@ -709,15 +757,57 @@ final class MediaPickerGridItemNode: GridItemNode {
         }
     }
     
+    private var livePhotoIconName: String?
+    private func updateLivePhotoMode(_ mode: TGMediaLivePhotoMode?) {
+        guard self.isLivePhoto, self.interaction?.displayLivePhotoIcon == true else {
+            return
+        }
+        var effectiveMode: TGMediaLivePhotoMode
+        if let mode, mode != .off {
+            effectiveMode = mode
+        } else {
+            if self.interaction?.editingState.isForceLivePhotoEnabled() == true {
+                effectiveMode = .live
+            } else {
+                effectiveMode = .off
+            }
+        }
+        
+        var iconName: String
+        switch effectiveMode {
+        case .off:
+            iconName = "Chat/Message/LivePhotoOff"
+        default:
+            iconName = "Chat/Message/LivePhoto"
+        }
+        
+        if self.livePhotoIconName != iconName {
+            self.livePhotoIconName = iconName
+            if self.leftShadowNode.supernode == nil {
+                if self.typeIconNode.supernode != nil {
+                    self.insertSubnode(self.leftShadowNode, belowSubnode: self.typeIconNode)
+                } else {
+                    self.addSubnode(self.leftShadowNode)
+                }
+            }
+            
+            self.typeIconNode.image = UIImage(bundleImageName: iconName)
+            if self.typeIconNode.supernode == nil {
+                self.addSubnode(self.typeIconNode)
+            }
+            self.setNeedsLayout()
+        }
+    }
+    
     override func layout() {
         super.layout()
         
         let backgroundSize = CGSize(width: self.bounds.width, height: floorToScreenPixels(self.bounds.height / 9.0 * 16.0))
         self.backgroundNode.frame = CGRect(origin: CGPoint(x: 0.0, y: floorToScreenPixels((self.bounds.height - backgroundSize.height) / 2.0)), size: backgroundSize)
         self.imageNode.frame = self.bounds
-        self.leftShadowNode.frame = CGRect(x: 0.0, y: self.bounds.height - leftShadowImage.size.height, width: min(leftShadowImage.size.width, self.bounds.width), height: leftShadowImage.size.height)
+        self.leftShadowNode.frame = CGRect(x: 0.0, y: 0.0, width: min(leftShadowImage.size.width, self.bounds.width), height: leftShadowImage.size.height)
         self.rightShadowNode.frame = CGRect(x: self.bounds.width - min(rightShadowImage.size.width, self.bounds.width), y: self.bounds.height - rightShadowImage.size.height, width: min(rightShadowImage.size.width, self.bounds.width), height: rightShadowImage.size.height)
-        self.typeIconNode.frame = CGRect(x: 0.0, y: self.bounds.height - 20.0, width: 19.0, height: 19.0)
+        self.typeIconNode.frame = CGRect(x: 0.0, y: 1.0, width: 19.0, height: 19.0)
         self.activateAreaNode.frame = self.bounds
         
         if self.durationNode.supernode != nil {

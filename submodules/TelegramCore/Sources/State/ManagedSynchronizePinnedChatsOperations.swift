@@ -146,7 +146,8 @@ private func synchronizePinnedChats(transaction: Transaction, postbox: Postbox, 
             let parsedPeers: AccumulatedPeers
             
             switch dialogs {
-            case let .peerDialogs(dialogs, messages, chats, users, _):
+            case let .peerDialogs(peerDialogsData):
+                let (dialogs, messages, chats, users) = (peerDialogsData.dialogs, peerDialogsData.messages, peerDialogsData.chats, peerDialogsData.users)
                 parsedPeers = AccumulatedPeers(transaction: transaction, chats: chats, users: users)
                 
             loop: for dialog in dialogs {
@@ -160,7 +161,8 @@ private func synchronizePinnedChats(transaction: Transaction, postbox: Postbox, 
                 let apiTtlPeriod: Int32?
                 let apiNotificationSettings: Api.PeerNotifySettings
                 switch dialog {
-                case let .dialog(flags, peer, topMessage, readInboxMaxId, readOutboxMaxId, unreadCount, _, _, peerNotificationSettings, pts, _, _, ttlPeriod):
+                case let .dialog(dialogData):
+                    let (flags, peer, topMessage, readInboxMaxId, readOutboxMaxId, unreadCount, peerNotificationSettings, pts, ttlPeriod) = (dialogData.flags, dialogData.peer, dialogData.topMessage, dialogData.readInboxMaxId, dialogData.readOutboxMaxId, dialogData.unreadCount, dialogData.notifySettings, dialogData.pts, dialogData.ttlPeriod)
                     apiPeer = peer
                     apiTopMessage = topMessage
                     apiReadInboxMaxId = readInboxMaxId
@@ -265,7 +267,7 @@ private func synchronizePinnedChats(transaction: Transaction, postbox: Postbox, 
                         switch itemId {
                             case let .peer(peerId):
                                 if let peer = transaction.getPeer(peerId), let inputPeer = apiInputPeer(peer) {
-                                    inputDialogPeers.append(Api.InputDialogPeer.inputDialogPeer(peer: inputPeer))
+                                    inputDialogPeers.append(Api.InputDialogPeer.inputDialogPeer(.init(peer: inputPeer)))
                                 }
                         }
                     }
@@ -311,7 +313,8 @@ private func synchronizePinnedSavedChats(transaction: Transaction, postbox: Post
                 
                 loop: for dialog in dialogs {
                     switch dialog {
-                    case let .savedDialog(_, peer, _):
+                    case let .savedDialog(savedDialogData):
+                        let peer = savedDialogData.peer
                         remoteItemIds.append(peer.peerId)
                     }
                 }

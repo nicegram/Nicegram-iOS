@@ -420,6 +420,7 @@ public final class AvatarStoryIndicatorComponent: Component {
     
     public let hasUnseen: Bool
     public let hasUnseenCloseFriendsItems: Bool
+    public let hasLiveItems: Bool
     public let colors: Colors
     public let activeLineWidth: CGFloat
     public let inactiveLineWidth: CGFloat
@@ -430,6 +431,7 @@ public final class AvatarStoryIndicatorComponent: Component {
     public init(
         hasUnseen: Bool,
         hasUnseenCloseFriendsItems: Bool,
+        hasLiveItems: Bool,
         colors: Colors,
         activeLineWidth: CGFloat,
         inactiveLineWidth: CGFloat,
@@ -439,6 +441,7 @@ public final class AvatarStoryIndicatorComponent: Component {
     ) {
         self.hasUnseen = hasUnseen
         self.hasUnseenCloseFriendsItems = hasUnseenCloseFriendsItems
+        self.hasLiveItems = hasLiveItems
         self.colors = colors
         self.activeLineWidth = activeLineWidth
         self.inactiveLineWidth = inactiveLineWidth
@@ -452,6 +455,9 @@ public final class AvatarStoryIndicatorComponent: Component {
             return false
         }
         if lhs.hasUnseenCloseFriendsItems != rhs.hasUnseenCloseFriendsItems {
+            return false
+        }
+        if lhs.hasLiveItems != rhs.hasLiveItems {
             return false
         }
         if lhs.colors != rhs.colors {
@@ -659,7 +665,9 @@ public final class AvatarStoryIndicatorComponent: Component {
             let activeColors: [CGColor]
             let inactiveColors: [CGColor]
             
-            if component.hasUnseenCloseFriendsItems {
+            if component.hasLiveItems {
+                activeColors = [UIColor(rgb: 0xFF3777).cgColor, UIColor(rgb: 0xFF2D55).cgColor]
+            } else if component.hasUnseenCloseFriendsItems {
                 activeColors = component.colors.unseenCloseFriendsColors.map(\.cgColor)
             } else {
                 activeColors = component.colors.unseenColors.map(\.cgColor)
@@ -681,9 +689,9 @@ public final class AvatarStoryIndicatorComponent: Component {
                 
                 var locations: [CGFloat] = [0.0, 1.0]
                 
-                if let counters = component.counters, counters.totalCount > 1 {
+                if let counters = component.counters, !component.hasLiveItems, counters.totalCount > 1 {
                     if component.isRoundedRect {
-                        let lineWidth: CGFloat = component.hasUnseen ? component.activeLineWidth : component.inactiveLineWidth
+                        let lineWidth: CGFloat = (component.hasUnseen || component.hasLiveItems) ? component.activeLineWidth : component.inactiveLineWidth
                         context.setLineWidth(lineWidth)
                         let path = UIBezierPath(roundedRect: CGRect(origin: CGPoint(x: size.width * 0.5 - diameter * 0.5, y: size.height * 0.5 - diameter * 0.5), size: size).insetBy(dx: lineWidth * 0.5, dy: lineWidth * 0.5), cornerRadius: floor(diameter * 0.27))
                         
@@ -826,7 +834,7 @@ public final class AvatarStoryIndicatorComponent: Component {
                         }
                     }
                 } else {
-                    let lineWidth: CGFloat = component.hasUnseen ? component.activeLineWidth : component.inactiveLineWidth
+                    let lineWidth: CGFloat = (component.hasUnseen || component.hasLiveItems) ? component.activeLineWidth : component.inactiveLineWidth
                     context.setLineWidth(lineWidth)
                     if component.isRoundedRect {
                         let path = UIBezierPath(roundedRect: CGRect(origin: CGPoint(x: size.width * 0.5 - diameter * 0.5, y: size.height * 0.5 - diameter * 0.5), size: size).insetBy(dx: lineWidth * 0.5, dy: lineWidth * 0.5), cornerRadius: floor(diameter * 0.27))
@@ -839,7 +847,9 @@ public final class AvatarStoryIndicatorComponent: Component {
                     context.clip()
                     
                     let colors: [CGColor]
-                    if component.hasUnseen {
+                    if component.hasLiveItems {
+                        colors = activeColors
+                    } else if component.hasUnseen {
                         colors = activeColors
                     } else {
                         colors = inactiveColors
@@ -874,7 +884,7 @@ public final class AvatarStoryIndicatorComponent: Component {
                 if case .definite = progress {
                     lineWidth = component.activeLineWidth
                 } else {
-                    lineWidth = component.hasUnseen ? component.activeLineWidth : component.inactiveLineWidth
+                    lineWidth = (component.hasUnseen || component.hasLiveItems) ? component.activeLineWidth : component.inactiveLineWidth
                 }
                 
                 colorLayer.colors = colors

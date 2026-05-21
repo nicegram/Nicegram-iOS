@@ -204,7 +204,7 @@ private enum GroupStickerPackEntry: ItemListNodeEntry {
         switch self {
             case let .search(theme, _, prefix, placeholder, value):
                 let isEmoji = prefix.contains("addemoji")
-                return ItemListSingleLineInputItem(presentationData: presentationData, title: NSAttributedString(string: prefix, textColor: theme.list.itemPrimaryTextColor), text: value, placeholder: placeholder, type: .regular(capitalization: false, autocorrection: false), spacing: 0.0, clearType: .none, tag: nil, sectionId: self.section, textUpdated: { value in
+                return ItemListSingleLineInputItem(presentationData: presentationData, systemStyle: .glass, title: NSAttributedString(string: prefix, textColor: theme.list.itemPrimaryTextColor), text: value, placeholder: placeholder, type: .regular(capitalization: false, autocorrection: false), spacing: 0.0, clearType: .none, tag: nil, sectionId: self.section, textUpdated: { value in
                     arguments.updateSearchText(value)
                 }, processPaste: { text in
                     if let url = (URL(string: text) ?? URL(string: "http://" + text)), url.host == "t.me" || url.host == "telegram.me" {
@@ -220,7 +220,7 @@ private enum GroupStickerPackEntry: ItemListNodeEntry {
             case let .packsTitle(_, text):
                 return ItemListSectionHeaderItem(presentationData: presentationData, text: text, sectionId: self.section)
             case let .pack(_, _, _, info, topItem, count, playAnimatedStickers, selected):
-                return ItemListStickerPackItem(presentationData: presentationData, context: arguments.context, packInfo: StickerPackCollectionInfo.Accessor(info), itemCount: count, topItem: topItem, unread: false, control: selected ? .selection : .none, editing: ItemListStickerPackItemEditing(editable: false, editing: false, revealed: false, reorderable: false, selectable: false), enabled: true, playAnimatedStickers: playAnimatedStickers, sectionId: self.section, action: {
+                return ItemListStickerPackItem(presentationData: presentationData, context: arguments.context, systemStyle: .glass, packInfo: StickerPackCollectionInfo.Accessor(info), itemCount: count, topItem: topItem, unread: false, control: selected ? .selection : .none, editing: ItemListStickerPackItemEditing(editable: false, editing: false, revealed: false, reorderable: false, selectable: false), enabled: true, playAnimatedStickers: playAnimatedStickers, sectionId: self.section, action: {
                     if selected {
                         arguments.openStickerPack(info)
                     } else {
@@ -232,7 +232,7 @@ private enum GroupStickerPackEntry: ItemListNodeEntry {
                 }, toggleSelected: {
                 })
             case let .currentPack(_, theme, strings, content):
-                return GroupStickerPackCurrentItem(theme: theme, strings: strings, account: arguments.context.account, content: content, sectionId: self.section, action: {
+                return GroupStickerPackCurrentItem(theme: theme, strings: strings, systemStyle: .glass, account: arguments.context.account, content: content, sectionId: self.section, action: {
                     if case let .found(packInfo, _, _) = content {
                         arguments.openStickerPack(packInfo)
                     }

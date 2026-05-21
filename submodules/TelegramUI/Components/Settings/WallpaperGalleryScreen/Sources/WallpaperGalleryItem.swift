@@ -131,7 +131,7 @@ final class WallpaperGalleryItemNode: GalleryItemNode {
     private let colorDisposable = MetaDisposable()
     
     let subtitle = Promise<String?>(nil)
-    let status = Promise<MediaResourceStatus>(.Local)
+    let status = Promise<EngineMediaResource.FetchStatus>(.Local)
     let actionButton = Promise<UIBarButtonItem?>(nil)
     var action: (() -> Void)?
     var requestPatternPanel: ((Bool, TelegramWallpaper) -> Void)?
@@ -615,7 +615,7 @@ final class WallpaperGalleryItemNode: GalleryItemNode {
             
             let signal: Signal<(TransformImageArguments) -> DrawingContext?, NoError>
             let fetchSignal: Signal<FetchResourceSourceType, FetchResourceError>
-            let statusSignal: Signal<MediaResourceStatus, NoError>
+            let statusSignal: Signal<EngineMediaResource.FetchStatus, NoError>
             let subtitleSignal: Signal<String?, NoError>
             var actionSignal: Signal<UIBarButtonItem?, NoError> = .single(nil)
             var colorSignal: Signal<UIColor, NoError> = serviceColor(from: imagePromise.get())
@@ -794,15 +794,15 @@ final class WallpaperGalleryItemNode: GalleryItemNode {
                                 }
                                 signal = wallpaperImage(account: context.account, accountManager: context.sharedContext.accountManager, fileReference: fileReference, representations: convertedRepresentations, alwaysShowThumbnailFirst: true, autoFetchFullSize: false)
                             }
-                            fetchSignal = fetchedMediaResource(mediaBox: context.account.postbox.mediaBox, userLocation: .other, userContentType: .other, reference: convertedRepresentations[convertedRepresentations.count - 1].reference)
-                            let account = self.context.account
-                            statusSignal = self.context.sharedContext.accountManager.mediaBox.resourceStatus(file.file.resource)
+                            fetchSignal = context.engine.resources.fetch(reference: convertedRepresentations[convertedRepresentations.count - 1].reference, userLocation: .other, userContentType: .other)
+                            let engine = self.context.engine
+                            statusSignal = self.context.sharedContext.accountManager.resources.status(resource: EngineMediaResource(file.file.resource))
                             |> take(1)
-                            |> mapToSignal { status -> Signal<MediaResourceStatus, NoError> in
+                            |> mapToSignal { status -> Signal<EngineMediaResource.FetchStatus, NoError> in
                                 if case .Local = status {
                                     return .single(status)
                                 } else {
-                                    return account.postbox.mediaBox.resourceStatus(file.file.resource)
+                                    return engine.resources.status(resource: EngineMediaResource(file.file.resource))
                                 }
                             }
                             if let fileSize = file.file.size {
@@ -826,18 +826,18 @@ final class WallpaperGalleryItemNode: GalleryItemNode {
                                 signal = wallpaperImage(account: context.account, accountManager: context.sharedContext.accountManager, representations: convertedRepresentations, alwaysShowThumbnailFirst: true, autoFetchFullSize: false)
                                 
                                 if let largestIndex = convertedRepresentations.firstIndex(where: { $0.representation == largestSize }) {
-                                    fetchSignal = fetchedMediaResource(mediaBox: context.account.postbox.mediaBox, userLocation: .other, userContentType: .other, reference: convertedRepresentations[largestIndex].reference)
+                                    fetchSignal = context.engine.resources.fetch(reference: convertedRepresentations[largestIndex].reference, userLocation: .other, userContentType: .other)
                                 } else {
                                     fetchSignal = .complete()
                                 }
-                                let account = context.account
-                                statusSignal = context.sharedContext.accountManager.mediaBox.resourceStatus(largestSize.resource)
+                                let engine = context.engine
+                                statusSignal = context.sharedContext.accountManager.resources.status(resource: EngineMediaResource(largestSize.resource))
                                 |> take(1)
-                                |> mapToSignal { status -> Signal<MediaResourceStatus, NoError> in
+                                |> mapToSignal { status -> Signal<EngineMediaResource.FetchStatus, NoError> in
                                     if case .Local = status {
                                         return .single(status)
                                     } else {
-                                        return account.postbox.mediaBox.resourceStatus(largestSize.resource)
+                                        return engine.resources.status(resource: EngineMediaResource(largestSize.resource))
                                     }
                                 }
                                 if let fileSize = largestSize.resource.size {
@@ -926,8 +926,8 @@ final class WallpaperGalleryItemNode: GalleryItemNode {
                         let tmpImage = TelegramMediaImage(imageId: MediaId(namespace: 0, id: 0), representations: representations, immediateThumbnailData: nil, reference: nil, partialReference: nil, flags: [])
                         
                         signal = chatMessagePhoto(postbox: context.account.postbox, userLocation: .other, photoReference: .standalone(media: tmpImage))
-                        fetchSignal = fetchedMediaResource(mediaBox: context.account.postbox.mediaBox, userLocation: .other, userContentType: .other, reference: .media(media: .standalone(media: tmpImage), resource: imageResource))
-                        statusSignal = context.account.postbox.mediaBox.resourceStatus(imageResource)
+                        fetchSignal = context.engine.resources.fetch(reference: .media(media: .standalone(media: tmpImage), resource: imageResource), userLocation: .other, userContentType: .other)
+                        statusSignal = context.engine.resources.status(resource: EngineMediaResource(imageResource))
                     } else {
                         displaySize = CGSize(width: 1.0, height: 1.0)
                         contentSize = displaySize
@@ -986,7 +986,7 @@ final class WallpaperGalleryItemNode: GalleryItemNode {
                     
                     if case .asset = entry, let image, let data = image.jpegData(compressionQuality: 0.5) {
                         let resource = LocalFileMediaResource(fileId: Int64.random(in: Int64.min ... Int64.max))
-                        strongSelf.context.sharedContext.accountManager.mediaBox.storeResourceData(resource.id, data: data, synchronous: true)
+                        strongSelf.context.sharedContext.accountManager.resources.storeResourceData(id: EngineMediaResource.Id(resource.id), data: data, synchronous: true)
                         
                         let wallpaper: TelegramWallpaper = .image([TelegramMediaImageRepresentation(dimensions: PixelDimensions(image.size), resource: resource, progressiveSizes: [], immediateThumbnailData: nil, hasVideo: false, isPersonal: false)], WallpaperSettings())
                         strongSelf.nativeNode.update(wallpaper: wallpaper, animated: false)
@@ -1513,8 +1513,8 @@ final class WallpaperGalleryItemNode: GalleryItemNode {
         
         let replyAuthor = self.presentationData.strings.Appearance_ThemePreview_Chat_2_ReplyName
         
-        var messageAuthor: Peer = TelegramUser(id: peerId, accessHash: nil, firstName: self.presentationData.strings.Appearance_PreviewReplyAuthor, lastName: "", username: nil, phone: nil, photo: [], botInfo: nil, restrictionInfo: nil, flags: [], emojiStatus: nil, usernames: [], storiesHidden: nil, nameColor: .blue, backgroundEmojiId: nil, profileColor: nil, profileBackgroundEmojiId: nil, subscriberCount: nil, verificationIconFileId: nil)
-        let otherAuthor = TelegramUser(id: otherPeerId, accessHash: nil, firstName: replyAuthor, lastName: "", username: nil, phone: nil, photo: [], botInfo: nil, restrictionInfo: nil, flags: [], emojiStatus: nil, usernames: [], storiesHidden: nil, nameColor: .blue, backgroundEmojiId: nil, profileColor: nil, profileBackgroundEmojiId: nil, subscriberCount: nil, verificationIconFileId: nil)
+        var messageAuthor: Peer = TelegramUser(id: peerId, accessHash: nil, firstName: self.presentationData.strings.Appearance_PreviewReplyAuthor, lastName: "", username: nil, phone: nil, photo: [], botInfo: nil, restrictionInfo: nil, flags: [], emojiStatus: nil, usernames: [], storiesHidden: nil, nameColor: .preset(.blue), backgroundEmojiId: nil, profileColor: nil, profileBackgroundEmojiId: nil, subscriberCount: nil, verificationIconFileId: nil)
+        let otherAuthor = TelegramUser(id: otherPeerId, accessHash: nil, firstName: replyAuthor, lastName: "", username: nil, phone: nil, photo: [], botInfo: nil, restrictionInfo: nil, flags: [], emojiStatus: nil, usernames: [], storiesHidden: nil, nameColor: .preset(.blue), backgroundEmojiId: nil, profileColor: nil, profileBackgroundEmojiId: nil, subscriberCount: nil, verificationIconFileId: nil)
         peers[otherPeerId] = otherAuthor
         
         var messageAttributes: [MessageAttribute] = []
@@ -1524,7 +1524,7 @@ final class WallpaperGalleryItemNode: GalleryItemNode {
             
             let replyMessageId = MessageId(peerId: peerId, namespace: 0, id: 3)
             messages[replyMessageId] = Message(stableId: 3, stableVersion: 0, id: replyMessageId, globallyUniqueId: nil, groupingKey: nil, groupInfo: nil, threadId: nil, timestamp: 66000, flags: [], tags: [], globalTags: [], localTags: [], customTags: [], forwardInfo: nil, author: messageAuthor, text: self.presentationData.strings.WallpaperPreview_ChannelReplyText, attributes: [], media: [], peers: peers, associatedMessages: SimpleDictionary(), associatedMessageIds: [], associatedMedia: [:], associatedThreadInfo: nil, associatedStories: [:])
-            messageAttributes = [ReplyMessageAttribute(messageId: replyMessageId, threadMessageId: nil, quote: nil, isQuote: false, todoItemId: nil)]
+            messageAttributes = [ReplyMessageAttribute(messageId: replyMessageId, threadMessageId: nil, quote: nil, isQuote: false, innerSubject: nil)]
         }
         
         peers[peerId] = messageAuthor
@@ -1627,19 +1627,19 @@ final class WallpaperGalleryItemNode: GalleryItemNode {
                    
         if !bottomMessageText.isEmpty {
             let message1 = Message(stableId: 2, stableVersion: 0, id: MessageId(peerId: peerId, namespace: 0, id: 2), globallyUniqueId: nil, groupingKey: nil, groupInfo: nil, threadId: nil, timestamp: 66001, flags: [], tags: [], globalTags: [], localTags: [], customTags: [], forwardInfo: nil, author: peers[otherPeerId], text: bottomMessageText, attributes: [], media: [], peers: peers, associatedMessages: messages, associatedMessageIds: [], associatedMedia: [:], associatedThreadInfo: nil, associatedStories: [:])
-            items.append(self.context.sharedContext.makeChatMessagePreviewItem(context: self.context, messages: [message1], theme: theme, strings: self.presentationData.strings, wallpaper: currentWallpaper, fontSize: self.presentationData.chatFontSize, chatBubbleCorners: self.presentationData.chatBubbleCorners, dateTimeFormat: self.presentationData.dateTimeFormat, nameOrder: self.presentationData.nameDisplayOrder, forcedResourceStatus: nil, tapMessage: nil, clickThroughMessage: nil, backgroundNode: self.nativeNode, availableReactions: nil, accountPeer: nil, isCentered: false, isPreview: true, isStandalone: false))
+            items.append(self.context.sharedContext.makeChatMessagePreviewItem(context: self.context, messages: [message1], theme: theme, strings: self.presentationData.strings, wallpaper: currentWallpaper, fontSize: self.presentationData.chatFontSize, chatBubbleCorners: self.presentationData.chatBubbleCorners, dateTimeFormat: self.presentationData.dateTimeFormat, nameOrder: self.presentationData.nameDisplayOrder, forcedResourceStatus: nil, tapMessage: nil, clickThroughMessage: nil, backgroundNode: self.nativeNode, availableReactions: nil, accountPeer: nil, isCentered: false, isPreview: true, isStandalone: false, rank: nil, rankRole: nil))
         }
     
         
         let message2 = Message(stableId: 1, stableVersion: 0, id: MessageId(peerId: peerId, namespace: 0, id: 1), globallyUniqueId: nil, groupingKey: nil, groupInfo: nil, threadId: nil, timestamp: 66000, flags: [.Incoming], tags: [], globalTags: [], localTags: [], customTags: [], forwardInfo: nil, author: peers[peerId], text: topMessageText, attributes: messageAttributes, media: [], peers: peers, associatedMessages: messages, associatedMessageIds: [], associatedMedia: [:], associatedThreadInfo: nil, associatedStories: [:])
-        items.append(self.context.sharedContext.makeChatMessagePreviewItem(context: self.context, messages: [message2], theme: theme, strings: self.presentationData.strings, wallpaper: currentWallpaper, fontSize: self.presentationData.chatFontSize, chatBubbleCorners: self.presentationData.chatBubbleCorners, dateTimeFormat: self.presentationData.dateTimeFormat, nameOrder: self.presentationData.nameDisplayOrder, forcedResourceStatus: nil, tapMessage: nil, clickThroughMessage: nil, backgroundNode: self.nativeNode, availableReactions: nil, accountPeer: nil, isCentered: false, isPreview: true, isStandalone: false))
+        items.append(self.context.sharedContext.makeChatMessagePreviewItem(context: self.context, messages: [message2], theme: theme, strings: self.presentationData.strings, wallpaper: currentWallpaper, fontSize: self.presentationData.chatFontSize, chatBubbleCorners: self.presentationData.chatBubbleCorners, dateTimeFormat: self.presentationData.dateTimeFormat, nameOrder: self.presentationData.nameDisplayOrder, forcedResourceStatus: nil, tapMessage: nil, clickThroughMessage: nil, backgroundNode: self.nativeNode, availableReactions: nil, accountPeer: nil, isCentered: false, isPreview: true, isStandalone: false, rank: nil, rankRole: nil))
         
         if let serviceMessageText {
             let attributedText = convertMarkdownToAttributes(NSAttributedString(string: serviceMessageText))
             let entities = generateChatInputTextEntities(attributedText)
             
             let message3 = Message(stableId: 0, stableVersion: 0, id: MessageId(peerId: peerId, namespace: 0, id: 0), globallyUniqueId: nil, groupingKey: nil, groupInfo: nil, threadId: nil, timestamp: 66002, flags: [.Incoming], tags: [], globalTags: [], localTags: [], customTags: [], forwardInfo: nil, author: peers[peerId], text: "", attributes: [], media: [TelegramMediaAction(action: .customText(text: attributedText.string, entities: entities, additionalAttributes: nil))], peers: peers, associatedMessages: messages, associatedMessageIds: [], associatedMedia: [:], associatedThreadInfo: nil, associatedStories: [:])
-            items.append(self.context.sharedContext.makeChatMessagePreviewItem(context: self.context, messages: [message3], theme: theme, strings: self.presentationData.strings, wallpaper: currentWallpaper, fontSize: self.presentationData.chatFontSize, chatBubbleCorners: self.presentationData.chatBubbleCorners, dateTimeFormat: self.presentationData.dateTimeFormat, nameOrder: self.presentationData.nameDisplayOrder, forcedResourceStatus: nil, tapMessage: nil, clickThroughMessage: nil, backgroundNode: self.nativeNode, availableReactions: nil, accountPeer: nil, isCentered: false, isPreview: true, isStandalone: false))
+            items.append(self.context.sharedContext.makeChatMessagePreviewItem(context: self.context, messages: [message3], theme: theme, strings: self.presentationData.strings, wallpaper: currentWallpaper, fontSize: self.presentationData.chatFontSize, chatBubbleCorners: self.presentationData.chatBubbleCorners, dateTimeFormat: self.presentationData.dateTimeFormat, nameOrder: self.presentationData.nameDisplayOrder, forcedResourceStatus: nil, tapMessage: nil, clickThroughMessage: nil, backgroundNode: self.nativeNode, availableReactions: nil, accountPeer: nil, isCentered: false, isPreview: true, isStandalone: false, rank: nil, rankRole: nil))
         }
         
         let params = ListViewItemLayoutParams(width: layout.size.width, leftInset: layout.safeInsets.left, rightInset: layout.safeInsets.right, availableHeight: layout.size.height)

@@ -8,6 +8,8 @@ private enum TelegramMediaWebpageAttributeTypes: Int32 {
     case stickerPack
     case starGift
     case giftCollection
+    case giftAuction
+    case aiTextStyle
 }
 
 public enum TelegramMediaWebpageAttribute: PostboxCoding, Equatable {
@@ -16,6 +18,8 @@ public enum TelegramMediaWebpageAttribute: PostboxCoding, Equatable {
     case stickerPack(TelegramMediaWebpageStickerPackAttribute)
     case starGift(TelegramMediaWebpageStarGiftAttribute)
     case giftCollection(TelegramMediaWebpageGiftCollectionAttribute)
+    case giftAuction(TelegramMediaWebpageGiftAuctionAttribute)
+    case aiTextStyle(TelegramMediaWebpageAITextStyleAttribute)
     
     public init(decoder: PostboxDecoder) {
         switch decoder.decodeInt32ForKey("r", orElse: 0) {
@@ -27,6 +31,10 @@ public enum TelegramMediaWebpageAttribute: PostboxCoding, Equatable {
             self = .starGift(decoder.decodeObjectForKey("a", decoder: { TelegramMediaWebpageStarGiftAttribute(decoder: $0) }) as! TelegramMediaWebpageStarGiftAttribute)
         case TelegramMediaWebpageAttributeTypes.giftCollection.rawValue:
             self = .giftCollection(decoder.decodeObjectForKey("a", decoder: { TelegramMediaWebpageGiftCollectionAttribute(decoder: $0) }) as! TelegramMediaWebpageGiftCollectionAttribute)
+        case TelegramMediaWebpageAttributeTypes.giftAuction.rawValue:
+            self = .giftAuction(decoder.decodeObjectForKey("a", decoder: { TelegramMediaWebpageGiftAuctionAttribute(decoder: $0) }) as! TelegramMediaWebpageGiftAuctionAttribute)
+        case TelegramMediaWebpageAttributeTypes.aiTextStyle.rawValue:
+            self = .aiTextStyle(decoder.decodeObjectForKey("a", decoder: { TelegramMediaWebpageAITextStyleAttribute(decoder: $0) }) as! TelegramMediaWebpageAITextStyleAttribute)
         default:
             self = .unsupported
         }
@@ -48,6 +56,20 @@ public enum TelegramMediaWebpageAttribute: PostboxCoding, Equatable {
         case let .giftCollection(attribute):
             encoder.encodeInt32(TelegramMediaWebpageAttributeTypes.giftCollection.rawValue, forKey: "r")
             encoder.encodeObject(attribute, forKey: "a")
+        case let .giftAuction(attribute):
+            encoder.encodeInt32(TelegramMediaWebpageAttributeTypes.giftAuction.rawValue, forKey: "r")
+            encoder.encodeObject(attribute, forKey: "a")
+        case let .aiTextStyle(attribute):
+            encoder.encodeInt32(TelegramMediaWebpageAttributeTypes.aiTextStyle.rawValue, forKey: "r")
+            encoder.encodeObject(attribute, forKey: "a")
+        }
+    }
+    
+    public var mediaIds: [MediaId] {
+        if case let .aiTextStyle(attribute) = self {
+            return [MediaId(namespace: Namespaces.Media.CloudFile, id: attribute.emojiFileId)]
+        } else {
+            return []
         }
     }
 }
@@ -194,6 +216,65 @@ public final class TelegramMediaWebpageGiftCollectionAttribute: PostboxCoding, E
         encoder.encodeObjectArray(self.files, forKey: "files")
     }
 }
+
+public final class TelegramMediaWebpageGiftAuctionAttribute: PostboxCoding, Equatable {
+    public static func == (lhs: TelegramMediaWebpageGiftAuctionAttribute, rhs: TelegramMediaWebpageGiftAuctionAttribute) -> Bool {
+        if lhs.gift != rhs.gift {
+            return false
+        }
+        if lhs.endDate != rhs.endDate {
+            return false
+        }
+        return true
+    }
+    
+    public let gift: StarGift
+    public let endDate: Int32
+
+    public init(
+        gift: StarGift,
+        endDate: Int32
+    ) {
+        self.gift = gift
+        self.endDate = endDate
+    }
+    
+    public init(decoder: PostboxDecoder) {
+        self.gift = decoder.decodeObjectForKey("gift", decoder: { StarGift(decoder: $0) }) as! StarGift
+        self.endDate = decoder.decodeInt32ForKey("endDate", orElse: 0)
+    }
+    
+    public func encode(_ encoder: PostboxEncoder) {
+        encoder.encodeObject(self.gift, forKey: "gift")
+        encoder.encodeInt32(self.endDate, forKey: "endDate")
+    }
+}
+
+public final class TelegramMediaWebpageAITextStyleAttribute: PostboxCoding, Equatable {
+    public static func == (lhs: TelegramMediaWebpageAITextStyleAttribute, rhs: TelegramMediaWebpageAITextStyleAttribute) -> Bool {
+        if lhs.emojiFileId != rhs.emojiFileId {
+            return false
+        }
+        return true
+    }
+    
+    public let emojiFileId: Int64
+
+    public init(
+        emojiFileId: Int64
+    ) {
+        self.emojiFileId = emojiFileId
+    }
+    
+    public init(decoder: PostboxDecoder) {
+        self.emojiFileId = decoder.decodeInt64ForKey("eid", orElse: 0)
+    }
+    
+    public func encode(_ encoder: PostboxEncoder) {
+        encoder.encodeInt64(self.emojiFileId, forKey: "eid")
+    }
+}
+
 
 public final class TelegramMediaWebpageLoadedContent: PostboxCoding, Equatable {
     public let url: String
@@ -512,6 +593,17 @@ public final class TelegramMediaWebpage: Media, Equatable {
         } else {
             return []
         }
+    }
+    
+    public var mediaIds: [MediaId] {
+        guard case let .Loaded(content) = self.content else {
+            return []
+        }
+        var result: [MediaId] = []
+        for attribute in content.attributes {
+            result.append(contentsOf: attribute.mediaIds)
+        }
+        return result
     }
     
     public let webpageId: MediaId

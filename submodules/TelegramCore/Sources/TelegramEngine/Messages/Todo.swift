@@ -14,6 +14,10 @@ func _internal_requestUpdateTodoMessageItems(account: Account, messageId: Messag
         guard let peer = transaction.getPeer(messageId.peerId), let inputPeer = apiInputPeer(peer) else {
             return .complete()
         }
+        var completedBy = account.peerId
+        if messageId.peerId.namespace == Namespaces.Peer.CloudChannel, let cachedChannelData = transaction.getPeerCachedData(peerId: messageId.peerId) as? CachedChannelData, let sendAsPeerId = cachedChannelData.sendAsPeerId {
+            completedBy = sendAsPeerId
+        }
         transaction.updateMessage(messageId, update: { currentMessage in
             let storeForwardInfo = currentMessage.forwardInfo.flatMap(StoreMessageForwardInfo.init)
             var media: [Media] = []
@@ -21,7 +25,7 @@ func _internal_requestUpdateTodoMessageItems(account: Account, messageId: Messag
                 let timestamp = Int32(CFAbsoluteTimeGetCurrent() + NSTimeIntervalSince1970)
                 var updatedCompletions = todo.completions
                 for id in completedIds {
-                    updatedCompletions.append(TelegramMediaTodo.Completion(id: id, date: timestamp, completedBy: account.peerId))
+                    updatedCompletions.append(TelegramMediaTodo.Completion(id: id, date: timestamp, completedBy: completedBy))
                 }
                 updatedCompletions.removeAll(where: { incompletedIds.contains($0.id) })
                 media = [todo.withUpdated(completions: updatedCompletions)]

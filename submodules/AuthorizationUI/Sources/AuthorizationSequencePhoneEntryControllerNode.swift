@@ -1,7 +1,5 @@
 // Nicegram Onboarding
-import FeatOnboarding
-//
-// Nicegram PhoneEntryBanner
+import FeatOnboardingCore
 import FeatPhoneEntryBanner
 //
 import Foundation
@@ -14,13 +12,13 @@ import PhoneInputNode
 import CountrySelectionUI
 import QrCode
 import SwiftSignalKit
-import Postbox
 import AccountContext
 import AnimatedStickerNode
 import TelegramAnimatedStickerNode
 import SolidRoundedButtonNode
 import AuthorizationUtils
 import ManagedAnimationNode
+import Markdown
 
 private final class PhoneAndCountryNode: ASDisplayNode {
     let strings: PresentationStrings
@@ -123,7 +121,9 @@ private final class PhoneAndCountryNode: ASDisplayNode {
         self.phoneInputNode.numberField.textField.tintColor = theme.list.itemAccentColor
         self.phoneInputNode.countryCodeField.accessibilityHint = strings.Login_VoiceOver_PhoneCountryCode
         self.phoneInputNode.numberField.accessibilityHint = strings.Login_VoiceOver_PhoneNumber
-        
+        self.phoneInputNode.countryCodeField.textField.accessibilityIdentifier = "Auth.PhoneEntry.CountryCodeField"
+        self.phoneInputNode.numberField.textField.accessibilityIdentifier = "Auth.PhoneEntry.PhoneNumberField"
+
         self.phoneInputNode.countryCodeField.textField.tintColor = theme.list.itemAccentColor
         self.phoneInputNode.numberField.textField.tintColor = theme.list.itemAccentColor
         
@@ -281,7 +281,10 @@ private final class ContactSyncNode: ASDisplayNode {
         self.switchNode.frameColor = theme.list.itemSwitchColors.frameColor
         self.switchNode.contentColor = theme.list.itemSwitchColors.contentColor
         self.switchNode.handleColor = theme.list.itemSwitchColors.handleColor
-        self.switchNode.isOn = true
+        
+        // Nicegram, set initial value to false
+        self.switchNode.isOn = false
+        //
         
         super.init()
         
@@ -290,7 +293,14 @@ private final class ContactSyncNode: ASDisplayNode {
     }
     
     func updateLayout(width: CGFloat) -> CGSize {
-        let switchSize = CGSize(width: 51.0, height: 31.0)
+        var switchSize = CGSize(width: 51.0, height: 31.0)
+        if let switchView = self.switchNode.view as? UISwitch {
+            if self.switchNode.bounds.size.width.isZero {
+                switchView.sizeToFit()
+            }
+            switchSize = switchView.bounds.size
+        }
+        
         let inset: CGFloat = 24.0
         let titleSize = self.titleNode.updateLayout(CGSize(width: width - switchSize.width - inset * 2.0 - 8.0, height: .greatestFiniteMagnitude))
         let height: CGFloat = 40.0
@@ -312,8 +322,6 @@ final class AuthorizationSequencePhoneEntryControllerNode: ASDisplayNode {
     //
     
     // Nicegram Onboarding
-    let ngGuideButtonNode = ASDisplayNode { UIView() }
-    
     let isNgOnboarding: Bool
     //
     
@@ -321,7 +329,7 @@ final class AuthorizationSequencePhoneEntryControllerNode: ASDisplayNode {
     private let managedAnimationNode: ManagedPhoneAnimationNode
     private let titleNode: ASTextNode
     private let titleActivateAreaNode: AccessibilityAreaNode
-    private let noticeNode: ASTextNode
+    private let noticeNode: ImmediateTextNode
     private let noticeActivateAreaNode: AccessibilityAreaNode
     private let phoneAndCountryNode: PhoneAndCountryNode
     private let contactSyncNode: ContactSyncNode
@@ -332,6 +340,8 @@ final class AuthorizationSequencePhoneEntryControllerNode: ASDisplayNode {
     private let exportTokenDisposable = MetaDisposable()
     private let tokenEventsDisposable = MetaDisposable()
     var accountUpdated: ((UnauthorizedAccount) -> Void)?
+    
+    var retryPasskey: (() -> Void)?
     
     private let debugAction: () -> Void
     
@@ -415,7 +425,7 @@ final class AuthorizationSequencePhoneEntryControllerNode: ASDisplayNode {
         self.titleActivateAreaNode = AccessibilityAreaNode()
         self.titleActivateAreaNode.accessibilityTraits = .staticText
         
-        self.noticeNode = ASTextNode()
+        self.noticeNode = ImmediateTextNode()
         self.noticeNode.maximumNumberOfLines = 0
         self.noticeNode.isUserInteractionEnabled = true
         self.noticeNode.displaysAsynchronously = false
@@ -432,7 +442,7 @@ final class AuthorizationSequencePhoneEntryControllerNode: ASDisplayNode {
         // Nicegram Onboarding, overwrite 'notice' if isNgOnboarding
         var notice = account == nil ? strings.ChangePhoneNumberNumber_Help : strings.Login_PhoneAndCountryHelp
         if isNgOnboarding {
-            notice = FeatOnboarding.strings.phoneEntryDesc()
+            notice = FeatOnboardingCore.strings.phoneEntryDesc()
         }
         self.noticeNode.attributedText = NSAttributedString(string: notice, font: Font.regular(17.0), textColor: theme.list.itemPrimaryTextColor, paragraphAlignment: .center)
         
@@ -440,10 +450,11 @@ final class AuthorizationSequencePhoneEntryControllerNode: ASDisplayNode {
         
         self.phoneAndCountryNode = PhoneAndCountryNode(strings: strings, theme: theme)
         
-        self.proceedNode = SolidRoundedButtonNode(title: self.strings.Login_Continue, theme: SolidRoundedButtonTheme(theme: self.theme), height: 50.0, cornerRadius: 11.0, gloss: false)
+        self.proceedNode = SolidRoundedButtonNode(title: self.strings.Login_Continue, theme: SolidRoundedButtonTheme(theme: self.theme), glass: false, height: 50.0, cornerRadius: 50 * 0.5)
         self.proceedNode.progressType = .embedded
         self.proceedNode.isEnabled = false
-        
+        self.proceedNode.accessibilityIdentifier = "Auth.PhoneEntry.ContinueButton"
+
         super.init()
         
         self.setViewBlock({
@@ -457,11 +468,6 @@ final class AuthorizationSequencePhoneEntryControllerNode: ASDisplayNode {
         self.addSubnode(ngBannerNode)
         //
         
-        // Nicegram Onboarding
-        ngGuideButtonNode.isHidden = true
-        self.addSubnode(self.ngGuideButtonNode)
-        //
-        
         self.addSubnode(self.titleNode)
         self.addSubnode(self.noticeNode)
         self.addSubnode(self.titleActivateAreaNode)
@@ -472,6 +478,23 @@ final class AuthorizationSequencePhoneEntryControllerNode: ASDisplayNode {
         self.addSubnode(self.animationNode)
         self.addSubnode(self.managedAnimationNode)
         self.contactSyncNode.isHidden = true
+        
+        self.noticeNode.highlightAttributeAction = { attributes in
+            if let _ = attributes[NSAttributedString.Key(rawValue: "URL")] {
+                return NSAttributedString.Key(rawValue: "URL")
+            } else {
+                return nil
+            }
+        }
+        self.noticeNode.tapAttributeAction = { [weak self] attributes, _ in
+            guard let self else {
+                return
+            }
+            if let _ = attributes[NSAttributedString.Key(rawValue: "URL")] as? String {
+                self.retryPasskey?()
+            }
+        }
+        self.noticeNode.linkHighlightColor = theme.list.itemAccentColor.withAlphaComponent(0.2)
         
         self.phoneAndCountryNode.selectCountryCode = { [weak self] in
             self?.selectCountryCode?()
@@ -488,12 +511,8 @@ final class AuthorizationSequencePhoneEntryControllerNode: ASDisplayNode {
             }
         }
         
-        if let account = account {
-            self.tokenEventsDisposable.set((account.updateLoginTokenEvents
-            |> deliverOnMainQueue).startStrict(next: { [weak self] _ in
-                self?.refreshQrToken()
-            }))
-        }
+        // Nicegram, updateLoginTokenEvents subscription removed
+        // Conflicts with token-based login in the TgAccountShop feature
         
         self.proceedNode.pressed = { [weak self] in
             self?.checkPhone?()
@@ -514,7 +533,7 @@ final class AuthorizationSequencePhoneEntryControllerNode: ASDisplayNode {
         super.didLoad()
         
         self.titleNode.view.addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(self.debugTap(_:))))
-        #if DEBUG
+        #if DEBUG && false
         self.noticeNode.view.addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(self.debugQrTap(_:))))
         #endif
     }
@@ -585,6 +604,27 @@ final class AuthorizationSequencePhoneEntryControllerNode: ASDisplayNode {
         let _ = self.phoneAndCountryNode.processNumberChange(number: self.phoneAndCountryNode.phoneInputNode.number)
     }
     
+    func updateDisplayPasskeyLoginOption() {
+        if self.account == nil {
+            return
+        }
+        let attributedText = NSMutableAttributedString(attributedString: parseMarkdownIntoAttributedString(self.strings.Login_PhoneWithPasskeySubtitle, attributes: MarkdownAttributes(
+            body: MarkdownAttributeSet(font: Font.regular(17.0), textColor: self.theme.list.itemPrimaryTextColor),
+            bold: MarkdownAttributeSet(font: Font.semibold(17.0), textColor: self.theme.list.itemPrimaryTextColor),
+            link: MarkdownAttributeSet(font: Font.regular(17.0), textColor: self.theme.list.itemAccentColor),
+            linkAttribute: { url in
+                return ("URL", url)
+            }
+        )))
+        let chevronImage = generateTintedImage(image: UIImage(bundleImageName: "Item List/InlineTextRightArrow"), color: self.theme.list.itemAccentColor)
+        
+        if let range = attributedText.string.range(of: ">"), let chevronImage {
+            attributedText.addAttribute(.attachment, value: chevronImage, range: NSRange(range, in: attributedText.string))
+        }
+        
+        self.noticeNode.attributedText = attributedText
+    }
+    
     func containerLayoutUpdated(_ layout: ContainerViewLayout, navigationBarHeight: CGFloat, transition: ContainedViewLayoutTransition) {
         var insets = layout.insets(options: [])
         insets.top = layout.statusBarHeight ?? 20.0
@@ -596,9 +636,9 @@ final class AuthorizationSequencePhoneEntryControllerNode: ASDisplayNode {
         let additionalBottomInset: CGFloat = layout.size.width > 320.0 ? 80.0 : 10.0
         
         // Nicegram Onboarding, overwrite 'title' if isNgOnboarding
-        var title = self.account == nil ? strings.Login_NewNumber : strings.Login_PhoneTitle
+        var title = self.account == nil ? self.strings.Login_NewNumber : self.strings.Login_PhoneTitle
         if self.isNgOnboarding {
-            title = FeatOnboarding.strings.phoneEntryTitle()
+            title = FeatOnboardingCore.strings.phoneEntryTitle()
         }
         self.titleNode.attributedText = NSAttributedString(string: title, font: Font.bold(28.0), textColor: self.theme.list.itemPrimaryTextColor)
         self.titleActivateAreaNode.accessibilityLabel = self.titleNode.attributedText?.string ?? ""
@@ -609,10 +649,8 @@ final class AuthorizationSequencePhoneEntryControllerNode: ASDisplayNode {
         let animationSize = CGSize(width: 100.0, height: 100.0)
         let titleSize = self.titleNode.measure(CGSize(width: maximumWidth, height: CGFloat.greatestFiniteMagnitude))
         
-        let noticeInset: CGFloat = self.account == nil ? 32.0 : 0.0
-        
         // Nicegram Onboarding, changed width
-        let noticeSize = self.noticeNode.measure(CGSize(width: maximumWidth - 28.0, height: CGFloat.greatestFiniteMagnitude))
+        let noticeSize = self.noticeNode.updateLayout(CGSize(width: maximumWidth - 28.0, height: CGFloat.greatestFiniteMagnitude))
         let proceedHeight = self.proceedNode.updateLayout(width: maximumWidth - inset * 2.0, transition: transition)
         let proceedSize = CGSize(width: maximumWidth - inset * 2.0, height: proceedHeight)
         
@@ -623,26 +661,16 @@ final class AuthorizationSequencePhoneEntryControllerNode: ASDisplayNode {
         ]
         
         // Nicegram PhoneEntryBanner
-        var showBanner = true
-        if #unavailable(iOS 15.0) {
-            showBanner = false
-        }
-        if isNgOnboarding {
-            showBanner = false
-        }
-        
-        if showBanner {
-            if let index = items.firstIndex(where: { $0.node === phoneAndCountryNode}) {
-                let bannerItem = AuthorizationLayoutItem(
-                    node: self.ngBannerNode,
-                    size: CGSize(width: maximumWidth, height: 110),
-                    spacingBefore: AuthorizationLayoutItemSpacing(weight: 0, maxValue: 0),
-                    spacingAfter: AuthorizationLayoutItemSpacing(weight: 0, maxValue: 0)
-                )
-                items.insert(bannerItem, at: index)
-                
-                ngBannerNode.isHidden = false
-            }
+        if let index = items.firstIndex(where: { $0.node === phoneAndCountryNode}) {
+            let bannerItem = AuthorizationLayoutItem(
+                node: self.ngBannerNode,
+                size: CGSize(width: maximumWidth, height: 110),
+                spacingBefore: AuthorizationLayoutItemSpacing(weight: 0, maxValue: 0),
+                spacingAfter: AuthorizationLayoutItemSpacing(weight: 0, maxValue: 0)
+            )
+            items.insert(bannerItem, at: index)
+            
+            ngBannerNode.isHidden = false
         }
         //
         
@@ -666,39 +694,18 @@ final class AuthorizationSequencePhoneEntryControllerNode: ASDisplayNode {
             self.contactSyncNode.isHidden = true
         }
         
-        // Nicegram Onboarding
-        if #available(iOS 15.0, *), self.isNgOnboarding {
-            let ngGuideButtonHeight = PhoneEntryGuideButtonConstants.HEIGHT
-            transition.updateFrame(
-                node: self.ngGuideButtonNode,
-                frame: CGRect(
-                    x: floorToScreenPixels((layout.size.width - proceedSize.width) / 2.0),
-                    y: layout.size.height - insets.bottom - ngGuideButtonHeight - inset,
-                    width: proceedSize.width,
-                    height: ngGuideButtonHeight
-                )
-            )
-            self.ngGuideButtonNode.isHidden = false
-        }
-        //
-        
-        // Nicegram Onboarding, changed 'let' to 'var'
-        var buttonFrame: CGRect
+        let buttonFrame: CGRect
         if let forcedButtonFrame = self.forcedButtonFrame, (layout.inputHeight ?? 0.0).isZero {
             buttonFrame = forcedButtonFrame
         } else {
             buttonFrame = CGRect(origin: CGPoint(x: floorToScreenPixels((layout.size.width - proceedSize.width) / 2.0), y: layout.size.height - insets.bottom - proceedSize.height - inset), size: proceedSize)
-            // Nicegram Onboarding
-            buttonFrame.origin.y -= self.ngGuideButtonNode.frame.height
-            //
         }
         
         transition.updateFrame(node: self.proceedNode, frame: buttonFrame)
         
         self.animationNode.updateLayout(size: animationSize)
         
-        // Nicegram PhoneEntryBanner, reduce height by (buttonFrame.height + self.ngGuideButtonNode.frame.height)
-        let _ = layoutAuthorizationItems(bounds: CGRect(origin: CGPoint(x: 0.0, y: insets.top), size: CGSize(width: layout.size.width, height: layout.size.height - insets.top - insets.bottom - additionalBottomInset - buttonFrame.height - self.ngGuideButtonNode.frame.height)), items: items, transition: transition, failIfDoesNotFit: false)
+        let _ = layoutAuthorizationItems(bounds: CGRect(origin: CGPoint(x: 0.0, y: insets.top), size: CGSize(width: layout.size.width, height: layout.size.height - insets.top - insets.bottom - additionalBottomInset)), items: items, transition: transition, failIfDoesNotFit: false)
         
         transition.updateFrame(node: self.managedAnimationNode, frame: self.animationNode.frame)
         
@@ -882,7 +889,7 @@ final class PhoneConfirmationController: ViewController {
             
             self.backgroundNode = ASDisplayNode()
             self.backgroundNode.backgroundColor = theme.list.itemBlocksBackgroundColor
-            self.backgroundNode.cornerRadius = 24.0
+            self.backgroundNode.cornerRadius = 42.0
             
             self.textNode = ImmediateTextNode()
             self.textNode.displaysAsynchronously = false
@@ -897,9 +904,10 @@ final class PhoneConfirmationController: ViewController {
             self.cancelButton.accessibilityTraits = [.button]
             self.cancelButton.accessibilityLabel = strings.Login_Edit
             
-            self.proceedNode = SolidRoundedButtonNode(title: strings.Login_Continue, theme: SolidRoundedButtonTheme(theme: theme), height: 50.0, cornerRadius: 11.0, gloss: false)
+            self.proceedNode = SolidRoundedButtonNode(title: strings.Login_Continue, theme: SolidRoundedButtonTheme(theme: theme), glass: false, height: 50.0, cornerRadius: 50.0 * 0.5)
             self.proceedNode.progressType = .embedded
-            
+            self.proceedNode.accessibilityIdentifier = "Auth.PhoneConfirm.ContinueButton"
+
             let font = Font.with(size: 20.0, design: .regular, traits: [.monospacedNumbers])
             let largeFont = Font.with(size: 34.0, design: .regular, weight: .bold, traits: [.monospacedNumbers])
             
@@ -1150,7 +1158,7 @@ final class PhoneConfirmationController: ViewController {
             self.textActivateAreaNode.frame = self.textNode.frame
             self.textActivateAreaNode.accessibilityLabel = "\(self.code) \(self.number). \(self.strings.Login_PhoneNumberConfirmation)"
             
-            let proceedWidth = backgroundSize.width - 16.0 * 2.0
+            let proceedWidth = backgroundSize.width - innerInset * 2.0
             let proceedHeight = self.proceedNode.updateLayout(width: proceedWidth, transition: transition)
             transition.updateFrame(node: self.proceedNode, frame: CGRect(origin: CGPoint(x: innerInset, y: backgroundSize.height - proceedHeight - innerInset), size: CGSize(width: proceedWidth, height: proceedHeight)).offsetBy(dx: backgroundFrame.minX, dy: backgroundFrame.minY))
             

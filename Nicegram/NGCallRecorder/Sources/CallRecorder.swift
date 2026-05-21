@@ -144,11 +144,11 @@ private extension CallRecorder {
         self.partNumber += 1
         
         Task {
-            try await sendAudioToSavedMessages(
+            let receiverId = try await sendAudioToChat(
                 audio: audio,
                 partNumber: partNumber
             )
-            showRecordSavedToast()
+            showRecordSavedToast(receiverId: receiverId)
             log("record saved")
         }
     }

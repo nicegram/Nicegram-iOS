@@ -61,7 +61,7 @@ private final class BlurModeComponent: Component {
                 component: AnyComponent(
                     Image(
                         image: component.icon,
-                        tintColor: component.isSelected ? UIColor(rgb: 0xf8d74a) : .white,
+                        tintColor: component.isSelected ? UIColor(rgb: 0xffd300) : .white,
                         size: CGSize(width: 30.0, height: 30.0)
                     )
                 ),
@@ -74,7 +74,7 @@ private final class BlurModeComponent: Component {
                     Text(
                         text: component.title,
                         font: Font.regular(14.0),
-                        color: component.isSelected ? UIColor(rgb: 0xf8d74a) : UIColor(rgb: 0x808080)
+                        color: component.isSelected ? UIColor(rgb: 0xffd300) : UIColor(rgb: 0x808080)
                     )
                 ),
                 environment: {},

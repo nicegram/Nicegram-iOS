@@ -130,7 +130,7 @@ private final class MediaGroupsGridAlbumItemNode : ListViewItemNode {
         self.countNode = TextNode()
         self.countNode.isUserInteractionEnabled = false
         
-        super.init(layerBacked: false, dynamicBounce: false, rotated: false, seeThrough: false)
+        super.init(layerBacked: false, rotated: false, seeThrough: false)
                 
         self.addSubnode(self.containerNode)
         self.containerNode.addSubnode(self.imageNode)
@@ -280,10 +280,10 @@ private class MediaGroupsAlbumGridItemNode: ListViewItemNode {
     private var enqueuedTransitions: [MediaGroupsAlbumGridItemNodeTransition] = []
     
     init() {
-        self.listNode = ListView()
+        self.listNode = ListViewImpl()
         self.listNode.transform = CATransform3DMakeRotation(-CGFloat.pi / 2.0, 0.0, 0.0, 1.0)
         
-        super.init(layerBacked: false, dynamicBounce: false, rotated: false, seeThrough: false)
+        super.init(layerBacked: false, rotated: false, seeThrough: false)
         
         self.addSubnode(self.listNode)
     }

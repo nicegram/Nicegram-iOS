@@ -376,8 +376,10 @@ public class InstantPageGalleryController: ViewController, StandalonePresentable
         }, editMedia: { _ in
         }, controller: { [weak self] in
             return self
+        }, currentItemNode: { [weak self] in
+            return self?.galleryNode.pager.centralItemNode()
         })
-        self.displayNode = GalleryControllerNode(context: self.context,controllerInteraction: controllerInteraction)
+        self.displayNode = GalleryControllerNode(context: self.context,controllerInteraction: controllerInteraction, titleView: nil)
         self.displayNodeDidLoad()
         
         self.galleryNode.statusBar = self.statusBar
@@ -415,7 +417,7 @@ public class InstantPageGalleryController: ViewController, StandalonePresentable
                     
                     if let node = strongSelf.galleryNode.pager.centralItemNode() {
                         strongSelf.centralItemTitle.set(node.title())
-                        strongSelf.centralItemTitleView.set(node.titleView())
+                        //strongSelf.centralItemTitleView.set(node.titleView())
                         strongSelf.centralItemRightBarButtonItem.set(node.rightBarButtonItem())
                         strongSelf.centralItemRightBarButtonItems.set(node.rightBarButtonItems())
                         strongSelf.centralItemNavigationStyle.set(node.navigationStyle())
@@ -446,7 +448,7 @@ public class InstantPageGalleryController: ViewController, StandalonePresentable
         
         if let centralItemNode = self.galleryNode.pager.centralItemNode(), let presentationArguments = self.presentationArguments as? InstantPageGalleryControllerPresentationArguments {
             self.centralItemTitle.set(centralItemNode.title())
-            self.centralItemTitleView.set(centralItemNode.titleView())
+            //self.centralItemTitleView.set(centralItemNode.titleView())
             self.centralItemRightBarButtonItem.set(centralItemNode.rightBarButtonItem())
             self.centralItemRightBarButtonItems.set(centralItemNode.rightBarButtonItems())
             self.centralItemNavigationStyle.set(centralItemNode.navigationStyle())

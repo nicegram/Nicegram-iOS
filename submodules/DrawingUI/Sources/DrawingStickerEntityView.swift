@@ -305,7 +305,7 @@ public class DrawingStickerEntityView: DrawingEntityView {
             
             var file: TelegramMediaFile?
             for attribute in gift.attributes {
-                if case let .model(_, fileValue, _) = attribute {
+                if case let .model(_, fileValue, _, _) = attribute {
                     file = fileValue
                     break
                 }
@@ -466,7 +466,7 @@ public class DrawingStickerEntityView: DrawingEntityView {
                 file = fileValue
             } else if case let .gift(gift, _) = self.stickerEntity.content {
                 for attribute in gift.attributes {
-                    if case let .model(_, fileValue, _) = attribute {
+                    if case let .model(_, fileValue, _, _) = attribute {
                         file = fileValue
                         break
                     }
@@ -478,7 +478,7 @@ public class DrawingStickerEntityView: DrawingEntityView {
                     let dimensions = file.dimensions ?? PixelDimensions(width: 512, height: 512)
                     let fittedDimensions = dimensions.cgSize.aspectFitted(CGSize(width: 384.0, height: 384.0))
                     let source = AnimatedStickerResourceSource(account: self.context.account, resource: file.resource, isVideo: file.isVideoSticker || file.mimeType == "video/webm")
-                    let pathPrefix = self.context.account.postbox.mediaBox.shortLivedResourceCachePathPrefix(file.resource.id)
+                    let pathPrefix = self.context.engine.resources.shortLivedResourceCachePathPrefix(id: EngineMediaResource.Id(file.resource.id))
                     let playbackMode: AnimatedStickerPlaybackMode = .loop
                     self.animationNode?.setup(source: source, width: Int(fittedDimensions.width), height: Int(fittedDimensions.height), playbackMode: playbackMode, mode: .direct(cachePathPrefix: pathPrefix))
                     
@@ -887,7 +887,7 @@ public class DrawingStickerEntityView: DrawingEntityView {
         } else if case let .gift(gift, _) = self.stickerEntity.content {
             var file: TelegramMediaFile?
             for attribute in gift.attributes {
-                if case let .model(_, fileValue, _) = attribute {
+                if case let .model(_, fileValue, _, _) = attribute {
                     file = fileValue
                     break
                 }

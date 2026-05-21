@@ -3,12 +3,12 @@ import UIKit
 import Display
 import TelegramCore
 import SwiftSignalKit
-import PeerInfoUI
 import OverlayStatusController
 import PresentationDataUtils
 import InviteLinksUI
 import UndoUI
 import TelegramPresentationData
+import AccountContext
 
 extension VideoChatScreenComponent.View {
     func openInviteMembers() {
@@ -113,7 +113,7 @@ extension VideoChatScreenComponent.View {
                     filters.append(.excludeBots)
                     
                     var dismissController: (() -> Void)?
-                    let controller = ChannelMembersSearchController(context: groupCall.accountContext, peerId: groupPeer.id, forceTheme: environment.theme, mode: .inviteToCall, filters: filters, openPeer: { [weak self] peer, participant in
+                    let controller = groupCall.accountContext.sharedContext.makeChannelMembersSearchController(params: ChannelMembersSearchControllerParams(context: groupCall.accountContext, peerId: groupPeer.id, forceTheme: environment.theme, mode: .inviteToCall, filters: filters, openPeer: { [weak self] peer, participant in
                         guard let self, let environment = self.environment, case let .group(groupCall) = self.currentCall else {
                             dismissController?()
                             return
@@ -136,7 +136,7 @@ extension VideoChatScreenComponent.View {
                                 } else {
                                     text = environment.strings.VoiceChat_InvitedPeerText(peer.displayTitle(strings: environment.strings, displayOrder: groupCall.accountContext.sharedContext.currentPresentationData.with({ $0 }).nameDisplayOrder)).string
                                 }
-                                self.presentUndoOverlay(content: .invitedToVoiceChat(context: groupCall.accountContext, peer: EnginePeer(participant.peer), title: nil, text: text, action: nil, duration: 3), action: { _ in return false })
+                                self.presentToast(icon: .peer(participant.peer), text: text, duration: 3)
                             }
                         } else {
                             if case let .channel(groupPeer) = groupPeer, let listenerLink = inviteLinks?.listenerLink, !groupPeer.hasPermission(.inviteMembers) {
@@ -154,7 +154,7 @@ extension VideoChatScreenComponent.View {
                                         guard let self, let environment = self.environment, case let .group(groupCall) = self.currentCall else {
                                             return
                                         }
-                                        self.presentUndoOverlay(content: .forward(savedMessages: false, text: environment.strings.UserInfo_LinkForwardTooltip_Chat_One(peer.displayTitle(strings: environment.strings, displayOrder: groupCall.accountContext.sharedContext.currentPresentationData.with({ $0 }).nameDisplayOrder)).string), action: { _ in return true })
+                                        self.presentToast(icon: .animation("anim_savedmessages"), text: environment.strings.UserInfo_LinkForwardTooltip_Chat_One(peer.displayTitle(strings: environment.strings, displayOrder: groupCall.accountContext.sharedContext.currentPresentationData.with({ $0 }).nameDisplayOrder)).string, duration: 3)
                                     })
                                 })]), in: .window(.root))
                             } else {
@@ -248,7 +248,7 @@ extension VideoChatScreenComponent.View {
                                                 } else {
                                                     text = environment.strings.VoiceChat_InvitedPeerText(peer.displayTitle(strings: environment.strings, displayOrder: presentationData.nameDisplayOrder)).string
                                                 }
-                                                self.presentUndoOverlay(content: .invitedToVoiceChat(context: groupCall.accountContext, peer: peer, title: nil, text: text, action: nil, duration: 3), action: { _ in return false })
+                                                self.presentToast(icon: .peer(peer), text: text, duration: 3)
                                             }
                                         }))
                                     } else if case let .legacyGroup(groupPeer) = groupPeer {
@@ -292,12 +292,19 @@ extension VideoChatScreenComponent.View {
                                             
                                             switch error {
                                             case .privacy:
-                                                let _ = (groupCall.accountContext.account.postbox.loadedPeerWithId(peer.id)
+                                                let _ = (groupCall.accountContext.engine.data.get(TelegramEngine.EngineData.Item.Peer.Peer(id: peer.id))
+                                                    |> mapToSignal { peer -> Signal<EnginePeer, NoError> in
+                                                        if let peer {
+                                                            return .single(peer)
+                                                        } else {
+                                                            return .never()
+                                                        }
+                                                    }
                                                     |> deliverOnMainQueue).start(next: { [weak self] peer in
                                                     guard let self, let environment = self.environment, case let .group(groupCall) = self.currentCall else {
                                                         return
                                                     }
-                                                    environment.controller()?.present(textAlertController(context: groupCall.accountContext, title: nil, text: environment.strings.Privacy_GroupsAndChannels_InviteToGroupError(EnginePeer(peer).compactDisplayTitle, EnginePeer(peer).compactDisplayTitle).string, actions: [TextAlertAction(type: .genericAction, title: environment.strings.Common_OK, action: {})]), in: .window(.root))
+                                                    environment.controller()?.present(textAlertController(context: groupCall.accountContext, title: nil, text: environment.strings.Privacy_GroupsAndChannels_InviteToGroupError(peer.compactDisplayTitle, peer.compactDisplayTitle).string, actions: [TextAlertAction(type: .genericAction, title: environment.strings.Common_OK, action: {})]), in: .window(.root))
                                                 })
                                             case .notMutualContact:
                                                 environment.controller()?.present(textAlertController(context: context, title: nil, text: environment.strings.GroupInfo_AddUserLeftError, actions: [TextAlertAction(type: .genericAction, title: environment.strings.Common_OK, action: {})]), in: .window(.root))
@@ -320,14 +327,14 @@ extension VideoChatScreenComponent.View {
                                                 } else {
                                                     text = environment.strings.VoiceChat_InvitedPeerText(peer.displayTitle(strings: environment.strings, displayOrder: presentationData.nameDisplayOrder)).string
                                                 }
-                                                self.presentUndoOverlay(content: .invitedToVoiceChat(context: groupCall.accountContext, peer: peer, title: nil, text: text, action: nil, duration: 3), action: { _ in return false })
+                                                self.presentToast(icon: .peer(peer), text: text, duration: 3)
                                             }
                                         }))
                                     }
                                 })]), in: .window(.root))
                             }
                         }
-                    })
+                    }))
                     controller.copyInviteLink = { [weak self] in
                         dismissController?()
                         
@@ -361,7 +368,7 @@ extension VideoChatScreenComponent.View {
                             if let link {
                                 UIPasteboard.general.string = link
                                 
-                                self.presentUndoOverlay(content: .linkCopied(title: nil, text: environment.strings.VoiceChat_InviteLinkCopiedText), action: { _ in return false })
+                                self.presentToast(icon: .animation("anim_linkcopied"), text: environment.strings.VoiceChat_InviteLinkCopiedText, duration: 3)
                             }
                         })
                     }

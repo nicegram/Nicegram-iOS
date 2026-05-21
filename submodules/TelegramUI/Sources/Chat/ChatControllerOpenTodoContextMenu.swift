@@ -15,6 +15,7 @@ import ChatControllerInteraction
 import Pasteboard
 import TelegramStringFormatting
 import TelegramPresentationData
+import ChatPresentationInterfaceState
 
 private enum OptionsId: Hashable {
     case item
@@ -29,9 +30,6 @@ extension ChatControllerImpl {
         
         let completion = todo.completions.first(where: { $0.id == todoItemId })
                 
-//        let recognizer: TapLongTapOrDoubleTapGestureRecognizer? = nil// anyRecognizer as? TapLongTapOrDoubleTapGestureRecognizer
-//        let gesture: ContextGesture? = nil // anyRecognizer as? ContextGesture
-        
         var canMark = false
         if (todo.flags.contains(.othersCanComplete) || message.author?.id == context.account.peerId) {
             canMark = true
@@ -128,14 +126,19 @@ extension ChatControllerImpl {
                 }
             }
             
-            if canReplyInChat(self.presentationInterfaceState, accountPeerId: self.context.account.peerId) {
+            var canReply = canReplyInChat(self.presentationInterfaceState, accountPeerId: self.context.account.peerId)
+            if !canSendMessagesToChat(self.presentationInterfaceState) && (self.presentationInterfaceState.copyProtectionEnabled || message.isCopyProtected()) {
+                canReply = false
+            }
+            
+            if canReply {
                 items.append(.action(ContextMenuActionItem(text: self.presentationData.strings.Chat_Todo_ReplyToItem, icon: { theme in
                     return generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Reply"), color: theme.actionSheet.primaryTextColor)
                 }, action: { [weak self] c, _ in
                     guard let self else {
                         return
                     }
-                    self.interfaceInteraction?.setupReplyMessage(message.id, todoItem.id, { transition, completed in
+                    self.interfaceInteraction?.setupReplyMessage(message.id, .todoItem(todoItem.id), { transition, completed in
                         c?.dismiss(result: .custom(transition), completion: {
                             completed()
                         })
@@ -263,7 +266,7 @@ extension ChatControllerImpl {
                 messageContentSource?.snapshotView?.removeFromSuperview()
             }
             
-            let contextController = ContextController(
+            let contextController = makeContextController(
                 presentationData: self.presentationData,
                 configuration: ContextController.Configuration(
                     sources: sources,

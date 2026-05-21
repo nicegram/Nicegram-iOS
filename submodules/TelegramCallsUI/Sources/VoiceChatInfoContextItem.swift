@@ -64,9 +64,9 @@ private final class VoiceChatInfoContextItemNode: ASDisplayNode, ContextMenuCust
     }
 
     func updateLayout(constrainedWidth: CGFloat, constrainedHeight: CGFloat) -> (CGSize, (CGSize, ContainedViewLayoutTransition) -> Void) {
-        let sideInset: CGFloat = 16.0
-        let iconSideInset: CGFloat = 12.0
-        let verticalInset: CGFloat = 12.0
+        let sideInset: CGFloat = 18.0
+        let iconSideInset: CGFloat = 20.0
+        let verticalInset: CGFloat = 11.0
         
         let iconSize = self.iconNode.image.flatMap({ $0.size }) ?? CGSize()
         
@@ -80,11 +80,11 @@ private final class VoiceChatInfoContextItemNode: ASDisplayNode, ContextMenuCust
         
         return (CGSize(width: textSize.width + sideInset + rightTextInset, height: verticalInset * 2.0 + textSize.height), { size, transition in
             let verticalOrigin = floor((size.height - textSize.height) / 2.0)
-            let textFrame = CGRect(origin: CGPoint(x: sideInset, y: verticalOrigin), size: textSize)
+            let textFrame = CGRect(origin: CGPoint(x: iconSideInset + 40.0, y: verticalOrigin), size: textSize)
             transition.updateFrameAdditive(node: self.textNode, frame: textFrame)
             
             if !iconSize.width.isZero {
-                transition.updateFrameAdditive(node: self.iconNode, frame: CGRect(origin: CGPoint(x: size.width - standardIconWidth - iconSideInset + floor((standardIconWidth - iconSize.width) / 2.0), y: floor((size.height - iconSize.height) / 2.0)), size: iconSize))
+                transition.updateFrameAdditive(node: self.iconNode, frame: CGRect(origin: CGPoint(x: iconSideInset + floor((standardIconWidth - iconSize.width) / 2.0), y: floor((size.height - iconSize.height) / 2.0)), size: iconSize))
             }
             
             transition.updateFrame(node: self.backgroundNode, frame: CGRect(origin: CGPoint(x: 0.0, y: 0.0), size: CGSize(width: size.width, height: size.height)))

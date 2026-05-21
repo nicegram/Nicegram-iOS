@@ -21,7 +21,8 @@ public func updateAutodownloadSettingsInteractively(accountManager: AccountManag
 extension AutodownloadPresetSettings {
     init(apiAutodownloadSettings: Api.AutoDownloadSettings) {
         switch apiAutodownloadSettings {
-        case let .autoDownloadSettings(flags, photoSizeMax, videoSizeMax, fileSizeMax, videoUploadMaxbitrate, _, _):
+        case let .autoDownloadSettings(autoDownloadSettingsData):
+            let (flags, photoSizeMax, videoSizeMax, fileSizeMax, videoUploadMaxbitrate, _, _) = (autoDownloadSettingsData.flags, autoDownloadSettingsData.photoSizeMax, autoDownloadSettingsData.videoSizeMax, autoDownloadSettingsData.fileSizeMax, autoDownloadSettingsData.videoUploadMaxbitrate, autoDownloadSettingsData.smallQueueActiveOperationsMax, autoDownloadSettingsData.largeQueueActiveOperationsMax)
             self.init(disabled: (flags & (1 << 0)) != 0, photoSizeMax: Int64(photoSizeMax), videoSizeMax: videoSizeMax, fileSizeMax: fileSizeMax, preloadLargeVideo: (flags & (1 << 1)) != 0, lessDataForPhoneCalls: (flags & (1 << 3)) != 0, videoUploadMaxbitrate: videoUploadMaxbitrate)
         }
     }
@@ -30,7 +31,8 @@ extension AutodownloadPresetSettings {
 extension AutodownloadSettings {
     init(apiAutodownloadSettings: Api.account.AutoDownloadSettings) {
         switch apiAutodownloadSettings {
-            case let .autoDownloadSettings(low, medium, high):
+            case let .autoDownloadSettings(autoDownloadSettingsData):
+                let (low, medium, high) = (autoDownloadSettingsData.low, autoDownloadSettingsData.medium, autoDownloadSettingsData.high)
                 self.init(lowPreset: AutodownloadPresetSettings(apiAutodownloadSettings: low), mediumPreset: AutodownloadPresetSettings(apiAutodownloadSettings: medium), highPreset: AutodownloadPresetSettings(apiAutodownloadSettings: high))
         }
     }
@@ -47,6 +49,6 @@ func apiAutodownloadPresetSettings(_ autodownloadPresetSettings: AutodownloadPre
     if autodownloadPresetSettings.lessDataForPhoneCalls {
         flags |= (1 << 3)
     }
-    return .autoDownloadSettings(flags: flags, photoSizeMax: Int32(autodownloadPresetSettings.photoSizeMax), videoSizeMax: autodownloadPresetSettings.videoSizeMax, fileSizeMax: autodownloadPresetSettings.fileSizeMax, videoUploadMaxbitrate: autodownloadPresetSettings.videoUploadMaxbitrate, smallQueueActiveOperationsMax: 0, largeQueueActiveOperationsMax: 0)
+    return .autoDownloadSettings(Api.AutoDownloadSettings.Cons_autoDownloadSettings(flags: flags, photoSizeMax: Int32(autodownloadPresetSettings.photoSizeMax), videoSizeMax: autodownloadPresetSettings.videoSizeMax, fileSizeMax: autodownloadPresetSettings.fileSizeMax, videoUploadMaxbitrate: autodownloadPresetSettings.videoUploadMaxbitrate, smallQueueActiveOperationsMax: 0, largeQueueActiveOperationsMax: 0))
 }
 

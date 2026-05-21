@@ -20,6 +20,7 @@ public final class PlainButtonComponent: Component {
     public let animateAlpha: Bool
     public let animateScale: Bool
     public let animateContents: Bool
+    public let rasterizeOnScaleAnimation: Bool
     public let tag: AnyObject?
     
     public init(
@@ -33,6 +34,7 @@ public final class PlainButtonComponent: Component {
         animateAlpha: Bool = true,
         animateScale: Bool = true,
         animateContents: Bool = true,
+        rasterizeOnScaleAnimation: Bool = true,
         tag: AnyObject? = nil
     ) {
         self.content = content
@@ -45,6 +47,7 @@ public final class PlainButtonComponent: Component {
         self.animateAlpha = animateAlpha
         self.animateScale = animateScale
         self.animateContents = animateContents
+        self.rasterizeOnScaleAnimation = rasterizeOnScaleAnimation
         self.tag = tag
     }
     
@@ -74,6 +77,9 @@ public final class PlainButtonComponent: Component {
             return false
         }
         if lhs.animateContents != rhs.animateContents {
+            return false
+        }
+        if lhs.rasterizeOnScaleAnimation != rhs.rasterizeOnScaleAnimation {
             return false
         }
         if lhs.tag !== rhs.tag {
@@ -108,6 +114,7 @@ public final class PlainButtonComponent: Component {
             super.init(frame: frame)
             
             self.isExclusiveTouch = true
+            self.layer.rasterizationScale = UIScreenScale
             
             self.contentContainer.isUserInteractionEnabled = false
             self.addSubview(self.contentContainer)
@@ -130,8 +137,13 @@ public final class PlainButtonComponent: Component {
                             self.contentContainer.alpha = 0.7
                         }
                         if animateScale {
+                            self.layer.shouldRasterize = true
                             let transition = ComponentTransition(animation: .curve(duration: 0.2, curve: .easeInOut))
-                            transition.setScale(layer: self.contentContainer.layer, scale: topScale)
+                            transition.setScale(layer: self.contentContainer.layer, scale: topScale, completion: { finished in
+                                if finished {
+                                    self.layer.shouldRasterize = false
+                                }
+                            })
                         }
                     } else {
                         if animateAlpha {
@@ -140,15 +152,21 @@ public final class PlainButtonComponent: Component {
                         }
                         
                         if animateScale {
+                            self.layer.shouldRasterize = true
+                            
                             let transition = ComponentTransition(animation: .none)
                             transition.setScale(layer: self.contentContainer.layer, scale: 1.0)
-                            
+                                
                             self.contentContainer.layer.animateScale(from: topScale, to: maxScale, duration: 0.13, timingFunction: CAMediaTimingFunctionName.easeOut.rawValue, removeOnCompletion: false, completion: { [weak self] _ in
                                 guard let self else {
                                     return
                                 }
                                 
-                                self.contentContainer.layer.animateScale(from: maxScale, to: 1.0, duration: 0.1, timingFunction: CAMediaTimingFunctionName.easeIn.rawValue)
+                                self.contentContainer.layer.animateScale(from: maxScale, to: 1.0, duration: 0.1, timingFunction: CAMediaTimingFunctionName.easeIn.rawValue, completion: { finished in
+                                    if finished {
+                                        self.layer.shouldRasterize = false
+                                    }
+                                })
                             })
                         }
                     }

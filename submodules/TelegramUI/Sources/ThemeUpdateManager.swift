@@ -109,7 +109,7 @@ final class ThemeUpdateManagerImpl: ThemeUpdateManager {
                                         guard complete, let fullSizeData = fullSizeData else {
                                             return .complete()
                                         }
-                                        accountManager.mediaBox.storeResourceData(file.file.resource.id, data: fullSizeData, synchronous: true)
+                                        accountManager.resources.storeResourceData(id: EngineMediaResource.Id(file.file.resource.id), data: fullSizeData, synchronous: true)
                                         return .single((.cloud(PresentationCloudTheme(theme: theme, resolvedWallpaper: wallpaper, creatorAccountId: theme.isCreator ? account.id : nil)), presentationTheme))
                                     }
                                 } else {

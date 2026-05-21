@@ -5,16 +5,21 @@ import RasterizedCompositionComponent
 import ComponentFlow
 
 public final class BadgeComponent: Component {
+    public enum CornerRadius: Equatable {
+        case automatic
+        case custom(CGFloat)
+    }
+    
     public let text: String
     public let font: UIFont
-    public let cornerRadius: CGFloat
+    public let cornerRadius: CornerRadius
     public let insets: UIEdgeInsets
     public let outerInsets: UIEdgeInsets
     
     public init(
         text: String,
         font: UIFont,
-        cornerRadius: CGFloat,
+        cornerRadius: CornerRadius,
         insets: UIEdgeInsets,
         outerInsets: UIEdgeInsets
     ) {
@@ -144,12 +149,6 @@ public final class BadgeComponent: Component {
                 }
             }
             
-            if component.cornerRadius != previousComponent?.cornerRadius {
-                self.backgroundLayer.image = generateStretchableFilledCircleImage(diameter: component.cornerRadius * 2.0, color: .white)
-                
-                self.backgroundInsetLayer.image = generateStretchableFilledCircleImage(diameter: component.cornerRadius * 2.0, color: .black)
-            }
-            
             let textSize = self.textLayout?.size ?? CGSize(width: 1.0, height: 1.0)
             
             let size = CGSize(width: textSize.width + component.insets.left + component.insets.right, height: textSize.height + component.insets.top + component.insets.bottom)
@@ -169,6 +168,19 @@ public final class BadgeComponent: Component {
             
             transition.setPosition(layer: self.textContentsLayer, position: textFrame.origin)
             self.textContentsLayer.bounds = CGRect(origin: CGPoint(), size: textFrame.size)
+            
+            if component.cornerRadius != previousComponent?.cornerRadius {
+                let cornerRadius: CGFloat
+                switch component.cornerRadius {
+                case let .custom(value):
+                    cornerRadius = value
+                case .automatic:
+                    cornerRadius = floor(min(size.width, size.height) * 0.5)
+                }
+                
+                self.backgroundLayer.image = generateStretchableFilledCircleImage(diameter: cornerRadius * 2.0, color: .white)
+                self.backgroundInsetLayer.image = generateStretchableFilledCircleImage(diameter: cornerRadius * 2.0, color: .black)
+            }
             
             return size
         }

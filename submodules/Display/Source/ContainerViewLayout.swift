@@ -140,36 +140,55 @@ public extension ContainerViewLayout {
         return false
     }
     
+    var deviceOrientationSize: CGSize {
+        let screenSize = self.deviceMetrics.screenSize
+        return self.actualOrientation == .landscape ? CGSize(width: screenSize.height, height: screenSize.width) : screenSize
+    }
+    
     var inSplitView: Bool {
-        var maybeSplitView = false
-        if case .tablet = self.deviceMetrics.type {
-            if case .compact = self.metrics.widthClass {
-                maybeSplitView = true
-            }
-            if case .compact = self.metrics.heightClass {
-                maybeSplitView = true
-            }
+        guard case .tablet = self.deviceMetrics.type else {
+            return false
         }
-        if maybeSplitView && abs(max(self.size.width, self.size.height) - self.deviceMetrics.screenSize.height) < 1.0 {
+        guard self.metrics.widthClass == .compact || self.metrics.heightClass == .compact else {
+            return false
+        }
+        
+        let orient = self.deviceOrientationSize
+        guard abs(self.size.height - orient.height) < 1.0 else {
+            return false
+        }
+        
+        let ratio = self.size.width / max(orient.width, 1.0)
+        let tol: CGFloat = 0.04
+        let isSplitFraction = abs(ratio - 0.5)   < tol || abs(ratio - (1.0/3.0)) < tol || abs(ratio - (2.0/3.0)) < tol
+        
+        return isSplitFraction
+    }
+    
+    var inSlideOver: Bool {
+        guard case .tablet = self.deviceMetrics.type else {
+            return false
+        }
+        guard self.metrics.widthClass == .compact || self.metrics.heightClass == .compact else {
+            return false
+        }
+        let currentLong = max(self.size.width, self.size.height)
+        let screenLong = max(self.deviceMetrics.screenSize.width, self.deviceMetrics.screenSize.height)
+        
+        if abs(currentLong - screenLong) > 10.0 {
             return true
         }
         return false
     }
     
-    var inSlideOver: Bool {
-        var maybeSlideOver = false
-        if case .tablet = self.deviceMetrics.type {
-            if case .compact = self.metrics.widthClass {
-                maybeSlideOver = true
-            }
-            if case .compact = self.metrics.heightClass {
-                maybeSlideOver = true
-            }
-        }
-        if maybeSlideOver && abs(max(self.size.width, self.size.height) - self.deviceMetrics.screenSize.height) > 10.0 {
-            return true
-        }
-        return false
+    var actualOrientation: LayoutOrientation {
+        let screenPortraitHeight = max(self.deviceMetrics.screenSize.width, self.deviceMetrics.screenSize.height)
+        let screenPortraitWidth = min(self.deviceMetrics.screenSize.width, self.deviceMetrics.screenSize.height)
+        
+        let deltaPortrait = abs(self.size.height - screenPortraitHeight)
+        let deltaLandscape = abs(self.size.height - screenPortraitWidth)
+        
+        return deltaLandscape < deltaPortrait ? .landscape : .portrait
     }
     
     var orientation: LayoutOrientation {
@@ -182,5 +201,10 @@ public extension ContainerViewLayout {
     
     var standardInputHeight: CGFloat {
         return self.deviceMetrics.standardInputHeight(inLandscape: self.orientation == .landscape)
+    }
+    
+    static func concentricInsets(bottomInset: CGFloat, innerDiameter: CGFloat, sideInset: CGFloat) -> UIEdgeInsets {
+        let mappedBottomInset: CGFloat = max(bottomInset, sideInset)
+        return UIEdgeInsets(top: 0.0, left: sideInset, bottom: mappedBottomInset, right: sideInset)
     }
 }

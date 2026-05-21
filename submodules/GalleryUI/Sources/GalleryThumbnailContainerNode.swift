@@ -4,22 +4,24 @@ import AsyncDisplayKit
 import Display
 import SwiftSignalKit
 
-private let itemBaseSize = CGSize(width: 23.0, height: 42.0)
-private let spacing: CGFloat = 2.0
-private let maxWidth: CGFloat = 75.0
-
 public protocol GalleryThumbnailItem {
     func isEqual(to: GalleryThumbnailItem) -> Bool
     func image(synchronous: Bool) -> (Signal<(TransformImageArguments) -> DrawingContext?, NoError>, CGSize)
 }
 
 private final class GalleryThumbnailItemNode: ASDisplayNode {
+    private let itemBaseSize: CGSize
+    private let maxWidth: CGFloat
+    
     private let imageNode: TransformImageNode
     private let imageContainerNode: ASDisplayNode
     
     private let imageSize: CGSize
     
-    init(item: GalleryThumbnailItem, synchronous: Bool) {
+    init(item: GalleryThumbnailItem, itemBaseSize: CGSize, maxWidth: CGFloat, synchronous: Bool) {
+        self.itemBaseSize = itemBaseSize
+        self.maxWidth = maxWidth
+        
         self.imageNode = TransformImageNode()
         self.imageContainerNode = ASDisplayNode()
         self.imageContainerNode.clipsToBounds = true
@@ -36,7 +38,7 @@ private final class GalleryThumbnailItemNode: ASDisplayNode {
     
     func updateLayout(height: CGFloat, progress: CGFloat, transition: ContainedViewLayoutTransition) -> CGFloat {
         let boundingSize = self.imageSize.aspectFilled(CGSize(width: 1.0, height: height))
-        let width = itemBaseSize.width * (1.0 - progress) + min(maxWidth, boundingSize.width) * progress
+        let width = self.itemBaseSize.width * (1.0 - progress) + min(self.maxWidth, boundingSize.width) * progress
         let arguments = TransformImageArguments(corners: ImageCorners(radius: 0), imageSize: boundingSize, boundingSize: boundingSize, intrinsicInsets: UIEdgeInsets())
         let makeLayout = self.imageNode.asyncLayout()
         let apply = makeLayout(arguments)
@@ -52,6 +54,10 @@ public final class GalleryThumbnailContainerNode: ASDisplayNode, ASScrollViewDel
     public let groupId: Int64
     private let scrollNode: ASScrollNode
     
+    private let itemBaseSize: CGSize
+    private let spacing: CGFloat
+    private let maxWidth: CGFloat
+    
     public private(set) var items: [GalleryThumbnailItem] = []
     public private(set) var indexes: [Int] = []
     private var itemNodes: [GalleryThumbnailItemNode] = []
@@ -66,6 +72,10 @@ public final class GalleryThumbnailContainerNode: ASDisplayNode, ASScrollViewDel
     public init(groupId: Int64) {
         self.groupId = groupId
         self.scrollNode = ASScrollNode()
+        
+        self.itemBaseSize = CGSize(width: 15.0, height: 30.0)
+        self.spacing = 2.0
+        self.maxWidth = 75.0
         
         super.init()
         
@@ -108,7 +118,7 @@ public final class GalleryThumbnailContainerNode: ASDisplayNode, ASScrollViewDel
                 if let index = self.items.firstIndex(where: { $0.isEqual(to: item) }) {
                     itemNodes.append(self.itemNodes[index])
                 } else {
-                    itemNodes.append(GalleryThumbnailItemNode(item: item, synchronous: self.updateSynchronously))
+                    itemNodes.append(GalleryThumbnailItemNode(item: item, itemBaseSize: self.itemBaseSize, maxWidth: self.maxWidth, synchronous: self.updateSynchronously))
                 }
             }
             

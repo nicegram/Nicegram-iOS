@@ -7,7 +7,7 @@ swift_library(
         "Sources/**/*.swift",
     ]),
     copts = [
-        #"-warnings-as-errors",
+        "-warnings-as-errors",
     ],
     deps = [
         "//submodules/Display",
@@ -16,6 +16,8 @@ swift_library(
         "//submodules/ActivityIndicator",
         "//submodules/ShimmerEffect",
         "//submodules/Components/BundleIconComponent",
+        "//submodules/TelegramUI/Components/GlassBackgroundComponent",
+        
     ],
     visibility = [
         "//visibility:public",

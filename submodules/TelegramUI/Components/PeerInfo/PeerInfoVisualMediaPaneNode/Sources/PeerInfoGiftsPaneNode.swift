@@ -24,6 +24,7 @@ import PeerInfoPaneNode
 import GiftItemComponent
 import PlainButtonComponent
 import GiftViewScreen
+import GiftUnpinScreen
 import ButtonComponent
 import UndoUI
 import CheckComponent
@@ -34,6 +35,8 @@ import BundleIconComponent
 import EmojiTextAttachmentView
 import TextFormat
 import PromptUI
+import CollectionTabItemComponent
+import EdgeEffect
 
 public final class PeerInfoGiftsPaneNode: ASDisplayNode, PeerInfoPaneNode, UIScrollViewDelegate {
     public enum GiftCollection: Equatable {
@@ -90,16 +93,11 @@ public final class PeerInfoGiftsPaneNode: ASDisplayNode, PeerInfoPaneNode, UIScr
     private let tabSelector = ComponentView<Empty>()
     public private(set) var currentCollection: GiftCollection = .all
     
-    private var panelBackground: NavigationBackgroundNode?
-    private var panelSeparator: ASDisplayNode?
+    private var panelEdgeEffectView: EdgeEffectView?
+    private var panelContentContainer: UIView?
     private var panelButton: ComponentView<Empty>?
     private var panelCheck: ComponentView<Empty>?
-    
-    private let emptyResultsClippingView = UIView()
-    private let emptyResultsAnimation = ComponentView<Empty>()
-    private let emptyResultsTitle = ComponentView<Empty>()
-    private let emptyResultsAction = ComponentView<Empty>()
-    
+        
     private var currentParams: (size: CGSize, topInset: CGFloat, sideInset: CGFloat, bottomInset: CGFloat, deviceMetrics: DeviceMetrics, visibleHeight: CGFloat, isScrollingLockedAtTop: Bool, expandProgress: CGFloat, navigationHeight: CGFloat, presentationData: PresentationData)?
     
     private var theme: PresentationTheme?
@@ -237,7 +235,7 @@ public final class PeerInfoGiftsPaneNode: ASDisplayNode, PeerInfoPaneNode, UIScr
             return
         }
         
-        let promptController = promptController(sharedContext: self.context.sharedContext, updatedPresentationData: nil, text: params.presentationData.strings.PeerInfo_Gifts_CreateCollection_Title, titleFont: .bold, subtitle: params.presentationData.strings.PeerInfo_Gifts_CreateCollection_Text, value: "", placeholder: params.presentationData.strings.PeerInfo_Gifts_CreateCollection_Placeholder, characterLimit: 12, displayCharacterLimit: true, apply: { [weak self] value in
+        let promptController = promptController(context: self.context, updatedPresentationData: nil, text: params.presentationData.strings.PeerInfo_Gifts_CreateCollection_Title, titleFont: .bold, subtitle: params.presentationData.strings.PeerInfo_Gifts_CreateCollection_Text, value: "", placeholder: params.presentationData.strings.PeerInfo_Gifts_CreateCollection_Placeholder, characterLimit: 12, displayCharacterLimit: true, apply: { [weak self] value in
             guard let self, let value else {
                 return
             }
@@ -308,7 +306,7 @@ public final class PeerInfoGiftsPaneNode: ASDisplayNode, PeerInfoPaneNode, UIScr
             return
         }
         
-        let promptController = promptController(sharedContext: self.context.sharedContext, updatedPresentationData: nil, text: params.presentationData.strings.PeerInfo_Gifts_RenameCollection_Title, titleFont: .bold, value: collection.title, placeholder: params.presentationData.strings.PeerInfo_Gifts_CreateCollection_Placeholder, characterLimit: 12, displayCharacterLimit: true, apply: { [weak self] value in
+        let promptController = promptController(context: self.context, updatedPresentationData: nil, text: params.presentationData.strings.PeerInfo_Gifts_RenameCollection_Title, titleFont: .bold, value: collection.title, placeholder: params.presentationData.strings.PeerInfo_Gifts_CreateCollection_Placeholder, characterLimit: 12, displayCharacterLimit: true, apply: { [weak self] value in
             guard let self, let value else {
                 return
             }
@@ -569,7 +567,7 @@ public final class PeerInfoGiftsPaneNode: ASDisplayNode, PeerInfoPaneNode, UIScr
             })))
         }
         
-        let contextController = ContextController(
+        let contextController = makeContextController(
             presentationData: params.presentationData,
             source: .extracted(GiftsExtractedContentSource(sourceNode: sourceNode)),
             items: .single(ContextController.Items(content: .list(items))),
@@ -583,7 +581,7 @@ public final class PeerInfoGiftsPaneNode: ASDisplayNode, PeerInfoPaneNode, UIScr
         if let params = self.currentParams {
             let visibleBounds = self.scrollNode.bounds.insetBy(dx: 0.0, dy: -10.0)
                 
-            var topInset: CGFloat = 60.0
+            var topInset: CGFloat = params.topInset
             
             var canEditCollections = false
             if self.peerId == self.context.account.peerId || self.canManage {
@@ -661,14 +659,15 @@ public final class PeerInfoGiftsPaneNode: ASDisplayNode, PeerInfoPaneNode, UIScr
                     component: AnyComponent(TabSelectorComponent(
                         context: self.context,
                         colors: TabSelectorComponent.Colors(
-                            foreground: params.presentationData.theme.list.itemSecondaryTextColor,
+                            foreground: params.presentationData.theme.list.itemPrimaryTextColor,
                             selection: params.presentationData.theme.list.itemSecondaryTextColor.withMultipliedAlpha(0.15),
                             simple: true
                         ),
                         theme: params.presentationData.theme,
                         customLayout: TabSelectorComponent.CustomLayout(
-                            font: Font.medium(14.0),
-                            spacing: 2.0
+                            font: Font.medium(15.0),
+                            spacing: 2.0,
+                            height: 44.0 - 5.0 * 2.0
                         ),
                         items: tabSelectorItems,
                         selectedId: AnyHashable(self.currentCollection.rawValue),
@@ -705,7 +704,7 @@ public final class PeerInfoGiftsPaneNode: ASDisplayNode, PeerInfoPaneNode, UIScr
                         }
                     )),
                     environment: {},
-                    containerSize: CGSize(width: params.size.width - 10.0 * 2.0, height: 50.0)
+                    containerSize: CGSize(width: params.size.width - 14.0 * 2.0, height: 44.0)
                 )
                 if let tabSelectorView = self.tabSelector.view {
                     if tabSelectorView.superview == nil {
@@ -716,9 +715,9 @@ public final class PeerInfoGiftsPaneNode: ASDisplayNode, PeerInfoPaneNode, UIScr
                             tabSelectorView.layer.animateAlpha(from: 0.0, to: 1.0, duration: 0.25)
                         }
                     }
-                    transition.setFrame(view: tabSelectorView, frame: CGRect(origin: CGPoint(x: floor((params.size.width - tabSelectorSize.width) / 2.0), y: 60.0), size: tabSelectorSize))
+                    transition.setFrame(view: tabSelectorView, frame: CGRect(origin: CGPoint(x: floor((params.size.width - tabSelectorSize.width) / 2.0), y: topInset), size: tabSelectorSize))
                     
-                    topInset += tabSelectorSize.height + 14.0
+                    topInset += tabSelectorSize.height + 15.0
                 }
             } else if let tabSelectorView = self.tabSelector.view {
                 tabSelectorView.alpha = 0.0
@@ -735,32 +734,31 @@ public final class PeerInfoGiftsPaneNode: ASDisplayNode, PeerInfoPaneNode, UIScr
             let bottomInset = params.bottomInset
             let presentationData = params.presentationData
           
-            let themeUpdated = self.theme !== presentationData.theme
             self.theme = presentationData.theme
             
-            let panelBackground: NavigationBackgroundNode
-            let panelSeparator: ASDisplayNode
+            let panelEdgeEffectView: EdgeEffectView
+            let panelContentContainer: UIView
             
             var panelVisibility = params.expandProgress < 1.0 ? 0.0 : 1.0
             if !self.canGift || self.resultsAreEmpty {
                 panelVisibility = 0.0
             }
             
-            let panelTransition: ComponentTransition = .immediate
-            if let current = self.panelBackground {
-                panelBackground = current
+            if let current = self.panelContentContainer {
+                panelContentContainer = current
             } else {
-                panelBackground = NavigationBackgroundNode(color: presentationData.theme.rootController.tabBar.backgroundColor)
-                self.addSubnode(panelBackground)
-                self.panelBackground = panelBackground
+                panelContentContainer = UIView()
+                self.view.addSubview(panelContentContainer)
+                self.panelContentContainer = panelContentContainer
             }
             
-            if let current = self.panelSeparator {
-                panelSeparator = current
+            let panelTransition: ComponentTransition = .immediate
+            if let current = self.panelEdgeEffectView {
+                panelEdgeEffectView = current
             } else {
-                panelSeparator = ASDisplayNode()
-                panelBackground.addSubnode(panelSeparator)
-                self.panelSeparator = panelSeparator
+                panelEdgeEffectView = EdgeEffectView()
+                panelContentContainer.addSubview(panelEdgeEffectView)
+                self.panelEdgeEffectView = panelEdgeEffectView
             }
                     
             let panelButton: ComponentView<Empty>
@@ -771,7 +769,7 @@ public final class PeerInfoGiftsPaneNode: ASDisplayNode, PeerInfoPaneNode, UIScr
                 self.panelButton = panelButton
             }
             
-            let buttonSideInset = sideInset + 16.0
+            let buttonInsets = ContainerViewLayout.concentricInsets(bottomInset: params.bottomInset, innerDiameter: 52.0 * 0.5, sideInset: sideInset + 30.0)
             
             let buttonTitle: String
             var buttonIconName: String?
@@ -804,6 +802,7 @@ public final class PeerInfoGiftsPaneNode: ASDisplayNode, PeerInfoPaneNode, UIScr
                 component: AnyComponent(
                     ButtonComponent(
                         background: ButtonComponent.Background(
+                            style: .glass,
                             color: presentationData.theme.list.itemCheckColors.fillColor,
                             foreground: presentationData.theme.list.itemCheckColors.foregroundColor,
                             pressedColor: presentationData.theme.list.itemCheckColors.fillColor.withMultipliedAlpha(0.8)
@@ -819,32 +818,27 @@ public final class PeerInfoGiftsPaneNode: ASDisplayNode, PeerInfoPaneNode, UIScr
                     )
                 ),
                 environment: {},
-                containerSize: CGSize(width: size.width - buttonSideInset * 2.0, height: 50.0)
+                containerSize: CGSize(width: size.width - buttonInsets.left * 2.0, height: 52.0)
             )
             
             var scrollOffset: CGFloat = max(0.0, size.height - params.visibleHeight)
             
-            let effectiveBottomInset = max(8.0, bottomInset)
-            var bottomPanelHeight = effectiveBottomInset + panelButtonSize.height + 8.0
+            let effectiveBottomInset = max(buttonInsets.bottom, bottomInset)
+            let bottomPanelHeight = effectiveBottomInset + panelButtonSize.height + 8.0
             if params.visibleHeight < 110.0 {
                 scrollOffset -= bottomPanelHeight
             }
             
             if let panelButtonView = panelButton.view {
                 if panelButtonView.superview == nil {
-                    panelBackground.view.addSubview(panelButtonView)
+                    panelContentContainer.addSubview(panelButtonView)
                 }
-                panelButtonView.frame = CGRect(origin: CGPoint(x: buttonSideInset, y: 8.0), size: panelButtonSize)
+                panelButtonView.frame = CGRect(origin: CGPoint(x: buttonInsets.left, y: 8.0), size: panelButtonSize)
             }
             
-            if themeUpdated {
-                panelBackground.updateColor(color: presentationData.theme.rootController.tabBar.backgroundColor, transition: .immediate)
-                panelSeparator.backgroundColor = presentationData.theme.rootController.tabBar.separatorColor
-            }
+            panelTransition.setFrame(view: panelContentContainer, frame: CGRect(origin: CGPoint(x: 0.0, y: size.height - bottomPanelHeight), size: CGSize(width: size.width, height: bottomPanelHeight)))
             
             if self.canManage {
-                bottomPanelHeight -= 9.0
-                
                 let panelCheck: ComponentView<Empty>
                 if let current = self.panelCheck {
                     panelCheck = current
@@ -907,20 +901,20 @@ public final class PeerInfoGiftsPaneNode: ASDisplayNode, PeerInfoPaneNode, UIScr
                 )
                 if let panelCheckView = panelCheck.view {
                     if panelCheckView.superview == nil {
-                        panelBackground.view.addSubview(panelCheckView)
+                        panelContentContainer.addSubview(panelCheckView)
                     }
-                    panelCheckView.frame = CGRect(origin: CGPoint(x: floor((size.width - panelCheckSize.width) / 2.0), y: 16.0), size: panelCheckSize)
+                    panelCheckView.frame = CGRect(origin: CGPoint(x: floor((size.width - panelCheckSize.width) / 2.0), y: 16.0 + 16.0), size: panelCheckSize)
                 }
                 if let panelButtonView = panelButton.view {
                     panelButtonView.isHidden = true
                 }
             }
             
-            panelTransition.setFrame(view: panelBackground.view, frame: CGRect(x: 0.0, y: size.height - bottomPanelHeight - scrollOffset, width: size.width, height: bottomPanelHeight))
-            ComponentTransition.spring(duration: 0.4).setSublayerTransform(view: panelBackground.view, transform: CATransform3DMakeTranslation(0.0, bottomPanelHeight * (1.0 - panelVisibility), 0.0))
+            let edgeEffectFrame = CGRect(x: 0.0, y: 0.0, width: size.width, height: bottomPanelHeight)
+            panelTransition.setFrame(view: panelEdgeEffectView, frame: edgeEffectFrame)
+            panelEdgeEffectView.update(content: presentationData.theme.list.blocksBackgroundColor, blur: false, rect: edgeEffectFrame, edge: .bottom, edgeSize: 40.0, transition: panelTransition)
             
-            panelBackground.update(size: CGSize(width: size.width, height: bottomPanelHeight), transition: transition.containedViewLayoutTransition)
-            panelTransition.setFrame(view: panelSeparator.view, frame: CGRect(x: 0.0, y: 0.0, width: size.width, height: UIScreenPixel))
+            ComponentTransition.spring(duration: 0.4).setSublayerTransform(view: panelContentContainer, transform: CATransform3DMakeTranslation(0.0, bottomPanelHeight * (1.0 - panelVisibility), 0.0))
             
             contentHeight += bottomPanelHeight
             bottomScrollInset = bottomPanelHeight - 40.0
@@ -935,8 +929,10 @@ public final class PeerInfoGiftsPaneNode: ASDisplayNode, PeerInfoPaneNode, UIScr
         }
         
         let bottomContentOffset = max(0.0, self.scrollNode.view.contentSize.height - self.scrollNode.view.contentOffset.y - self.scrollNode.view.frame.height)
-        if interactive, bottomContentOffset < 200.0 {
-            self.giftsListView.loadMore()
+        if bottomContentOffset < 200.0 {
+            Queue.mainQueue().justDispatch {
+                self.giftsListView.loadMore()
+            }
         }
     }
         
@@ -1037,7 +1033,7 @@ public final class PeerInfoGiftsPaneNode: ASDisplayNode, PeerInfoPaneNode, UIScr
                         let isAdded = gift.collectionIds?.contains(collection.id) ?? false
                         
                         subItems.append(.action(ContextMenuActionItem(text: title, entities: entities, entityFiles: entityFiles, enableEntityAnimations: false, icon: { theme in
-                            return entities.isEmpty ? generateTintedImage(image: UIImage(bundleImageName: "Peer Info/Gifts/Collection"), color: theme.contextMenu.primaryColor) : (isAdded ? generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Check"), color: theme.contextMenu.primaryColor) : nil)
+                            return entities.isEmpty ? generateTintedImage(image: UIImage(bundleImageName: "Peer Info/Gifts/Collection"), color: theme.contextMenu.primaryColor) : (isAdded ? generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Check"), color: theme.contextMenu.primaryColor) : UIImage())
                         }, iconPosition: collection.icon == nil ? .left : .right, action: { [weak self] _, f in
                             f(.default)
                             
@@ -1059,7 +1055,7 @@ public final class PeerInfoGiftsPaneNode: ASDisplayNode, PeerInfoPaneNode, UIScr
                             case let .unique(uniqueGift):
                                 giftTitle = uniqueGift.title + " #\(formatCollectibleNumber(uniqueGift.number, dateTimeFormat: currentParams.presentationData.dateTimeFormat))"
                                 for attribute in uniqueGift.attributes {
-                                    if case let .model(_, file, _) = attribute {
+                                    if case let .model(_, file, _, _) = attribute {
                                         giftFile = file
                                     }
                                 }
@@ -1206,72 +1202,74 @@ public final class PeerInfoGiftsPaneNode: ASDisplayNode, PeerInfoPaneNode, UIScr
                     let context = self.context
                     let shareController = context.sharedContext.makeShareController(
                         context: context,
-                        subject: .url(link),
-                        forceExternal: false,
-                        shareStory: { [weak self] in
-                            guard let self, let parentController = self.parentController else {
-                                return
-                            }
-                            Queue.mainQueue().after(0.15) {
-                                let controller = self.context.sharedContext.makeStorySharingScreen(context: self.context, subject: .gift(gift), parentController: parentController)
-                                parentController.push(controller)
-                            }
-                        },
-                        enqueued: { [weak self] peerIds, _ in
-                            let _ = (context.engine.data.get(
-                                EngineDataList(
-                                    peerIds.map(TelegramEngine.EngineData.Item.Peer.Peer.init)
+                        params: ShareControllerParams(
+                            subject: .url(link),
+                            externalShare: false,
+                            actionCompleted: { [weak self] in
+                                self?.parentController?.present(UndoOverlayController(presentationData: presentationData, content: .linkCopied(title: nil, text: presentationData.strings.Conversation_LinkCopied), elevatedLayout: true, animateInAsReplacement: false, action: { _ in return false }), in: .current)
+                            },
+                            enqueued: { [weak self] peerIds, _ in
+                                let _ = (context.engine.data.get(
+                                    EngineDataList(
+                                        peerIds.map(TelegramEngine.EngineData.Item.Peer.Peer.init)
+                                    )
                                 )
-                            )
-                            |> deliverOnMainQueue).startStandalone(next: { [weak self] peerList in
+                                |> deliverOnMainQueue).startStandalone(next: { [weak self] peerList in
+                                    guard let self, let parentController = self.parentController else {
+                                        return
+                                    }
+
+                                    let peers = peerList.compactMap { $0 }
+                                    let presentationData = context.sharedContext.currentPresentationData.with { $0 }
+                                    let text: String
+                                    var savedMessages = false
+                                    if peerIds.count == 1, let peerId = peerIds.first, peerId == context.account.peerId {
+                                        text = presentationData.strings.Conversation_ForwardTooltip_SavedMessages_One
+                                        savedMessages = true
+                                    } else {
+                                        if peers.count == 1, let peer = peers.first {
+                                            var peerName = peer.id == context.account.peerId ? presentationData.strings.DialogList_SavedMessages : peer.displayTitle(strings: presentationData.strings, displayOrder: presentationData.nameDisplayOrder)
+                                            peerName = peerName.replacingOccurrences(of: "**", with: "")
+                                            text = presentationData.strings.Conversation_ForwardTooltip_Chat_One(peerName).string
+                                        } else if peers.count == 2, let firstPeer = peers.first, let secondPeer = peers.last {
+                                            var firstPeerName = firstPeer.id == context.account.peerId ? presentationData.strings.DialogList_SavedMessages : firstPeer.displayTitle(strings: presentationData.strings, displayOrder: presentationData.nameDisplayOrder)
+                                            firstPeerName = firstPeerName.replacingOccurrences(of: "**", with: "")
+                                            var secondPeerName = secondPeer.id == context.account.peerId ? presentationData.strings.DialogList_SavedMessages : secondPeer.displayTitle(strings: presentationData.strings, displayOrder: presentationData.nameDisplayOrder)
+                                            secondPeerName = secondPeerName.replacingOccurrences(of: "**", with: "")
+                                            text = presentationData.strings.Conversation_ForwardTooltip_TwoChats_One(firstPeerName, secondPeerName).string
+                                        } else if let peer = peers.first {
+                                            var peerName = peer.displayTitle(strings: presentationData.strings, displayOrder: presentationData.nameDisplayOrder)
+                                            peerName = peerName.replacingOccurrences(of: "**", with: "")
+                                            text = presentationData.strings.Conversation_ForwardTooltip_ManyChats_One(peerName, "\(peers.count - 1)").string
+                                        } else {
+                                            text = ""
+                                        }
+                                    }
+
+                                    parentController.present(UndoOverlayController(presentationData: presentationData, content: .forward(savedMessages: savedMessages, text: text), elevatedLayout: true, animateInAsReplacement: false, action: { [weak self] action in
+                                        if savedMessages, action == .info {
+                                            let _ = (context.engine.data.get(TelegramEngine.EngineData.Item.Peer.Peer(id: context.account.peerId))
+                                            |> deliverOnMainQueue).start(next: { [weak self] peer in
+                                                guard let peer, let navigationController = self?.parentController?.navigationController as? NavigationController else {
+                                                    return
+                                                }
+                                                context.sharedContext.navigateToChatController(NavigateToChatControllerParams(navigationController: navigationController, chatController: nil, context: context, chatLocation: .peer(peer), subject: nil, botStart: nil, updateTextInputState: nil, keepStack: .always, useExisting: true, purposefulAction: nil, scrollToEndIfExists: false, activateMessageSearch: nil, animated: true))
+                                            })
+                                        }
+                                        return false
+                                    }, additionalView: nil), in: .current)
+                                })
+                            },
+                            shareStory: { [weak self] in
                                 guard let self, let parentController = self.parentController else {
                                     return
                                 }
-                                
-                                let peers = peerList.compactMap { $0 }
-                                let presentationData = context.sharedContext.currentPresentationData.with { $0 }
-                                let text: String
-                                var savedMessages = false
-                                if peerIds.count == 1, let peerId = peerIds.first, peerId == context.account.peerId {
-                                    text = presentationData.strings.Conversation_ForwardTooltip_SavedMessages_One
-                                    savedMessages = true
-                                } else {
-                                    if peers.count == 1, let peer = peers.first {
-                                        var peerName = peer.id == context.account.peerId ? presentationData.strings.DialogList_SavedMessages : peer.displayTitle(strings: presentationData.strings, displayOrder: presentationData.nameDisplayOrder)
-                                        peerName = peerName.replacingOccurrences(of: "**", with: "")
-                                        text = presentationData.strings.Conversation_ForwardTooltip_Chat_One(peerName).string
-                                    } else if peers.count == 2, let firstPeer = peers.first, let secondPeer = peers.last {
-                                        var firstPeerName = firstPeer.id == context.account.peerId ? presentationData.strings.DialogList_SavedMessages : firstPeer.displayTitle(strings: presentationData.strings, displayOrder: presentationData.nameDisplayOrder)
-                                        firstPeerName = firstPeerName.replacingOccurrences(of: "**", with: "")
-                                        var secondPeerName = secondPeer.id == context.account.peerId ? presentationData.strings.DialogList_SavedMessages : secondPeer.displayTitle(strings: presentationData.strings, displayOrder: presentationData.nameDisplayOrder)
-                                        secondPeerName = secondPeerName.replacingOccurrences(of: "**", with: "")
-                                        text = presentationData.strings.Conversation_ForwardTooltip_TwoChats_One(firstPeerName, secondPeerName).string
-                                    } else if let peer = peers.first {
-                                        var peerName = peer.displayTitle(strings: presentationData.strings, displayOrder: presentationData.nameDisplayOrder)
-                                        peerName = peerName.replacingOccurrences(of: "**", with: "")
-                                        text = presentationData.strings.Conversation_ForwardTooltip_ManyChats_One(peerName, "\(peers.count - 1)").string
-                                    } else {
-                                        text = ""
-                                    }
+                                Queue.mainQueue().after(0.15) {
+                                    let controller = self.context.sharedContext.makeStorySharingScreen(context: self.context, subject: .gift(gift), parentController: parentController)
+                                    parentController.push(controller)
                                 }
-                                
-                                parentController.present(UndoOverlayController(presentationData: presentationData, content: .forward(savedMessages: savedMessages, text: text), elevatedLayout: true, animateInAsReplacement: false, action: { [weak self] action in
-                                    if savedMessages, action == .info {
-                                        let _ = (context.engine.data.get(TelegramEngine.EngineData.Item.Peer.Peer(id: context.account.peerId))
-                                        |> deliverOnMainQueue).start(next: { [weak self] peer in
-                                            guard let peer, let navigationController = self?.parentController?.navigationController as? NavigationController else {
-                                                return
-                                            }
-                                            context.sharedContext.navigateToChatController(NavigateToChatControllerParams(navigationController: navigationController, chatController: nil, context: context, chatLocation: .peer(peer), subject: nil, botStart: nil, updateTextInputState: nil, keepStack: .always, useExisting: true, purposefulAction: nil, scrollToEndIfExists: false, activateMessageSearch: nil, animated: true))
-                                        })
-                                    }
-                                    return false
-                                }, additionalView: nil), in: .current)
-                            })
-                        },
-                        actionCompleted: { [weak self] in
-                            self?.parentController?.present(UndoOverlayController(presentationData: presentationData, content: .linkCopied(title: nil, text: presentationData.strings.Conversation_LinkCopied), elevatedLayout: true, animateInAsReplacement: false, action: { _ in return false }), in: .current)
-                        }
+                            }
+                        )
                     )
                     self.parentController?.present(shareController, in: .window(.root))
                 })
@@ -1294,7 +1292,7 @@ public final class PeerInfoGiftsPaneNode: ASDisplayNode, PeerInfoPaneNode, UIScr
                             animationFile = gift.file
                         case let .unique(gift):
                             for attribute in gift.attributes {
-                                if case let .model(_, file, _) = attribute {
+                                if case let .model(_, file, _, _) = attribute {
                                     animationFile = file
                                     break
                                 }
@@ -1330,6 +1328,25 @@ public final class PeerInfoGiftsPaneNode: ASDisplayNode, PeerInfoPaneNode, UIScr
                             return
                         }
                         let context = self.context
+                        
+                        guard uniqueGift.hostPeerId == nil else {
+                            let presentationData = context.sharedContext.currentPresentationData.with { $0 }
+                            let alertController = textAlertController(
+                                context: context,
+                                title: presentationData.strings.Gift_UnavailableAction_Title,
+                                text: presentationData.strings.Gift_UnavailableAction_Text,
+                                actions: [
+                                    TextAlertAction(type: .defaultAction, title: presentationData.strings.Gift_UnavailableAction_OpenFragment, action: {
+                                        context.sharedContext.openExternalUrl(context: context, urlContext: .generic, url: "https://fragment.com/gift/\(uniqueGift.slug)", forceExternal: true, presentationData: presentationData, navigationController: nil, dismissInput: {})
+                                    }),
+                                    TextAlertAction(type: .genericAction, title: presentationData.strings.Common_Cancel, action: {})
+                                ],
+                                actionLayout: .vertical
+                            )
+                            self.parentController?.present(alertController, in: .window(.root))
+                            return
+                        }
+                        
                         let _ = (context.account.stateManager.contactBirthdays
                         |> take(1)
                         |> deliverOnMainQueue).start(next: { [weak self] birthdays in
@@ -1379,7 +1396,7 @@ public final class PeerInfoGiftsPaneNode: ASDisplayNode, PeerInfoPaneNode, UIScr
                 case let .unique(uniqueGift):
                     giftTitle = uniqueGift.title + " #\(formatCollectibleNumber(uniqueGift.number, dateTimeFormat: currentParams.presentationData.dateTimeFormat))"
                     for attribute in uniqueGift.attributes {
-                        if case let .model(_, file, _) = attribute {
+                        if case let .model(_, file, _, _) = attribute {
                             giftFile = file
                         }
                     }
@@ -1409,7 +1426,7 @@ public final class PeerInfoGiftsPaneNode: ASDisplayNode, PeerInfoPaneNode, UIScr
         }
         
         let previewController = GiftContextPreviewController(context: self.context, gift: gift)
-        let contextController = ContextController(
+        let contextController = makeContextController(
             context: self.context,
             presentationData: currentParams.presentationData,
             source: .controller(ContextControllerContentSourceImpl(controller: previewController, sourceView: view)),
@@ -1423,7 +1440,7 @@ public final class PeerInfoGiftsPaneNode: ASDisplayNode, PeerInfoPaneNode, UIScr
         self.presentationDataPromise.set(.single(presentationData))
         
         self.backgroundNode.backgroundColor = presentationData.theme.list.blocksBackgroundColor
-        transition.updateFrame(node: self.backgroundNode, frame: CGRect(origin: CGPoint(x: 0.0, y: 48.0), size: size))
+        transition.updateFrame(node: self.backgroundNode, frame: CGRect(origin: CGPoint(x: 0.0, y: topInset), size: CGSize(width: size.width, height: size.height - topInset)))
         transition.updateFrame(node: self.scrollNode, frame: CGRect(origin: CGPoint(), size: size))
         
         let visibleBounds = self.scrollNode.bounds.insetBy(dx: 0.0, dy: -10.0)
@@ -1476,162 +1493,6 @@ private func cancelContextGestures(view: UIView) {
     }
     for subview in view.subviews {
         cancelContextGestures(view: subview)
-    }
-}
-
-private final class CollectionTabItemComponent: Component {
-    typealias EnvironmentType = TabSelectorComponent.ItemEnvironment
-    
-    enum Icon: Equatable {
-        case collection(TelegramMediaFile)
-        case add
-    }
-    
-    let context: AccountContext
-    let icon: Icon?
-    let title: String
-    let theme: PresentationTheme
-    
-    init(
-        context: AccountContext,
-        icon: Icon?,
-        title: String,
-        theme: PresentationTheme
-    ) {
-        self.context = context
-        self.icon = icon
-        self.title = title
-        self.theme = theme
-    }
-    
-    static func ==(lhs: CollectionTabItemComponent, rhs: CollectionTabItemComponent) -> Bool {
-        if lhs.icon != rhs.icon {
-            return false
-        }
-        if lhs.title != rhs.title {
-            return false
-        }
-        if lhs.theme !== rhs.theme {
-            return false
-        }
-        return true
-    }
-    
-    final class View: UIView {
-        private let title = ComponentView<Empty>()
-        private let icon = ComponentView<Empty>()
-        private var iconLayer: InlineStickerItemLayer?
-                
-        private var component: CollectionTabItemComponent?
-                
-        func update(component: CollectionTabItemComponent, availableSize: CGSize, state: State, environment: Environment<EnvironmentType>, transition: ComponentTransition) -> CGSize {
-            self.component = component
-            
-            let environment = environment[EnvironmentType.self].value
-                        
-            let iconSpacing: CGFloat = 3.0
-            
-            let normalColor = component.theme.list.itemSecondaryTextColor
-            let selectedColor = component.theme.list.freeTextColor
-            let effectiveColor = normalColor.mixedWith(selectedColor, alpha: environment.selectionFraction)
-            
-            let titleSize = self.title.update(
-                transition: .immediate,
-                component: AnyComponent(MultilineTextComponent(
-                    text: .plain(NSAttributedString(string: component.title, font: Font.medium(14.0), textColor: effectiveColor))
-                )),
-                environment: {},
-                containerSize: CGSize(width: availableSize.width, height: 100.0)
-            )
-                        
-            var iconOffset: CGFloat = 0.0
-            var iconSize = CGSize()
-            if let icon = component.icon  {
-                switch icon {
-                case let .collection(file):
-                    iconSize = CGSize(width: 16.0, height: 16.0)
-                    
-                    let iconLayer: InlineStickerItemLayer
-                    if let current = self.iconLayer {
-                        iconLayer = current
-                    } else {
-                        iconLayer = InlineStickerItemLayer(
-                            context: component.context,
-                            userLocation: .other,
-                            attemptSynchronousLoad: true,
-                            emoji: ChatTextInputTextCustomEmojiAttribute(interactivelySelectedFromPackId: nil, fileId: file.fileId.id, file: file),
-                            file: file,
-                            cache: component.context.animationCache,
-                            renderer: component.context.animationRenderer,
-                            placeholderColor: component.theme.list.mediaPlaceholderColor,
-                            pointSize: iconSize,
-                            loopCount: 1
-                        )
-                        self.layer.addSublayer(iconLayer)
-                        self.iconLayer = iconLayer
-                    }
-                    let iconFrame = CGRect(origin: CGPoint(x: iconOffset, y: floorToScreenPixels((titleSize.height - iconSize.height) * 0.5)), size: iconSize)
-                    iconLayer.frame = iconFrame
-                case .add:
-                    iconSize = self.icon.update(
-                        transition: .immediate,
-                        component: AnyComponent(BundleIconComponent(
-                            name: "Chat/Input/Media/PanelBadgeAdd",
-                            tintColor: component.theme.list.itemSecondaryTextColor
-                        )),
-                        environment: {},
-                        containerSize: CGSize(width: 100.0, height: 100.0)
-                    )
-                    let iconFrame = CGRect(origin: CGPoint(x: iconOffset, y: floorToScreenPixels((titleSize.height - iconSize.height) * 0.5)), size: iconSize)
-                    if let iconView = self.icon.view {
-                        if iconView.superview == nil {
-                            iconView.isUserInteractionEnabled = false
-                            self.addSubview(iconView)
-                        }
-                        iconView.frame = iconFrame
-                    }
-                }
-                                
-                iconOffset += iconSize.width + iconSpacing
-            } else {
-                if let iconLayer = self.iconLayer {
-                    self.iconLayer = nil
-                    iconLayer.animateAlpha(from: 1.0, to: 0.0, duration: 0.2, removeOnCompletion: false, completion: { _ in
-                        iconLayer.removeFromSuperlayer()
-                    })
-                    iconLayer.animateScale(from: 1.0, to: 0.01, duration: 0.2, removeOnCompletion: false)
-                }
-                if let iconView = self.icon.view {
-                    iconView.removeFromSuperview()
-                }
-            }
-            
-            let titleFrame = CGRect(origin: CGPoint(x: iconOffset, y: 0.0), size: titleSize)
-            if let titleView = self.title.view {
-                if titleView.superview == nil {
-                    titleView.isUserInteractionEnabled = false
-                    self.addSubview(titleView)
-                }
-                titleView.frame = titleFrame
-            }
-                        
-            let size: CGSize
-            if let _ = component.icon {
-                size = CGSize(width: iconSize.width + iconSpacing + titleSize.width, height: titleSize.height)
-            } else {
-                size = titleSize
-            }
-             
-            return size
-        }
-    }
-    
-    func makeView() -> View {
-        return View(frame: CGRect())
-    }
-    
-    func update(view: View, availableSize: CGSize, state: State, environment: Environment<EnvironmentType>, transition: ComponentTransition) -> CGSize {
-        return view.update(component: self, availableSize: availableSize, state: state, environment: environment, transition: transition)
     }
 }
 

@@ -59,6 +59,17 @@
     }
 }
 
++ (void * _Nullable)getMethodOfClass:(Class _Nonnull)targetClass selector:(SEL _Nonnull)selector {
+    return class_getInstanceMethod(targetClass, selector);
+}
+
++ (void)replaceMethodImplementationOfClass:(Class _Nonnull)targetClass selector:(SEL _Nonnull)selector replacement:(IMP _Nonnull)replacement {
+    Method method = class_getInstanceMethod(targetClass, selector);
+    if (method) {
+        method_setImplementation(method, replacement);
+    }
+}
+
 @end
 
 @implementation NSObject (AssociatedObject)

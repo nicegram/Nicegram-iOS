@@ -56,29 +56,30 @@ func _internal_joinChannel(account: Account, peerId: PeerId, hash: String?) -> S
                         return .fail(.generic)
                     }
                     return account.postbox.transaction { transaction -> RenderedChannelParticipant? in
-                        var peers: [PeerId: Peer] = [:]
+                        var peers: [EnginePeer.Id: EnginePeer] = [:]
                         var presences: [PeerId: PeerPresence] = [:]
                         guard let peer = transaction.getPeer(account.peerId) else {
                             return nil
                         }
-                        peers[account.peerId] = peer
+                        peers[account.peerId] = EnginePeer(peer)
                         if let presence = transaction.getPeerPresence(peerId: account.peerId) {
                             presences[account.peerId] = presence
                         }
                         let updatedParticipant: ChannelParticipant
                         switch result {
-                            case let .channelParticipant(participant, _, _):
+                            case let .channelParticipant(channelParticipantData):
+                                let participant = channelParticipantData.participant
                                 updatedParticipant = ChannelParticipant(apiParticipant: participant)
                         }
                         if case let .member(_, _, maybeAdminInfo, _, _, _) = updatedParticipant {
                             if let adminInfo = maybeAdminInfo {
                                 if let peer = transaction.getPeer(adminInfo.promotedBy) {
-                                    peers[peer.id] = peer
+                                    peers[peer.id] = EnginePeer(peer)
                                 }
                             }
                         }
                         
-                        return RenderedChannelParticipant(participant: updatedParticipant, peer: peer, peers: peers, presences: presences)
+                        return RenderedChannelParticipant(participant: updatedParticipant, peer: EnginePeer(peer), peers: peers, presences: presences)
                     }
                     |> castError(JoinChannelError.self)
                 }

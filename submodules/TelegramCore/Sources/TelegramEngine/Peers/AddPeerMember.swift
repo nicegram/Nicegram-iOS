@@ -71,7 +71,8 @@ func _internal_addGroupMember(account: Account, peerId: PeerId, memberId: PeerId
                     let updatesValue: Api.Updates
                     let missingInviteesValue: [Api.MissingInvitee]
                     switch result {
-                    case let .invitedUsers(updates, missingInvitees):
+                    case let .invitedUsers(invitedUsersData):
+                        let (updates, missingInvitees) = (invitedUsersData.updates, invitedUsersData.missingInvitees)
                         updatesValue = updates
                         missingInviteesValue = missingInvitees
                     }
@@ -91,7 +92,7 @@ func _internal_addGroupMember(account: Account, peerId: PeerId, memberId: PeerId
                                         }
                                     }
                                     if !found {
-                                        updatedParticipants.append(.member(id: memberId, invitedBy: account.peerId, invitedAt: timestamp))
+                                        updatedParticipants.append(.member(id: memberId, invitedBy: account.peerId, invitedAt: timestamp, rank: nil))
                                     }
                                     return cachedData.withUpdatedParticipants(CachedGroupParticipants(participants: updatedParticipants, version: participants.version))
                                 } else {
@@ -102,7 +103,8 @@ func _internal_addGroupMember(account: Account, peerId: PeerId, memberId: PeerId
                                                 
                         let result = TelegramInvitePeersResult(forbiddenPeers: missingInviteesValue.compactMap { invitee -> TelegramForbiddenInvitePeer? in
                             switch invitee {
-                            case let .missingInvitee(flags, userId):
+                            case let .missingInvitee(missingInviteeData):
+                                let (flags, userId) = (missingInviteeData.flags, missingInviteeData.userId)
                                 guard let peer = transaction.getPeer(PeerId(namespace: Namespaces.Peer.CloudUser, id: PeerId.Id._internalFromInt64Value(userId))) else {
                                     return nil
                                 }
@@ -188,17 +190,19 @@ func _internal_addChannelMember(account: Account, peerId: PeerId, memberId: Peer
                     |> mapToSignal { result -> Signal<(ChannelParticipant?, RenderedChannelParticipant), AddChannelMemberError> in
                         let updatesValue: Api.Updates
                         switch result {
-                        case let .invitedUsers(updates, missingInvitees):
-                            if case let .missingInvitee(flags, _) = missingInvitees.first {
+                        case let .invitedUsers(invitedUsersData):
+                            let (updates, missingInvitees) = (invitedUsersData.updates, invitedUsersData.missingInvitees)
+                            if case let .missingInvitee(missingInviteeData) = missingInvitees.first {
+                                let flags = missingInviteeData.flags
                                 let _ = _internal_updateIsPremiumRequiredToContact(account: account, peerIds: [memberPeer.id]).startStandalone()
-                                
+
                                 return .fail(.restricted(TelegramForbiddenInvitePeer(
                                     peer: EnginePeer(memberPeer),
                                     canInviteWithPremium: (flags & (1 << 0)) != 0,
                                     premiumRequiredToContact: (flags & (1 << 1)) != 0
                                 )))
                             }
-                            
+
                             updatesValue = updates
                         }
                         
@@ -235,20 +239,20 @@ func _internal_addChannelMember(account: Account, peerId: PeerId, memberId: Peer
                                     return cachedData
                                 }
                             })
-                            var peers: [PeerId: Peer] = [:]
+                            var peers: [EnginePeer.Id: EnginePeer] = [:]
                             var presences: [PeerId: PeerPresence] = [:]
-                            peers[memberPeer.id] = memberPeer
+                            peers[memberPeer.id] = EnginePeer(memberPeer)
                             if let presence = transaction.getPeerPresence(peerId: memberPeer.id) {
                                 presences[memberPeer.id] = presence
                             }
                             if case let .member(_, _, maybeAdminInfo, _, _, _) = updatedParticipant {
                                 if let adminInfo = maybeAdminInfo {
                                     if let peer = transaction.getPeer(adminInfo.promotedBy) {
-                                        peers[peer.id] = peer
+                                        peers[peer.id] = EnginePeer(peer)
                                     }
                                 }
                             }
-                            return (currentParticipant, RenderedChannelParticipant(participant: updatedParticipant, peer: memberPeer, peers: peers, presences: presences))
+                            return (currentParticipant, RenderedChannelParticipant(participant: updatedParticipant, peer: EnginePeer(memberPeer), peers: peers, presences: presences))
                         }
                         |> mapError { _ -> AddChannelMemberError in }
                     }
@@ -299,7 +303,8 @@ func _internal_addChannelMembers(account: Account, peerId: PeerId, memberIds: [P
                 let updatesValue: Api.Updates
                 let missingInviteesValue: [Api.MissingInvitee]
                 switch result {
-                case let .invitedUsers(updates, missingInvitees):
+                case let .invitedUsers(invitedUsersData):
+                    let (updates, missingInvitees) = (invitedUsersData.updates, invitedUsersData.missingInvitees)
                     updatesValue = updates
                     missingInviteesValue = missingInvitees
                 }
@@ -310,7 +315,8 @@ func _internal_addChannelMembers(account: Account, peerId: PeerId, memberIds: [P
                 return account.postbox.transaction { transaction -> TelegramInvitePeersResult in
                     let result = TelegramInvitePeersResult(forbiddenPeers: missingInviteesValue.compactMap { invitee -> TelegramForbiddenInvitePeer? in
                         switch invitee {
-                        case let .missingInvitee(flags, userId):
+                        case let .missingInvitee(missingInviteeData):
+                            let (flags, userId) = (missingInviteeData.flags, missingInviteeData.userId)
                             guard let peer = transaction.getPeer(PeerId(namespace: Namespaces.Peer.CloudUser, id: PeerId.Id._internalFromInt64Value(userId))) else {
                                 return nil
                             }
@@ -344,7 +350,7 @@ public enum SendBotRequestedPeerError {
     case generic
 }
 
-func _internal_sendBotRequestedPeer(account: Account, peerId: PeerId, messageId: MessageId, buttonId: Int32, requestedPeerIds: [PeerId]) -> Signal<Void, SendBotRequestedPeerError> {
+func _internal_sendBotRequestedPeer(account: Account, peerId: PeerId, messageId: MessageId?, requestId: String?, buttonId: Int32, requestedPeerIds: [PeerId]) -> Signal<Void, SendBotRequestedPeerError> {
     return account.postbox.transaction { transaction -> Signal<Void, SendBotRequestedPeerError> in
         if let peer = transaction.getPeer(peerId) {
             var inputRequestedPeers: [Api.InputPeer] = []
@@ -354,7 +360,16 @@ func _internal_sendBotRequestedPeer(account: Account, peerId: PeerId, messageId:
                 }
             }
             if let inputPeer = apiInputPeer(peer), !inputRequestedPeers.isEmpty {
-                let signal = account.network.request(Api.functions.messages.sendBotRequestedPeer(peer: inputPeer, msgId: messageId.id, buttonId: buttonId, requestedPeers: inputRequestedPeers))
+                var flags: Int32 = 0
+                var msgId: Int32?
+                if let messageId = messageId {
+                    flags |= (1 << 0)
+                    msgId = messageId.id
+                }
+                if let _ = requestId {
+                    flags |= (1 << 1)
+                }
+                let signal = account.network.request(Api.functions.messages.sendBotRequestedPeer(flags: flags, peer: inputPeer, msgId: msgId, webappReqId: requestId, buttonId: buttonId, requestedPeers: inputRequestedPeers))
                 |> mapError { error -> SendBotRequestedPeerError in
                     return .generic
                 }
@@ -368,4 +383,73 @@ func _internal_sendBotRequestedPeer(account: Account, peerId: PeerId, messageId:
     }
     |> castError(SendBotRequestedPeerError.self)
     |> switchToLatest
+}
+
+public enum CreateBotError {
+    case generic
+    case occupied
+    case limitExceeded
+}
+
+func _internal_createBot(account: Account, name: String, username: String, managerPeerId: PeerId, viaDeeplink: Bool) -> Signal<EnginePeer, CreateBotError> {
+    return account.postbox.transaction { transaction -> Api.InputUser? in
+        if let peer = transaction.getPeer(managerPeerId) {
+            return apiInputUser(peer)
+        }
+        return nil
+    }
+    |> castError(CreateBotError.self)
+    |> mapToSignal { inputUser -> Signal<EnginePeer, CreateBotError> in
+        guard let inputUser = inputUser else {
+            return .fail(.generic)
+        }
+        var flags: Int32 = 0
+        if viaDeeplink {
+            flags |= (1 << 0)
+        }
+        return account.network.request(Api.functions.bots.createBot(flags: flags, name: name, username: username, managerId: inputUser))
+        |> mapError { error -> CreateBotError in
+            if error.errorDescription == "USERNAME_OCCUPIED" {
+                return .occupied
+            } else if error.errorDescription == "BOT_CREATE_LIMIT_EXCEEDED" {
+                return .limitExceeded
+            } else {
+                return .generic
+            }
+        }
+        |> mapToSignal { apiUser -> Signal<EnginePeer, CreateBotError> in
+            return account.postbox.transaction { transaction -> EnginePeer in
+                let user = TelegramUser(user: apiUser)
+                updatePeers(transaction: transaction, accountPeerId: account.peerId, peers: AccumulatedPeers(transaction: transaction, chats: [], users: [apiUser]))
+                return EnginePeer(user)
+            }
+            |> castError(CreateBotError.self)
+        }
+    }
+}
+
+public enum GetRequestedWebViewButtonError {
+    case generic
+}
+
+func _internal_getRequestedWebViewButton(account: Account, botId: PeerId, requestId: String) -> Signal<ReplyMarkupButton, GetRequestedWebViewButtonError> {
+    return account.postbox.transaction { transaction -> Api.InputUser? in
+        if let peer = transaction.getPeer(botId) {
+            return apiInputUser(peer)
+        }
+        return nil
+    }
+    |> castError(GetRequestedWebViewButtonError.self)
+    |> mapToSignal { inputUser -> Signal<ReplyMarkupButton, GetRequestedWebViewButtonError> in
+        guard let inputUser = inputUser else {
+            return .fail(.generic)
+        }
+        return account.network.request(Api.functions.bots.getRequestedWebViewButton(bot: inputUser, webappReqId: requestId))
+        |> mapError { _ -> GetRequestedWebViewButtonError in
+            return .generic
+        }
+        |> map { apiButton -> ReplyMarkupButton in
+            return ReplyMarkupButton(apiButton: apiButton)
+        }
+    }
 }

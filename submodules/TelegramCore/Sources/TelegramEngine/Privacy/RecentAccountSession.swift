@@ -104,7 +104,8 @@ public struct RecentAccountSession: Equatable {
 extension RecentAccountSession {
     init(apiAuthorization: Api.Authorization) {
         switch apiAuthorization {
-            case let .authorization(flags, hash, deviceModel, platform, systemVersion, apiId, appName, appVersion, dateCreated, dateActive, ip, country, region):
+            case let .authorization(authorizationData):
+                let (flags, hash, deviceModel, platform, systemVersion, apiId, appName, appVersion, dateCreated, dateActive, ip, country, region) = (authorizationData.flags, authorizationData.hash, authorizationData.deviceModel, authorizationData.platform, authorizationData.systemVersion, authorizationData.apiId, authorizationData.appName, authorizationData.appVersion, authorizationData.dateCreated, authorizationData.dateActive, authorizationData.ip, authorizationData.country, authorizationData.region)
                 var accountSessionFlags: AccountSessionFlags = []
                 if (flags & (1 << 1)) != 0 {
                     accountSessionFlags.insert(.isOfficial)

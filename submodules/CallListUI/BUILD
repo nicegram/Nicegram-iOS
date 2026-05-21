@@ -7,7 +7,7 @@ swift_library(
         "Sources/**/*.swift",
     ]),
     copts = [
-        #"-warnings-as-errors",
+        "-warnings-as-errors",
     ],
     deps = [
         "//submodules/SSignalKit/SwiftSignalKit:SwiftSignalKit",
@@ -34,6 +34,9 @@ swift_library(
         "//submodules/InviteLinksUI",
         "//submodules/UndoUI",
         "//submodules/TelegramCallsUI",
+        "//submodules/TelegramUI/Components/EdgeEffect",
+        "//submodules/ComponentFlow",
+        "//submodules/Components/ComponentDisplayAdapters",
     ],
     visibility = [
         "//visibility:public",

@@ -1,5 +1,5 @@
+import CoreAnalytics
 import Foundation
-import NGAnalytics
 
 public enum SpyOnFriendsAnalyticsEvent: String {
     case show = "spy_friends_show"

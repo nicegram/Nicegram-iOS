@@ -7,7 +7,7 @@ swift_library(
         "Sources/**/*.swift",
     ]),
     copts = [
-        #"-warnings-as-errors",
+        "-warnings-as-errors",
     ],
     deps = [
         "//submodules/Display:Display",
@@ -24,6 +24,11 @@ swift_library(
         "//submodules/SearchUI:SearchUI",
         "//submodules/MergeLists:MergeLists",
         "//submodules/UndoUI:UndoUI",
+        "//submodules/TelegramUI/Components/GlassBackgroundComponent",
+        "//submodules/ComponentFlow",
+        "//submodules/Components/ComponentDisplayAdapters",
+        "//submodules/AppBundle",
+        "//submodules/ActivityIndicator",
     ],
     visibility = [
         "//visibility:public",

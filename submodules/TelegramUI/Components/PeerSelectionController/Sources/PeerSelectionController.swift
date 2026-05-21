@@ -10,9 +10,8 @@ import AccountContext
 import SearchUI
 import ChatListUI
 import CounterControllerTitleView
-// Nicegram NCG-6652 Hide UI notifications
-import NGData
-//
+import ChatListFilterTabContainerNode
+
 public final class PeerSelectionControllerImpl: ViewController, PeerSelectionController {
     private let context: AccountContext
     
@@ -26,6 +25,7 @@ public final class PeerSelectionControllerImpl: ViewController, PeerSelectionCon
     private let filter: ChatListNodePeersFilter
     private let forumPeerId: (id: EnginePeer.Id, isMonoforum: Bool)?
     private let selectForumThreads: Bool
+    private let suggestedPeers: [EnginePeer]
     
     private let attemptSelection: ((EnginePeer, Int64?, ChatListDisabledPeerReason) -> Void)?
     private let createNewGroup: (() -> Void)?
@@ -69,6 +69,7 @@ public final class PeerSelectionControllerImpl: ViewController, PeerSelectionCon
     private let requestPeerType: [ReplyMarkupButtonRequestPeerType]?
     let multipleSelectionLimit: Int32?
     private let hasCreation: Bool
+    let immediatelySwitchToContacts: Bool
     let immediatelyActivateMultipleSelection: Bool
     
     override public var _presentedInModal: Bool {
@@ -111,10 +112,14 @@ public final class PeerSelectionControllerImpl: ViewController, PeerSelectionCon
         self.selectForumThreads = params.selectForumThreads
         self.requestPeerType = params.requestPeerType
         self.hasCreation = params.hasCreation
+        self.immediatelySwitchToContacts = params.immediatelySwitchToContacts
         self.immediatelyActivateMultipleSelection = params.immediatelyActivateMultipleSelection
         self.multipleSelectionLimit = params.multipleSelectionLimit
+        self.suggestedPeers = params.suggestedPeers
         
-        super.init(navigationBarPresentationData: NavigationBarPresentationData(presentationData: self.presentationData))
+        super.init(navigationBarPresentationData: NavigationBarPresentationData(presentationData: self.presentationData, style: .glass))
+        
+        self._hasGlassStyle = true
         
         self.statusBar.statusBarStyle = self.presentationData.theme.rootController.statusBarStyle.style
         
@@ -133,6 +138,8 @@ public final class PeerSelectionControllerImpl: ViewController, PeerSelectionCon
                     self.customTitle = self.presentationData.strings.RequestPeer_ChooseGroupTitle
                 case .channel:
                     self.customTitle = self.presentationData.strings.RequestPeer_ChooseChannelTitle
+                case .createBot:
+                    break
                 }
             } else {
                 self.customTitle = self.presentationData.strings.ChatImport_Title
@@ -149,7 +156,6 @@ public final class PeerSelectionControllerImpl: ViewController, PeerSelectionCon
         
         if params.forumPeerId == nil {
             self.navigationPresentation = .modal
-            self.navigationItem.leftBarButtonItem = UIBarButtonItem(title: self.presentationData.strings.Common_Cancel, style: .plain, target: self, action: #selector(self.cancelPressed))
         }
         self.navigationItem.backBarButtonItem = UIBarButtonItem(title: self.presentationData.strings.Common_Back, style: .plain, target: nil, action: nil)
         
@@ -208,7 +214,9 @@ public final class PeerSelectionControllerImpl: ViewController, PeerSelectionCon
                 if force {
                     strongSelf.tabContainerNode?.cancelAnimations()
                 }
-                strongSelf.tabContainerNode?.update(size: CGSize(width: layout.size.width, height: 46.0), sideInset: layout.safeInsets.left, filters: tabContainerData.0, selectedFilter: filter, isReordering: false, isEditing: false, canReorderAllChats: false, filtersLimit: tabContainerData.2, transitionFraction: fraction, presentationData: strongSelf.presentationData, transition: transition)
+                if let tabContainerNode = strongSelf.tabContainerNode {
+                    tabContainerNode.update(size: CGSize(width: layout.size.width, height: 44.0), sideInset: layout.safeInsets.left, filters: tabContainerData.0, selectedFilter: filter, isReordering: false, isEditing: false, canReorderAllChats: false, filtersLimit: tabContainerData.2, transitionFraction: fraction, presentationData: strongSelf.presentationData, transition: transition)
+                }
             }
             
             self.tabContainerNode?.tabSelected = { [weak self] id, isDisabled in
@@ -226,6 +234,7 @@ public final class PeerSelectionControllerImpl: ViewController, PeerSelectionCon
                     replaceImpl = { [weak controller] c in
                         controller?.replace(with: c)
                     }
+                    strongSelf.peerSelectionNode.pushedController = controller
                     strongSelf.push(controller)
                 } else {
                     strongSelf.selectTab(id: id)
@@ -246,7 +255,7 @@ public final class PeerSelectionControllerImpl: ViewController, PeerSelectionCon
     
     private func updateThemeAndStrings() {
         self.statusBar.statusBarStyle = self.presentationData.theme.rootController.statusBarStyle.style
-        self.navigationBar?.updatePresentationData(NavigationBarPresentationData(presentationData: self.presentationData))
+        self.navigationBar?.updatePresentationData(NavigationBarPresentationData(presentationData: self.presentationData, style: .glass), transition: .immediate)
         self.searchContentNode?.updateThemeAndPlaceholder(theme: self.presentationData.theme, placeholder: self.presentationData.strings.Common_Search)
         self.title = self.customTitle ?? self.presentationData.strings.Conversation_ForwardTitle
         self.navigationItem.backBarButtonItem = UIBarButtonItem(title: self.presentationData.strings.Common_Back, style: .plain, target: nil, action: nil)
@@ -254,7 +263,9 @@ public final class PeerSelectionControllerImpl: ViewController, PeerSelectionCon
     }
     
     override public func loadDisplayNode() {
-        self.displayNode = PeerSelectionControllerNode(context: self.context, controller: self, presentationData: self.presentationData, filter: self.filter, forumPeerId: self.forumPeerId, hasFilters: self.hasFilters, hasChatListSelector: self.hasChatListSelector, hasContactSelector: self.hasContactSelector, hasGlobalSearch: self.hasGlobalSearch, forwardedMessageIds: self.forwardedMessageIds, hasTypeHeaders: self.hasTypeHeaders, requestPeerType: self.requestPeerType, hasCreation: self.hasCreation, createNewGroup: self.createNewGroup, present: { [weak self] c, a in
+        self.navigationBar?.secondaryContentHeight = 44.0 + 10.0
+        
+        self.displayNode = PeerSelectionControllerNode(context: self.context, controller: self, presentationData: self.presentationData, filter: self.filter, forumPeerId: self.forumPeerId, hasFilters: self.hasFilters, hasChatListSelector: self.hasChatListSelector, hasContactSelector: self.hasContactSelector, hasGlobalSearch: self.hasGlobalSearch, forwardedMessageIds: self.forwardedMessageIds, hasTypeHeaders: self.hasTypeHeaders, requestPeerType: self.requestPeerType, hasCreation: self.hasCreation, createNewGroup: self.createNewGroup, suggestedPeers: self.suggestedPeers, present: { [weak self] c, a in
             self?.present(c, in: .window(.root), with: a)
         }, presentInGlobalOverlay: { [weak self] c, a in
             self?.presentInGlobalOverlay(c, with: a)
@@ -302,7 +313,7 @@ public final class PeerSelectionControllerImpl: ViewController, PeerSelectionCon
                         return
                     }
                     
-                    if mainChannel.hasPermission(.manageDirect) {
+                    if !mainChannel.isMonoForum || mainChannel.hasPermission(.manageDirect) {
                         let displayPeer = EnginePeer(mainChannel)
                         
                         let controller = PeerSelectionControllerImpl(
@@ -326,6 +337,7 @@ public final class PeerSelectionControllerImpl: ViewController, PeerSelectionCon
                             )
                         )
                         controller.peerSelected = self.peerSelected
+                        self.peerSelectionNode.pushedController = controller
                         self.push(controller)
                     } else {
                         peerSelected(.channel(peer), threadId)
@@ -344,7 +356,7 @@ public final class PeerSelectionControllerImpl: ViewController, PeerSelectionCon
         
         self.peerSelectionNode.requestOpenPeerFromSearch = { [weak self] peer, threadId in
             if let strongSelf = self {
-                strongSelf.openMessageFromSearchDisposable.set((_internal_storedMessageFromSearchPeer(postbox: strongSelf.context.account.postbox, peer: peer._asPeer())
+                strongSelf.openMessageFromSearchDisposable.set((_internal_storedMessageFromSearchPeer(postbox: strongSelf.context.account.postbox, peer: peer)
                 |> deliverOnMainQueue).start(completed: { [weak strongSelf] in
                     if let strongSelf = strongSelf, let peerSelected = strongSelf.peerSelected {
                         if case let .channel(peer) = peer, peer.isForumOrMonoForum, threadId == nil, strongSelf.selectForumThreads {
@@ -369,6 +381,7 @@ public final class PeerSelectionControllerImpl: ViewController, PeerSelectionCon
                                 )
                             )
                             controller.peerSelected = strongSelf.peerSelected
+                            strongSelf.peerSelectionNode.pushedController = controller
                             strongSelf.push(controller)
                         } else {
                             peerSelected(peer, threadId)
@@ -421,8 +434,8 @@ public final class PeerSelectionControllerImpl: ViewController, PeerSelectionCon
         if let tabContainerNode = self.tabContainerNode, let mainContainerNode = self.peerSelectionNode.mainContainerNode {
             let tabContainerOffset: CGFloat = 0.0
             let navigationBarHeight = self.navigationBar?.frame.maxY ?? 0.0
-            transition.updateFrame(node: tabContainerNode, frame: CGRect(origin: CGPoint(x: 0.0, y: navigationBarHeight - self.additionalNavigationBarHeight - 46.0 + tabContainerOffset), size: CGSize(width: layout.size.width, height: 46.0)))
-            tabContainerNode.update(size: CGSize(width: layout.size.width, height: 46.0), sideInset: layout.safeInsets.left, filters: self.tabContainerData?.0 ?? [], selectedFilter: mainContainerNode.currentItemFilter, isReordering: false, isEditing: false, canReorderAllChats: false, filtersLimit: self.tabContainerData?.2, transitionFraction: mainContainerNode.transitionFraction, presentationData: self.presentationData, transition: .animated(duration: 0.4, curve: .spring))
+            transition.updateFrame(node: tabContainerNode, frame: CGRect(origin: CGPoint(x: 0.0, y: navigationBarHeight - self.additionalNavigationBarHeight - 44.0 - 8.0 + tabContainerOffset), size: CGSize(width: layout.size.width, height: 44.0)))
+            tabContainerNode.update(size: CGSize(width: layout.size.width, height: 44.0), sideInset: layout.safeInsets.left, filters: self.tabContainerData?.0 ?? [], selectedFilter: mainContainerNode.currentItemFilter, isReordering: false, isEditing: false, canReorderAllChats: false, filtersLimit: self.tabContainerData?.2, transitionFraction: mainContainerNode.transitionFraction, presentationData: self.presentationData, transition: .animated(duration: 0.4, curve: .spring))
         }
     }
     
@@ -460,6 +473,8 @@ public final class PeerSelectionControllerImpl: ViewController, PeerSelectionCon
     }
     
     private var initializedFilters = false
+    private(set) var chatListFiltersNonEmpty: Bool = false
+    
     private func reloadFilters(firstUpdate: (() -> Void)? = nil) {
         let filterItems = chatListFilterItems(context: self.context)
         var notifiedFirstUpdate = false
@@ -491,23 +506,8 @@ public final class PeerSelectionControllerImpl: ViewController, PeerSelectionCon
                 }
             }
             
-// Nicegram NCG-6652 Hide UI notifications
-            let resolvedItems = filterItems.map { filter -> ChatListFilterTabEntry in
-                switch filter {
-                case let .all(unreadCount):
-                    return .all(unreadCount: NGSettings.hideUnreadCounters ? 0 : unreadCount)
-                case let .filter(id, text, unread):
-                    return .filter(
-                        id: id,
-                        text: text,
-                        unread: .init(
-                            entry: unread,
-                            hideUnreadCounters: NGSettings.hideUnreadCounters
-                        )
-                    )
-                }
-            }
-//
+            let resolvedItems = filterItems
+            
             var wasEmpty = false
             if let tabContainerData = strongSelf.tabContainerData {
                 wasEmpty = tabContainerData.0.count <= 1 || tabContainerData.1
@@ -578,6 +578,7 @@ public final class PeerSelectionControllerImpl: ViewController, PeerSelectionCon
             
             let isEmpty = resolvedItems.count <= 1
             
+            strongSelf.chatListFiltersNonEmpty = !isEmpty
             if wasEmpty != isEmpty, strongSelf.displayNavigationBar {
                 strongSelf.navigationBar?.setSecondaryContentNode(isEmpty ? nil : strongSelf.tabContainerNode, animated: false)
             }
@@ -585,8 +586,8 @@ public final class PeerSelectionControllerImpl: ViewController, PeerSelectionCon
             if let layout = strongSelf.validLayout {
                 if wasEmpty != isEmpty {
                     strongSelf.containerLayoutUpdated(layout, transition: .immediate)
-                } else {
-                    strongSelf.tabContainerNode?.update(size: CGSize(width: layout.size.width, height: 46.0), sideInset: layout.safeInsets.left, filters: resolvedItems, selectedFilter: selectedEntryId, isReordering: false, isEditing: false, canReorderAllChats: false, filtersLimit: filtersLimit, transitionFraction: 0.0, presentationData: strongSelf.presentationData, transition: .animated(duration: 0.4, curve: .spring))
+                } else if let tabContainerNode = strongSelf.tabContainerNode {
+                    tabContainerNode.update(size: CGSize(width: layout.size.width, height: 44.0), sideInset: layout.safeInsets.left, filters: resolvedItems, selectedFilter: selectedEntryId, isReordering: false, isEditing: false, canReorderAllChats: false, filtersLimit: filtersLimit, transitionFraction: 0.0, presentationData: strongSelf.presentationData, transition: .animated(duration: 0.4, curve: .spring))
                 }
             }
             
@@ -630,10 +631,20 @@ public final class PeerSelectionControllerImpl: ViewController, PeerSelectionCon
             if strongSelf.peerSelectionNode.mainContainerNode?.currentItemNode.chatListFilter?.id == updatedFilter?.id {
                 strongSelf.scrollToTop?()
             } else {
-                strongSelf.peerSelectionNode.mainContainerNode?.switchToFilter(
-                    id: updatedFilter.flatMap { .filter($0.id) } ?? .all
-                )
+                strongSelf.peerSelectionNode.mainContainerNode?.switchToFilter(id: updatedFilter.flatMap { .filter($0.id) } ?? .all)
             }
         })
+    }
+    
+    override public func dismiss(completion: (() -> Void)? = nil) {
+        guard let navigationController = self.navigationController as? NavigationController else {
+            return
+        }
+        var viewControllers = navigationController.viewControllers
+        viewControllers.removeAll(where: { $0 === self })
+        if let pushedController = self.peerSelectionNode.pushedController {
+            viewControllers.removeAll(where: { $0 === pushedController })
+        }
+        navigationController.setViewControllers(viewControllers, animated: true)
     }
 }

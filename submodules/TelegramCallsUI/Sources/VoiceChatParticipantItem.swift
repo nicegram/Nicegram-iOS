@@ -135,7 +135,7 @@ private let tileSize = CGSize(width: 84.0, height: 84.0)
 private let backgroundCornerRadius: CGFloat = 14.0
 private let avatarSize: CGFloat = 40.0
 
-private let accentColor: UIColor = UIColor(rgb: 0x007aff)
+private let accentColor: UIColor = UIColor(rgb: 0x0088ff)
 private let constructiveColor: UIColor = UIColor(rgb: 0x34c759)
 private let destructiveColor: UIColor = UIColor(rgb: 0xff3b30)
 
@@ -344,7 +344,7 @@ class VoiceChatParticipantItemNode: ItemListRevealOptionsItemNode {
         
         self.highlightedBackgroundNode = ASDisplayNode()
         
-        super.init(layerBacked: false, dynamicBounce: false, rotated: false, seeThrough: false)
+        super.init(layerBacked: false, rotated: false, seeThrough: false)
         
         self.isAccessibilityElement = true
         
@@ -462,7 +462,7 @@ class VoiceChatParticipantItemNode: ItemListRevealOptionsItemNode {
                                     return
                                 }
                                 strongSelf.avatarListNode?.controlsContainerNode.alpha = 0.0
-                                let pinchController = PinchController(sourceNode: sourceNode, getContentAreaInScreenSpace: {
+                                let pinchController = makePinchController(sourceNode: sourceNode, getContentAreaInScreenSpace: {
                                     return UIScreen.main.bounds
                                 })
                                 item.context.sharedContext.mainWindow?.presentInGlobalOverlay(pinchController)

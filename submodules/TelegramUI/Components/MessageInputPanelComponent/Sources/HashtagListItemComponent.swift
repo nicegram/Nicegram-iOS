@@ -7,7 +7,6 @@ import ComponentFlow
 import SwiftSignalKit
 import AccountContext
 import TelegramCore
-import Postbox
 import MultilineTextComponent
 import AvatarNode
 import TelegramPresentationData
@@ -196,6 +195,7 @@ public final class HashtagListItemComponent: Component {
         private var isExtractedToContextMenu: Bool = false
         
         public var customUpdateIsHighlighted: ((Bool) -> Void)?
+        public var enumerateSiblings: (((UIView) -> Void) -> Void)?
         public private(set) var separatorInset: CGFloat = 0.0
         
         override init(frame: CGRect) {
@@ -442,7 +442,7 @@ public final class HashtagListItemComponent: Component {
             }
             
             if themeUpdated {
-                let accentColor = UIColor(rgb: 0x007aff)
+                let accentColor = UIColor(rgb: 0x0088ff)
                 self.separatorLayer.backgroundColor = component.theme.list.itemPlainSeparatorColor.cgColor
                 self.iconBackgroundLayer.backgroundColor = accentColor.cgColor
                 self.iconLayer.layerTintColor = UIColor.white.cgColor

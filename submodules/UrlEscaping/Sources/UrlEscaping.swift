@@ -4,6 +4,10 @@ public func doesUrlMatchText(url: String, text: String, fullText: String) -> Boo
     if fullText.range(of: "\u{202e}") != nil {
         return false
     }
+    let allowed = CharacterSet(charactersIn: "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~:/?#[]@!$&'()*+,;=%")
+    if !url.unicodeScalars.allSatisfy({ allowed.contains($0) }) {
+        return false
+    }
     if url == text {
         return true
     }

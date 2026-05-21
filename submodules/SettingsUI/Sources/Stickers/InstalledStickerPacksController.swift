@@ -14,7 +14,7 @@ import StickerPackPreviewUI
 import ItemListStickerPackItem
 import ItemListPeerActionItem
 import UndoUI
-import ShareController
+
 import WebPBinding
 import ReactionImageComponent
 import FeaturedStickersScreen
@@ -67,7 +67,11 @@ private enum InstalledStickerPacksSection: Int32 {
 }
 
 public enum InstalledStickerPacksEntryTag: ItemListItemTag {
+    case edit
     case suggestOptions
+    case largeEmoji
+    case dynamicOrder
+    case suggestAnimatedEmoji
     
     public func isEqual(to other: ItemListItemTag) -> Bool {
         if let other = other as? InstalledStickerPacksEntryTag, self == other {
@@ -391,49 +395,49 @@ private indirect enum InstalledStickerPacksEntry: ItemListNodeEntry {
             case let .info(_, text):
                 return ItemListTextItem(presentationData: presentationData, text: .plain(text), sectionId: self.section)
             case let .suggestOptions(_, text, value):
-                return ItemListDisclosureItem(presentationData: presentationData, title: text, label: value, sectionId: self.section, style: .blocks, action: {
+                return ItemListDisclosureItem(presentationData: presentationData, systemStyle: .glass, title: text, label: value, sectionId: self.section, style: .blocks, action: {
                     arguments.openSuggestOptions()
                 }, tag: InstalledStickerPacksEntryTag.suggestOptions)
             case let .largeEmoji(_, text, value):
-                return ItemListSwitchItem(presentationData: presentationData, title: text, value: value, sectionId: self.section, style: .blocks, updated: { value in
+                return ItemListSwitchItem(presentationData: presentationData, systemStyle: .glass, title: text, value: value, sectionId: self.section, style: .blocks, updated: { value in
                     arguments.toggleLargeEmoji(value)
-                })
+                }, tag: InstalledStickerPacksEntryTag.largeEmoji)
             case let .trending(theme, text, count):
-                return ItemListDisclosureItem(presentationData: presentationData, icon: UIImage(bundleImageName: "Settings/Menu/Trending")?.precomposed(), title: text, label: count == 0 ? "" : "\(count)", labelStyle: .badge(theme.list.itemAccentColor), sectionId: self.section, style: .blocks, action: {
+                return ItemListDisclosureItem(presentationData: presentationData, systemStyle: .glass, icon: PresentationResourcesSettings.trendingSticker, title: text, label: count == 0 ? "" : "\(count)", labelStyle: .badge(theme.list.itemAccentColor), sectionId: self.section, style: .blocks, action: {
                     arguments.openFeatured()
                 })
             case let .masks(_, text):
-                return ItemListDisclosureItem(presentationData: presentationData, title: text, label: "", sectionId: self.section, style: .blocks, action: {
+                return ItemListDisclosureItem(presentationData: presentationData, systemStyle: .glass, title: text, label: "", sectionId: self.section, style: .blocks, action: {
                     arguments.openMasks()
                 })
             case let .emoji(_, text, count):
-                return ItemListDisclosureItem(presentationData: presentationData, icon: UIImage(bundleImageName: "Settings/Menu/Emoji")?.precomposed(), title: text, label: count == 0 ? "" : "\(count)", sectionId: self.section, style: .blocks, action: {
+                return ItemListDisclosureItem(presentationData: presentationData, systemStyle: .glass, icon: PresentationResourcesSettings.emoji, title: text, label: count == 0 ? "" : "\(count)", sectionId: self.section, style: .blocks, action: {
                     arguments.openEmoji()
                 })
             case let .quickReaction(title, reaction, availableReactions):
-                return ItemListReactionItem(context: arguments.context, presentationData: presentationData, icon: UIImage(bundleImageName: "Settings/Menu/Reactions")?.precomposed(), title: title, arrowStyle: .arrow, reaction: reaction, availableReactions: availableReactions, sectionId: self.section, style: .blocks, action: {
+                return ItemListReactionItem(context: arguments.context, presentationData: presentationData, systemStyle: .glass, icon: PresentationResourcesSettings.reactions, title: title, arrowStyle: .arrow, reaction: reaction, availableReactions: availableReactions, sectionId: self.section, style: .blocks, action: {
                     arguments.openQuickReaction()
                 })
             case let .archived(_, text, count, archived):
-                return ItemListDisclosureItem(presentationData: presentationData, icon: UIImage(bundleImageName: "Settings/Menu/Archived")?.precomposed(), title: text, label: count == 0 ? "" : "\(count)", sectionId: self.section, style: .blocks, action: {
+                return ItemListDisclosureItem(presentationData: presentationData, systemStyle: .glass, icon: PresentationResourcesSettings.archivedSticker, title: text, label: count == 0 ? "" : "\(count)", sectionId: self.section, style: .blocks, action: {
                     arguments.openArchived(archived)
                 })
             case let .packOrder(_, text, value):
-                return ItemListSwitchItem(presentationData: presentationData, title: text, value: value, sectionId: self.section, style: .blocks, updated: { value in
+                return ItemListSwitchItem(presentationData: presentationData, systemStyle: .glass, title: text, value: value, sectionId: self.section, style: .blocks, updated: { value in
                     arguments.toggleDynamicPackOrder(value)
-                })
+                }, tag: InstalledStickerPacksEntryTag.dynamicOrder)
             case let .packOrderInfo(_, text):
                 return ItemListTextItem(presentationData: presentationData, text: .plain(text), sectionId: self.section)
             case let .suggestAnimatedEmoji(text, value):
-                return ItemListSwitchItem(presentationData: presentationData, title: text, value: value, sectionId: self.section, style: .blocks, updated: { value in
+                return ItemListSwitchItem(presentationData: presentationData, systemStyle: .glass, title: text, value: value, sectionId: self.section, style: .blocks, updated: { value in
                     arguments.toggleSuggestAnimatedEmoji(value)
-                })
+                }, tag: InstalledStickerPacksEntryTag.suggestAnimatedEmoji)
             case let .suggestAnimatedEmojiInfo(_, text):
                 return ItemListTextItem(presentationData: presentationData, text: .plain(text), sectionId: self.section)
             case let .packsTitle(_, text):
                 return ItemListSectionHeaderItem(presentationData: presentationData, text: text, sectionId: self.section)
             case let .pack(_, _, _, info, topItem, count, animatedStickers, enabled, editing, selected):
-                return ItemListStickerPackItem(presentationData: presentationData, context: arguments.context, packInfo: StickerPackCollectionInfo.Accessor(info), itemCount: count, topItem: topItem, unread: false, control: editing.editing ? .check(checked: selected ?? false) : .none, editing: editing, enabled: enabled, playAnimatedStickers: animatedStickers, sectionId: self.section, action: {
+                return ItemListStickerPackItem(presentationData: presentationData, context: arguments.context, systemStyle: .glass, packInfo: StickerPackCollectionInfo.Accessor(info), itemCount: count, topItem: topItem, unread: false, control: editing.editing ? .check(checked: selected ?? false) : .none, editing: editing, enabled: enabled, playAnimatedStickers: animatedStickers, sectionId: self.section, action: {
                     arguments.openStickerPack(info)
                 }, setPackIdWithRevealedOptions: { current, previous in
                     arguments.setPackIdWithRevealedOptions(current, previous)
@@ -651,6 +655,12 @@ public func installedStickerPacksController(context: AccountContext, mode: Insta
         statePromise.set(stateValue.modify { f($0) })
     }
     
+    if focusOnItemTag == InstalledStickerPacksEntryTag.edit {
+        updateState {
+            $0.withUpdatedEditing(true).withUpdatedSelectedPackIds(Set())
+        }
+    }
+    
     var presentationData = context.sharedContext.currentPresentationData.with { $0 }
     if let forceTheme {
         presentationData = presentationData.withUpdated(theme: forceTheme)
@@ -826,7 +836,8 @@ public func installedStickerPacksController(context: AccountContext, mode: Insta
         }).start()
     }, togglePackSelected: { packId in
         updateState { state in
-            if var selectedPackIds = state.selectedPackIds {
+            if state.editing {
+                var selectedPackIds = state.selectedPackIds ?? Set()
                 if selectedPackIds.contains(packId) {
                     selectedPackIds.remove(packId)
                 } else {
@@ -853,7 +864,7 @@ public func installedStickerPacksController(context: AccountContext, mode: Insta
                     if installed {
                         return .complete()
                     } else {
-                        return context.engine.stickers.addStickerPackInteractively(info: info._parse(), items: items)
+                        return context.engine.stickers.addStickerPackInteractively(info: info._parse(), items: items) |> map { _ in return Void() }
                     }
                 case .fetching:
                     break
@@ -877,11 +888,11 @@ public func installedStickerPacksController(context: AccountContext, mode: Insta
             archivedPromise.set(.single(archivedPacks) |> then(context.engine.stickers.archivedStickerPacks() |> map(Optional.init)))
             quickReaction = combineLatest(
                 context.engine.data.subscribe(TelegramEngine.EngineData.Item.Peer.Peer(id: context.account.peerId)),
-                context.account.postbox.preferencesView(keys: [PreferencesKeys.reactionSettings])
+                context.engine.data.subscribe(TelegramEngine.EngineData.Item.Configuration.ApplicationSpecificPreference(key: PreferencesKeys.reactionSettings))
             )
             |> map { peer, preferencesView -> MessageReaction.Reaction? in
                 let reactionSettings: ReactionSettings
-                if let entry = preferencesView.values[PreferencesKeys.reactionSettings], let value = entry.get(ReactionSettings.self) {
+                if let entry = preferencesView, let value = entry.get(ReactionSettings.self) {
                     reactionSettings = value
                 } else {
                     reactionSettings = .default
@@ -979,7 +990,7 @@ public func installedStickerPacksController(context: AccountContext, mode: Insta
                        
                         if case .modal = mode {
                             updateState {
-                                $0.withUpdatedEditing(true).withUpdatedSelectedPackIds(nil)
+                                $0.withUpdatedEditing(true).withUpdatedSelectedPackIds(Set())
                             }
                         } else {
                             updateState {
@@ -1010,7 +1021,7 @@ public func installedStickerPacksController(context: AccountContext, mode: Insta
                        
                         if case .modal = mode {
                             updateState {
-                                $0.withUpdatedEditing(true).withUpdatedSelectedPackIds(nil)
+                                $0.withUpdatedEditing(true).withUpdatedSelectedPackIds(Set())
                             }
                         } else {
                             updateState {
@@ -1036,7 +1047,7 @@ public func installedStickerPacksController(context: AccountContext, mode: Insta
                 }), .init(title: presentationData.strings.StickerPacks_ActionShare, isEnabled: selectedCount > 0, action: {
                     if case .modal = mode {
                         updateState {
-                            $0.withUpdatedEditing(true).withUpdatedSelectedPackIds(nil)
+                            $0.withUpdatedEditing(true).withUpdatedSelectedPackIds(Set())
                         }
                     } else {
                         updateState {
@@ -1053,7 +1064,7 @@ public func installedStickerPacksController(context: AccountContext, mode: Insta
                         }
                     }
                     let text = packNames.map { "https://t.me/addstickers/\($0)" }.joined(separator: "\n")
-                    let shareController = ShareController(context: context, subject: .text(text), externalShare: true)
+                    let shareController = context.sharedContext.makeShareController(context: context, params: ShareControllerParams(subject: .text(text), externalShare: true))
                     presentControllerImpl?(shareController, nil)
                 })])
             } else {
@@ -1297,6 +1308,20 @@ public func installedStickerPacksController(context: AccountContext, mode: Insta
     }
     dismissImpl = { [weak controller] in
         controller?.dismiss()
+    }
+    
+    if let focusOnItemTag {
+        var didFocusOnItem = false
+        controller.afterTransactionCompleted = { [weak controller] in
+            if !didFocusOnItem, let controller {
+                controller.forEachItemNode { itemNode in
+                    if let itemNode = itemNode as? ItemListItemNode, let tag = itemNode.tag, tag.isEqual(to: focusOnItemTag) {
+                        didFocusOnItem = true
+                        itemNode.displayHighlight()
+                    }
+                }
+            }
+        }
     }
     
     return controller

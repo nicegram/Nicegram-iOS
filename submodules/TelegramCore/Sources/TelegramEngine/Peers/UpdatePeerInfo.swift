@@ -293,7 +293,7 @@ func _internal_updatePeerEmojiStatus(account: Account, peerId: PeerId, fileId: I
             if let _ = expirationDate {
                 flags |= (1 << 0)
             }
-            mappedStatus = .emojiStatus(flags: flags, documentId: fileId, until: expirationDate)
+            mappedStatus = .emojiStatus(.init(flags: flags, documentId: fileId, until: expirationDate))
         } else {
             mappedStatus = .emojiStatusEmpty
         }
@@ -322,7 +322,7 @@ func _internal_updatePeerStarGiftStatus(account: Account, peerId: PeerId, starGi
     var textColor: Int32?
     for attribute in starGift.attributes {
         switch attribute {
-        case let .model(_, fileValue, _):
+        case let .model(_, fileValue, _, _):
             file = fileValue
         case let .pattern(_, patternFileValue, _):
             patternFile = patternFileValue
@@ -338,7 +338,7 @@ func _internal_updatePeerStarGiftStatus(account: Account, peerId: PeerId, starGi
     let apiEmojiStatus: Api.EmojiStatus
     var emojiStatus: PeerEmojiStatus?
     if let file, let patternFile, let innerColor, let outerColor, let patternColor, let textColor {
-        apiEmojiStatus = .inputEmojiStatusCollectible(flags: flags, collectibleId: starGift.id, until: expirationDate)
+        apiEmojiStatus = .inputEmojiStatusCollectible(.init(flags: flags, collectibleId: starGift.id, until: expirationDate))
         emojiStatus = PeerEmojiStatus(content: .starGift(id: starGift.id, fileId: file.fileId.id, title: starGift.title, slug: starGift.slug, patternFileId: patternFile.fileId.id, innerColor: innerColor, outerColor: outerColor, patternColor: patternColor, textColor: textColor), expirationDate: expirationDate)
     } else {
         apiEmojiStatus = .emojiStatusEmpty

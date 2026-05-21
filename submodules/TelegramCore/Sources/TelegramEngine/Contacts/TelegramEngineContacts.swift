@@ -30,20 +30,26 @@ public extension TelegramEngine {
             return _internal_updateContactName(account: self.account, peerId: peerId, firstName: firstName, lastName: lastName)
         }
 
-        public func updateContactPhoto(peerId: PeerId, resource: MediaResource?, videoResource: MediaResource?, videoStartTimestamp: Double?, markup: UploadPeerPhotoMarkup?, mode: SetCustomPeerPhotoMode, mapResourceToAvatarSizes: @escaping (MediaResource, [TelegramMediaImageRepresentation]) -> Signal<[Int: Data], NoError>) -> Signal<UpdatePeerPhotoStatus, UploadPeerPhotoError> {
-            return _internal_updateContactPhoto(account: self.account, peerId: peerId, resource: resource, videoResource: videoResource, videoStartTimestamp: videoStartTimestamp, markup: markup, mode: mode, mapResourceToAvatarSizes: mapResourceToAvatarSizes)
+        public func updateContactPhoto(peerId: PeerId, resource: EngineMediaResource?, videoResource: EngineMediaResource?, videoStartTimestamp: Double?, markup: UploadPeerPhotoMarkup?, mode: SetCustomPeerPhotoMode, mapResourceToAvatarSizes: @escaping (EngineMediaResource, [TelegramMediaImageRepresentation]) -> Signal<[Int: Data], NoError>) -> Signal<UpdatePeerPhotoStatus, UploadPeerPhotoError> {
+            return _internal_updateContactPhoto(account: self.account, peerId: peerId, resource: resource?._asResource(), videoResource: videoResource?._asResource(), videoStartTimestamp: videoStartTimestamp, markup: markup, mode: mode, mapResourceToAvatarSizes: { rawResource, representations in
+                return mapResourceToAvatarSizes(EngineMediaResource(rawResource), representations)
+            })
+        }
+        
+        public func updateContactNote(peerId: PeerId, text: String, entities: [MessageTextEntity]) -> Signal<Never, UpdateContactNoteError> {
+            return _internal_updateContactNote(account: self.account, peerId: peerId, text: text, entities: entities)
         }
         
         public func deviceContactsImportedByCount(contacts: [(String, [DeviceContactNormalizedPhoneNumber])]) -> Signal<[String: Int32], NoError> {
             return _internal_deviceContactsImportedByCount(postbox: self.account.postbox, contacts: contacts)
         }
 
-        public func importContact(firstName: String, lastName: String, phoneNumber: String) -> Signal<PeerId?, NoError> {
-            return _internal_importContact(account: self.account, firstName: firstName, lastName: lastName, phoneNumber: phoneNumber)
+        public func importContact(firstName: String, lastName: String, phoneNumber: String, noteText: String, noteEntities: [MessageTextEntity]) -> Signal<PeerId?, NoError> {
+            return _internal_importContact(account: self.account, firstName: firstName, lastName: lastName, phoneNumber: phoneNumber, noteText: noteText, noteEntities: noteEntities)
         }
 
-        public func addContactInteractively(peerId: PeerId, firstName: String, lastName: String, phoneNumber: String, addToPrivacyExceptions: Bool) -> Signal<Never, AddContactError> {
-            return _internal_addContactInteractively(account: self.account, peerId: peerId, firstName: firstName, lastName: lastName, phoneNumber: phoneNumber, addToPrivacyExceptions: addToPrivacyExceptions)
+        public func addContactInteractively(peerId: PeerId, firstName: String, lastName: String, phoneNumber: String, noteText: String, noteEntities: [MessageTextEntity], addToPrivacyExceptions: Bool) -> Signal<Never, AddContactError> {
+            return _internal_addContactInteractively(account: self.account, peerId: peerId, firstName: firstName, lastName: lastName, phoneNumber: phoneNumber, noteText: noteText, noteEntities: noteEntities, addToPrivacyExceptions: addToPrivacyExceptions)
         }
 
         public func acceptAndShareContact(peerId: PeerId) -> Signal<Never, AcceptAndShareContactError> {
@@ -54,8 +60,8 @@ public extension TelegramEngine {
             return _internal_searchPeers(accountPeerId: self.account.peerId, postbox: self.account.postbox, network: self.account.network, query: query, scope: scope)
         }
 
-        public func searchLocalPeers(query: String, scope: TelegramSearchPeersScope = .everywhere) -> Signal<[EngineRenderedPeer], NoError> {
-            return self.account.postbox.searchPeers(query: query)
+        public func searchLocalPeers(query: String, scope: TelegramSearchPeersScope = .everywhere, predicate: ChatListFilterPredicate? = nil) -> Signal<[EngineRenderedPeer], NoError> {
+            return self.account.postbox.searchPeers(query: query, predicate: predicate)
             |> map { peers in
                 switch scope {
                 case .everywhere:

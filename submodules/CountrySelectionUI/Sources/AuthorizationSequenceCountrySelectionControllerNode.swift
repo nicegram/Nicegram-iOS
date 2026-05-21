@@ -6,6 +6,9 @@ import TelegramCore
 import TelegramPresentationData
 import TelegramStringFormatting
 import AppBundle
+import ComponentFlow
+import EdgeEffect
+import SearchInputPanelComponent
 
 private func loadCountryCodes() -> [(String, Int)] {
     guard let filePath = getAppBundle().path(forResource: "PhoneCountries", ofType: "txt") else {
@@ -186,10 +189,12 @@ public func searchCountries(items: [((String, String), String, [Int])], query: S
 
 final class AuthorizationSequenceCountrySelectionControllerNode: ASDisplayNode, UITableViewDelegate, UITableViewDataSource {
     let itemSelected: (((String, String), String, Int)) -> Void
+    var deactivateSearch: () -> Void = {}
     
     private let theme: PresentationTheme
     private let strings: PresentationStrings
     private let displayCodes: Bool
+    private let glass: Bool
     private let needsSubtitle: Bool
     
     private let tableView: UITableView
@@ -201,19 +206,27 @@ final class AuthorizationSequenceCountrySelectionControllerNode: ASDisplayNode, 
     private var searchResults: [((String, String), String, Int)] = []
     private let countryNamesAndCodes: [((String, String), String, [Int])]
     
-    init(theme: PresentationTheme, strings: PresentationStrings, displayCodes: Bool, itemSelected: @escaping (((String, String), String, Int)) -> Void) {
+    private let topEdgeEffectView: EdgeEffectView
+    
+    private var searchInput: ComponentView<Empty>?
+    var isSearching = true
+    
+    private var validLayout: ContainerViewLayout?
+    
+    init(theme: PresentationTheme, strings: PresentationStrings, displayCodes: Bool, glass: Bool, itemSelected: @escaping (((String, String), String, Int)) -> Void) {
         self.theme = theme
         self.strings = strings
         self.displayCodes = displayCodes
+        self.glass = glass
         self.itemSelected = itemSelected
         
         self.needsSubtitle = strings.baseLanguageCode != "en"
         
-        self.tableView = UITableView(frame: CGRect(), style: .plain)
+        self.tableView = UITableView(frame: CGRect(), style: glass ? .insetGrouped : .plain)
         if #available(iOS 15.0, *) {
             self.tableView.sectionHeaderTopPadding = 0.0
         }
-        self.searchTableView = UITableView(frame: CGRect(), style: .plain)
+        self.searchTableView = UITableView(frame: CGRect(), style: glass ? .insetGrouped : .plain)
         self.searchTableView.isHidden = true
         
         if #available(iOS 11.0, *) {
@@ -239,28 +252,32 @@ final class AuthorizationSequenceCountrySelectionControllerNode: ASDisplayNode, 
         self.sections = sections
         self.sectionTitles = sections.map { $0.0 }
         
+        self.topEdgeEffectView = EdgeEffectView()
+        
         super.init()
         
         self.setViewBlock({
             return UITracingLayerView()
         })
         
-        self.backgroundColor = theme.list.plainBackgroundColor
-        
-        self.tableView.backgroundColor = theme.list.plainBackgroundColor
-        
-        self.tableView.backgroundColor = self.theme.list.plainBackgroundColor
-        self.tableView.separatorColor = self.theme.list.itemPlainSeparatorColor
-        self.tableView.backgroundView = UIView()
-        self.tableView.sectionIndexColor = self.theme.list.itemAccentColor
-        
-        self.searchTableView.backgroundColor = self.theme.list.plainBackgroundColor
-        
-        self.searchTableView.backgroundColor = self.theme.list.plainBackgroundColor
-        self.searchTableView.separatorColor = self.theme.list.itemPlainSeparatorColor
-        self.searchTableView.backgroundView = UIView()
-        self.searchTableView.sectionIndexColor = self.theme.list.itemAccentColor
-        
+        if glass {
+            self.backgroundColor = theme.list.blocksBackgroundColor
+            self.tableView.backgroundColor = theme.list.blocksBackgroundColor
+            self.searchTableView.backgroundColor = theme.list.blocksBackgroundColor
+        } else {
+            self.backgroundColor = theme.list.plainBackgroundColor
+            
+            self.tableView.backgroundColor = self.theme.list.plainBackgroundColor
+            self.tableView.separatorColor = self.theme.list.itemPlainSeparatorColor
+            self.tableView.backgroundView = UIView()
+            self.tableView.sectionIndexColor = self.theme.list.itemAccentColor
+            
+            self.searchTableView.backgroundColor = self.theme.list.plainBackgroundColor
+            self.searchTableView.separatorColor = self.theme.list.itemPlainSeparatorColor
+            self.searchTableView.backgroundView = UIView()
+            self.searchTableView.sectionIndexColor = self.theme.list.itemAccentColor
+            }
+    
         self.tableView.delegate = self
         self.tableView.dataSource = self
         
@@ -269,13 +286,80 @@ final class AuthorizationSequenceCountrySelectionControllerNode: ASDisplayNode, 
         
         self.view.addSubview(self.tableView)
         self.view.addSubview(self.searchTableView)
+        
+        if glass {
+            self.view.addSubview(self.topEdgeEffectView)
+        }
     }
-    
+        
     func containerLayoutUpdated(_ layout: ContainerViewLayout, navigationBarHeight: CGFloat, transition: ContainedViewLayoutTransition) {
-        self.tableView.contentInset = UIEdgeInsets(top: 0.0, left: 0.0, bottom: layout.intrinsicInsets.bottom, right: 0.0)
-        self.searchTableView.contentInset = UIEdgeInsets(top: 0.0, left: 0.0, bottom: layout.intrinsicInsets.bottom, right: 0.0)
-        transition.updateFrame(view: self.tableView, frame: CGRect(origin: CGPoint(x: 0.0, y: navigationBarHeight), size: CGSize(width: layout.size.width, height: layout.size.height - navigationBarHeight)))
-        transition.updateFrame(view: self.searchTableView, frame: CGRect(origin: CGPoint(x: 0.0, y: navigationBarHeight), size: CGSize(width: layout.size.width, height: layout.size.height - navigationBarHeight)))
+        self.validLayout = layout
+        self.tableView.contentInset = UIEdgeInsets(top: navigationBarHeight, left: 0.0, bottom: layout.intrinsicInsets.bottom, right: 0.0)
+        self.searchTableView.contentInset = UIEdgeInsets(top: navigationBarHeight, left: 0.0, bottom: layout.intrinsicInsets.bottom, right: 0.0)
+        transition.updateFrame(view: self.tableView, frame: CGRect(origin: CGPoint(x: 0.0, y: 0.0), size: CGSize(width: layout.size.width, height: layout.size.height)))
+        transition.updateFrame(view: self.searchTableView, frame: CGRect(origin: CGPoint(x: 0.0, y: 0.0), size: CGSize(width: layout.size.width, height: layout.size.height)))
+        
+        if self.glass {
+            let edgeEffectHeight: CGFloat = 88.0
+            let topEdgeEffectFrame = CGRect(origin: CGPoint(x: 0.0, y: 0.0), size: CGSize(width: layout.size.width, height: edgeEffectHeight))
+            transition.updateFrame(view: self.topEdgeEffectView, frame: topEdgeEffectFrame)
+            self.topEdgeEffectView.update(content: .clear, blur: true, alpha: 1.0, rect: topEdgeEffectFrame, edge: .top, edgeSize: topEdgeEffectFrame.height, transition: ComponentTransition(transition))
+        }
+        
+        if self.glass && self.isSearching {
+            let searchInput: ComponentView<Empty>
+            if let current = self.searchInput {
+                searchInput = current
+            } else {
+                searchInput = ComponentView()
+                self.searchInput = searchInput
+            }
+            
+            let searchInputSize = searchInput.update(
+                transition: .immediate,
+                component: AnyComponent(
+                    SearchInputPanelComponent(
+                        theme: self.theme,
+                        strings: self.strings,
+                        metrics: layout.metrics,
+                        safeInsets: layout.safeInsets,
+                        updated: { [weak self] query in
+                            guard let self else {
+                                return
+                            }
+                            self.updateSearchQuery(query)
+                        },
+                        cancel: { [weak self] in
+                            guard let self else {
+                                return
+                            }
+                            self.deactivateSearch()
+                            self.updateSearchQuery("")
+                        }
+                    )
+                ),
+                environment: {},
+                containerSize: CGSize(width: layout.size.width, height: layout.size.height)
+            )
+            let bottomInset: CGFloat = layout.insets(options: .input).bottom
+            let searchInputFrame = CGRect(origin: CGPoint(x: 0.0, y: layout.size.height - bottomInset - searchInputSize.height), size: searchInputSize)
+            if let searchInputView = searchInput.view as? SearchInputPanelComponent.View {
+                if searchInputView.superview == nil {
+                    self.view.addSubview(searchInputView)
+                    searchInputView.frame = CGRect(origin: CGPoint(x: searchInputFrame.minX, y: layout.size.height), size: searchInputFrame.size)
+
+                    searchInputView.activateInput()
+                }
+                transition.updateFrame(view: searchInputView, frame: searchInputFrame)
+            }
+        } else if let searchInput = self.searchInput {
+            self.searchInput = nil
+            if let searchInputView = searchInput.view {
+                transition.updateFrame(view: searchInputView, frame: CGRect(origin: CGPoint(x: searchInputView.frame.minX, y: layout.size.height), size: searchInputView.frame.size), completion: { _ in
+                    searchInputView.removeFromSuperview()
+                })
+            }
+        }
     }
     
     func animateIn() {

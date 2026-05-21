@@ -43,7 +43,7 @@ final class WebSearchGalleryFooterContentNode: GalleryFooterContentNode {
         
     }
     
-    override func updateLayout(size: CGSize, metrics: LayoutMetrics, leftInset: CGFloat, rightInset: CGFloat, bottomInset: CGFloat, contentInset: CGFloat, transition: ContainedViewLayoutTransition) -> CGFloat {
+    override func updateLayout(size: CGSize, metrics: LayoutMetrics, leftInset: CGFloat, rightInset: CGFloat, bottomInset: CGFloat, contentInset: CGFloat, transition: ContainedViewLayoutTransition) -> LayoutInfo {
         let width = size.width
         let panelSize: CGFloat = 49.0
         var panelHeight: CGFloat = panelSize + bottomInset
@@ -52,7 +52,7 @@ final class WebSearchGalleryFooterContentNode: GalleryFooterContentNode {
         self.cancelButton.frame = CGRect(origin: CGPoint(x: leftInset, y: panelHeight - bottomInset - panelSize), size: CGSize(width: panelSize, height: panelSize))
         self.sendButton.frame = CGRect(origin: CGPoint(x: width - panelSize - rightInset, y: panelHeight - bottomInset - panelSize), size: CGSize(width: panelSize, height: panelSize))
         
-        return panelHeight
+        return LayoutInfo(height: panelHeight, needsShadow: false)
     }
     
     override func animateIn(fromHeight: CGFloat, previousContentNode: GalleryFooterContentNode, transition: ContainedViewLayoutTransition) {

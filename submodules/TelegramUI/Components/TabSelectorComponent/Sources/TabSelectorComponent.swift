@@ -10,6 +10,11 @@ import AccountContext
 import TelegramPresentationData
 
 public final class TabSelectorComponent: Component {
+    public enum Style {
+        case glass
+        case legacy
+    }
+    
     public final class TransitionHint {
         public let scrollToEnd: Bool
         
@@ -36,15 +41,18 @@ public final class TabSelectorComponent: Component {
     public struct Colors: Equatable {
         public var foreground: UIColor
         public var selection: UIColor
+        public var normal: UIColor?
         public var simple: Bool
 
         public init(
             foreground: UIColor,
             selection: UIColor,
+            normal: UIColor? = nil,
             simple: Bool = false
         ) {
             self.foreground = foreground
             self.selection = selection
+            self.normal = normal
             self.simple = simple
         }
     }
@@ -57,8 +65,9 @@ public final class TabSelectorComponent: Component {
         public var lineSelection: Bool
         public var verticalInset: CGFloat
         public var allowScroll: Bool
+        public var height: CGFloat?
         
-        public init(font: UIFont, spacing: CGFloat, innerSpacing: CGFloat? = nil, fillWidth: Bool = false, lineSelection: Bool = false, verticalInset: CGFloat = 0.0, allowScroll: Bool = true) {
+        public init(font: UIFont, spacing: CGFloat = 2.0, innerSpacing: CGFloat? = nil, fillWidth: Bool = false, lineSelection: Bool = false, verticalInset: CGFloat = 0.0, allowScroll: Bool = true, height: CGFloat? = nil) {
             self.font = font
             self.spacing = spacing
             self.innerSpacing = innerSpacing
@@ -66,6 +75,7 @@ public final class TabSelectorComponent: Component {
             self.lineSelection = lineSelection
             self.verticalInset = verticalInset
             self.allowScroll = allowScroll
+            self.height = height
         }
     }
     
@@ -121,6 +131,7 @@ public final class TabSelectorComponent: Component {
     public let context: AccountContext?
     public let colors: Colors
     public let theme: PresentationTheme
+    public let style: Style
     public let customLayout: CustomLayout?
     public let items: [Item]
     public let selectedId: AnyHashable?
@@ -132,6 +143,7 @@ public final class TabSelectorComponent: Component {
         context: AccountContext? = nil,
         colors: Colors,
         theme: PresentationTheme,
+        style: Style = .legacy,
         customLayout: CustomLayout? = nil,
         items: [Item],
         selectedId: AnyHashable?,
@@ -142,6 +154,7 @@ public final class TabSelectorComponent: Component {
         self.context = context
         self.colors = colors
         self.theme = theme
+        self.style = style
         self.customLayout = customLayout
         self.items = items
         self.selectedId = selectedId
@@ -158,6 +171,9 @@ public final class TabSelectorComponent: Component {
             return false
         }
         if lhs.theme !== rhs.theme {
+            return false
+        }
+        if lhs.style != rhs.style {
             return false
         }
         if lhs.customLayout != rhs.customLayout {
@@ -343,6 +359,12 @@ public final class TabSelectorComponent: Component {
             self.containerNode.isGestureEnabled = item.contextAction != nil && !isReordering
             self.tapGesture?.isEnabled = !isReordering
             
+            // Nicegram, add accessibility ids
+            if case .text(let text) = self.item?.content {
+                self.accessibilityIdentifier = "item_\(text)"
+            }
+            //
+            
             transition.setFrame(view: self.containerButton, frame: CGRect(origin: CGPoint(), size: size))
             
             self.extractedContainerNode.frame = CGRect(origin: CGPoint(), size: size)
@@ -516,7 +538,17 @@ public final class TabSelectorComponent: Component {
             
             self.reorderRecognizer?.isEnabled = component.reorderItem != nil
             
-            let baseHeight: CGFloat = 28.0
+            let baseHeight: CGFloat
+            if let customLayout = component.customLayout, let height = customLayout.height {
+                baseHeight = height
+            } else {
+                switch component.style {
+                case .glass:
+                    baseHeight = 32.0
+                case .legacy:
+                    baseHeight = 28.0
+                }
+            }
             
             var verticalInset: CGFloat = 0.0
             if let customLayout = component.customLayout {
@@ -611,6 +643,9 @@ public final class TabSelectorComponent: Component {
                 if case .component = item.content {
                     useSelectionFraction = true
                 }
+                if let normal = component.colors.normal, normal != component.colors.foreground {
+                    useSelectionFraction = true
+                }
                 
                 let itemSize = itemView.title.update(
                     transition: itemTransition,
@@ -619,6 +654,7 @@ public final class TabSelectorComponent: Component {
                         content: item.content,
                         font: itemFont,
                         color: component.colors.foreground,
+                        normalColor: component.colors.normal,
                         selectedColor: component.colors.selection,
                         selectionFraction: useSelectionFraction ? selectionFraction : 0.0
                     )),
@@ -805,6 +841,7 @@ private final class ItemComponent: CombinedComponent {
     let content: TabSelectorComponent.Item.Content
     let font: UIFont
     let color: UIColor
+    let normalColor: UIColor?
     let selectedColor: UIColor
     let selectionFraction: CGFloat
     
@@ -813,6 +850,7 @@ private final class ItemComponent: CombinedComponent {
         content: TabSelectorComponent.Item.Content,
         font: UIFont,
         color: UIColor,
+        normalColor: UIColor?,
         selectedColor: UIColor,
         selectionFraction: CGFloat
     ) {
@@ -820,6 +858,7 @@ private final class ItemComponent: CombinedComponent {
         self.content = content
         self.font = font
         self.color = color
+        self.normalColor = normalColor
         self.selectedColor = selectedColor
         self.selectionFraction = selectionFraction
     }
@@ -835,6 +874,9 @@ private final class ItemComponent: CombinedComponent {
             return false
         }
         if lhs.color != rhs.color {
+            return false
+        }
+        if lhs.normalColor != rhs.normalColor {
             return false
         }
         if lhs.selectedColor != rhs.selectedColor {
@@ -856,7 +898,7 @@ private final class ItemComponent: CombinedComponent {
             
             switch component.content {
             case let .text(text):
-                let attributedTitle = NSMutableAttributedString(string: text, font: component.font, textColor: component.color)
+                let attributedTitle = NSMutableAttributedString(string: text, font: component.font, textColor: component.normalColor ?? component.color)
                 var range = (attributedTitle.string as NSString).range(of: "⭐️")
                 if range.location != NSNotFound {
                     attributedTitle.addAttribute(ChatTextInputAttributes.customEmoji, value: ChatTextInputTextCustomEmojiAttribute(interactivelySelectedFromPackId: nil, fileId: 0, file: nil, custom: .stars(tinted: false)), range: range)
@@ -879,7 +921,12 @@ private final class ItemComponent: CombinedComponent {
                     .opacity(1.0 - component.selectionFraction)
                 )
                 
-                let selectedAttributedTitle = NSMutableAttributedString(string: text, font: component.font, textColor: component.selectedColor)
+                var selectedColor = component.selectedColor
+                if let _ = component.normalColor {
+                    selectedColor = component.color
+                }
+                
+                let selectedAttributedTitle = NSMutableAttributedString(string: text, font: component.font, textColor: selectedColor)
                 range = (selectedAttributedTitle.string as NSString).range(of: "⭐️")
                 if range.location != NSNotFound {
                     selectedAttributedTitle.addAttribute(ChatTextInputAttributes.customEmoji, value: ChatTextInputTextCustomEmojiAttribute(interactivelySelectedFromPackId: nil, fileId: 0, file: nil, custom: .stars(tinted: false)), range: range)

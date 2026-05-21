@@ -52,8 +52,8 @@ final class SecureIdAuthHeaderNode: ASDisplayNode {
     
     func updateState(formData: SecureIdEncryptedFormData?, verificationState: SecureIdAuthControllerVerificationState) {
         if let formData = formData {
-            self.serviceAvatarNode.setPeer(context: self.context, theme: self.theme, peer: EnginePeer(formData.servicePeer))
-            let titleData = self.strings.Passport_RequestHeader(EnginePeer(formData.servicePeer).displayTitle(strings: self.strings, displayOrder: self.nameDisplayOrder))
+            self.serviceAvatarNode.setPeer(context: self.context, theme: self.theme, peer: formData.servicePeer)
+            let titleData = self.strings.Passport_RequestHeader(formData.servicePeer.displayTitle(strings: self.strings, displayOrder: self.nameDisplayOrder))
             
             let titleString = NSMutableAttributedString()
             titleString.append(NSAttributedString(string: titleData.string, font: textFont, textColor: self.theme.list.freeTextColor))

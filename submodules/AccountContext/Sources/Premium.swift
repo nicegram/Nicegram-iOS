@@ -43,7 +43,9 @@ public enum PremiumIntroSource {
     case animatedEmoji
     case messageEffects
     case todo
-    case auth(String)
+    case copyProtection
+    case aiTools
+    case auth(String, Int32)
     case premiumGift(TelegramMediaFile)
 }
 
@@ -83,6 +85,8 @@ public enum PremiumDemoSubject {
     case business
     case messageEffects
     case todo
+    case copyProtection
+    case aiTools
     
     case businessLocation
     case businessHours
@@ -143,6 +147,8 @@ public enum StarsPurchasePurpose: Equatable {
     case transferStarGift(requiredStars: Int64)
     case sendMessage(peerId: EnginePeer.Id, requiredStars: Int64)
     case buyStarGift(requiredStars: Int64)
+    case removeOriginalDetailsStarGift(requiredStars: Int64)
+    case starGiftOffer(requiredStars: Int64)
 }
 
 public struct PremiumConfiguration {
@@ -342,7 +348,37 @@ public struct AccountFreezeConfiguration {
     }
 }
 
+public struct CopyProtectionConfiguration {
+    public static var defaultValue: CopyProtectionConfiguration {
+        return CopyProtectionConfiguration(
+            requestExpirePeriod: 86400
+        )
+    }
+    
+    public let requestExpirePeriod: Int32
+    
+    fileprivate init(
+        requestExpirePeriod: Int32
+    ) {
+        self.requestExpirePeriod = requestExpirePeriod
+    }
+    
+    public static func with(appConfiguration: AppConfiguration) -> CopyProtectionConfiguration {
+        let defaultValue = self.defaultValue
+        if let data = appConfiguration.data {
+            return CopyProtectionConfiguration(
+                requestExpirePeriod: (data["no_forwards_request_expire_period"] as? Double).flatMap(Int32.init) ?? defaultValue.requestExpirePeriod
+            )
+        } else {
+            return defaultValue
+        }
+    }
+}
 
 public protocol GiftOptionsScreenProtocol {
+    
+}
+
+public protocol GiftSetupScreenProtocol {
     
 }

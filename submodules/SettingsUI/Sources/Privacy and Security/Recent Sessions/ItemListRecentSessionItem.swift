@@ -36,6 +36,7 @@ enum ItemListRecentSessionItemText {
 
 final class ItemListRecentSessionItem: ListViewItem, ItemListItem {
     let presentationData: ItemListPresentationData
+    let systemStyle: ItemListSystemStyle
     let dateTimeFormat: PresentationDateTimeFormat
     let session: RecentAccountSession
     let enabled: Bool
@@ -47,8 +48,9 @@ final class ItemListRecentSessionItem: ListViewItem, ItemListItem {
     let removeSession: (Int64) -> Void
     let action: (() -> Void)?
     
-    init(presentationData: ItemListPresentationData, dateTimeFormat: PresentationDateTimeFormat, session: RecentAccountSession, enabled: Bool, editable: Bool, editing: Bool, revealed: Bool, sectionId: ItemListSectionId, setSessionIdWithRevealedOptions: @escaping (Int64?, Int64?) -> Void, removeSession: @escaping (Int64) -> Void, action: (() -> Void)?) {
+    init(presentationData: ItemListPresentationData, systemStyle: ItemListSystemStyle, dateTimeFormat: PresentationDateTimeFormat, session: RecentAccountSession, enabled: Bool, editable: Bool, editing: Bool, revealed: Bool, sectionId: ItemListSectionId, setSessionIdWithRevealedOptions: @escaping (Int64?, Int64?) -> Void, removeSession: @escaping (Int64) -> Void, action: (() -> Void)?) {
         self.presentationData = presentationData
+        self.systemStyle = systemStyle
         self.dateTimeFormat = dateTimeFormat
         self.session = session
         self.enabled = enabled
@@ -118,7 +120,7 @@ func iconForSession(_ session: RecentAccountSession) -> (UIImage?, UIColor?, Str
         return (UIImage(bundleImageName: "Settings/Devices/Xbox"), UIColor(rgb: 0x35c759), nil, nil)
     }
     if device.contains("chrome") && !device.contains("chromebook") {
-        return (UIImage(bundleImageName: "Settings/Devices/Chrome"), UIColor(rgb: 0x35c759), "device_chrome", ["Vector 20.Vector 20.Обводка 1", "Ellipse 18.Ellipse 18.Обводка 1"])
+        return (PresentationResourcesDevices.chrome, UIColor(rgb: 0x35c759), "device_chrome", ["Vector 20.Vector 20.Обводка 1", "Ellipse 18.Ellipse 18.Обводка 1"])
     }
     if device.contains("brave") {
         return (UIImage(bundleImageName: "Settings/Devices/Brave"), UIColor(rgb: 0xff9500), nil, nil)
@@ -127,7 +129,7 @@ func iconForSession(_ session: RecentAccountSession) -> (UIImage?, UIColor?, Str
         return (UIImage(bundleImageName: "Settings/Devices/Vivaldi"), UIColor(rgb: 0xff3c30), nil, nil)
     }
     if device.contains("safari") {
-        return (UIImage(bundleImageName: "Settings/Devices/Safari"), UIColor(rgb: 0x0079ff), "device_safari", ["Com 2.Com 2.Заливка 1"])
+        return (PresentationResourcesDevices.safari, UIColor(rgb: 0x0079ff), "device_safari", ["Com 2.Com 2.Заливка 1"])
     }
     if device.contains("firefox") {
         return (UIImage(bundleImageName: "Settings/Devices/Firefox"), UIColor(rgb: 0xff9500), "device_firefox", nil)
@@ -136,28 +138,28 @@ func iconForSession(_ session: RecentAccountSession) -> (UIImage?, UIColor?, Str
         return (UIImage(bundleImageName: "Settings/Devices/Opera"), UIColor(rgb: 0xff3c30), nil, nil)
     }
     if platform.contains("android") {
-        return (UIImage(bundleImageName: "Settings/Devices/Android"), UIColor(rgb: 0x35c759), "device_android", ["Eye L.Eye L.Заливка 1", "Eye R.Eye R.Заливка 1"])
+        return (PresentationResourcesDevices.android, UIColor(rgb: 0x35c759), "device_android", ["Eye L.Eye L.Заливка 1", "Eye R.Eye R.Заливка 1"])
     }
     if device.contains("iphone") {
-        return (UIImage(bundleImageName: "Settings/Devices/iPhone"), UIColor(rgb: 0x0079ff), "device_iphone", ["apple.apple.Заливка 1"])
+        return (PresentationResourcesDevices.iPhone, UIColor(rgb: 0x0079ff), "device_iphone", ["apple.apple.Заливка 1"])
     }
     if device.contains("ipad") {
-        return (UIImage(bundleImageName: "Settings/Devices/iPad"), UIColor(rgb: 0x0079ff), "device_ipad", ["apple.apple.Заливка 1"])
+        return (PresentationResourcesDevices.iPad, UIColor(rgb: 0x0079ff), "device_ipad", ["apple.apple.Заливка 1"])
     }
     if (platform.contains("macos") || systemVersion.contains("macos")) && device.contains("mac") {
-        return (UIImage(bundleImageName: "Settings/Devices/Mac"), UIColor(rgb: 0x0079ff), "device_mac", nil)
+        return (PresentationResourcesDevices.macbook, UIColor(rgb: 0x0079ff), "device_mac", nil)
     }
     if platform.contains("ios") || platform.contains("macos") || systemVersion.contains("macos") {
-        return (UIImage(bundleImageName: "Settings/Devices/iOS"), UIColor(rgb: 0x0079ff), nil, nil)
+        return (PresentationResourcesDevices.iOS, UIColor(rgb: 0x0079ff), nil, nil)
     }
     if platform.contains("ubuntu") || systemVersion.contains("ubuntu") {
-        return (UIImage(bundleImageName: "Settings/Devices/Ubuntu"), UIColor(rgb: 0xff9500), "device_ubuntu", ["Ellipse 25.Ellipse 24.Обводка 1", "Ellipse 24.Ellipse 24.Обводка 1", "Union.Union.Заливка 1"])
+        return (PresentationResourcesDevices.ubuntu, UIColor(rgb: 0xff9500), "device_ubuntu", ["Ellipse 25.Ellipse 24.Обводка 1", "Ellipse 24.Ellipse 24.Обводка 1", "Union.Union.Заливка 1"])
     }
     if platform.contains("linux") || systemVersion.contains("linux") {
-        return (UIImage(bundleImageName: "Settings/Devices/Linux"), UIColor(rgb: 0x8e8e93), "device_linux", nil)
+        return (PresentationResourcesDevices.linux, UIColor(rgb: 0x8e8e93), "device_linux", nil)
     }
     if platform.contains("windows") || systemVersion.contains("windows") {
-        return (UIImage(bundleImageName: "Settings/Devices/Windows"), UIColor(rgb: 0x0079ff), "device_windows", ["Union.Union.Заливка 1"])
+        return (PresentationResourcesDevices.windows, UIColor(rgb: 0x0079ff), "device_windows", ["Union.Union.Заливка 1"])
     }
     return (UIImage(bundleImageName: "Settings/Devices/Generic"), UIColor(rgb: 0x8e8e93), nil, nil)
 }
@@ -239,7 +241,7 @@ class ItemListRecentSessionItemNode: ItemListRevealOptionsItemNode {
         
         self.activateArea = AccessibilityAreaNode()
         
-        super.init(layerBacked: false, dynamicBounce: false, rotated: false, seeThrough: false)
+        super.init(layerBacked: false, rotated: false, seeThrough: false)
         
         self.addSubnode(self.containerNode)
         self.containerNode.addSubnode(self.iconNode)
@@ -266,7 +268,14 @@ class ItemListRecentSessionItemNode: ItemListRevealOptionsItemNode {
             let titleFont = Font.medium(floor(item.presentationData.fontSize.itemListBaseFontSize * 16.0 / 17.0))
             let textFont = Font.regular(floor(item.presentationData.fontSize.itemListBaseFontSize * 14.0 / 17.0))
             
-            let verticalInset: CGFloat = 10.0
+            let verticalInset: CGFloat
+            switch item.systemStyle {
+            case .glass:
+                verticalInset = 14.0
+            case .legacy:
+                verticalInset = 10.0
+            }
+            
             let titleSpacing: CGFloat = 1.0
             let textSpacing: CGFloat = 3.0
             
@@ -345,6 +354,7 @@ class ItemListRecentSessionItemNode: ItemListRevealOptionsItemNode {
             let insets = itemListNeighborsGroupedInsets(neighbors, params)
             let contentSize = CGSize(width: params.width, height: verticalInset * 2.0 + titleLayout.size.height + titleSpacing + appLayout.size.height + textSpacing + locationLayout.size.height)
             let separatorHeight = UIScreenPixel
+            let separatorRightInset: CGFloat = item.systemStyle == .glass ? 16.0 : 0.0
             
             let layout = ListViewItemNodeLayout(contentSize: contentSize, insets: insets)
             let layoutSize = layout.size
@@ -498,13 +508,13 @@ class ItemListRecentSessionItemNode: ItemListRevealOptionsItemNode {
                             strongSelf.bottomStripeNode.isHidden = hasCorners
                     }
                     
-                    strongSelf.maskNode.image = hasCorners ? PresentationResourcesItemList.cornersImage(item.presentationData.theme, top: hasTopCorners, bottom: hasBottomCorners) : nil
+                    strongSelf.maskNode.image = hasCorners ? PresentationResourcesItemList.cornersImage(item.presentationData.theme, top: hasTopCorners, bottom: hasBottomCorners, glass: item.systemStyle == .glass) : nil
                     
                     strongSelf.backgroundNode.frame = CGRect(origin: CGPoint(x: 0.0, y: -min(insets.top, separatorHeight)), size: CGSize(width: params.width, height: contentSize.height + min(insets.top, separatorHeight) + min(insets.bottom, separatorHeight)))
                     strongSelf.containerNode.frame = CGRect(origin: CGPoint(), size: strongSelf.backgroundNode.frame.size)
                     strongSelf.maskNode.frame = strongSelf.backgroundNode.frame.insetBy(dx: params.leftInset, dy: 0.0)
                     transition.updateFrame(node: strongSelf.topStripeNode, frame: CGRect(origin: CGPoint(x: 0.0, y: -min(insets.top, separatorHeight)), size: CGSize(width: layoutSize.width, height: separatorHeight)))
-                    transition.updateFrame(node: strongSelf.bottomStripeNode, frame: CGRect(origin: CGPoint(x: bottomStripeInset, y: contentSize.height + bottomStripeOffset), size: CGSize(width: layoutSize.width - bottomStripeInset, height: separatorHeight)))
+                    transition.updateFrame(node: strongSelf.bottomStripeNode, frame: CGRect(origin: CGPoint(x: bottomStripeInset, y: contentSize.height + bottomStripeOffset), size: CGSize(width: layoutSize.width - bottomStripeInset - params.rightInset - separatorRightInset, height: separatorHeight)))
                     
                     transition.updateFrame(node: strongSelf.iconNode, frame: CGRect(origin: CGPoint(x: params.leftInset + revealOffset + editingOffset + 16.0, y: 12.0), size: CGSize(width: 30.0, height: 30.0)))
                     transition.updateFrame(node: strongSelf.titleNode, frame: CGRect(origin: CGPoint(x: leftInset + revealOffset + editingOffset, y: verticalInset), size: titleLayout.size))

@@ -2,7 +2,6 @@ import Foundation
 import UIKit
 import Display
 import AsyncDisplayKit
-import Postbox
 import TelegramCore
 import SwiftSignalKit
 import UniversalMediaPlayer
@@ -162,7 +161,6 @@ final class ThemeGridControllerNode: ASDisplayNode {
     private let emptyStateUpdated: (Bool) -> Void
     private let resetWallpapers: () -> Void
     
-    var requestDeactivateSearch: (() -> Void)?
     var requestWallpaperRemoval: (() -> Void)?
     
     let ready = ValuePromise<Bool>()
@@ -243,13 +241,13 @@ final class ThemeGridControllerNode: ASDisplayNode {
         self.maskNode.isUserInteractionEnabled = false
         
         self.colorItemNode = ItemListActionItemNode()
-        self.colorItem = ItemListActionItem(presentationData: ItemListPresentationData(presentationData), title: presentationData.strings.Wallpaper_SetColor, kind: .generic, alignment: .natural, sectionId: 0, style: .blocks, action: {
+        self.colorItem = ItemListActionItem(presentationData: ItemListPresentationData(presentationData), systemStyle: .glass, title: presentationData.strings.Wallpaper_SetColor, kind: .generic, alignment: .natural, sectionId: 0, style: .blocks, action: {
             presentColors()
         })
         
         switch mode {
         case .generic:
-            self.galleryItem = ItemListActionItem(presentationData: ItemListPresentationData(presentationData), title: presentationData.strings.Wallpaper_SetCustomBackground, kind: .generic, alignment: .natural, sectionId: 0, style: .blocks, action: {
+            self.galleryItem = ItemListActionItem(presentationData: ItemListPresentationData(presentationData), systemStyle: .glass, title: presentationData.strings.Wallpaper_SetCustomBackground, kind: .generic, alignment: .natural, sectionId: 0, style: .blocks, action: {
                 presentGallery()
             })
             self.galleryItemNode = ItemListActionItemNode()
@@ -259,14 +257,14 @@ final class ThemeGridControllerNode: ASDisplayNode {
                 requiredCustomWallpaperLevel = customLevel
             }
 
-            self.galleryItem = ItemListPeerActionItem(presentationData: ItemListPresentationData(presentationData), icon: generateTintedImage(image: UIImage(bundleImageName: "Chat/Attach Menu/Image"), color: presentationData.theme.list.itemAccentColor), title: presentationData.strings.Wallpaper_SetCustomBackground, additionalBadgeIcon: requiredCustomWallpaperLevel.flatMap { generateDisclosureActionBoostLevelBadgeImage(text: presentationData.strings.Channel_Appearance_BoostLevel("\($0)").string) }, alwaysPlain: false, hasSeparator: true, sectionId: 0, height: .generic, color: .accent, editing: false, action: {
+            self.galleryItem = ItemListPeerActionItem(presentationData: ItemListPresentationData(presentationData), systemStyle: .glass, icon: generateTintedImage(image: UIImage(bundleImageName: "Chat/Attach Menu/Image"), color: presentationData.theme.list.itemAccentColor), title: presentationData.strings.Wallpaper_SetCustomBackground, additionalBadgeIcon: requiredCustomWallpaperLevel.flatMap { generateDisclosureActionBoostLevelBadgeImage(text: presentationData.strings.Channel_Appearance_BoostLevel("\($0)").string) }, alwaysPlain: false, hasSeparator: true, sectionId: 0, height: .generic, color: .accent, editing: false, action: {
                 presentGallery()
             })
             self.galleryItemNode = ItemListPeerActionItemNode()
         }
         
         var removeImpl: (() -> Void)?
-        self.removeItem = ItemListPeerActionItem(presentationData: ItemListPresentationData(presentationData), icon: generateTintedImage(image: UIImage(bundleImageName: "Chat/Input/Accessory Panels/MessageSelectionTrash"), color: presentationData.theme.list.itemDestructiveColor), title: presentationData.strings.Wallpaper_ChannelRemoveBackground, alwaysPlain: false, hasSeparator: true, sectionId: 0, height: .generic, color: .destructive, editing: false, action: {
+        self.removeItem = ItemListPeerActionItem(presentationData: ItemListPresentationData(presentationData), systemStyle: .glass, icon: generateTintedImage(image: UIImage(bundleImageName: "Chat/Input/Accessory Panels/MessageSelectionTrash"), color: presentationData.theme.list.itemDestructiveColor), title: presentationData.strings.Wallpaper_ChannelRemoveBackground, alwaysPlain: false, hasSeparator: true, sectionId: 0, height: .generic, color: .destructive, editing: false, action: {
             removeImpl?()
         })
         self.removeItemNode = ItemListPeerActionItemNode()
@@ -283,7 +281,7 @@ final class ThemeGridControllerNode: ASDisplayNode {
         self.descriptionItem = ItemListTextItem(presentationData: ItemListPresentationData(presentationData), text: .plain(descriptionText), sectionId: 0)
 
         self.resetItemNode = ItemListActionItemNode()
-        self.resetItem = ItemListActionItem(presentationData: ItemListPresentationData(presentationData), title: presentationData.strings.Wallpaper_ResetWallpapers, kind: .generic, alignment: .natural, sectionId: 0, style: .blocks, action: {
+        self.resetItem = ItemListActionItem(presentationData: ItemListPresentationData(presentationData), systemStyle: .glass, title: presentationData.strings.Wallpaper_ResetWallpapers, kind: .generic, alignment: .natural, sectionId: 0, style: .blocks, action: {
             resetWallpapers()
         })
         self.resetDescriptionItemNode = ItemListTextItemNode()
@@ -679,13 +677,13 @@ final class ThemeGridControllerNode: ASDisplayNode {
         self.bottomBackgroundNode.backgroundColor = presentationData.theme.list.blocksBackgroundColor
         self.bottomSeparatorNode.backgroundColor = presentationData.theme.list.itemBlocksSeparatorColor
         
-        self.colorItem = ItemListActionItem(presentationData: ItemListPresentationData(presentationData), title: presentationData.strings.Wallpaper_SetColor, kind: .generic, alignment: .natural, sectionId: 0, style: .blocks, action: { [weak self] in
+        self.colorItem = ItemListActionItem(presentationData: ItemListPresentationData(presentationData), systemStyle: .glass, title: presentationData.strings.Wallpaper_SetColor, kind: .generic, alignment: .natural, sectionId: 0, style: .blocks, action: { [weak self] in
             self?.presentColors()
         })
         
         switch self.mode {
         case .generic:
-            self.galleryItem = ItemListActionItem(presentationData: ItemListPresentationData(presentationData), title: presentationData.strings.Wallpaper_SetCustomBackground, kind: .generic, alignment: .natural, sectionId: 0, style: .blocks, action: { [weak self] in
+            self.galleryItem = ItemListActionItem(presentationData: ItemListPresentationData(presentationData), systemStyle: .glass, title: presentationData.strings.Wallpaper_SetCustomBackground, kind: .generic, alignment: .natural, sectionId: 0, style: .blocks, action: { [weak self] in
                 self?.presentGallery()
             })
         case .peer:
@@ -693,16 +691,16 @@ final class ThemeGridControllerNode: ASDisplayNode {
             if case let .peer(_, _, _, _, customLevel) = mode {
                 requiredCustomWallpaperLevel = customLevel
             }
-            self.galleryItem = ItemListPeerActionItem(presentationData: ItemListPresentationData(presentationData), icon: generateTintedImage(image: UIImage(bundleImageName: "Chat/Attach Menu/Image"), color: presentationData.theme.list.itemAccentColor), title: presentationData.strings.Wallpaper_SetCustomBackground, additionalBadgeIcon: requiredCustomWallpaperLevel.flatMap { generateDisclosureActionBoostLevelBadgeImage(text: presentationData.strings.Channel_Appearance_BoostLevel("\($0)").string) }, alwaysPlain: false, hasSeparator: true, sectionId: 0, height: .generic, color: .accent, editing: false, action: { [weak self] in
+            self.galleryItem = ItemListPeerActionItem(presentationData: ItemListPresentationData(presentationData), systemStyle: .glass, icon: generateTintedImage(image: UIImage(bundleImageName: "Chat/Attach Menu/Image"), color: presentationData.theme.list.itemAccentColor), title: presentationData.strings.Wallpaper_SetCustomBackground, additionalBadgeIcon: requiredCustomWallpaperLevel.flatMap { generateDisclosureActionBoostLevelBadgeImage(text: presentationData.strings.Channel_Appearance_BoostLevel("\($0)").string) }, alwaysPlain: false, hasSeparator: true, sectionId: 0, height: .generic, color: .accent, editing: false, action: { [weak self] in
                 self?.presentGallery()
             })
-            self.removeItem = ItemListPeerActionItem(presentationData: ItemListPresentationData(presentationData), icon: generateTintedImage(image: UIImage(bundleImageName: "Chat/Input/Accessory Panels/MessageSelectionTrash"), color: presentationData.theme.list.itemDestructiveColor), title: presentationData.strings.Wallpaper_ChannelRemoveBackground, alwaysPlain: false, hasSeparator: true, sectionId: 0, height: .generic, color: .destructive, editing: false, action: { [weak self] in
+            self.removeItem = ItemListPeerActionItem(presentationData: ItemListPresentationData(presentationData), systemStyle: .glass, icon: generateTintedImage(image: UIImage(bundleImageName: "Chat/Input/Accessory Panels/MessageSelectionTrash"), color: presentationData.theme.list.itemDestructiveColor), title: presentationData.strings.Wallpaper_ChannelRemoveBackground, alwaysPlain: false, hasSeparator: true, sectionId: 0, height: .generic, color: .destructive, editing: false, action: { [weak self] in
                 self?.controllerInteraction?.removeWallpaper()
             })
         }
         
         self.descriptionItem = ItemListTextItem(presentationData: ItemListPresentationData(presentationData), text: .plain(presentationData.strings.Wallpaper_SetCustomBackgroundInfo), sectionId: 0)
-        self.resetItem = ItemListActionItem(presentationData: ItemListPresentationData(presentationData), title: presentationData.strings.Wallpaper_ResetWallpapers, kind: .generic, alignment: .natural, sectionId: 0, style: .blocks, action: { [weak self] in
+        self.resetItem = ItemListActionItem(presentationData: ItemListPresentationData(presentationData), systemStyle: .glass, title: presentationData.strings.Wallpaper_ResetWallpapers, kind: .generic, alignment: .natural, sectionId: 0, style: .blocks, action: { [weak self] in
             self?.resetWallpapers()
         })
         self.resetDescriptionItem = ItemListTextItem(presentationData: ItemListPresentationData(presentationData), text: .plain(presentationData.strings.Wallpaper_ResetWallpapersInfo), sectionId: 0)
@@ -956,75 +954,6 @@ final class ThemeGridControllerNode: ASDisplayNode {
         if let searchDisplayController = self.searchDisplayController {
             searchDisplayController.containerLayoutUpdated(layout, navigationBarHeight: navigationBarHeight, transition: transition)
         }
-    }
-    
-    func activateSearch(placeholderNode: SearchBarPlaceholderNode) {
-        guard let (containerLayout, navigationBarHeight) = self.validLayout, let navigationBar = self.navigationBar, self.searchDisplayController == nil else {
-            return
-        }
-        
-        self.searchDisplayController = SearchDisplayController(presentationData: self.presentationData, contentNode: ThemeGridSearchContentNode(context: context, openResult: { [weak self] result in
-            if let strongSelf = self {
-                strongSelf.presentPreviewController(.contextResult(result))
-            }
-        }), cancel: { [weak self] in
-            self?.requestDeactivateSearch?()
-        })
-        
-        self.searchDisplayController?.containerLayoutUpdated(containerLayout, navigationBarHeight: navigationBarHeight, transition: .immediate)
-        self.searchDisplayController?.activate(insertSubnode: { [weak self, weak placeholderNode] subnode, isSearchBar in
-            if let strongSelf = self, let strongPlaceholderNode = placeholderNode {
-                if isSearchBar {
-                    strongPlaceholderNode.supernode?.insertSubnode(subnode, aboveSubnode: strongPlaceholderNode)
-                } else {
-                    strongSelf.insertSubnode(subnode, belowSubnode: navigationBar)
-                }
-            }
-        }, placeholder: placeholderNode)
-    }
-    
-    func deactivateSearch(placeholderNode: SearchBarPlaceholderNode, animated: Bool) {
-        if let searchDisplayController = self.searchDisplayController {
-            searchDisplayController.deactivate(placeholder: placeholderNode, animated: animated)
-            self.searchDisplayController = nil
-        }
-    }
-    
-    func fixNavigationSearchableGridNodeScrolling(searchNode: NavigationBarSearchContentNode) -> Bool {
-        if searchNode.expansionProgress > 0.0 && searchNode.expansionProgress < 1.0 {
-            let scrollToItem: GridNodeScrollToItem
-            let targetProgress: CGFloat
-            
-            let duration: Double = 0.3
-            let curve = ContainedViewLayoutTransitionCurve.slide
-            let transition: ContainedViewLayoutTransition = .animated(duration: duration, curve: curve)
-            let timingFunction = curve.timingFunction
-            let mediaTimingFunction = curve.mediaTimingFunction
-            
-            if searchNode.expansionProgress < 0.6 {
-                scrollToItem = GridNodeScrollToItem(index: 0, position: .top(navigationBarSearchContentHeight), transition: transition, directionHint: .up, adjustForSection: true, adjustForTopInset: true)
-                targetProgress = 0.0
-            } else {
-                scrollToItem = GridNodeScrollToItem(index: 0, position: .top(0.0), transition: transition, directionHint: .up, adjustForSection: true, adjustForTopInset: true)
-                targetProgress = 1.0
-            }
-            
-            let previousOffset = (self.gridNode.scrollView.contentOffset.y + self.gridNode.scrollView.contentInset.top)
-            searchNode.updateExpansionProgress(targetProgress, animated: true)
-            
-            self.gridNode.transaction(GridNodeTransaction(deleteItems: [], insertItems: [], updateItems: [], scrollToItem: scrollToItem, updateLayout: nil, itemTransition: .immediate, stationaryItems: .none, updateFirstIndexInSectionOffset: nil, updateOpaqueState: nil, synchronousLoads: false), completion: { _ in })
-            
-            let offset = (self.gridNode.scrollView.contentOffset.y + self.gridNode.scrollView.contentInset.top) - previousOffset
-            
-            self.backgroundNode.layer.animatePosition(from: self.backgroundNode.layer.position.offsetBy(dx: 0.0, dy: offset), to: self.backgroundNode.layer.position, duration: duration, timingFunction: timingFunction, mediaTimingFunction: mediaTimingFunction)
-            self.separatorNode.layer.animatePosition(from: self.separatorNode.layer.position.offsetBy(dx: 0.0, dy: offset), to: self.separatorNode.layer.position, duration: duration, timingFunction: timingFunction, mediaTimingFunction: mediaTimingFunction)
-            self.colorItemNode.layer.animatePosition(from: self.colorItemNode.layer.position.offsetBy(dx: 0.0, dy: offset), to: self.colorItemNode.layer.position, duration: duration, timingFunction: timingFunction, mediaTimingFunction: mediaTimingFunction)
-            self.galleryItemNode.layer.animatePosition(from: self.galleryItemNode.layer.position.offsetBy(dx: 0.0, dy: offset), to: self.galleryItemNode.layer.position, duration: duration, timingFunction: timingFunction, mediaTimingFunction: mediaTimingFunction)
-            self.descriptionItemNode.layer.animatePosition(from: self.descriptionItemNode.layer.position.offsetBy(dx: 0.0, dy: offset), to: self.descriptionItemNode.layer.position, duration: duration, timingFunction: timingFunction, mediaTimingFunction: mediaTimingFunction)
-            
-            return true
-        }
-        return false
     }
     
     func scrollToTop(animated: Bool = true) {

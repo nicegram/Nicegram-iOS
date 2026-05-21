@@ -6,6 +6,7 @@ import SwiftSignalKit
 import HierarchyTrackingLayer
 import ShimmerEffect
 import ManagedAnimationNode
+import GlassBackgroundComponent
 
 private func generateIndefiniteActivityIndicatorImage(color: UIColor, diameter: CGFloat = 22.0, lineWidth: CGFloat = 2.0) -> UIImage? {
     return generateImage(CGSize(width: diameter, height: diameter), rotatedContext: { size, context in
@@ -165,8 +166,10 @@ private final class BadgeNode: ASDisplayNode {
 public final class SolidRoundedButtonNode: ASDisplayNode {
     // Nicegram Onboarding, make public
     public private(set) var theme: SolidRoundedButtonTheme
+    private var glass: Bool
+    private var glassInset: Bool
     private var fontSize: CGFloat
-    private let gloss: Bool
+    private let isShimmering: Bool
     
     public let buttonBackgroundNode: ASImageNode
     private var buttonBackgroundAnimationView: UIImageView?
@@ -175,7 +178,9 @@ public final class SolidRoundedButtonNode: ASDisplayNode {
     private var borderView: UIView?
     private var borderMaskView: UIView?
     private var borderShimmerView: ShimmerEffectForegroundView?
-        
+            
+    private var chromeView: UIImageView?
+    
     private let buttonNode: HighlightTrackingButtonNode
     public let titleNode: ImmediateTextNode
     private let subtitleNode: ImmediateTextNode
@@ -269,7 +274,7 @@ public final class SolidRoundedButtonNode: ASDisplayNode {
                         _ = self.updateLayout(width: width, transition: .immediate)
                     }
                     
-                    if self.gloss {
+                    if self.isShimmering {
                         self.animationTimer?.invalidate()
                         
                         Queue.mainQueue().after(1.25) {
@@ -340,14 +345,16 @@ public final class SolidRoundedButtonNode: ASDisplayNode {
         }
     }
     
-    public init(title: String? = nil, icon: UIImage? = nil, theme: SolidRoundedButtonTheme, font: SolidRoundedButtonFont = .bold, fontSize: CGFloat = 17.0, height: CGFloat = 48.0, cornerRadius: CGFloat = 24.0, gloss: Bool = false) {
+    public init(title: String? = nil, icon: UIImage? = nil, theme: SolidRoundedButtonTheme, glass: Bool = false, glassInset: Bool = false, font: SolidRoundedButtonFont = .bold, fontSize: CGFloat = 17.0, height: CGFloat = 48.0, cornerRadius: CGFloat = 24.0, isShimmering: Bool = false) {
         self.theme = theme
+        self.glass = glass
+        self.glassInset = glassInset
         self.font = font
         self.fontSize = fontSize
         self.buttonHeight = height
         self.buttonCornerRadius = cornerRadius
         self.title = title
-        self.gloss = gloss
+        self.isShimmering = isShimmering
         
         self.buttonBackgroundNode = ASImageNode()
         self.buttonBackgroundNode.displaysAsynchronously = false
@@ -445,7 +452,7 @@ public final class SolidRoundedButtonNode: ASDisplayNode {
     }
         
     private func setupGloss() {
-        if self.gloss {
+        if self.isShimmering {
             if self.shimmerView == nil {
                 let shimmerView = ShimmerEffectForegroundView()
                 self.shimmerView = shimmerView
@@ -792,6 +799,28 @@ public final class SolidRoundedButtonNode: ASDisplayNode {
             self.titleNode.layer.animatePosition(from: CGPoint(x: 0.0, y: spacingOffset / 2.0), to: CGPoint(), duration: 0.3, additive: true)
             self.subtitleNode.layer.animatePosition(from: CGPoint(x: 0.0, y: -spacingOffset / 2.0), to: CGPoint(), duration: 0.3, additive: true)
             self.subtitleNode.layer.animateAlpha(from: 0.0, to: 1.0, duration: 0.3)
+        }
+        
+        if self.glass {
+            let chromeView: UIImageView
+            var chromeTransition = transition
+            if let current = self.chromeView {
+                chromeView = current
+            } else {
+                chromeTransition = .immediate
+                chromeView = UIImageView()
+                self.chromeView = chromeView
+                if let shimmeringView = self.shimmerView {
+                    self.view.insertSubview(chromeView, aboveSubview: shimmeringView)
+                } else {
+                    self.view.insertSubview(chromeView, aboveSubview: self.buttonBackgroundNode.view)
+                }
+                
+                chromeView.layer.compositingFilter = "overlayBlendMode"
+                chromeView.alpha = 0.8
+                chromeView.image = GlassBackgroundView.generateForegroundImage(size: CGSize(width: 26.0 * 2.0, height: 26.0 * 2.0), isDark: self.theme.backgroundColor.lightness < 0.4, fillColor: .clear)
+            }
+            chromeTransition.updateFrame(view: chromeView, frame: CGRect(origin: .zero, size: buttonSize))
         }
         
         return buttonSize.height

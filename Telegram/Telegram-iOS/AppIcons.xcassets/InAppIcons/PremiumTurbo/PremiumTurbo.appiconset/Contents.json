@@ -1,0 +1,20 @@
+{
+  "images": [
+    {
+      "filename": "PremiumTurbo@2x.png",
+      "idiom": "iphone",
+      "scale": "2x",
+      "size": "60x60"
+    },
+    {
+      "filename": "PremiumTurbo@3x.png",
+      "idiom": "iphone",
+      "scale": "3x",
+      "size": "60x60"
+    }
+  ],
+  "info": {
+    "author": "xcode",
+    "version": 1
+  }
+}

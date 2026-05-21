@@ -388,7 +388,11 @@ final class NavigationModalContainer: ASDisplayNode, ASScrollViewDelegate, ASGes
             if isStandaloneModal || isLandscape || (self.isFlat && !flatReceivesModalTransition) {
                 self.container.cornerRadius = 0.0
             } else {
-                self.container.cornerRadius = 10.0
+                var cornerRadius: CGFloat = 10.0
+                if let controller = controllers.first, controller._hasGlassStyle {
+                    cornerRadius = 38.0
+                }
+                self.container.cornerRadius = cornerRadius
             }
             
             if #available(iOS 11.0, *) {
@@ -448,7 +452,7 @@ final class NavigationModalContainer: ASDisplayNode, ASScrollViewDelegate, ASGes
             } else {
                 self.dim.backgroundColor = UIColor(white: 0.0, alpha: 0.4)
                 self.container.clipsToBounds = true
-                self.container.cornerRadius = 10.0
+                self.container.cornerRadius = 38.0
                 if #available(iOS 11.0, *) {
                     self.container.layer.maskedCorners = [.layerMinXMinYCorner, .layerMaxXMinYCorner, .layerMinXMaxYCorner, .layerMaxXMaxYCorner]
                 }

@@ -12,6 +12,7 @@ import BalancedTextComponent
 import Markdown
 import TelegramStringFormatting
 import BundleIconComponent
+import GlassBarButtonComponent
 
 public final class ButtonSubtitleComponent: CombinedComponent {
     public let title: String
@@ -124,23 +125,29 @@ private final class StoryQualityUpgradeSheetContentComponent: Component {
             }
             let cancelButtonSize = cancelButton.update(
                 transition: transition,
-                component: AnyComponent(Button(
-                    content: AnyComponent(Text(text: environment.strings.Common_Cancel, font: Font.regular(17.0), color: environment.theme.list.itemAccentColor)),
-                    action: { [weak self] in
-                        guard let self, let component = self.component else {
-                            return
-                        }
+                component: AnyComponent(GlassBarButtonComponent(
+                    size: CGSize(width: 44.0, height: 44.0),
+                    backgroundColor: nil,
+                    isDark: environment.theme.overallDarkAppearance,
+                    state: .glass,
+                    component: AnyComponentWithIdentity(id: "close", component: AnyComponent(
+                        BundleIconComponent(
+                            name: "Navigation/Close",
+                            tintColor: environment.theme.chat.inputPanel.panelControlColor
+                        )
+                    )),
+                    action: { _ in
                         component.dismiss()
                     }
-                ).minSize(CGSize(width: 8.0, height: 44.0))),
+                )),
                 environment: {},
-                containerSize: CGSize(width: 200.0, height: 100.0)
+                containerSize: CGSize(width: 44.0, height: 44.0)
             )
             if let cancelButtonView = cancelButton.view {
                 if cancelButtonView.superview == nil {
                     self.addSubview(cancelButtonView)
                 }
-                transition.setFrame(view: cancelButtonView, frame: CGRect(origin: CGPoint(x: 16.0, y: 6.0), size: cancelButtonSize))
+                transition.setFrame(view: cancelButtonView, frame: CGRect(origin: CGPoint(x: 16.0, y: 16.0), size: cancelButtonSize))
             }
             
             var contentHeight: CGFloat = 0.0
@@ -152,7 +159,8 @@ private final class StoryQualityUpgradeSheetContentComponent: Component {
                     content: LottieComponent.AppBundleContent(name: "StoryUpgradeSheet"),
                     color: nil,
                     startingPosition: .begin,
-                    size: CGSize(width: 100.0, height: 100.0)
+                    size: CGSize(width: 100.0, height: 100.0),
+                    loop: true
                 )),
                 environment: {},
                 containerSize: CGSize(width: 100.0, height: 100.0)
@@ -217,16 +225,18 @@ private final class StoryQualityUpgradeSheetContentComponent: Component {
                 color: environment.theme.list.itemCheckColors.foregroundColor.withMultipliedAlpha(0.7)
             ))))
             
+            let buttonInsets = ContainerViewLayout.concentricInsets(bottomInset: environment.safeInsets.bottom, innerDiameter: 52.0, sideInset: 30.0)
             let buttonSize = self.button.update(
                 transition: transition,
                 component: AnyComponent(ButtonComponent(
                     background: ButtonComponent.Background(
+                        style: .glass,
                         color: environment.theme.list.itemCheckColors.fillColor,
                         foreground: environment.theme.list.itemCheckColors.foregroundColor,
                         pressedColor: environment.theme.list.itemCheckColors.fillColor.withMultipliedAlpha(0.8)
                     ),
                     content: AnyComponentWithIdentity(id: AnyHashable(0 as Int), component: AnyComponent(
-                        VStack(buttonContents, spacing: 3.0)
+                        VStack(buttonContents, spacing: 1.0)
                     )),
                     isEnabled: true,
                     allowActionWhenDisabled: true,
@@ -240,9 +250,9 @@ private final class StoryQualityUpgradeSheetContentComponent: Component {
                     }
                 )),
                 environment: {},
-                containerSize: CGSize(width: availableSize.width - sideInset * 2.0, height: 50.0)
+                containerSize: CGSize(width: availableSize.width - buttonInsets.left - buttonInsets.right, height: 52.0)
             )
-            let buttonFrame = CGRect(origin: CGPoint(x: sideInset, y: contentHeight), size: buttonSize)
+            let buttonFrame = CGRect(origin: CGPoint(x: buttonInsets.left, y: contentHeight), size: buttonSize)
             if let buttonView = self.button.view {
                 if buttonView.superview == nil {
                     self.addSubview(buttonView)
@@ -250,12 +260,7 @@ private final class StoryQualityUpgradeSheetContentComponent: Component {
                 transition.setFrame(view: buttonView, frame: buttonFrame)
             }
             contentHeight += buttonSize.height
-            
-            if environment.safeInsets.bottom.isZero {
-                contentHeight += 16.0
-            } else {
-                contentHeight += environment.safeInsets.bottom + 14.0
-            }
+            contentHeight += buttonInsets.bottom
             
             return CGSize(width: availableSize.width, height: contentHeight)
         }
@@ -313,6 +318,8 @@ private final class StoryQualityUpgradeSheetScreenComponent: Component {
             self.environment = environment
             
             let sheetEnvironment = SheetComponentEnvironment(
+                metrics: environment.metrics,
+                deviceMetrics: environment.deviceMetrics,
                 isDisplaying: environment.isVisible,
                 isCentered: environment.metrics.widthClass == .regular,
                 hasInputHeight: !environment.inputHeight.isZero,
@@ -355,7 +362,8 @@ private final class StoryQualityUpgradeSheetScreenComponent: Component {
                             })
                         }
                     )),
-                    backgroundColor: .color(environment.theme.overallDarkAppearance ? environment.theme.list.itemBlocksBackgroundColor : environment.theme.list.blocksBackgroundColor),
+                    style: .glass,
+                    backgroundColor: .color(environment.theme.list.modalPlainBackgroundColor),
                     animateOut: self.sheetAnimateOut
                 )),
                 environment: {

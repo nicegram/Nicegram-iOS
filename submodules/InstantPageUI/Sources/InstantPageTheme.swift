@@ -1,6 +1,5 @@
 import Foundation
 import UIKit
-import Postbox
 import Display
 import TelegramPresentationData
 import TelegramUIPreferences
@@ -136,6 +135,32 @@ public final class InstantPageTheme {
     public func withUpdatedFontStyles(sizeMultiplier: CGFloat, forceSerif: Bool) -> InstantPageTheme {
         return InstantPageTheme(type: type, pageBackgroundColor: pageBackgroundColor, textCategories: self.textCategories.withUpdatedFontStyles(sizeMultiplier: sizeMultiplier, forceSerif: forceSerif), serif: forceSerif, codeBlockBackgroundColor: codeBlockBackgroundColor, linkColor: linkColor, textHighlightColor: textHighlightColor, linkHighlightColor: linkHighlightColor, markerColor: markerColor, panelBackgroundColor: panelBackgroundColor, panelHighlightedBackgroundColor: panelHighlightedBackgroundColor, panelPrimaryColor: panelPrimaryColor, panelSecondaryColor: panelSecondaryColor, panelAccentColor: panelAccentColor, tableBorderColor: tableBorderColor, tableHeaderColor: tableHeaderColor, controlColor: controlColor, imageTintColor: imageTintColor, overlayPanelColor: overlayPanelColor)
     }
+
+    func headingTextAttributes(level: Int32, link: Bool) -> InstantPageTextAttributes {
+        let clampedLevel = max(Int32(3), min(level, Int32(6)))
+        let subheaderAttributes = self.textCategories.subheader
+        guard clampedLevel > 3 else {
+            return subheaderAttributes.withUnderline(link)
+        }
+
+        let baseSize: CGFloat
+        switch clampedLevel {
+        case 4:
+            baseSize = 17.0
+        case 5:
+            baseSize = 15.0
+        default:
+            baseSize = 13.0
+        }
+
+        let sizeMultiplier = subheaderAttributes.font.size / 19.0
+        let attributes = InstantPageTextAttributes(
+            font: InstantPageFont(style: .serif, size: floor(baseSize * sizeMultiplier), lineSpacingFactor: subheaderAttributes.font.lineSpacingFactor),
+            color: subheaderAttributes.color,
+            underline: subheaderAttributes.underline
+        )
+        return attributes.withUnderline(link)
+    }
 }
 
 private let lightTheme = InstantPageTheme(
@@ -153,15 +178,15 @@ private let lightTheme = InstantPageTheme(
     ),
     serif: false,
     codeBlockBackgroundColor: UIColor(rgb: 0xf5f8fc),
-    linkColor: UIColor(rgb: 0x007aff),
+    linkColor: UIColor(rgb: 0x0088ff),
     textHighlightColor: UIColor(rgb: 0, alpha: 0.12),
-    linkHighlightColor: UIColor(rgb: 0x007aff, alpha: 0.07),
+    linkHighlightColor: UIColor(rgb: 0x0088ff, alpha: 0.07),
     markerColor: UIColor(rgb: 0xfef3bc),
     panelBackgroundColor: UIColor(rgb: 0xf3f4f5),
     panelHighlightedBackgroundColor: UIColor(rgb: 0xe7e7e7),
     panelPrimaryColor: .black,
     panelSecondaryColor: UIColor(rgb: 0x79828b),
-    panelAccentColor: UIColor(rgb: 0x007aff),
+    panelAccentColor: UIColor(rgb: 0x0088ff),
     tableBorderColor: UIColor(rgb: 0xe2e2e2),
     tableHeaderColor: UIColor(rgb: 0xf4f4f4),
     controlColor: UIColor(rgb: 0xc7c7cd),

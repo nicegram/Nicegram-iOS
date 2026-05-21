@@ -8,6 +8,14 @@ import AccountContext
 import ComponentFlow
 
 public final class BirthdayPickerComponent: Component {
+    public final class TransitionHint {
+        public let animate: Bool
+        
+        public init(animate: Bool) {
+            self.animate = animate
+        }
+    }
+    
     public struct Theme: Equatable {
         let backgroundColor: UIColor
         let textColor: UIColor
@@ -97,7 +105,11 @@ public final class BirthdayPickerComponent: Component {
                 if let year = component.value.year {
                     self.pickerView.selectRow(Int(year - self.minYear), inComponent: PickerComponent.year.rawValue, animated: false)
                 } else {
-                    self.pickerView.selectRow(Int(self.maxYear - self.minYear + 1), inComponent: PickerComponent.year.rawValue, animated: false)
+                    var animate = false
+                    if let hint = transition.userData(TransitionHint.self), hint.animate {
+                        animate = true
+                    }
+                    self.pickerView.selectRow(Int(self.maxYear - self.minYear + 1), inComponent: PickerComponent.year.rawValue, animated: animate)
                 }
                 self.pickerView.selectRow(Int(component.value.month) - 1, inComponent: PickerComponent.month.rawValue, animated: false)
                 self.pickerView.selectRow(Int(component.value.day) - 1, inComponent: PickerComponent.day.rawValue, animated: false)

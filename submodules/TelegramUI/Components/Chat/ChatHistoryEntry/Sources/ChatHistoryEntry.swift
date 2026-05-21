@@ -1,7 +1,6 @@
-// Nicegram ATT
-import FeatAttentionEconomy
-//
-// Nicegram Wallet
+// Nicegram
+import FeatAdsgram
+import MemberwiseInit
 import NicegramWallet
 //
 import Postbox
@@ -29,8 +28,9 @@ public struct ChatMessageEntryAttributes: Equatable {
     public var isCentered: Bool
     public var authorStoryStats: PeerStoryStats?
     public var displayContinueThreadFooter: Bool
+    public var pinToTop: Bool
     
-    public init(rank: CachedChannelAdminRank?, isContact: Bool, contentTypeHint: ChatMessageEntryContentType, updatingMedia: ChatUpdatingMessageMedia?, isPlaying: Bool, isCentered: Bool, authorStoryStats: PeerStoryStats?, displayContinueThreadFooter: Bool) {
+    public init(rank: CachedChannelAdminRank?, isContact: Bool, contentTypeHint: ChatMessageEntryContentType, updatingMedia: ChatUpdatingMessageMedia?, isPlaying: Bool, isCentered: Bool, authorStoryStats: PeerStoryStats?, displayContinueThreadFooter: Bool, pinToTop: Bool) {
         self.rank = rank
         self.isContact = isContact
         self.contentTypeHint = contentTypeHint
@@ -39,6 +39,7 @@ public struct ChatMessageEntryAttributes: Equatable {
         self.isCentered = isCentered
         self.authorStoryStats = authorStoryStats
         self.displayContinueThreadFooter = displayContinueThreadFooter
+        self.pinToTop = pinToTop
     }
     
     public init() {
@@ -50,11 +51,12 @@ public struct ChatMessageEntryAttributes: Equatable {
         self.isCentered = false
         self.authorStoryStats = nil
         self.displayContinueThreadFooter = false
+        self.pinToTop = false
     }
 }
 
 public enum ChatInfoData: Equatable {
-    case botInfo(title: String, text: String, photo: TelegramMediaImage?, video: TelegramMediaFile?)
+    case botInfo(title: String, text: String, photo: TelegramMediaImage?, video: TelegramMediaFile?, peer: EnginePeer?, managedByBot: EnginePeer?)
     case userInfo(peer: EnginePeer, verification: PeerVerification?, registrationDate: String?, phoneCountry: String?, groupsInCommonCount: Int32)
     case newThreadInfo
 }
@@ -65,89 +67,78 @@ public enum ChatHistoryEntry: Identifiable, Comparable {
     case UnreadEntry(MessageIndex, ChatPresentationData)
     case ReplyCountEntry(MessageIndex, Bool, Int, ChatPresentationData)
     case ChatInfoEntry(ChatInfoData, ChatPresentationData)
-    case SearchEntry(PresentationTheme, PresentationStrings)
-    // Nicegram ATT
-    case NicegramAdEntry(String, AttAd, ChatPresentationData)
-    //
-    
-    // Nicegram ATT
-    public enum StableId: Hashable, Comparable {
-        case uint64(UInt64)
-        case nicegramAd(String)
+
+    // Nicegram Ads
+    case nicegramAd(NicegramAd)
+
+    @MemberwiseInit(.public)
+    public struct NicegramAd: Equatable {
+        public let presentationData: ChatPresentationData
+        public let viewModel: ChatMessageAdViewModel
+        public let viewState: PlacementViewState
         
-        public var uint64Value: UInt64 {
-            switch self {
-            case let .uint64(uint64): uint64
-            case .nicegramAd: 0
-            }
-        }
-        
-        public static func <(lhs: StableId, rhs: StableId) -> Bool {
-            lhs.uint64Value < rhs.uint64Value
+        public static func ==(lhs: NicegramAd, rhs: NicegramAd) -> Bool {
+            lhs.presentationData === rhs.presentationData &&
+            lhs.viewModel === rhs.viewModel &&
+            lhs.viewState == rhs.viewState
         }
     }
     //
     
-    // Nicegram ATT, changed UInt64 to StableId
-    public var stableId: StableId {
+    public var stableId: UInt64 {
         switch self {
-            case let .MessageEntry(message, _, _, _, _, attributes):
-                let type: UInt64
-                switch attributes.contentTypeHint {
-                    case .generic:
-                        type = 2
-                    case .largeEmoji:
-                        type = 3
-                    case .animatedEmoji:
-                        type = 4
-                }
-                // Nicegram ATT, wrap in .uint64()
-                return .uint64(UInt64(message.stableId) | ((type << 40)))
-            case let .MessageGroupEntry(groupInfo, _, _):
-                // Nicegram ATT, wrap in .uint64()
-                return .uint64(UInt64(bitPattern: groupInfo) | ((UInt64(2) << 40)))
-            case .UnreadEntry:
-                // Nicegram ATT, wrap in .uint64()
-                return .uint64(UInt64(4) << 40)
-            case .ReplyCountEntry:
-                // Nicegram ATT, wrap in .uint64()
-                return .uint64(UInt64(5) << 40)
-            case .ChatInfoEntry:
-                // Nicegram ATT, wrap in .uint64()
-                return .uint64(UInt64(6) << 40)
-            case .SearchEntry:
-                // Nicegram ATT, wrap in .uint64()
-                return .uint64(UInt64(7) << 40)
-            // Nicegram ATT
-            case let .NicegramAdEntry(id, _, _):
-                return .nicegramAd(id)
-            //
+        case let .MessageEntry(message, _, _, _, _, attributes):
+            let type: UInt64
+            switch attributes.contentTypeHint {
+            case .generic:
+                type = 2
+            case .largeEmoji:
+                type = 3
+            case .animatedEmoji:
+                type = 4
+            }
+            return UInt64(message.stableId) | ((type << 40))
+        case let .MessageGroupEntry(groupInfo, _, _):
+            return UInt64(bitPattern: groupInfo) | ((UInt64(2) << 40))
+        case .UnreadEntry:
+            return UInt64(4) << 40
+        case .ReplyCountEntry:
+            return UInt64(5) << 40
+        case let .ChatInfoEntry(infoData, _):
+            switch infoData {
+            case .newThreadInfo:
+                return UInt64(7) << 40
+            default:
+                return UInt64(6) << 40
+            }
+        // Nicegram Ads
+        case .nicegramAd:
+            return UInt64(8) << 40
+        //
         }
     }
     
     public var index: MessageIndex {
         switch self {
-            case let .MessageEntry(message, _, _, _, _, _):
-                return message.index
-            case let .MessageGroupEntry(_, messages, _):
-                return messages[messages.count - 1].0.index
-            case let .UnreadEntry(index, _):
-                return index
-            case let .ReplyCountEntry(index, _, _, _):
-                return index
-            case let .ChatInfoEntry(infoData, _):
-                switch infoData {
-                case .newThreadInfo:
-                    return MessageIndex.absoluteUpperBound()
-                default:
-                    return MessageIndex.absoluteLowerBound()
-                }
-            case .SearchEntry:
+        case let .MessageEntry(message, _, _, _, _, _):
+            return message.index
+        case let .MessageGroupEntry(_, messages, _):
+            return messages[messages.count - 1].0.index
+        case let .UnreadEntry(index, _):
+            return index
+        case let .ReplyCountEntry(index, _, _, _):
+            return index
+        case let .ChatInfoEntry(infoData, _):
+            switch infoData {
+            case .newThreadInfo:
+                return MessageIndex.absoluteUpperBound()
+            default:
                 return MessageIndex.absoluteLowerBound()
-            // Nicegram ATT
-            case .NicegramAdEntry:
-                return MessageIndex.absoluteLowerBound()
-            //
+            }
+        // Nicegram Ads
+        case .nicegramAd:
+            return MessageIndex.absoluteLowerBound()
+        //
         }
     }
     
@@ -168,10 +159,8 @@ public enum ChatHistoryEntry: Identifiable, Comparable {
                 default:
                     return MessageIndex.absoluteLowerBound()
                 }
-            case .SearchEntry:
-                return MessageIndex.absoluteLowerBound()
-            // Nicegram ATT
-            case .NicegramAdEntry:
+            // Nicegram Ads
+            case .nicegramAd:
                 return MessageIndex.absoluteLowerBound()
             //
         }
@@ -346,18 +335,9 @@ public enum ChatHistoryEntry: Identifiable, Comparable {
                 } else {
                     return false
                 }
-            case let .SearchEntry(lhsTheme, lhsStrings):
-                if case let .SearchEntry(rhsTheme, rhsStrings) = rhs, lhsTheme === rhsTheme, lhsStrings === rhsStrings {
-                    return true
-                } else {
-                    return false
-                }
-            // Nicegram ATT
-            case let .NicegramAdEntry(lhsId, lhsAd, lhsPresentationData):
-                if case let .NicegramAdEntry(rhsId, rhsAd, rhsPresentationData) = rhs,
-                   lhsId == rhsId,
-                   lhsAd == rhsAd,
-                   lhsPresentationData === rhsPresentationData {
+            // Nicegram Ads
+            case let .nicegramAd(lhsValue):
+                if case let .nicegramAd(rhsValue) = rhs, lhsValue == rhsValue {
                     return true
                 } else {
                     return false

@@ -1,3 +1,4 @@
+import CoreAnalytics
 import FeatAgents
 import FeatAssistant
 import FeatAttentionEconomy
@@ -5,15 +6,14 @@ import Foundation
 import AccountContext
 import Display
 import FeatOnboarding
-import FeatPremiumUI
+import FeatPaywall
+import FeatUserArchetype
 import NGAiChatUI
-import NGAnalytics
 import NGEntryPoint
 import FeatAuth
 import NGCore
 import class NGCoreUI.SharedLoadingView
 import NGModels
-import NGRemoteConfig
 import NGRepoUser
 import NGSpecialOffer
 import NGUI
@@ -76,16 +76,13 @@ class NGDeeplinkHandler {
             return handleOnboarding(url: url)
         case "specialOffer":
             return handleSpecialOffer(url: url)
-        case "refferaldraw":
-            if #available(iOS 15.0, *) {
-                AssistantTgHelper.showReferralDrawFromDeeplink()
-            }
-            return true
         case "tgAuthSuccess":
             if #available(iOS 15.0, *) {
                 AssistantTgHelper.routeToAssistant(source: .generic)
             }
             return true
+        case "userArchetype":
+            return handleUserArchetype(url: url)
         default:
             return false
         }
@@ -129,8 +126,7 @@ private extension NGDeeplinkHandler {
         
         var dismissImpl: (() -> Void)?
         
-        let c = LaunchOnboardingFactory().makeController(
-            launchOnboardingBridge: LaunchOnboardingBridgeImpl(),
+        let c = OnboardingRoot().makeController(
             onFinish: {
                 dismissImpl?()
             }
@@ -157,10 +153,27 @@ private extension NGDeeplinkHandler {
     }
     
     func handleSpecialOffer(url: URL) -> Bool {
-        SpecialOfferTgHelper.showSpecialOfferFromDeeplink(
+        _ = SpecialOfferTgHelper.showSpecialOfferFromDeeplink(
             id: url.queryItems["id"]
         )
         return true
+    }
+    
+    func handleUserArchetype(url: URL) -> Bool {
+        guard #available(iOS 15.0, *) else {
+            return false
+        }
+        
+        switch url.lastPathComponent {
+        case "bot":
+            UserArchetypePresenter().presentBot()
+            return true
+        case "flow":
+            UserArchetypePresenter().presentFlow()
+            return true
+        default:
+            return false
+        }
     }
 }
 

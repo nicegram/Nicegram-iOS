@@ -77,6 +77,15 @@ private let titleFont = Font.regular(17.0)
 private let subtitleFont = Font.regular(13.0)
 
 class SettingsSearchResultItemNode: ListViewItemNode {
+    private let contextSourceNode: ContextExtractedContentContainingNode
+    private let containerNode: ContextControllerSourceNode
+    private let extractedBackgroundImageNode: ASImageNode
+    
+    private var extractedRect: CGRect?
+    private var nonExtractedRect: CGRect?
+    
+    private let offsetContainerNode: ASDisplayNode
+    
     private let backgroundNode: ASDisplayNode
     private let topStripeNode: ASDisplayNode
     private let bottomStripeNode: ASDisplayNode
@@ -90,6 +99,15 @@ class SettingsSearchResultItemNode: ListViewItemNode {
     private var layoutParams: (ListViewItemLayoutParams, ItemListNeighbors)?
     
     init() {
+        self.contextSourceNode = ContextExtractedContentContainingNode()
+        self.containerNode = ContextControllerSourceNode()
+        
+        self.extractedBackgroundImageNode = ASImageNode()
+        self.extractedBackgroundImageNode.displaysAsynchronously = false
+        self.extractedBackgroundImageNode.alpha = 0.0
+        
+        self.offsetContainerNode = ASDisplayNode()
+        
         self.backgroundNode = ASDisplayNode()
         self.backgroundNode.isLayerBacked = true
         
@@ -117,11 +135,50 @@ class SettingsSearchResultItemNode: ListViewItemNode {
         self.highlightedBackgroundNode = ASDisplayNode()
         self.highlightedBackgroundNode.isLayerBacked = true
         
-        super.init(layerBacked: false, dynamicBounce: false, rotated: false, seeThrough: false)
+        super.init(layerBacked: false, rotated: false, seeThrough: false)
         
-        self.addSubnode(self.iconNode)
-        self.addSubnode(self.titleNode)
-        self.addSubnode(self.subtitleNode)
+        self.containerNode.addSubnode(self.contextSourceNode)
+        self.containerNode.targetNodeForActivationProgress = self.contextSourceNode.contentNode
+        self.addSubnode(self.containerNode)
+        
+        self.contextSourceNode.contentNode.addSubnode(self.extractedBackgroundImageNode)
+        self.contextSourceNode.contentNode.addSubnode(self.offsetContainerNode)
+        
+        self.offsetContainerNode.addSubnode(self.iconNode)
+        self.offsetContainerNode.addSubnode(self.titleNode)
+        self.offsetContainerNode.addSubnode(self.subtitleNode)
+        
+        self.containerNode.activated = { [weak self] gesture, _ in
+            guard let strongSelf = self, let item = strongSelf.item else {
+                return
+            }
+
+            cancelParentGestures(view: strongSelf.view)
+            
+            item.interaction.openItemContextMenu(item.item, strongSelf.contextSourceNode, strongSelf.contextSourceNode.bounds, gesture)
+        }
+        
+        self.contextSourceNode.willUpdateIsExtractedToContextPreview = { [weak self] isExtracted, transition in
+            guard let strongSelf = self, let item = strongSelf.item else {
+                return
+            }
+            
+            if isExtracted {
+                strongSelf.extractedBackgroundImageNode.image = generateStretchableFilledCircleImage(diameter: 52.0, color: item.theme.list.plainBackgroundColor)
+            }
+            
+            if let extractedRect = strongSelf.extractedRect, let nonExtractedRect = strongSelf.nonExtractedRect {
+                let rect = isExtracted ? extractedRect : nonExtractedRect
+                transition.updateFrame(node: strongSelf.extractedBackgroundImageNode, frame: rect)
+            }
+            
+            transition.updateSublayerTransformOffset(layer: strongSelf.offsetContainerNode.layer, offset: CGPoint(x: isExtracted ? 12.0 : 0.0, y: 0.0))
+            transition.updateAlpha(node: strongSelf.extractedBackgroundImageNode, alpha: isExtracted ? 1.0 : 0.0, completion: { _ in
+                if !isExtracted {
+                    self?.extractedBackgroundImageNode.image = nil
+                }
+            })
+        }
     }
     
     func asyncLayout() -> (_ item: SettingsSearchResultItem, _ params: ListViewItemLayoutParams, _ neighbors: ItemListNeighbors) -> (ListViewItemNodeLayout, (Bool) -> Void) {
@@ -132,7 +189,7 @@ class SettingsSearchResultItemNode: ListViewItemNode {
         
         return { item, params, neighbors in
             var leftInset: CGFloat = params.leftInset
-            let contentInset: CGFloat = 58.0
+            let contentInset: CGFloat = 60.0
             
             let insets = itemListNeighborsGroupedInsets(neighbors, params)
             
@@ -157,12 +214,11 @@ class SettingsSearchResultItemNode: ListViewItemNode {
                 updateIconImage = item.icon
             }
             
-            var height = titleLayout.size.height
-            if subtitle.isEmpty {
-                height += 22.0
-            } else {
-                height += 39.0
+            var height: CGFloat = 30.0 + titleLayout.size.height
+            if !subtitle.isEmpty {
+                height += 9.0
             }
+            
             let contentSize = CGSize(width: params.width, height: height)
             let layout = ListViewItemNodeLayout(contentSize: contentSize, insets: insets)
             return (layout, { [weak self] animated in
@@ -219,11 +275,29 @@ class SettingsSearchResultItemNode: ListViewItemNode {
                     default:
                         bottomStripeInset = 0.0
                     }
+                    
+                    strongSelf.containerNode.frame = CGRect(origin: CGPoint(), size: layout.contentSize)
+                    strongSelf.contextSourceNode.frame = CGRect(origin: CGPoint(), size: layout.contentSize)
+                    strongSelf.offsetContainerNode.frame = CGRect(origin: CGPoint(), size: layout.contentSize)
+                    strongSelf.contextSourceNode.contentNode.frame = CGRect(origin: CGPoint(), size: layout.contentSize)
+                    
+                    let nonExtractedRect = CGRect(origin: CGPoint(), size: CGSize(width: layout.contentSize.width - 16.0, height: layout.contentSize.height))
+                    let extractedRect = CGRect(origin: CGPoint(), size: layout.contentSize).insetBy(dx: 16.0 + params.leftInset, dy: 0.0)
+                    strongSelf.extractedRect = extractedRect
+                    strongSelf.nonExtractedRect = nonExtractedRect
+                    
+                    if strongSelf.contextSourceNode.isExtractedToContextPreview {
+                        strongSelf.extractedBackgroundImageNode.frame = extractedRect
+                    } else {
+                        strongSelf.extractedBackgroundImageNode.frame = nonExtractedRect
+                    }
+                    strongSelf.contextSourceNode.contentRect = extractedRect
+                    
                     strongSelf.backgroundNode.frame = CGRect(origin: CGPoint(x: 0.0, y: -min(insets.top, separatorHeight)), size: CGSize(width: params.width, height: contentSize.height + min(insets.top, separatorHeight) + min(insets.bottom, separatorHeight)))
                     strongSelf.topStripeNode.frame = CGRect(origin: CGPoint(x: 0.0, y: -min(insets.top, separatorHeight)), size: CGSize(width: params.width, height: separatorHeight))
                     strongSelf.bottomStripeNode.frame = CGRect(origin: CGPoint(x: bottomStripeInset, y: contentSize.height - separatorHeight), size: CGSize(width: params.width - bottomStripeInset, height: separatorHeight))
                     
-                    let titleY: CGFloat = subtitle.isEmpty ? 11.0 : 11.0
+                    let titleY: CGFloat = subtitle.isEmpty ? 16.0 - UIScreenPixel : 11.0
                     transition.updateFrame(node: strongSelf.titleNode, frame: CGRect(origin: CGPoint(x: leftInset, y: titleY), size: titleLayout.size))
                     transition.updateFrame(node: strongSelf.subtitleNode, frame: CGRect(origin: CGPoint(x: leftInset, y: titleY + titleLayout.size.height + 1.0), size: subtitleLayout.size))
                     

@@ -28,8 +28,6 @@
 
 "NiceFeatures.Folders.Header" = "分组";
 "NiceFeatures.Account.Header" = "隐私设置";
-"NiceFeatures.Folders.TgFolders" = "分组显示在底部";
-"NiceFeatures.Folders.TgFolders.Notice" = "iOS 风格分组列表";
 
 "NiceFeatures.RoundVideos.Header" = "圆形视频";
 "NiceFeatures.RoundVideos.UseRearCamera" = "使用后置相机";
@@ -50,8 +48,6 @@
 /*Common*/
 "Common.ExitNow" = "立即退出";
 "Common.Later" = "稍后";
-"Common.RestartRequired" = "需要重启！";
-"NiceFeatures.Tabs.ShowNames" = "显示标签名";
 "Chat.ForwardAsCopy" = "无引用转发";
 
 /*Folder*/
@@ -156,23 +152,10 @@
 "NicegramSettings.Other.hidePhoneInSettingsNotice" = "您的电話号码只会在设置介面中隐藏，要对其他使用者隐藏，请使用隐私设置。";
 "NicegramSettings.Other.showProfileId" = "显示 ID";
 "NicegramSettings.Other.showRegDate" = "显示注册日期";
-"NicegramSettings.Unblock.Header" = "解封";
-"NicegramSettings.Unblock.Button" = "解封指南";
-"NicegramSettings.Other.hideReactions" = "隐藏反应";
-"NicegramSettings.Other.hideReactionsToYourMessages" = "隐藏对您消息的反应";
 "NicegramSettings.RoundVideos.DownloadVideos" = "将视频下载到图库";
 "Premium.OnetapTranslate.UseIgnoreLanguages" = "忽略语言";
 "Premium.OnetapTranslate.UseIgnoreLanguages.Note" = "应用会检测您设备上每条消息使用的语言。这一功能需要很高的性能，可能会影响电池寿命。";
 "Premium.rememberFolderOnExit" = "退出时记住当前分组";
-"NicegramSettings.HideStories" = "隐藏故事";
-"NicegramSettings.HideBadgeCounters" = "隐藏反应通知";
-"NicegramSettings.HideUnreadCounters" = "隐藏未读计数";
-"NicegramSettings.HideMentionNotification" = "隐藏提及通知";
-"NicegramSettings.EnableAnimationsInChatList" = "聊天列表中的动画";
-"NicegramSettings.EnableGrayscaleAll" = "全屏灰度";
-"NicegramSettings.EnableGrayscaleInChatList" = "聊天列表中的灰度";
-"NicegramSettings.EnableGrayscaleInChat" = "灰度在聊天中";
-"NicegramSettings.EnableAppleSpeech2Text" = "启用Apple Speech2Text";
 "NicegramSettings.ShowKeywords" = "显示关键词文件夹";
 
 /*Registration Date*/
@@ -202,10 +185,6 @@
 "RoundedVideos.MoreButtonTooltip" = "一键将方形视频转换为圆形发送。";
 "RoundedVideos.SendButtonTooltip" = "长按以将您的视频以时尚圆形发送。";
 
-/*Speech to text*/
-"SpeechToText.UseOpenAi" = "OpenAI 语音转文本";
-"SpeechToText.Toast" = "[订阅Nicegram Premium]() 更快更好的 OpenAI 语音转文本技术！";
-
 /*Confirm Call*/
 "ConfirmCall.Desc" = "您确定要拨打电话吗？";
 
@@ -227,7 +206,6 @@
 "NicegramCallRecord.StopAlertDescription" = "您想停止录制这个通话吗？";
 "NicegramCallRecord.StopAlertButtonStop" = "停止";
 "NicegramCallRecord.StopAlertButtonCancel" = "取消";
-"NicegramCallRecord.SavedMessage" = "已将录制的通话保存到 **保存的消息** 中。";
 
 /*Feed*/
 "NicegramFeed.Title" = "动态";
@@ -236,7 +214,6 @@
 
 /*SpeechToText*/
 "NicegramSpeechToText.Language.Title" = "Speеch-2-Text";
-"NicegramSpeechToText.Language.Whisper" = "⚠️ 选择您语音消息的语言以提高准确性，或[激活 Whisper](https://my.nicegram.app/) 进行轻松的自动识别";
 "NicegramSpeechToText.Language.Choose" = "选择识别语言";
 "NicegramSpeechToText.SelectLanguage" = "选择语言";
 "NicegramSpeechToText.NotAvailable" = "语音转文字识别目前不可用";
@@ -267,3 +244,15 @@
 "AccountsBackup.ImportFromFile" = "从文件导入";
 "AccountsBackup.ExportAsFile" = "导出为文件";
 "AccountsBackup.DeleteSessions" = "删除会话";
+
+/*Privacy Settings Recommendation*/
+"NicegramSettings.AccountPrivacy.Button" = "更新账户隐私";
+"NicegramSettings.AccountPrivacy.Alert.Title" = "应用推荐的隐私设置？";
+"NicegramSettings.AccountPrivacy.Alert.Body" = "将推荐的隐私和安全设置应用到您的账户。您可以稍后在 设置 → 隐私与安全 中更改";
+"NicegramSettings.AccountPrivacy.Alert.Apply" = "应用";
+"NicegramSettings.AccountPrivacy.Alert.Cancel" = "取消";
+
+/*WhiteBridge*/
+"whitebridge.profile.button" = "WhiteBridge";
+"whitebridge.profile.hint" = "获取结构化概览：来自网络的公开信息——个人资料、背景、社交动态等一应俱全！";
+"whitebridge.chats.quick.action" = "查看 WhiteBridge 报告";

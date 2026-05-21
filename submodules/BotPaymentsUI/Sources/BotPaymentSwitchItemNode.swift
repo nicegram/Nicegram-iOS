@@ -74,14 +74,14 @@ final class BotPaymentSwitchItemNode: BotPaymentItemNode {
         
         let titleSize = self.titleNode.measure(CGSize(width: width - leftInset - 70.0 - sideInset * 2.0, height: CGFloat.greatestFiniteMagnitude))
         
-        transition.updateFrame(node: self.titleNode, frame: CGRect(origin: CGPoint(x: leftInset + sideInset, y: 11.0), size: titleSize))
+        transition.updateFrame(node: self.titleNode, frame: CGRect(origin: CGPoint(x: leftInset + sideInset, y: 16.0), size: titleSize))
         
         let switchSize = self.switchNode.measure(CGSize(width: 100.0, height: 100.0))
-        let switchFrame = CGRect(origin: CGPoint(x: width - switchSize.width - 15.0 - sideInset, y: 6.0), size: switchSize)
+        let switchFrame = CGRect(origin: CGPoint(x: width - switchSize.width - 15.0 - sideInset, y: 12.0), size: switchSize)
         transition.updateFrame(node: self.switchNode, frame: switchFrame)
         transition.updateFrame(node: self.buttonNode, frame: switchFrame)
         
-        return 44.0
+        return 52.0
     }
     
     @objc private func buttonPressed() {

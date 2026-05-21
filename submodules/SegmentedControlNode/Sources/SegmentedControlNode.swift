@@ -4,8 +4,8 @@ import UIKit
 import AsyncDisplayKit
 import TelegramPresentationData
 
-private let textFont = Font.regular(13.0)
-private let selectedTextFont = Font.bold(13.0)
+private let textFont = Font.regular(14.0)
+private let selectedTextFont = Font.semibold(14.0)
 
 public enum SegmentedControlLayout {
     case stretchToFill(width: CGFloat)
@@ -399,7 +399,7 @@ public final class SegmentedControlNode: ASDisplayNode, ASGestureRecognizerDeleg
         }
         
         if !self.dividerNodes.isEmpty {
-            let dividerSize = CGSize(width: 1.0, height: 16.0)
+            let dividerSize = CGSize(width: 1.0, height: size.height - 8.0)
             let delta: CGFloat = size.width / CGFloat(self.dividerNodes.count + 1)
             for i in 0 ..< self.dividerNodes.count {
                 let dividerNode = self.dividerNodes[i]

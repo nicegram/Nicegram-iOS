@@ -7,7 +7,8 @@ import TelegramApi
 extension TelegramTheme {
     convenience init(apiTheme: Api.Theme) {
         switch apiTheme {
-            case let .theme(flags, id, accessHash, slug, title, document, settings, emoticon, installCount):
+            case let .theme(themeData):
+                let (flags, id, accessHash, slug, title, document, settings, emoticon, installCount) = (themeData.flags, themeData.id, themeData.accessHash, themeData.slug, themeData.title, themeData.document, themeData.settings, themeData.emoticon, themeData.installsCount)
                 self.init(id: id, accessHash: accessHash, slug: slug, emoticon: emoticon, title: title, file: document.flatMap { telegramMediaFileFromApiDocument($0, altDocuments: []) }, settings: settings?.compactMap(TelegramThemeSettings.init(apiThemeSettings:)), isCreator: (flags & 1 << 0) != 0, isDefault: (flags & 1 << 1) != 0, installCount: installCount)
         }
     }
@@ -50,7 +51,8 @@ extension TelegramBaseTheme {
 extension TelegramThemeSettings {
     convenience init?(apiThemeSettings: Api.ThemeSettings) {
         switch apiThemeSettings {
-            case let .themeSettings(flags, baseTheme, accentColor, outboxAccentColor, messageColors, wallpaper):
+            case let .themeSettings(themeSettingsData):
+                let (flags, baseTheme, accentColor, outboxAccentColor, messageColors, wallpaper) = (themeSettingsData.flags, themeSettingsData.baseTheme, themeSettingsData.accentColor, themeSettingsData.outboxAccentColor, themeSettingsData.messageColors, themeSettingsData.wallpaper)
                 self.init(baseTheme: TelegramBaseTheme(apiBaseTheme: baseTheme), accentColor: UInt32(bitPattern: accentColor), outgoingAccentColor: outboxAccentColor.flatMap { UInt32(bitPattern: $0) }, messageColors: messageColors?.map(UInt32.init(bitPattern:)) ?? [], animateMessageColors: (flags & 1 << 2) != 0, wallpaper: wallpaper.flatMap(TelegramWallpaper.init(apiWallpaper:)))
         }
     }
@@ -77,6 +79,6 @@ extension TelegramThemeSettings {
             flags |= 1 << 1
         }
         
-        return .inputThemeSettings(flags: flags, baseTheme: self.baseTheme.apiBaseTheme, accentColor: Int32(bitPattern: self.accentColor), outboxAccentColor: self.outgoingAccentColor.flatMap { Int32(bitPattern: $0) }, messageColors: self.messageColors.isEmpty ? nil : self.messageColors.map(Int32.init(bitPattern:)), wallpaper: inputWallpaper, wallpaperSettings: inputWallpaperSettings)
+        return .inputThemeSettings(.init(flags: flags, baseTheme: self.baseTheme.apiBaseTheme, accentColor: Int32(bitPattern: self.accentColor), outboxAccentColor: self.outgoingAccentColor.flatMap { Int32(bitPattern: $0) }, messageColors: self.messageColors.isEmpty ? nil : self.messageColors.map(Int32.init(bitPattern:)), wallpaper: inputWallpaper, wallpaperSettings: inputWallpaperSettings))
     }
 }

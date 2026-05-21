@@ -72,9 +72,9 @@ private func updatedContextQueryResultStateForQuery(context: AccountContext, pee
                 signal = .single({ _ in return .stickers([]) })
             }
             
-            let stickerConfiguration = context.account.postbox.preferencesView(keys: [PreferencesKeys.appConfiguration])
+            let stickerConfiguration = context.engine.data.subscribe(TelegramEngine.EngineData.Item.Configuration.ApplicationSpecificPreference(key: PreferencesKeys.appConfiguration))
             |> map { preferencesView -> StickersSearchConfiguration in
-                let appConfiguration: AppConfiguration = preferencesView.values[PreferencesKeys.appConfiguration]?.get(AppConfiguration.self) ?? .defaultValue
+                let appConfiguration: AppConfiguration = preferencesView?.get(AppConfiguration.self) ?? .defaultValue
                 return StickersSearchConfiguration.with(appConfiguration: appConfiguration)
             }
             let stickerSettings = context.sharedContext.accountManager.transaction { transaction -> StickerSettings in

@@ -6,9 +6,10 @@ import SwiftSignalKit
 import TelegramCore
 import TelegramUIPreferences
 import TelegramPresentationData
-import LegacyComponents
 import ItemListUI
 import PresentationDataUtils
+import ComponentFlow
+import SliderComponent
 
 enum AutomaticDownloadDataUsage: Int {
     case low
@@ -33,20 +34,24 @@ enum AutomaticDownloadDataUsage: Int {
 final class AutodownloadDataUsagePickerItem: ListViewItem, ItemListItem {
     let theme: PresentationTheme
     let strings: PresentationStrings
+    let systemStyle: ItemListSystemStyle
     let value: AutomaticDownloadDataUsage
     let customPosition: Int?
     let enabled: Bool
     let sectionId: ItemListSectionId
     let updated: (AutomaticDownloadDataUsage) -> Void
+    let tag: ItemListItemTag?
     
-    init(theme: PresentationTheme, strings: PresentationStrings, value: AutomaticDownloadDataUsage, customPosition: Int?, enabled: Bool, sectionId: ItemListSectionId, updated: @escaping (AutomaticDownloadDataUsage) -> Void) {
+    init(theme: PresentationTheme, strings: PresentationStrings, systemStyle: ItemListSystemStyle = .legacy, value: AutomaticDownloadDataUsage, customPosition: Int?, enabled: Bool, sectionId: ItemListSectionId, updated: @escaping (AutomaticDownloadDataUsage) -> Void, tag: ItemListItemTag? = nil) {
         self.theme = theme
         self.strings = strings
+        self.systemStyle = systemStyle
         self.value = value
         self.customPosition = customPosition
         self.enabled = enabled
         self.sectionId = sectionId
         self.updated = updated
+        self.tag = tag
     }
     
     func nodeConfiguredForParams(async: @escaping (@escaping () -> Void) -> Void, params: ListViewItemLayoutParams, synchronousLoads: Bool, previousItem: ListViewItem?, nextItem: ListViewItem?, completion: @escaping (ListViewItemNode, @escaping () -> (Signal<Void, NoError>?, (ListViewItemApply) -> Void)) -> Void) {
@@ -83,8 +88,9 @@ final class AutodownloadDataUsagePickerItem: ListViewItem, ItemListItem {
     }
 }
 
-private final class AutodownloadDataUsagePickerItemNode: ListViewItemNode {
+private final class AutodownloadDataUsagePickerItemNode: ListViewItemNode, ItemListItemNode {
     private let backgroundNode: ASDisplayNode
+    private let highlightNode: ASDisplayNode
     private let topStripeNode: ASDisplayNode
     private let bottomStripeNode: ASDisplayNode
     private let maskNode: ASImageNode
@@ -93,16 +99,23 @@ private final class AutodownloadDataUsagePickerItemNode: ListViewItemNode {
     private let mediumTextNode: TextNode
     private let highTextNode: TextNode
     private let customTextNode: TextNode
-    private var sliderView: TGPhotoEditorSliderView?
+    private let slider = ComponentView<Empty>()
     
     private let activateArea: AccessibilityAreaNode
     
     private var item: AutodownloadDataUsagePickerItem?
     private var layoutParams: ListViewItemLayoutParams?
     
+    public var tag: ItemListItemTag? {
+        return self.item?.tag
+    }
+    
     init() {
         self.backgroundNode = ASDisplayNode()
         self.backgroundNode.isLayerBacked = true
+        
+        self.highlightNode = ASDisplayNode()
+        self.highlightNode.isLayerBacked = true
         
         self.topStripeNode = ASDisplayNode()
         self.topStripeNode.isLayerBacked = true
@@ -130,7 +143,7 @@ private final class AutodownloadDataUsagePickerItemNode: ListViewItemNode {
         
         self.activateArea = AccessibilityAreaNode()
         
-        super.init(layerBacked: false, dynamicBounce: false)
+        super.init(layerBacked: false)
         
         self.addSubnode(self.lowTextNode)
         self.addSubnode(self.mediumTextNode)
@@ -138,100 +151,40 @@ private final class AutodownloadDataUsagePickerItemNode: ListViewItemNode {
         self.addSubnode(self.customTextNode)
         self.addSubnode(self.activateArea)
         
-        self.activateArea.increment = { [weak self] in
-            if let self {
-                self.sliderView?.increase()
-            }
-        }
-        
-        self.activateArea.decrement = { [weak self] in
-            if let self {
-                self.sliderView?.decrease()
-            }
-        }
+//        self.activateArea.increment = { [weak self] in
+//            if let self {
+//                self.sliderView?.increase()
+//            }
+//        }
+//        
+//        self.activateArea.decrement = { [weak self] in
+//            if let self {
+//                self.sliderView?.decrease()
+//            }
+//        }
     }
     
-    func updateSliderView() {
-        if let sliderView = self.sliderView, let item = self.item {
-            sliderView.maximumValue = 2.0 + (item.customPosition != nil ? 1 : 0)
-            sliderView.positionsCount = 3 + (item.customPosition != nil ? 1 : 0)
-            var value = item.value.rawValue
-            if let customPosition = item.customPosition {
-                if case .custom = item.value {
-                    value = customPosition
-                } else {
-                    if value >= customPosition {
-                        value += 1
-                    }
-                }
-            }
-            
-            sliderView.value = CGFloat(value)
-            
-            sliderView.isUserInteractionEnabled = item.enabled
-            sliderView.alpha = item.enabled ? 1.0 : 0.4
-            sliderView.layer.allowsGroupOpacity = !item.enabled
-            
-            self.updateAccessibilityLabels()
+    public func displayHighlight() {
+        if self.backgroundNode.supernode != nil {
+            self.insertSubnode(self.highlightNode, aboveSubnode: self.backgroundNode)
+        } else {
+            self.insertSubnode(self.highlightNode, at: 0)
         }
-    }
-    
-    override func didLoad() {
-        super.didLoad()
         
-        let sliderView = TGPhotoEditorSliderView()
-        sliderView.enablePanHandling = true
-        sliderView.trackCornerRadius = 2.0
-        sliderView.lineSize = 4.0
-        sliderView.dotSize = 5.0
-        sliderView.minimumValue = 0.0
-        sliderView.maximumValue = 2.0 + (self.item?.customPosition != nil ? 1 : 0)
-        sliderView.startValue = 0.0
-        sliderView.disablesInteractiveTransitionGestureRecognizer = true
-        sliderView.positionsCount = 3 + (self.item?.customPosition != nil ? 1 : 0)
-        sliderView.useLinesForPositions = true
-        if let item = self.item, let params = self.layoutParams {
-            var value = item.value.rawValue
-            if let customPosition = item.customPosition {
-                if case .custom = item.value {
-                    value = customPosition
-                } else {
-                    if value >= customPosition {
-                        value += 1
-                    }
-                }
-            }
-            
-            sliderView.value = CGFloat(value)
-            sliderView.backgroundColor = item.theme.list.itemBlocksBackgroundColor
-            sliderView.backColor = item.theme.list.itemSwitchColors.frameColor
-            sliderView.startColor = item.theme.list.itemSwitchColors.frameColor
-            sliderView.trackColor = item.theme.list.itemAccentColor
-            sliderView.knobImage = PresentationResourcesItemList.knobImage(item.theme)
-            
-            sliderView.frame = CGRect(origin: CGPoint(x: params.leftInset + 15.0, y: 37.0), size: CGSize(width: params.width - params.leftInset - params.rightInset - 15.0 * 2.0, height: 44.0))
-            sliderView.hitTestEdgeInsets = UIEdgeInsets(top: -sliderView.frame.minX, left: 0.0, bottom: 0.0, right: -sliderView.frame.minX)
-        }
-        self.view.addSubview(sliderView)
-        sliderView.addTarget(self, action: #selector(self.sliderValueChanged), for: .valueChanged)
-        self.sliderView = sliderView
-        
-        self.updateSliderView()
+        Queue.mainQueue().after(1.2, {
+            self.highlightNode.layer.animateAlpha(from: 1.0, to: 0.0, duration: 0.3, removeOnCompletion: false, completion: { _ in
+                self.highlightNode.removeFromSupernode()
+            })
+        })
     }
     
     func asyncLayout() -> (_ item: AutodownloadDataUsagePickerItem, _ params: ListViewItemLayoutParams, _ neighbors: ItemListNeighbors) -> (ListViewItemNodeLayout, () -> Void) {
-        let currentItem = self.item
         let makeLowTextLayout = TextNode.asyncLayout(self.lowTextNode)
         let makeMediumTextLayout = TextNode.asyncLayout(self.mediumTextNode)
         let makeHighTextLayout = TextNode.asyncLayout(self.highTextNode)
         let makeCustomTextLayout = TextNode.asyncLayout(self.customTextNode)
         
         return { item, params, neighbors in
-            var themeUpdated = false
-            if currentItem?.theme !== item.theme {
-                themeUpdated = true
-            }
-            
             let contentSize: CGSize
             let insets: UIEdgeInsets
             let separatorHeight = UIScreenPixel
@@ -258,6 +211,7 @@ private final class AutodownloadDataUsagePickerItemNode: ListViewItemNode {
                     strongSelf.backgroundNode.backgroundColor = item.theme.list.itemBlocksBackgroundColor
                     strongSelf.topStripeNode.backgroundColor = item.theme.list.itemBlocksSeparatorColor
                     strongSelf.bottomStripeNode.backgroundColor = item.theme.list.itemBlocksSeparatorColor
+                    strongSelf.highlightNode.backgroundColor = item.theme.list.itemSearchHighlightColor
                     
                     if strongSelf.backgroundNode.supernode == nil {
                         strongSelf.insertSubnode(strongSelf.backgroundNode, at: 0)
@@ -296,9 +250,10 @@ private final class AutodownloadDataUsagePickerItemNode: ListViewItemNode {
                         strongSelf.bottomStripeNode.isHidden = hasCorners
                     }
                     
-                    strongSelf.maskNode.image = hasCorners ? PresentationResourcesItemList.cornersImage(item.theme, top: hasTopCorners, bottom: hasBottomCorners) : nil
+                    strongSelf.maskNode.image = hasCorners ? PresentationResourcesItemList.cornersImage(item.theme, top: hasTopCorners, bottom: hasBottomCorners, glass: item.systemStyle == .glass) : nil
                     
                     strongSelf.backgroundNode.frame = CGRect(origin: CGPoint(x: 0.0, y: -min(insets.top, separatorHeight)), size: CGSize(width: params.width, height: contentSize.height + min(insets.top, separatorHeight) + min(insets.bottom, separatorHeight)))
+                    strongSelf.highlightNode.frame = CGRect(origin: CGPoint(x: 0.0, y: -min(insets.top, separatorHeight)), size: CGSize(width: params.width, height: contentSize.height + min(insets.top, separatorHeight) + min(insets.bottom, separatorHeight)))
                     strongSelf.maskNode.frame = strongSelf.backgroundNode.frame.insetBy(dx: params.leftInset, dy: 0.0)
                     strongSelf.topStripeNode.frame = CGRect(origin: CGPoint(x: 0.0, y: -min(insets.top, separatorHeight)), size: CGSize(width: layoutSize.width, height: separatorHeight))
                     strongSelf.bottomStripeNode.frame = CGRect(origin: CGPoint(x: bottomStripeInset, y: contentSize.height + bottomStripeOffset), size: CGSize(width: layoutSize.width - bottomStripeInset, height: separatorHeight))
@@ -315,33 +270,77 @@ private final class AutodownloadDataUsagePickerItemNode: ListViewItemNode {
                         textNodes.insert((strongSelf.customTextNode, customTextLayout.size), at: customPosition)
                     }
                     
-                    let delta = (params.width - params.leftInset - params.rightInset - 18.0 * 2.0) / CGFloat(textNodes.count - 1)
+                    let delta = (params.width - params.leftInset - params.rightInset - 25.0 * 2.0) / CGFloat(textNodes.count - 1)
                     for i in 0 ..< textNodes.count {
                         let (textNode, textSize) = textNodes[i]
                         
-                        var position = params.leftInset + 18.0 + delta * CGFloat(i)
-                        if i == textNodes.count - 1 {
-                            position -= textSize.width
-                        } else if i > 0 {
-                            position -= textSize.width / 2.0
-                        }
+                        let leftEdge = params.leftInset + 18.0
+                        let rightEdge = params.width - params.rightInset - 18.0
+                        let position = params.leftInset + 25.0 + delta * CGFloat(i)
+                        let origin = max(leftEdge, min(rightEdge - textSize.width, position - textSize.width / 2.0))
                         
-                        textNode.frame = CGRect(origin: CGPoint(x: position, y: 15.0), size: textSize)
+                        textNode.frame = CGRect(origin: CGPoint(x: origin, y: 15.0), size: textSize)
                     }
                     
-                    if let sliderView = strongSelf.sliderView {
-                        if themeUpdated {
-                            sliderView.backgroundColor = item.theme.list.itemBlocksBackgroundColor
-                            sliderView.backColor = item.theme.list.itemSwitchColors.frameColor
-                            sliderView.trackColor = item.theme.list.itemSwitchColors.frameColor
-                            sliderView.knobImage = PresentationResourcesItemList.knobImage(item.theme)
+                    
+                    var valueCount = 3
+                    var value = item.value.rawValue
+                    if let customPosition = item.customPosition {
+                        valueCount += 1
+                        if case .custom = item.value {
+                            value = customPosition
+                        } else {
+                            if value >= customPosition {
+                                value += 1
+                            }
                         }
-                        
-                        sliderView.frame = CGRect(origin: CGPoint(x: params.leftInset + 15.0, y: 37.0), size: CGSize(width: params.width - params.leftInset - params.rightInset - 15.0 * 2.0, height: 44.0))
-                        sliderView.hitTestEdgeInsets = UIEdgeInsets(top: -sliderView.frame.minX, left: 0.0, bottom: 0.0, right: -sliderView.frame.minX)
-                        
-                        strongSelf.updateSliderView()
                     }
+                    
+                    let sliderSize = strongSelf.slider.update(
+                        transition: .immediate,
+                        component: AnyComponent(
+                            SliderComponent(
+                                content: .discrete(.init(
+                                    valueCount: valueCount,
+                                    value: value,
+                                    markPositions: true,
+                                    valueUpdated: { [weak self] position in
+                                        guard let self else {
+                                            return
+                                        }
+                                        var value: AutomaticDownloadDataUsage?
+                                        if let customPosition = self.item?.customPosition {
+                                            if position == customPosition {
+                                                value = .custom
+                                            } else {
+                                                value = AutomaticDownloadDataUsage(rawValue: position > customPosition ? (position - 1) : position)
+                                            }
+                                        } else {
+                                            value = AutomaticDownloadDataUsage(rawValue: position)
+                                        }
+                                        if let value = value {
+                                            self.item?.updated(value)
+                                        }
+                                    }
+                                )),
+                                useNative: true,
+                                trackBackgroundColor: item.theme.list.itemSwitchColors.frameColor,
+                                trackForegroundColor: item.theme.list.itemAccentColor
+                            )
+                        ),
+                        environment: {},
+                        containerSize: CGSize(width: params.width - params.leftInset - params.rightInset - 15.0 * 2.0, height: 44.0)
+                    )
+                    if let sliderView = strongSelf.slider.view {
+                        if sliderView.superview == nil {
+                            strongSelf.view.addSubview(sliderView)
+                        }
+                        sliderView.frame = CGRect(origin: CGPoint(x: floorToScreenPixels((params.width - sliderSize.width) / 2.0), y: 37.0), size: sliderSize)
+                        sliderView.isUserInteractionEnabled = item.enabled
+                        sliderView.alpha = item.enabled ? 1.0 : 0.4
+                        sliderView.layer.allowsGroupOpacity = !item.enabled
+                    }
+                    
                     strongSelf.activateArea.accessibilityLabel = item.strings.AutoDownloadSettings_DataUsage
                     
                     strongSelf.activateArea.frame = CGRect(origin: CGPoint(x: params.leftInset, y: 0.0), size: CGSize(width: params.width - params.leftInset - params.rightInset, height: layout.contentSize.height))
@@ -351,22 +350,22 @@ private final class AutodownloadDataUsagePickerItemNode: ListViewItemNode {
     }
     
     private func updateAccessibilityLabels() {
-        guard let item = self.item else {
-            return
-        }
-        var textNodes: [TextNode] = [self.lowTextNode, self.mediumTextNode, self.highTextNode]
-        if let customPosition = item.customPosition {
-            textNodes.insert(self.customTextNode, at: customPosition)
-        }
-        if let value = self.sliderView?.value {
-            self.activateArea.accessibilityValue = textNodes[Int(value)].cachedLayout?.attributedString?.string ?? ""
-        }
-        var accessibilityTraits: UIAccessibilityTraits = [.adjustable]
-        if item.enabled {
-        } else {
-            accessibilityTraits.insert(.notEnabled)
-        }
-        self.activateArea.accessibilityTraits = accessibilityTraits
+//        guard let item = self.item else {
+//            return
+//        }
+//        var textNodes: [TextNode] = [self.lowTextNode, self.mediumTextNode, self.highTextNode]
+//        if let customPosition = item.customPosition {
+//            textNodes.insert(self.customTextNode, at: customPosition)
+//        }
+//        if let value = self.sliderView?.value {
+//            self.activateArea.accessibilityValue = textNodes[Int(value)].cachedLayout?.attributedString?.string ?? ""
+//        }
+//        var accessibilityTraits: UIAccessibilityTraits = [.adjustable]
+//        if item.enabled {
+//        } else {
+//            accessibilityTraits.insert(.notEnabled)
+//        }
+//        self.activateArea.accessibilityTraits = accessibilityTraits
     }
     
     override func animateInsertion(_ currentTimestamp: Double, duration: Double, options: ListViewItemAnimationOptions) {
@@ -375,29 +374,6 @@ private final class AutodownloadDataUsagePickerItemNode: ListViewItemNode {
     
     override func animateRemoved(_ currentTimestamp: Double, duration: Double) {
         self.layer.animateAlpha(from: 1.0, to: 0.0, duration: 0.15, removeOnCompletion: false)
-    }
-    
-    @objc func sliderValueChanged() {
-        guard let sliderView = self.sliderView else {
-            return
-        }
-        
-        let position = Int(sliderView.value)
-        var value: AutomaticDownloadDataUsage?
-        
-        if let customPosition = self.item?.customPosition {
-            if position == customPosition {
-                value = .custom
-            } else {
-                value = AutomaticDownloadDataUsage(rawValue: position > customPosition ? (position - 1) : position)
-            }
-        } else {
-            value = AutomaticDownloadDataUsage(rawValue: position)
-        }
-        
-        if let value = value {
-            self.item?.updated(value)
-        }
     }
 }
 

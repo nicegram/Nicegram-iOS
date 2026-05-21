@@ -371,7 +371,8 @@ public final class ConferenceCallE2EContext {
                     offset: "",
                     ssrcs: [],
                     limit: 100,
-                    sortAscending: true
+                    sortAscending: true,
+                    isStream: false
                 )
                 |> map(Optional.init)
                 |> `catch` { _ -> Signal<GroupCallParticipantsContext.State?, NoError> in

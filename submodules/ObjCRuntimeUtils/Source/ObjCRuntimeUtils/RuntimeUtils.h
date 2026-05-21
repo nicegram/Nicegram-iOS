@@ -11,6 +11,8 @@ typedef enum {
 + (void)swizzleInstanceMethodOfClass:(Class _Nonnull)targetClass currentSelector:(SEL _Nonnull)currentSelector newSelector:(SEL _Nonnull)newSelector;
 + (void)swizzleInstanceMethodOfClass:(Class _Nonnull)targetClass currentSelector:(SEL _Nonnull)currentSelector withAnotherClass:(Class _Nonnull)anotherClass newSelector:(SEL _Nonnull)newSelector;
 + (void)swizzleClassMethodOfClass:(Class _Nonnull)targetClass currentSelector:(SEL _Nonnull)currentSelector newSelector:(SEL _Nonnull)newSelector;
++ (void * _Nullable)getMethodOfClass:(Class _Nonnull)targetClass selector:(SEL _Nonnull)selector;
++ (void)replaceMethodImplementationOfClass:(Class _Nonnull)targetClass selector:(SEL _Nonnull)selector replacement:(IMP _Nonnull)replacement;
 + (CALayer * _Nonnull)makeLayerHostCopy:(CALayer * _Nonnull)another;
 
 @end
@@ -30,3 +32,4 @@ typedef enum {
 @end
 
 SEL _Nonnull makeSelectorFromString(NSString * _Nonnull string);
+

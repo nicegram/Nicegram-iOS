@@ -3,7 +3,6 @@ import UIKit
 import Display
 import AsyncDisplayKit
 import SwiftSignalKit
-import Postbox
 import TelegramCore
 import TelegramPresentationData
 import MergeLists
@@ -269,7 +268,7 @@ private final class ThemeGridThemeItemIconNode : ASDisplayNode {
                 }
                 self.animatedStickerNode = animatedStickerNode
                 self.emojiContainerNode.insertSubnode(animatedStickerNode, belowSubnode: self.placeholderNode)
-                let pathPrefix = item.context.account.postbox.mediaBox.shortLivedResourceCachePathPrefix(file.resource.id)
+                let pathPrefix = item.context.engine.resources.shortLivedResourceCachePathPrefix(id: EngineMediaResource.Id(file.resource.id))
                 animatedStickerNode.setup(source: AnimatedStickerResourceSource(account: item.context.account, resource: file.resource), width: 128, height: 128, playbackMode: .still(.start), mode: .direct(cachePathPrefix: pathPrefix))
                 
                 animatedStickerNode.anchorPoint = CGPoint(x: 0.5, y: 1.0)
@@ -277,7 +276,7 @@ private final class ThemeGridThemeItemIconNode : ASDisplayNode {
             animatedStickerNode.autoplay = true
             animatedStickerNode.visibility = true
             
-            self.stickerFetchedDisposable.set(fetchedMediaResource(mediaBox: item.context.account.postbox.mediaBox, userLocation: .other, userContentType: .other, reference: MediaResourceReference.media(media: .standalone(media: file), resource: file.resource)).start())
+            self.stickerFetchedDisposable.set(item.context.engine.resources.fetch(reference: MediaResourceReference.media(media: .standalone(media: file), resource: file.resource), userLocation: .other, userContentType: .other).start())
             
             let thumbnailDimensions = PixelDimensions(width: 512, height: 512)
             self.placeholderNode.update(backgroundColor: nil, foregroundColor: UIColor(rgb: 0xffffff, alpha: 0.2), shimmeringColor: UIColor(rgb: 0xffffff, alpha: 0.3), data: file.immediateThumbnailData, size: emojiFrame.size, enableEffect: item.context.sharedContext.energyUsageSettings.fullTranslucency, imageSize: thumbnailDimensions.cgSize)
@@ -406,7 +405,7 @@ class ThemeGridThemeItemNode: ListViewItemNode, ItemListItemNode {
 
         self.scrollNode = ASScrollNode()
 
-        super.init(layerBacked: false, dynamicBounce: false)
+        super.init(layerBacked: false)
 
         self.addSubnode(self.containerNode)
         self.addSubnode(self.scrollNode)

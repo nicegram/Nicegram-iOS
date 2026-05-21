@@ -282,11 +282,13 @@ public struct PeerStoryStats: Equatable {
     public var totalCount: Int
     public var unseenCount: Int
     public var hasUnseenCloseFriends: Bool
+    public var hasLiveItems: Bool
     
-    public init(totalCount: Int, unseenCount: Int, hasUnseenCloseFriends: Bool) {
+    public init(totalCount: Int, unseenCount: Int, hasUnseenCloseFriends: Bool, hasLiveItems: Bool) {
         self.totalCount = totalCount
         self.unseenCount = unseenCount
         self.hasUnseenCloseFriends = hasUnseenCloseFriends
+        self.hasLiveItems = hasLiveItems
     }
 }
 
@@ -305,9 +307,9 @@ func fetchPeerStoryStats(postbox: PostboxImpl, peerId: PeerId) -> PeerStoryStats
     
     if topItems.isExact {
         let stats = postbox.storyItemsTable.getStats(peerId: peerId, maxSeenId: maxSeenId)
-        return PeerStoryStats(totalCount: stats.total, unseenCount: stats.unseen, hasUnseenCloseFriends: stats.hasUnseenCloseFriends)
+        return PeerStoryStats(totalCount: stats.total, unseenCount: stats.unseen, hasUnseenCloseFriends: stats.hasUnseenCloseFriends, hasLiveItems: stats.hasLiveItems)
     } else {
-        return PeerStoryStats(totalCount: 1, unseenCount: topItems.id > maxSeenId ? 1 : 0, hasUnseenCloseFriends: false)
+        return PeerStoryStats(totalCount: 1, unseenCount: topItems.id > maxSeenId ? 1 : 0, hasUnseenCloseFriends: false, hasLiveItems: topItems.hasLiveItems)
     }
 }
 
@@ -1040,23 +1042,6 @@ public final class ChatListView {
         self.groupId = mutableView.groupId
         
         var entries: [ChatListEntry] = []
-        
-        //TODO:release
-        var linkedEntries: [PeerId: [MutableChatListEntry.MessageEntryData]] = [:]
-        if "".isEmpty {
-            for entry in mutableView.sampledState.entries {
-                guard case let .MessageEntry(entryData) = entry else {
-                    continue
-                }
-                if let peer = entryData.renderedPeer.peer, peer.id.namespace._internalGetInt32Value() == 2, let associatedPeerId = peer.associatedPeerId, associatedPeerId.namespace._internalGetInt32Value() == 0 {
-                    if linkedEntries[associatedPeerId] == nil {
-                        linkedEntries[associatedPeerId] = []
-                    }
-                    linkedEntries[associatedPeerId]?.append(entryData)
-                }
-            }
-        }
-        
         for entry in mutableView.sampledState.entries {
             switch entry {
             case let .MessageEntry(entryData):
@@ -1064,36 +1049,10 @@ public final class ChatListView {
                     continue
                 }
                 
-                //TODO:release
-                var index = entryData.index
-                var messages = entryData.messages
-                var readState = entryData.readState
-                var forumTopicData = entryData.displayAsRegularChat ? nil : entryData.forumTopicData
-                if let linkedEntries = linkedEntries[entryData.index.messageIndex.id.peerId] {
-                    for entry in linkedEntries {
-                        if entry.index.messageIndex.timestamp >= index.messageIndex.timestamp {
-                            index = ChatListIndex(pinningIndex: index.pinningIndex, messageIndex: MessageIndex(id: index.messageIndex.id, timestamp: entry.index.messageIndex.timestamp))
-                            messages = entry.messages
-                            forumTopicData = entry.forumTopicData
-                        }
-                        if let entryReadState = entry.readState {
-                            if var readStateValue = readState {
-                                var states = readStateValue.state.states
-                                for (namespace, state) in entryReadState.state.states {
-                                    if let index = states.firstIndex(where: { $0.0 == namespace }) {
-                                        states[index] = (namespace, states[index].1.withAddedCount(state.count))
-                                    } else {
-                                        states.append((namespace, state))
-                                    }
-                                }
-                                readStateValue.state = .init(states: states)
-                                readState = readStateValue
-                            } else {
-                                readState = entryReadState
-                            }
-                        }
-                    }
-                }
+                let index = entryData.index
+                let messages = entryData.messages
+                let readState = entryData.readState
+                let forumTopicData = entryData.displayAsRegularChat ? nil : entryData.forumTopicData
                 
                 entries.append(.MessageEntry(ChatListEntry.MessageEntryData(
                     index: index,

@@ -207,9 +207,9 @@ public final class StoryContentContextImpl: StoryContentContext {
                     if let cachedUserData = cachedPeerDataView.cachedPeerData as? CachedUserData {
                         var isMuted = false
                         if let notificationSettings = peerView.notificationSettings as? TelegramPeerNotificationSettings {
-                            isMuted = resolvedAreStoriesMuted(globalSettings: globalNotificationSettings._asGlobalNotificationSettings(), peer: peer._asPeer(), peerSettings: notificationSettings, topSearchPeers: [])
+                            isMuted = resolvedAreStoriesMuted(globalSettings: globalNotificationSettings._asGlobalNotificationSettings(), peer: peer, peerSettings: notificationSettings, topSearchPeers: [])
                         } else {
-                            isMuted = resolvedAreStoriesMuted(globalSettings: globalNotificationSettings._asGlobalNotificationSettings(), peer: peer._asPeer(), peerSettings: nil, topSearchPeers: [])
+                            isMuted = resolvedAreStoriesMuted(globalSettings: globalNotificationSettings._asGlobalNotificationSettings(), peer: peer, peerSettings: nil, topSearchPeers: [])
                         }
                         additionalPeerData = StoryContentContextState.AdditionalPeerData(
                             isMuted: isMuted,
@@ -318,6 +318,7 @@ public final class StoryContentContextImpl: StoryContentContext {
                         isMy: item.isMy,
                         myReaction: item.myReaction,
                         forwardInfo: forwardInfo,
+                        music: item.music.flatMap(EngineMedia.init),
                         author: item.authorId.flatMap { peers[$0].flatMap(EnginePeer.init) },
                         folderIds: item.folderIds
                     )
@@ -356,6 +357,7 @@ public final class StoryContentContextImpl: StoryContentContext {
                                 isMy: true,
                                 myReaction: nil,
                                 forwardInfo: pendingForwardsInfo[item.randomId],
+                                music: item.music.flatMap(EngineMedia.init),
                                 author: nil,
                                 folderIds: item.folders
                             ))
@@ -589,6 +591,7 @@ public final class StoryContentContextImpl: StoryContentContext {
     private var focusedItem: (peerId: EnginePeer.Id, storyId: Int32?)?
     
     private var currentState: StateContext?
+    private var stateIsEmpty: Bool = false
     private var currentStateUpdatedDisposable: Disposable?
     
     private var pendingState: StateContext?
@@ -645,10 +648,11 @@ public final class StoryContentContextImpl: StoryContentContext {
                 
                 let storySubscriptions = EngineStorySubscriptions(
                     accountItem: nil,
-                    items: [EngineStorySubscriptions.Item(
+                    items: state.items.isEmpty ? [] : [EngineStorySubscriptions.Item(
                         peer: peer,
                         hasUnseen: state.hasUnseen,
                         hasUnseenCloseFriends: state.hasUnseenCloseFriends,
+                        hasLiveItems: false,
                         hasPending: false,
                         storyCount: state.items.count,
                         unseenCount: 0,
@@ -937,6 +941,9 @@ public final class StoryContentContextImpl: StoryContentContext {
                             self.updateState()
                         })
                     })
+                } else {
+                    self.stateIsEmpty = true
+                    self.updateState()
                 }
             }
         } else {
@@ -946,6 +953,12 @@ public final class StoryContentContextImpl: StoryContentContext {
     
     private func updateState() {
         guard let currentState = self.currentState else {
+            if self.stateIsEmpty {
+                self.stateValue = nil
+                self.statePromise.set(.single(StoryContentContextState(slice: nil, previousSlice: nil, nextSlice: nil)))
+                
+                self.updatedPromise.set(.single(Void()))
+            }
             return
         }
         let stateValue = StoryContentContextState(
@@ -997,7 +1010,7 @@ public final class StoryContentContextImpl: StoryContentContext {
         for i in 0 ..< min(possibleItems.count, 3) {
             let peer = possibleItems[i].0
             let item = possibleItems[i].1
-            if let peerReference = PeerReference(peer._asPeer()), let mediaId = item.media.id {
+            if let peerReference = PeerReference(peer), let mediaId = item.media.id {
                 var reactions: [MessageReaction.Reaction] = []
                 for mediaArea in item.mediaAreas {
                     if case let .reaction(_, reaction, _) = mediaArea {
@@ -1271,7 +1284,7 @@ public final class SingleStoryContentContextImpl: StoryContentContext {
                 return
             }
 
-            let isMuted = resolvedAreStoriesMuted(globalSettings: globalNotificationSettings._asGlobalNotificationSettings(), peer: peer._asPeer(), peerSettings: notificationSettings._asNotificationSettings(), topSearchPeers: [])
+            let isMuted = resolvedAreStoriesMuted(globalSettings: globalNotificationSettings._asGlobalNotificationSettings(), peer: peer, peerSettings: notificationSettings._asNotificationSettings(), topSearchPeers: [])
             
             let additionalPeerData = StoryContentContextState.AdditionalPeerData(
                 isMuted: isMuted,
@@ -1356,6 +1369,7 @@ public final class SingleStoryContentContextImpl: StoryContentContext {
                     isMy: itemValue.isMy,
                     myReaction: itemValue.myReaction,
                     forwardInfo: forwardInfo,
+                    music: itemValue.music.flatMap(EngineMedia.init),
                     author: itemValue.authorId.flatMap { peers[$0].flatMap(EnginePeer.init) },
                     folderIds: itemValue.folderIds
                 )
@@ -1582,7 +1596,7 @@ public final class PeerStoryListContentContextImpl: StoryContentContext {
                 
                 let stateValue: StoryContentContextState
                 if let focusedIndex, let (peer, presence, areVoiceMessagesAvailable, canViewStats, notificationSettings, globalNotificationSettings, isPremiumRequiredForMessaging, boostsToUnrestrict, appliedBoosts, sendPaidMessageStars) = data?.data, let peer {
-                    let isMuted = resolvedAreStoriesMuted(globalSettings: globalNotificationSettings._asGlobalNotificationSettings(), peer: peer._asPeer(), peerSettings: notificationSettings._asNotificationSettings(), topSearchPeers: [])
+                    let isMuted = resolvedAreStoriesMuted(globalSettings: globalNotificationSettings._asGlobalNotificationSettings(), peer: peer, peerSettings: notificationSettings._asNotificationSettings(), topSearchPeers: [])
                     let additionalPeerData = StoryContentContextState.AdditionalPeerData(
                         isMuted: isMuted,
                         areVoiceMessagesAvailable: areVoiceMessagesAvailable,
@@ -1700,7 +1714,7 @@ public final class PeerStoryListContentContextImpl: StoryContentContext {
                         for i in 0 ..< min(possibleItems.count, 3) {
                             let peer = possibleItems[i].0
                             let item = possibleItems[i].1
-                            if let peerReference = PeerReference(peer._asPeer()), let mediaId = item.storyItem.media.id {
+                            if let peerReference = PeerReference(peer), let mediaId = item.storyItem.media.id {
                                 var reactions: [MessageReaction.Reaction] = []
                                 for mediaArea in item.storyItem.mediaAreas {
                                     if case let .reaction(_, reaction, _) = mediaArea {
@@ -1902,13 +1916,13 @@ public func preloadStoryMedia(context: AccountContext, info: StoryPreloadInfo) -
             
             return combineLatest(files.map { file -> Signal<Void, NoError> in
                 return Signal { subscriber in
-                    let loadSignal = fetchedMediaResource(mediaBox: context.account.postbox.mediaBox, userLocation: .other, userContentType: .sticker, reference: .standalone(resource: file.resource))
+                    let loadSignal = context.engine.resources.fetch(reference: .standalone(resource: file.resource), userLocation: .other, userContentType: .sticker)
                     |> ignoreValues
                     |> `catch` { _ -> Signal<Never, NoError> in
                         return .complete()
                     }
                     
-                    let statusSignal = context.account.postbox.mediaBox.resourceStatus(file.resource)
+                    let statusSignal = context.engine.resources.status(resource: EngineMediaResource(file.resource))
                     |> filter { status in
                         if case .Local = status {
                             return true
@@ -1949,13 +1963,13 @@ public func preloadStoryMedia(context: AccountContext, info: StoryPreloadInfo) -
             
             return combineLatest(files.map { file -> Signal<Void, NoError> in
                 return Signal { subscriber in
-                    let loadSignal = fetchedMediaResource(mediaBox: context.account.postbox.mediaBox, userLocation: .other, userContentType: .sticker, reference: .standalone(resource: file.resource))
+                    let loadSignal = context.engine.resources.fetch(reference: .standalone(resource: file.resource), userLocation: .other, userContentType: .sticker)
                     |> ignoreValues
                     |> `catch` { _ -> Signal<Never, NoError> in
                         return .complete()
                     }
                     
-                    let statusSignal = context.account.postbox.mediaBox.resourceStatus(file.resource)
+                    let statusSignal = context.engine.resources.status(resource: EngineMediaResource(file.resource))
                     |> filter { status in
                         if case .Local = status {
                             return true
@@ -2014,7 +2028,7 @@ public func waitUntilStoryMediaPreloaded(context: AccountContext, peerId: Engine
         guard let peerValue else {
             return .complete()
         }
-        guard let peer = PeerReference(peerValue._asPeer()) else {
+        guard let peer = PeerReference(peerValue) else {
             return .complete()
         }
         
@@ -2037,6 +2051,8 @@ public func waitUntilStoryMediaPreloaded(context: AccountContext, peerId: Engine
             }
         case let .file(file):
             fetchPriorityResourceId = file.resource.id.stringRepresentation
+        case .liveStream:
+            return .complete()
         default:
             break
         }
@@ -2049,9 +2065,9 @@ public func waitUntilStoryMediaPreloaded(context: AccountContext, peerId: Engine
         case let .image(image):
             if let representation = largestImageRepresentation(image.representations) {
                 statusSignals.append(
-                    context.account.postbox.mediaBox.resourceData(representation.resource)
+                    context.engine.resources.data(resource: EngineMediaResource(representation.resource))
                     |> filter { data in
-                        return data.complete
+                        return data.isComplete
                     }
                     |> take(1)
                     |> ignoreValues
@@ -2075,7 +2091,7 @@ public func waitUntilStoryMediaPreloaded(context: AccountContext, peerId: Engine
             }
             
             statusSignals.append(
-                context.account.postbox.mediaBox.resourceRangesStatus(file.resource)
+                context.engine.resources.resourceRangesStatus(resource: EngineMediaResource(file.resource))
                 |> filter { ranges in
                     if let fetchRange {
                         return ranges.isSuperset(of: RangeSet(fetchRange.0))
@@ -2136,13 +2152,13 @@ public func waitUntilStoryMediaPreloaded(context: AccountContext, peerId: Engine
                 
                 return combineLatest(files.map { file -> Signal<Void, NoError> in
                     return Signal { subscriber in
-                        let loadSignal = fetchedMediaResource(mediaBox: context.account.postbox.mediaBox, userLocation: .other, userContentType: .sticker, reference: .standalone(resource: file.resource))
+                        let loadSignal = context.engine.resources.fetch(reference: .standalone(resource: file.resource), userLocation: .other, userContentType: .sticker)
                         |> ignoreValues
                         |> `catch` { _ -> Signal<Never, NoError> in
                             return .complete()
                         }
                         
-                        let statusSignal = context.account.postbox.mediaBox.resourceStatus(file.resource)
+                        let statusSignal = context.engine.resources.status(resource: EngineMediaResource(file.resource))
                         |> filter { status in
                             if case .Local = status {
                                 return true
@@ -2185,13 +2201,13 @@ public func waitUntilStoryMediaPreloaded(context: AccountContext, peerId: Engine
                 
                 return combineLatest(files.map { file -> Signal<Void, NoError> in
                     return Signal { subscriber in
-                        let loadSignal = fetchedMediaResource(mediaBox: context.account.postbox.mediaBox, userLocation: .other, userContentType: .sticker, reference: .standalone(resource: file.resource))
+                        let loadSignal = context.engine.resources.fetch(reference: .standalone(resource: file.resource), userLocation: .other, userContentType: .sticker)
                         |> ignoreValues
                         |> `catch` { _ -> Signal<Never, NoError> in
                             return .complete()
                         }
                         
-                        let statusSignal = context.account.postbox.mediaBox.resourceStatus(file.resource)
+                        let statusSignal = context.engine.resources.status(resource: EngineMediaResource(file.resource))
                         |> filter { status in
                             if case .Local = status {
                                 return true
@@ -2295,6 +2311,7 @@ private func getCachedStory(storyId: StoryId, transaction: Transaction) -> Engin
             isMy: item.isMy,
             myReaction: item.myReaction,
             forwardInfo: item.forwardInfo.flatMap { EngineStoryItem.ForwardInfo($0, transaction: transaction) },
+            music: item.music.flatMap(EngineMedia.init),
             author: item.authorId.flatMap { transaction.getPeer($0).flatMap(EnginePeer.init) },
             folderIds: item.folderIds
         )
@@ -2470,9 +2487,9 @@ public final class RepostStoriesContentContextImpl: StoryContentContext {
                     if let cachedUserData = cachedPeerDataView.cachedPeerData as? CachedUserData {
                         var isMuted = false
                         if let notificationSettings = peerView.notificationSettings as? TelegramPeerNotificationSettings {
-                            isMuted = resolvedAreStoriesMuted(globalSettings: globalNotificationSettings._asGlobalNotificationSettings(), peer: peer._asPeer(), peerSettings: notificationSettings, topSearchPeers: [])
+                            isMuted = resolvedAreStoriesMuted(globalSettings: globalNotificationSettings._asGlobalNotificationSettings(), peer: peer, peerSettings: notificationSettings, topSearchPeers: [])
                         } else {
-                            isMuted = resolvedAreStoriesMuted(globalSettings: globalNotificationSettings._asGlobalNotificationSettings(), peer: peer._asPeer(), peerSettings: nil, topSearchPeers: [])
+                            isMuted = resolvedAreStoriesMuted(globalSettings: globalNotificationSettings._asGlobalNotificationSettings(), peer: peer, peerSettings: nil, topSearchPeers: [])
                         }
                         additionalPeerData = StoryContentContextState.AdditionalPeerData(
                             isMuted: isMuted,
@@ -2957,7 +2974,7 @@ public final class RepostStoriesContentContextImpl: StoryContentContext {
         for i in 0 ..< min(possibleItems.count, 3) {
             let peer = possibleItems[i].0
             let item = possibleItems[i].1
-            if let peerReference = PeerReference(peer._asPeer()), let mediaId = item.media.id {
+            if let peerReference = PeerReference(peer), let mediaId = item.media.id {
                 var reactions: [MessageReaction.Reaction] = []
                 for mediaArea in item.mediaAreas {
                     if case let .reaction(_, reaction, _) = mediaArea {

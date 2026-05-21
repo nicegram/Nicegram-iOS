@@ -18,6 +18,9 @@ public enum ServerProvidedSuggestion: Equatable {
     case gracePremium
     case starsSubscriptionLowBalance
     case setupPhoto
+    case setupLoginEmail
+    case setupLoginEmailBlocking
+    case setupPasskey
     case link(id: String, url: String, title: ServerSuggestionInfo.Item.Text, subtitle: ServerSuggestionInfo.Item.Text)
     
     init?(string: String) {
@@ -50,6 +53,12 @@ public enum ServerProvidedSuggestion: Equatable {
             self = .starsSubscriptionLowBalance
         case "USERPIC_SETUP":
             self = .setupPhoto
+        case "SETUP_LOGIN_EMAIL":
+            self = .setupLoginEmail
+        case "SETUP_LOGIN_EMAIL_NOSKIP":
+            self = .setupLoginEmailBlocking
+        case "SETUP_PASSKEY":
+            self = .setupPasskey
         default:
             return nil
         }
@@ -85,6 +94,12 @@ public enum ServerProvidedSuggestion: Equatable {
             return "STARS_SUBSCRIPTION_LOW_BALANCE"
         case .setupPhoto:
             return "USERPIC_SETUP"
+        case .setupLoginEmail:
+            return "SETUP_LOGIN_EMAIL"
+        case .setupLoginEmailBlocking:
+            return "SETUP_LOGIN_EMAIL_NOSKIP"
+        case .setupPasskey:
+            return "SETUP_PASSKEY"
         case let .link(id, _, _, _):
             return id
         }
@@ -156,6 +171,9 @@ func _internal_dismissServerProvidedSuggestion(account: Account, suggestion: Str
         dismissedSuggestions[account.id]?.insert(suggestion)
     } else {
         dismissedSuggestions[account.id] = Set([suggestion])
+    }
+    if suggestion == ServerProvidedSuggestion.setupLoginEmailBlocking.id {
+        return .complete()
     }
     return account.network.request(Api.functions.help.dismissSuggestion(peer: .inputPeerEmpty, suggestion: suggestion))
     |> `catch` { _ -> Signal<Api.Bool, NoError> in

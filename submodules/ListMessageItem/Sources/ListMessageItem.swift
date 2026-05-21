@@ -14,6 +14,7 @@ public final class ListMessageItemInteraction {
     public let openMessage: (Message, ChatControllerInteractionOpenMessageMode) -> Bool
     public let openMessageContextMenu: (Message, Bool, ASDisplayNode, CGRect, UIGestureRecognizer?) -> Void
     public let toggleMessagesSelection: ([MessageId], Bool) -> Void
+    public let toggleMediaPlayback: ((Message) -> Void)?
     let openUrl: (String, Bool, Bool?, Message?) -> Void
     let openInstantPage: (Message, ChatMessageItemAssociatedData?) -> Void
     let longTap: (ChatControllerInteractionLongTapAction, Message?) -> Void
@@ -22,9 +23,19 @@ public final class ListMessageItemInteraction {
     public var searchTextHighightState: String?
     public var preferredStoryHighQuality: Bool = false
     
-    public init(openMessage: @escaping (Message, ChatControllerInteractionOpenMessageMode) -> Bool, openMessageContextMenu: @escaping (Message, Bool, ASDisplayNode, CGRect, UIGestureRecognizer?) -> Void, toggleMessagesSelection: @escaping ([MessageId], Bool) -> Void, openUrl: @escaping (String, Bool, Bool?, Message?) -> Void, openInstantPage: @escaping (Message, ChatMessageItemAssociatedData?) -> Void, longTap: @escaping (ChatControllerInteractionLongTapAction, Message?) -> Void, getHiddenMedia: @escaping () -> [MessageId: [Media]]) {
+    public init(
+        openMessage: @escaping (Message, ChatControllerInteractionOpenMessageMode) -> Bool,
+        openMessageContextMenu: @escaping (Message, Bool, ASDisplayNode, CGRect, UIGestureRecognizer?) -> Void,
+        toggleMediaPlayback: ((Message) -> Void)?,
+        toggleMessagesSelection: @escaping ([MessageId], Bool) -> Void,
+        openUrl: @escaping (String, Bool, Bool?, Message?) -> Void,
+        openInstantPage: @escaping (Message, ChatMessageItemAssociatedData?) -> Void,
+        longTap: @escaping (ChatControllerInteractionLongTapAction, Message?) -> Void,
+        getHiddenMedia: @escaping () -> [MessageId: [Media]]
+    ) {
         self.openMessage = openMessage
         self.openMessageContextMenu = openMessageContextMenu
+        self.toggleMediaPlayback = toggleMediaPlayback
         self.toggleMessagesSelection = toggleMessagesSelection
         self.openUrl = openUrl
         self.openInstantPage = openInstantPage
@@ -35,8 +46,9 @@ public final class ListMessageItemInteraction {
     public static var `default`: ListMessageItemInteraction = ListMessageItemInteraction(openMessage: { _, _ in
         return false
     }, openMessageContextMenu: { _, _, _, _, _ in
-    }, toggleMessagesSelection: { _, _ in
-    }, openUrl: { _, _, _, _ in
+    }, toggleMediaPlayback: nil, toggleMessagesSelection: { _, _ in
+    },
+    openUrl: { _, _, _, _ in
     }, openInstantPage: { _, _ in
     }, longTap: { _, _ in
     }, getHiddenMedia: { () -> [MessageId : [Media]] in
@@ -44,18 +56,27 @@ public final class ListMessageItemInteraction {
     })
 }
 
-public final class ListMessageItem: ListViewItem {
+public enum ListMessageItemSelectionSide {
+    case left
+    case right
+}
+
+public final class ListMessageItem: ListViewItem, ItemListItem {
     let presentationData: ChatPresentationData
+    let systemStyle: ItemListSystemStyle
     let context: AccountContext
     let chatLocation: ChatLocation
     let interaction: ListMessageItemInteraction
     let message: Message?
     let translateToLanguage: String?
     public let selection: ChatHistoryMessageSelection
+    public let selectionSide: ListMessageItemSelectionSide
     let hintIsLink: Bool
     let isGlobalSearchResult: Bool
     let isDownloadList: Bool
     let isSavedMusic: Bool
+    let isStoryMusic: Bool
+    let isAttachMusic: Bool
     let displayFileInfo: Bool
     let displayBackground: Bool
     let canReorder: Bool
@@ -63,10 +84,36 @@ public final class ListMessageItem: ListViewItem {
     
     let header: ListViewItemHeader?
     
+    public var sectionId: ItemListSectionId
+    
     public let selectable: Bool = true
     
-    public init(presentationData: ChatPresentationData, context: AccountContext, chatLocation: ChatLocation, interaction: ListMessageItemInteraction, message: Message?, translateToLanguage: String? = nil, selection: ChatHistoryMessageSelection, displayHeader: Bool, customHeader: ListViewItemHeader? = nil, hintIsLink: Bool = false, isGlobalSearchResult: Bool = false, isDownloadList: Bool = false, isSavedMusic: Bool = false, displayFileInfo: Bool = true, displayBackground: Bool = false, canReorder: Bool = false, style: ItemListStyle = .plain) {
+    public init(
+        presentationData: ChatPresentationData,
+        systemStyle: ItemListSystemStyle = .legacy,
+        context: AccountContext,
+        chatLocation: ChatLocation,
+        interaction: ListMessageItemInteraction,
+        message: Message?,
+        translateToLanguage: String? = nil,
+        selection: ChatHistoryMessageSelection,
+        selectionSide: ListMessageItemSelectionSide = .right,
+        displayHeader: Bool,
+        customHeader: ListViewItemHeader? = nil,
+        hintIsLink: Bool = false,
+        isGlobalSearchResult: Bool = false,
+        isDownloadList: Bool = false,
+        isSavedMusic: Bool = false,
+        isStoryMusic: Bool = false,
+        isAttachMusic: Bool = false,
+        displayFileInfo: Bool = true,
+        displayBackground: Bool = false,
+        canReorder: Bool = false,
+        style: ItemListStyle = .plain,
+        sectionId: ItemListSectionId = 0
+    ) {
         self.presentationData = presentationData
+        self.systemStyle = systemStyle
         self.context = context
         self.chatLocation = chatLocation
         self.interaction = interaction
@@ -80,14 +127,18 @@ public final class ListMessageItem: ListViewItem {
             self.header = nil
         }
         self.selection = selection
+        self.selectionSide = selectionSide
         self.hintIsLink = hintIsLink
         self.isGlobalSearchResult = isGlobalSearchResult
         self.isDownloadList = isDownloadList
         self.isSavedMusic = isSavedMusic
+        self.isStoryMusic = isStoryMusic
+        self.isAttachMusic = isAttachMusic
         self.displayFileInfo = displayFileInfo
         self.displayBackground = displayBackground
         self.canReorder = canReorder
         self.style = style
+        self.sectionId = sectionId
     }
     
     public func nodeConfiguredForParams(async: @escaping (@escaping () -> Void) -> Void, params: ListViewItemLayoutParams, synchronousLoads: Bool, previousItem: ListViewItem?, nextItem: ListViewItem?, completion: @escaping (ListViewItemNode, @escaping () -> (Signal<Void, NoError>?, (ListViewItemApply) -> Void)) -> Void) {
@@ -118,7 +169,23 @@ public final class ListMessageItem: ListViewItem {
             node.setupItem(self)
             
             let nodeLayout = node.asyncLayout()
-            let (top, bottom, dateAtBottom) = (previousItem != nil && !(previousItem is ItemListItem), nextItem != nil, self.getDateAtBottom(top: previousItem, bottom: nextItem))
+            
+            var topMerged = false
+            if let previousItem {
+                if let previousItem = previousItem as? ItemListItem, previousItem.sectionId == self.sectionId && !previousItem.isAlwaysPlain {
+                    topMerged = true
+                }
+            }
+            
+            var bottomMerged = false
+            if let nextItem {
+                if let nextItem = nextItem as? ItemListItem, nextItem.sectionId == self.sectionId && !nextItem.isAlwaysPlain {
+                    bottomMerged = true
+                }
+            }
+            
+            
+            let (top, bottom, dateAtBottom) = (topMerged, bottomMerged, self.getDateAtBottom(top: previousItem, bottom: nextItem))
             let (layout, apply) = nodeLayout(self, params, top, bottom, dateAtBottom)
             
             node.updateSelectionState(animated: false)
@@ -150,9 +217,22 @@ public final class ListMessageItem: ListViewItem {
                 
                 let nodeLayout = nodeValue.asyncLayout()
                 
+                var topMerged = false
+                if let previousItem {
+                    if let previousItem = previousItem as? ItemListItem, previousItem.sectionId == self.sectionId && !previousItem.isAlwaysPlain {
+                        topMerged = true
+                    }
+                }
+                
+                var bottomMerged = false
+                if let nextItem {
+                    if let nextItem = nextItem as? ItemListItem, nextItem.sectionId == self.sectionId && !nextItem.isAlwaysPlain {
+                        bottomMerged = true
+                    }
+                }
+                
                 async {
-                    let (top, bottom, dateAtBottom) = (previousItem != nil && !(previousItem is ItemListItem), nextItem != nil, self.getDateAtBottom(top: previousItem, bottom: nextItem))
-                    
+                    let (top, bottom, dateAtBottom) = (topMerged, bottomMerged, self.getDateAtBottom(top: previousItem, bottom: nextItem))
                     let (layout, apply) = nodeLayout(self, params, top, bottom, dateAtBottom)
                     Queue.mainQueue().async {
                         completion(layout, { _ in
@@ -173,10 +253,10 @@ public final class ListMessageItem: ListViewItem {
             return
         }
         
-        if case let .selectable(selected) = self.selection {
+        if case let .selectable(selected, _) = self.selection {
             self.interaction.toggleMessagesSelection([message.id], !selected)
         } else {
-            if !self.displayFileInfo {
+            if !self.displayFileInfo || self.isAttachMusic {
                 let _ = self.interaction.openMessage(message, .default)
             } else {
                 listView.forEachItemNode { itemNode in

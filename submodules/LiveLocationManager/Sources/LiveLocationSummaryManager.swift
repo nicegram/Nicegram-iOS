@@ -167,7 +167,7 @@ private final class LiveLocationPeerSummaryContext {
                         for message in messages {
                             if let author = message.author {
                                 if author.id != strongSelf.accountPeerId && message.flags.contains(.Incoming) {
-                                    peersAndMessages.append((EnginePeer(author), EngineMessage(message)))
+                                    peersAndMessages.append((author, message))
                                 }
                             }
                         }

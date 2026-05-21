@@ -9,14 +9,11 @@ import TranslateUI
 
 public final class LanguageListControllerArguments {
     public let selectLanguage: (String) -> Void
-    public let selectWhisper: () -> Void
     
     public init(
-        selectLanguage: @escaping (String) -> Void,
-        selectWhisper: @escaping () -> Void
+        selectLanguage: @escaping (String) -> Void
     ) {
         self.selectLanguage = selectLanguage
-        self.selectWhisper = selectWhisper
     }
 }
 
@@ -123,8 +120,7 @@ public func languageListController(
                 return state
             }
             selectLanguage(code)
-        },
-        selectWhisper: {}
+        }
     )
 
     let signal = combineLatest(context.sharedContext.presentationData, statePromise.get())

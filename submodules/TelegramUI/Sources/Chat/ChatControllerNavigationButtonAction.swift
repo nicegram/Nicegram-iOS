@@ -1,6 +1,3 @@
-// Nicegram Imports
-import NGWebUtils
-//
 import Foundation
 import UIKit
 import Postbox
@@ -21,10 +18,8 @@ import AccountContext
 import TelegramStringFormatting
 import OverlayStatusController
 import DeviceLocationManager
-import ShareController
 import UrlEscaping
 import ContextUI
-import ComposePollUI
 import AlertUI
 import PresentationDataUtils
 import UndoUI
@@ -283,13 +278,19 @@ extension ChatControllerImpl {
                                 return
                             }
                             
-                            strongSelf.present(standardTextAlertController(theme: AlertControllerTheme(presentationData: strongSelf.presentationData), title: strongSelf.presentationData.strings.ChatList_DeleteSavedMessagesConfirmationTitle, text: strongSelf.presentationData.strings.ChatList_DeleteSavedMessagesConfirmationText, actions: [
-                                TextAlertAction(type: .genericAction, title: strongSelf.presentationData.strings.Common_Cancel, action: {
-                                }),
-                                TextAlertAction(type: .destructiveAction, title: strongSelf.presentationData.strings.ChatList_DeleteSavedMessagesConfirmationAction, action: {
-                                    beginClear(.scheduledMessages)
-                                })
-                            ], parseMarkdown: true), in: .window(.root))
+                            let alertController = textAlertController(
+                                context: strongSelf.context,
+                                title: strongSelf.presentationData.strings.ChatList_DeleteSavedMessagesConfirmationTitle,
+                                text: strongSelf.presentationData.strings.ChatList_DeleteSavedMessagesConfirmationText,
+                                actions: [
+                                    TextAlertAction(type: .genericAction, title: strongSelf.presentationData.strings.Common_Cancel, action: {
+                                    }),
+                                    TextAlertAction(type: .destructiveAction, title: strongSelf.presentationData.strings.ChatList_DeleteSavedMessagesConfirmationAction, action: {
+                                        beginClear(.scheduledMessages)
+                                    })
+                                ]
+                            )
+                            strongSelf.present(alertController, in: .window(.root))
                         }))
                     } else {
                         if let _ = canClearForMyself ?? canClearForEveryone {
@@ -313,13 +314,19 @@ extension ChatControllerImpl {
                                         return
                                     }
                                     
-                                    strongSelf.present(standardTextAlertController(theme: AlertControllerTheme(presentationData: strongSelf.presentationData), title: strongSelf.presentationData.strings.ChatList_DeleteForEveryoneConfirmationTitle, text: confirmationText, actions: [
-                                        TextAlertAction(type: .genericAction, title: strongSelf.presentationData.strings.Common_Cancel, action: {
-                                        }),
-                                        TextAlertAction(type: .destructiveAction, title: strongSelf.presentationData.strings.ChatList_DeleteForEveryoneConfirmationAction, action: {
-                                            beginClear(.forEveryone)
-                                        })
-                                    ], parseMarkdown: true), in: .window(.root))
+                                    let alertController = textAlertController(
+                                        context: strongSelf.context,
+                                        title: strongSelf.presentationData.strings.ChatList_DeleteForEveryoneConfirmationTitle,
+                                        text: confirmationText,
+                                        actions: [
+                                            TextAlertAction(type: .genericAction, title: strongSelf.presentationData.strings.Common_Cancel, action: {
+                                            }),
+                                            TextAlertAction(type: .destructiveAction, title: strongSelf.presentationData.strings.ChatList_DeleteForEveryoneConfirmationAction, action: {
+                                                beginClear(.forEveryone)
+                                            })
+                                        ]
+                                    )
+                                    strongSelf.present(alertController, in: .window(.root))
                                 }))
                             }
                             if let canClearForMyself = canClearForMyself {
@@ -333,13 +340,19 @@ extension ChatControllerImpl {
                                 items.append(ActionSheetButtonItem(title: text, color: .destructive, action: { [weak self, weak actionSheet] in
                                     actionSheet?.dismissAnimated()
                                     if mainPeer.id == context.account.peerId, let strongSelf = self {
-                                        strongSelf.present(standardTextAlertController(theme: AlertControllerTheme(presentationData: strongSelf.presentationData), title: strongSelf.presentationData.strings.ChatList_DeleteSavedMessagesConfirmationTitle, text: strongSelf.presentationData.strings.ChatList_DeleteSavedMessagesConfirmationText, actions: [
-                                            TextAlertAction(type: .genericAction, title: strongSelf.presentationData.strings.Common_Cancel, action: {
-                                            }),
-                                            TextAlertAction(type: .destructiveAction, title: strongSelf.presentationData.strings.ChatList_DeleteSavedMessagesConfirmationAction, action: {
-                                                beginClear(.forLocalPeer)
-                                            })
-                                        ], parseMarkdown: true), in: .window(.root))
+                                        let alertController = textAlertController(
+                                            context: strongSelf.context,
+                                            title: strongSelf.presentationData.strings.ChatList_DeleteSavedMessagesConfirmationTitle,
+                                            text: strongSelf.presentationData.strings.ChatList_DeleteSavedMessagesConfirmationText,
+                                            actions: [
+                                                TextAlertAction(type: .genericAction, title: strongSelf.presentationData.strings.Common_Cancel, action: {
+                                                }),
+                                                TextAlertAction(type: .destructiveAction, title: strongSelf.presentationData.strings.ChatList_DeleteSavedMessagesConfirmationAction, action: {
+                                                    beginClear(.forLocalPeer)
+                                                })
+                                            ]
+                                        )
+                                        strongSelf.present(alertController, in: .window(.root))
                                     } else {
                                         beginClear(.forLocalPeer)
                                     }
@@ -422,16 +435,10 @@ extension ChatControllerImpl {
                             ))
                             return
                         }
-                                    
-                        //  MARK: - Nicegram (open restricted peer info)
-                        let contentSettings = self.context.currentContentSettings.with { $0 }
-                        let isAllowed = isAllowedPeerInfo(peer: peer, contentSettings: contentSettings)
-                        //
                         
-                        //  MARK: - Nicegram, isAllowed check added
-                        if (peer.restrictionText(platform: "ios", contentSettings: self.context.currentContentSettings.with { $0 }) == nil || isAllowed) && !self.presentationInterfaceState.isNotAccessible {
+                        if peer.restrictionText(platform: "ios", contentSettings: self.context.currentContentSettings.with { $0 }) == nil && !self.presentationInterfaceState.isNotAccessible {
                             if peer.id == self.context.account.peerId {
-                                if let peer = self.presentationInterfaceState.renderedPeer?.chatMainPeer, let infoController = self.context.sharedContext.makePeerInfoController(context: self.context, updatedPresentationData: self.updatedPresentationData, peer: peer, mode: .generic, avatarInitiallyExpanded: false, fromChat: true, requestsContext: nil) {
+                                if let peer = self.presentationInterfaceState.renderedPeer?.chatMainPeer, let infoController = self.context.sharedContext.makePeerInfoController(context: self.context, updatedPresentationData: self.updatedPresentationData, peer: EnginePeer(peer), mode: .generic, avatarInitiallyExpanded: false, fromChat: true, requestsContext: nil) {
                                     self.effectiveNavigationController?.pushViewController(infoController)
                                 }
                             } else {
@@ -451,17 +458,17 @@ extension ChatControllerImpl {
                                 default:
                                     mode = .generic
                                 }
-                                if let infoController = self.context.sharedContext.makePeerInfoController(context: self.context, updatedPresentationData: self.updatedPresentationData, peer: peer, mode: mode, avatarInitiallyExpanded: expandAvatar, fromChat: true, requestsContext: self.contentData?.inviteRequestsContext) {
+                                if let infoController = self.context.sharedContext.makePeerInfoController(context: self.context, updatedPresentationData: self.updatedPresentationData, peer: EnginePeer(peer), mode: mode, avatarInitiallyExpanded: expandAvatar, fromChat: true, requestsContext: self.contentData?.inviteRequestsContext) {
                                     self.effectiveNavigationController?.pushViewController(infoController)
                                 }
                             }
-                            
+
                             let _ = self.dismissPreviewing?(false)
                         }
                     }))
                 case .replyThread:
                     if let peer = self.presentationInterfaceState.renderedPeer?.peer, case let .replyThread(replyThreadMessage) = self.chatLocation, replyThreadMessage.peerId == self.context.account.peerId {
-                        if let infoController = self.context.sharedContext.makePeerInfoController(context: self.context, updatedPresentationData: self.updatedPresentationData, peer: peer, mode: .forumTopic(thread: replyThreadMessage), avatarInitiallyExpanded: false, fromChat: true, requestsContext: nil) {
+                        if let infoController = self.context.sharedContext.makePeerInfoController(context: self.context, updatedPresentationData: self.updatedPresentationData, peer: EnginePeer(peer), mode: .forumTopic(thread: replyThreadMessage), avatarInitiallyExpanded: false, fromChat: true, requestsContext: nil) {
                             self.effectiveNavigationController?.pushViewController(infoController)
                         }
                     } else if let monoforumPeer = self.presentationInterfaceState.renderedPeer?.peer, case let .replyThread(replyThreadMessage) = self.chatLocation, monoforumPeer.isMonoForum {
@@ -476,13 +483,13 @@ extension ChatControllerImpl {
                                 guard let self else {
                                     return
                                 }
-                                if let infoController = self.context.sharedContext.makePeerInfoController(context: self.context, updatedPresentationData: self.updatedPresentationData, peer: peer._asPeer(), mode: .monoforum(monoforumPeer.id), avatarInitiallyExpanded: false, fromChat: true, requestsContext: nil) {
+                                if let infoController = self.context.sharedContext.makePeerInfoController(context: self.context, updatedPresentationData: self.updatedPresentationData, peer: peer, mode: .monoforum(monoforumPeer.id), avatarInitiallyExpanded: false, fromChat: true, requestsContext: nil) {
                                     self.effectiveNavigationController?.pushViewController(infoController)
                                 }
                             }
                         }
                     } else if let channel = self.presentationInterfaceState.renderedPeer?.peer as? TelegramChannel, channel.isForumOrMonoForum, case let .replyThread(message) = self.chatLocation {
-                        if let infoController = self.context.sharedContext.makePeerInfoController(context: self.context, updatedPresentationData: self.updatedPresentationData, peer: channel, mode: .forumTopic(thread: message), avatarInitiallyExpanded: false, fromChat: true, requestsContext: self.contentData?.inviteRequestsContext) {
+                        if let infoController = self.context.sharedContext.makePeerInfoController(context: self.context, updatedPresentationData: self.updatedPresentationData, peer: EnginePeer(channel), mode: .forumTopic(thread: message), avatarInitiallyExpanded: false, fromChat: true, requestsContext: self.contentData?.inviteRequestsContext) {
                             self.effectiveNavigationController?.pushViewController(infoController)
                         }
                     }

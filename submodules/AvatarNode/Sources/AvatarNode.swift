@@ -1,6 +1,3 @@
-// Nicegram Imports
-import NGWebUtils
-//
 import Foundation
 import UIKit
 import AsyncDisplayKit
@@ -75,7 +72,7 @@ private class AvatarNodeParameters: NSObject {
     }
 }
 
-public func calculateAvatarColors(context: AccountContext?, explicitColorIndex: Int?, peerId: EnginePeer.Id?, nameColor: PeerNameColor?, icon: AvatarNodeIcon, theme: PresentationTheme?) -> [UIColor] {
+public func calculateAvatarColors(context: AccountContext?, explicitColorIndex: Int?, peerId: EnginePeer.Id?, nameColor: PeerColor?, icon: AvatarNodeIcon, theme: PresentationTheme?) -> [UIColor] {
     let colorIndex: Int
     if let explicitColorIndex = explicitColorIndex {
         colorIndex = explicitColorIndex
@@ -141,9 +138,8 @@ public func calculateAvatarColors(context: AccountContext?, explicitColorIndex: 
         }
     } else {
         if let nameColor {
-            if let context, nameColor.rawValue > 13 {
-                let nameColors = context.peerNameColors.get(nameColor)
-                let hue = nameColors.main.hsb.h
+            func colorIndexFromColor(color: UIColor) -> Int {
+                let hue = color.hsb.h
                 var index: Int = 0
                 if hue > 0.9 || hue < 0.02 {
                     index = 0
@@ -160,10 +156,24 @@ public func calculateAvatarColors(context: AccountContext?, explicitColorIndex: 
                 } else {
                     index = 6
                 }
-                colors = AvatarNode.gradientColors[index % AvatarNode.gradientColors.count]
-            } else {
-                colors = AvatarNode.gradientColors[Int(nameColor.rawValue) % AvatarNode.gradientColors.count]
+                return index
             }
+            
+            switch nameColor {
+            case let .preset(nameColor):
+                if let context, nameColor.rawValue > 13 {
+                    let nameColors = context.peerNameColors.get(nameColor)
+                    let index = colorIndexFromColor(color: nameColors.main)
+                    colors = AvatarNode.gradientColors[index % AvatarNode.gradientColors.count]
+                } else {
+                    colors = AvatarNode.gradientColors[Int(nameColor.rawValue) % AvatarNode.gradientColors.count]
+                }
+            case let .collectible(peerCollectibleColor):
+                let color = UIColor(rgb: peerCollectibleColor.accentColor)
+                let index = colorIndexFromColor(color: color)
+                colors = AvatarNode.gradientColors[index % AvatarNode.gradientColors.count]
+            }
+            
         } else {
             colors = AvatarNode.gradientColors[colorIndex % AvatarNode.gradientColors.count]
         }
@@ -178,7 +188,7 @@ public enum AvatarNodeExplicitIcon {
 
 private enum AvatarNodeState: Equatable {
     case empty
-    case peerAvatar(EnginePeer.Id, PeerNameColor?, [String], TelegramMediaImageRepresentation?, AvatarNodeClipStyle, CGRect?)
+    case peerAvatar(EnginePeer.Id, PeerColor?, [String], TelegramMediaImageRepresentation?, AvatarNodeClipStyle, CGRect?)
     case custom(letter: [String], explicitColorIndex: Int?, explicitIcon: AvatarNodeExplicitIcon?)
 }
 
@@ -633,7 +643,7 @@ public final class AvatarNode: ASDisplayNode {
                 
                 let parameters: AvatarNodeParameters
                 
-                if let peer = peer, let signal = peerAvatarImage(postbox: postbox, network: network, peerReference: PeerReference(peer._asPeer()), authorOfMessage: authorOfMessage, representation: representation, displayDimensions: displayDimensions, clipStyle: clipStyle, emptyColor: emptyColor, synchronousLoad: synchronousLoad, provideUnrounded: storeUnrounded, cutoutRect: cutoutRect) {
+                if let peer = peer, let signal = peerAvatarImage(postbox: postbox, network: network, peerReference: PeerReference(peer), authorOfMessage: authorOfMessage, representation: representation, displayDimensions: displayDimensions, clipStyle: clipStyle, emptyColor: emptyColor, synchronousLoad: synchronousLoad, provideUnrounded: storeUnrounded, cutoutRect: cutoutRect) {
                     self.contents = nil
                     self.displaySuspended = true
                     self.imageReady.set(self.imageNode.contentReady)
@@ -753,7 +763,7 @@ public final class AvatarNode: ASDisplayNode {
                 self.imageNode.view.mask = nil
             }
             
-            if let imageCache = genericContext.imageCache as? DirectMediaImageCache, let peer, let smallProfileImage = peer.smallProfileImage, let peerReference = PeerReference(peer._asPeer()) {
+            if let imageCache = genericContext.imageCache as? DirectMediaImageCache, let peer, let smallProfileImage = peer.smallProfileImage, let peerReference = PeerReference(peer) {
                 if let result = imageCache.getAvatarImage(peer: peerReference, resource: MediaResourceReference.avatar(peer: peerReference, resource: smallProfileImage.resource), immediateThumbnail: peer.profileImageRepresentations.first?.immediateThumbnailData, size: Int(displayDimensions.width * UIScreenScale), synchronous: synchronousLoad) {
                     if let image = result.image {
                         self.imageNode.contents = image.cgImage
@@ -829,9 +839,7 @@ public final class AvatarNode: ASDisplayNode {
                     representation = nil
                     icon = .storyIcon
                 }
-            }
-            // Nicegram (isAllowedChat)
-            else if peer?.restrictionText(platform: "ios", contentSettings: genericContext.currentContentSettings.with { $0 }) == nil || isAllowedChat(peer: peer?._asPeer(), contentSettings: genericContext.currentContentSettings.with { $0 }) {
+            } else if peer?.restrictionText(platform: "ios", contentSettings: genericContext.currentContentSettings.with { $0 }) == nil {
                 representation = peer?.smallProfileImage
             }
             
@@ -845,7 +853,7 @@ public final class AvatarNode: ASDisplayNode {
                 
                 let account = account ?? genericContext.account
                 
-                if let peer = peer, let signal = peerAvatarImage(account: account, peerReference: PeerReference(peer._asPeer()), authorOfMessage: authorOfMessage, representation: representation, displayDimensions: displayDimensions, clipStyle: clipStyle, emptyColor: emptyColor, synchronousLoad: synchronousLoad, provideUnrounded: storeUnrounded, cutoutRect: cutoutRect) {
+                if let peer = peer, let signal = peerAvatarImage(account: account, peerReference: PeerReference(peer), authorOfMessage: authorOfMessage, representation: representation, displayDimensions: displayDimensions, clipStyle: clipStyle, emptyColor: emptyColor, synchronousLoad: synchronousLoad, provideUnrounded: storeUnrounded, cutoutRect: cutoutRect) {
                     self.contents = nil
                     self.displaySuspended = true
                     self.imageReady.set(self.imageNode.contentReady)
@@ -1158,7 +1166,7 @@ public final class AvatarNode: ASDisplayNode {
             if let parameters = parameters as? AvatarNodeParameters, let cutoutRect = parameters.cutoutRect {
                 context.setBlendMode(.copy)
                 context.setFillColor(UIColor.clear.cgColor)
-                context.fillEllipse(in: cutoutRect.offsetBy(dx: 0.0, dy: bounds.height - cutoutRect.maxY - cutoutRect.height))
+                context.fillEllipse(in: cutoutRect)
             }
         }
     }
@@ -1173,17 +1181,20 @@ public final class AvatarNode: ASDisplayNode {
         public var totalCount: Int
         public var unseenCount: Int
         public var hasUnseenCloseFriendsItems: Bool
+        public var hasLiveItems: Bool
         public var progress: Float?
         
         public init(
             totalCount: Int,
             unseenCount: Int,
             hasUnseenCloseFriendsItems: Bool,
+            hasLiveItems: Bool,
             progress: Float? = nil
         ) {
             self.totalCount = totalCount
             self.unseenCount = unseenCount
             self.hasUnseenCloseFriendsItems = hasUnseenCloseFriendsItems
+            self.hasLiveItems = hasLiveItems
             self.progress = progress
         }
     }
@@ -1471,6 +1482,7 @@ public final class AvatarNode: ASDisplayNode {
                 component: AnyComponent(AvatarStoryIndicatorComponent(
                     hasUnseen: storyStats.unseenCount != 0,
                     hasUnseenCloseFriendsItems: storyStats.hasUnseenCloseFriendsItems,
+                    hasLiveItems: storyStats.hasLiveItems,
                     colors: AvatarStoryIndicatorComponent.Colors(
                         unseenColors: storyPresentationParams.colors.unseenColors,
                         unseenCloseFriendsColors: storyPresentationParams.colors.unseenCloseFriendsColors,

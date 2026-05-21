@@ -117,7 +117,7 @@ private func synchronizeAppLogEvents(transaction: Transaction, postbox: Postbox,
         switch operation.content {
             case let .add(time, type, peerId, data):
                 if let data = apiJson(data) {
-                    events.append(.inputAppEvent(time: time, type: type, peer: peerId?.toInt64() ?? 0, data: data))
+                    events.append(.inputAppEvent(.init(time: time, type: type, peer: peerId?.toInt64() ?? 0, data: data)))
                 }
             default:
                 break

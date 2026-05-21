@@ -23,6 +23,20 @@ public enum CallListControllerMode {
     case navigation
 }
 
+public enum CallListEntryTag: ItemListItemTag, Equatable {
+    case edit
+    case showTab
+    case missed
+
+    public func isEqual(to other: ItemListItemTag) -> Bool {
+        if let other = other as? CallListEntryTag, self == other {
+            return true
+        } else {
+            return false
+        }
+    }
+}
+
 private final class DeleteAllButtonNode: ASDisplayNode {
     private let pressed: () -> Void
     
@@ -43,7 +57,7 @@ private final class DeleteAllButtonNode: ASDisplayNode {
         self.buttonNode.addSubnode(self.titleNode)
         self.contentNode.contentNode.addSubnode(self.buttonNode)
         
-        self.titleNode.attributedText = NSAttributedString(string: presentationData.strings.CallList_DeleteAll, font: Font.regular(17.0), textColor: presentationData.theme.rootController.navigationBar.accentTextColor)
+        self.titleNode.attributedText = NSAttributedString(string: presentationData.strings.CallList_DeleteAll, font: Font.medium(17.0), textColor: presentationData.theme.chat.inputPanel.panelControlColor)
         
         //self.buttonNode.addTarget(self, action: #selector(self.buttonPressed), forControlEvents: .touchUpInside)
     }
@@ -54,9 +68,10 @@ private final class DeleteAllButtonNode: ASDisplayNode {
     
     override public func calculateSizeThatFits(_ constrainedSize: CGSize) -> CGSize {
         let titleSize = self.titleNode.updateLayout(constrainedSize)
-        self.titleNode.frame = CGRect(origin: CGPoint(), size: titleSize)
-        self.buttonNode.frame = CGRect(origin: CGPoint(), size: titleSize)
-        return titleSize
+        let size = CGSize(width: 10.0 * 2.0 + titleSize.width, height: 44.0)
+        self.titleNode.frame = CGRect(origin: CGPoint(x: 10.0, y: floorToScreenPixels((size.height - titleSize.height) * 0.5)), size: titleSize)
+        self.buttonNode.frame = CGRect(origin: CGPoint(), size: size)
+        return size
     }
     
     override public func layout() {
@@ -67,6 +82,8 @@ private final class DeleteAllButtonNode: ASDisplayNode {
         self.contentNode.contentRect = CGRect(origin: CGPoint(), size: size)
     }
 }
+
+
 
 public final class CallListController: TelegramBaseController {
     private var controllerNode: CallListControllerNode {
@@ -80,6 +97,7 @@ public final class CallListController: TelegramBaseController {
     
     private let context: AccountContext
     private let mode: CallListControllerMode
+    private let focusOnItemTag: CallListEntryTag?
     
     private var presentationData: PresentationData
     private var presentationDataDisposable: Disposable?
@@ -95,14 +113,20 @@ public final class CallListController: TelegramBaseController {
     private let clearDisposable = MetaDisposable()
     private var createConferenceCallDisposable: Disposable?
     
-    public init(context: AccountContext, mode: CallListControllerMode) {
+    public init(
+        context: AccountContext,
+        mode: CallListControllerMode,
+        focusOnItemTag: CallListEntryTag? = nil
+    ) {
         self.context = context
         self.mode = mode
+        self.focusOnItemTag = focusOnItemTag
+        
         self.presentationData = context.sharedContext.currentPresentationData.with { $0 }
         
         self.segmentedTitleView = ItemListControllerSegmentedTitleView(theme: self.presentationData.theme, segments: [self.presentationData.strings.Calls_All, self.presentationData.strings.Calls_Missed], selectedIndex: 0)
         
-        super.init(context: context, navigationBarPresentationData: NavigationBarPresentationData(presentationData: self.presentationData), mediaAccessoryPanelVisibility: .none, locationBroadcastPanelSource: .none, groupCallPanelSource: .none)
+        super.init(context: context, navigationBarPresentationData: NavigationBarPresentationData(presentationData: self.presentationData, style: .glass))
         
         self.tabBarItemContextActionType = .always
         
@@ -155,6 +179,8 @@ public final class CallListController: TelegramBaseController {
         if case .navigation = self.mode {
             self.navigationItem.backBarButtonItem = UIBarButtonItem(title: self.presentationData.strings.Common_Back, style: .plain, target: nil, action: nil)
         }
+
+        self.updateTabBarSearchState(ViewController.TabBarSearchState(isActive: false), transition: .immediate)
     }
     
     required public init(coder aDecoder: NSCoder) {
@@ -203,7 +229,7 @@ public final class CallListController: TelegramBaseController {
         }
         
         self.statusBar.statusBarStyle = self.presentationData.theme.rootController.statusBarStyle.style
-        self.navigationBar?.updatePresentationData(NavigationBarPresentationData(presentationData: self.presentationData))
+        self.navigationBar?.updatePresentationData(NavigationBarPresentationData(presentationData: self.presentationData, style: .glass), transition: .immediate)
         
         if self.isNodeLoaded {
             self.controllerNode.updateThemeAndStrings(presentationData: self.presentationData)
@@ -346,7 +372,7 @@ public final class CallListController: TelegramBaseController {
                     TelegramEngine.EngineData.Item.Peer.Peer(id: peerId)
                 )
                 |> deliverOnMainQueue).startStandalone(next: { peer in
-                    if let strongSelf = self, let peer = peer, let controller = strongSelf.context.sharedContext.makePeerInfoController(context: strongSelf.context, updatedPresentationData: nil, peer: peer._asPeer(), mode: .calls(messages: messages.map({ $0._asMessage() })), avatarInitiallyExpanded: false, fromChat: false, requestsContext: nil) {
+                    if let strongSelf = self, let peer = peer, let controller = strongSelf.context.sharedContext.makePeerInfoController(context: strongSelf.context, updatedPresentationData: nil, peer: peer, mode: .calls(messages: messages.map({ $0._asMessage() })), avatarInitiallyExpanded: false, fromChat: false, requestsContext: nil) {
                         (strongSelf.navigationController as? NavigationController)?.pushViewController(controller)
                     }
                 })
@@ -359,10 +385,10 @@ public final class CallListController: TelegramBaseController {
                     if empty {
                         switch strongSelf.mode {
                             case .tab:
-                                strongSelf.navigationItem.setLeftBarButton(nil, animated: true)
-                                strongSelf.navigationItem.setRightBarButton(nil, animated: true)
+                            strongSelf.navigationItem.setLeftBarButton(nil, animated: strongSelf.controllerNode.didSetReady)
+                                strongSelf.navigationItem.setRightBarButton(nil, animated: strongSelf.controllerNode.didSetReady)
                             case .navigation:
-                                strongSelf.navigationItem.setRightBarButton(nil, animated: true)
+                                strongSelf.navigationItem.setRightBarButton(nil, animated: strongSelf.controllerNode.didSetReady)
                         }
                     } else {
                         var pressedImpl: (() -> Void)?
@@ -379,25 +405,24 @@ public final class CallListController: TelegramBaseController {
                         switch strongSelf.mode {
                             case .tab:
                                 if strongSelf.editingMode {
-                                    strongSelf.navigationItem.setLeftBarButton(UIBarButtonItem(title: strongSelf.presentationData.strings.Common_Done, style: .done, target: strongSelf, action: #selector(strongSelf.donePressed)), animated: true)
-                                    strongSelf.navigationItem.setRightBarButton(UIBarButtonItem(customDisplayNode: buttonNode), animated: true)
+                                    strongSelf.navigationItem.setLeftBarButton(UIBarButtonItem(title: strongSelf.presentationData.strings.Common_Done, style: .done, target: strongSelf, action: #selector(strongSelf.donePressed)), animated: strongSelf.controllerNode.didSetReady)
+                                    strongSelf.navigationItem.setRightBarButton(UIBarButtonItem(customDisplayNode: buttonNode), animated: strongSelf.controllerNode.didSetReady)
                                     strongSelf.navigationItem.rightBarButtonItem?.setCustomAction({
                                         pressedImpl?()
                                     })
                                 } else {
-                                    strongSelf.navigationItem.setLeftBarButton(UIBarButtonItem(title: strongSelf.presentationData.strings.Common_Edit, style: .plain, target: strongSelf, action: #selector(strongSelf.editPressed)), animated: true)
-                                    //strongSelf.navigationItem.setRightBarButton(UIBarButtonItem(image: PresentationResourcesRootController.navigationCallIcon(strongSelf.presentationData.theme), style: .plain, target: self, action: #selector(strongSelf.callPressed)), animated: true)
-                                    strongSelf.navigationItem.setRightBarButton(nil, animated: true)
+                                    strongSelf.navigationItem.setLeftBarButton(UIBarButtonItem(title: strongSelf.presentationData.strings.Common_Edit, style: .plain, target: strongSelf, action: #selector(strongSelf.editPressed)), animated: strongSelf.controllerNode.didSetReady)
+                                    strongSelf.navigationItem.setRightBarButton(nil, animated: strongSelf.controllerNode.didSetReady)
                                 }
                             case .navigation:
                                 if strongSelf.editingMode {
-                                    strongSelf.navigationItem.setLeftBarButton(UIBarButtonItem(customDisplayNode: buttonNode), animated: true)
+                                    strongSelf.navigationItem.setLeftBarButton(UIBarButtonItem(customDisplayNode: buttonNode), animated: strongSelf.controllerNode.didSetReady)
                                     strongSelf.navigationItem.leftBarButtonItem?.setCustomAction({
                                         pressedImpl?()
                                     })
-                                    strongSelf.navigationItem.setRightBarButton(UIBarButtonItem(title: strongSelf.presentationData.strings.Common_Done, style: .done, target: strongSelf, action: #selector(strongSelf.donePressed)), animated: true)
+                                    strongSelf.navigationItem.setRightBarButton(UIBarButtonItem(title: strongSelf.presentationData.strings.Common_Done, style: .done, target: strongSelf, action: #selector(strongSelf.donePressed)), animated: strongSelf.controllerNode.didSetReady)
                                 } else {
-                                    strongSelf.navigationItem.setRightBarButton(UIBarButtonItem(title: strongSelf.presentationData.strings.Common_Edit, style: .plain, target: strongSelf, action: #selector(strongSelf.editPressed)), animated: true)
+                                    strongSelf.navigationItem.setRightBarButton(UIBarButtonItem(title: strongSelf.presentationData.strings.Common_Edit, style: .plain, target: strongSelf, action: #selector(strongSelf.editPressed)), animated: strongSelf.controllerNode.didSetReady)
                                 }
                         }
                     }
@@ -407,7 +432,7 @@ public final class CallListController: TelegramBaseController {
             if let strongSelf = self {
                 strongSelf.callPressed()
             }
-        })
+        }, focusOnItemTag: self.focusOnItemTag)
         
         if case .navigation = self.mode {
             self.controllerNode.navigationBar = self.navigationBar
@@ -419,12 +444,29 @@ public final class CallListController: TelegramBaseController {
         }
         self._ready.set(self.controllerNode.ready)
         self.displayNodeDidLoad()
+        
+        switch self.focusOnItemTag {
+        case .edit:
+            self.editPressed()
+        case .missed:
+            Queue.mainQueue().after(0.1) {
+                self.segmentedTitleView.index = 1
+                self.controllerNode.updateType(.missed)
+            }
+        default:
+            break
+        }
+    }
+    
+    override public var navigationEdgeEffectExtension: CGFloat {
+        return self.controllerNode.navigationEdgeEffectExtension
     }
     
     override public func containerLayoutUpdated(_ layout: ContainerViewLayout, transition: ContainedViewLayoutTransition) {
         super.containerLayoutUpdated(layout, transition: transition)
         
-        self.controllerNode.containerLayoutUpdated(layout, navigationBarHeight: self.navigationLayout(layout: layout).navigationFrame.maxY, transition: transition)
+        let navigationLayout = self.navigationLayout(layout: layout)
+        self.controllerNode.containerLayoutUpdated(layout, navigationBarHeight: navigationLayout.navigationFrame.maxY, transition: transition)
     }
     
     @objc func callPressed() {
@@ -510,7 +552,7 @@ public final class CallListController: TelegramBaseController {
             }
         }
     
-        let contextController = ContextController(presentationData: self.presentationData, source: .extracted(ExtractedContentSourceImpl(controller: self, sourceNode: buttonNode.contentNode, keepInPlace: false, blurBackground: false)), items: .single(ContextController.Items(content: .list(items))), gesture: nil)
+        let contextController = makeContextController(presentationData: self.presentationData, source: .extracted(ExtractedContentSourceImpl(controller: self, sourceNode: buttonNode.contentNode, keepInPlace: false, blurBackground: false)), items: .single(ContextController.Items(content: .list(items))), gesture: nil)
         self.presentInGlobalOverlay(contextController)
     }
     
@@ -750,7 +792,7 @@ public final class CallListController: TelegramBaseController {
         })
     }
     
-    override public func tabBarItemContextAction(sourceNode: ContextExtractedContentContainingNode, gesture: ContextGesture) {
+    override public func tabBarItemContextAction(sourceView: ContextExtractedContentContainingView, gesture: ContextGesture) {
         var items: [ContextMenuItem] = []
         items.append(.action(ContextMenuActionItem(text: self.presentationData.strings.Calls_StartNewCall, icon: { theme in
             return generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/AddUser"), color: theme.contextMenu.primaryColor)
@@ -775,30 +817,31 @@ public final class CallListController: TelegramBaseController {
             })
         })))
         
-        let controller = ContextController(presentationData: self.presentationData, source: .extracted(CallListTabBarContextExtractedContentSource(controller: self, sourceNode: sourceNode)), items: .single(ContextController.Items(content: .list(items))), recognizer: nil, gesture: gesture)
+        let controller = makeContextController(presentationData: self.presentationData, source: .reference(CallListTabBarContextReferenceContentSource(controller: self, sourceView: sourceView)), items: .single(ContextController.Items(content: .list(items))), recognizer: nil, gesture: gesture)
         self.context.sharedContext.mainWindow?.presentInGlobalOverlay(controller)
+    }
+    
+    override public func tabBarActivateSearch() {
+        self.beginCallImpl()
     }
 }
 
-private final class CallListTabBarContextExtractedContentSource: ContextExtractedContentSource {
+private final class CallListTabBarContextReferenceContentSource: ContextReferenceContentSource {
     let keepInPlace: Bool = true
-    let ignoreContentTouches: Bool = true
-    let blurBackground: Bool = true
-    let actionsHorizontalAlignment: ContextActionsHorizontalAlignment = .center
     
     private let controller: ViewController
-    private let sourceNode: ContextExtractedContentContainingNode
+    private let sourceView: ContextExtractedContentContainingView
     
-    init(controller: ViewController, sourceNode: ContextExtractedContentContainingNode) {
+    init(controller: ViewController, sourceView: ContextExtractedContentContainingView) {
         self.controller = controller
-        self.sourceNode = sourceNode
+        self.sourceView = sourceView
     }
     
-    func takeView() -> ContextControllerTakeViewInfo? {
-        return ContextControllerTakeViewInfo(containingItem: .node(self.sourceNode), contentAreaInScreenSpace: UIScreen.main.bounds)
-    }
-    
-    func putBack() -> ContextControllerPutBackViewInfo? {
-        return ContextControllerPutBackViewInfo(contentAreaInScreenSpace: UIScreen.main.bounds)
+    func transitionInfo() -> ContextControllerReferenceViewInfo? {
+        return ContextControllerReferenceViewInfo(
+            referenceView: self.sourceView.contentView,
+            contentAreaInScreenSpace: UIScreen.main.bounds,
+            actionsPosition: .top
+        )
     }
 }

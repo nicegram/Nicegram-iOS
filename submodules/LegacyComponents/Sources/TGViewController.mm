@@ -1135,7 +1135,11 @@ static id<LegacyComponentsContext> _defaultContext = nil;
             return UIEdgeInsetsMake(0.0f, 44.0f, 21.0f, 44.0f);
         
         default:
-            return UIEdgeInsetsMake(44.0f, 0.0f, 34.0f, 0.0f);
+            if (iosMajorVersion() >= 26) {
+                return UIEdgeInsetsMake(44.0f, 0.0f, 20.0f, 0.0f);
+            } else {
+                return UIEdgeInsetsMake(44.0f, 0.0f, 34.0f, 0.0f);
+            }
     }
 }
 

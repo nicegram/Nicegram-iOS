@@ -50,7 +50,11 @@ double animationDurationFactorImpl() {
 
 @end
 
-CABasicAnimation * _Nonnull makeSpringAnimationImpl(NSString * _Nonnull keyPath) {
+CABasicAnimation * _Nonnull makeSpringAnimationImpl(NSString * _Nonnull keyPath, double duration) {
+    if (@available(iOS 26.0, *)) {
+        return make26SpringAnimationImpl(keyPath, duration);
+    }
+    
     CASpringAnimation *springAnimation = [CASpringAnimation animationWithKeyPath:keyPath];
     springAnimation.mass = 3.0f;
     springAnimation.stiffness = 1000.0f;
@@ -61,7 +65,25 @@ CABasicAnimation * _Nonnull makeSpringAnimationImpl(NSString * _Nonnull keyPath)
     return springAnimation;
 }
 
-CABasicAnimation * _Nonnull makeSpringBounceAnimationImpl(NSString * _Nonnull keyPath, CGFloat initialVelocity, CGFloat damping) {
+CABasicAnimation * _Nonnull make26SpringAnimationImpl(NSString * _Nonnull keyPath, double duration) {
+    CASpringAnimation *springAnimation = [CASpringAnimation animationWithKeyPath:keyPath];
+    springAnimation.mass = 1.0f;
+    springAnimation.stiffness = 555.027;
+    springAnimation.damping = 47.118;
+    springAnimation.duration = duration;
+    springAnimation.timingFunction = [CAMediaTimingFunction functionWithName:kCAMediaTimingFunctionLinear];
+    if (@available(iOS 17.0, *)) {
+        springAnimation.allowsOverdamping = false;
+    }
+    if (@available(iOS 15.0, *)) {
+        [springAnimation setValue:@(1048619) forKey:@"highFrameRateReason"];
+        springAnimation.preferredFrameRateRange = CAFrameRateRangeMake(80.0, 120.0, 120.0);
+    }
+    
+    return springAnimation;
+}
+
+CASpringAnimation * _Nonnull makeSpringBounceAnimationImpl(NSString * _Nonnull keyPath, CGFloat initialVelocity, CGFloat damping) {
     CASpringAnimation *springAnimation = [CASpringAnimation animationWithKeyPath:keyPath];
     springAnimation.mass = 5.0f;
     springAnimation.stiffness = 900.0f;
@@ -121,6 +143,20 @@ static void setNilField(CustomBlurEffect *object, NSString *name) {
 }
 
 static void setBoolField(NSObject *object, NSString *name, BOOL value) {
+    SEL selector = NSSelectorFromString(name);
+    NSMethodSignature *signature = [[object class] instanceMethodSignatureForSelector:selector];
+    if (signature == nil) {
+        return;
+    }
+    
+    NSInvocation *inv = [NSInvocation invocationWithMethodSignature:signature];
+    [inv setSelector:selector];
+    [inv setArgument:&value atIndex:2];
+    [inv setTarget:object];
+    [inv invoke];
+}
+
+static void setLongLongField(NSObject *object, NSString *name, long long value) {
     SEL selector = NSSelectorFromString(name);
     NSMethodSignature *signature = [[object class] instanceMethodSignatureForSelector:selector];
     if (signature == nil) {
@@ -230,6 +266,10 @@ NSObject * _Nullable makeBlurFilter() {
     return [(id<GraphicsFilterProtocol>)NSClassFromString(@"CAFilter") filterWithName:@"gaussianBlur"];
 }
 
+NSObject * _Nullable makeVariableBlurFilter() {
+    return [(id<GraphicsFilterProtocol>)NSClassFromString(@"CAFilter") filterWithName:@"variableBlur"];
+}
+
 NSObject * _Nullable makeLuminanceToAlphaFilter() {
     return [(id<GraphicsFilterProtocol>)NSClassFromString(@"CAFilter") filterWithName:@"luminanceToAlpha"];
 }
@@ -240,6 +280,18 @@ NSObject * _Nullable makeColorInvertFilter() {
 
 NSObject * _Nullable makeMonochromeFilter() {
     return [(id<GraphicsFilterProtocol>)NSClassFromString(@"CAFilter") filterWithName:@"colorMonochrome"];
+}
+
+NSObject * _Nullable makeDisplacementMapFilter() {
+    if (@available(iOS 26.0, *)) {
+        return [(id<GraphicsFilterProtocol>)NSClassFromString(@"CAFilter") filterWithName:@"displacementMap"];
+    } else {
+        return nil;
+    }
+}
+
+NSObject * _Nullable makeColorMatrixFilter() {
+    return [(id<GraphicsFilterProtocol>)NSClassFromString(@"CAFilter") filterWithName:@"colorMatrix"];
 }
 
 static const void *layerDisableScreenshotsKey = &layerDisableScreenshotsKey;
@@ -297,5 +349,29 @@ void setLayerContentsMaskMode(CALayer * _Nonnull layer, bool maskMode) {
         [layer setValue:@"AAAA" forKey:key];
     } else {
         [layer setValue:@"RGBA" forKey:key];
+    }
+}
+
+void setMonochromaticEffectImpl(UIView * _Nonnull view, bool isEnabled) {
+    if (@available(iOS 26.0, *)) {
+        static NSString *key1 = nil;
+        static NSString *key2 = nil;
+        static NSString *key3 = nil;
+        static dispatch_once_t onceToken;
+        dispatch_once(&onceToken, ^{
+            key1 = [[@"_" stringByAppendingString:@"setAllows"] stringByAppendingString:@"MonochromaticTreatment:"];
+            key2 = [[@"_" stringByAppendingString:@"setEnable"] stringByAppendingString:@"MonochromaticTreatment:"];
+            key3 = [[@"_" stringByAppendingString:@"set"] stringByAppendingString:@"MonochromaticTreatment:"];
+        });
+        
+        if (isEnabled) {
+            setBoolField(view, key1, true);
+            setBoolField(view, key2, true);
+            setLongLongField(view, key3, 2);
+        } else {
+            setBoolField(view, key1, false);
+            setBoolField(view, key2, false);
+            setLongLongField(view, key3, 0);
+        }
     }
 }

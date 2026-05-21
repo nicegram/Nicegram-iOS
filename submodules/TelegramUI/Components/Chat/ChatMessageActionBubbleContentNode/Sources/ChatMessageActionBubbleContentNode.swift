@@ -57,6 +57,10 @@ public class ChatMessageActionBubbleContentNode: ChatMessageBubbleContentNode {
     private var cachedMaskBackgroundImage: (CGPoint, UIImage, [CGRect])?
     private var absoluteRect: (CGRect, CGSize)?
     
+    override public var disablesClipping: Bool {
+        return true
+    }
+    
     override public var visibility: ListViewItemNodeVisibility {
         didSet {
             if oldValue != self.visibility {

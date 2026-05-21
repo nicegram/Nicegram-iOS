@@ -72,6 +72,7 @@ final class GreetingMessageListItemComponent: Component {
         private var itemNode: ListViewItemNode?
         
         var customUpdateIsHighlighted: ((Bool) -> Void)?
+        var enumerateSiblings: (((UIView) -> Void) -> Void)?
         private(set) var separatorInset: CGFloat = 0.0
         
         override init(frame: CGRect) {
@@ -204,8 +205,6 @@ final class GreetingMessageListItemComponent: Component {
                     },
                     openStarsTopup: { _ in
                     },
-                    dismissNotice: { _ in
-                    },
                     editPeer: { _ in
                     },
                     openWebApp: { _ in
@@ -237,6 +236,7 @@ final class GreetingMessageListItemComponent: Component {
                     presence: nil,
                     hasUnseenMentions: false,
                     hasUnseenReactions: false,
+                    hasUnseenPollVotes: false,
                     draftState: nil,
                     mediaDraftContentType: nil,
                     inputActivities: nil,

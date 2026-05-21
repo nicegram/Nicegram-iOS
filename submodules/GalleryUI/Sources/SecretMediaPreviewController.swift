@@ -253,8 +253,10 @@ public final class SecretMediaPreviewController: ViewController {
         }, editMedia: { _ in
         }, controller: { [weak self] in
             return self
+        }, currentItemNode: { [weak self] in
+            return self?.controllerNode.pager.centralItemNode()
         })
-        self.displayNode = SecretMediaPreviewControllerNode(context: self.context, controllerInteraction: controllerInteraction)
+        self.displayNode = SecretMediaPreviewControllerNode(context: self.context, controllerInteraction: controllerInteraction, titleView: nil)
         self.displayNodeDidLoad()
         
         self.controllerNode.statusPressed = { [weak self] _ in
@@ -514,7 +516,7 @@ public final class SecretMediaPreviewController: ViewController {
                 var duration: Double = 0.0
                 for media in message.media {
                     if let file = media as? TelegramMediaFile {
-                        if let path = self.context.account.postbox.mediaBox.completedResourcePath(file.resource) {
+                        if let path = self.context.engine.resources.completedResourcePath(id: EngineMediaResource.Id(file.resource.id)) {
                             let tempFile = TempBox.shared.file(path: path, fileName: file.fileName ?? "file")
                             self.tempFile = tempFile
                             tempFilePath = tempFile.path
@@ -536,7 +538,7 @@ public final class SecretMediaPreviewController: ViewController {
                             self.dismiss(forceAway: false)
                         }
                     }
-                }, present: { _, _ in }) else {
+                }, sendSticker: nil, present: { _, _ in }) else {
                     self._ready.set(.single(true))
                     return
                 }

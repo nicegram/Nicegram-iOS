@@ -65,7 +65,7 @@ func chatHistoryViewForLocation(
             
             let combinedInitialData = ChatHistoryCombinedInitialData(initialData: initialData, buttonKeyboardMessage: view.topTaggedMessages.first, cachedData: cachedData, cachedDataMessages: cachedDataMessages, readStateData: readStateData)
             
-            if view.isLoading {
+            if view.isLoading || (view.entries.isEmpty && (view.holeEarlier || view.holeLater)) {
                 return .Loading(initialData: combinedInitialData, type: .Generic(type: updateType))
             }
 
@@ -147,7 +147,7 @@ func chatHistoryViewForLocation(
                     if preloaded {
                         return .HistoryView(view: view, type: .Generic(type: updateType), scrollPosition: nil, flashIndicators: false, originalScrollPosition: nil, initialData: combinedInitialData, id: location.id)
                     } else {
-                        if view.isLoading {
+                        if view.isLoading || (view.entries.isEmpty && (view.holeEarlier || view.holeLater)) {
                             return .Loading(initialData: combinedInitialData, type: .Generic(type: updateType))
                         }
                         var scrollPosition: ChatHistoryViewScrollPosition?
@@ -284,7 +284,7 @@ func chatHistoryViewForLocation(
                         
                         preloaded = true
                         
-                        return .HistoryView(view: view, type: reportUpdateType, scrollPosition: .index(subject: MessageHistoryScrollToSubject(index: anchorIndex, quote: searchLocationSubject.quote.flatMap { quote in MessageHistoryScrollToSubject.Quote(string: quote.string, offset: quote.offset) }, todoTaskId: searchLocationSubject.todoTaskId, setupReply: setupReply), position: .center(.bottom), directionHint: .Down, animated: false, highlight: highlight, displayLink: false, setupReply: setupReply), flashIndicators: false, originalScrollPosition: nil, initialData: ChatHistoryCombinedInitialData(initialData: initialData, buttonKeyboardMessage: view.topTaggedMessages.first, cachedData: cachedData, cachedDataMessages: cachedDataMessages, readStateData: readStateData), id: location.id)
+                        return .HistoryView(view: view, type: reportUpdateType, scrollPosition: .index(subject: MessageHistoryScrollToSubject(index: anchorIndex, quote: searchLocationSubject.quote.flatMap { quote in MessageHistoryScrollToSubject.Quote(string: quote.string, offset: quote.offset) }, subject: searchLocationSubject.subject, setupReply: setupReply), position: .center(.bottom), directionHint: .Down, animated: false, highlight: highlight, displayLink: false, setupReply: setupReply), flashIndicators: false, originalScrollPosition: nil, initialData: ChatHistoryCombinedInitialData(initialData: initialData, buttonKeyboardMessage: view.topTaggedMessages.first, cachedData: cachedData, cachedDataMessages: cachedDataMessages, readStateData: readStateData), id: location.id)
                     }
                 }
             case let .Navigation(index, anchorIndex, count, _):
@@ -311,7 +311,7 @@ func chatHistoryViewForLocation(
                     
                     let combinedInitialData = ChatHistoryCombinedInitialData(initialData: initialData, buttonKeyboardMessage: view.topTaggedMessages.first, cachedData: cachedData, cachedDataMessages: cachedDataMessages, readStateData: readStateData)
                     
-                    if view.isLoading {
+                    if view.isLoading || (view.entries.isEmpty && (view.holeEarlier || view.holeLater)) {
                         return ChatHistoryViewUpdate.Loading(initialData: combinedInitialData, type: .Generic(type: updateType))
                     }
                     
@@ -445,6 +445,22 @@ func fetchAndPreloadReplyThreadInfo(context: AccountContext, subject: ReplyThrea
         }
         
         if preload {
+            var channelMessage: Signal<Void, NoError> = .single(Void())
+            if case .channelPost = subject, let channelMessageId = replyThreadMessage.channelMessageId {
+                channelMessage = context.engine.messages.getMessagesLoadIfNecessary([channelMessageId], strategy: .cloud(skipLocal: false))
+                |> mapToSignal { result -> Signal<Void, GetMessagesError> in
+                    switch result {
+                    case .progress:
+                        return .never()
+                    case .result:
+                        return .single(Void())
+                    }
+                }
+                |> `catch` { _ -> Signal<Void, NoError> in
+                    return .single(Void())
+                }
+            }
+            
             let preloadSignal = preloadedChatHistoryViewForLocation(
                 input,
                 context: context,
@@ -455,12 +471,15 @@ func fetchAndPreloadReplyThreadInfo(context: AccountContext, subject: ReplyThrea
                 tag: nil,
                 additionalData: []
             )
-            return preloadSignal
-            |> map { historyView -> Bool? in
+            return combineLatest(preloadSignal, channelMessage)
+            |> map { historyView, _ -> Bool? in
                 switch historyView {
                 case .Loading:
                     return nil
                 case let .HistoryView(view, _, _, _, _, _, _):
+                    if view.isLoading || (view.entries.isEmpty && (view.holeEarlier || view.holeLater)) {
+                        return nil
+                    }
                     return view.entries.isEmpty
                 }
             }

@@ -26,6 +26,9 @@ import ContextUI
 import BalancedTextComponent
 import AlertComponent
 import PremiumCoinComponent
+import AlertComponent
+import AlertTableComponent
+import TableComponent
 
 private func textForTimeout(value: Int32) -> String {
     if value < 3600 {
@@ -64,13 +67,16 @@ final class AffiliateProgramSetupScreenComponent: Component {
     typealias EnvironmentType = ViewControllerComponentContainer.Environment
     
     let context: AccountContext
+    let overNavigationContainer: UIView
     let initialContent: AffiliateProgramSetupScreen.Content
 
     init(
         context: AccountContext,
+        overNavigationContainer: UIView,
         initialContent: AffiliateProgramSetupScreen.Content
     ) {
         self.context = context
+        self.overNavigationContainer = overNavigationContainer
         self.initialContent = initialContent
     }
 
@@ -93,6 +99,7 @@ final class AffiliateProgramSetupScreenComponent: Component {
         
         private let coinIcon = ComponentView<Empty>()
         private let title = ComponentView<Empty>()
+        private let titleContainer: UIView
         private let titleTransformContainer: UIView
         private var titleNeutralScale: CGFloat = 1.0
         private let subtitle = ComponentView<Empty>()
@@ -157,6 +164,8 @@ final class AffiliateProgramSetupScreenComponent: Component {
             self.scrollView.contentInsetAdjustmentBehavior = .never
             self.scrollView.alwaysBounceVertical = true
             
+            self.titleContainer = SparseContainerView()
+            
             self.titleTransformContainer = UIView()
             self.titleTransformContainer.isUserInteractionEnabled = false
             
@@ -208,30 +217,50 @@ final class AffiliateProgramSetupScreenComponent: Component {
             } else {
                 durationTitle = environment.strings.AffiliateProgram_DurationLifetime
             }
+                        
+            var content: [AnyComponentWithIdentity<AlertComponentEnvironment>] = []
+            content.append(AnyComponentWithIdentity(
+                id: "title",
+                component: AnyComponent(
+                    AlertTitleComponent(title: environment.strings.AffiliateSetup_AlertApply_Title)
+                )
+            ))
+            content.append(AnyComponentWithIdentity(
+                id: "text",
+                component: AnyComponent(
+                    AlertTextComponent(content: .plain(environment.strings.AffiliateSetup_AlertApply_Text))
+                )
+            ))
             
-            let presentationData = component.context.sharedContext.currentPresentationData.with({ $0 })
-            self.environment?.controller()?.present(tableAlert(
-                theme: presentationData.theme,
-                title: environment.strings.AffiliateSetup_AlertApply_Title,
-                text: environment.strings.AffiliateSetup_AlertApply_Text,
-                table: TableComponent(theme: environment.theme, items: [
-                    TableComponent.Item(id: 0, title: environment.strings.AffiliateSetup_AlertApply_SectionCommission, component: AnyComponent(MultilineTextComponent(
-                        text: .plain(NSAttributedString(string: commissionTitle, font: Font.regular(17.0), textColor: environment.theme.actionSheet.primaryTextColor))
-                    ))),
-                    TableComponent.Item(id: 1, title: environment.strings.AffiliateSetup_AlertApply_SectionDuration, component: AnyComponent(MultilineTextComponent(
-                        text: .plain(NSAttributedString(string: durationTitle, font: Font.regular(17.0), textColor: environment.theme.actionSheet.primaryTextColor))
-                    )))
-                ]),
+            let tableItems: [TableComponent.Item] = [
+                TableComponent.Item(id: 0, title: environment.strings.AffiliateSetup_AlertApply_SectionCommission, component: AnyComponent(MultilineTextComponent(
+                    text: .plain(NSAttributedString(string: commissionTitle, font: Font.regular(15.0), textColor: environment.theme.actionSheet.primaryTextColor))
+                ))),
+                TableComponent.Item(id: 1, title: environment.strings.AffiliateSetup_AlertApply_SectionDuration, component: AnyComponent(MultilineTextComponent(
+                    text: .plain(NSAttributedString(string: durationTitle, font: Font.regular(15.0), textColor: environment.theme.actionSheet.primaryTextColor))
+                )))
+            ]
+            content.append(AnyComponentWithIdentity(
+                id: "table",
+                component: AnyComponent(
+                    AlertTableComponent(items: tableItems)
+                )
+            ))
+            
+            let alertController = AlertScreen(
+                context: component.context,
+                content: content,
                 actions: [
-                    ComponentAlertAction(type: .genericAction, title: environment.strings.Common_Cancel, action: {}),
-                    ComponentAlertAction(type: .defaultAction, title: environment.strings.AffiliateSetup_AlertApply_Action, action: { [weak self] in
+                    .init(title: environment.strings.Common_Cancel),
+                    .init(title: environment.strings.AffiliateSetup_AlertApply_Action, type: .default, action: { [weak self] in
                         guard let self else {
                             return
                         }
                         self.applyProgram()
                     })
                 ]
-            ), in: .window(.root))
+            )
+            self.environment?.controller()?.present(alertController, in: .window(.root))
         }
         
         private func requestApplyEndProgram() {
@@ -239,8 +268,8 @@ final class AffiliateProgramSetupScreenComponent: Component {
                 return
             }
             let presentationData = component.context.sharedContext.currentPresentationData.with({ $0 })
-            self.environment?.controller()?.present(standardTextAlertController(
-                theme: AlertControllerTheme(presentationData: presentationData),
+            self.environment?.controller()?.present(textAlertController(
+                context: component.context,
                 title: environment.strings.AffiliateSetup_AlertTerminate_Title,
                 text: environment.strings.AffiliateSetup_AlertTerminate_Text,
                 actions: [
@@ -336,6 +365,8 @@ final class AffiliateProgramSetupScreenComponent: Component {
             let titleY: CGFloat = max(titleCenterY, self.titleTransformContainer.center.y - self.scrollView.contentOffset.y)
             
             transition.setSublayerTransform(view: self.titleTransformContainer, transform: CATransform3DMakeTranslation(0.0, titleY - self.titleTransformContainer.center.y, 0.0))
+            
+            transition.setSublayerTransform(view: self.titleContainer, transform: CATransform3DMakeTranslation(0.0, -self.scrollView.contentOffset.y, 0.0))
             
             let titleYDistance: CGFloat = titleY - titleCenterY
             let titleTransformFraction: CGFloat = 1.0 - max(0.0, min(1.0, titleYDistance / titleTransformDistance))
@@ -445,7 +476,7 @@ final class AffiliateProgramSetupScreenComponent: Component {
                     if isSelected {
                         return generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Check"), color: theme.actionSheet.primaryTextColor)
                     } else {
-                        return nil
+                        return UIImage()
                     }
                 }, action: { [weak self] _, f in
                     f(.default)
@@ -474,7 +505,7 @@ final class AffiliateProgramSetupScreenComponent: Component {
             }
             
             let presentationData = component.context.sharedContext.currentPresentationData.with({ $0 })
-            let contextController = ContextController(presentationData: presentationData, source: .reference(HeaderContextReferenceContentSource(controller: controller, sourceView: sourceView, actionsOnTop: false)), items: .single(ContextController.Items(id: AnyHashable(0), content: .list(items))), gesture: nil)
+            let contextController = makeContextController(presentationData: presentationData, source: .reference(HeaderContextReferenceContentSource(controller: controller, sourceView: sourceView, actionsOnTop: false)), items: .single(ContextController.Items(id: AnyHashable(0), content: .list(items))), gesture: nil)
             controller.presentInGlobalOverlay(contextController)
         }
         
@@ -625,6 +656,10 @@ final class AffiliateProgramSetupScreenComponent: Component {
             self.component = component
             self.state = state
             
+            if self.titleContainer.superview == nil {
+                component.overNavigationContainer.addSubview(self.titleContainer)
+            }
+            
             let topInset: CGFloat = environment.navigationHeight + 90.0
             let bottomInset: CGFloat = 8.0
             let sideInset: CGFloat = 16.0 + environment.safeInsets.left
@@ -648,7 +683,7 @@ final class AffiliateProgramSetupScreenComponent: Component {
             let coinIconFrame = CGRect(origin: CGPoint(x: floor((availableSize.width - coinIconSize.width) * 0.5), y: contentHeight - coinIconSize.height + 30.0), size: coinIconSize)
             if let coinIconView = self.coinIcon.view {
                 if coinIconView.superview == nil {
-                    self.scrollView.addSubview(coinIconView)
+                    self.titleContainer.addSubview(coinIconView)
                 }
                 transition.setFrame(view: coinIconView, frame: coinIconFrame)
             }
@@ -858,7 +893,7 @@ final class AffiliateProgramSetupScreenComponent: Component {
                 transition: transition,
                 component: AnyComponent(FilledRoundedRectangleComponent(
                     color: environment.theme.list.itemBlocksBackgroundColor,
-                    cornerRadius: .value(11.0),
+                    cornerRadius: .value(26.0),
                     smoothCorners: false
                 )),
                 environment: {},
@@ -882,6 +917,7 @@ final class AffiliateProgramSetupScreenComponent: Component {
                     transition: transition,
                     component: AnyComponent(ListSectionComponent(
                         theme: environment.theme,
+                        style: .glass,
                         header: AnyComponent(MultilineTextComponent(
                             text: .plain(NSAttributedString(
                                 string: environment.strings.AffiliateSetup_SectionCommission,
@@ -918,7 +954,8 @@ final class AffiliateProgramSetupScreenComponent: Component {
                                         
                                         self.state?.updated(transition: .immediate)
                                     }
-                                ))
+                                )),
+                                preferNative: true
                             )))
                         ],
                         displaySeparators: false
@@ -951,6 +988,7 @@ final class AffiliateProgramSetupScreenComponent: Component {
                     transition: transition,
                     component: AnyComponent(ListSectionComponent(
                         theme: environment.theme,
+                        style: .glass,
                         header: AnyComponent(HStack([
                             AnyComponentWithIdentity(id: 0, component: AnyComponent(MultilineTextComponent(
                                 text: .plain(NSAttributedString(
@@ -995,7 +1033,8 @@ final class AffiliateProgramSetupScreenComponent: Component {
                                         self.durationValue = Int(durationItems[value])
                                         self.state?.updated(transition: .immediate)
                                     }
-                                ))
+                                )),
+                                preferNative: true
                             )))
                         ],
                         displaySeparators: false
@@ -1018,6 +1057,7 @@ final class AffiliateProgramSetupScreenComponent: Component {
                     transition: transition,
                     component: AnyComponent(ListSectionComponent(
                         theme: environment.theme,
+                        style: .glass,
                         header: nil,
                         footer: AnyComponent(MultilineTextComponent(
                             text: .plain(NSAttributedString(
@@ -1030,6 +1070,7 @@ final class AffiliateProgramSetupScreenComponent: Component {
                         items: [
                             AnyComponentWithIdentity(id: 0, component: AnyComponent(ListActionItemComponent(
                                 theme: environment.theme,
+                                style: .glass,
                                 title: AnyComponent(VStack([
                                     AnyComponentWithIdentity(id: AnyHashable(0), component: AnyComponent(MultilineTextComponent(
                                         text: .plain(NSAttributedString(
@@ -1068,11 +1109,13 @@ final class AffiliateProgramSetupScreenComponent: Component {
                     transition: transition,
                     component: AnyComponent(ListSectionComponent(
                         theme: environment.theme,
+                        style: .glass,
                         header: nil,
                         footer: nil,
                         items: [
                             AnyComponentWithIdentity(id: 0, component: AnyComponent(ListActionItemComponent(
                                 theme: environment.theme,
+                                style: .glass,
                                 title: AnyComponent(VStack([
                                     AnyComponentWithIdentity(id: AnyHashable(0), component: AnyComponent(MultilineTextComponent(
                                         text: .plain(NSAttributedString(
@@ -1150,6 +1193,7 @@ final class AffiliateProgramSetupScreenComponent: Component {
                     transition: transition,
                     component: AnyComponent(ButtonComponent(
                         background: ButtonComponent.Background(
+                            style: .glass,
                             color: environment.theme.list.itemCheckColors.fillColor,
                             foreground: environment.theme.list.itemCheckColors.foregroundColor,
                             pressedColor: environment.theme.list.itemCheckColors.fillColor.withMultipliedAlpha(0.8)
@@ -1166,7 +1210,7 @@ final class AffiliateProgramSetupScreenComponent: Component {
                         }
                     )),
                     environment: {},
-                    containerSize: CGSize(width: availableSize.width - bottomPanelButtonInsets.left - bottomPanelButtonInsets.right, height: 50.0)
+                    containerSize: CGSize(width: availableSize.width - bottomPanelButtonInsets.left - bottomPanelButtonInsets.right, height: 52.0)
                 )
                 
                 let bottomPanelHeight: CGFloat = bottomPanelButtonInsets.top + bottomPanelButtonSize.height + bottomPanelButtonInsets.bottom + bottomPanelTextSize.height + 8.0 + environment.safeInsets.bottom
@@ -1299,7 +1343,7 @@ final class AffiliateProgramSetupScreenComponent: Component {
                                 
                                 let items = ContextController.Items(content: .list(itemList))
                                 
-                                let controller = ContextController(
+                                let controller = makeContextController(
                                     presentationData: presentationData,
                                     source: .extracted(ListContextExtractedContentSource(contentView: sourceView)),
                                     items: .single(items),
@@ -1363,6 +1407,7 @@ final class AffiliateProgramSetupScreenComponent: Component {
                             transition: transition,
                             component: AnyComponent(ListSectionComponent(
                                 theme: environment.theme,
+                                style: .glass,
                                 header: AnyComponent(MultilineTextComponent(
                                     text: .plain(NSAttributedString(
                                         string: environment.strings.AffiliateSetup_ConnectedSectionTitle,
@@ -1517,6 +1562,7 @@ final class AffiliateProgramSetupScreenComponent: Component {
                             transition: transition,
                             component: AnyComponent(ListSectionComponent(
                                 theme: environment.theme,
+                                style: .glass,
                                 header: AnyComponent(HStack(suggestedHeaderItems, spacing: 4.0, alignment: .alternatingLeftRight)),
                                 footer: nil,
                                 items: suggestedSectionItems,
@@ -1610,16 +1656,21 @@ public class AffiliateProgramSetupScreen: ViewControllerComponentContainer {
     private let context: AccountContext
     private var isDismissed: Bool = false
     
+    private let overNavigationContainer: UIView
+    
     public init(
         context: AccountContext,
         initialContent: AffiliateProgramSetupScreenInitialData
     ) {
         self.context = context
         
+        self.overNavigationContainer = SparseContainerView()
+        
         let initialContent = initialContent as! AffiliateProgramSetupScreen.Content
         
         super.init(context: context, component: AffiliateProgramSetupScreenComponent(
             context: context,
+            overNavigationContainer: self.overNavigationContainer,
             initialContent: initialContent
         ), navigationBarAppearance: .default, theme: .default)
         
@@ -1636,6 +1687,10 @@ public class AffiliateProgramSetupScreen: ViewControllerComponentContainer {
             }
             
             return componentView.attemptNavigation(complete: complete)
+        }
+        
+        if let navigationBar = self.navigationBar {
+            navigationBar.customOverBackgroundContentView.insertSubview(self.overNavigationContainer, at: 0)
         }
     }
     

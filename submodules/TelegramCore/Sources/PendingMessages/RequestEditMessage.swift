@@ -27,15 +27,15 @@ public enum RequestEditMessageError {
     case invalidGrouping
 }
 
-func _internal_requestEditMessage(account: Account, messageId: MessageId, text: String, media: RequestEditMessageMedia, entities: TextEntitiesMessageAttribute?, inlineStickers: [MediaId: Media], webpagePreviewAttribute: WebpagePreviewMessageAttribute?, disableUrlPreview: Bool, scheduleTime: Int32?, invertMediaAttribute: InvertMediaMessageAttribute?) -> Signal<RequestEditMessageResult, RequestEditMessageError> {
-    return requestEditMessage(accountPeerId: account.peerId, postbox: account.postbox, network: account.network, stateManager: account.stateManager, transformOutgoingMessageMedia: account.transformOutgoingMessageMedia, messageMediaPreuploadManager: account.messageMediaPreuploadManager, mediaReferenceRevalidationContext: account.mediaReferenceRevalidationContext, messageId: messageId, text: text, media: media, entities: entities, inlineStickers: inlineStickers, webpagePreviewAttribute: webpagePreviewAttribute, disableUrlPreview: disableUrlPreview, scheduleTime: scheduleTime, invertMediaAttribute: invertMediaAttribute)
+func _internal_requestEditMessage(account: Account, messageId: MessageId, text: String, media: RequestEditMessageMedia, entities: TextEntitiesMessageAttribute?, inlineStickers: [MediaId: Media], webpagePreviewAttribute: WebpagePreviewMessageAttribute?, disableUrlPreview: Bool, scheduleInfoAttribute: OutgoingScheduleInfoMessageAttribute?, invertMediaAttribute: InvertMediaMessageAttribute?) -> Signal<RequestEditMessageResult, RequestEditMessageError> {
+    return requestEditMessage(accountPeerId: account.peerId, postbox: account.postbox, network: account.network, stateManager: account.stateManager, transformOutgoingMessageMedia: account.transformOutgoingMessageMedia, messageMediaPreuploadManager: account.messageMediaPreuploadManager, mediaReferenceRevalidationContext: account.mediaReferenceRevalidationContext, messageId: messageId, text: text, media: media, entities: entities, inlineStickers: inlineStickers, webpagePreviewAttribute: webpagePreviewAttribute, disableUrlPreview: disableUrlPreview, scheduleInfoAttribute: scheduleInfoAttribute, invertMediaAttribute: invertMediaAttribute)
 }
 
-func requestEditMessage(accountPeerId: PeerId, postbox: Postbox, network: Network, stateManager: AccountStateManager, transformOutgoingMessageMedia: TransformOutgoingMessageMedia?, messageMediaPreuploadManager: MessageMediaPreuploadManager, mediaReferenceRevalidationContext: MediaReferenceRevalidationContext, messageId: MessageId, text: String, media: RequestEditMessageMedia, entities: TextEntitiesMessageAttribute?, inlineStickers: [MediaId: Media], webpagePreviewAttribute: WebpagePreviewMessageAttribute?, disableUrlPreview: Bool, scheduleTime: Int32?, invertMediaAttribute: InvertMediaMessageAttribute?) -> Signal<RequestEditMessageResult, RequestEditMessageError> {
-    return requestEditMessageInternal(accountPeerId: accountPeerId, postbox: postbox, network: network, stateManager: stateManager, transformOutgoingMessageMedia: transformOutgoingMessageMedia, messageMediaPreuploadManager: messageMediaPreuploadManager, mediaReferenceRevalidationContext: mediaReferenceRevalidationContext, messageId: messageId, text: text, media: media, entities: entities, inlineStickers: inlineStickers, webpagePreviewAttribute: webpagePreviewAttribute, invertMediaAttribute: invertMediaAttribute, disableUrlPreview: disableUrlPreview, scheduleTime: scheduleTime, forceReupload: false)
+func requestEditMessage(accountPeerId: PeerId, postbox: Postbox, network: Network, stateManager: AccountStateManager, transformOutgoingMessageMedia: TransformOutgoingMessageMedia?, messageMediaPreuploadManager: MessageMediaPreuploadManager, mediaReferenceRevalidationContext: MediaReferenceRevalidationContext, messageId: MessageId, text: String, media: RequestEditMessageMedia, entities: TextEntitiesMessageAttribute?, inlineStickers: [MediaId: Media], webpagePreviewAttribute: WebpagePreviewMessageAttribute?, disableUrlPreview: Bool, scheduleInfoAttribute: OutgoingScheduleInfoMessageAttribute?, invertMediaAttribute: InvertMediaMessageAttribute?) -> Signal<RequestEditMessageResult, RequestEditMessageError> {
+    return requestEditMessageInternal(accountPeerId: accountPeerId, postbox: postbox, network: network, stateManager: stateManager, transformOutgoingMessageMedia: transformOutgoingMessageMedia, messageMediaPreuploadManager: messageMediaPreuploadManager, mediaReferenceRevalidationContext: mediaReferenceRevalidationContext, messageId: messageId, text: text, media: media, entities: entities, inlineStickers: inlineStickers, webpagePreviewAttribute: webpagePreviewAttribute, invertMediaAttribute: invertMediaAttribute, disableUrlPreview: disableUrlPreview, scheduleInfoAttribute: scheduleInfoAttribute, forceReupload: false)
     |> `catch` { error -> Signal<RequestEditMessageResult, RequestEditMessageInternalError> in
         if case .invalidReference = error {
-            return requestEditMessageInternal(accountPeerId: accountPeerId, postbox: postbox, network: network, stateManager: stateManager, transformOutgoingMessageMedia: transformOutgoingMessageMedia, messageMediaPreuploadManager: messageMediaPreuploadManager, mediaReferenceRevalidationContext: mediaReferenceRevalidationContext, messageId: messageId, text: text, media: media, entities: entities, inlineStickers: inlineStickers, webpagePreviewAttribute: webpagePreviewAttribute, invertMediaAttribute: invertMediaAttribute, disableUrlPreview: disableUrlPreview, scheduleTime: scheduleTime, forceReupload: true)
+            return requestEditMessageInternal(accountPeerId: accountPeerId, postbox: postbox, network: network, stateManager: stateManager, transformOutgoingMessageMedia: transformOutgoingMessageMedia, messageMediaPreuploadManager: messageMediaPreuploadManager, mediaReferenceRevalidationContext: mediaReferenceRevalidationContext, messageId: messageId, text: text, media: media, entities: entities, inlineStickers: inlineStickers, webpagePreviewAttribute: webpagePreviewAttribute, invertMediaAttribute: invertMediaAttribute, disableUrlPreview: disableUrlPreview, scheduleInfoAttribute: scheduleInfoAttribute, forceReupload: true)
         } else {
             return .fail(error)
         }
@@ -50,7 +50,7 @@ func requestEditMessage(accountPeerId: PeerId, postbox: Postbox, network: Networ
     }
 }
 
-private func requestEditMessageInternal(accountPeerId: PeerId, postbox: Postbox, network: Network, stateManager: AccountStateManager, transformOutgoingMessageMedia: TransformOutgoingMessageMedia?, messageMediaPreuploadManager: MessageMediaPreuploadManager, mediaReferenceRevalidationContext: MediaReferenceRevalidationContext, messageId: MessageId, text: String, media: RequestEditMessageMedia, entities: TextEntitiesMessageAttribute?, inlineStickers: [MediaId: Media], webpagePreviewAttribute: WebpagePreviewMessageAttribute?, invertMediaAttribute: InvertMediaMessageAttribute?, disableUrlPreview: Bool, scheduleTime: Int32?, forceReupload: Bool) -> Signal<RequestEditMessageResult, RequestEditMessageInternalError> {
+private func requestEditMessageInternal(accountPeerId: PeerId, postbox: Postbox, network: Network, stateManager: AccountStateManager, transformOutgoingMessageMedia: TransformOutgoingMessageMedia?, messageMediaPreuploadManager: MessageMediaPreuploadManager, mediaReferenceRevalidationContext: MediaReferenceRevalidationContext, messageId: MessageId, text: String, media: RequestEditMessageMedia, entities: TextEntitiesMessageAttribute?, inlineStickers: [MediaId: Media], webpagePreviewAttribute: WebpagePreviewMessageAttribute?, invertMediaAttribute: InvertMediaMessageAttribute?, disableUrlPreview: Bool, scheduleInfoAttribute: OutgoingScheduleInfoMessageAttribute?, forceReupload: Bool) -> Signal<RequestEditMessageResult, RequestEditMessageInternalError> {
     let uploadedMedia: Signal<PendingMessageUploadedContentResult?, NoError>
     switch media {
     case .keep:
@@ -76,7 +76,7 @@ private func requestEditMessageInternal(accountPeerId: PeerId, postbox: Postbox,
             if todo.flags.contains(.othersCanComplete) {
                 flags |= 1 << 1
             }
-            let inputTodo = Api.InputMedia.inputMediaTodo(todo: .todoList(flags: flags, title: .textWithEntities(text: todo.text, entities: apiEntitiesFromMessageTextEntities(todo.textEntities, associatedPeers: SimpleDictionary())), list: todo.items.map { $0.apiItem }))
+            let inputTodo = Api.InputMedia.inputMediaTodo(.init(todo: .todoList(.init(flags: flags, title: .textWithEntities(.init(text: todo.text, entities: apiEntitiesFromMessageTextEntities(todo.textEntities, associatedPeers: SimpleDictionary()))), list: todo.items.map { $0.apiItem }))))
             uploadedMedia = .single(.content(PendingMessageUploadedContentAndReuploadInfo(content: .media(inputTodo, text), reuploadInfo: nil, cacheReferenceKey: nil)))
         }
         else if let uploadSignal = generateUploadSignal(forceReupload) {
@@ -124,7 +124,7 @@ private func requestEditMessageInternal(accountPeerId: PeerId, postbox: Postbox,
                         case _ as TelegramMediaImage, _ as TelegramMediaFile, _ as TelegramMediaTodo:
                             break
                         default:
-                            if let _ = scheduleTime {
+                            if let _ = scheduleInfoAttribute {
                                 break
                             } else {
                                 return (nil, nil, SimpleDictionary())
@@ -173,15 +173,24 @@ private func requestEditMessageInternal(accountPeerId: PeerId, postbox: Postbox,
                 }
                 
                 var effectiveScheduleTime: Int32?
+                var effectiveScheduleRepeatPeriod: Int32?
                 if messageId.namespace == Namespaces.Message.ScheduledCloud {
-                    if let scheduleTime = scheduleTime {
+                    if let scheduleTime = scheduleInfoAttribute?.scheduleTime {
                         effectiveScheduleTime = scheduleTime
                     } else {
                         effectiveScheduleTime = message.timestamp
                     }
                     flags |= Int32(1 << 15)
+                    
+                    if let scheduleInfoAttribute {
+                        effectiveScheduleRepeatPeriod = scheduleInfoAttribute.repeatPeriod ?? 0
+                        flags |= Int32(1 << 18)
+                    }
                 }
                 
+                if let webpagePreviewAttribute, webpagePreviewAttribute.leadingPreview {
+                    flags |= Int32(1 << 16)
+                }
                 if let _ = invertMediaAttribute {
                     flags |= Int32(1 << 16)
                 }
@@ -192,7 +201,7 @@ private func requestEditMessageInternal(accountPeerId: PeerId, postbox: Postbox,
                     flags |= Int32(1 << 17)
                 }
                 
-                return network.request(Api.functions.messages.editMessage(flags: flags, peer: inputPeer, id: messageId.id, message: text, media: inputMedia, replyMarkup: nil, entities: apiEntities, scheduleDate: effectiveScheduleTime, quickReplyShortcutId: quickReplyShortcutId))
+                return network.request(Api.functions.messages.editMessage(flags: flags, peer: inputPeer, id: messageId.id, message: text, media: inputMedia, replyMarkup: nil, entities: apiEntities, scheduleDate: effectiveScheduleTime, scheduleRepeatPeriod: effectiveScheduleRepeatPeriod, quickReplyShortcutId: quickReplyShortcutId))
                 |> map { result -> Api.Updates? in
                     return result
                 }
@@ -228,10 +237,90 @@ private func requestEditMessageInternal(accountPeerId: PeerId, postbox: Postbox,
                             }
                             
                             switch result {
-                            case let .updates(updates, users, chats, _, _):
+                            case let .updates(updatesData):
+                                let (updates, users, chats) = (updatesData.updates, updatesData.users, updatesData.chats)
                                 for update in updates {
                                     switch update {
-                                    case .updateEditMessage(let message, _, _), .updateNewMessage(let message, _, _), .updateEditChannelMessage(let message, _, _), .updateNewChannelMessage(let message, _, _):
+                                    case .updateEditMessage(let data):
+                                        let message = data.message
+                                        let peers = AccumulatedPeers(transaction: transaction, chats: chats, users: users)
+                                        updatePeers(transaction: transaction, accountPeerId: accountPeerId, peers: peers)
+
+                                        if let message = StoreMessage(apiMessage: message, accountPeerId: accountPeerId, peerIsForum: peer.isForumOrMonoForum), case let .Id(id) = message.id {
+                                            transaction.updateMessage(id, update: { previousMessage in
+                                                var updatedFlags = message.flags
+                                                var updatedLocalTags = message.localTags
+                                                if previousMessage.localTags.contains(.OutgoingLiveLocation) {
+                                                    updatedLocalTags.insert(.OutgoingLiveLocation)
+                                                }
+                                                if previousMessage.flags.contains(.Incoming) {
+                                                    updatedFlags.insert(.Incoming)
+                                                } else {
+                                                    updatedFlags.remove(.Incoming)
+                                                }
+
+                                                var updatedMedia = message.media
+                                                if let previousPaidContent = previousMessage.media.first(where: { $0 is TelegramMediaPaidContent }) as? TelegramMediaPaidContent, case .full = previousPaidContent.extendedMedia.first {
+                                                    updatedMedia = previousMessage.media
+                                                }
+
+                                                return .update(message.withUpdatedLocalTags(updatedLocalTags).withUpdatedFlags(updatedFlags).withUpdatedMedia(updatedMedia))
+                                            })
+                                        }
+                                    case .updateNewMessage(let data):
+                                        let message = data.message
+                                        let peers = AccumulatedPeers(transaction: transaction, chats: chats, users: users)
+                                        updatePeers(transaction: transaction, accountPeerId: accountPeerId, peers: peers)
+
+                                        if let message = StoreMessage(apiMessage: message, accountPeerId: accountPeerId, peerIsForum: peer.isForumOrMonoForum), case let .Id(id) = message.id {
+                                            transaction.updateMessage(id, update: { previousMessage in
+                                                var updatedFlags = message.flags
+                                                var updatedLocalTags = message.localTags
+                                                if previousMessage.localTags.contains(.OutgoingLiveLocation) {
+                                                    updatedLocalTags.insert(.OutgoingLiveLocation)
+                                                }
+                                                if previousMessage.flags.contains(.Incoming) {
+                                                    updatedFlags.insert(.Incoming)
+                                                } else {
+                                                    updatedFlags.remove(.Incoming)
+                                                }
+
+                                                var updatedMedia = message.media
+                                                if let previousPaidContent = previousMessage.media.first(where: { $0 is TelegramMediaPaidContent }) as? TelegramMediaPaidContent, case .full = previousPaidContent.extendedMedia.first {
+                                                    updatedMedia = previousMessage.media
+                                                }
+
+                                                return .update(message.withUpdatedLocalTags(updatedLocalTags).withUpdatedFlags(updatedFlags).withUpdatedMedia(updatedMedia))
+                                            })
+                                        }
+                                    case .updateEditChannelMessage(let data):
+                                        let message = data.message
+                                        let peers = AccumulatedPeers(transaction: transaction, chats: chats, users: users)
+                                        updatePeers(transaction: transaction, accountPeerId: accountPeerId, peers: peers)
+
+                                        if let message = StoreMessage(apiMessage: message, accountPeerId: accountPeerId, peerIsForum: peer.isForumOrMonoForum), case let .Id(id) = message.id {
+                                            transaction.updateMessage(id, update: { previousMessage in
+                                                var updatedFlags = message.flags
+                                                var updatedLocalTags = message.localTags
+                                                if previousMessage.localTags.contains(.OutgoingLiveLocation) {
+                                                    updatedLocalTags.insert(.OutgoingLiveLocation)
+                                                }
+                                                if previousMessage.flags.contains(.Incoming) {
+                                                    updatedFlags.insert(.Incoming)
+                                                } else {
+                                                    updatedFlags.remove(.Incoming)
+                                                }
+
+                                                var updatedMedia = message.media
+                                                if let previousPaidContent = previousMessage.media.first(where: { $0 is TelegramMediaPaidContent }) as? TelegramMediaPaidContent, case .full = previousPaidContent.extendedMedia.first {
+                                                    updatedMedia = previousMessage.media
+                                                }
+
+                                                return .update(message.withUpdatedLocalTags(updatedLocalTags).withUpdatedFlags(updatedFlags).withUpdatedMedia(updatedMedia))
+                                            })
+                                        }
+                                    case .updateNewChannelMessage(let data):
+                                        let message = data.message
                                         let peers = AccumulatedPeers(transaction: transaction, chats: chats, users: users)
                                         updatePeers(transaction: transaction, accountPeerId: accountPeerId, peers: peers)
                                         
@@ -309,13 +398,13 @@ func _internal_requestEditLiveLocation(postbox: Postbox, network: Network, state
                 if let _ = coordinate.accuracyRadius {
                     geoFlags |= 1 << 0
                 }
-                inputGeoPoint = .inputGeoPoint(flags: geoFlags, lat: coordinate.latitude, long: coordinate.longitude, accuracyRadius: coordinate.accuracyRadius.flatMap({ Int32($0) }))
+                inputGeoPoint = .inputGeoPoint(.init(flags: geoFlags, lat: coordinate.latitude, long: coordinate.longitude, accuracyRadius: coordinate.accuracyRadius.flatMap({ Int32($0) })))
             } else {
                 var geoFlags: Int32 = 0
                 if let _ = media.accuracyRadius {
                     geoFlags |= 1 << 0
                 }
-                inputGeoPoint = .inputGeoPoint(flags: geoFlags, lat: media.latitude, long: media.longitude, accuracyRadius: media.accuracyRadius.flatMap({ Int32($0) }))
+                inputGeoPoint = .inputGeoPoint(.init(flags: geoFlags, lat: media.latitude, long: media.longitude, accuracyRadius: media.accuracyRadius.flatMap({ Int32($0) })))
             }
             if let _ = heading {
                 flags |= 1 << 2
@@ -335,12 +424,12 @@ func _internal_requestEditLiveLocation(postbox: Postbox, network: Network, state
                 period = liveBroadcastingTimeout
             }
             
-            inputMedia = .inputMediaGeoLive(flags: flags, geoPoint: inputGeoPoint, heading: heading, period: period, proximityNotificationRadius: proximityNotificationRadius)
+            inputMedia = .inputMediaGeoLive(.init(flags: flags, geoPoint: inputGeoPoint, heading: heading, period: period, proximityNotificationRadius: proximityNotificationRadius))
         } else {
-            inputMedia = .inputMediaGeoLive(flags: 1 << 0, geoPoint: .inputGeoPoint(flags: 0, lat: media.latitude, long: media.longitude, accuracyRadius: nil), heading: nil, period: nil, proximityNotificationRadius: nil)
+            inputMedia = .inputMediaGeoLive(.init(flags: 1 << 0, geoPoint: .inputGeoPoint(.init(flags: 0, lat: media.latitude, long: media.longitude, accuracyRadius: nil)), heading: nil, period: nil, proximityNotificationRadius: nil))
         }
 
-        return network.request(Api.functions.messages.editMessage(flags: 1 << 14, peer: inputPeer, id: messageId.id, message: nil, media: inputMedia, replyMarkup: nil, entities: nil, scheduleDate: nil, quickReplyShortcutId: nil))
+        return network.request(Api.functions.messages.editMessage(flags: 1 << 14, peer: inputPeer, id: messageId.id, message: nil, media: inputMedia, replyMarkup: nil, entities: nil, scheduleDate: nil, scheduleRepeatPeriod: nil, quickReplyShortcutId: nil))
         |> map(Optional.init)
         |> `catch` { _ -> Signal<Api.Updates?, NoError> in
             return .single(nil)

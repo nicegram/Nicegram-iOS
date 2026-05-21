@@ -2511,6 +2511,7 @@ encryptDecrypt:(NSData * _Nullable (^ _Nullable)(NSData * _Nonnull, int64_t, boo
                     GroupCallNetworkState mappedState;
                     mappedState.isConnected = networkState.isConnected;
                     mappedState.isTransitioningFromBroadcastToRtc = networkState.isTransitioningFromBroadcastToRtc;
+                    mappedState.isBroadcast = networkState.connectionMode == tgcalls::GroupConnectionMode::GroupConnectionModeBroadcast;
                     networkStateUpdated(mappedState);
                 }];
             },

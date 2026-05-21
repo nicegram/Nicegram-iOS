@@ -28,8 +28,6 @@
 
 "NiceFeatures.Folders.Header" = "ПАПКИ";
 "NiceFeatures.Account.Header" = "Настройки конфиденциальности";
-"NiceFeatures.Folders.TgFolders" = "Папки снизу";
-"NiceFeatures.Folders.TgFolders.Notice" = "Список папок в стиле iOS";
 
 "NiceFeatures.RoundVideos.Header" = "ВИДЕОСООБЩЕНИЯ";
 "NiceFeatures.RoundVideos.UseRearCamera" = "Запись сразу с задней камеры";
@@ -50,8 +48,6 @@
 /*Common*/
 "Common.ExitNow" = "Выйти Сейчас";
 "Common.Later" = "Позже";
-"Common.RestartRequired" = "Необходим перезапуск!";
-"NiceFeatures.Tabs.ShowNames" = "Показывать Имена Вкладок";
 "Chat.ForwardAsCopy" = "Переслать без Автора";
 
 /*Folder*/
@@ -90,7 +86,7 @@
 "Common.SupportChatUsername" = "nicegram_ru";
 "Common.FAQUrl" = "https://nicegram.app/ru/faq/";
 "Common.FAQ.Button" = "Вопросы о Nicegram";
-"IAP.Premium.Title" = "Премиум";
+"IAP.Premium.Title" = "Premium";
 "IAP.Premium.Subtitle" = "Уникальные функции, от которых трудно отказаться!";
 "IAP.Premium.Activated" = "Премиум Активирован!";
 "IAP.Common.Restore" = "Восстановить Покупки";
@@ -156,23 +152,10 @@
 "NicegramSettings.Other.hidePhoneInSettingsNotice" = "Ваш номер будет скрыт только в интерфейсе. Чтобы скрыть его от других, пожалуйста, используйте настройки конфиденциальности.";
 "NicegramSettings.Other.showProfileId" = "Показывать ID профилей";
 "NicegramSettings.Other.showRegDate" = "Показывать дату регистрации";
-"NicegramSettings.Unblock.Header" = "Разблокировать";
-"NicegramSettings.Unblock.Button" = "Руководство по разблокировке";
-"NicegramSettings.Other.hideReactions" = "Скрыть реакции";
-"NicegramSettings.Other.hideReactionsToYourMessages" = "Скрыть реакции на ваши сообщения";
 "NicegramSettings.RoundVideos.DownloadVideos" = "Скачивать видео в галерею";
 "Premium.OnetapTranslate.UseIgnoreLanguages" = "Игнорировать языки";
 "Premium.OnetapTranslate.UseIgnoreLanguages.Note" = "Приложение определяет язык для каждого сообщения на Вашем устройстве. Поскольку это высокопроизводительная задача, время работы аккумулятора может уменьшиться.";
 "Premium.rememberFolderOnExit" = "Запомнить текущую папку при выходе";
-"NicegramSettings.HideStories" = "Скрыть истории";
-"NicegramSettings.HideBadgeCounters" = "Скрыть уведомления о реакциях";
-"NicegramSettings.HideUnreadCounters" = "Скрыть счетчики непрочитанных сообщений";
-"NicegramSettings.HideMentionNotification" = "Скрыть уведомления об упоминаниях";
-"NicegramSettings.EnableAnimationsInChatList" = "Анимации в списке чата";
-"NicegramSettings.EnableGrayscaleAll" = "Полноэкранный черно-белый режим";
-"NicegramSettings.EnableGrayscaleInChatList" = "Оттенки серого в списке чата";
-"NicegramSettings.EnableGrayscaleInChat" = "Оттенки серого в чате";
-"NicegramSettings.EnableAppleSpeech2Text" = "Включить Apple Speech2Text";
 "NicegramSettings.ShowKeywords" = "Показать Папку для ключевых слов";
 
 /*Registration Date*/
@@ -202,10 +185,6 @@
 "RoundedVideos.MoreButtonTooltip" = "Конвертируйте квадратные видео в круглые одним нажатием.";
 "RoundedVideos.SendButtonTooltip" = "Удерживайте, чтобы отправить видео в кружке.";
 
-/*Speech to text*/
-"SpeechToText.UseOpenAi" = "OpenAI Речь в текст";
-"SpeechToText.Toast" = "[Подпишитесь на Nicegram Premium]() для доступа к улучшенным технологиям OpenAI в функции Речь в текст!";
-
 /*Confirm Call*/
 "ConfirmCall.Desc" = "Вы уверены, что хотите совершить звонок?";
 
@@ -227,7 +206,6 @@
 "NicegramCallRecord.StopAlertDescription" = "Вы хотите остановить запись этого звонка?";
 "NicegramCallRecord.StopAlertButtonStop" = "Стоп";
 "NicegramCallRecord.StopAlertButtonCancel" = "Закрыть";
-"NicegramCallRecord.SavedMessage" = "Записанный звонок сохранен в **Избранное**.";
 
 /*Feed*/
 "NicegramFeed.Title" = "Лента";
@@ -236,7 +214,6 @@
 
 /*SpeechToText*/
 "NicegramSpeechToText.Language.Title" = "Speеch-2-Text";
-"NicegramSpeechToText.Language.Whisper" = "⚠️ Выберите язык голосового сообщения для повышения точности, или [активируйте Whisper](https://my.nicegram.app/) для упрощения автоматического распознавания";
 "NicegramSpeechToText.Language.Choose" = "Выберите язык для распознавания";
 "NicegramSpeechToText.SelectLanguage" = "Выбрать язык";
 "NicegramSpeechToText.NotAvailable" = "Распознавание речи в текст в настоящее время недоступно";
@@ -267,3 +244,15 @@
 "AccountsBackup.ImportFromFile" = "Импортировать из файла";
 "AccountsBackup.ExportAsFile" = "Экспортировать как файл";
 "AccountsBackup.DeleteSessions" = "Удалить сеансы";
+
+/*Privacy Settings Recommendation*/
+"NicegramSettings.AccountPrivacy.Button" = "Обновить настройки приватности";
+"NicegramSettings.AccountPrivacy.Alert.Title" = "Применить рекомендованные настройки приватности?";
+"NicegramSettings.AccountPrivacy.Alert.Body" = "Применить рекомендованные настройки приватности и безопасности для вашего аккаунта. Их всегда можно изменить в Настройках → Приватность и безопасность";
+"NicegramSettings.AccountPrivacy.Alert.Apply" = "Применить";
+"NicegramSettings.AccountPrivacy.Alert.Cancel" = "Закрыть";
+
+/*WhiteBridge*/
+"whitebridge.profile.button" = "WhiteBridge";
+"whitebridge.profile.hint" = "Получите структурированный обзор открытой информации из интернета — профили, анкетные данные, социальная активность и не только!";
+"whitebridge.chats.quick.action" = "Посмотреть отчет WhiteBridge";

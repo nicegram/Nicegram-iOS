@@ -2,14 +2,12 @@ import Foundation
 import UIKit
 import AsyncDisplayKit
 import Display
-import Postbox
 import TelegramCore
 import SwiftSignalKit
 import Photos
 import TelegramPresentationData
 import TextFormat
 import AccountContext
-import ShareController
 import GalleryUI
 import AppBundle
 
@@ -106,7 +104,7 @@ final class InstantPageGalleryFooterContentNode: GalleryFooterContentNode {
         self.actionButton.isHidden = shareMedia == nil
     }
     
-    override func updateLayout(size: CGSize, metrics: LayoutMetrics, leftInset: CGFloat, rightInset: CGFloat, bottomInset: CGFloat, contentInset: CGFloat, transition: ContainedViewLayoutTransition) -> CGFloat {
+    override func updateLayout(size: CGSize, metrics: LayoutMetrics, leftInset: CGFloat, rightInset: CGFloat, bottomInset: CGFloat, contentInset: CGFloat, transition: ContainedViewLayoutTransition) -> LayoutInfo {
         let width = size.width
         var panelHeight: CGFloat = 44.0 + bottomInset + contentInset
         if !self.textNode.isHidden {
@@ -126,7 +124,7 @@ final class InstantPageGalleryFooterContentNode: GalleryFooterContentNode {
         
         self.actionButton.frame = CGRect(origin: CGPoint(x: leftInset, y: panelHeight - bottomInset - 44.0), size: CGSize(width: 44.0, height: 44.0))
         
-        return panelHeight
+        return LayoutInfo(height: panelHeight, needsShadow: false)
     }
     
     override func animateIn(fromHeight: CGFloat, previousContentNode: GalleryFooterContentNode, transition: ContainedViewLayoutTransition) {
@@ -147,7 +145,7 @@ final class InstantPageGalleryFooterContentNode: GalleryFooterContentNode {
     
     @objc func actionButtonPressed() {
         if let shareMedia = self.shareMedia {
-            self.controllerInteraction?.presentController(ShareController(context: self.context, subject: .media(shareMedia, nil), preferredAction: .saveToCameraRoll, showInChat: nil, externalShare: true, immediateExternalShare: false), nil)
+            self.controllerInteraction?.presentController(self.context.sharedContext.makeShareController(context: self.context, params: ShareControllerParams(subject: .media(shareMedia, nil), preferredAction: .saveToCameraRoll, showInChat: nil, externalShare: true, immediateExternalShare: false)), nil)
         }
     }
 }

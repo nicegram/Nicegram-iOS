@@ -686,7 +686,8 @@ private final class ChatMessageTodoItemNode: ASDisplayNode {
                     TelegramTextAttributes.PeerTextMention,
                     TelegramTextAttributes.BotCommand,
                     TelegramTextAttributes.Hashtag,
-                    TelegramTextAttributes.BankCard
+                    TelegramTextAttributes.BankCard,
+                    TelegramTextAttributes.Date
                 ]
                 for name in possibleNames {
                     if let _ = attributes[NSAttributedString.Key(rawValue: name)], let textRects = textNode.textNode.attributeRects(name: name, at: index) {
@@ -768,10 +769,10 @@ private final class ChatMessageTodoItemNode: ASDisplayNode {
                 linkColor: messageTheme.linkTextColor,
                 baseFont: presentationData.messageFont,
                 linkFont: presentationData.messageFont,
-                boldFont: presentationData.messageFont,
-                italicFont: presentationData.messageFont,
-                boldItalicFont: presentationData.messageFont,
-                fixedFont: presentationData.messageFont,
+                boldFont: presentationData.messageBoldFont,
+                italicFont: presentationData.messageItalicFont,
+                boldItalicFont: presentationData.messageBoldItalicFont,
+                fixedFont: presentationData.messageFixedFont,
                 blockQuoteFont: presentationData.messageFont,
                 underlineLinks: underlineLinks,
                 message: message
@@ -1481,8 +1482,15 @@ public class ChatMessageTodoBubbleContentNode: ChatMessageBubbleContentNode {
         
         if isTranslating, !rects.isEmpty {
             if self.shimmeringNodes.isEmpty {
+                let color: UIColor
+                let isIncoming = item.message.effectivelyIncoming(item.context.account.peerId)
+                if item.presentationData.theme.theme.overallDarkAppearance {
+                    color = isIncoming ? item.presentationData.theme.theme.chat.message.incoming.primaryTextColor.withAlphaComponent(0.1) : item.presentationData.theme.theme.chat.message.outgoing.primaryTextColor.withAlphaComponent(0.1)
+                } else {
+                    color = isIncoming ? item.presentationData.theme.theme.chat.message.incoming.accentTextColor.withAlphaComponent(0.1) : item.presentationData.theme.theme.chat.message.outgoing.secondaryTextColor.withAlphaComponent(0.1)
+                }
                 for rects in rects {
-                    let shimmeringNode = ShimmeringLinkNode(color: item.message.effectivelyIncoming(item.context.account.peerId) ? item.presentationData.theme.theme.chat.message.incoming.secondaryTextColor.withAlphaComponent(0.1) : item.presentationData.theme.theme.chat.message.outgoing.secondaryTextColor.withAlphaComponent(0.1))
+                    let shimmeringNode = ShimmeringLinkNode(color: color)
                     shimmeringNode.updateRects(rects)
                     shimmeringNode.frame = self.bounds
                     shimmeringNode.updateLayout(self.bounds.size)
@@ -1577,7 +1585,8 @@ public class ChatMessageTodoBubbleContentNode: ChatMessageBubbleContentNode {
                     TelegramTextAttributes.PeerTextMention,
                     TelegramTextAttributes.BotCommand,
                     TelegramTextAttributes.Hashtag,
-                    TelegramTextAttributes.BankCard
+                    TelegramTextAttributes.BankCard,
+                    TelegramTextAttributes.Date
                 ]
                 for name in possibleNames {
                     if let _ = attributes[NSAttributedString.Key(rawValue: name)], let textRects = self.textNode.textNode.attributeRects(name: name, at: index) {

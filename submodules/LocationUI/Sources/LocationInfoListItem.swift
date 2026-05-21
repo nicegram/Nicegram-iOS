@@ -98,9 +98,9 @@ public final class LocationInfoListItemNode: ListViewItemNode {
         self.venueIconNode = TransformImageNode()
         self.venueIconNode.isUserInteractionEnabled = false
         
-        super.init(layerBacked: false, dynamicBounce: false, rotated: false, seeThrough: false)
+        super.init(layerBacked: false, rotated: false, seeThrough: false)
         
-        self.addSubnode(self.backgroundNode)
+        //self.addSubnode(self.backgroundNode)
         self.addSubnode(self.buttonNode)
         self.addSubnode(self.venueIconNode)
         

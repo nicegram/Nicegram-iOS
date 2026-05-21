@@ -7,7 +7,7 @@ swift_library(
         "Sources/**/*.swift",
     ]),
     copts = [
-        #"-warnings-as-errors",
+        "-warnings-as-errors",
     ],
     deps = [
         "//submodules/AsyncDisplayKit",
@@ -15,6 +15,7 @@ swift_library(
         "//submodules/LegacyComponents",
         "//submodules/MetalEngine",
         # Nicegram, removed 'submodules/TelegramUI/Components/Calls/CallScreen'
+        "//submodules/TelegramUI/Components/GlassBackgroundComponent",
     ],
     visibility = [
         "//visibility:public",

@@ -20,7 +20,7 @@ enum PeerInfoScreenMemberItemAction {
 final class PeerInfoScreenMemberItem: PeerInfoScreenItem {
     let id: AnyHashable
     let context: ItemListPeerItem.Context
-    let enclosingPeer: Peer?
+    let enclosingPeer: EnginePeer?
     let member: PeerInfoMember
     let badge: String?
     let isAccount: Bool
@@ -31,7 +31,7 @@ final class PeerInfoScreenMemberItem: PeerInfoScreenItem {
     init(
         id: AnyHashable,
         context: ItemListPeerItem.Context,
-        enclosingPeer: Peer?,
+        enclosingPeer: EnginePeer?,
         member: PeerInfoMember,
         badge: String? = nil,
         isAccount: Bool,
@@ -135,6 +135,8 @@ private final class PeerInfoScreenMemberItemNode: PeerInfoScreenItemNode {
         
         self.bottomSeparatorNode.backgroundColor = presentationData.theme.list.itemBlocksSeparatorColor
         
+        var labelColor = presentationData.theme.list.itemSecondaryTextColor
+        var labelBackground = false
         let label: String?
         if let rank = item.member.rank {
             label = rank
@@ -145,20 +147,44 @@ private final class PeerInfoScreenMemberItemNode: PeerInfoScreenItemNode {
             case .admin:
                 label = presentationData.strings.GroupInfo_LabelAdmin
             case .member:
-                label = nil
+                var canEditRank = false
+                if item.member.id == item.context.accountPeerId {
+                    if case let .channel(channel) = item.enclosingPeer, channel.hasPermission(.editRank) {
+                        canEditRank = true
+                    } else if case let .legacyGroup(group) = item.enclosingPeer, !group.hasBannedPermission(.banEditRank) {
+                        canEditRank = true
+                    }
+                }
+                if canEditRank {
+                    label = presentationData.strings.GroupInfo_AddRank
+                    labelColor = presentationData.theme.list.itemAccentColor
+                } else {
+                    label = nil
+                }
             }
+        }
+        
+        switch item.member.role {
+        case .creator:
+            labelBackground = true
+            labelColor = UIColor(rgb: 0x956ac8)
+        case .admin:
+            labelBackground = true
+            labelColor = UIColor(rgb: 0x49a355)
+        default:
+            break
         }
         
         let actions = availableActionsForMemberOfPeer(accountPeerId: item.context.accountPeerId, peer: item.enclosingPeer, member: item.member)
         
         var options: [ItemListPeerItemRevealOption] = []
-        if actions.contains(.promote) && item.enclosingPeer is TelegramChannel {
+        if actions.contains(.promote), case .channel = item.enclosingPeer {
             options.append(ItemListPeerItemRevealOption(type: .neutral, title: presentationData.strings.GroupInfo_ActionPromote, action: {
                 item.action?(.promote)
             }))
         }
         if actions.contains(.restrict) {
-            if item.enclosingPeer is TelegramChannel {
+            if case .channel = item.enclosingPeer {
                 options.append(ItemListPeerItemRevealOption(type: .warning, title: presentationData.strings.GroupInfo_ActionRestrict, action: {
                     item.action?(.restrict)
                 }))
@@ -175,7 +201,7 @@ private final class PeerInfoScreenMemberItemNode: PeerInfoScreenItemNode {
         
         let itemLabel: ItemListPeerItemLabel
         if let label = label {
-            itemLabel = .text(label, .standard)
+            itemLabel = .text(label, .standard, labelColor, labelBackground)
         } else if let badge = item.badge {
             itemLabel = .badge(badge)
         } else {
@@ -194,7 +220,7 @@ private final class PeerInfoScreenMemberItemNode: PeerInfoScreenItemNode {
             itemText = .presence
         }
         
-        let peerItem = ItemListPeerItem(presentationData: ItemListPresentationData(presentationData), dateTimeFormat: presentationData.dateTimeFormat, nameDisplayOrder: presentationData.nameDisplayOrder, context: item.context, peer: EnginePeer(item.member.peer), height: itemHeight, presence: item.member.presence.flatMap(EnginePeer.Presence.init), text: itemText, label: itemLabel, editing: ItemListPeerItemEditing(editable: !options.isEmpty, editing: false, revealed: nil), revealOptions: ItemListPeerItemRevealOptions(options: options), switchValue: nil, enabled: true, selectable: false, animateFirstAvatarTransition: !item.isAccount, sectionId: 0, action: nil, setPeerIdWithRevealedOptions: { lhs, rhs in
+        let peerItem = ItemListPeerItem(presentationData: ItemListPresentationData(presentationData), systemStyle: .glass, dateTimeFormat: presentationData.dateTimeFormat, nameDisplayOrder: presentationData.nameDisplayOrder, context: item.context, peer: item.member.peer, height: itemHeight, presence: item.member.presence.flatMap(EnginePeer.Presence.init), text: itemText, label: itemLabel, editing: ItemListPeerItemEditing(editable: !options.isEmpty, editing: false, revealed: nil), revealOptions: ItemListPeerItemRevealOptions(options: options), switchValue: nil, enabled: true, selectable: false, animateFirstAvatarTransition: !item.isAccount, sectionId: 0, action: nil, setPeerIdWithRevealedOptions: { lhs, rhs in
             
         }, removePeer: { _ in
             
@@ -243,7 +269,7 @@ private final class PeerInfoScreenMemberItemNode: PeerInfoScreenItemNode {
         let hasTopCorners = hasCorners && topItem == nil
         let hasBottomCorners = hasCorners && bottomItem == nil
         
-        self.maskNode.image = hasCorners ? PresentationResourcesItemList.cornersImage(presentationData.theme, top: hasTopCorners, bottom: hasBottomCorners) : nil
+        self.maskNode.image = hasCorners ? PresentationResourcesItemList.cornersImage(presentationData.theme, top: hasTopCorners, bottom: hasBottomCorners, glass: true) : nil
         self.maskNode.frame = CGRect(origin: CGPoint(x: safeInsets.left, y: 0.0), size: CGSize(width: width - safeInsets.left - safeInsets.right, height: height))
         self.bottomSeparatorNode.isHidden = hasBottomCorners
         
@@ -260,7 +286,9 @@ private final class PeerInfoScreenMemberItemNode: PeerInfoScreenItemNode {
             separatorInset += 49.0
         }
         
-        transition.updateFrame(node: self.bottomSeparatorNode, frame: CGRect(origin: CGPoint(x: separatorInset, y: height - UIScreenPixel), size: CGSize(width: width - sideInset, height: UIScreenPixel)))
+        let separatorRightInset: CGFloat = 16.0
+        
+        transition.updateFrame(node: self.bottomSeparatorNode, frame: CGRect(origin: CGPoint(x: separatorInset, y: height - UIScreenPixel), size: CGSize(width: width - separatorInset - separatorRightInset, height: UIScreenPixel)))
         transition.updateAlpha(node: self.bottomSeparatorNode, alpha: bottomItem == nil ? 0.0 : 1.0)
         
         return height

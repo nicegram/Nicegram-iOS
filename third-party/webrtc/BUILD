@@ -2741,6 +2741,19 @@ ios_objcpp_sources = [
     "objc/base/RTCSSLCertificateVerifier.h",
     "objc/native/api/objc_audio_device_module.h",
     "objc/components/audio/RTCAudioDevice.h",
+    # Nicegram
+    "objc/api/peerconnection/RTCMediaConstraints.mm",
+    "objc/api/peerconnection/RTCPeerConnectionFactory.mm",
+    "objc/api/peerconnection/RTCRtpCapabilities.mm",
+    "objc/api/peerconnection/RTCRtpHeaderExtensionCapability.mm",
+    "objc/components/capturer/RTCCameraVideoCapturer.m",
+    "objc/components/renderer/metal/RTCMTLVideoView.m",
+    "objc/components/video_codec/RTCDefaultVideoDecoderFactory.m",
+    "objc/components/video_codec/RTCDefaultVideoEncoderFactory.m",
+    "objc/native/api/objc_audio_device_module.mm",
+    "objc/native/src/objc_audio_device.mm",
+    "objc/native/src/objc_audio_device_delegate.mm",
+    #
 ]
 
 common_arm_specific_sources = ["webrtc/" + path for path in [
@@ -3060,6 +3073,33 @@ objc_library(
         "webrtc/sdk/" + path for path in ios_objcpp_sources ] + [
         "webrtc/rtc_base/system/gcd_helpers.m",
     ],
+    # Nicegram
+    hdrs = glob([
+        "webrtc/sdk/objc/api/peerconnection/RTCAudioSource.h",
+        "webrtc/sdk/objc/api/peerconnection/RTCAudioTrack.h",
+        "webrtc/sdk/objc/api/peerconnection/RTCConfiguration.h",
+        "webrtc/sdk/objc/api/peerconnection/RTCDataChannel.h",
+        "webrtc/sdk/objc/api/peerconnection/RTCIceCandidate.h",
+        "webrtc/sdk/objc/api/peerconnection/RTCIceServer.h",
+        "webrtc/sdk/objc/api/peerconnection/RTCMediaConstraints.h",
+        "webrtc/sdk/objc/api/peerconnection/RTCMediaStream.h",
+        "webrtc/sdk/objc/api/peerconnection/RTCPeerConnection.h",
+        "webrtc/sdk/objc/api/peerconnection/RTCPeerConnectionFactory.h",
+        "webrtc/sdk/objc/api/peerconnection/RTCRtpSender.h",
+        "webrtc/sdk/objc/api/peerconnection/RTCRtpTransceiver.h",
+        "webrtc/sdk/objc/api/peerconnection/RTCSessionDescription.h",
+        "webrtc/sdk/objc/api/peerconnection/RTCVideoSource.h",
+        "webrtc/sdk/objc/api/peerconnection/RTCVideoTrack.h",
+        "webrtc/sdk/objc/components/audio/RTCAudioSession.h",
+        "webrtc/sdk/objc/components/capturer/RTCCameraVideoCapturer.h",
+        "webrtc/sdk/objc/components/renderer/metal/RTCMTLVideoView.h",
+        "webrtc/sdk/objc/components/video_codec/RTCDefaultVideoDecoderFactory.h",
+        "webrtc/sdk/objc/components/video_codec/RTCDefaultVideoEncoderFactory.h",
+    ]),
+    includes = [
+        "webrtc/sdk/objc/base",
+    ],
+    #
     copts = [
         "-w",
         "-Ithird-party/webrtc/webrtc/",

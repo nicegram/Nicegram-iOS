@@ -7,7 +7,7 @@ swift_library(
         "Sources/**/*.swift",
     ]),
     copts = [
-        #"-warnings-as-errors",
+        "-warnings-as-errors",
     ],
     deps = [
         "//submodules/SSignalKit/SwiftSignalKit:SwiftSignalKit",
@@ -17,14 +17,18 @@ swift_library(
         "//submodules/Postbox",
         "//submodules/AccountContext",
         "//submodules/LegacyComponents",
+        "//submodules/ChatPresentationInterfaceState",
         "//submodules/ComponentFlow",
         "//submodules/TelegramPresentationData",
         "//submodules/ContextUI",
         "//submodules/TooltipUI",
         "//submodules/UndoUI",
+        "//submodules/TelegramUI/Components/ChatEntityKeyboardInputNode",
         "//submodules/TelegramUI/Components/MessageInputPanelComponent",
-        "//submodules/TelegramUI/Components/LegacyMessageInputPanelInputView",
         "//submodules/TelegramNotices",
+        "//submodules/TextFormat",
+        "//submodules/TelegramUIPreferences",
+        "//submodules/Pasteboard",
     ],
     visibility = [
         "//visibility:public",

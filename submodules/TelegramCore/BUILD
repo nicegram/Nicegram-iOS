@@ -7,7 +7,7 @@ swift_library(
         "Sources/**/*.swift",
     ]),
     copts = [
-        #"-warnings-as-errors",
+        "-warnings-as-errors",
     ],
     deps = [
         "//submodules/TelegramApi:TelegramApi",
@@ -25,6 +25,7 @@ swift_library(
         "//submodules/Emoji",
         "//submodules/TelegramCore/FlatBuffers",
         "//submodules/TelegramCore/FlatSerialization",
+        "//submodules/MurMurHash32"
     ],
     visibility = [
         "//visibility:public",

@@ -10,10 +10,12 @@ import AvatarNode
 final class StoryAvatarInfoComponent: Component {
 	let context: AccountContext
 	let peer: EnginePeer
+    let isLiveStream: Bool
 
-	init(context: AccountContext, peer: EnginePeer) {
+	init(context: AccountContext, peer: EnginePeer, isLiveStream: Bool) {
 		self.context = context
 		self.peer = peer
+        self.isLiveStream = isLiveStream
 	}
 
 	static func ==(lhs: StoryAvatarInfoComponent, rhs: StoryAvatarInfoComponent) -> Bool {
@@ -23,6 +25,9 @@ final class StoryAvatarInfoComponent: Component {
 		if lhs.peer != rhs.peer {
 			return false
 		}
+        if lhs.isLiveStream != rhs.isLiveStream {
+            return false
+        }
 		return true
 	}
 
@@ -56,6 +61,24 @@ final class StoryAvatarInfoComponent: Component {
                 theme: component.context.sharedContext.currentPresentationData.with({ $0 }).theme,
                 peer: component.peer,
                 synchronousLoad: true
+            )
+            self.avatarNode.setStoryStats(
+                storyStats: component.isLiveStream ? AvatarNode.StoryStats(
+                    totalCount: 1,
+                    unseenCount: 1,
+                    hasUnseenCloseFriendsItems: false,
+                    hasLiveItems: true
+                ) : nil,
+                presentationParams: AvatarNode.StoryPresentationParams(
+                    colors: AvatarNode.Colors(
+                        unseenColors: [.white],
+                        unseenCloseFriendsColors: [.white],
+                        seenColors: [.white]
+                    ),
+                    lineWidth: 1.33,
+                    inactiveLineWidth: 1.33
+                ),
+                transition: .immediate
             )
             
             return size

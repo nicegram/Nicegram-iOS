@@ -2,7 +2,6 @@ import Foundation
 import UIKit
 import Display
 import SwiftSignalKit
-import Postbox
 import TelegramCore
 import TelegramPresentationData
 import ItemListUI
@@ -76,11 +75,11 @@ private enum DebugAccountsControllerEntry: ItemListNodeEntry {
         let arguments = arguments as! DebugAccountsControllerArguments
         switch self {
             case let .record(_, record, current):
-                return ItemListCheckboxItem(presentationData: presentationData, title: "\(UInt64(bitPattern: record.id.int64))", style: .left, checked: current, zeroSeparatorInsets: false, sectionId: self.section, action: {
+                return ItemListCheckboxItem(presentationData: presentationData, systemStyle: .glass, title: "\(UInt64(bitPattern: record.id.int64))", style: .left, checked: current, zeroSeparatorInsets: false, sectionId: self.section, action: {
                     arguments.switchAccount(record.id)
                 })
             case .loginNewAccount:
-                return ItemListActionItem(presentationData: presentationData, title: "Login to another account", kind: .generic, alignment: .natural, sectionId: self.section, style: .blocks, action: {
+                return ItemListActionItem(presentationData: presentationData, systemStyle: .glass, title: "Login to another account", kind: .generic, alignment: .natural, sectionId: self.section, style: .blocks, action: {
                     arguments.loginNewAccount()
                 })
         }
@@ -126,11 +125,8 @@ public func debugAccountsController(context: AccountContext, accountManager: Acc
                 ActionSheetButtonItem(title: "Production", color: .accent, action: {
                     dismissAction()
                     
-                    // Nicegram Multi-account, internal build check commented
+                    // Nicegram Multi-account, unconditionally allow auth
                     context.sharedContext.beginNewAuth(testingEnvironment: false)
-//                    if case .internal = context.sharedContext.applicationBindings.appBuildType {
-//                        context.sharedContext.beginNewAuth(testingEnvironment: false)
-//                    }
                 }),
                 ActionSheetButtonItem(title: "Test", color: .accent, action: {
                     dismissAction()

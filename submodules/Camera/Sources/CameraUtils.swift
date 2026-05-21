@@ -188,16 +188,26 @@ extension CameraPreviewView.Rotation {
     }
 }
 
-func exifOrientationForDeviceOrientation(_ deviceOrientation: UIDeviceOrientation) -> CGImagePropertyOrientation {
-    switch deviceOrientation {
-    case .portraitUpsideDown:
-        return .rightMirrored
-    case .landscapeLeft:
-        return .downMirrored
-    case .landscapeRight:
-        return .upMirrored
-    default:
-        return .leftMirrored
+func exifOrientation(for orientation: AVCaptureVideoOrientation, mirror: Bool) -> Int32 {
+    switch (orientation, mirror) {
+    case (.portrait, false):
+        return 6
+    case (.portrait, true):
+        return 5
+    case (.portraitUpsideDown, false):
+        return 8
+    case (.portraitUpsideDown, true):
+        return 7
+    case (.landscapeLeft, false):
+        return 3
+    case (.landscapeLeft, true):
+        return 2
+    case (.landscapeRight, false):
+        return 1
+    case (.landscapeRight, true):
+        return 4
+    @unknown default:
+        return 6
     }
 }
 

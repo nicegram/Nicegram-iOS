@@ -193,12 +193,8 @@ private enum ApplicationSpecificGlobalNotice: Int32 {
     case incomingVideoMessagePlayOnceTip = 62
     case outgoingVideoMessagePlayOnceTip = 63
     case savedMessageTagLabelSuggestion = 65
-    case dismissedBusinessBadge = 68
     case monetizationIntroDismissed = 70
     case businessBotMessageTooltip = 71
-    case dismissedBusinessIntroBadge = 72
-    case dismissedBusinessLinksBadge = 73
-    case dismissedBusinessChatbotsBadge = 74
     case captionAboveMediaTooltip = 75
     case channelSendGiftTooltip = 76
     case starGiftWearTips = 77
@@ -208,6 +204,11 @@ private enum ApplicationSpecificGlobalNotice: Int32 {
     case videoMessagesPauseSuggestion = 81
     case voiceMessagesResumeTrimWarning = 82
     case globalPostsSearch = 83
+    case giftAuctionTips = 84
+    case giftCraftingTips = 85
+    case copyProtectionTips = 86
+    case aiTextProcessingStyleSelectionTips = 87
+    case savedMessagesChatListView = 88
     
     var key: ValueBoxKey {
         let v = ValueBoxKey(length: 4)
@@ -518,10 +519,6 @@ private struct ApplicationSpecificNoticeKeys {
         return NoticeEntryKey(namespace: noticeNamespace(namespace: globalNamespace), key: ApplicationSpecificGlobalNotice.savedMessageTagLabelSuggestion.key)
     }
     
-    static func dismissedBusinessBadge() -> NoticeEntryKey {
-        return NoticeEntryKey(namespace: noticeNamespace(namespace: globalNamespace), key: ApplicationSpecificGlobalNotice.dismissedBusinessBadge.key)
-    }
-        
     static func dismissedBirthdayPremiumGiftTip(peerId: PeerId) -> NoticeEntryKey {
         return NoticeEntryKey(namespace: noticeNamespace(namespace: dismissedBirthdayPremiumGiftTipNamespace), key: noticeKey(peerId: peerId, key: 0))
     }
@@ -540,18 +537,6 @@ private struct ApplicationSpecificNoticeKeys {
     
     static func businessBotMessageTooltip() -> NoticeEntryKey {
         return NoticeEntryKey(namespace: noticeNamespace(namespace: globalNamespace), key: ApplicationSpecificGlobalNotice.businessBotMessageTooltip.key)
-    }
-    
-    static func dismissedBusinessIntroBadge() -> NoticeEntryKey {
-        return NoticeEntryKey(namespace: noticeNamespace(namespace: globalNamespace), key: ApplicationSpecificGlobalNotice.dismissedBusinessIntroBadge.key)
-    }
-    
-    static func dismissedBusinessLinksBadge() -> NoticeEntryKey {
-        return NoticeEntryKey(namespace: noticeNamespace(namespace: globalNamespace), key: ApplicationSpecificGlobalNotice.dismissedBusinessLinksBadge.key)
-    }
-    
-    static func dismissedBusinessChatbotsBadge() -> NoticeEntryKey {
-        return NoticeEntryKey(namespace: noticeNamespace(namespace: globalNamespace), key: ApplicationSpecificGlobalNotice.dismissedBusinessChatbotsBadge.key)
     }
     
     static func captionAboveMediaTooltip() -> NoticeEntryKey {
@@ -588,6 +573,26 @@ private struct ApplicationSpecificNoticeKeys {
     
     static func globalPostsSearch() -> NoticeEntryKey {
         return NoticeEntryKey(namespace: noticeNamespace(namespace: globalNamespace), key: ApplicationSpecificGlobalNotice.globalPostsSearch.key)
+    }
+    
+    static func giftAuctionTips() -> NoticeEntryKey {
+        return NoticeEntryKey(namespace: noticeNamespace(namespace: globalNamespace), key: ApplicationSpecificGlobalNotice.giftAuctionTips.key)
+    }
+    
+    static func giftCraftingTips() -> NoticeEntryKey {
+        return NoticeEntryKey(namespace: noticeNamespace(namespace: globalNamespace), key: ApplicationSpecificGlobalNotice.giftCraftingTips.key)
+    }
+    
+    static func copyProtectionTips() -> NoticeEntryKey {
+        return NoticeEntryKey(namespace: noticeNamespace(namespace: globalNamespace), key: ApplicationSpecificGlobalNotice.copyProtectionTips.key)
+    }
+    
+    static func aiTextProcessingStyleSelectionTips() -> NoticeEntryKey {
+        return NoticeEntryKey(namespace: noticeNamespace(namespace: globalNamespace), key: ApplicationSpecificGlobalNotice.aiTextProcessingStyleSelectionTips.key)
+    }
+    
+    static func savedMessagesChatListView() -> NoticeEntryKey {
+        return NoticeEntryKey(namespace: noticeNamespace(namespace: globalNamespace), key: ApplicationSpecificGlobalNotice.savedMessagesChatListView.key)
     }
 }
 
@@ -2149,27 +2154,6 @@ public struct ApplicationSpecificNotice {
             return Int(previousValue)
         }
     }
-
-    public static func setDismissedBusinessBadge(accountManager: AccountManager<TelegramAccountManagerTypes>) -> Signal<Never, NoError> {
-        return accountManager.transaction { transaction -> Void in
-            if let entry = CodableEntry(ApplicationSpecificBoolNotice()) {
-                transaction.setNotice(ApplicationSpecificNoticeKeys.dismissedBusinessBadge(), entry)
-            }
-        }
-        |> ignoreValues
-    }
-    
-    public static func dismissedBusinessBadge(accountManager: AccountManager<TelegramAccountManagerTypes>) -> Signal<Bool, NoError> {
-        return accountManager.noticeEntry(key: ApplicationSpecificNoticeKeys.dismissedBusinessBadge())
-        |> map { view -> Bool in
-            if let _ = view.value?.get(ApplicationSpecificBoolNotice.self) {
-                return true
-            } else {
-                return false
-            }
-        }
-        |> take(1)
-    }
     
     public static func dismissedBirthdayPremiumGiftTip(accountManager: AccountManager<TelegramAccountManagerTypes>, peerId: PeerId) -> Signal<Int32?, NoError> {
         return accountManager.noticeEntry(key: ApplicationSpecificNoticeKeys.dismissedBirthdayPremiumGiftTip(peerId: peerId))
@@ -2279,69 +2263,6 @@ public struct ApplicationSpecificNotice {
             
             return Int(previousValue)
         }
-    }
-    
-    public static func setDismissedBusinessLinksBadge(accountManager: AccountManager<TelegramAccountManagerTypes>) -> Signal<Never, NoError> {
-        return accountManager.transaction { transaction -> Void in
-            if let entry = CodableEntry(ApplicationSpecificBoolNotice()) {
-                transaction.setNotice(ApplicationSpecificNoticeKeys.dismissedBusinessLinksBadge(), entry)
-            }
-        }
-        |> ignoreValues
-    }
-    
-    public static func dismissedBusinessLinksBadge(accountManager: AccountManager<TelegramAccountManagerTypes>) -> Signal<Bool, NoError> {
-        return accountManager.noticeEntry(key: ApplicationSpecificNoticeKeys.dismissedBusinessLinksBadge())
-        |> map { view -> Bool in
-            if let _ = view.value?.get(ApplicationSpecificBoolNotice.self) {
-                return true
-            } else {
-                return false
-            }
-        }
-        |> take(1)
-    }
-    
-    public static func setDismissedBusinessIntroBadge(accountManager: AccountManager<TelegramAccountManagerTypes>) -> Signal<Never, NoError> {
-        return accountManager.transaction { transaction -> Void in
-            if let entry = CodableEntry(ApplicationSpecificBoolNotice()) {
-                transaction.setNotice(ApplicationSpecificNoticeKeys.dismissedBusinessIntroBadge(), entry)
-            }
-        }
-        |> ignoreValues
-    }
-    
-    public static func dismissedBusinessIntroBadge(accountManager: AccountManager<TelegramAccountManagerTypes>) -> Signal<Bool, NoError> {
-        return accountManager.noticeEntry(key: ApplicationSpecificNoticeKeys.dismissedBusinessIntroBadge())
-        |> map { view -> Bool in
-            if let _ = view.value?.get(ApplicationSpecificBoolNotice.self) {
-                return true
-            } else {
-                return false
-            }
-        }
-        |> take(1)
-    }
-    
-    public static func setDismissedBusinessChatbotsBadge(accountManager: AccountManager<TelegramAccountManagerTypes>) -> Signal<Never, NoError> {
-        return accountManager.transaction { transaction -> Void in
-            if let entry = CodableEntry(ApplicationSpecificBoolNotice()) {
-                transaction.setNotice(ApplicationSpecificNoticeKeys.dismissedBusinessChatbotsBadge(), entry)
-            }
-        }
-        |> ignoreValues
-    }
-    
-    public static func dismissedBusinessChatbotsBadge(accountManager: AccountManager<TelegramAccountManagerTypes>) -> Signal<Bool, NoError> {
-        return accountManager.noticeEntry(key: ApplicationSpecificNoticeKeys.dismissedBusinessChatbotsBadge())
-        |> map { view -> Bool in
-            if let _ = view.value?.get(ApplicationSpecificBoolNotice.self) {
-                return true
-            } else {
-                return false
-            }
-        }
-        |> take(1)
     }
     
     public static func getCaptionAboveMediaTooltip(accountManager: AccountManager<TelegramAccountManagerTypes>) -> Signal<Int32, NoError> {
@@ -2581,6 +2502,141 @@ public struct ApplicationSpecificNotice {
 
             if let entry = CodableEntry(ApplicationSpecificCounterNotice(value: currentValue)) {
                 transaction.setNotice(ApplicationSpecificNoticeKeys.globalPostsSearch(), entry)
+            }
+            
+            return Int(previousValue)
+        }
+    }
+    
+    public static func getGiftAuctionTips(accountManager: AccountManager<TelegramAccountManagerTypes>) -> Signal<Int32, NoError> {
+        return accountManager.transaction { transaction -> Int32 in
+            if let value = transaction.getNotice(ApplicationSpecificNoticeKeys.giftAuctionTips())?.get(ApplicationSpecificCounterNotice.self) {
+                return value.value
+            } else {
+                return 0
+            }
+        }
+    }
+    
+    public static func incrementGiftAuctionTips(accountManager: AccountManager<TelegramAccountManagerTypes>, count: Int = 1) -> Signal<Int, NoError> {
+        return accountManager.transaction { transaction -> Int in
+            var currentValue: Int32 = 0
+            if let value = transaction.getNotice(ApplicationSpecificNoticeKeys.giftAuctionTips())?.get(ApplicationSpecificCounterNotice.self) {
+                currentValue = value.value
+            }
+            let previousValue = currentValue
+            currentValue += Int32(count)
+
+            if let entry = CodableEntry(ApplicationSpecificCounterNotice(value: currentValue)) {
+                transaction.setNotice(ApplicationSpecificNoticeKeys.giftAuctionTips(), entry)
+            }
+            
+            return Int(previousValue)
+        }
+    }
+    
+    public static func getGiftCraftingTips(accountManager: AccountManager<TelegramAccountManagerTypes>) -> Signal<Int32, NoError> {
+        return accountManager.transaction { transaction -> Int32 in
+            if let value = transaction.getNotice(ApplicationSpecificNoticeKeys.giftCraftingTips())?.get(ApplicationSpecificCounterNotice.self) {
+                return value.value
+            } else {
+                return 0
+            }
+        }
+    }
+    
+    public static func incrementGiftCraftingTips(accountManager: AccountManager<TelegramAccountManagerTypes>, count: Int = 1) -> Signal<Int, NoError> {
+        return accountManager.transaction { transaction -> Int in
+            var currentValue: Int32 = 0
+            if let value = transaction.getNotice(ApplicationSpecificNoticeKeys.giftCraftingTips())?.get(ApplicationSpecificCounterNotice.self) {
+                currentValue = value.value
+            }
+            let previousValue = currentValue
+            currentValue += Int32(count)
+
+            if let entry = CodableEntry(ApplicationSpecificCounterNotice(value: currentValue)) {
+                transaction.setNotice(ApplicationSpecificNoticeKeys.giftCraftingTips(), entry)
+            }
+            
+            return Int(previousValue)
+        }
+    }
+    
+    public static func getCopyProtectionTips(accountManager: AccountManager<TelegramAccountManagerTypes>) -> Signal<Int32, NoError> {
+        return accountManager.transaction { transaction -> Int32 in
+            if let value = transaction.getNotice(ApplicationSpecificNoticeKeys.copyProtectionTips())?.get(ApplicationSpecificCounterNotice.self) {
+                return value.value
+            } else {
+                return 0
+            }
+        }
+    }
+    
+    public static func incrementCopyProtectionTips(accountManager: AccountManager<TelegramAccountManagerTypes>, count: Int = 1) -> Signal<Int, NoError> {
+        return accountManager.transaction { transaction -> Int in
+            var currentValue: Int32 = 0
+            if let value = transaction.getNotice(ApplicationSpecificNoticeKeys.copyProtectionTips())?.get(ApplicationSpecificCounterNotice.self) {
+                currentValue = value.value
+            }
+            let previousValue = currentValue
+            currentValue += Int32(count)
+
+            if let entry = CodableEntry(ApplicationSpecificCounterNotice(value: currentValue)) {
+                transaction.setNotice(ApplicationSpecificNoticeKeys.copyProtectionTips(), entry)
+            }
+            
+            return Int(previousValue)
+        }
+    }
+    
+    public static func getAITextProcessingStyleSelection(accountManager: AccountManager<TelegramAccountManagerTypes>) -> Signal<Int32, NoError> {
+        return accountManager.transaction { transaction -> Int32 in
+            if let value = transaction.getNotice(ApplicationSpecificNoticeKeys.aiTextProcessingStyleSelectionTips())?.get(ApplicationSpecificCounterNotice.self) {
+                return value.value
+            } else {
+                return 0
+            }
+        }
+    }
+    
+    public static func incrementAITextProcessingStyleSelection(accountManager: AccountManager<TelegramAccountManagerTypes>, count: Int = 1) -> Signal<Int, NoError> {
+        return accountManager.transaction { transaction -> Int in
+            var currentValue: Int32 = 0
+            if let value = transaction.getNotice(ApplicationSpecificNoticeKeys.aiTextProcessingStyleSelectionTips())?.get(ApplicationSpecificCounterNotice.self) {
+                currentValue = value.value
+            }
+            let previousValue = currentValue
+            currentValue += Int32(count)
+
+            if let entry = CodableEntry(ApplicationSpecificCounterNotice(value: currentValue)) {
+                transaction.setNotice(ApplicationSpecificNoticeKeys.aiTextProcessingStyleSelectionTips(), entry)
+            }
+            
+            return Int(previousValue)
+        }
+    }
+    
+    public static func getSavedMessagesChatListView(accountManager: AccountManager<TelegramAccountManagerTypes>) -> Signal<Int32, NoError> {
+        return accountManager.transaction { transaction -> Int32 in
+            if let value = transaction.getNotice(ApplicationSpecificNoticeKeys.savedMessagesChatListView())?.get(ApplicationSpecificCounterNotice.self) {
+                return value.value
+            } else {
+                return 0
+            }
+        }
+    }
+    
+    public static func incrementSavedMessagesChatListView(accountManager: AccountManager<TelegramAccountManagerTypes>, count: Int = 1) -> Signal<Int, NoError> {
+        return accountManager.transaction { transaction -> Int in
+            var currentValue: Int32 = 0
+            if let value = transaction.getNotice(ApplicationSpecificNoticeKeys.savedMessagesChatListView())?.get(ApplicationSpecificCounterNotice.self) {
+                currentValue = value.value
+            }
+            let previousValue = currentValue
+            currentValue += Int32(count)
+
+            if let entry = CodableEntry(ApplicationSpecificCounterNotice(value: currentValue)) {
+                transaction.setNotice(ApplicationSpecificNoticeKeys.savedMessagesChatListView(), entry)
             }
             
             return Int(previousValue)

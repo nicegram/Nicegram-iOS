@@ -79,7 +79,7 @@ final class OldChannelsSearchItem: ItemListControllerSearch {
         }
     }
     
-    func titleContentNode(current: (NavigationBarContentNode & ItemListControllerSearchNavigationContentNode)?) -> NavigationBarContentNode & ItemListControllerSearchNavigationContentNode {
+    func titleContentNode(current: (NavigationBarContentNode & ItemListControllerSearchNavigationContentNode)?) -> (NavigationBarContentNode & ItemListControllerSearchNavigationContentNode)? {
         let updateActivated: (Bool) -> Void = self.updateActivated
         if let current = current as? NavigationBarSearchContentNode {
             current.updateThemeAndPlaceholder(theme: self.theme, placeholder: self.placeholder)
@@ -154,7 +154,7 @@ private enum OldChannelsSearchEntry: Comparable, Identifiable {
     func item(context: AccountContext, presentationData: ItemListPresentationData, interaction: OldChannelsSearchInteraction)  -> ListViewItem {
         switch self {
         case let .peer(_, peer, selected):
-            return ContactsPeerItem(presentationData: presentationData, style: .plain, sortOrder: .firstLast, displayOrder: .firstLast, context: context, peerMode: .peer, peer: .peer(peer: EnginePeer(peer.peer), chatPeer: EnginePeer(peer.peer)), status: .custom(string: NSAttributedString(string: localizedOldChannelDate(peer: peer, strings: presentationData.strings)), multiline: false, isActive: false, icon: nil), badge: nil, enabled: true, selection: ContactsPeerItemSelection.selectable(selected: selected), editing: ContactsPeerItemEditing(editable: false, editing: false, revealed: false), options: [], actionIcon: .none, index: nil, header: nil, action: { _ in
+            return ContactsPeerItem(presentationData: presentationData, style: .plain, sortOrder: .firstLast, displayOrder: .firstLast, context: context, peerMode: .peer, peer: .peer(peer: peer.peer, chatPeer: peer.peer), status: .custom(string: NSAttributedString(string: localizedOldChannelDate(peer: peer, strings: presentationData.strings)), multiline: false, isActive: false, icon: nil), badge: nil, enabled: true, selection: ContactsPeerItemSelection.selectable(selected: selected), editing: ContactsPeerItemEditing(editable: false, editing: false, revealed: false), options: [], actionIcon: .none, index: nil, header: nil, action: { _ in
                 interaction.togglePeer(peer.peer.id)
             }, setPeerIdWithRevealedOptions: nil, deletePeer: nil, itemHighlighting: nil, contextAction: nil)
         }
@@ -198,7 +198,7 @@ private final class OldChannelsSearchContainerNode: SearchDisplayControllerConte
         self.presentationData = presentationData
         self.presentationDataPromise = Promise(self.presentationData)
         
-        self.listNode = ListView()
+        self.listNode = ListViewImpl()
         self.listNode.backgroundColor = self.presentationData.theme.chatList.backgroundColor
         self.listNode.isHidden = true
         self.listNode.accessibilityPageScrolledString = { row, count in
@@ -391,7 +391,7 @@ private final class OldChannelsSearchItemNode: ItemListControllerSearchNode {
         
         self.searchDisplayController = SearchDisplayController(presentationData: self.presentationData, contentNode: OldChannelsSearchContainerNode(context: self.context, peers: self.peers, selectedPeerIds: self.selectedPeerIds, togglePeer: self.togglePeer), cancel: { [weak self] in
             self?.cancel()
-        })
+        }, fieldStyle: placeholderNode.fieldStyle)
         
         self.searchDisplayController?.containerLayoutUpdated(containerLayout, navigationBarHeight: navigationBarHeight, transition: .immediate)
         self.searchDisplayController?.activate(insertSubnode: { [weak self, weak placeholderNode] subnode, isSearchBar in

@@ -3,7 +3,6 @@ import UIKit
 import Display
 import AsyncDisplayKit
 import SwiftSignalKit
-import Postbox
 import TelegramCore
 import TelegramPresentationData
 import AccountContext
@@ -183,7 +182,7 @@ final class InstantImageGalleryItemNode: ZoomableContentGalleryItemNode {
                     })
                 } else {
                     self.imageNode.setSignal(chatMessagePhoto(postbox: self.context.account.postbox, userLocation: userLocation, photoReference: imageReference), dispatchOnDisplayLink: false)
-                    self.fetchDisposable.set(fetchedMediaResource(mediaBox: self.context.account.postbox.mediaBox, userLocation: userLocation, userContentType: .image, reference: imageReference.resourceReference(largestSize.resource)).start())
+                    self.fetchDisposable.set(self.context.engine.resources.fetch(reference: imageReference.resourceReference(largestSize.resource), userLocation: userLocation, userContentType: .image).start())
                 }
             } else {
                 self._ready.set(.single(Void()))
@@ -339,7 +338,7 @@ final class InstantImageGalleryItemNode: ZoomableContentGalleryItemNode {
         
         if let (context, media) = self.contextAndMedia, let fileReference = media.concrete(TelegramMediaFile.self) {
             if isVisible {
-                self.fetchDisposable.set(fetchedMediaResource(mediaBox: context.account.postbox.mediaBox, userLocation: self.userLocation ?? .other, userContentType: .file, reference: fileReference.resourceReference(fileReference.media.resource)).start())
+                self.fetchDisposable.set(context.engine.resources.fetch(reference: fileReference.resourceReference(fileReference.media.resource), userLocation: self.userLocation ?? .other, userContentType: .file).start())
             } else {
                 self.fetchDisposable.set(nil)
             }

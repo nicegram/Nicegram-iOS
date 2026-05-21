@@ -11,7 +11,8 @@ func managedVoipConfigurationUpdates(postbox: Postbox, network: Network) -> Sign
         |> mapToSignal { result -> Signal<Void, NoError> in
             return postbox.transaction { transaction -> Void in
                 switch result {
-                    case let .dataJSON(data):
+                    case let .dataJSON(dataJSONData):
+                        let data = dataJSONData.data
                         updateVoipConfiguration(transaction: transaction, { configuration in
                             var configuration = configuration
                             configuration.serializedData = data

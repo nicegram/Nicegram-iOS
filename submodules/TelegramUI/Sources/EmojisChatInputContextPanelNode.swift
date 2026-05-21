@@ -152,7 +152,7 @@ final class EmojisChatInputContextPanelNode: ChatInputContextPanelNode {
         self.clippingNode = ASDisplayNode()
         self.clippingNode.clipsToBounds = true
         
-        self.listView = ListView()
+        self.listView = ListViewImpl()
         self.listView.isOpaque = false
         self.listView.view.disablesInteractiveTransitionGestureRecognizer = true
         self.listView.transform = CATransform3DMakeRotation(-CGFloat.pi / 2.0, 0.0, 0.0, 1.0)
@@ -183,7 +183,7 @@ final class EmojisChatInputContextPanelNode: ChatInputContextPanelNode {
             }
             
             let presentationData = strongSelf.context.sharedContext.currentPresentationData.with { $0 }
-            let controller = PeekController(presentationData: presentationData, content: content, sourceView: {
+            let controller = makePeekController(presentationData: presentationData, content: content, sourceView: {
                 return (sourceView, sourceRect)
             })
             /*controller.visibilityUpdated = { [weak self] visible in

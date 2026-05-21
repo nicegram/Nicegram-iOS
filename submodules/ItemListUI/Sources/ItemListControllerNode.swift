@@ -70,6 +70,11 @@ public enum ItemListStyle {
     case blocks
 }
 
+public enum ItemListSystemStyle {
+    case glass
+    case legacy
+}
+
 open class ItemListToolbarItem {
     public struct Action {
         public let title: String
@@ -305,7 +310,7 @@ open class ItemListControllerNode: ASDisplayNode, ASGestureRecognizerDelegate {
         self.navigationBar = navigationBar
         
         self.listNodeContainer = ASDisplayNode()
-        self.listNode = ListView()
+        self.listNode = ListViewImpl()
         self.leftOverlayNode = ASDisplayNode()
         self.leftOverlayNode.isUserInteractionEnabled = false
         self.rightOverlayNode = ASDisplayNode()
@@ -365,7 +370,7 @@ open class ItemListControllerNode: ASDisplayNode, ASGestureRecognizerDelegate {
             }
         }
         
-        self.listNode.visibleContentOffsetChanged = { [weak self] offset in
+        self.listNode.visibleContentOffsetChanged = { [weak self] offset, _ in
             guard let strongSelf = self else {
                 return
             }
@@ -887,13 +892,13 @@ open class ItemListControllerNode: ASDisplayNode, ASGestureRecognizerDelegate {
                         if let titleContentNode = self.navigationBar.contentNode as? ItemListControllerSearchNavigationContentNode {
                             titleContentNode.deactivate()
                         }
-                        updatedTitleContentNode.setQueryUpdated { [weak self] query in
+                        updatedTitleContentNode?.setQueryUpdated { [weak self] query in
                             if let strongSelf = self {
                                 strongSelf.searchNode?.queryUpdated(query)
                             }
                         }
                         self.navigationBar.setContentNode(updatedTitleContentNode, animated: true)
-                        updatedTitleContentNode.activate()
+                        updatedTitleContentNode?.activate()
                     }
                     
                     let updatedNode = searchItem.node(current: self.searchNode, titleContentNode: updatedTitleContentNode)
@@ -905,7 +910,7 @@ open class ItemListControllerNode: ASDisplayNode, ASGestureRecognizerDelegate {
                         if let validLayout = self.validLayout {
                             updatedNode.updateLayout(layout: validLayout.0, navigationBarHeight: validLayout.1, transition: .immediate)
                         }
-                        self.addSubnode(updatedNode)
+                        self.insertSubnode(updatedNode, belowSubnode: self.navigationBar)
                         updatedNode.activate()
                     }
                 } else {

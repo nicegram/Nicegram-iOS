@@ -10,6 +10,8 @@ import TelegramUIPreferences
 import AccountContext
 import AnimatedCountLabelNode
 import VoiceChatActionButton
+import ComponentFlow
+import ReactionSelectionNode
 
 private let blue = UIColor(rgb: 0x007fff)
 private let lightBlue = UIColor(rgb: 0x00affe)
@@ -19,6 +21,22 @@ private let purple = UIColor(rgb: 0x3252ef)
 private let pink = UIColor(rgb: 0xef436c)
 private let latePurple = UIColor(rgb: 0xaa56a6)
 private let latePink = UIColor(rgb: 0xef476f)
+
+private func textForTimeout(value: Int32) -> String {
+    if value < 3600 {
+        let minutes = value / 60
+        let seconds = value % 60
+        let secondsPadding = seconds < 10 ? "0" : ""
+        return "\(minutes):\(secondsPadding)\(seconds)"
+    } else {
+        let hours = value / 3600
+        let minutes = (value % 3600) / 60
+        let minutesPadding = minutes < 10 ? "0" : ""
+        let seconds = value % 60
+        let secondsPadding = seconds < 10 ? "0" : ""
+        return "\(hours):\(minutesPadding)\(minutes):\(secondsPadding)\(seconds)"
+    }
+}
 
 private class CallStatusBarBackgroundNode: ASDisplayNode {
     enum State {
@@ -191,6 +209,7 @@ public class CallStatusBarNodeImpl: CallStatusBarNode {
     private let titleNode: ImmediateTextNode
     private let subtitleNode: ImmediateAnimatedCountLabelNode
     private let speakerNode: ImmediateTextNode
+    private var messageView: ComponentView<Empty>?
     
     private let audioLevelDisposable = MetaDisposable()
     private let stateDisposable = MetaDisposable()
@@ -212,6 +231,11 @@ public class CallStatusBarNodeImpl: CallStatusBarNode {
     private var currentMembers: PresentationGroupCallMembers?
     private var currentIsConnected = true
 
+    private var reactionItems: [ReactionItem]?
+    private var messagesState: GroupCallMessagesContext.State?
+    private let messagesStateDisposable = MetaDisposable()
+    private var currentMessageId: GroupCallMessagesContext.Message.Id?
+    
     private let hierarchyTrackingNode: HierarchyTrackingNode
     private var isCurrentlyInHierarchy = true
     
@@ -250,6 +274,7 @@ public class CallStatusBarNodeImpl: CallStatusBarNode {
         self.presentationDataDisposable.dispose()
         self.audioLevelDisposable.dispose()
         self.stateDisposable.dispose()
+        self.messagesStateDisposable.dispose()
         self.currentCallTimer?.invalidate()
     }
     
@@ -268,7 +293,8 @@ public class CallStatusBarNodeImpl: CallStatusBarNode {
         self.update()
     }
 
-    private let textFont = Font.with(size: 13.0, design: .regular, weight: .regular, traits: [.monospacedNumbers])
+    private let callTextFont = Font.with(size: 13.0, design: .regular, weight: .regular, traits: [.monospacedNumbers])
+    private let groupCallTextFont = Font.with(size: 13.0, design: .regular, weight: .regular, traits: [])
     
     private func update() {
         guard let size = self.currentSize, let content = self.currentContent else {
@@ -277,12 +303,15 @@ public class CallStatusBarNodeImpl: CallStatusBarNode {
         
         let wasEmpty = (self.titleNode.attributedText?.string ?? "").isEmpty
         
+        let textFont: UIFont
         let setupDataForCall: AnyObject?
         switch content {
         case let .call(_, _, call):
             setupDataForCall = call
+            textFont = callTextFont
         case let .groupCall(_, _, call):
             setupDataForCall = call
+            textFont = groupCallTextFont
         }
         
         if self.didSetupDataForCall !== setupDataForCall {
@@ -290,15 +319,23 @@ public class CallStatusBarNodeImpl: CallStatusBarNode {
             switch content {
                 case let .call(sharedContext, account, call):
                     self.presentationData = sharedContext.currentPresentationData.with { $0 }
+                    let callPeer = TelegramEngine(account: account).data.get(TelegramEngine.EngineData.Item.Peer.Peer(id: call.peerId))
+                    |> mapToSignal { peer -> Signal<EnginePeer, NoError> in
+                        if let peer {
+                            return .single(peer)
+                        } else {
+                            return .never()
+                        }
+                    }
                     self.stateDisposable.set(
                         (combineLatest(
-                            account.postbox.loadedPeerWithId(call.peerId),
+                            callPeer,
                             call.state,
                             call.isMuted
                         )
                     |> deliverOnMainQueue).start(next: { [weak self] peer, state, isMuted in
                         if let strongSelf = self {
-                            strongSelf.currentPeer = peer
+                            strongSelf.currentPeer = peer._asPeer()
                             strongSelf.currentCallState = state
                             strongSelf.currentIsMuted = isMuted
                             
@@ -397,6 +434,27 @@ public class CallStatusBarNodeImpl: CallStatusBarNode {
                         effectiveLevel = audioLevels.map { $0.2 }.max() ?? 0.0
                         strongSelf.backgroundNode.audioLevel = effectiveLevel
                     }))
+                
+                    if let groupCall = call as? PresentationGroupCallImpl {
+                        let _ = (allowedStoryReactions(account: account)
+                        |> deliverOnMainQueue).start(next: { [weak self] reactionItems in
+                            self?.reactionItems = reactionItems
+                        })
+                        
+                        self.messagesStateDisposable.set((groupCall.messagesState
+                        |> deliverOnMainQueue).start(next: { [weak self] messagesState in
+                            guard let self else {
+                                return
+                            }
+                            if self.messagesState != messagesState {
+                                self.messagesState = messagesState
+                                
+                                if self.isCurrentlyInHierarchy {
+                                    self.update()
+                                }
+                            }
+                        }))
+                    }
             }
         }
         
@@ -525,9 +583,66 @@ public class CallStatusBarNodeImpl: CallStatusBarNode {
             self.subtitleNode.segments = segments
         }
         
+        let contentHeight: CGFloat = 24.0
+        let verticalOrigin: CGFloat = size.height - contentHeight
+        
+        var isDisplayingMessage = false
+        let componentTransition: ComponentTransition = .easeInOut(duration: 0.25)
+        if case let .groupCall(_, account, call) = self.currentContent, let message = self.messagesState?.messages.last(where: { $0.author?.id != account.peerId }), let author = message.author, let groupCall = call as? PresentationGroupCallImpl {
+            if self.currentMessageId != message.id {
+                self.currentMessageId = message.id
+                
+                if let messageView = self.messageView?.view {
+                    self.messageView = nil
+                    componentTransition.setAlpha(view: messageView, alpha: 0.0, completion: { _ in
+                        messageView.removeFromSuperview()
+                    })
+                }
+            }
+            let messageView: ComponentView<Empty>
+            if let current = self.messageView {
+                messageView = current
+            } else {
+                messageView = ComponentView<Empty>()
+                self.messageView = messageView
+            }
+            
+            let messageSize = messageView.update(
+                transition: .immediate,
+                component: AnyComponent(
+                    MessageItemComponent(
+                        context: groupCall.accountContext,
+                        icon: .peer(author),
+                        style: .status,
+                        text: message.text,
+                        entities: message.entities,
+                        availableReactions: self.reactionItems,
+                        openPeer: nil
+                    )
+                ),
+                environment: {},
+                containerSize: CGSize(width: size.width - 140.0, height: contentHeight)
+            )
+            if let view = messageView.view {
+                if view.superview == nil {
+                    view.transform = CGAffineTransformMakeScale(1.0, -1.0)
+                    self.view.addSubview(view)
+                    componentTransition.animateAlpha(view: view, from: 0.0, to: 1.0)
+                }
+                view.frame = CGRect(origin: CGPoint(x: floorToScreenPixels((size.width - messageSize.width) / 2.0), y: verticalOrigin + floor((contentHeight - messageSize.height) / 2.0) + 1.0), size: messageSize)
+            }
+            isDisplayingMessage = true
+        } else if let messageView = self.messageView?.view {
+            self.messageView = nil
+            componentTransition.setAlpha(view: messageView, alpha: 0.0, completion: { _ in
+                messageView.removeFromSuperview()
+            })
+        }
+        
         let alphaTransition: ContainedViewLayoutTransition = .animated(duration: 0.2, curve: .easeInOut)
-        alphaTransition.updateAlpha(node: self.subtitleNode, alpha: displaySpeakerSubtitle ? 0.0 : 1.0)
-        alphaTransition.updateAlpha(node: self.speakerNode, alpha: displaySpeakerSubtitle ? 1.0 : 0.0)
+        alphaTransition.updateAlpha(node: self.titleNode, alpha: isDisplayingMessage ? 0.0 : 1.0)
+        alphaTransition.updateAlpha(node: self.subtitleNode, alpha: displaySpeakerSubtitle || isDisplayingMessage ? 0.0 : 1.0)
+        alphaTransition.updateAlpha(node: self.speakerNode, alpha: displaySpeakerSubtitle && !isDisplayingMessage ? 1.0 : 0.0)
         
         self.titleNode.attributedText = NSAttributedString(string: title, font: Font.semibold(13.0), textColor: .white)
         
@@ -540,11 +655,12 @@ public class CallStatusBarNodeImpl: CallStatusBarNode {
         let subtitleSize = self.subtitleNode.updateLayout(size: CGSize(width: 150.0, height: size.height), animated: true)
         let speakerSize = self.speakerNode.updateLayout(CGSize(width: 150.0, height: size.height))
         
-        let totalWidth = titleSize.width + spacing + subtitleSize.width
+        var totalWidth = titleSize.width
+        if totalWidth > 0.0 {
+            totalWidth += spacing
+        }
+        totalWidth += subtitleSize.width
         let horizontalOrigin: CGFloat = floor((size.width - totalWidth) / 2.0)
-        
-        let contentHeight: CGFloat = 24.0
-        let verticalOrigin: CGFloat = size.height - contentHeight
         
         let sizeChanged = self.titleNode.frame.size.width != titleSize.width
         
@@ -553,7 +669,8 @@ public class CallStatusBarNodeImpl: CallStatusBarNode {
         transition.updateFrame(node: self.subtitleNode, frame: CGRect(origin: CGPoint(x: horizontalOrigin + titleSize.width + spacing, y: verticalOrigin + floor((contentHeight - subtitleSize.height) / 2.0)), size: subtitleSize))
         
         if displaySpeakerSubtitle {
-            self.speakerNode.frame = CGRect(origin: CGPoint(x: horizontalOrigin + titleSize.width + spacing, y: verticalOrigin + floor((contentHeight - speakerSize.height) / 2.0)), size: speakerSize)
+            let speakerOriginX: CGFloat = title.isEmpty ? floor((size.width - speakerSize.width) / 2.0) : horizontalOrigin + titleSize.width + spacing
+            self.speakerNode.frame = CGRect(origin: CGPoint(x: speakerOriginX, y: verticalOrigin + floor((contentHeight - speakerSize.height) / 2.0)), size: speakerSize)
         }
         
         let state: CallStatusBarBackgroundNode.State

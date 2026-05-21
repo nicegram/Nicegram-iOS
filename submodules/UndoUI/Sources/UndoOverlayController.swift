@@ -18,7 +18,7 @@ public enum UndoOverlayContent {
     case swipeToReply(title: String, text: String)
     case actionSucceeded(title: String?, text: String, cancel: String?, destructive: Bool)
     case stickersModified(title: String, text: String, undo: Bool, info: StickerPackCollectionInfo, topItem: StickerPackItem?, context: AccountContext)
-    case dice(dice: TelegramMediaDice, context: AccountContext, text: String, action: String?)
+    case dice(dice: TelegramMediaDice, context: AccountContext, text: String, action: String?, changeAction: String?)
     case chatAddedToFolder(context: AccountContext, chatTitle: String, folderTitle: NSAttributedString)
     case chatRemovedFromFolder(context: AccountContext, chatTitle: String, folderTitle: NSAttributedString)
     case messagesUnpinned(title: String, text: String, undo: Bool, isHidden: Bool)
@@ -83,11 +83,13 @@ public final class UndoOverlayController: ViewController {
     }
     
     public struct Appearance {
+        public var isNarrow: Bool?
         public var isBlurred: Bool?
         public var sideInset: CGFloat?
         public var bottomInset: CGFloat?
         
-        public init(isBlurred: Bool? = nil, sideInset: CGFloat? = nil, bottomInset: CGFloat? = nil) {
+        public init(isNarrow: Bool? = nil, isBlurred: Bool? = nil, sideInset: CGFloat? = nil, bottomInset: CGFloat? = nil) {
+            self.isNarrow = isNarrow
             self.isBlurred = isBlurred
             self.sideInset = sideInset
             self.bottomInset = bottomInset

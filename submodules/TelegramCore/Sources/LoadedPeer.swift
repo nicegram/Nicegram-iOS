@@ -35,9 +35,11 @@ public func actualizedPeer(accountPeerId: PeerId, postbox: Postbox, network: Net
                         if let result = result {
                             let chats: [Api.Chat]
                             switch result {
-                            case let .chats(apiChats):
+                            case let .chats(chatsData):
+                                let apiChats = chatsData.chats
                                 chats = apiChats
-                            case let .chatsSlice(_, apiChats):
+                            case let .chatsSlice(chatsSliceData):
+                                let apiChats = chatsSliceData.chats
                                 chats = apiChats
                             }
                             let parsedPeersValue = AccumulatedPeers(transaction: transaction, chats: chats, users: [])

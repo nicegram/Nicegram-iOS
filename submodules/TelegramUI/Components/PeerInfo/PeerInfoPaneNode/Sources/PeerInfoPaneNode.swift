@@ -7,6 +7,10 @@ import Display
 import TelegramPresentationData
 
 public enum PeerInfoPaneKey: Int32 {
+    // Nicegram NftSticker
+    @available(iOS 16.0, *)
+    case nftSticker
+    //
     // Nicegram NCG-7303 Spy on friends
     @available(iOS 15.0, *)
     case spyOnFriends
@@ -23,6 +27,7 @@ public enum PeerInfoPaneKey: Int32 {
     case voice
     case links
     case gifs
+    case polls
     case groupsInCommon
     case similarChannels
     case similarBots

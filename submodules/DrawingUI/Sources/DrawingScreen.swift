@@ -6,7 +6,6 @@ import Display
 import ComponentFlow
 import LegacyComponents
 import TelegramCore
-import Postbox
 import SwiftSignalKit
 import TelegramPresentationData
 import AccountContext
@@ -825,7 +824,7 @@ private final class DrawingScreenComponent: CombinedComponent {
             let tools = self.drawingState.tools
             let _ = (self.context.sharedContext.accountManager.transaction { transaction -> Void in
                 transaction.updateSharedData(ApplicationSpecificSharedDataKeys.drawingSettings, { _ in
-                    return PreferencesEntry(DrawingSettings(tools: tools, colors: []))
+                    return EnginePreferencesEntry(DrawingSettings(tools: tools, colors: []))
                 })
             }).start()
         }
@@ -989,7 +988,7 @@ private final class DrawingScreenComponent: CombinedComponent {
                 )
             ]
             let presentationData = self.context.sharedContext.currentPresentationData.with { $0 }.withUpdated(theme: defaultDarkPresentationTheme)
-            let contextController = ContextController(presentationData: presentationData, source: .reference(ReferenceContentSource(sourceView: sourceView, contentArea: UIScreen.main.bounds, customPosition: CGPoint(x: 7.0, y: 3.0))), items: .single(ContextController.Items(content: .list(items))))
+            let contextController = makeContextController(presentationData: presentationData, source: .reference(ReferenceContentSource(sourceView: sourceView, contentArea: UIScreen.main.bounds, customPosition: CGPoint(x: 7.0, y: 3.0))), items: .single(ContextController.Items(content: .list(items))))
             self.present(contextController)
         }
         
@@ -2893,13 +2892,13 @@ public class DrawingScreen: ViewController, TGPhotoDrawingInterfaceController, U
         var stickers: [Any] = []
         for entity in self.entitiesView.entities {
             if let sticker = entity as? DrawingStickerEntity, case let .file(file, _) = sticker.content {
-                let coder = PostboxEncoder()
+                let coder = EnginePostboxEncoder()
                 coder.encodeRootObject(file.media)
                 stickers.append(coder.makeData())
             } else if let text = entity as? DrawingTextEntity, let subEntities = text.renderSubEntities {
                 for sticker in subEntities {
                     if let sticker = sticker as? DrawingStickerEntity, case let .file(file, _) = sticker.content {
-                        let coder = PostboxEncoder()
+                        let coder = EnginePostboxEncoder()
                         coder.encodeRootObject(file.media)
                         stickers.append(coder.makeData())
                     }
@@ -3482,7 +3481,7 @@ public final class DrawingToolsInteraction {
         }
         
         let presentationData = self.context.sharedContext.currentPresentationData.with { $0 }.withUpdated(theme: defaultDarkPresentationTheme)
-        let contextController = ContextController(presentationData: presentationData, source: .reference(ReferenceContentSource(sourceView: sourceView, contentArea: CGRect(origin: .zero, size: CGSize(width: validLayout.size.width, height: validLayout.size.height - (validLayout.inputHeight ?? 0.0))), customPosition: CGPoint(x: 0.0, y: 1.0))), items: .single(ContextController.Items(content: .list(items))))
+        let contextController = makeContextController(presentationData: presentationData, source: .reference(ReferenceContentSource(sourceView: sourceView, contentArea: CGRect(origin: .zero, size: CGSize(width: validLayout.size.width, height: validLayout.size.height - (validLayout.inputHeight ?? 0.0))), customPosition: CGPoint(x: 0.0, y: 1.0))), items: .single(ContextController.Items(content: .list(items))))
         self.present(contextController, .window(.root), nil)
         self.currentFontPicker = contextController
         contextController.view.disablesInteractiveKeyboardGestureRecognizer = true

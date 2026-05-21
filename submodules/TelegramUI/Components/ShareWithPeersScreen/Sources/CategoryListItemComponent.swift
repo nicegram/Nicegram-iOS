@@ -173,7 +173,7 @@ final class CategoryListItemComponent: Component {
             
             let contextInset: CGFloat = 0.0
             
-            let height: CGFloat = 56.0
+            let height: CGFloat = 64.0
             let verticalInset: CGFloat = 0.0
             var leftInset: CGFloat = 62.0
             let rightInset: CGFloat = contextInset * 2.0 + 8.0
@@ -264,7 +264,7 @@ final class CategoryListItemComponent: Component {
                 containerSize: CGSize(width: availableSize.width - leftInset - rightInset, height: 100.0)
             )
             
-            let titleSpacing: CGFloat = 1.0
+            let titleSpacing: CGFloat = 3.0
             var centralContentHeight: CGFloat = titleSize.height
             if !labelData.0.isEmpty {
                 centralContentHeight += titleSpacing + labelSize.height

@@ -12,6 +12,9 @@ public extension Camera {
         case iPhone15Plus
         case iPhone15Pro
         case iPhone15ProMax
+        case iPhone17
+        case iPhone17Pro
+        case iPhoneAir
         case unknown
         
         public init(model: DeviceModel) {
@@ -38,6 +41,12 @@ public extension Camera {
                 self = .iPhone15Pro
             case .iPhone16ProMax:
                 self = .iPhone15ProMax
+            case .iPhone17:
+                self = .iPhone17
+            case .iPhone17Pro, .iPhone17ProMax:
+                self = .iPhone17Pro
+            case .iPhoneAir:
+                self = .iPhoneAir
             case .unknown:
                 self = .unknown
             default:
@@ -49,12 +58,16 @@ public extension Camera {
             switch self {
             case .singleCamera:
                 return [1.0]
-            case .iPhone14, .iPhone14Plus, .iPhone15, .iPhone15Plus:
+            case .iPhone14, .iPhone14Plus, .iPhone15, .iPhone15Plus, .iPhone17:
                 return [0.5, 1.0, 2.0]
             case .iPhone14Pro, .iPhone14ProMax, .iPhone15Pro:
                 return [0.5, 1.0, 2.0, 3.0]
             case .iPhone15ProMax:
                 return [0.5, 1.0, 2.0, 5.0]
+            case .iPhone17Pro:
+                return [0.5, 1.0, 2.0, 8.0]
+            case .iPhoneAir:
+                return [1.0, 2.0]
             case .unknown:
                 return [1.0, 2.0]
             }

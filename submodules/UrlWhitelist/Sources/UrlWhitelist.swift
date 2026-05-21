@@ -14,9 +14,8 @@ public func isConcealedUrlWhitelisted(_ url: URL) -> Bool {
         if host.hasPrefix(www) {
             host.removeFirst(www.count)
         }
-        if whitelistedHosts.contains(host) {
-            return true
-        }
+        
+        // Nicegram, remove whitelist check
     }
     if let host = url.host?.lowercased(), host == "telegram.org" {
         let whitelistedNativePrefixes: Set<String> = Set([

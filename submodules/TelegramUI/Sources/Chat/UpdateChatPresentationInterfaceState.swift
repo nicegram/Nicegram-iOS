@@ -14,17 +14,21 @@ import PresentationDataUtils
 import TelegramCallsUI
 import AttachmentUI
 import WebUI
+import LegacyChatHeaderPanelComponent
+import ComponentFlow
+import ComponentDisplayAdapters
 
 func updateChatPresentationInterfaceStateImpl(
     selfController: ChatControllerImpl,
     transition: ContainedViewLayoutTransition,
     interactive: Bool,
+    force: Bool,
     saveInterfaceState: Bool,
     _ f: (ChatPresentationInterfaceState) -> ChatPresentationInterfaceState,
     completion externalCompletion: @escaping (ContainedViewLayoutTransition) -> Void
 ) {
     var transition = transition
-    if !selfController.didAppear {
+    if !selfController.enableAnimations {
         transition = .immediate
     }
     
@@ -45,7 +49,7 @@ func updateChatPresentationInterfaceStateImpl(
                         $0.withUpdatedReplyMessageSubject(ChatInterfaceState.ReplyMessageSubject(
                             messageId: keyboardButtonsMessage.id,
                             quote: nil,
-                            todoItemId: nil
+                            innerSubject: nil
                         )).withUpdatedMessageActionsState({ value in
                         var value = value
                         value.processedSetupReplyMessageId = keyboardButtonsMessage.id
@@ -69,7 +73,7 @@ func updateChatPresentationInterfaceStateImpl(
             temporaryChatPresentationInterfaceState = temporaryChatPresentationInterfaceState.updatedInterfaceState({ $0.withUpdatedReplyMessageSubject(ChatInterfaceState.ReplyMessageSubject(
                 messageId: keyboardButtonsMessage.id,
                 quote: nil,
-                todoItemId: nil
+                innerSubject: nil
             )).withUpdatedMessageActionsState({ value in
                 var value = value
                 value.processedSetupReplyMessageId = keyboardButtonsMessage.id
@@ -78,7 +82,7 @@ func updateChatPresentationInterfaceStateImpl(
         }
     }
     
-    let inputTextPanelState = inputTextPanelStateForChatPresentationInterfaceState(temporaryChatPresentationInterfaceState, context: selfController.context)
+    let inputTextPanelState = inputTextPanelStateForChatPresentationInterfaceState(temporaryChatPresentationInterfaceState, context: selfController.context, controller: selfController)
     var updatedChatPresentationInterfaceState = temporaryChatPresentationInterfaceState.updatedInputTextPanelState({ _ in return inputTextPanelState })
     
     let contextQueryUpdates = contextQueryResultStateForChatInterfacePresentationState(updatedChatPresentationInterfaceState, context: selfController.context, currentQueryStates: &selfController.contextQueryStates, requestBotLocationStatus: { [weak selfController] peerId in
@@ -90,7 +94,7 @@ func updateChatPresentationInterfaceStateImpl(
             guard let selfController, value else {
                 return
             }
-            selfController.present(textAlertController(context: selfController.context, updatedPresentationData: selfController.updatedPresentationData, title: nil, text: selfController.presentationData.strings.Conversation_ShareInlineBotLocationConfirmation, actions: [TextAlertAction(type: .defaultAction, title: selfController.presentationData.strings.Common_Cancel, action: {
+            selfController.present(textAlertController(context: selfController.context, updatedPresentationData: selfController.updatedPresentationData, title: nil, text: selfController.presentationData.strings.Conversation_ShareInlineBotLocationConfirmation, actions: [TextAlertAction(type: .genericAction, title: selfController.presentationData.strings.Common_Cancel, action: {
             }), TextAlertAction(type: .defaultAction, title: selfController.presentationData.strings.Common_OK, action: { [weak selfController] in
                 guard let selfController else {
                     return
@@ -147,7 +151,7 @@ func updateChatPresentationInterfaceStateImpl(
                 case .generic:
                     break
                 case let .inlineBotLocationRequest(peerId):
-                    selfController.present(textAlertController(context: selfController.context, updatedPresentationData: selfController.updatedPresentationData, title: nil, text: selfController.presentationData.strings.Conversation_ShareInlineBotLocationConfirmation, actions: [TextAlertAction(type: .defaultAction, title: selfController.presentationData.strings.Common_Cancel, action: { [weak selfController] in
+                    selfController.present(textAlertController(context: selfController.context, updatedPresentationData: selfController.updatedPresentationData, title: nil, text: selfController.presentationData.strings.Conversation_ShareInlineBotLocationConfirmation, actions: [TextAlertAction(type: .genericAction, title: selfController.presentationData.strings.Common_Cancel, action: { [weak selfController] in
                         guard let selfController else {
                             return
                         }
@@ -452,8 +456,32 @@ func updateChatPresentationInterfaceStateImpl(
     
     selfController.tempHideAccessoryPanels = selfController.presentationInterfaceState.search != nil
     
+    var forceLayout = false
+    
+    if let chatTitleContent = selfController.contentData?.state.chatTitleContent, let chatTitleView = selfController.chatTitleView {
+        var titleTransition = ComponentTransition(transition)
+        if case .messageOptions = selfController.subject {
+            titleTransition = titleTransition.withAnimation(.none)
+        }
+        let isChatTitleViewUpdated = chatTitleView.update(
+            context: selfController.context,
+            theme: selfController.presentationData.theme,
+            preferClearGlass: selfController.presentationInterfaceState.preferredGlassType == .clear,
+            wallpaper: selfController.presentationInterfaceState.chatWallpaper,
+            strings: selfController.presentationData.strings,
+            dateTimeFormat: selfController.presentationData.dateTimeFormat,
+            nameDisplayOrder: selfController.presentationData.nameDisplayOrder,
+            content: chatTitleContent,
+            transition: titleTransition,
+            ignoreParentTransitionRequests: true
+        )
+        if isChatTitleViewUpdated {
+            forceLayout = true
+        }
+    }
+    
     if selfController.isNodeLoaded {
-        selfController.chatDisplayNode.updateChatPresentationInterfaceState(updatedChatPresentationInterfaceState, transition: transition, interactive: interactive, completion: completion)
+        selfController.chatDisplayNode.updateChatPresentationInterfaceState(updatedChatPresentationInterfaceState, transition: transition, interactive: interactive, forceLayout: forceLayout, completion: completion)
     } else {
         completion(.immediate)
     }
@@ -604,6 +632,5 @@ func updateChatPresentationInterfaceStateImpl(
             selfController.customNavigationPanelNode = nil
         }
     }
-    
     selfController.stateUpdated?(transition)
 }

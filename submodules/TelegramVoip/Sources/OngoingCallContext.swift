@@ -489,7 +489,7 @@ public final class OngoingCallVideoCapturer {
         if isCustom {
             self.impl = OngoingCallThreadLocalContextVideoCapturer.withExternalSampleBufferProvider()
         } else {
-            #if targetEnvironment(simulator) && false
+            #if targetEnvironment(simulator)
             self.impl = OngoingCallThreadLocalContextVideoCapturer.withExternalSampleBufferProvider()
             let imageSize = CGSize(width: 600.0, height: 800.0)
             UIGraphicsBeginImageContextWithOptions(imageSize, true, 1.0)
@@ -832,8 +832,8 @@ public final class OngoingCallContext {
     public final class AudioDevice {
         let impl: SharedCallAudioDevice
         
-        public static func create(enableSystemMute: Bool) -> AudioDevice? {
-            return AudioDevice(impl: SharedCallAudioDevice(disableRecording: false, enableSystemMute: enableSystemMute))
+        public static func create(enableSystemMute: Bool, enableMicrophone: Bool) -> AudioDevice? {
+            return AudioDevice(impl: SharedCallAudioDevice(disableRecording: !enableMicrophone, enableSystemMute: enableSystemMute))
         }
         
         private init(impl: SharedCallAudioDevice) {

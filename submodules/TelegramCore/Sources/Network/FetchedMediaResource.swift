@@ -175,6 +175,11 @@ private func findMediaResource(media: Media, previousMedia: Media?, resource: Me
                 return representation.resource
             }
         }
+        if let video = image.video {
+            if let resource = findMediaResource(media: video, previousMedia: previousMedia, resource: resource) {
+                return resource
+            }
+        }
     } else if let file = media as? TelegramMediaFile {
         if areResourcesEqual(file.resource, resource) {
             return file.resource
@@ -1005,6 +1010,11 @@ func revalidateMediaResourceReference(accountPeerId: PeerId, postbox: Postbox, n
                         } else {
                             for alternativeMediaValue in item.alternativeMediaList {
                                 if let updatedResource = findUpdatedMediaResource(media: alternativeMediaValue, previousMedia: nil, resource: resource) {
+                                    return .single(RevalidatedMediaResource(updatedResource: updatedResource, updatedReference: nil))
+                                }
+                            }
+                            if let music = item.music {
+                                if let updatedResource = findUpdatedMediaResource(media: music, previousMedia: nil, resource: resource) {
                                     return .single(RevalidatedMediaResource(updatedResource: updatedResource, updatedReference: nil))
                                 }
                             }

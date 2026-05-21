@@ -12,7 +12,6 @@ import TextFormat
 import TelegramStringFormatting
 import AccountContext
 import RadialStatusNode
-import ShareController
 import OpenInExternalAppUI
 import AppBundle
 import LocalizedPeerData
@@ -31,6 +30,13 @@ import TranslateUI
 import TelegramNotices
 import SolidRoundedButtonNode
 import UrlHandling
+import GlassControls
+import ComponentFlow
+import ComponentDisplayAdapters
+import EdgeEffect
+import RasterizedCompositionComponent
+import BadgeComponent
+import UIKitRuntimeUtils
 
 private let deleteImage = generateTintedImage(image: UIImage(bundleImageName: "Chat/Input/Accessory Panels/MessageSelectionTrash"), color: .white)
 private let actionImage = generateTintedImage(image: UIImage(bundleImageName: "Chat/Input/Accessory Panels/MessageSelectionForward"), color: .white)
@@ -40,25 +46,6 @@ private let backwardImage = generateTintedImage(image:  UIImage(bundleImageName:
 private let forwardImage = generateTintedImage(image: UIImage(bundleImageName: "Media Gallery/ForwardButton"), color: .white)
 
 private let cloudFetchIcon = generateTintedImage(image: UIImage(bundleImageName: "Chat/Message/FileCloudFetch"), color: UIColor.white)
-
-private let fullscreenOnImage = generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Expand"), color: .white)
-private let fullscreenOffImage = generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Collapse"), color: .white)
-
-private let captionMaskImage = generateImage(CGSize(width: 1.0, height: 17.0), opaque: false, rotatedContext: { size, context in
-    let bounds = CGRect(origin: CGPoint(), size: size)
-    context.clear(bounds)
-    
-    let gradientColors = [UIColor.white.withAlphaComponent(1.0).cgColor, UIColor.white.withAlphaComponent(0.0).cgColor] as CFArray
-    
-    var locations: [CGFloat] = [0.0, 1.0]
-    let colorSpace = CGColorSpaceCreateDeviceRGB()
-    let gradient = CGGradient(colorsSpace: colorSpace, colors: gradientColors, locations: &locations)!
-
-    context.drawLinearGradient(gradient, start: CGPoint(x: 0.0, y: 0.0), end: CGPoint(x: 0.0, y: 17.0), options: CGGradientDrawingOptions())
-})
-
-private let titleFont = Font.medium(15.0)
-private let dateFont = Font.regular(14.0)
 
 enum ChatItemGalleryFooterContent: Equatable {
     case info
@@ -124,6 +111,26 @@ class CaptionScrollWrapperNode: ASDisplayNode {
 }
 
 final class ChatItemGalleryFooterContentNode: GalleryFooterContentNode, ASScrollViewDelegate {
+    public final class SettingsButtonState: Equatable {
+        public let speed: String?
+        public let quality: String?
+        
+        public init(speed: String?, quality: String?) {
+            self.speed = speed
+            self.quality = quality
+        }
+        
+        public static func ==(lhs: SettingsButtonState, rhs: SettingsButtonState) -> Bool {
+            if lhs.speed != rhs.speed {
+                return false
+            }
+            if lhs.quality != rhs.quality {
+                return false
+            }
+            return true
+        }
+    }
+    
     private let context: AccountContext
     private var presentationData: PresentationData
     private var theme: PresentationTheme
@@ -132,14 +139,12 @@ final class ChatItemGalleryFooterContentNode: GalleryFooterContentNode, ASScroll
     private var dateTimeFormat: PresentationDateTimeFormat
     
     private let contentNode: ASDisplayNode
-    private let deleteButton: UIButton
-    private let fullscreenButton: UIButton
-    private let actionButton: UIButton
-    private let editButton: UIButton
     private let maskNode: ASDisplayNode
     private let textSelectionKnobContainer: UIView
     private let textSelectionKnobSurface: UIView
     private let scrollWrapperNode: CaptionScrollWrapperNode
+    private let scrollWrapperMask: EdgeMaskView
+    private let scrollWrapperEffect: VariableBlurEffect
     private let scrollNode: ASScrollNode
 
     private let textNode: ImmediateTextNodeWithEntities
@@ -147,14 +152,13 @@ final class ChatItemGalleryFooterContentNode: GalleryFooterContentNode, ASScroll
     private var dustNode: InvisibleInkDustNode?
     private var buttonNode: SolidRoundedButtonNode?
     private var buttonIconNode: ASImageNode?
+    private let buttonPanel = ComponentView<Empty>()
     
     private var textSelectionNode: TextSelectionNode?
     
     private let animationCache: AnimationCache
     private let animationRenderer: MultiAnimationRenderer
     
-    private let authorNameNode: ASTextNode
-    private let dateNode: ASTextNode
     private let backwardButton: PlaybackButtonNode
     private let forwardButton: PlaybackButtonNode
     private let playbackControlButton: HighlightableButtonNode
@@ -164,16 +168,25 @@ final class ChatItemGalleryFooterContentNode: GalleryFooterContentNode, ASScroll
     private let statusNode: RadialStatusNode
     
     private var currentMessageText: NSAttributedString?
-    private var currentAuthorNameText: String?
-    private var currentDateText: String?
     
     private var currentMessage: Message?
     private var currentWebPageAndMedia: (TelegramMediaWebpage, Media)?
+    private var mediaSubject: GalleryMediaSubject?
     private let messageContextDisposable = MetaDisposable()
     
     private var videoFramePreviewNode: (ASImageNode, ImmediateTextNode)?
     
     private var validLayout: (CGSize, LayoutMetrics, CGFloat, CGFloat, CGFloat, CGFloat)?
+    private var buttonsState: (
+        displayDeleteButton: Bool,
+        displayFullscreenButton: Bool,
+        displayActionButton: Bool,
+        displayEditButton: Bool,
+        displayPictureInPictureButton: Bool,
+        settingsButtonState: SettingsButtonState?,
+        displayTextRecognitionButton: Bool,
+        displayStickersButton: Bool
+    )?
     
     private var codeHighlightState: (id: EngineMessage.Id, specs: [CachedMessageSyntaxHighlight.Spec], disposable: Disposable)?
     
@@ -209,16 +222,12 @@ final class ChatItemGalleryFooterContentNode: GalleryFooterContentNode, ASScroll
             if self.content != oldValue {
                 switch self.content {
                     case .info:
-                        self.authorNameNode.isHidden = false
-                        self.dateNode.isHidden = false
                         self.hasSeekControls = false
                         self.playbackControlButton.isHidden = true
                         self.statusButtonNode.isHidden = true
                         self.statusNode.isHidden = true
                     case let .fetch(status, seekable):
                         self.currentIsPaused = true
-                        self.authorNameNode.isHidden = true
-                        self.dateNode.isHidden = true
                         self.hasSeekControls = seekable && !self.isAd
                     
                         if status == .Local && !self.isAd {
@@ -259,8 +268,6 @@ final class ChatItemGalleryFooterContentNode: GalleryFooterContentNode, ASScroll
                         self.statusButtonNode.isUserInteractionEnabled = statusState != .none
                     case let .playback(paused, seekable):
                         self.currentIsPaused = paused
-                        self.authorNameNode.isHidden = true
-                        self.dateNode.isHidden = true
                         
                         if !self.isAd {
                             self.playbackControlButton.isHidden = false
@@ -303,9 +310,20 @@ final class ChatItemGalleryFooterContentNode: GalleryFooterContentNode, ASScroll
             }
         }
         didSet {
-             if let scrubberView = self.scrubberView {
-                scrubberView.setCollapsed(self.visibilityAlpha < 1.0, animated: false)
+            if let scrubberView = self.scrubberView {
                 self.view.addSubview(scrubberView)
+                scrubberView.onRequestLayout = { [weak self] transition in
+                    guard let self else {
+                        return
+                    }
+                    if let requestLayout = self.requestLayout {
+                        requestLayout(transition)
+                    } else {
+                        if let validLayout = self.validLayout {
+                            let _ = self.updateLayout(size: validLayout.0, metrics: validLayout.1, leftInset: validLayout.2, rightInset: validLayout.3, bottomInset: validLayout.4, contentInset: validLayout.5, transition: transition)
+                        }
+                    }
+                }
                 scrubberView.updateScrubbingVisual = { [weak self] value in
                     guard let strongSelf = self else {
                         return
@@ -338,8 +356,16 @@ final class ChatItemGalleryFooterContentNode: GalleryFooterContentNode, ASScroll
     
     override func setVisibilityAlpha(_ alpha: CGFloat, animated: Bool) {
         self.visibilityAlpha = alpha
-        self.contentNode.alpha = alpha
-        self.scrubberView?.setCollapsed(alpha < 1.0, animated: animated)
+        
+        let transition: ComponentTransition = animated ? .easeInOut(duration: 0.2) : .immediate
+        transition.animateView {
+            self.contentNode.alpha = alpha
+        }
+        //transition.setAlpha(view: self.contentNode.view, alpha: alpha)
+        
+        if let validLayout = self.validLayout {
+            let _ = self.updateLayout(size: validLayout.0, metrics: validLayout.1, leftInset: validLayout.2, rightInset: validLayout.3, bottomInset: validLayout.4, contentInset: validLayout.5, transition: animated ? .animated(duration: 0.4, curve: .spring) : .immediate)
+        }
     }
     
     private var hasExpandedCaptionPromise = ValuePromise<Bool>(false)
@@ -357,21 +383,19 @@ final class ChatItemGalleryFooterContentNode: GalleryFooterContentNode, ASScroll
         
         self.contentNode = ASDisplayNode()
         
-        self.deleteButton = UIButton()
-        self.fullscreenButton = UIButton()
-        self.actionButton = UIButton()
-        self.editButton = UIButton()
-        
-        self.deleteButton.setImage(deleteImage, for: [.normal])
-        self.actionButton.setImage(actionImage, for: [.normal])
-        self.editButton.setImage(editImage, for: [.normal])
-        
         self.textSelectionKnobContainer = UIView()
         self.textSelectionKnobSurface = UIView()
         self.textSelectionKnobContainer.addSubview(self.textSelectionKnobSurface)
         
         self.scrollWrapperNode = CaptionScrollWrapperNode()
+        self.scrollWrapperNode.layer.allowsGroupOpacity = true
         self.scrollWrapperNode.clipsToBounds = true
+        self.scrollWrapperEffect = VariableBlurEffect(layer: self.scrollWrapperNode.layer, isTransparent: true, maxBlurRadius: 1.0)
+        self.scrollWrapperNode.backgroundColor = .clear
+        self.scrollWrapperNode.isOpaque = false
+        
+        self.scrollWrapperMask = EdgeMaskView()
+        //self.scrollWrapperNode.view.addSubview(self.scrollWrapperMask)
         
         self.scrollNode = ASScrollNode()
         self.scrollNode.clipsToBounds = false
@@ -382,16 +406,6 @@ final class ChatItemGalleryFooterContentNode: GalleryFooterContentNode, ASScroll
         self.textNode.maximumNumberOfLines = 0
         self.textNode.linkHighlightColor = UIColor(rgb: 0x5ac8fa, alpha: 0.2)
         self.textNode.displaySpoilerEffect = false
-        
-        self.authorNameNode = ASTextNode()
-        self.authorNameNode.maximumNumberOfLines = 1
-        self.authorNameNode.isUserInteractionEnabled = false
-        self.authorNameNode.displaysAsynchronously = false
-    
-        self.dateNode = ASTextNode()
-        self.dateNode.maximumNumberOfLines = 1
-        self.dateNode.isUserInteractionEnabled = false
-        self.dateNode.displaysAsynchronously = false
         
         self.backwardButton = PlaybackButtonNode()
         self.backwardButton.alpha = 0.0
@@ -457,18 +471,18 @@ final class ChatItemGalleryFooterContentNode: GalleryFooterContentNode, ASScroll
         )
         self.textNode.visibility = true
         
-        let textSelectionNode = TextSelectionNode(theme: TextSelectionTheme(selection: defaultDarkPresentationTheme.list.itemAccentColor.withMultipliedAlpha(0.5), knob: defaultDarkPresentationTheme.list.itemAccentColor, isDark: true), strings: presentationData.strings, textNode: self.textNode, updateIsActive: { [weak self] value in
+        let textSelectionNode = TextSelectionNode(theme: TextSelectionTheme(selection: defaultDarkPresentationTheme.list.itemAccentColor.withMultipliedAlpha(0.5), knob: defaultDarkPresentationTheme.list.itemAccentColor, isDark: true), strings: presentationData.strings, textNodeOrView: .node(self.textNode), updateIsActive: { [weak self] value in
             guard let self else {
                 return
             }
             let _ = self
         }, present: { c, a in
             present(c, a)
-        }, rootNode: { [weak self] in
+        }, rootView: { [weak self] in
             guard let self else {
                 return nil
             }
-            return self.controllerInteraction?.controller()?.displayNode
+            return self.controllerInteraction?.controller()?.displayNode.view
         }, externalKnobSurface: self.textSelectionKnobSurface, performAction: { [weak self] text, action in
             guard let self else {
                 return
@@ -486,8 +500,8 @@ final class ChatItemGalleryFooterContentNode: GalleryFooterContentNode, ASScroll
                 let theme = defaultDarkPresentationTheme
                 let updatedPresentationData: (initial: PresentationData, signal: Signal<PresentationData, NoError>) = (self.context.sharedContext.currentPresentationData.with({ $0 }).withUpdated(theme: theme), self.context.sharedContext.presentationData |> map { $0.withUpdated(theme: theme) })
                 
-                let shareController = ShareController(context: self.context, subject: .text(text.string), externalShare: true, immediateExternalShare: false, updatedPresentationData: updatedPresentationData)
-                
+                let shareController = self.context.sharedContext.makeShareController(context: self.context, params: ShareControllerParams(subject: .text(text.string), externalShare: true, immediateExternalShare: false, updatedPresentationData: updatedPresentationData))
+
                 self.controllerInteraction?.presentController(shareController, nil)
             case .lookup:
                 let controller = UIReferenceLibraryViewController(term: text.string)
@@ -604,10 +618,6 @@ final class ChatItemGalleryFooterContentNode: GalleryFooterContentNode, ASScroll
         
         self.textSelectionNode = textSelectionNode
         
-        self.contentNode.view.addSubview(self.deleteButton)
-        self.contentNode.view.addSubview(self.fullscreenButton)
-        self.contentNode.view.addSubview(self.actionButton)
-        self.contentNode.view.addSubview(self.editButton)
         self.contentNode.addSubnode(self.scrollWrapperNode)
         self.scrollWrapperNode.addSubnode(self.scrollNode)
         self.contentNode.view.addSubview(self.textSelectionKnobContainer)
@@ -615,18 +625,15 @@ final class ChatItemGalleryFooterContentNode: GalleryFooterContentNode, ASScroll
         self.scrollNode.addSubnode(self.textNode)
         self.scrollNode.addSubnode(textSelectionNode)
         
-        self.contentNode.addSubnode(self.authorNameNode)
-        self.contentNode.addSubnode(self.dateNode)
-        
-        self.contentNode.addSubnode(self.backwardButton)
-        self.contentNode.addSubnode(self.forwardButton)
-        self.contentNode.addSubnode(self.playbackControlButton)
+        //self.contentNode.addSubnode(self.backwardButton)
+        //self.contentNode.addSubnode(self.forwardButton)
+        //self.contentNode.addSubnode(self.playbackControlButton)
         self.playbackControlButton.addSubnode(self.playPauseIconNode)
         
         self.contentNode.addSubnode(self.statusNode)
         self.contentNode.addSubnode(self.statusButtonNode)
         
-        self.deleteButton.addTarget(self, action: #selector(self.deleteButtonPressed), for: [.touchUpInside])
+        /*self.deleteButton.addTarget(self, action: #selector(self.deleteButtonPressed), for: [.touchUpInside])
         self.deleteButton.accessibilityTraits = [.button]
         self.deleteButton.accessibilityLabel = presentationData.strings.Gallery_VoiceOver_Delete
         
@@ -640,7 +647,7 @@ final class ChatItemGalleryFooterContentNode: GalleryFooterContentNode, ASScroll
         
         self.editButton.addTarget(self, action: #selector(self.editButtonPressed), for: [.touchUpInside])
         self.editButton.accessibilityTraits = [.button]
-        self.editButton.accessibilityLabel = presentationData.strings.Gallery_VoiceOver_Edit
+        self.editButton.accessibilityLabel = presentationData.strings.Gallery_VoiceOver_Edit*/
         
         self.backwardButton.addTarget(self, action: #selector(self.backwardButtonPressed), forControlEvents: .touchUpInside)
         self.forwardButton.addTarget(self, action: #selector(self.forwardButtonPressed), forControlEvents: .touchUpInside)
@@ -801,7 +808,6 @@ final class ChatItemGalleryFooterContentNode: GalleryFooterContentNode, ASScroll
     
     func setup(origin: GalleryItemOriginData?, caption: NSAttributedString, isAd: Bool = false) {
         var titleText = origin?.title
-        var dateText = origin?.timestamp.flatMap { humanReadableStringForTimestamp(strings: self.strings, dateTimeFormat: self.dateTimeFormat, timestamp: $0).string }
         
         let caption = caption.mutableCopy() as! NSMutableAttributedString
         if isAd {
@@ -809,13 +815,23 @@ final class ChatItemGalleryFooterContentNode: GalleryFooterContentNode, ASScroll
                 caption.insert(NSAttributedString(string: titleText + "\n", font: Font.semibold(17.0), textColor: .white), at: 0)
             }
             titleText = nil
-            dateText = nil
         }
         
-        if self.currentMessageText != caption || self.currentAuthorNameText != titleText || self.currentDateText != dateText {
+        if origin == nil {
+            self.buttonsState = (
+                displayDeleteButton: false,
+                displayFullscreenButton: false,
+                displayActionButton: false,
+                displayEditButton: false,
+                displayPictureInPictureButton: false,
+                settingsButtonState: nil,
+                displayTextRecognitionButton: false,
+                displayStickersButton: false
+            )
+        }
+        
+        if self.currentMessageText != caption {
             self.currentMessageText = caption
-            self.currentAuthorNameText = titleText
-            self.currentDateText = dateText
             
             if caption.length == 0 {
                 self.textNode.isHidden = true
@@ -826,33 +842,13 @@ final class ChatItemGalleryFooterContentNode: GalleryFooterContentNode, ASScroll
             }
             self.textSelectionNode?.isHidden = self.textNode.isHidden
             
-            if let titleText = titleText {
-                self.authorNameNode.attributedText = NSAttributedString(string: titleText, font: titleFont, textColor: .white)
-            } else {
-                self.authorNameNode.attributedText = nil
-            }
-            self.authorNameNode.accessibilityLabel = self.authorNameNode.attributedText?.string
-            
-            if let dateText = dateText {
-                self.dateNode.attributedText = NSAttributedString(string: dateText, font: dateFont, textColor: .white)
-            } else {
-                self.dateNode.attributedText = nil
-            }
-            self.dateNode.accessibilityLabel = self.dateNode.attributedText?.string
-            
             self.requestLayout?(.immediate)
-        }
-        
-        if origin == nil {
-            self.editButton.isHidden = true
-            self.deleteButton.isHidden = true
-            self.fullscreenButton.isHidden = true
-            self.editButton.isHidden = true
         }
     }
     
-    func setMessage(_ message: Message, displayInfo: Bool = true, translateToLanguage: String? = nil, peerIsCopyProtected: Bool = false) {
+    func setMessage(_ message: Message, mediaSubject: GalleryMediaSubject? = nil, displayInfo: Bool = true, translateToLanguage: String? = nil, peerIsCopyProtected: Bool = false, displayPictureInPictureButton: Bool = false, settingsButtonState: SettingsButtonState? = nil, displayTextRecognitionButton: Bool = false, displayStickersButton: Bool = false, animated: Bool = false) {
         self.currentMessage = message
+        self.mediaSubject = mediaSubject
         
         var displayInfo = displayInfo
         if Namespaces.Message.allNonRegular.contains(message.id.namespace) || message.timestamp == 0 {
@@ -954,6 +950,10 @@ final class ChatItemGalleryFooterContentNode: GalleryFooterContentNode, ASScroll
             canFullscreen = false
         }
         
+        if message.media.contains(where: { $0 is TelegramMediaPoll }) {
+            canDelete = false
+        }
+        
         var authorNameText: String?
         if let forwardInfo = message.forwardInfo, forwardInfo.flags.contains(.isImported), let authorSignature = forwardInfo.authorSignature {
             authorNameText = authorSignature
@@ -963,8 +963,6 @@ final class ChatItemGalleryFooterContentNode: GalleryFooterContentNode, ASScroll
             authorNameText = EnginePeer(peer).displayTitle(strings: self.strings, displayOrder: self.nameOrder)
         }
         
-        var dateText = humanReadableStringForTimestamp(strings: self.strings, dateTimeFormat: self.dateTimeFormat, timestamp: message.timestamp).string
-
         var messageText = NSMutableAttributedString(string: "")
         var hasCaption = false
         var mediaDuration: Double?
@@ -972,6 +970,8 @@ final class ChatItemGalleryFooterContentNode: GalleryFooterContentNode, ASScroll
             if media is TelegramMediaPaidContent {
                 hasCaption = true
             } else if media is TelegramMediaImage {
+                hasCaption = true
+            } else if media is TelegramMediaPoll {
                 hasCaption = true
             } else if let file = media as? TelegramMediaFile {
                 hasCaption = file.mimeType.hasPrefix("image/") || file.mimeType.hasPrefix("video/")
@@ -981,18 +981,11 @@ final class ChatItemGalleryFooterContentNode: GalleryFooterContentNode, ASScroll
             }
         }
         if hasCaption {
-            var entities: [MessageTextEntity] = []
-            for attribute in message.attributes {
-                if let attribute = attribute as? TextEntitiesMessageAttribute {
-                    entities = attribute.entities
-                    break
-                }
-            }
-            var text = message.text
+            var (text, entities) = galleryMessageCaptionText(message, mediaSubject: mediaSubject)
             if let result = addLocallyGeneratedEntities(text, enabledTypes: [.timecode], entities: entities, mediaDuration: mediaDuration) {
                 entities = result
             }
-            if let translateToLanguage, !text.isEmpty {
+            if let translateToLanguage, mediaSubject == nil && !text.isEmpty {
                 for attribute in message.attributes {
                     if let attribute = attribute as? TranslationMessageAttribute, !attribute.text.isEmpty, attribute.toLang == translateToLanguage {
                         text = attribute.text
@@ -1040,12 +1033,15 @@ final class ChatItemGalleryFooterContentNode: GalleryFooterContentNode, ASScroll
         }
         
         if !displayInfo {
-            authorNameText = ""
-            dateText = ""
             canEdit = false
         }
+        
+        var displayDeleteButton = false
+        var displayFullscreenButton = false
+        var displayActionButton = false
+        var displayEditButton = false
                         
-        if self.currentMessageText != messageText || canDelete != !self.deleteButton.isHidden || canFullscreen != !self.fullscreenButton.isHidden || canShare != !self.actionButton.isHidden || canEdit != !self.editButton.isHidden || self.currentAuthorNameText != authorNameText || self.currentDateText != dateText {
+        do {
             self.currentMessageText = messageText
             
             if messageText.length == 0 {
@@ -1058,26 +1054,13 @@ final class ChatItemGalleryFooterContentNode: GalleryFooterContentNode, ASScroll
             
             self.textSelectionNode?.isHidden = self.textNode.isHidden
             
-            if let authorNameText = authorNameText {
-                self.authorNameNode.attributedText = NSAttributedString(string: authorNameText, font: titleFont, textColor: .white)
-            } else {
-                self.authorNameNode.attributedText = nil
-            }
-            self.authorNameNode.accessibilityLabel = self.authorNameNode.attributedText?.string
-           
-            self.dateNode.attributedText = NSAttributedString(string: dateText, font: dateFont, textColor: .white)
-            self.dateNode.accessibilityLabel = self.dateNode.attributedText?.string
-            
             if canFullscreen {
-                self.fullscreenButton.isHidden = false
-                self.deleteButton.isHidden = true
-            } else {
-                self.deleteButton.isHidden = !canDelete
-                self.fullscreenButton.isHidden = true
+                displayFullscreenButton = true
             }
+            displayDeleteButton = canDelete
 
-            self.actionButton.isHidden = !canShare
-            self.editButton.isHidden = !canEdit
+            displayActionButton = canShare
+            displayEditButton = canEdit
             
             if let adAttribute = message.adAttribute {
                 if self.buttonNode == nil {
@@ -1103,7 +1086,18 @@ final class ChatItemGalleryFooterContentNode: GalleryFooterContentNode, ASScroll
                 buttonNode.removeFromSupernode()
             }
             
-            self.requestLayout?(.immediate)
+            self.buttonsState = (
+                displayDeleteButton: displayDeleteButton,
+                displayFullscreenButton: displayFullscreenButton,
+                displayActionButton: displayActionButton,
+                displayEditButton: displayEditButton,
+                displayPictureInPictureButton: displayPictureInPictureButton,
+                settingsButtonState: settingsButtonState,
+                displayTextRecognitionButton: displayTextRecognitionButton,
+                displayStickersButton: displayStickersButton
+            )
+            
+            self.requestLayout?(animated ? .animated(duration: 0.4, curve: .spring) : .immediate)
         }
     }
     
@@ -1171,20 +1165,14 @@ final class ChatItemGalleryFooterContentNode: GalleryFooterContentNode, ASScroll
         self.hasExpandedCaptionPromise.set(scrollView.contentOffset.y > 1.0)
     }
     
-    override func updateLayout(size: CGSize, metrics: LayoutMetrics, leftInset: CGFloat, rightInset: CGFloat, bottomInset: CGFloat, contentInset: CGFloat, transition: ContainedViewLayoutTransition) -> CGFloat {
+    override func updateLayout(size: CGSize, metrics: LayoutMetrics, leftInset: CGFloat, rightInset: CGFloat, bottomInset: CGFloat, contentInset: CGFloat, transition: ContainedViewLayoutTransition) -> LayoutInfo {
         self.validLayout = (size, metrics, leftInset, rightInset, bottomInset, contentInset)
         
         let width = size.width
-        var bottomInset = bottomInset
-        if !bottomInset.isZero && bottomInset < 30.0 {
-            bottomInset -= 7.0
-        }
-        var panelHeight = 44.0 + bottomInset
+        var panelHeight = 54.0 + bottomInset
         panelHeight += contentInset
         
         let isLandscape = size.width > size.height
-
-        self.fullscreenButton.setImage(isLandscape ? fullscreenOffImage : fullscreenOnImage, for: [.normal])
 
         let displayCaption: Bool
         if case .compact = metrics.widthClass {
@@ -1193,23 +1181,32 @@ final class ChatItemGalleryFooterContentNode: GalleryFooterContentNode, ASScroll
             displayCaption = !self.textNode.isHidden
         }
         
-        if metrics.isTablet {
-            self.fullscreenButton.isHidden = true
+        var buttonPanelInsets = UIEdgeInsets()
+        buttonPanelInsets.left = 8.0
+        buttonPanelInsets.right = 8.0
+        buttonPanelInsets.bottom = bottomInset + 8.0
+        if bottomInset <= 32.0 {
+            buttonPanelInsets.left += 18.0
+            buttonPanelInsets.right += 18.0
         }
         
+        var needsShadow = false
         if !self.textNode.isHidden {
             var textFrame = CGRect()
             var visibleTextHeight: CGFloat = 0.0
             
-            let sideInset: CGFloat = 8.0 + leftInset
+            let sideInset: CGFloat = 16.0 + leftInset
             let topInset: CGFloat = 8.0
-            let textBottomInset: CGFloat = 8.0
+            let textBottomInset: CGFloat = 8.0 + 14.0
             
             let constrainSize = CGSize(width: width - sideInset * 2.0, height: CGFloat.greatestFiniteMagnitude)
             let textSize = self.textNode.updateLayout(constrainSize)
             
             var textOffset: CGFloat = 0.0
+            var additionalTextHeight: CGFloat = 0.0
             if displayCaption {
+                needsShadow = true
+                
                 visibleTextHeight = textSize.height
                 if visibleTextHeight > 100.0 {
                     visibleTextHeight = 80.0
@@ -1230,29 +1227,32 @@ final class ChatItemGalleryFooterContentNode: GalleryFooterContentNode, ASScroll
                 
                 var maxTextOffset: CGFloat = size.height - bottomInset - 238.0 - UIScreenPixel
                 if let _ = self.scrubberView {
-                    maxTextOffset -= 44.0
+                    //maxTextOffset -= 100.0
+                    maxTextOffset += 0.0
+                    additionalTextHeight += 44.0
                 }
                 textOffset = min(maxTextOffset, self.scrollNode.view.contentOffset.y)
+                let originalPanelHeight = panelHeight
                 panelHeight = max(0.0, panelHeight + visibleTextPanelHeight + textOffset)
                 
                 if self.scrollNode.view.isScrollEnabled {
-                    if self.scrollWrapperNode.layer.mask == nil, let maskImage = captionMaskImage {
-                        let maskLayer = CALayer()
-                        maskLayer.contents = maskImage.cgImage
-                        maskLayer.contentsScale = maskImage.scale
-                        maskLayer.contentsCenter = CGRect(x: 0.0, y: 0.0, width: 1.0, height: (maskImage.size.height - 16.0) / maskImage.size.height)
-                        self.scrollWrapperNode.layer.mask = maskLayer
-                        
+                    if self.scrollWrapperNode.view.mask == nil {
+                        self.scrollWrapperNode.view.mask = self.scrollWrapperMask
                     }
                 } else {
-                    self.scrollWrapperNode.layer.mask = nil
+                    self.scrollWrapperNode.view.mask = nil
                 }
                 
-                let scrollWrapperNodeFrame = CGRect(x: 0.0, y: 0.0, width: width, height: max(0.0, visibleTextPanelHeight + textOffset))
+                let scrollWrapperNodeFrame = CGRect(x: 0.0, y: 0.0, width: width, height: max(0.0, visibleTextPanelHeight + textOffset + originalPanelHeight - 14.0 + additionalTextHeight))
                 if self.scrollWrapperNode.frame != scrollWrapperNodeFrame {
                     self.scrollWrapperNode.frame = scrollWrapperNodeFrame
-                    self.scrollWrapperNode.layer.mask?.frame = self.scrollWrapperNode.bounds
-                    self.scrollWrapperNode.layer.mask?.removeAllAnimations()
+                    do {
+                        let mask = self.scrollWrapperMask
+                        mask.update(size: self.scrollWrapperNode.bounds.size, color: UIColor.blue, gradientHeight: 90.0 + additionalTextHeight + contentInset, extensionHeight: 0.0, transition: ComponentTransition(transition))
+                        mask.frame = self.scrollWrapperNode.bounds
+                        mask.layer.removeAllAnimations()
+                    }
+                    self.scrollWrapperEffect.update(size: CGSize(width: scrollWrapperNodeFrame.width, height: scrollWrapperNodeFrame.height), constantHeight: 90.0, placement: VariableBlurEffect.Placement(position: .bottom, inwardsExtension: additionalTextHeight + contentInset), gradient: EdgeEffectView.generateEdgeGradientData(baseHeight: 90.0), transition: transition)
                 }
                 
                 if let buttonNode = self.buttonNode {
@@ -1288,17 +1288,17 @@ final class ChatItemGalleryFooterContentNode: GalleryFooterContentNode, ASScroll
         
         if let scrubberView = self.scrubberView, scrubberView.superview == self.view {
             panelHeight += 10.0
-            if isLandscape, case .compact = metrics.widthClass {
-                panelHeight += 14.0
+            if isLandscape {
+                panelHeight += 34.0
             } else {
                 panelHeight += 34.0
             }
             
-            var scrubberY: CGFloat = 8.0
+            var scrubberY: CGFloat = 0.0
             if self.textNode.isHidden || !displayCaption {
                 panelHeight += 8.0
             } else {
-                scrubberY = panelHeight - bottomInset - 44.0 - 44.0
+                scrubberY = panelHeight - buttonPanelInsets.bottom - 44.0 - 44.0 - 10.0
                 if contentInset > 0.0 {
                     scrubberY -= contentInset
                 }
@@ -1308,50 +1308,178 @@ final class ChatItemGalleryFooterContentNode: GalleryFooterContentNode, ASScroll
                 panelHeight -= 44.0
             }
             
-            let scrubberFrame = CGRect(origin: CGPoint(x: leftInset, y: scrubberY), size: CGSize(width: width - leftInset - rightInset, height: 34.0))
-            scrubberView.updateLayout(size: size, leftInset: leftInset, rightInset: rightInset, transition: .immediate)
+            var scrubberFrame = CGRect(origin: CGPoint(x: buttonPanelInsets.left, y: scrubberY), size: CGSize(width: width - buttonPanelInsets.left - buttonPanelInsets.right, height: 44.0))
+            if scrubberView.hasVisibleInfo {
+                let infoHeight: CGFloat = 16.0
+                scrubberFrame.size.height += infoHeight
+                panelHeight += infoHeight
+            }
+            
+            scrubberView.updateLayout(size: scrubberFrame.size, leftInset: 0.0, rightInset: 0.0, isCollapsed: self.visibilityAlpha < 1.0, transition: transition)
             transition.updateBounds(layer: scrubberView.layer, bounds: CGRect(origin: CGPoint(), size: scrubberFrame.size))
             transition.updatePosition(layer: scrubberView.layer, position: CGPoint(x: scrubberFrame.midX, y: scrubberFrame.midY))
         }
         transition.updateAlpha(node: self.scrollWrapperNode, alpha: displayCaption ? 1.0 : 0.0)
         
-        self.actionButton.frame = CGRect(origin: CGPoint(x: leftInset, y: panelHeight - bottomInset - 44.0), size: CGSize(width: 44.0, height: 44.0))
+        var leftControlItems: [GlassControlGroupComponent.Item] = []
+        var rightControlItems: [GlassControlGroupComponent.Item] = []
+        var centerControlItems: [GlassControlGroupComponent.Item] = []
         
-        let deleteFrame = CGRect(origin: CGPoint(x: width - 44.0 - rightInset, y: panelHeight - bottomInset - 44.0), size: CGSize(width: 44.0, height: 44.0))
-        var editFrame = CGRect(origin: CGPoint(x: width - 44.0 - 50.0 - rightInset, y: panelHeight - bottomInset - 44.0), size: CGSize(width: 44.0, height: 44.0))
-        if self.deleteButton.isHidden && self.fullscreenButton.isHidden {
-            editFrame = deleteFrame
+        if let buttonsState = self.buttonsState {
+            if buttonsState.displayActionButton {
+                leftControlItems.append(GlassControlGroupComponent.Item(
+                    id: AnyHashable("forward"),
+                    content: .icon("Chat/Input/Accessory Panels/MessageSelectionForward"),
+                    action: { [weak self] in
+                        guard let self else {
+                            return
+                        }
+                        self.actionButtonPressed()
+                    }
+                ))
+            }
+            if buttonsState.displayPictureInPictureButton {
+                centerControlItems.append(GlassControlGroupComponent.Item(
+                    id: AnyHashable("pip"),
+                    content: .icon("Media Gallery/PictureInPictureButton"),
+                    action: { [weak self] in
+                        guard let self else {
+                            return
+                        }
+                        self.pipButtonPressed()
+                    }
+                ))
+            }
+            if let settingsButtonState = buttonsState.settingsButtonState {
+                centerControlItems.append(GlassControlGroupComponent.Item(
+                    id: AnyHashable("settings"),
+                    content: .customIcon(id: AnyHashable("settings"), component: AnyComponent(SettingsNavigationIconComponent(
+                        speed: settingsButtonState.speed,
+                        quality: settingsButtonState.quality,
+                        isOpen: false
+                    ))),
+                    action: { [weak self] in
+                        guard let self, let buttonPanelView = self.buttonPanel.view as? GlassControlPanelComponent.View else {
+                            return
+                        }
+                        if let centerItemView = buttonPanelView.centerItemView, let itemView = centerItemView.itemView(id: AnyHashable("settings")) {
+                            self.settingsButtonPressed(sourceView: itemView)
+                        } else if let rightItemView = buttonPanelView.rightItemView, let itemView = rightItemView.itemView(id: AnyHashable("settings")) {
+                            self.settingsButtonPressed(sourceView: itemView)
+                        }
+                    }
+                ))
+            }
+            if buttonsState.displayEditButton {
+                centerControlItems.append(GlassControlGroupComponent.Item(
+                    id: AnyHashable("edit"),
+                    content: .icon("Media Gallery/Draw"),
+                    action: { [weak self] in
+                        guard let self else {
+                            return
+                        }
+                        self.editButtonPressed()
+                    }
+                ))
+            }
+            if buttonsState.displayTextRecognitionButton {
+                centerControlItems.append(GlassControlGroupComponent.Item(
+                    id: AnyHashable("textRecognition"),
+                    content: .icon("Media Gallery/LiveTextIcon"),
+                    action: { [weak self] in
+                        guard let self else {
+                            return
+                        }
+                        self.textRecognitionButtonPressed()
+                    }
+                ))
+            }
+            if buttonsState.displayStickersButton {
+                centerControlItems.append(GlassControlGroupComponent.Item(
+                    id: AnyHashable("stickers"),
+                    content: .icon("Media Gallery/Stickers"),
+                    action: { [weak self] in
+                        guard let self else {
+                            return
+                        }
+                        self.stickersButtonPressed()
+                    }
+                ))
+            }
+            if buttonsState.displayFullscreenButton && !metrics.isTablet {
+                centerControlItems.append(GlassControlGroupComponent.Item(
+                    id: AnyHashable("fullscreen"),
+                    content: .icon(isLandscape ? "Chat/Context Menu/Collapse" : "Chat/Context Menu/Expand"),
+                    action: { [weak self] in
+                        guard let self else {
+                            return
+                        }
+                        self.fullscreenButtonPressed()
+                    }
+                ))
+            }
+            if buttonsState.displayDeleteButton {
+                rightControlItems.append(GlassControlGroupComponent.Item(
+                    id: AnyHashable("delete"),
+                    content: .icon("Chat/Input/Accessory Panels/MessageSelectionTrash"),
+                    action: { [weak self] in
+                        guard let self else {
+                            return
+                        }
+                        self.deleteButtonPressed()
+                    }
+                ))
+            }
         }
-        self.deleteButton.frame = deleteFrame
-        self.fullscreenButton.frame = deleteFrame
-        self.editButton.frame = editFrame
+        
+        if !centerControlItems.isEmpty && rightControlItems.isEmpty {
+            rightControlItems = centerControlItems
+            centerControlItems = []
+        }
+        
+        let buttonPanelSize = self.buttonPanel.update(
+            transition: ComponentTransition(transition),
+            component: AnyComponent(GlassControlPanelComponent(
+                theme: defaultDarkColorPresentationTheme,
+                leftItem: leftControlItems.isEmpty ? nil : GlassControlPanelComponent.Item(
+                    items: leftControlItems,
+                    background: .panel
+                ),
+                centralItem: centerControlItems.isEmpty ? nil : GlassControlPanelComponent.Item(
+                    items: centerControlItems,
+                    background: .panel
+                ),
+                rightItem: rightControlItems.isEmpty ? nil : GlassControlPanelComponent.Item(
+                    items: rightControlItems,
+                    background: .panel
+                ),
+                centerAlignmentIfPossible: true
+            )),
+            environment: {},
+            containerSize: CGSize(width: size.width - buttonPanelInsets.left - buttonPanelInsets.right, height: 44.0)
+        )
+        let buttonPanelFrame = CGRect(origin: CGPoint(x: buttonPanelInsets.left, y: panelHeight - buttonPanelInsets.bottom - buttonPanelSize.height), size: buttonPanelSize)
+        if let buttonPanelView = self.buttonPanel.view {
+            if buttonPanelView.superview == nil {
+                self.contentNode.view.addSubview(buttonPanelView)
+            }
+            ComponentTransition(transition).setFrame(view: buttonPanelView, frame: buttonPanelFrame)
+        }
 
         if let image = self.backwardButton.backgroundIconNode.image {
-            self.backwardButton.frame = CGRect(origin: CGPoint(x: floor((width - image.size.width) / 2.0) - 66.0, y: panelHeight - bottomInset - 44.0 + 7.0), size: image.size)
+            self.backwardButton.frame = CGRect(origin: CGPoint(x: floor((width - image.size.width) / 2.0) - 66.0, y: panelHeight - buttonPanelInsets.bottom - 44.0 + floorToScreenPixels((44.0 - image.size.height) * 0.5)), size: image.size)
         }
         if let image = self.forwardButton.backgroundIconNode.image {
-            self.forwardButton.frame = CGRect(origin: CGPoint(x: floor((width - image.size.width) / 2.0) + 66.0, y: panelHeight - bottomInset - 44.0 + 7.0), size: image.size)
+            self.forwardButton.frame = CGRect(origin: CGPoint(x: floor((width - image.size.width) / 2.0) + 66.0, y: panelHeight - buttonPanelInsets.bottom - 44.0 + floorToScreenPixels((44.0 - image.size.height) * 0.5)), size: image.size)
         }
         
-        self.playbackControlButton.frame = CGRect(origin: CGPoint(x: floor((width - 44.0) / 2.0), y: panelHeight - bottomInset - 44.0 - 2.0), size: CGSize(width: 44.0, height: 44.0))
-        self.playPauseIconNode.frame = self.playbackControlButton.bounds.offsetBy(dx: 2.0, dy: 2.0)
+        self.playbackControlButton.frame = CGRect(origin: CGPoint(x: floor((width - 44.0) / 2.0), y: panelHeight - buttonPanelInsets.bottom - 44.0 + floorToScreenPixels((44.0 - 44.0) * 0.5)), size: CGSize(width: 44.0, height: 44.0))
+        self.playPauseIconNode.frame = self.playbackControlButton.bounds.offsetBy(dx: 2.0, dy: -2.0)
         
         let statusSize = CGSize(width: 28.0, height: 28.0)
         transition.updateFrame(node: self.statusNode, frame: CGRect(origin: CGPoint(x: floor((width - statusSize.width) / 2.0), y: panelHeight - bottomInset - statusSize.height - 8.0), size: statusSize))
         
         self.statusButtonNode.frame = CGRect(origin: CGPoint(x: floor((width - 44.0) / 2.0), y: panelHeight - bottomInset - 44.0), size: CGSize(width: 44.0, height: 44.0))
-        
-        let buttonsSideInset: CGFloat = !self.editButton.isHidden ? 88.0 : 44.0
-        let authorNameSize = self.authorNameNode.measure(CGSize(width: width - buttonsSideInset * 2.0 - 8.0 * 2.0 - leftInset - rightInset, height: CGFloat.greatestFiniteMagnitude))
-        let dateSize = self.dateNode.measure(CGSize(width: width - buttonsSideInset * 2.0 - 8.0 * 2.0, height: CGFloat.greatestFiniteMagnitude))
-        
-        if authorNameSize.height.isZero {
-            self.dateNode.frame = CGRect(origin: CGPoint(x: floor((width - dateSize.width) / 2.0), y: panelHeight - bottomInset - 44.0 + floor((44.0 - dateSize.height) / 2.0)), size: dateSize)
-        } else {
-            let labelsSpacing: CGFloat = 0.0
-            self.authorNameNode.frame = CGRect(origin: CGPoint(x: floor((width - authorNameSize.width) / 2.0), y: panelHeight - bottomInset - 44.0 + floor((44.0 - dateSize.height - authorNameSize.height - labelsSpacing) / 2.0)), size: authorNameSize)
-            self.dateNode.frame = CGRect(origin: CGPoint(x: floor((width - dateSize.width) / 2.0), y: panelHeight - bottomInset - 44.0 + floor((44.0 - dateSize.height - authorNameSize.height - labelsSpacing) / 2.0) + authorNameSize.height + labelsSpacing), size: dateSize)
-        }
         
         if let (videoFramePreviewNode, videoFrameTextNode) = self.videoFramePreviewNode {
             let intrinsicImageSize = videoFramePreviewNode.image?.size ?? CGSize(width: 320.0, height: 240.0)
@@ -1365,7 +1493,7 @@ final class ChatItemGalleryFooterContentNode: GalleryFooterContentNode, ASScroll
             if size.width > size.height {
                 scrubberInset = 58.0
             } else {
-                scrubberInset = 13.0
+                scrubberInset = 14.0 + 8.0
             }
             
             let imageSize = intrinsicImageSize.aspectFitted(fitSize)
@@ -1382,7 +1510,7 @@ final class ChatItemGalleryFooterContentNode: GalleryFooterContentNode, ASScroll
         
         self.contentNode.frame = CGRect(origin: CGPoint(), size: CGSize(width: width, height: panelHeight))
         
-        return panelHeight
+        return LayoutInfo(height: panelHeight, needsShadow: needsShadow)
     }
     
     override func animateIn(transition: ContainedViewLayoutTransition) {
@@ -1397,22 +1525,22 @@ final class ChatItemGalleryFooterContentNode: GalleryFooterContentNode, ASScroll
                 transition.animatePositionAdditive(layer: scrubberView.layer, offset: CGPoint(x: 0.0, y: self.bounds.height - fromHeight))
             }
             scrubberView.alpha = 1.0
-            scrubberView.layer.animateAlpha(from: 0.0, to: 1.0, duration: 0.15)
+            if transition.isAnimated {
+                scrubberView.layer.animateAlpha(from: 0.0, to: 1.0, duration: 0.15)
+            }
         }
         transition.animatePositionAdditive(node: self.scrollWrapperNode, offset: CGPoint(x: 0.0, y: self.bounds.height - fromHeight))
-        self.scrollWrapperNode.alpha = 1.0
-        self.dateNode.alpha = 1.0
-        self.authorNameNode.alpha = 1.0
-        self.deleteButton.alpha = 1.0
-        self.fullscreenButton.alpha = 1.0
-        self.actionButton.alpha = 1.0
-        self.editButton.alpha = 1.0
+        self.scrollNode.alpha = 0.0
+        ComponentTransition(transition).setAlpha(view: self.scrollNode.view, alpha: 1.0)
+        if let buttonPanelView = self.buttonPanel.view {
+            buttonPanelView.alpha = 1.0
+        }
+        
         self.backwardButton.alpha = self.hasSeekControls ? 1.0 : 0.0
         self.forwardButton.alpha = self.hasSeekControls ? 1.0 : 0.0
         self.statusNode.alpha = 1.0
         self.playbackControlButton.alpha = 1.0
         self.buttonNode?.alpha = 1.0
-        self.scrollWrapperNode.layer.animateAlpha(from: 0.0, to: 1.0, duration: 0.15)
     }
     
     override func animateOut(transition: ContainedViewLayoutTransition) {
@@ -1429,21 +1557,19 @@ final class ChatItemGalleryFooterContentNode: GalleryFooterContentNode, ASScroll
             scrubberView.layer.animateAlpha(from: 1.0, to: 0.0, duration: 0.15)
         }
         transition.updateFrame(node: self.scrollWrapperNode, frame: self.scrollWrapperNode.frame.offsetBy(dx: 0.0, dy: self.bounds.height - toHeight))
-        self.scrollWrapperNode.alpha = 0.0
-        self.dateNode.alpha = 0.0
-        self.authorNameNode.alpha = 0.0
-        self.deleteButton.alpha = 0.0
-        self.fullscreenButton.alpha = 0.0
-        self.actionButton.alpha = 0.0
-        self.editButton.alpha = 0.0
+        ComponentTransition(transition).setAlpha(view: self.scrollNode.view, alpha: 0.0, completion: { _ in
+            completion()
+        })
+        
+        if let buttonPanelView = self.buttonPanel.view {
+            buttonPanelView.alpha = 0.0
+        }
+        
         self.backwardButton.alpha = 0.0
         self.forwardButton.alpha = 0.0
         self.statusNode.alpha = 0.0
         self.playbackControlButton.alpha = 0.0
         self.buttonNode?.alpha = 0.0
-        self.scrollWrapperNode.layer.animateAlpha(from: 1.0, to: 0.0, duration: 0.15, completion: { _ in
-            completion()
-        })
     }
 
     @objc func fullscreenButtonPressed() {
@@ -1615,7 +1741,25 @@ final class ChatItemGalleryFooterContentNode: GalleryFooterContentNode, ASScroll
                     var messageContentKinds = Set<MessageContentKindKey>()
                     
                     for message in messages {
-                        let currentKind = messageContentKind(contentSettings: strongSelf.context.currentContentSettings.with { $0 }, message: message, strings: presentationData.strings, nameDisplayOrder: presentationData.nameDisplayOrder, dateTimeFormat: presentationData.dateTimeFormat, accountPeerId: strongSelf.context.account.peerId)
+                        var currentKind = messageContentKind(contentSettings: strongSelf.context.currentContentSettings.with { $0 }, message: message, strings: presentationData.strings, nameDisplayOrder: presentationData.nameDisplayOrder, dateTimeFormat: presentationData.dateTimeFormat, accountPeerId: strongSelf.context.account.peerId)
+                        if case .poll = currentKind, let poll = message.media.first(where: { $0 is TelegramMediaPoll }) as? TelegramMediaPoll {
+                            var media: Media?
+                            switch strongSelf.mediaSubject {
+                            case .pollDescription:
+                                media = poll.attachedMedia
+                            case .pollSolution:
+                                media = poll.results.solution?.media
+                            case let .pollOption(opaqueIdentifier):
+                                if let option = poll.options.first(where: { $0.opaqueIdentifier == opaqueIdentifier }) {
+                                    media = option.media
+                                }
+                            default:
+                                break
+                            }
+                            if let media, let kind = mediaContentKind(EngineMedia(media)) {
+                                currentKind = kind
+                            }
+                        }
                         if beganContentKindScanning, let messageContentKind = generalMessageContentKind, !messageContentKind.isSemanticallyEqual(to: currentKind) {
                             generalMessageContentKind = nil
                         } else if !beganContentKindScanning || currentKind == generalMessageContentKind {
@@ -1650,8 +1794,25 @@ final class ChatItemGalleryFooterContentNode: GalleryFooterContentNode, ASScroll
                     
                     if messages.count == 1 {
                         var subject: ShareControllerSubject = ShareControllerSubject.messages(messages.map { $0._asMessage() })
-                        for m in messages[0].media {
-                            if let image = m as? TelegramMediaImage {
+                        
+                        var media = messages[0].media.first
+                        if let poll = media as? TelegramMediaPoll {
+                            switch strongSelf.mediaSubject {
+                            case .pollDescription:
+                                media = poll.attachedMedia
+                            case .pollSolution:
+                                media = poll.results.solution?.media
+                            case let .pollOption(opaqueIdentifier):
+                                if let option = poll.options.first(where: { $0.opaqueIdentifier == opaqueIdentifier }) {
+                                    media = option.media
+                                }
+                            default:
+                                break
+                            }
+                        }
+                        
+                        if let m = media {
+                            if let image = media as? TelegramMediaImage {
                                 subject = .image(image.representations.map({ ImageRepresentationWithReference(representation: $0, reference: .media(media: .message(message: MessageReference(messages[0]._asMessage()), media: m), resource: $0.resource)) }))
                             } else if let webpage = m as? TelegramMediaWebpage, case let .Loaded(content) = webpage.content {
                                 if content.embedType == "iframe" {
@@ -1744,41 +1905,14 @@ final class ChatItemGalleryFooterContentNode: GalleryFooterContentNode, ASScroll
                             }
                         }
                         
-                        let shareController = ShareController(context: strongSelf.context, subject: subject, preferredAction: preferredAction, externalShare: hasExternalShare, forceTheme: forceTheme)
-                        shareController.dismissed = { [weak self] _ in
-                            self?.interacting?(false)
-                        }
-                        shareController.onMediaTimestampLinkCopied = { [weak self] timestamp in
-                            guard let self else {
-                                return
-                            }
-                            let presentationData = self.context.sharedContext.currentPresentationData.with { $0 }
-                            let text: String
-                            if let timestamp {
-                                let startTimeString: String
-                                let hours = timestamp / (60 * 60)
-                                let minutes = timestamp % (60 * 60) / 60
-                                let seconds = timestamp % 60
-                                if hours != 0 {
-                                    startTimeString = String(format: "%d:%02d:%02d", hours, minutes, seconds)
-                                } else {
-                                    startTimeString = String(format: "%d:%02d", minutes, seconds)
-                                }
-                                text = presentationData.strings.Conversation_VideoTimeLinkCopied(startTimeString).string
-                            } else {
-                                text = presentationData.strings.Conversation_LinkCopied
-                            }
-                            
-                            self.controllerInteraction?.presentController(UndoOverlayController(presentationData: presentationData, content: .linkCopied(title: nil, text: text), elevatedLayout: true, animateInAsReplacement: false, action: { _ in return true }), nil)
-                        }
-                        
-                        shareController.actionCompleted = { [weak self] in
+                        let shareController = strongSelf.context.sharedContext.makeShareController(context: strongSelf.context, params: ShareControllerParams(subject: subject, preferredAction: preferredAction, externalShare: hasExternalShare, forceTheme: forceTheme, actionCompleted: { [weak self] in
                             if let strongSelf = self, let actionCompletionText = actionCompletionText {
                                 let presentationData = strongSelf.context.sharedContext.currentPresentationData.with { $0 }
                                 strongSelf.controllerInteraction?.presentController(UndoOverlayController(presentationData: presentationData, content: .mediaSaved(text: actionCompletionText), elevatedLayout: true, animateInAsReplacement: false, action: { _ in return true }), nil)
                             }
-                        }
-                        shareController.completed = { [weak self] peerIds in
+                        }, dismissed: { [weak self] _ in
+                            self?.interacting?(false)
+                        }, completed: { [weak self] peerIds in
                             if let strongSelf = self {
                                 let _ = (strongSelf.context.engine.data.get(
                                     EngineDataList(
@@ -1789,7 +1923,7 @@ final class ChatItemGalleryFooterContentNode: GalleryFooterContentNode, ASScroll
                                     if let strongSelf = self {
                                         let peers = peerList.compactMap { $0 }
                                         let presentationData = strongSelf.context.sharedContext.currentPresentationData.with { $0 }
-                                        
+
                                         let text: String
                                         var savedMessages = false
                                         if peerIds.count == 1, let peerId = peerIds.first, peerId == strongSelf.context.account.peerId {
@@ -1814,12 +1948,33 @@ final class ChatItemGalleryFooterContentNode: GalleryFooterContentNode, ASScroll
                                                 text = ""
                                             }
                                         }
-                                        
+
                                         strongSelf.controllerInteraction?.presentController(UndoOverlayController(presentationData: presentationData, content: .forward(savedMessages: savedMessages, text: text), elevatedLayout: true, animateInAsReplacement: true, action: { _ in return false }), nil)
                                     }
                                 })
                             }
-                        }
+                        }, onMediaTimestampLinkCopied: { [weak self] timestamp in
+                            guard let self else {
+                                return
+                            }
+                            let presentationData = self.context.sharedContext.currentPresentationData.with { $0 }
+                            let text: String
+                            if let timestamp {
+                                let startTimeString: String
+                                let hours = timestamp / (60 * 60)
+                                let minutes = timestamp % (60 * 60) / 60
+                                let seconds = timestamp % 60
+                                if hours != 0 {
+                                    startTimeString = String(format: "%d:%02d:%02d", hours, minutes, seconds)
+                                } else {
+                                    startTimeString = String(format: "%d:%02d", minutes, seconds)
+                                }
+                                text = presentationData.strings.Conversation_VideoTimeLinkCopied(startTimeString).string
+                            } else {
+                                text = presentationData.strings.Conversation_LinkCopied
+                            }
+                            self.controllerInteraction?.presentController(UndoOverlayController(presentationData: presentationData, content: .linkCopied(title: nil, text: text), elevatedLayout: true, animateInAsReplacement: false, action: { _ in return true }), nil)
+                        }))
                         strongSelf.controllerInteraction?.presentController(shareController, nil)
                     } else {
                         var singleText = presentationData.strings.Media_ShareItem(1)
@@ -1840,17 +1995,14 @@ final class ChatItemGalleryFooterContentNode: GalleryFooterContentNode, ASScroll
                         
                         let shareAction: ([Message]) -> Void = { messages in
                             if let strongSelf = self {
-                                let shareController = ShareController(context: strongSelf.context, subject: .messages(messages), preferredAction: preferredAction, forceTheme: forceTheme)
-                                shareController.dismissed = { [weak self] _ in
-                                    self?.interacting?(false)
-                                }
-                                shareController.actionCompleted = { [weak self, weak shareController] in
-                                    if let strongSelf = self, let shareController = shareController, shareController.actionIsMediaSaving {
+                                let shareController = strongSelf.context.sharedContext.makeShareController(context: strongSelf.context, params: ShareControllerParams(subject: .messages(messages), preferredAction: preferredAction, forceTheme: forceTheme, actionCompleted: { [weak self] in
+                                    if let strongSelf = self {
                                         let presentationData = strongSelf.context.sharedContext.currentPresentationData.with { $0 }
                                         strongSelf.controllerInteraction?.presentController(UndoOverlayController(presentationData: presentationData, content: .mediaSaved(text: presentationData.strings.Gallery_ImageSaved), elevatedLayout: true, animateInAsReplacement: false, action: { _ in return true }), nil)
                                     }
-                                }
-                                shareController.completed = { [weak self] peerIds in
+                                }, dismissed: { [weak self] _ in
+                                    self?.interacting?(false)
+                                }, completed: { [weak self] peerIds in
                                     if let strongSelf = self {
                                         let _ = (strongSelf.context.engine.data.get(
                                             EngineDataList(
@@ -1861,7 +2013,7 @@ final class ChatItemGalleryFooterContentNode: GalleryFooterContentNode, ASScroll
                                             if let strongSelf = self {
                                                 let peers = peerList.compactMap { $0 }
                                                 let presentationData = strongSelf.context.sharedContext.currentPresentationData.with { $0 }
-                                                
+
                                                 let text: String
                                                 var savedMessages = false
                                                 if peerIds.count == 1, let peerId = peerIds.first, peerId == strongSelf.context.account.peerId {
@@ -1886,12 +2038,12 @@ final class ChatItemGalleryFooterContentNode: GalleryFooterContentNode, ASScroll
                                                         text = ""
                                                     }
                                                 }
-                                                
+
                                                 strongSelf.controllerInteraction?.presentController(UndoOverlayController(presentationData: presentationData, content: .forward(savedMessages: savedMessages, text: text), elevatedLayout: true, animateInAsReplacement: true, action: { _ in return false }), nil)
                                             }
                                         })
                                     }
-                                }
+                                }))
                                 strongSelf.controllerInteraction?.presentController(shareController, nil)
                             }
                         }
@@ -1998,11 +2150,9 @@ final class ChatItemGalleryFooterContentNode: GalleryFooterContentNode, ASScroll
                     }
                 }
             }
-            let shareController = ShareController(context: self.context, subject: subject, preferredAction: preferredAction, forceTheme: forceTheme)
-            shareController.dismissed = { [weak self] _ in
+            let shareController = self.context.sharedContext.makeShareController(context: self.context, params: ShareControllerParams(subject: subject, preferredAction: preferredAction, forceTheme: forceTheme, dismissed: { [weak self] _ in
                 self?.interacting?(false)
-            }
-            shareController.completed = { [weak self] peerIds in
+            }, completed: { [weak self] peerIds in
                 if let strongSelf = self {
                     let _ = (strongSelf.context.engine.data.get(
                         EngineDataList(
@@ -2013,7 +2163,7 @@ final class ChatItemGalleryFooterContentNode: GalleryFooterContentNode, ASScroll
                         if let strongSelf = self {
                             let peers = peerList.compactMap { $0 }
                             let presentationData = strongSelf.context.sharedContext.currentPresentationData.with { $0 }
-                            
+
                             let text: String
                             var savedMessages = false
                             if peerIds.count == 1, let peerId = peerIds.first, peerId == strongSelf.context.account.peerId {
@@ -2038,12 +2188,12 @@ final class ChatItemGalleryFooterContentNode: GalleryFooterContentNode, ASScroll
                                     text = ""
                                 }
                             }
-                            
+
                             strongSelf.controllerInteraction?.presentController(UndoOverlayController(presentationData: presentationData, content: .forward(savedMessages: savedMessages, text: text), elevatedLayout: true, animateInAsReplacement: true, action: { _ in return false }), nil)
                         }
                     })
                 }
-            }
+            }))
             self.controllerInteraction?.presentController(shareController, nil)
         }
     }
@@ -2053,6 +2203,35 @@ final class ChatItemGalleryFooterContentNode: GalleryFooterContentNode, ASScroll
             return
         }
         self.controllerInteraction?.editMedia(message.id)
+    }
+    
+    private func textRecognitionButtonPressed() {
+        guard let currentItemNode = self.controllerInteraction?.currentItemNode() as? ChatImageGalleryItemNode else {
+            return
+        }
+        currentItemNode.textRecognitionButtonPressed()
+    }
+    
+    private func stickersButtonPressed() {
+        if let currentItemNode = self.controllerInteraction?.currentItemNode() as? ChatImageGalleryItemNode {
+            currentItemNode.openStickersButtonPressed()
+        } else if let currentItemNode = self.controllerInteraction?.currentItemNode() as? UniversalVideoGalleryItemNode {
+            currentItemNode.openStickersButtonPressed()
+        }
+    }
+    
+    private func pipButtonPressed() {
+        guard let currentItemNode = self.controllerInteraction?.currentItemNode() as? UniversalVideoGalleryItemNode else {
+            return
+        }
+        currentItemNode.pictureInPictureButtonPressed()
+    }
+    
+    private func settingsButtonPressed(sourceView: UIView) {
+        guard let currentItemNode = self.controllerInteraction?.currentItemNode() as? UniversalVideoGalleryItemNode else {
+            return
+        }
+        currentItemNode.settingsButtonPressed(sourceView: sourceView)
     }
     
     @objc func playbackControlPressed() {
@@ -2081,7 +2260,7 @@ final class ChatItemGalleryFooterContentNode: GalleryFooterContentNode, ASScroll
         }
     }
     
-    func setFramePreviewImage(image: UIImage?) {
+    func setFramePreviewImage(image: UIImage?, isSecret: Bool) {
         if let image = image {
             let videoFramePreviewNode: ASImageNode
             let videoFrameTextNode: ImmediateTextNode
@@ -2118,6 +2297,7 @@ final class ChatItemGalleryFooterContentNode: GalleryFooterContentNode, ASScroll
             videoFramePreviewNode.subnodes?.first?.alpha = 0.0
             let updateLayout = videoFramePreviewNode.image?.size != image.size
             videoFramePreviewNode.image = image
+            setLayerDisableScreenshots(videoFramePreviewNode.layer, isSecret)
             if updateLayout, let validLayout = self.validLayout {
                 let _ = self.updateLayout(size: validLayout.0, metrics: validLayout.1, leftInset: validLayout.2, rightInset: validLayout.3, bottomInset: validLayout.4, contentInset: validLayout.5, transition: .immediate)
             }
@@ -2246,5 +2426,227 @@ private final class PlaybackButtonNode: HighlightTrackingButtonNode {
         let size = self.bounds.size
         let textSize = self.textNode.updateLayout(size)
         self.textNode.frame = CGRect(origin: CGPoint(x: floorToScreenPixels((size.width - textSize.width) / 2.0), y: floorToScreenPixels((size.height - textSize.height) / 2.0) + UIScreenPixel), size: textSize)
+    }
+}
+
+final class SettingsNavigationIconComponent: Component {
+    let speed: String?
+    let quality: String?
+    let isOpen: Bool
+    
+    init(speed: String?, quality: String?, isOpen: Bool) {
+        self.speed = speed
+        self.quality = quality
+        self.isOpen = isOpen
+    }
+    
+    static func ==(lhs: SettingsNavigationIconComponent, rhs: SettingsNavigationIconComponent) -> Bool {
+        if lhs.speed != rhs.speed {
+            return false
+        }
+        if lhs.quality != rhs.quality {
+            return false
+        }
+        if lhs.isOpen != rhs.isOpen {
+            return false
+        }
+        return true
+    }
+    
+    final class View: UIView {
+        private let iconLayer: RasterizedCompositionMonochromeLayer
+        
+        private let gearsLayer: RasterizedCompositionImageLayer
+        private let dotLayer: RasterizedCompositionImageLayer
+        
+        private var speedBadge: ComponentView<Empty>?
+        private var qualityBadge: ComponentView<Empty>?
+        
+        private var speedBadgeText: String?
+        private var qualityBadgeText: String?
+        
+        private let badgeFont: UIFont
+        
+        private var isMenuOpen: Bool = false
+        
+        override init(frame: CGRect) {
+            self.iconLayer = RasterizedCompositionMonochromeLayer()
+            
+            self.gearsLayer = RasterizedCompositionImageLayer()
+            self.gearsLayer.image = generateTintedImage(image: UIImage(bundleImageName: "Media Gallery/NavigationSettingsNoDot"), color: .white)
+            
+            self.dotLayer = RasterizedCompositionImageLayer()
+            self.dotLayer.image = generateFilledCircleImage(diameter: 4.0, color: .white)
+            
+            self.iconLayer.contentsLayer.addSublayer(self.gearsLayer)
+            self.iconLayer.contentsLayer.addSublayer(self.dotLayer)
+            
+            self.badgeFont = Font.with(size: 8.0, design: .round, weight: .bold)
+            
+            super.init(frame: frame)
+            
+            self.layer.addSublayer(self.iconLayer)
+            
+            let size = CGSize(width: 44.0, height: 44.0)
+            
+            if let image = self.gearsLayer.image {
+                let iconInnerInsets = UIEdgeInsets(top: 4.0, left: 8.0, bottom: 4.0, right: 6.0)
+                let iconSize = CGSize(width: image.size.width + iconInnerInsets.left + iconInnerInsets.right, height: image.size.height + iconInnerInsets.top + iconInnerInsets.bottom)
+                let iconFrame = CGRect(origin: CGPoint(x: floor((size.width - iconSize.width) / 2.0), y: floor((size.height - iconSize.height) / 2.0)), size: iconSize)
+                self.iconLayer.position = iconFrame.center
+                self.iconLayer.bounds = CGRect(origin: CGPoint(), size: iconFrame.size)
+                
+                self.iconLayer.contentsLayer.position = CGRect(origin: CGPoint(), size: iconFrame.size).center
+                self.iconLayer.contentsLayer.bounds = CGRect(origin: CGPoint(), size: iconFrame.size)
+                
+                self.iconLayer.maskedLayer.position = CGRect(origin: CGPoint(), size: iconFrame.size).center
+                self.iconLayer.maskedLayer.bounds = CGRect(origin: CGPoint(), size: iconFrame.size)
+                self.iconLayer.maskedLayer.backgroundColor = UIColor.white.cgColor
+                
+                let gearsFrame = CGRect(origin: CGPoint(x: floor((iconSize.width - image.size.width) * 0.5), y: floor((iconSize.height - image.size.height) * 0.5)), size: image.size)
+                self.gearsLayer.position = gearsFrame.center
+                self.gearsLayer.bounds = CGRect(origin: CGPoint(), size: gearsFrame.size)
+                
+                if let dotImage = self.dotLayer.image {
+                    let dotFrame = CGRect(origin: CGPoint(x: gearsFrame.minX + floorToScreenPixels((gearsFrame.width - dotImage.size.width) * 0.5), y: gearsFrame.minY + floorToScreenPixels((gearsFrame.height - dotImage.size.height) * 0.5)), size: dotImage.size)
+                    self.dotLayer.position = dotFrame.center
+                    self.dotLayer.bounds = CGRect(origin: CGPoint(), size: dotFrame.size)
+                }
+            }
+        }
+        
+        required init?(coder: NSCoder) {
+            fatalError("init(coder:) has not been implemented")
+        }
+        
+        func setIsMenuOpen(isMenuOpen: Bool) {
+            if self.isMenuOpen == isMenuOpen {
+                return
+            }
+            self.isMenuOpen = isMenuOpen
+            
+            let rotationTransition: ContainedViewLayoutTransition = .animated(duration: 0.35, curve: .spring)
+            rotationTransition.updateTransform(layer: self.gearsLayer, transform: CGAffineTransformMakeRotation(isMenuOpen ? (CGFloat.pi * 2.0 / 6.0) : 0.0))
+            self.gearsLayer.animateScale(from: 1.0, to: 1.07, duration: 0.1, removeOnCompletion: false, completion: { [weak self] finished in
+                guard let self, finished else {
+                    return
+                }
+                self.gearsLayer.animateScale(from: 1.07, to: 1.0, duration: 0.1, removeOnCompletion: true)
+            })
+            
+            self.dotLayer.animateScale(from: 1.0, to: 0.8, duration: 0.1, removeOnCompletion: false, completion: { [weak self] finished in
+                guard let self, finished else {
+                    return
+                }
+                self.dotLayer.animateScale(from: 0.8, to: 1.0, duration: 0.1, removeOnCompletion: true)
+            })
+        }
+        
+        func setBadges(speed: String?, quality: String?, transition: ComponentTransition) {
+            if self.speedBadgeText == speed && self.qualityBadgeText == quality {
+                return
+            }
+            self.speedBadgeText = speed
+            self.qualityBadgeText = quality
+            
+            if let badgeText = speed {
+                var badgeTransition = transition
+                let speedBadge: ComponentView<Empty>
+                if let current = self.speedBadge {
+                    speedBadge = current
+                } else {
+                    speedBadge = ComponentView()
+                    self.speedBadge = speedBadge
+                    badgeTransition = badgeTransition.withAnimation(.none)
+                }
+                let badgeSize = speedBadge.update(
+                    transition: badgeTransition,
+                    component: AnyComponent(BadgeComponent(
+                        text: badgeText,
+                        font: self.badgeFont,
+                        cornerRadius: .custom(3.0),
+                        insets: UIEdgeInsets(top: 1.33, left: 1.66, bottom: 1.33, right: 1.66),
+                        outerInsets: UIEdgeInsets(top: 1.0, left: 1.0, bottom: 1.0, right: 1.0)
+                    )),
+                    environment: {},
+                    containerSize: CGSize(width: 100.0, height: 100.0)
+                )
+                if let speedBadgeView = speedBadge.view {
+                    if speedBadgeView.layer.superlayer == nil {
+                        self.iconLayer.contentsLayer.addSublayer(speedBadgeView.layer)
+                        
+                        transition.animateAlpha(layer: speedBadgeView.layer, from: 0.0, to: 1.0)
+                        transition.animateScale(layer: speedBadgeView.layer, from: 0.001, to: 1.0)
+                    }
+                    badgeTransition.setFrame(layer: speedBadgeView.layer, frame: CGRect(origin: CGPoint(x: 0.0, y: 0.0), size: badgeSize))
+                }
+            } else if let speedBadge = self.speedBadge {
+                self.speedBadge = nil
+                if let speedBadgeView = speedBadge.view {
+                    let speedBadgeLayer = speedBadgeView.layer
+                    transition.setAlpha(layer: speedBadgeLayer, alpha: 0.0, completion: { [weak speedBadgeLayer] _ in
+                        speedBadgeLayer?.removeFromSuperlayer()
+                    })
+                    transition.setScale(layer: speedBadgeLayer, scale: 0.001)
+                }
+            }
+            
+            if let badgeText = quality {
+                var badgeTransition = transition
+                let qualityBadge: ComponentView<Empty>
+                if let current = self.qualityBadge {
+                    qualityBadge = current
+                } else {
+                    qualityBadge = ComponentView()
+                    self.qualityBadge = qualityBadge
+                    badgeTransition = badgeTransition.withAnimation(.none)
+                }
+                let badgeSize = qualityBadge.update(
+                    transition: badgeTransition,
+                    component: AnyComponent(BadgeComponent(
+                        text: badgeText,
+                        font: self.badgeFont,
+                        cornerRadius: .custom(3.0),
+                        insets: UIEdgeInsets(top: 1.33, left: 1.66, bottom: 1.33, right: 1.66),
+                        outerInsets: UIEdgeInsets(top: 1.0, left: 1.0, bottom: 1.0, right: 1.0)
+                    )),
+                    environment: {},
+                    containerSize: CGSize(width: 100.0, height: 100.0)
+                )
+                if let qualityBadgeView = qualityBadge.view {
+                    if qualityBadgeView.layer.superlayer == nil {
+                        self.iconLayer.contentsLayer.addSublayer(qualityBadgeView.layer)
+                        
+                        transition.animateAlpha(layer: qualityBadgeView.layer, from: 0.0, to: 1.0)
+                        transition.animateScale(layer: qualityBadgeView.layer, from: 0.001, to: 1.0)
+                    }
+                    badgeTransition.setFrame(layer: qualityBadgeView.layer, frame: CGRect(origin: CGPoint(x: self.iconLayer.bounds.width - badgeSize.width, y: self.iconLayer.bounds.height - badgeSize.height), size: badgeSize))
+                }
+            } else if let qualityBadge = self.qualityBadge {
+                self.qualityBadge = nil
+                if let qualityBadgeView = qualityBadge.view {
+                    let qualityBadgeLayer = qualityBadgeView.layer
+                    transition.setAlpha(layer: qualityBadgeLayer, alpha: 0.0, completion: { [weak qualityBadgeLayer] _ in
+                        qualityBadgeLayer?.removeFromSuperlayer()
+                    })
+                    transition.setScale(layer: qualityBadgeLayer, scale: 0.001)
+                }
+            }
+        }
+        
+        func update(component: SettingsNavigationIconComponent, availableSize: CGSize, state: State, environment: Environment<Empty>, transition: ComponentTransition) -> CGSize {
+            self.setBadges(speed: component.speed, quality: component.quality, transition: transition)
+            self.setIsMenuOpen(isMenuOpen: component.isOpen)
+            
+            return CGSize(width: 44.0, height: 44.0)
+        }
+    }
+    
+    func makeView() -> View {
+        return View(frame: CGRect())
+    }
+    
+    func update(view: View, availableSize: CGSize, state: State, environment: Environment<Empty>, transition: ComponentTransition) -> CGSize {
+        return view.update(component: self, availableSize: availableSize, state: state, environment: environment, transition: transition)
     }
 }

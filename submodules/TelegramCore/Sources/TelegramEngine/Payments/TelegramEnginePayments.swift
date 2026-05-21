@@ -125,6 +125,10 @@ public extension TelegramEngine {
             return _internal_updateStarGiftAddedToProfile(account: self.account, reference: reference, added: added)
         }
         
+        public func dropStarGiftOriginalDetails(reference: StarGiftReference) -> Signal<Never, DropStarGiftOriginalDetailsError> {
+            return _internal_dropStarGiftOriginalDetails(account: self.account, reference: reference)
+        }
+        
         public func transferStarGift(prepaid: Bool, reference: StarGiftReference, peerId: EnginePeer.Id) -> Signal<Never, TransferStarGiftError> {
             return _internal_transferStarGift(account: self.account, prepaid: prepaid, reference: reference, peerId: peerId)
         }
@@ -137,7 +141,7 @@ public extension TelegramEngine {
             return _internal_upgradeStarGift(account: self.account, formId: formId, reference: reference, keepOriginalInfo: keepOriginalInfo)
         }
         
-        public func starGiftUpgradePreview(giftId: Int64) -> Signal<[StarGift.UniqueGift.Attribute], NoError> {
+        public func starGiftUpgradePreview(giftId: Int64) -> Signal<StarGiftUpgradePreview?, NoError> {
             return _internal_starGiftUpgradePreview(account: self.account, giftId: giftId)
         }
         
@@ -145,7 +149,7 @@ public extension TelegramEngine {
             return _internal_checkCanSendStarGift(account: self.account, giftId: giftId)
         }
         
-        public func getUniqueStarGift(slug: String) -> Signal<StarGift.UniqueGift?, NoError> {
+        public func getUniqueStarGift(slug: String) -> Signal<StarGift.UniqueGift, GetUniqueStarGiftError> {
             return _internal_getUniqueStarGift(account: self.account, slug: slug)
         }
         
@@ -169,8 +173,24 @@ public extension TelegramEngine {
             return _internal_updateStarGiftResalePrice(account: self.account, reference: reference, price: price)
         }
         
+        public func getGiftAuctionAcquiredGifts(giftId: Int64) -> Signal<[GiftAuctionAcquiredGift], NoError> {
+            return _internal_getGiftAuctionAcquiredGifts(account: self.account, giftId: giftId)
+        }
+        
         public func getStarsTransaction(reference: StarsTransactionReference) -> Signal<StarsContext.State.Transaction?, NoError> {
             return _internal_getStarsTransaction(accountPeerId: self.account.peerId, postbox: self.account.postbox, network: self.account.network, transactionReference: reference)
+        }
+        
+        public func resolveStarGiftOffer(messageId: EngineMessage.Id, accept: Bool) -> Signal<Never, ResolveStarGiftOfferError> {
+            return _internal_resolveStarGiftOffer(account: self.account, messageId: messageId, accept: accept)
+        }
+ 
+        public func sendStarGiftOffer(peerId: EnginePeer.Id, slug: String, amount: CurrencyAmount, duration: Int32, allowPaidStars: Int64?) -> Signal<Never, SendStarGiftOfferError> {
+            return _internal_sendStarGiftOffer(account: self.account, peerId: peerId, slug: slug, amount: amount, duration: duration, allowPaidStars: allowPaidStars)
+        }
+        
+        public func getStarGiftUpgradeAttributes(giftId: Int64) -> Signal<[StarGift.UniqueGift.Attribute]?, NoError> {
+            return _internal_getStarGiftUpgradeAttributes(account: self.account, giftId: giftId)
         }
     }
 }

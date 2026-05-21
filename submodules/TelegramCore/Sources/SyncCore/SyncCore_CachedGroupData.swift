@@ -89,7 +89,8 @@ extension PeerAllowedReactions {
         switch apiReactions {
         case .chatReactionsAll:
             self = .all
-        case let .chatReactionsSome(reactions):
+        case let .chatReactionsSome(chatReactionsSomeData):
+            let reactions = chatReactionsSomeData.reactions
             self = .limited(reactions.compactMap(MessageReaction.Reaction.init(apiReaction:)))
         case .chatReactionsNone:
             self = .empty

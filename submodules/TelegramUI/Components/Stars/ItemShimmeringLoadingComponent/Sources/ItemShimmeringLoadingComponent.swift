@@ -76,7 +76,7 @@ public final class ItemShimmeringLoadingComponent: Component {
             self.component = component
             
             if previousCornerRadius != component.cornerRadius {
-                self.borderView.image = generateFilledRoundedRectImage(size: CGSize(width: 24.0, height: 24.0), cornerRadius: component.cornerRadius, color: nil, strokeColor: .white, strokeWidth: 1.0 + UIScreenPixel, backgroundColor: nil)?.stretchableImage(withLeftCapWidth: Int(component.cornerRadius), topCapHeight: Int(component.cornerRadius)).withRenderingMode(.alwaysTemplate)
+                self.borderView.image = generateFilledRoundedRectImage(size: CGSize(width: component.cornerRadius * 2.0 + 2.0, height: component.cornerRadius * 2.0 + 2.0), cornerRadius: component.cornerRadius, color: nil, strokeColor: .white, strokeWidth: 1.0 + UIScreenPixel, backgroundColor: nil)?.stretchableImage(withLeftCapWidth: Int(component.cornerRadius), topCapHeight: Int(component.cornerRadius)).withRenderingMode(.alwaysTemplate)
             }
             
             self.borderView.tintColor = component.color

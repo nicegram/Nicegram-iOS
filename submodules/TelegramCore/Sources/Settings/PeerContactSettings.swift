@@ -6,7 +6,8 @@ import SwiftSignalKit
 extension PeerStatusSettings {
     init(apiSettings: Api.PeerSettings) {
         switch apiSettings {
-            case let .peerSettings(flags, geoDistance, requestChatTitle, requestChatDate, businessBotId, businessBotManageUrl, chargePaidMessageStars, registrationMonth, phoneCountry, nameChangeDate, photoChangeDate):
+            case let .peerSettings(peerSettingsData):
+                let (flags, geoDistance, requestChatTitle, requestChatDate, businessBotId, businessBotManageUrl, chargePaidMessageStars, registrationMonth, phoneCountry, nameChangeDate, photoChangeDate) = (peerSettingsData.flags, peerSettingsData.geoDistance, peerSettingsData.requestChatTitle, peerSettingsData.requestChatDate, peerSettingsData.businessBotId, peerSettingsData.businessBotManageUrl, peerSettingsData.chargePaidMessageStars, peerSettingsData.registrationMonth, peerSettingsData.phoneCountry, peerSettingsData.nameChangeDate, peerSettingsData.photoChangeDate)
                 var result = PeerStatusSettings.Flags()
                 if (flags & (1 << 1)) != 0 {
                     result.insert(.canAddContact)

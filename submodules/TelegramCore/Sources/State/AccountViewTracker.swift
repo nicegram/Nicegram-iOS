@@ -87,10 +87,11 @@ private func fetchWebpage(account: Account, messageId: MessageId, threadId: Int6
                 }
             } else {
                 switch inputPeer {
-                    case let .inputPeerChannel(channelId, accessHash):
-                        messages = account.network.request(Api.functions.channels.getMessages(channel: Api.InputChannel.inputChannel(channelId: channelId, accessHash: accessHash), id: [Api.InputMessage.inputMessageID(id: messageId.id)]))
+                    case let .inputPeerChannel(inputPeerChannelData):
+                        let (channelId, accessHash) = (inputPeerChannelData.channelId, inputPeerChannelData.accessHash)
+                        messages = account.network.request(Api.functions.channels.getMessages(channel: Api.InputChannel.inputChannel(.init(channelId: channelId, accessHash: accessHash)), id: [Api.InputMessage.inputMessageID(.init(id: messageId.id))]))
                     default:
-                        messages = account.network.request(Api.functions.messages.getMessages(id: [Api.InputMessage.inputMessageID(id: messageId.id)]))
+                        messages = account.network.request(Api.functions.messages.getMessages(id: [Api.InputMessage.inputMessageID(.init(id: messageId.id))]))
                 }
             }
             return messages
@@ -100,15 +101,20 @@ private func fetchWebpage(account: Account, messageId: MessageId, threadId: Int6
                 let chats: [Api.Chat]
                 let users: [Api.User]
                 switch result {
-                    case let .messages(messages: apiMessages, chats: apiChats, users: apiUsers):
+                    case let .messages(messagesData):
+                        let (apiMessages, apiTopics, apiChats, apiUsers) = (messagesData.messages, messagesData.topics, messagesData.chats, messagesData.users)
+                        let _ = apiTopics
                         messages = apiMessages
                         chats = apiChats
                         users = apiUsers
-                    case let .messagesSlice(_, _, _, _, _, messages: apiMessages, chats: apiChats, users: apiUsers):
+                    case let .messagesSlice(messagesSliceData):
+                        let (apiMessages, apiTopics, apiChats, apiUsers) = (messagesSliceData.messages, messagesSliceData.topics, messagesSliceData.chats, messagesSliceData.users)
+                        let _ = apiTopics
                         messages = apiMessages
                         chats = apiChats
                         users = apiUsers
-                    case let .channelMessages(_, _, _, _, apiMessages, apiTopics, apiChats, apiUsers):
+                    case let .channelMessages(channelMessagesData):
+                        let (apiMessages, apiTopics, apiChats, apiUsers) = (channelMessagesData.messages, channelMessagesData.topics, channelMessagesData.chats, channelMessagesData.users)
                         messages = apiMessages
                         let _ = apiTopics
                         chats = apiChats
@@ -158,13 +164,15 @@ private func fetchWebpage(account: Account, messageId: MessageId, threadId: Int6
 }
 
 private func fetchPoll(account: Account, messageId: MessageId) -> Signal<Void, NoError> {
-    return account.postbox.loadedPeerWithId(messageId.peerId)
-    |> take(1)
-    |> mapToSignal { peer -> Signal<Void, NoError> in
-        guard let inputPeer = apiInputPeer(peer) else {
+    return account.postbox.transaction { transaction -> Signal<Void, NoError> in
+        guard let peer = transaction.getPeer(messageId.peerId), let inputPeer = apiInputPeer(peer) else {
             return .complete()
         }
-        return account.network.request(Api.functions.messages.getPollResults(peer: inputPeer, msgId: messageId.id))
+        var pollHash: Int64 = 0
+        if let message = transaction.getMessage(messageId), let poll = message.media.first(where: { $0 is TelegramMediaPoll }) as? TelegramMediaPoll {
+            pollHash = poll.pollHash
+        }
+        return account.network.request(Api.functions.messages.getPollResults(peer: inputPeer, msgId: messageId.id, pollHash: pollHash))
         |> map(Optional.init)
         |> `catch` { _ -> Signal<Api.Updates?, NoError> in
             return .single(nil)
@@ -176,6 +184,7 @@ private func fetchPoll(account: Account, messageId: MessageId) -> Signal<Void, N
             return .complete()
         }
     }
+    |> switchToLatest
 }
 
 private func wrappedHistoryViewAdditionalData(chatLocation: ChatLocationInput, additionalData: [AdditionalMessageHistoryViewData]) -> [AdditionalMessageHistoryViewData] {
@@ -717,10 +726,11 @@ public final class AccountViewTracker {
                                 return .single(nil)
                             }
                             |> mapToSignal { result -> Signal<[MessageId: ViewCountContextState], NoError> in
-                                guard case let .messageViews(viewCounts, chats, users)? = result else {
+                                guard case let .messageViews(messageViewsData)? = result else {
                                     return .complete()
                                 }
-                                
+                                let (viewCounts, chats, users) = (messageViewsData.views, messageViewsData.chats, messageViewsData.users)
+
                                 return account.postbox.transaction { transaction -> [MessageId: ViewCountContextState] in
                                     var resultStates: [MessageId: ViewCountContextState] = [:]
                                     
@@ -730,7 +740,8 @@ public final class AccountViewTracker {
                                     
                                     for i in 0 ..< messageIds.count {
                                         if i < viewCounts.count {
-                                            if case let .messageViews(_, views, forwards, replies) = viewCounts[i] {
+                                            if case let .messageViews(messageViewsData) = viewCounts[i] {
+                                                let (views, forwards, replies) = (messageViewsData.views, messageViewsData.forwards, messageViewsData.replies)
                                                 transaction.updateMessage(messageIds[i], update: { currentMessage in
                                                     let storeForwardInfo = currentMessage.forwardInfo.flatMap(StoreMessageForwardInfo.init)
                                                     var attributes = currentMessage.attributes
@@ -742,7 +753,8 @@ public final class AccountViewTracker {
                                                     var repliesReadMaxId: Int32?
                                                     if let replies = replies {
                                                         switch replies {
-                                                        case let .messageReplies(_, repliesCountValue, _, recentRepliers, channelId, maxId, readMaxId):
+                                                        case let .messageReplies(messageRepliesData):
+                                                            let (repliesCountValue, recentRepliers, channelId, maxId, readMaxId) = (messageRepliesData.replies, messageRepliesData.recentRepliers, messageRepliesData.channelId, messageRepliesData.maxId, messageRepliesData.readMaxId)
                                                             if let channelId = channelId {
                                                                 commentsChannelId = PeerId(namespace: Namespaces.Peer.CloudChannel, id: PeerId.Id._internalFromInt64Value(channelId))
                                                             }
@@ -859,18 +871,22 @@ public final class AccountViewTracker {
                                     return account.postbox.transaction { transaction -> Void in
                                         let updateList: [Api.Update]
                                         switch updates {
-                                        case let .updates(updates, _, _, _, _):
+                                        case let .updates(updatesData):
+                                            let updates = updatesData.updates
                                             updateList = updates
-                                        case let .updatesCombined(updates, _, _, _, _, _):
+                                        case let .updatesCombined(updatesCombinedData):
+                                            let updates = updatesCombinedData.updates
                                             updateList = updates
-                                        case let .updateShort(update, _):
+                                        case let .updateShort(updateShortData):
+                                            let update = updateShortData.update
                                             updateList = [update]
                                         default:
                                             updateList = []
                                         }
                                         for update in updateList {
                                             switch update {
-                                            case let .updateMessageReactions(_, peer, msgId, _, _, reactions):
+                                            case let .updateMessageReactions(updateMessageReactionsData):
+                                                let (peer, msgId, reactions) = (updateMessageReactionsData.peer, updateMessageReactionsData.msgId, updateMessageReactionsData.reactions)
                                                 transaction.updateMessage(MessageId(peerId: peer.peerId, namespace: Namespaces.Message.Cloud, id: msgId), update: { currentMessage in
                                                     var updatedReactions = ReactionsMessageAttribute(apiReactions: reactions)
                                                     
@@ -947,8 +963,9 @@ public final class AccountViewTracker {
                                 case .inputPeerChat, .inputPeerSelf, .inputPeerUser:
                                     request = account.network.request(Api.functions.messages.readMessageContents(id: messageIds.map { $0.id }))
                                     |> map { _ in true }
-                                case let .inputPeerChannel(channelId, accessHash):
-                                    request = account.network.request(Api.functions.channels.readMessageContents(channel: .inputChannel(channelId: channelId, accessHash: accessHash), id: messageIds.map { $0.id }))
+                                case let .inputPeerChannel(inputPeerChannelData):
+                                    let (channelId, accessHash) = (inputPeerChannelData.channelId, inputPeerChannelData.accessHash)
+                                    request = account.network.request(Api.functions.channels.readMessageContents(channel: .inputChannel(.init(channelId: channelId, accessHash: accessHash)), id: messageIds.map { $0.id }))
                                     |> map { _ in true }
                                 default:
                                     return .complete()
@@ -1072,10 +1089,10 @@ public final class AccountViewTracker {
                                     fetchSignal = .never()
                                 }
                             } else if peerIdAndThreadId.peerId.namespace == Namespaces.Peer.CloudUser || peerIdAndThreadId.peerId.namespace == Namespaces.Peer.CloudGroup {
-                                fetchSignal = account.network.request(Api.functions.messages.getMessages(id: messageIds.map { Api.InputMessage.inputMessageID(id: $0.id) }))
+                                fetchSignal = account.network.request(Api.functions.messages.getMessages(id: messageIds.map { Api.InputMessage.inputMessageID(.init(id: $0.id)) }))
                             } else if peerIdAndThreadId.peerId.namespace == Namespaces.Peer.CloudChannel {
                                 if let inputChannel = apiInputChannel(peer) {
-                                    fetchSignal = account.network.request(Api.functions.channels.getMessages(channel: inputChannel, id: messageIds.map { Api.InputMessage.inputMessageID(id: $0.id) }))
+                                    fetchSignal = account.network.request(Api.functions.channels.getMessages(channel: inputChannel, id: messageIds.map { Api.InputMessage.inputMessageID(.init(id: $0.id)) }))
                                 }
                             }
                             guard let signal = fetchSignal else {
@@ -1085,11 +1102,14 @@ public final class AccountViewTracker {
                             return signal
                             |> map { result -> (Peer, [Api.Message], [Api.Chat], [Api.User]) in
                                 switch result {
-                                    case let .messages(messages, chats, users):
+                                    case let .messages(messagesData):
+                                        let (messages, chats, users) = (messagesData.messages, messagesData.chats, messagesData.users)
                                         return (peer, messages, chats, users)
-                                    case let .messagesSlice(_, _, _, _, _, messages, chats, users):
+                                    case let .messagesSlice(messagesSliceData):
+                                        let (messages, chats, users) = (messagesSliceData.messages, messagesSliceData.chats, messagesSliceData.users)
                                         return (peer, messages, chats, users)
-                                    case let .channelMessages(_, _, _, _, messages, _, chats, users):
+                                    case let .channelMessages(channelMessagesData):
+                                        let (messages, chats, users) = (channelMessagesData.messages, channelMessagesData.chats, channelMessagesData.users)
                                         return (peer, messages, chats, users)
                                     case .messagesNotModified:
                                         return (peer, [], [], [])
@@ -1178,7 +1198,7 @@ public final class AccountViewTracker {
                             var requests: [Signal<Api.messages.StickerSet?, NoError>] = []
                             for reference in stickerPacks {
                                 if case let .id(id, accessHash) = reference {
-                                    requests.append(account.network.request(Api.functions.messages.getStickerSet(stickerset: .inputStickerSetID(id: id, accessHash: accessHash), hash: 0))
+                                    requests.append(account.network.request(Api.functions.messages.getStickerSet(stickerset: .inputStickerSetID(.init(id: id, accessHash: accessHash)), hash: 0))
                                     |> map(Optional.init)
                                     |> `catch` { _ -> Signal<Api.messages.StickerSet?, NoError> in
                                         return .single(nil)
@@ -1194,7 +1214,8 @@ public final class AccountViewTracker {
                                 return account.postbox.transaction { transaction -> Void in
                                     for result in results {
                                         switch result {
-                                        case let .stickerSet(_, _, _, documents)?:
+                                        case let .stickerSet(stickerSetData)?:
+                                            let documents = stickerSetData.documents
                                             for document in documents {
                                                 if let file = telegramMediaFileFromApiDocument(document, altDocuments: []) {
                                                     if transaction.getMedia(file.fileId) != nil {
@@ -1429,7 +1450,7 @@ public final class AccountViewTracker {
                             }
                             startIndex += batchCount
                             requests.append(account.network.request(Api.functions.stories.getPeerMaxIDs(id: slice.map(\.1)))
-                            |> `catch` { _ -> Signal<[Int32], NoError> in
+                            |> `catch` { _ -> Signal<[Api.RecentStory], NoError> in
                                 return .single([])
                             }
                             |> mapToSignal { result -> Signal<Never, NoError> in
@@ -1437,10 +1458,14 @@ public final class AccountViewTracker {
                                     for i in 0 ..< result.count {
                                         if i < slice.count {
                                             let value = result[i]
-                                            if value <= 0 {
-                                                transaction.clearStoryItemsInexactMaxId(peerId: slice[i].0)
-                                            } else {
-                                                transaction.setStoryItemsInexactMaxId(peerId: slice[i].0, id: value)
+                                            switch value {
+                                            case let .recentStory(recentStoryData):
+                                                let (flags, maxId) = (recentStoryData.flags, recentStoryData.maxId)
+                                                if let maxId {
+                                                    transaction.setStoryItemsInexactMaxId(peerId: slice[i].0, id: maxId, hasLiveItems: (flags & (1 << 0)) != 0)
+                                                } else {
+                                                    transaction.clearStoryItemsInexactMaxId(peerId: slice[i].0)
+                                                }
                                             }
                                         }
                                     }
@@ -1537,7 +1562,7 @@ public final class AccountViewTracker {
                                             let peerId = slice[i].0
                                             let value = result[i]
                                             transaction.updatePeerCachedData(peerIds: Set([peerId]), update: { _, cachedData in
-                                                var cachedData = cachedData as? CachedUserData ?? CachedUserData(about: nil, botInfo: nil, editableBotInfo: nil, peerStatusSettings: nil, pinnedMessageId: nil, isBlocked: false, commonGroupCount: 0, voiceCallsAvailable: true, videoCallsAvailable: true, callsPrivate: true, canPinMessages: true, hasScheduledMessages: true, autoremoveTimeout: .unknown, chatTheme: nil, photo: .unknown, personalPhoto: .unknown, fallbackPhoto: .unknown, voiceMessagesAvailable: true, wallpaper: nil, flags: [], businessHours: nil, businessLocation: nil, greetingMessage: nil, awayMessage: nil, connectedBot: nil, businessIntro: .unknown, birthday: nil, personalChannel: .unknown, botPreview: nil, starGiftsCount: nil, starRefProgram: nil, verification: nil, sendPaidMessageStars: nil, disallowedGifts: [], botGroupAdminRights: nil, botChannelAdminRights: nil, starRating: nil, pendingStarRating: nil, linkedBotChannelId: .unknown, mainProfileTab: nil, savedMusic: nil)
+                                                var cachedData = cachedData as? CachedUserData ?? CachedUserData(about: nil, botInfo: nil, editableBotInfo: nil, peerStatusSettings: nil, pinnedMessageId: nil, isBlocked: false, commonGroupCount: 0, voiceCallsAvailable: true, videoCallsAvailable: true, callsPrivate: true, canPinMessages: true, hasScheduledMessages: true, autoremoveTimeout: .unknown, chatTheme: nil, photo: .unknown, personalPhoto: .unknown, fallbackPhoto: .unknown, voiceMessagesAvailable: true, wallpaper: nil, flags: [], businessHours: nil, businessLocation: nil, greetingMessage: nil, awayMessage: nil, connectedBot: nil, businessIntro: .unknown, birthday: nil, personalChannel: .unknown, botPreview: nil, starGiftsCount: nil, starRefProgram: nil, verification: nil, sendPaidMessageStars: nil, disallowedGifts: [], botGroupAdminRights: nil, botChannelAdminRights: nil, starRating: nil, pendingStarRating: nil, mainProfileTab: nil, savedMusic: nil, note: nil, myCopyProtectionEnableDate: nil, botManagerId: nil)
                                                 var flags = cachedData.flags
                                                 var sendPaidMessageStars = cachedData.sendPaidMessageStars
                                                 switch value {
@@ -1547,7 +1572,8 @@ public final class AccountViewTracker {
                                                 case .requirementToContactPremium:
                                                     flags.insert(.premiumRequired)
                                                     sendPaidMessageStars = nil
-                                                case let .requirementToContactPaidMessages(starsAmount):
+                                                case let .requirementToContactPaidMessages(requirementToContactPaidMessagesData):
+                                                    let starsAmount = requirementToContactPaidMessagesData.starsAmount
                                                     flags.remove(.premiumRequired)
                                                     sendPaidMessageStars = StarsAmount(value: starsAmount, nanos: 0)
                                                 }
@@ -1658,13 +1684,16 @@ public final class AccountViewTracker {
         }
     }
     
-    public func updateMarkAllReactionsSeen(peerId: PeerId, threadId: Int64?) {
+    public func updateMarkAllReactionsAndPollVotesSeen(peerId: PeerId, threadId: Int64?) {
         self.queue.async {
             guard let account = self.account else {
                 return
             }
             let _ = (account.postbox.transaction { transaction -> Set<MessageId> in
-                let ids = Set(transaction.getMessageIndicesWithTag(peerId: peerId, threadId: threadId, namespace: Namespaces.Message.Cloud, tag: .unseenReaction).map({ $0.id }))
+                let reactionIds = Set(transaction.getMessageIndicesWithTag(peerId: peerId, threadId: threadId, namespace: Namespaces.Message.Cloud, tag: .unseenReaction).map({ $0.id }))
+                let pollVoteIds = Set(transaction.getMessageIndicesWithTag(peerId: peerId, threadId: threadId, namespace: Namespaces.Message.Cloud, tag: .unseenPollVote).map({ $0.id }))
+                
+                let ids = reactionIds.union(pollVoteIds)
                 
                 for id in ids {
                     transaction.updateMessage(id, update: { currentMessage in
@@ -1676,9 +1705,16 @@ public final class AccountViewTracker {
                                 break
                             }
                         }
+                        var media = currentMessage.media
+                        for i in 0 ..< media.count {
+                            if let poll = media[i] as? TelegramMediaPoll {
+                                media[i] = poll.withoutUnreadResults()
+                            }
+                        }
                         var tags = currentMessage.tags
                         tags.remove(.unseenReaction)
-                        return .update(StoreMessage(id: currentMessage.id, customStableId: nil, globallyUniqueId: currentMessage.globallyUniqueId, groupingKey: currentMessage.groupingKey, threadId: currentMessage.threadId, timestamp: currentMessage.timestamp, flags: StoreMessageFlags(currentMessage.flags), tags: tags, globalTags: currentMessage.globalTags, localTags: currentMessage.localTags, forwardInfo: storeForwardInfo, authorId: currentMessage.author?.id, text: currentMessage.text, attributes: attributes, media: currentMessage.media))
+                        tags.remove(.unseenPollVote)
+                        return .update(StoreMessage(id: currentMessage.id, customStableId: nil, globallyUniqueId: currentMessage.globallyUniqueId, groupingKey: currentMessage.groupingKey, threadId: currentMessage.threadId, timestamp: currentMessage.timestamp, flags: StoreMessageFlags(currentMessage.flags), tags: tags, globalTags: currentMessage.globalTags, localTags: currentMessage.localTags, forwardInfo: storeForwardInfo, authorId: currentMessage.author?.id, text: currentMessage.text, attributes: attributes, media: media))
                     })
                 }
                 
@@ -1692,13 +1728,23 @@ public final class AccountViewTracker {
                     addSynchronizeMarkAllUnseenReactionsOperation(transaction: transaction, peerId: peerId, maxId: summary.range.maxId, threadId: threadId)
                 }
                 
+                if let summary = transaction.getMessageTagSummary(peerId: peerId, threadId: threadId, tagMask: .unseenPollVote, namespace: Namespaces.Message.Cloud, customTag: nil) {
+                    var maxId: Int32 = summary.range.maxId
+                    if let index = transaction.getTopPeerMessageIndex(peerId: peerId, namespace: Namespaces.Message.Cloud) {
+                        maxId = index.id.id
+                    }
+                    
+                    transaction.replaceMessageTagSummary(peerId: peerId, threadId: threadId, tagMask: .unseenPollVote, namespace: Namespaces.Message.Cloud, customTag: nil, count: 0, maxId: maxId)
+                    addSynchronizeMarkAllUnseenPollVotesOperation(transaction: transaction, peerId: peerId, maxId: summary.range.maxId, threadId: threadId)
+                }
+                
                 return ids
             }
             |> deliverOn(self.queue)).start()
         }
     }
     
-    public func updateMarkReactionsSeenForMessageIds(messageIds: Set<MessageId>) {
+    public func updateMarkReactionsAndVotesSeenForMessageIds(messageIds: Set<MessageId>) {
         self.queue.async {
             let addedMessageIds: [MessageId] = Array(messageIds)
             if !addedMessageIds.isEmpty {
@@ -1707,7 +1753,7 @@ public final class AccountViewTracker {
                         for id in addedMessageIds {
                             if let _ = transaction.getMessage(id) {
                                 transaction.updateMessage(id, update: { currentMessage in
-                                    if !currentMessage.tags.contains(.unseenReaction) {
+                                    if !currentMessage.tags.contains(.unseenReaction) && !currentMessage.tags.contains(.unseenPollVote) {
                                         return .skip
                                     }
                                     var attributes = currentMessage.attributes
@@ -1717,13 +1763,21 @@ public final class AccountViewTracker {
                                             break loop
                                         }
                                     }
+                                    var media = currentMessage.media
+                                    loop: for j in 0 ..< media.count {
+                                        if let poll = media[j] as? TelegramMediaPoll {
+                                            media[j] = poll.withoutUnreadResults()
+                                            break loop
+                                        }
+                                    }
                                     var tags = currentMessage.tags
                                     tags.remove(.unseenReaction)
-                                    return .update(StoreMessage(id: currentMessage.id, customStableId: nil, globallyUniqueId: currentMessage.globallyUniqueId, groupingKey: currentMessage.groupingKey, threadId: currentMessage.threadId, timestamp: currentMessage.timestamp, flags: StoreMessageFlags(currentMessage.flags), tags: tags, globalTags: currentMessage.globalTags, localTags: currentMessage.localTags, forwardInfo: currentMessage.forwardInfo.flatMap(StoreMessageForwardInfo.init), authorId: currentMessage.author?.id, text: currentMessage.text, attributes: attributes, media: currentMessage.media))
+                                    tags.remove(.unseenPollVote)
+                                    return .update(StoreMessage(id: currentMessage.id, customStableId: nil, globallyUniqueId: currentMessage.globallyUniqueId, groupingKey: currentMessage.groupingKey, threadId: currentMessage.threadId, timestamp: currentMessage.timestamp, flags: StoreMessageFlags(currentMessage.flags), tags: tags, globalTags: currentMessage.globalTags, localTags: currentMessage.localTags, forwardInfo: currentMessage.forwardInfo.flatMap(StoreMessageForwardInfo.init), authorId: currentMessage.author?.id, text: currentMessage.text, attributes: attributes, media: media))
                                 })
 
-                                if transaction.getPendingMessageAction(type: .readReaction, id: id) == nil {
-                                    transaction.setPendingMessageAction(type: .readReaction, id: id, action: ReadReactionAction())
+                                if transaction.getPendingMessageAction(type: .readReactionOrPollVote, id: id) == nil {
+                                    transaction.setPendingMessageAction(type: .readReactionOrPollVote, id: id, action: ReadReactionAction())
                                 }
                             }
                         }
@@ -2168,7 +2222,7 @@ public final class AccountViewTracker {
                             fixedCombinedReadStates: .peer([peerId: CombinedPeerReadState(states: [
                                 (Namespaces.Message.Cloud, PeerReadState.idBased(maxIncomingReadId: Int32.max - 1, maxOutgoingReadId: Int32.max - 1, maxKnownId: Int32.max - 1, count: 0, markedUnread: false))
                             ])]),
-                            topTaggedMessageIdNamespaces: [],
+                            topTaggedMessageIdNamespaces: [Namespaces.Message.Cloud],
                             tag: tag,
                             appendMessagesFromTheSameGroup: false,
                             namespaces: .not(Namespaces.Message.allNonRegular),
@@ -2196,7 +2250,7 @@ public final class AccountViewTracker {
                                 count: count,
                                 trackHoles: trackHoles,
                                 fixedCombinedReadStates: nil,
-                                topTaggedMessageIdNamespaces: [],
+                                topTaggedMessageIdNamespaces: [Namespaces.Message.Cloud],
                                 tag: tag,
                                 appendMessagesFromTheSameGroup: false,
                                 namespaces: .not(Namespaces.Message.allNonRegular),
@@ -2514,16 +2568,19 @@ public final class AccountViewTracker {
         }
     }
     
-    public func unseenPersonalMessagesAndReactionCount(peerId: PeerId, threadId: Int64?) -> Signal<(mentionCount: Int32, reactionCount: Int32), NoError> {
+    public func unseenPersonalMessagesAndReactionCount(peerId: PeerId, threadId: Int64?) -> Signal<(mentionCount: Int32, reactionCount: Int32, pollVoteCount: Int32), NoError> {
         if let account = self.account {
             let pendingMentionsKey: PostboxViewKey = .pendingMessageActionsSummary(type: .consumeUnseenPersonalMessage, peerId: peerId, namespace: Namespaces.Message.Cloud)
             let summaryMentionsKey: PostboxViewKey = .historyTagSummaryView(tag: .unseenPersonalMessage, peerId: peerId, threadId: threadId, namespace: Namespaces.Message.Cloud, customTag: nil)
             
-            let pendingReactionsKey: PostboxViewKey = .pendingMessageActionsSummary(type: .readReaction, peerId: peerId, namespace: Namespaces.Message.Cloud)
+            let pendingReactionsKey: PostboxViewKey = .pendingMessageActionsSummary(type: .readReactionOrPollVote, peerId: peerId, namespace: Namespaces.Message.Cloud)
             let summaryReactionsKey: PostboxViewKey = .historyTagSummaryView(tag: .unseenReaction, peerId: peerId, threadId: threadId, namespace: Namespaces.Message.Cloud, customTag: nil)
             
-            return account.postbox.combinedView(keys: [pendingMentionsKey, summaryMentionsKey, pendingReactionsKey, summaryReactionsKey])
-            |> map { views -> (mentionCount: Int32, reactionCount: Int32) in
+            let pendingPollVotesKey: PostboxViewKey = .pendingMessageActionsSummary(type: .readReactionOrPollVote, peerId: peerId, namespace: Namespaces.Message.Cloud)
+            let summaryPollVotesKey: PostboxViewKey = .historyTagSummaryView(tag: .unseenPollVote, peerId: peerId, threadId: threadId, namespace: Namespaces.Message.Cloud, customTag: nil)
+            
+            return account.postbox.combinedView(keys: [pendingMentionsKey, summaryMentionsKey, pendingReactionsKey, summaryReactionsKey, pendingPollVotesKey, summaryPollVotesKey])
+            |> map { views -> (mentionCount: Int32, reactionCount: Int32, pollVoteCount: Int32) in
                 var mentionCount: Int32 = 0
                 if let view = views.views[pendingMentionsKey] as? PendingMessageActionsSummaryView {
                     mentionCount -= view.count
@@ -2539,13 +2596,25 @@ public final class AccountViewTracker {
                         reactionCount += unseenCount
                     }
                 }
-                return (max(0, mentionCount), max(0, reactionCount))
+                var pollVoteCount: Int32 = 0
+                if let view = views.views[pendingPollVotesKey] as? PendingMessageActionsSummaryView {
+                    pollVoteCount -= view.count
+                }
+                if let view = views.views[summaryPollVotesKey] as? MessageHistoryTagSummaryView {
+                    if let unseenCount = view.count {
+                        pollVoteCount += unseenCount
+                    }
+                }
+                return (max(0, mentionCount), max(0, reactionCount), max(0, pollVoteCount))
             }
             |> distinctUntilChanged(isEqual: { lhs, rhs in
                 if lhs.mentionCount != rhs.mentionCount {
                     return false
                 }
                 if lhs.reactionCount != rhs.reactionCount {
+                    return false
+                }
+                if lhs.pollVoteCount != rhs.pollVoteCount {
                     return false
                 }
                 return true
@@ -2594,7 +2663,14 @@ public final class AccountViewTracker {
                         ),
                         ChatListEntryMessageTagSummaryKey(
                             tag: .unseenReaction,
-                            actionType: PendingMessageActionType.readReaction
+                            actionType: PendingMessageActionType.readReactionOrPollVote
+                        ): ChatListEntrySummaryComponents.Component(
+                            tagSummary: ChatListEntryMessageTagSummaryComponent(namespace: Namespaces.Message.Cloud),
+                            actionsSummary: ChatListEntryPendingMessageActionsSummaryComponent(namespace: Namespaces.Message.Cloud)
+                        ),
+                        ChatListEntryMessageTagSummaryKey(
+                            tag: .unseenPollVote,
+                            actionType: PendingMessageActionType.readReactionOrPollVote
                         ): ChatListEntrySummaryComponents.Component(
                             tagSummary: ChatListEntryMessageTagSummaryComponent(namespace: Namespaces.Message.Cloud),
                             actionsSummary: ChatListEntryPendingMessageActionsSummaryComponent(namespace: Namespaces.Message.Cloud)
@@ -2627,7 +2703,14 @@ public final class AccountViewTracker {
                         ),
                         ChatListEntryMessageTagSummaryKey(
                             tag: .unseenReaction,
-                            actionType: PendingMessageActionType.readReaction
+                            actionType: PendingMessageActionType.readReactionOrPollVote
+                        ): ChatListEntrySummaryComponents.Component(
+                            tagSummary: ChatListEntryMessageTagSummaryComponent(namespace: Namespaces.Message.Cloud),
+                            actionsSummary: ChatListEntryPendingMessageActionsSummaryComponent(namespace: Namespaces.Message.Cloud)
+                        ),
+                        ChatListEntryMessageTagSummaryKey(
+                            tag: .unseenPollVote,
+                            actionType: PendingMessageActionType.readReactionOrPollVote
                         ): ChatListEntrySummaryComponents.Component(
                             tagSummary: ChatListEntryMessageTagSummaryComponent(namespace: Namespaces.Message.Cloud),
                             actionsSummary: ChatListEntryPendingMessageActionsSummaryComponent(namespace: Namespaces.Message.Cloud)

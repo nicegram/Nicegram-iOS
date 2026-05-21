@@ -273,10 +273,19 @@ public final class ChatMessageItemImpl: ChatMessageItem, CustomStringConvertible
     
     public var failed: Bool {
         switch self.content {
-            case let .message(message, _, _, _, _):
-                return message.flags.contains(.Failed)
-            case let .group(messages):
-                return messages[0].0.flags.contains(.Failed)
+        case let .message(message, _, _, _, _):
+            return message.flags.contains(.Failed)
+        case let .group(messages):
+            return messages[0].0.flags.contains(.Failed)
+        }
+    }
+    
+    public var pinToEdgeWithInset: Bool {
+        switch self.content {
+        case let .message(_, _, _, attributes, _):
+            return attributes.pinToTop
+        case let .group(messages):
+            return messages[0].3.pinToTop
         }
     }
     
@@ -334,14 +343,18 @@ public final class ChatMessageItemImpl: ChatMessageItem, CustomStringConvertible
                 }
                 displayAuthorInfo = incoming && peerId.isGroupOrChannel && effectiveAuthor != nil
                 
-                if let channel = content.firstMessage.peers[content.firstMessage.id.peerId] as? TelegramChannel, channel.isForumOrMonoForum {
+                if let _ = content.firstMessage.guestChatAttribute {
+                    displayAuthorInfo = true
+                }
+                
+                if let chatPeer = content.firstMessage.peers[content.firstMessage.id.peerId], chatPeer.isForumOrMonoForum {
                     if case .replyThread = chatLocation {
-                        if channel.isMonoForum && chatLocation.threadId != context.account.peerId.toInt64() {
+                        if chatPeer.isMonoForum && chatLocation.threadId != context.account.peerId.toInt64() {
                             displayAuthorInfo = false
                         }
                     } else {
-                        if channel.isMonoForum {
-                            if let linkedMonoforumId = channel.linkedMonoforumId, let mainChannel = content.firstMessage.peers[linkedMonoforumId] as? TelegramChannel, mainChannel.hasPermission(.manageDirect) {
+                        if chatPeer.isMonoForum {
+                            if let chatPeer = chatPeer as? TelegramChannel, let linkedMonoforumId = chatPeer.linkedMonoforumId, let mainChannel = content.firstMessage.peers[linkedMonoforumId] as? TelegramChannel, mainChannel.hasPermission(.manageDirect) {
                                 headerSeparableThreadId = content.firstMessage.threadId
                                 
                                 if let threadId = content.firstMessage.threadId, let peer = content.firstMessage.peers[EnginePeer.Id(threadId)] {
@@ -354,9 +367,8 @@ public final class ChatMessageItemImpl: ChatMessageItem, CustomStringConvertible
                                 headerDisplayPeer = ChatMessageDateHeader.HeaderData(contents: .thread(id: threadId, info: threadInfo))
                             } else if content.firstMessage.threadId == EngineMessage.newTopicThreadId {
                                 headerSeparableThreadId = content.firstMessage.threadId
-                                //TODO:localize
                                 headerDisplayPeer = ChatMessageDateHeader.HeaderData(contents: .thread(id: threadId, info: Message.AssociatedThreadInfo(
-                                    title: "New Chat",
+                                    title: presentationData.strings.Chat_MessageHeaderBotNewThread,
                                     icon: nil,
                                     iconColor: 0,
                                     isClosed: false
@@ -526,7 +538,7 @@ public final class ChatMessageItemImpl: ChatMessageItem, CustomStringConvertible
             }
         }
         
-        if viewClassName == ChatMessageBubbleItemNode.self && self.presentationData.largeEmoji && self.message.media.isEmpty {
+        if viewClassName == ChatMessageBubbleItemNode.self && self.presentationData.largeEmoji && self.message.media.isEmpty && !self.message.attributes.contains(where: { $0 is TypingDraftMessageAttribute }) {
             if case let .message(_, _, _, attributes, _) = self.content {
                 switch attributes.contentTypeHint {
                     case .largeEmoji:

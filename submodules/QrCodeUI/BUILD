@@ -7,7 +7,7 @@ swift_library(
         "Sources/**/*.swift",
     ]),
     copts = [
-        #"-warnings-as-errors",
+        "-warnings-as-errors",
     ],
     deps = [
         "//submodules/TelegramCore:TelegramCore",
@@ -31,6 +31,15 @@ swift_library(
         "//submodules/LegacyComponents:LegacyComponents",
         "//submodules/LegacyMediaPickerUI:LegacyMediaPickerUI",
         "//submodules/ImageContentAnalysis:ImageContentAnalysis",
+        "//submodules/ComponentFlow",
+        "//submodules/Components/SheetComponent",
+        "//submodules/TelegramUI/Components/ButtonComponent",
+        "//submodules/TelegramUI/Components/GlassBarButtonComponent",
+        "//submodules/Components/BundleIconComponent",
+        "//submodules/Components/BalancedTextComponent",
+        "//submodules/Components/MultilineTextComponent",
+        "//submodules/TelegramUI/Components/LottieComponent",
+        "//submodules/TelegramUI/Components/PlainButtonComponent",
     ],
     visibility = [
         "//visibility:public",

@@ -18,10 +18,8 @@ import AccountContext
 import TelegramStringFormatting
 import OverlayStatusController
 import DeviceLocationManager
-import ShareController
 import UrlEscaping
 import ContextUI
-import ComposePollUI
 import AlertUI
 import PresentationDataUtils
 import UndoUI
@@ -162,7 +160,7 @@ extension ChatControllerImpl {
             ], initialId: 0
         )
         
-        let contextController = ContextController(presentationData: self.presentationData, configuration: configuration)
+        let contextController = makeContextController(presentationData: self.presentationData, configuration: configuration)
         contextController.getOverlayViews = { [weak self] in
             guard let self else {
                 return []

@@ -5,6 +5,7 @@ import AsyncDisplayKit
 import SwiftSignalKit
 import TelegramCore
 import TelegramPresentationData
+import PresentationDataUtils
 import LegacyComponents
 import ProgressNavigationButtonNode
 import ImageCompression
@@ -13,6 +14,7 @@ import Postbox
 import TextFormat
 import MoreButtonNode
 import ContextUI
+import AccountContext
 
 final class AuthorizationSequenceSignUpController: ViewController {
     private var controllerNode: AuthorizationSequenceSignUpControllerNode {
@@ -23,6 +25,7 @@ final class AuthorizationSequenceSignUpController: ViewController {
     
     private let moreButtonNode: MoreButtonNode
     
+    private let sharedContext: SharedAccountContext
     private let presentationData: PresentationData
     private let back: () -> Void
     
@@ -46,7 +49,8 @@ final class AuthorizationSequenceSignUpController: ViewController {
         }
     }
     
-    init(presentationData: PresentationData, back: @escaping () -> Void, displayCancel: Bool) {
+    init(sharedContext: SharedAccountContext, presentationData: PresentationData, back: @escaping () -> Void, displayCancel: Bool) {
+        self.sharedContext = sharedContext
         self.presentationData = presentationData
         self.back = back
         
@@ -68,7 +72,7 @@ final class AuthorizationSequenceSignUpController: ViewController {
             guard let strongSelf = self else {
                 return
             }
-            strongSelf.present(standardTextAlertController(theme: AlertControllerTheme(presentationData: presentationData), title: nil, text: presentationData.strings.Login_CancelSignUpConfirmation, actions: [TextAlertAction(type: .genericAction, title: presentationData.strings.Login_CancelPhoneVerificationContinue, action: {
+            strongSelf.present(textAlertController(sharedContext: strongSelf.sharedContext, title: nil, text: presentationData.strings.Login_CancelSignUpConfirmation, actions: [TextAlertAction(type: .genericAction, title: presentationData.strings.Login_CancelPhoneVerificationContinue, action: {
             }), TextAlertAction(type: .defaultAction, title: presentationData.strings.Login_CancelPhoneVerificationStop, action: {
                 back()
             })]), in: .window(.root))
@@ -92,7 +96,7 @@ final class AuthorizationSequenceSignUpController: ViewController {
     }
     
     @objc private func cancelPressed() {
-        self.present(standardTextAlertController(theme: AlertControllerTheme(presentationData: self.presentationData), title: nil, text: self.presentationData.strings.Login_CancelSignUpConfirmation, actions: [TextAlertAction(type: .genericAction, title: self.presentationData.strings.Login_CancelPhoneVerificationContinue, action: {
+        self.present(textAlertController(sharedContext: self.sharedContext, title: nil, text: self.presentationData.strings.Login_CancelSignUpConfirmation, actions: [TextAlertAction(type: .genericAction, title: self.presentationData.strings.Login_CancelPhoneVerificationContinue, action: {
         }), TextAlertAction(type: .defaultAction, title: self.presentationData.strings.Login_CancelPhoneVerificationStop, action: { [weak self] in
             self?.back()
         })]), in: .window(.root))
@@ -113,7 +117,7 @@ final class AuthorizationSequenceSignUpController: ViewController {
         items.append(.separator)
         items.append(.action(ContextMenuActionItem(text: presentationData.strings.Login_Announce_Notify, icon: { theme in
             if !announceSignUp {
-                return nil
+                return UIImage()
             }
             return generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Check"), color: theme.contextMenu.primaryColor)
         }, iconPosition: .left, action: { [weak self] _, a in
@@ -124,7 +128,7 @@ final class AuthorizationSequenceSignUpController: ViewController {
         
         items.append(.action(ContextMenuActionItem(text: presentationData.strings.Login_Announce_DontNotify, icon: { theme in
             if announceSignUp {
-                return nil
+                return UIImage()
             }
             return generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Check"), color: theme.contextMenu.primaryColor)
         }, iconPosition: .left, action: { [weak self] _, a in
@@ -134,7 +138,7 @@ final class AuthorizationSequenceSignUpController: ViewController {
         })))
         
         
-        let contextController = ContextController(presentationData: self.presentationData, source: .reference(AuthorizationContextReferenceContentSource(controller: self, sourceNode: node)), items: .single(ContextController.Items(content: .list(items))), gesture: gesture)
+        let contextController = makeContextController(presentationData: self.presentationData, source: .reference(AuthorizationContextReferenceContentSource(controller: self, sourceNode: node)), items: .single(ContextController.Items(content: .list(items))), gesture: gesture)
         self.present(contextController, in: .window(.root))
     }
     

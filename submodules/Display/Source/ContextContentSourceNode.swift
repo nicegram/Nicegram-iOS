@@ -39,6 +39,42 @@ public final class ContextExtractedContentContainingNode: ASDisplayNode {
     }
 }
 
+public enum ContextExtractableContainerState {
+    public enum ExtractionState {
+        case animatedOut
+        case animatedIn
+    }
+    
+    case normal
+    case extracted(size: CGSize, cornerRadius: CGFloat, state: ExtractionState)
+}
+
+public struct ContextExtractableContainerNormalState {
+    public let size: CGSize
+    public let cornerRadius: CGFloat
+    
+    public init(size: CGSize, cornerRadius: CGFloat) {
+        self.size = size
+        self.cornerRadius = cornerRadius
+    }
+}
+
+public enum ContextExtractableContainerTransition {
+    case transition(ContainedViewLayoutTransition)
+    case spring(duration: Double, stiffness: CGFloat, damping: CGFloat)
+}
+
+public protocol ContextExtractableContainer: UIView {
+    typealias State = ContextExtractableContainerState
+    typealias NormalState = ContextExtractableContainerNormalState
+    typealias Transition = ContextExtractableContainerTransition
+    
+    var normalState: NormalState { get }
+    var extractableContentView: UIView { get }
+    
+    func updateState(state: State, transition: Transition, completion: ((Bool) -> Void)?)
+}
+
 public final class ContextExtractedContentContainingView: UIView {
     public let contentView: ContextExtractedContentView
     public var contentRect: CGRect = CGRect()
@@ -152,5 +188,6 @@ public final class ContextControllerContentNode: ASDisplayNode {
 public enum ContextContentNode {
     case reference(view: UIView)
     case extracted(node: ContextExtractedContentContainingNode, keepInPlace: Bool)
+    case extractedContainer(container: ContextExtractableContainer)
     case controller(ContextControllerContentNode)
 }

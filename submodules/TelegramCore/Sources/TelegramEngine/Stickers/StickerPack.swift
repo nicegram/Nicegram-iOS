@@ -21,16 +21,20 @@ func telegramStickerPackThumbnailRepresentationFromApiSizes(datacenterId: Int32,
     var representations: [TelegramMediaImageRepresentation] = []
     for size in sizes {
         switch size {
-            case let .photoCachedSize(type, w, h, _):
+            case let .photoCachedSize(photoCachedSizeData):
+                let (type, w, h) = (photoCachedSizeData.type, photoCachedSizeData.w, photoCachedSizeData.h)
                 let resource = CloudStickerPackThumbnailMediaResource(datacenterId: datacenterId, thumbVersion: thumbVersion, volumeId: nil, localId: nil)
                 representations.append(TelegramMediaImageRepresentation(dimensions: PixelDimensions(width: w, height: h), resource: resource, progressiveSizes: [], immediateThumbnailData: nil, typeHint: stickerTypeHint(for: type)))
-            case let .photoSize(type, w, h, _):
+            case let .photoSize(photoSizeData):
+                let (type, w, h) = (photoSizeData.type, photoSizeData.w, photoSizeData.h)
                 let resource = CloudStickerPackThumbnailMediaResource(datacenterId: datacenterId, thumbVersion: thumbVersion, volumeId: nil, localId: nil)
                 representations.append(TelegramMediaImageRepresentation(dimensions: PixelDimensions(width: w, height: h), resource: resource, progressiveSizes: [], immediateThumbnailData: nil, typeHint: stickerTypeHint(for: type)))
-            case let .photoSizeProgressive(type, w, h, sizes):
+            case let .photoSizeProgressive(photoSizeProgressiveData):
+                let (type, w, h, sizes) = (photoSizeProgressiveData.type, photoSizeProgressiveData.w, photoSizeProgressiveData.h, photoSizeProgressiveData.sizes)
                 let resource = CloudStickerPackThumbnailMediaResource(datacenterId: datacenterId, thumbVersion: thumbVersion, volumeId: nil, localId: nil)
                 representations.append(TelegramMediaImageRepresentation(dimensions: PixelDimensions(width: w, height: h), resource: resource, progressiveSizes: sizes, immediateThumbnailData: nil, typeHint: stickerTypeHint(for: type)))
-            case let .photoPathSize(_, data):
+            case let .photoPathSize(photoPathSizeData):
+                let data = photoPathSizeData.bytes
                 immediateThumbnailData = data.makeData()
             case .photoStrippedSize:
                 break
@@ -44,7 +48,8 @@ func telegramStickerPackThumbnailRepresentationFromApiSizes(datacenterId: Int32,
 extension StickerPackCollectionInfo {
     convenience init(apiSet: Api.StickerSet, namespace: ItemCollectionId.Namespace) {
         switch apiSet {
-            case let .stickerSet(flags, _, id, accessHash, title, shortName, thumbs, thumbDcId, thumbVersion, thumbDocumentId, count, nHash):
+            case let .stickerSet(stickerSetData):
+                let (flags, _, id, accessHash, title, shortName, thumbs, thumbDcId, thumbVersion, thumbDocumentId, count, nHash) = (stickerSetData.flags, stickerSetData.installedDate, stickerSetData.id, stickerSetData.accessHash, stickerSetData.title, stickerSetData.shortName, stickerSetData.thumbs, stickerSetData.thumbDcId, stickerSetData.thumbVersion, stickerSetData.thumbDocumentId, stickerSetData.count, stickerSetData.hash)
                 var setFlags: StickerPackCollectionInfoFlags = StickerPackCollectionInfoFlags()
                 if (flags & (1 << 2)) != 0 {
                     setFlags.insert(.isOfficial)
@@ -82,10 +87,10 @@ func _internal_stickerPacksAttachedToMedia(account: Account, media: AnyMediaRefe
     let inputMedia: Api.InputStickeredMedia
     let resourceReference: MediaResourceReference
     if let imageReference = media.concrete(TelegramMediaImage.self), let reference = imageReference.media.reference, case let .cloud(imageId, accessHash, fileReference) = reference, let representation = largestImageRepresentation(imageReference.media.representations) {
-        inputMedia = .inputStickeredMediaPhoto(id: Api.InputPhoto.inputPhoto(id: imageId, accessHash: accessHash, fileReference: Buffer(data: fileReference ?? Data())))
+        inputMedia = .inputStickeredMediaPhoto(.init(id: Api.InputPhoto.inputPhoto(.init(id: imageId, accessHash: accessHash, fileReference: Buffer(data: fileReference ?? Data())))))
         resourceReference = imageReference.resourceReference(representation.resource)
     } else if let fileReference = media.concrete(TelegramMediaFile.self), let resource = fileReference.media.resource as? CloudDocumentMediaResource {
-        inputMedia = .inputStickeredMediaDocument(id: Api.InputDocument.inputDocument(id: resource.fileId, accessHash: resource.accessHash, fileReference: Buffer(data: resource.fileReference ?? Data())))
+        inputMedia = .inputStickeredMediaDocument(.init(id: Api.InputDocument.inputDocument(.init(id: resource.fileId, accessHash: resource.accessHash, fileReference: Buffer(data: resource.fileReference ?? Data())))))
         resourceReference = fileReference.resourceReference(fileReference.media.resource)
     } else {
         return .single([])
@@ -101,9 +106,9 @@ func _internal_stickerPacksAttachedToMedia(account: Account, media: AnyMediaRefe
             let inputMedia: Api.InputStickeredMedia
             if let resource = reference.updatedResource as? TelegramCloudMediaResourceWithFileReference, let updatedReference = resource.fileReference {
                 if let imageReference = media.concrete(TelegramMediaImage.self), let reference = imageReference.media.reference, case let .cloud(imageId, accessHash, _) = reference, let _ = largestImageRepresentation(imageReference.media.representations) {
-                    inputMedia = .inputStickeredMediaPhoto(id: Api.InputPhoto.inputPhoto(id: imageId, accessHash: accessHash, fileReference: Buffer(data: updatedReference)))
+                    inputMedia = .inputStickeredMediaPhoto(.init(id: Api.InputPhoto.inputPhoto(.init(id: imageId, accessHash: accessHash, fileReference: Buffer(data: updatedReference)))))
                 } else if let fileReference = media.concrete(TelegramMediaFile.self), let resource = fileReference.media.resource as? CloudDocumentMediaResource {
-                    inputMedia = .inputStickeredMediaDocument(id: Api.InputDocument.inputDocument(id: resource.fileId, accessHash: resource.accessHash, fileReference: Buffer(data: updatedReference)))
+                    inputMedia = .inputStickeredMediaDocument(.init(id: Api.InputDocument.inputDocument(.init(id: resource.fileId, accessHash: resource.accessHash, fileReference: Buffer(data: updatedReference)))))
                 } else {
                     return .single([])
                 }
@@ -118,11 +123,19 @@ func _internal_stickerPacksAttachedToMedia(account: Account, media: AnyMediaRefe
     }
     |> map { result -> [StickerPackReference] in
         return result.map { pack in
+            let set: Api.StickerSet
             switch pack {
-            case let .stickerSetCovered(set, _), let .stickerSetMultiCovered(set, _), let .stickerSetFullCovered(set, _, _, _), let .stickerSetNoCovered(set):
-                let info = StickerPackCollectionInfo(apiSet: set, namespace: Namespaces.ItemCollection.CloudStickerPacks)
-                return .id(id: info.id.id, accessHash: info.accessHash)
+            case let .stickerSetCovered(stickerSetCoveredData):
+                set = stickerSetCoveredData.set
+            case let .stickerSetMultiCovered(stickerSetMultiCoveredData):
+                set = stickerSetMultiCoveredData.set
+            case let .stickerSetFullCovered(stickerSetFullCoveredData):
+                set = stickerSetFullCoveredData.set
+            case let .stickerSetNoCovered(stickerSetNoCoveredData):
+                set = stickerSetNoCoveredData.set
             }
+            let info = StickerPackCollectionInfo(apiSet: set, namespace: Namespaces.ItemCollection.CloudStickerPacks)
+            return .id(id: info.id.id, accessHash: info.accessHash)
         }
     }
     |> `catch` { _ -> Signal<[StickerPackReference], NoError> in

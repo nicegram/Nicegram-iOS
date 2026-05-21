@@ -6,7 +6,7 @@ import MtProtoKit
 
 public enum UploadStickerStatus {
     case progress(Float)
-    case complete(CloudDocumentMediaResource, String)
+    case complete(EngineMediaResource, String)
 }
 
 public enum UploadStickerError {
@@ -78,22 +78,23 @@ func _internal_uploadSticker(account: Account, peer: Peer, resource: MediaResour
                                 flags |= (1 << 2)
                             }
                             var attributes: [Api.DocumentAttribute] = []
-                            attributes.append(.documentAttributeSticker(flags: 0, alt: alt, stickerset: .inputStickerSetEmpty, maskCoords: nil))
+                            attributes.append(.documentAttributeSticker(.init(flags: 0, alt: alt, stickerset: .inputStickerSetEmpty, maskCoords: nil)))
                             if let duration {
-                                attributes.append(.documentAttributeVideo(flags: 0, duration: duration, w: dimensions.width, h: dimensions.height, preloadPrefixSize: nil, videoStartTs: nil, videoCodec: nil))
+                                attributes.append(.documentAttributeVideo(.init(flags: 0, duration: duration, w: dimensions.width, h: dimensions.height, preloadPrefixSize: nil, videoStartTs: nil, videoCodec: nil)))
                             }
-                            attributes.append(.documentAttributeImageSize(w: dimensions.width, h: dimensions.height))
-                            return account.network.request(Api.functions.messages.uploadMedia(flags: 0, businessConnectionId: nil, peer: inputPeer, media: Api.InputMedia.inputMediaUploadedDocument(flags: flags, file: file, thumb: thumbnailFile, mimeType: mimeType, attributes: attributes, stickers: nil, videoCover: nil, videoTimestamp: nil, ttlSeconds: nil)))
+                            attributes.append(.documentAttributeImageSize(.init(w: dimensions.width, h: dimensions.height)))
+                            return account.network.request(Api.functions.messages.uploadMedia(flags: 0, businessConnectionId: nil, peer: inputPeer, media: Api.InputMedia.inputMediaUploadedDocument(.init(flags: flags, file: file, thumb: thumbnailFile, mimeType: mimeType, attributes: attributes, stickers: nil, videoCover: nil, videoTimestamp: nil, ttlSeconds: nil))))
                             |> mapError { _ -> UploadStickerError in return .generic }
                             |> mapToSignal { media -> Signal<UploadStickerStatus, UploadStickerError> in
                                 switch media {
-                                case let .messageMediaDocument(_, document, altDocuments, _, _, _):
+                                case let .messageMediaDocument(messageMediaDocumentData):
+                                    let (document, altDocuments) = (messageMediaDocumentData.document, messageMediaDocumentData.altDocuments)
                                     if let document = document, let file = telegramMediaFileFromApiDocument(document, altDocuments: altDocuments), let uploadedResource = file.resource as? CloudDocumentMediaResource {
                                         account.postbox.mediaBox.copyResourceData(from: resource.id, to: uploadedResource.id, synchronous: true)
                                         if let thumbnail, let previewRepresentation = file.previewRepresentations.first(where: { $0.dimensions == PixelDimensions(width: 320, height: 320) }) {
                                             account.postbox.mediaBox.copyResourceData(from: thumbnail.id, to: previewRepresentation.resource.id, synchronous: true)
                                         }
-                                        return .single(.complete(uploadedResource, file.mimeType))
+                                        return .single(.complete(EngineMediaResource(uploadedResource), file.mimeType))
                                     }
                                 default:
                                     break
@@ -200,7 +201,7 @@ func _internal_createStickerSet(account: Account, title: String, shortName: Stri
         }
         for sticker in stickers {
             if let resource = sticker.resource.resource as? CloudDocumentMediaResource {
-                uploadStickers.append(.single(.complete(resource, sticker.mimeType)))
+                uploadStickers.append(.single(.complete(EngineMediaResource(resource), sticker.mimeType)))
             } else {
                 uploadStickers.append(_internal_uploadSticker(account: account, peer: peer, resource: sticker.resource.resource, thumbnail: sticker.thumbnailResource?.resource, alt: sticker.emojis.first ?? "", dimensions: sticker.dimensions, duration: sticker.duration, mimeType: sticker.mimeType)
                 |> mapError { _ -> CreateStickerSetError in
@@ -212,8 +213,8 @@ func _internal_createStickerSet(account: Account, title: String, shortName: Stri
         |> mapToSignal { uploadedStickers -> Signal<CreateStickerSetStatus, CreateStickerSetError> in
             var resources: [CloudDocumentMediaResource] = []
             for sticker in uploadedStickers {
-                if case let .complete(resource, _) = sticker {
-                    resources.append(resource)
+                if case let .complete(resource, _) = sticker, let rawResource = resource._asResource() as? CloudDocumentMediaResource {
+                    resources.append(rawResource)
                 }
             }
             if resources.count == stickers.count {
@@ -243,12 +244,12 @@ func _internal_createStickerSet(account: Account, title: String, shortName: Stri
                         flags |= (1 << 1)
                     }
                     
-                    inputStickers.append(.inputStickerSetItem(flags: flags, document: .inputDocument(id: resource.fileId, accessHash: resource.accessHash, fileReference: Buffer(data: resource.fileReference ?? Data())), emoji: sticker.emojis.joined(), maskCoords: nil, keywords: sticker.keywords))
+                    inputStickers.append(.inputStickerSetItem(.init(flags: flags, document: .inputDocument(.init(id: resource.fileId, accessHash: resource.accessHash, fileReference: Buffer(data: resource.fileReference ?? Data()))), emoji: sticker.emojis.joined(), maskCoords: nil, keywords: sticker.keywords)))
                 }
                 var thumbnailDocument: Api.InputDocument?
                 if thumbnail != nil, let resource = resources.last {
                     flags |= (1 << 2)
-                    thumbnailDocument = .inputDocument(id: resource.fileId, accessHash: resource.accessHash, fileReference: Buffer(data: resource.fileReference ?? Data()))
+                    thumbnailDocument = .inputDocument(.init(id: resource.fileId, accessHash: resource.accessHash, fileReference: Buffer(data: resource.fileReference ?? Data())))
                 }
                 if let software = software, !software.isEmpty {
                     flags |= (1 << 3)
@@ -367,7 +368,7 @@ private func revalidatedSticker<T>(account: Account, sticker: FileMediaReference
 func _internal_addStickerToStickerSet(account: Account, packReference: StickerPackReference, sticker: ImportSticker) -> Signal<Bool, AddStickerToSetError> {
     let uploadSticker: Signal<UploadStickerStatus, AddStickerToSetError>
     if let resource = sticker.resource.resource as? CloudDocumentMediaResource {
-        uploadSticker = .single(.complete(resource, sticker.mimeType))
+        uploadSticker = .single(.complete(EngineMediaResource(resource), sticker.mimeType))
     } else {
         uploadSticker = account.postbox.loadedPeerWithId(account.peerId)
         |> castError(AddStickerToSetError.self)
@@ -380,15 +381,15 @@ func _internal_addStickerToStickerSet(account: Account, packReference: StickerPa
     }
     return uploadSticker
     |> mapToSignal { uploadedSticker in
-        guard case let .complete(resource, _) = uploadedSticker else {
+        guard case let .complete(resource, _) = uploadedSticker, let rawResource = resource._asResource() as? CloudDocumentMediaResource else {
             return .complete()
         }
-        
+
         var flags: Int32 = 0
         if sticker.keywords.count > 0 {
             flags |= (1 << 1)
         }
-        let inputSticker: Api.InputStickerSetItem = .inputStickerSetItem(flags: flags, document: .inputDocument(id: resource.fileId, accessHash: resource.accessHash, fileReference: Buffer(data: resource.fileReference ?? Data())), emoji: sticker.emojis.joined(), maskCoords: nil, keywords: sticker.keywords)
+        let inputSticker: Api.InputStickerSetItem = .inputStickerSetItem(.init(flags: flags, document: .inputDocument(.init(id: rawResource.fileId, accessHash: rawResource.accessHash, fileReference: Buffer(data: rawResource.fileReference ?? Data()))), emoji: sticker.emojis.joined(), maskCoords: nil, keywords: sticker.keywords))
         return account.network.request(Api.functions.stickers.addStickerToSet(stickerset: packReference.apiInputStickerSet, sticker: inputSticker))
         |> `catch` { error -> Signal<Api.messages.StickerSet, MTRpcError> in
             if error.errorDescription == "FILE_REFERENCE_EXPIRED" {
@@ -400,8 +401,8 @@ func _internal_addStickerToStickerSet(account: Account, packReference: StickerPa
                     guard let resource = result.updatedResource as? CloudDocumentMediaResource else {
                         return .fail(MTRpcError(errorCode: 500, errorDescription: "Internal"))
                     }
-                    
-                    let inputSticker: Api.InputStickerSetItem = .inputStickerSetItem(flags: flags, document: .inputDocument(id: resource.fileId, accessHash: resource.accessHash, fileReference: Buffer(data: resource.fileReference)), emoji: sticker.emojis.joined(), maskCoords: nil, keywords: sticker.keywords)
+
+                    let inputSticker: Api.InputStickerSetItem = .inputStickerSetItem(.init(flags: flags, document: .inputDocument(.init(id: resource.fileId, accessHash: resource.accessHash, fileReference: Buffer(data: resource.fileReference))), emoji: sticker.emojis.joined(), maskCoords: nil, keywords: sticker.keywords))
                     
                     return account.network.request(Api.functions.stickers.addStickerToSet(stickerset: packReference.apiInputStickerSet, sticker: inputSticker))
                 }
@@ -434,7 +435,7 @@ public enum ReorderStickerError {
 
 func _internal_reorderSticker(account: Account, sticker: FileMediaReference, position: Int) -> Signal<Never, ReorderStickerError> {
     return revalidatedSticker(account: account, sticker: sticker, signal: { resource in
-        return account.network.request(Api.functions.stickers.changeStickerPosition(sticker: .inputDocument(id: resource.fileId, accessHash: resource.accessHash, fileReference: Buffer(data: resource.fileReference)), position: Int32(position)))
+        return account.network.request(Api.functions.stickers.changeStickerPosition(sticker: .inputDocument(.init(id: resource.fileId, accessHash: resource.accessHash, fileReference: Buffer(data: resource.fileReference))), position: Int32(position)))
     })
     |> mapError { error -> ReorderStickerError in
         return .generic
@@ -461,7 +462,7 @@ public enum DeleteStickerError {
 
 func _internal_deleteStickerFromStickerSet(account: Account, sticker: FileMediaReference) -> Signal<Never, DeleteStickerError> {
     return revalidatedSticker(account: account, sticker: sticker, signal: { resource in
-        return account.network.request(Api.functions.stickers.removeStickerFromSet(sticker: .inputDocument(id: resource.fileId, accessHash: resource.accessHash, fileReference: Buffer(data: resource.fileReference))))
+        return account.network.request(Api.functions.stickers.removeStickerFromSet(sticker: .inputDocument(.init(id: resource.fileId, accessHash: resource.accessHash, fileReference: Buffer(data: resource.fileReference)))))
     })
     |> mapError { error -> DeleteStickerError in
         return .generic
@@ -488,7 +489,7 @@ public enum ReplaceStickerError {
 func _internal_replaceSticker(account: Account, previousSticker: FileMediaReference, sticker: ImportSticker) -> Signal<Never, ReplaceStickerError> {
     let uploadSticker: Signal<UploadStickerStatus, ReplaceStickerError>
     if let resource = sticker.resource.resource as? CloudDocumentMediaResource {
-        uploadSticker = .single(.complete(resource, sticker.mimeType))
+        uploadSticker = .single(.complete(EngineMediaResource(resource), sticker.mimeType))
     } else {
         uploadSticker = account.postbox.loadedPeerWithId(account.peerId)
         |> castError(ReplaceStickerError.self)
@@ -501,16 +502,16 @@ func _internal_replaceSticker(account: Account, previousSticker: FileMediaRefere
     }
     return uploadSticker
     |> mapToSignal { uploadedSticker in
-        guard case let .complete(resource, _) = uploadedSticker else {
+        guard case let .complete(resource, _) = uploadedSticker, let rawResource = resource._asResource() as? CloudDocumentMediaResource else {
             return .complete()
         }
         var flags: Int32 = 0
         if sticker.keywords.count > 0 {
             flags |= (1 << 1)
         }
-        let inputSticker: Api.InputStickerSetItem = .inputStickerSetItem(flags: flags, document: .inputDocument(id: resource.fileId, accessHash: resource.accessHash, fileReference: Buffer(data: resource.fileReference ?? Data())), emoji: sticker.emojis.joined(), maskCoords: nil, keywords: sticker.keywords)
+        let inputSticker: Api.InputStickerSetItem = .inputStickerSetItem(.init(flags: flags, document: .inputDocument(.init(id: rawResource.fileId, accessHash: rawResource.accessHash, fileReference: Buffer(data: rawResource.fileReference ?? Data()))), emoji: sticker.emojis.joined(), maskCoords: nil, keywords: sticker.keywords))
         return revalidatedSticker(account: account, sticker: previousSticker, signal: { previousResource in
-            return account.network.request(Api.functions.stickers.replaceSticker(sticker: .inputDocument(id: previousResource.fileId, accessHash: previousResource.accessHash, fileReference: Buffer(data: previousResource.fileReference)), newSticker: inputSticker))
+            return account.network.request(Api.functions.stickers.replaceSticker(sticker: .inputDocument(.init(id: previousResource.fileId, accessHash: previousResource.accessHash, fileReference: Buffer(data: previousResource.fileReference))), newSticker: inputSticker))
         })
         |> mapError { error -> ReplaceStickerError in
             return .generic
@@ -543,13 +544,16 @@ func _internal_getMyStickerSets(account: Account) -> Signal<[(StickerPackCollect
         }
         var infos: [(StickerPackCollectionInfo, StickerPackItem?)] = []
         switch result {
-        case let .myStickers(_, sets):
+        case let .myStickers(myStickersData):
+            let sets = myStickersData.sets
             for set in sets {
                 switch set {
-                case let .stickerSetCovered(set, cover):
+                case let .stickerSetCovered(stickerSetCoveredData):
+                    let (set, cover) = (stickerSetCoveredData.set, stickerSetCoveredData.cover)
                     let namespace: ItemCollectionId.Namespace
                     switch set {
-                        case let .stickerSet(flags, _, _, _, _, _, _, _, _, _, _, _):
+                        case let .stickerSet(stickerSetData):
+                            let flags = stickerSetData.flags
                             if (flags & (1 << 3)) != 0 {
                                 namespace = Namespaces.ItemCollection.CloudMaskPacks
                             } else if (flags & (1 << 7)) != 0 {
@@ -564,10 +568,12 @@ func _internal_getMyStickerSets(account: Account) -> Signal<[(StickerPackCollect
                         firstItem = StickerPackItem(index: ItemCollectionItemIndex(index: 0, id: id.id), file: file, indexKeys: [])
                     }
                     infos.append((info, firstItem))
-                case let .stickerSetFullCovered(set, _, _, documents):
+                case let .stickerSetFullCovered(stickerSetFullCoveredData):
+                    let (set, documents) = (stickerSetFullCoveredData.set, stickerSetFullCoveredData.documents)
                     let namespace: ItemCollectionId.Namespace
                     switch set {
-                        case let .stickerSet(flags, _, _, _, _, _, _, _, _, _, _, _):
+                        case let .stickerSet(stickerSetData):
+                            let flags = stickerSetData.flags
                             if (flags & (1 << 3)) != 0 {
                                 namespace = Namespaces.ItemCollection.CloudMaskPacks
                             } else if (flags & (1 << 7)) != 0 {
@@ -597,10 +603,12 @@ private func parseStickerSetInfoAndItems(apiStickerSet: Api.messages.StickerSet)
     switch apiStickerSet {
     case .stickerSetNotModified:
         return nil
-    case let .stickerSet(set, packs, keywords, documents):
+    case let .stickerSet(stickerSetData):
+        let (set, packs, keywords, documents) = (stickerSetData.set, stickerSetData.packs, stickerSetData.keywords, stickerSetData.documents)
         let namespace: ItemCollectionId.Namespace
         switch set {
-            case let .stickerSet(flags, _, _, _, _, _, _, _, _, _, _, _):
+            case let .stickerSet(stickerSetData):
+                let flags = stickerSetData.flags
                 if (flags & (1 << 3)) != 0 {
                     namespace = Namespaces.ItemCollection.CloudMaskPacks
                 } else if (flags & (1 << 7)) != 0 {
@@ -613,7 +621,8 @@ private func parseStickerSetInfoAndItems(apiStickerSet: Api.messages.StickerSet)
         var indexKeysByFile: [MediaId: [MemoryBuffer]] = [:]
         for pack in packs {
             switch pack {
-                case let .stickerPack(text, fileIds):
+                case let .stickerPack(stickerPackData):
+                    let (text, fileIds) = (stickerPackData.emoticon, stickerPackData.documents)
                     let key = ValueBoxKey(text).toMemoryBuffer()
                     for fileId in fileIds {
                         let mediaId = MediaId(namespace: Namespaces.Media.CloudFile, id: fileId)
@@ -627,7 +636,8 @@ private func parseStickerSetInfoAndItems(apiStickerSet: Api.messages.StickerSet)
         }
         for keyword in keywords {
             switch keyword {
-            case let .stickerKeyword(documentId, texts):
+            case let .stickerKeyword(stickerKeywordData):
+                let (documentId, texts) = (stickerKeywordData.documentId, stickerKeywordData.keyword)
                 for text in texts {
                     let key = ValueBoxKey(text).toMemoryBuffer()
                     let mediaId = MediaId(namespace: Namespaces.Media.CloudFile, id: documentId)
@@ -667,8 +677,8 @@ func _internal_getStickerSetShortNameSuggestion(account: Account, title: String)
             return nil
         }
         switch result {
-            case let .suggestedShortName(shortName):
-                return shortName
+            case let .suggestedShortName(suggestedShortNameData):
+                return suggestedShortNameData.shortName
         }
     }
 }

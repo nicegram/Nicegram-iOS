@@ -117,7 +117,15 @@ public class ChatMessageContactBubbleContentNode: ChatMessageBubbleContentNode {
                 contactPeer = peer
             }
             
-            let nameColors = contactPeer?.nameColor.flatMap { item.context.peerNameColors.get($0, dark: item.presentationData.theme.theme.overallDarkAppearance) }
+            let nameColors: PeerNameColors.Colors?
+            switch contactPeer?.nameColor {
+            case let .preset(nameColor):
+                nameColors = item.context.peerNameColors.get(nameColor, dark: item.presentationData.theme.theme.overallDarkAppearance)
+            case let .collectible(collectibleColor):
+                nameColors = collectibleColor.peerNameColors(dark: item.presentationData.theme.theme.overallDarkAppearance)
+            default:
+                nameColors = nil
+            }
             
             let messageTheme = incoming ? item.presentationData.theme.theme.chat.message.incoming : item.presentationData.theme.theme.chat.message.outgoing
             let mainColor: UIColor

@@ -1,118 +1,71 @@
-import FeatAttentionEconomy
-
 import AsyncDisplayKit
-import ChatMessageItemCommon
 import ChatMessageItemView
 import Display
-import ShareController
+import FeatAdsgram
+import SwiftUI
+import UIKit
 
-@available(iOS 15.0, *)
+@available(iOS 16.0, *)
 class ChatMessageNicegramAdNode: ListViewItemNode {
-    var item: ChatMessageNicegramAdItem?
+    private var item: ChatMessageNicegramAdItem?
     
-    private let bannerView: AttChatBanner
+    private let bannerView: ChatMessageAdView
     private let bannerNode: ASDisplayNode
-    
+
     override var visibility: ListViewItemNodeVisibility {
         didSet {
-            let visiblePart: Double
+            let visibleFraction: Double
             switch visibility {
             case .none:
-                visiblePart = 0.0
+                visibleFraction = 0.0
             case let .visible(part, _):
-                visiblePart = part
+                visibleFraction = part
             }
             
-            bannerView.set(visiblePart: visiblePart)
+            item?.viewModel.updateVisibility {
+                $0.visibleFraction = visibleFraction
+            }
         }
     }
     
     required init(rotated: Bool) {
-        let bannerView = AttChatBanner()
+        let bannerView = ChatMessageAdView()
         self.bannerView = bannerView
-        self.bannerNode = ASDisplayNode {
-            bannerView
-        }
+        self.bannerNode = ASDisplayNode { bannerView }
         
-        super.init(layerBacked: false, dynamicBounce: true, rotated: rotated)
+        super.init(layerBacked: false, rotated: rotated)
         
         if rotated {
             self.transform = CATransform3DMakeRotation(CGFloat.pi, 0.0, 0.0, 1.0)
         }
         
         self.addSubnode(bannerNode)
-        
-        bannerView.share = { @MainActor [weak self] image, text in
-            guard let item = self?.item else { return }
-            let shareController = await shareController(
-                image: image,
-                text: text,
-                context: item.context
-            )
-            item.controllerInteraction.presentController(shareController, nil)
-        }
     }
     
     func setupItem(_ item: ChatMessageNicegramAdItem) {
         self.item = item
-        
-        let chatId = item.chatLocation.peerId?.ng_toInt64()
-        self.bannerView.set(chatId: chatId)
-    }
-    
-    override func layoutForParams(_ params: ListViewItemLayoutParams, item: ListViewItem, previousItem: ListViewItem?, nextItem: ListViewItem?) {
-        
     }
     
     func asyncLayout() -> (_ item: ChatMessageNicegramAdItem, _ params: ListViewItemLayoutParams, _ mergedTop: Bool, _ mergedBottom: Bool, _ dateAtBottom: Bool) -> (ListViewItemNodeLayout, (ListViewItemUpdateAnimation) -> Void) {
         return { [weak self] item, params, mergedTop, mergedBottom, dateHeaderAtBottom -> (ListViewItemNodeLayout, (ListViewItemUpdateAnimation) -> Void) in
             guard let self else {
-                return (
-                    ListViewItemNodeLayout(
-                        contentSize: .zero,
-                        insets: .zero
-                    ),
-                    { _ in }
-                )
+                return (ListViewItemNodeLayout(contentSize: .zero, insets: .zero), { _ in })
             }
-            
-            let presentationData = item.presentationData
-            let messagePresentationData = item.presentationData.theme.theme.chat.message
-            let incomingBubble = if presentationData.theme.wallpaper.hasWallpaper {
-                messagePresentationData.incoming.bubble.withWallpaper
-            } else {
-                messagePresentationData.incoming.bubble.withoutWallpaper
-            }
-            let bannerPresentationData = AttChatBannerPresentationData(
-                incomingBubble: .init(
-                    backgroundColor: incomingBubble.fill.first ?? .black,
-                    primaryTextColor: messagePresentationData.incoming.primaryTextColor
-                ),
-                messageFont: presentationData.messageFont,
-                messageBoldFont: presentationData.messageBoldFont
-            )
             
             let bubbleParams = ChatMessageBubbleNicegramParams(
                 params: params,
-                presentationData: presentationData
-            )
-            let layoutParams = AttChatBannerLayoutParams(
-                insets: bubbleParams.insets,
-                maximumWidthFill: bubbleParams.maximumWidthFill
+                presentationData: item.presentationData
             )
             
-            bannerView.set(
-                ad: item.ad,
-                layoutParams: layoutParams,
-                presentationData: bannerPresentationData
-            )
-            bannerView.layoutIfNeeded()
-            let bannerSize = bannerView.systemLayoutSizeFitting(
-                UIView.layoutFittingExpandedSize
-            )
-            let size = CGSize(
-                width: params.width,
-                height: bannerSize.height
+            let size = bannerView.update(
+                props: .init(
+                    layout: .init(
+                        availableWidth: params.width,
+                        insets: .init(bubbleParams.insets)
+                    ),
+                    viewState: item.viewState
+                ),
+                viewModel: item.viewModel
             )
             
             let layout = ListViewItemNodeLayout(
@@ -121,8 +74,7 @@ class ChatMessageNicegramAdNode: ListViewItemNode {
             )
             
             let apply: (ListViewItemUpdateAnimation) -> Void = { [weak self] _ in
-                guard let self else { return }
-                bannerNode.frame = CGRect(origin: .zero, size: size)
+                self?.bannerNode.frame = CGRect(origin: .zero, size: size)
             }
             
             return (layout, apply)

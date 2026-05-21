@@ -109,7 +109,7 @@ final class ThemeColorsGridControllerNode: ASDisplayNode {
         self.separatorNode.backgroundColor = presentationData.theme.list.itemBlocksSeparatorColor
         
         self.customColorItemNode = ItemListActionItemNode()
-        self.customColorItem = ItemListActionItem(presentationData: ItemListPresentationData(presentationData), title: presentationData.strings.WallpaperColors_SetCustomColor, kind: .generic, alignment: .natural, sectionId: 0, style: .blocks, action: {
+        self.customColorItem = ItemListActionItem(presentationData: ItemListPresentationData(presentationData), systemStyle: .glass, title: presentationData.strings.WallpaperColors_SetCustomColor, kind: .generic, alignment: .natural, sectionId: 0, style: .blocks, action: {
             presentColorPicker()
         })
         
@@ -265,7 +265,7 @@ final class ThemeColorsGridControllerNode: ASDisplayNode {
         self.topBackgroundNode.backgroundColor = presentationData.theme.list.blocksBackgroundColor
         self.separatorNode.backgroundColor = presentationData.theme.list.itemBlocksSeparatorColor
         
-        self.customColorItem = ItemListActionItem(presentationData: ItemListPresentationData(presentationData), title: presentationData.strings.WallpaperColors_SetCustomColor, kind: .generic, alignment: .natural, sectionId: 0, style: .blocks, action: { [weak self] in
+        self.customColorItem = ItemListActionItem(presentationData: ItemListPresentationData(presentationData), systemStyle: .glass, title: presentationData.strings.WallpaperColors_SetCustomColor, kind: .generic, alignment: .natural, sectionId: 0, style: .blocks, action: { [weak self] in
             self?.presentColorPicker()
         })
         

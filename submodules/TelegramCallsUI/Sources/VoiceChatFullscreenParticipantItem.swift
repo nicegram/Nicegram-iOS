@@ -26,7 +26,7 @@ private let videoCornerRadius: CGFloat = 23.0
 private let avatarSize: CGFloat = 50.0
 private let videoSize = CGSize(width: 180.0, height: 180.0)
 
-private let accentColor: UIColor = UIColor(rgb: 0x007aff)
+private let accentColor: UIColor = UIColor(rgb: 0x0088ff)
 private let constructiveColor: UIColor = UIColor(rgb: 0x34c759)
 private let destructiveColor: UIColor = UIColor(rgb: 0xff3b30)
 
@@ -259,7 +259,7 @@ class VoiceChatFullscreenParticipantItemNode: ItemListRevealOptionsItemNode {
         self.actionContainerNode = ASDisplayNode()
         self.actionButtonNode = HighlightableButtonNode()
 
-        super.init(layerBacked: false, dynamicBounce: false, rotated: false, seeThrough: false)
+        super.init(layerBacked: false, rotated: false, seeThrough: false)
         
         self.isAccessibilityElement = true
         

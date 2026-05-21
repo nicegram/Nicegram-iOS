@@ -335,9 +335,11 @@ public struct PresentationResourcesChat {
         return theme.image(PresentationResourceKey.chatInputTextFieldClearImage.rawValue, { theme in
             return generateImage(CGSize(width: 14.0, height: 14.0), contextGenerator: { size, context in
                 context.clear(CGRect(origin: CGPoint(), size: size))
-                context.setFillColor(theme.chat.inputPanel.inputControlColor.cgColor)
-                context.setStrokeColor(theme.chat.inputPanel.inputBackgroundColor.cgColor)
+                context.setFillColor(UIColor.white.cgColor)
                 context.fillEllipse(in: CGRect(origin: CGPoint(), size: size))
+                
+                context.setStrokeColor(UIColor.clear.cgColor)
+                context.setBlendMode(.copy)
                 
                 context.setLineWidth(1.5)
                 context.setLineCap(.round)
@@ -356,7 +358,7 @@ public struct PresentationResourcesChat {
                 context.move(to: CGPoint(x: (size.width - lineHeight) / 2.0, y: size.width / 2.0))
                 context.addLine(to: CGPoint(x: (size.width - lineHeight) / 2.0 + lineHeight, y: size.width / 2.0))
                 context.strokePath()
-            })
+            })?.withRenderingMode(.alwaysTemplate)
         })
     }
     
@@ -380,7 +382,12 @@ public struct PresentationResourcesChat {
     
     public static func chatInputPanelSendIconImage(_ theme: PresentationTheme) -> UIImage? {
         return theme.image(PresentationResourceKey.chatInputPanelSendIconImage.rawValue, { theme in
-            return generateImage(CGSize(width: 33.0, height: 33.0), rotatedContext: { size, context in
+            return generateImage(CGSize(width: 34.0, height: 34.0), rotatedContext: { size, context in
+                UIGraphicsPushContext(context)
+                defer {
+                    UIGraphicsPopContext()
+                }
+                
                 context.clear(CGRect(origin: CGPoint(), size: size))
                 let color: UIColor
                 if [.day, .night].contains(theme.referenceTheme.baseTheme) && !theme.chat.message.outgoing.bubble.withWallpaper.hasSingleFillColor {
@@ -388,13 +395,10 @@ public struct PresentationResourcesChat {
                 } else {
                     color = theme.chat.inputPanel.actionControlForegroundColor
                 }
-                context.setStrokeColor(color.cgColor)
-                context.setFillColor(color.cgColor)
-                context.setLineWidth(2.0)
-                context.setLineCap(.round)
-                context.setLineJoin(.round)
-                let _ = try? drawSvgPath(context, path: "M11,14.6666667 L16.4310816,9.40016333 L16.4310816,9.40016333 C16.4694824,9.36292619 16.5305176,9.36292619 16.5689184,9.40016333 L22,14.6666667 S ")
-                let _ = try? drawSvgPath(context, path: "M16.5,9.33333333 C17.0522847,9.33333333 17.5,9.78104858 17.5,10.3333333 L17.5,24 C17.5,24.5522847 17.0522847,25 16.5,25 C15.9477153,25 15.5,24.5522847 15.5,24 L15.5,10.3333333 C15.5,9.78104858 15.9477153,9.33333333 16.5,9.33333333 Z ")
+                
+                if let image = generateTintedImage(image: UIImage(bundleImageName: "Chat/Input/Text/SendIcon"), color: color) {
+                    image.draw(in: CGRect(origin: CGPoint(x: floorToScreenPixels((size.width - image.size.width) * 0.5), y: floorToScreenPixels((size.height - image.size.height) * 0.5)), size: image.size))
+                }
             })
         })
     }
@@ -504,19 +508,19 @@ public struct PresentationResourcesChat {
     
     public static func chatInputPanelAttachmentButtonImage(_ theme: PresentationTheme) -> UIImage? {
         return theme.image(PresentationResourceKey.chatInputPanelAttachmentButtonImage.rawValue, { theme in
-            return generateTintedImage(image: UIImage(bundleImageName: "Chat/Input/Text/IconAttachment"), color: theme.chat.inputPanel.panelControlColor)
+            return generateTintedImage(image: UIImage(bundleImageName: "Chat/Input/Text/IconAttachment"), color: .white)?.withRenderingMode(.alwaysTemplate)
         })
     }
     
     public static func chatInputPanelEditAttachmentButtonImage(_ theme: PresentationTheme) -> UIImage? {
         return theme.image(PresentationResourceKey.chatInputPanelEditAttachmentButtonImage.rawValue, { theme in
-            return generateTintedImage(image: UIImage(bundleImageName: "Chat/Input/Text/Replace"), color: theme.chat.inputPanel.panelControlAccentColor)
+            return generateTintedImage(image: UIImage(bundleImageName: "Chat/Input/Text/Replace"), color: .white)?.withRenderingMode(.alwaysTemplate)
         })
     }
     
     public static func chatInputPanelExpandButtonImage(_ theme: PresentationTheme) -> UIImage? {
         return theme.image(PresentationResourceKey.chatInputPanelExpandButtonImage.rawValue, { theme in
-            return generateTintedImage(image: UIImage(bundleImageName: "Chat/Input/Text/IconExpandInput"), color: theme.chat.inputPanel.panelControlColor)
+            return generateTintedImage(image: UIImage(bundleImageName: "Chat/Input/Text/IconExpandInput"), color: .white)?.withRenderingMode(.alwaysTemplate)
         })
     }
     
@@ -534,53 +538,53 @@ public struct PresentationResourcesChat {
     
     public static func chatInputTextFieldStickersImage(_ theme: PresentationTheme) -> UIImage? {
         return theme.image(PresentationResourceKey.chatInputTextFieldStickersImage.rawValue, { theme in
-            return generateTintedImage(image: UIImage(bundleImageName: "Chat/Input/Text/AccessoryIconStickers"), color: theme.chat.inputPanel.inputControlColor)
+            return generateTintedImage(image: UIImage(bundleImageName: "Chat/Input/Text/AccessoryIconStickers"), color: .white)?.withRenderingMode(.alwaysTemplate)
         })
     }
     
     public static func chatInputTextFieldInputButtonsImage(_ theme: PresentationTheme) -> UIImage? {
         return theme.image(PresentationResourceKey.chatInputTextFieldInputButtonsImage.rawValue, { theme in
-            return generateTintedImage(image: UIImage(bundleImageName: "Chat/Input/Text/AccessoryIconInputButtons"), color: theme.chat.inputPanel.inputControlColor)
+            return generateTintedImage(image: UIImage(bundleImageName: "Chat/Input/Text/AccessoryIconInputButtons"), color: .white)?.withRenderingMode(.alwaysTemplate)
         })
     }
     
     public static func chatInputTextFieldCommandsImage(_ theme: PresentationTheme) -> UIImage? {
         return theme.image(PresentationResourceKey.chatInputTextFieldCommandsImage.rawValue, { theme in
-            return generateTintedImage(image: UIImage(bundleImageName: "Chat/Input/Text/AccessoryIconCommands"), color: theme.chat.inputPanel.inputControlColor)
+            return generateTintedImage(image: UIImage(bundleImageName: "Chat/Input/Text/AccessoryIconCommands"), color: .white)?.withRenderingMode(.alwaysTemplate)
         })
     }
     
     public static func chatInputTextFieldSilentPostOnImage(_ theme: PresentationTheme) -> UIImage? {
         return theme.image(PresentationResourceKey.chatInputTextFieldSilentPostOnImage.rawValue, { theme in
-            return generateTintedImage(image: UIImage(bundleImageName: "Chat/Input/Text/AccessoryIconSilentPostOn"), color: theme.chat.inputPanel.inputControlColor)
+            return generateTintedImage(image: UIImage(bundleImageName: "Chat/Input/Text/AccessoryIconSilentPostOn"), color: .white)?.withRenderingMode(.alwaysTemplate)
         })
     }
     
     public static func chatInputTextFieldSilentPostOffImage(_ theme: PresentationTheme) -> UIImage? {
         return theme.image(PresentationResourceKey.chatInputTextFieldSilentPostOffImage.rawValue, { theme in
-            return generateTintedImage(image: UIImage(bundleImageName: "Chat/Input/Text/AccessoryIconSilentPostOff"), color: theme.chat.inputPanel.inputControlColor)
+            return generateTintedImage(image: UIImage(bundleImageName: "Chat/Input/Text/AccessoryIconSilentPostOff"), color: .white)?.withRenderingMode(.alwaysTemplate)
         })
     }
     
     public static func chatInputTextFieldSuggestPostImage(_ theme: PresentationTheme) -> UIImage? {
         return theme.image(PresentationResourceKey.chatInputTextFieldSuggestPostImage.rawValue, { theme in
-            return generateTintedImage(image: UIImage(bundleImageName: "Chat/Input/Text/AccessoryIconSuggestPost"), color: theme.chat.inputPanel.inputControlColor)
+            return generateTintedImage(image: UIImage(bundleImageName: "Chat/Input/Text/AccessoryIconSuggestPost"), color: .white)?.withRenderingMode(.alwaysTemplate)
         })
     }
     
     public static func chatInputTextFieldKeyboardImage(_ theme: PresentationTheme) -> UIImage? {
         return theme.image(PresentationResourceKey.chatInputTextFieldKeyboardImage.rawValue, { theme in
-            return generateTintedImage(image: UIImage(bundleImageName: "Chat/Input/Text/AccessoryIconKeyboard"), color: theme.chat.inputPanel.inputControlColor)
+            return generateTintedImage(image: UIImage(bundleImageName: "Chat/Input/Text/AccessoryIconKeyboard"), color: .white)?.withRenderingMode(.alwaysTemplate)
         })
     }
     
     public static func chatInputTextFieldTimerImage(_ theme: PresentationTheme) -> UIImage? {
         return theme.image(PresentationResourceKey.chatInputTextFieldTimerImage.rawValue, { theme in
-            if let image = generateTintedImage(image: UIImage(bundleImageName: "Chat/Input/Text/AccessoryIconTimer"), color: theme.chat.inputPanel.inputControlColor) {
+            if let image = generateTintedImage(image: UIImage(bundleImageName: "Chat/Input/Text/AccessoryIconTimer"), color: .white) {
                 return generateImage(CGSize(width: image.size.width, height: image.size.height + 1.0), contextGenerator: { size, context in
                     context.clear(CGRect(origin: CGPoint(), size: size))
                     context.draw(image.cgImage!, in: CGRect(origin: CGPoint(x: 0.0, y: 2.0), size: image.size))
-                })
+                })?.withRenderingMode(.alwaysTemplate)
             } else {
                 return nil
             }
@@ -589,13 +593,13 @@ public struct PresentationResourcesChat {
     
     public static func chatInputTextFieldScheduleImage(_ theme: PresentationTheme) -> UIImage? {
         return theme.image(PresentationResourceKey.chatInputTextFieldScheduleImage.rawValue, { theme in
-            return generateTintedImage(image: UIImage(bundleImageName: "Chat/Input/Text/AccessoryIconSchedule"), color: theme.chat.inputPanel.inputControlColor)
+            return generateTintedImage(image: UIImage(bundleImageName: "Chat/Input/Text/AccessoryIconSchedule"), color: .white)?.withRenderingMode(.alwaysTemplate)
         })
     }
     
     public static func chatInputTextFieldGiftImage(_ theme: PresentationTheme) -> UIImage? {
         return theme.image(PresentationResourceKey.chatInputTextFieldGiftImage.rawValue, { theme in
-            return generateTintedImage(image: UIImage(bundleImageName: "Chat/Input/Text/AccessoryIconGift"), color: theme.chat.inputPanel.inputControlColor)
+            return generateTintedImage(image: UIImage(bundleImageName: "Chat/Input/Text/AccessoryIconGift"), color: .white)?.withRenderingMode(.alwaysTemplate)
         })
     }
     
@@ -616,7 +620,7 @@ public struct PresentationResourcesChat {
             return generateImage(CGSize(width: 38.0, height: 38.0), contextGenerator: { size, context in
                 context.clear(CGRect(origin: CGPoint(), size: size))
                 
-                context.setStrokeColor(theme.rootController.navigationBar.accentTextColor.cgColor)
+                context.setStrokeColor(UIColor.white.cgColor)
                 context.setLineWidth(1.5)
                 
                 let position = CGPoint(x: 9.0 - 0.5, y: 23.0)
@@ -624,7 +628,7 @@ public struct PresentationResourcesChat {
                 context.addLine(to: CGPoint(x: position.x + 10.0, y: position.y - 10.0))
                 context.addLine(to: CGPoint(x: position.x + 19.0, y: position.y - 1.0))
                 context.strokePath()
-            })
+            })?.withRenderingMode(.alwaysTemplate)
         })
     }
     
@@ -633,7 +637,7 @@ public struct PresentationResourcesChat {
             return generateImage(CGSize(width: 38.0, height: 38.0), contextGenerator: { size, context in
                 context.clear(CGRect(origin: CGPoint(), size: size))
                 
-                context.setStrokeColor(theme.rootController.navigationBar.accentTextColor.cgColor)
+                context.setStrokeColor(UIColor.white.cgColor)
                 context.setLineWidth(1.5)
                 
                 context.translateBy(x: size.width * 0.5, y: size.height * 0.5)
@@ -644,7 +648,7 @@ public struct PresentationResourcesChat {
                 context.addLine(to: CGPoint(x: position.x + 10.0, y: position.y - 10.0))
                 context.addLine(to: CGPoint(x: position.x + 19.0, y: position.y - 1.0))
                 context.strokePath()
-            })
+            })?.withRenderingMode(.alwaysTemplate)
         })
     }
     
@@ -653,10 +657,10 @@ public struct PresentationResourcesChat {
             return generateImage(CGSize(width: 38.0, height: 38.0), contextGenerator: { size, context in
                 context.clear(CGRect(origin: CGPoint(), size: size))
                 
-                if let image = generateTintedImage(image: UIImage(bundleImageName: "Chat/NavigateToMentions"), color: theme.rootController.navigationBar.accentTextColor), let cgImage = image.cgImage {
+                if let image = generateTintedImage(image: UIImage(bundleImageName: "Chat/NavigateToMentions"), color: UIColor.white), let cgImage = image.cgImage {
                     context.draw(cgImage, in: CGRect(origin: CGPoint(x: floor((size.width - image.size.width) / 2.0), y: floor((size.height - image.size.height) / 2.0)), size: image.size))
                 }
-            })
+            })?.withRenderingMode(.alwaysTemplate)
         })
     }
     
@@ -665,10 +669,22 @@ public struct PresentationResourcesChat {
             return generateImage(CGSize(width: 38.0, height: 38.0), contextGenerator: { size, context in
                 context.clear(CGRect(origin: CGPoint(), size: size))
                 
-                if let image = generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Reactions"), color: theme.rootController.navigationBar.accentTextColor), let cgImage = image.cgImage {
+                if let image = generateTintedImage(image: UIImage(bundleImageName: "Chat/NavigateToReactions"), color: UIColor.white), let cgImage = image.cgImage {
                     context.draw(cgImage, in: CGRect(origin: CGPoint(x: floor((size.width - image.size.width) / 2.0), y: floor((size.height - image.size.height) / 2.0)), size: image.size))
                 }
-            })
+            })?.withRenderingMode(.alwaysTemplate)
+        })
+    }
+    
+    public static func chatHistoryPollVotesButtonImage(_ theme: PresentationTheme) -> UIImage? {
+        return theme.image(PresentationResourceKey.chatHistoryPollVotesButtonImage.rawValue, { theme in
+            return generateImage(CGSize(width: 38.0, height: 38.0), contextGenerator: { size, context in
+                context.clear(CGRect(origin: CGPoint(), size: size))
+                
+                if let image = generateTintedImage(image: UIImage(bundleImageName: "Chat/NavigateToPollVotes"), color: UIColor.white), let cgImage = image.cgImage {
+                    context.draw(cgImage, in: CGRect(origin: CGPoint(x: floor((size.width - image.size.width) / 2.0), y: floor((size.height - image.size.height) / 2.0)), size: image.size))
+                }
+            })?.withRenderingMode(.alwaysTemplate)
         })
     }
     
@@ -865,11 +881,17 @@ public struct PresentationResourcesChat {
             return generateTintedImage(image: UIImage(bundleImageName: "Chat/Message/BotLink"), color: theme.chat.message.incoming.accentControlColor)
         })
     }
-    
+        
     public static func chatMessageAttachedContentHighlightedButtonIconLinkIncoming(_ theme: PresentationTheme, wallpaper: Bool) -> UIImage? {
         let key: PresentationResourceKey = !wallpaper ? PresentationResourceKey.chatMessageAttachedContentHighlightedButtonIconLinkIncomingWithoutWallpaper : PresentationResourceKey.chatMessageAttachedContentHighlightedButtonIconLinkIncomingWithWallpaper
         return theme.image(key.rawValue, { theme in
             return generateTintedImage(image: UIImage(bundleImageName: "Chat/Message/BotLink"), color: bubbleColorComponents(theme: theme, incoming: true, wallpaper: wallpaper).fill[0])
+        })
+    }
+    
+    public static func chatMessageAttachedContentButtonIconBidIncoming(_ theme: PresentationTheme) -> UIImage? {
+        return theme.image(PresentationResourceKey.chatMessageAttachedContentButtonIconBidIncoming.rawValue, { theme in
+            return generateTintedImage(image: UIImage(bundleImageName: "Premium/Auction/BidSmall"), color: theme.chat.message.incoming.accentControlColor)
         })
     }
     
@@ -883,6 +905,12 @@ public struct PresentationResourcesChat {
         let key: PresentationResourceKey = !wallpaper ? PresentationResourceKey.chatMessageAttachedContentHighlightedButtonIconLinkOutgoingWithoutWallpaper : PresentationResourceKey.chatMessageAttachedContentHighlightedButtonIconLinkOutgoingWithWallpaper
         return theme.image(key.rawValue, { theme in
             return generateTintedImage(image: UIImage(bundleImageName: "Chat/Message/BotLink"), color: bubbleColorComponents(theme: theme, incoming: false, wallpaper: wallpaper).fill[0])
+        })
+    }
+    
+    public static func chatMessageAttachedContentButtonIconBidOutgoing(_ theme: PresentationTheme) -> UIImage? {
+        return theme.image(PresentationResourceKey.chatMessageAttachedContentButtonIconBidOutgoing.rawValue, { theme in
+            return generateTintedImage(image: UIImage(bundleImageName: "Premium/Auction/BidSmall"), color: theme.chat.message.outgoing.accentControlColor)
         })
     }
     
@@ -996,25 +1024,7 @@ public struct PresentationResourcesChat {
             })
         })
     }
-    
-    public static func groupInfoAdminsIcon(_ theme: PresentationTheme) -> UIImage? {
-        return theme.image(PresentationResourceKey.groupInfoAdminsIcon.rawValue, { _ in
-            return UIImage(bundleImageName: "Chat/Info/GroupAdminsIcon")?.precomposed()
-        })
-    }
-    
-    public static func groupInfoPermissionsIcon(_ theme: PresentationTheme) -> UIImage? {
-        return theme.image(PresentationResourceKey.groupInfoPermissionsIcon.rawValue, { _ in
-            return UIImage(bundleImageName: "Chat/Info/GroupPermissionsIcon")?.precomposed()
-        })
-    }
-    
-    public static func groupInfoMembersIcon(_ theme: PresentationTheme) -> UIImage? {
-        return theme.image(PresentationResourceKey.groupInfoMembersIcon.rawValue, { _ in
-            return UIImage(bundleImageName: "Chat/Info/GroupMembersIcon")?.precomposed()
-        })
-    }
-    
+                
     public static func chatOutgoingFullCheck(_ theme: PresentationTheme, size: CGFloat) -> UIImage? {
         return theme.image(PresentationResourceParameterKey.chatOutgoingFullCheck(size), { _ in
             return generateCheckImage(partial: false, color: theme.chat.message.outgoingCheckColor, width: size)
@@ -1166,6 +1176,18 @@ public struct PresentationResourcesChat {
         })
     }
     
+    public static func chatFreeExpandButtonIcon(_ theme: PresentationTheme, wallpaper: TelegramWallpaper) -> UIImage? {
+        return theme.image(PresentationResourceKey.chatFreeExpandButtonIcon.rawValue, { _ in
+            return generateTintedImage(image: UIImage(bundleImageName: "Chat/Message/ExpandIcon"), color: bubbleVariableColor(variableColor: theme.chat.message.shareButtonForegroundColor, wallpaper: wallpaper))
+        })
+    }
+    
+    public static func chatFreeCollapseButtonIcon(_ theme: PresentationTheme, wallpaper: TelegramWallpaper) -> UIImage? {
+        return theme.image(PresentationResourceKey.chatFreeCollapseButtonIcon.rawValue, { _ in
+            return generateTintedImage(image: UIImage(bundleImageName: "Chat/Message/CollapseIcon"), color: bubbleVariableColor(variableColor: theme.chat.message.shareButtonForegroundColor, wallpaper: wallpaper))
+        })
+    }
+    
     public static func chatKeyboardActionButtonMessageIconImage(_ theme: PresentationTheme) -> UIImage? {
         return theme.image(PresentationResourceKey.chatKeyboardActionButtonMessageIcon.rawValue, { theme in
             return generateTintedImage(image: UIImage(bundleImageName: "Chat/Message/BotMessage"), color: theme.chat.inputButtonPanel.buttonTextColor)
@@ -1257,9 +1279,9 @@ public struct PresentationResourcesChat {
                 let foregroundColor: UIColor
                 switch type {
                 case .incoming:
-                    foregroundColor = theme.chat.message.incoming.mediaActiveControlColor
+                    foregroundColor = theme.chat.message.incoming.accentTextColor
                 case .outgoing:
-                    foregroundColor = theme.chat.message.outgoing.mediaActiveControlColor
+                    foregroundColor = theme.chat.message.outgoing.accentTextColor
                 case .free:
                     foregroundColor = theme.chat.serviceMessage.components.withDefaultWallpaper.primaryText
                 }
@@ -1272,7 +1294,7 @@ public struct PresentationResourcesChat {
                     
                     UIGraphicsPopContext()
                 }
-            })
+            })?.withRenderingMode(.alwaysTemplate)
         })
     }
     
@@ -1283,9 +1305,9 @@ public struct PresentationResourcesChat {
                 let foregroundColor: UIColor
                 switch type {
                 case .incoming:
-                    foregroundColor = theme.chat.message.incoming.mediaActiveControlColor
+                    foregroundColor = theme.chat.message.incoming.accentTextColor
                 case .outgoing:
-                    foregroundColor = theme.chat.message.outgoing.mediaActiveControlColor
+                    foregroundColor = theme.chat.message.outgoing.accentTextColor
                 case .free:
                     foregroundColor = theme.chat.serviceMessage.components.withDefaultWallpaper.primaryText
                 }
@@ -1298,7 +1320,33 @@ public struct PresentationResourcesChat {
                     
                     UIGraphicsPopContext()
                 }
-            })
+            })?.withRenderingMode(.alwaysTemplate)
+        })
+    }
+    
+    public static func chatReplyPollIndicatorIcon(_ theme: PresentationTheme, type: ChatExpiredStoryIndicatorType) -> UIImage? {
+        return theme.image(PresentationResourceParameterKey.chatReplyStoryIndicatorIcon(type: type), { theme in
+            return generateImage(CGSize(width: 16.0, height: 16.0), rotatedContext: { size, context in
+                context.clear(CGRect(origin: CGPoint(), size: size))
+                let foregroundColor: UIColor
+                switch type {
+                case .incoming:
+                    foregroundColor = theme.chat.message.incoming.accentTextColor
+                case .outgoing:
+                    foregroundColor = theme.chat.message.outgoing.accentTextColor
+                case .free:
+                    foregroundColor = theme.chat.serviceMessage.components.withDefaultWallpaper.primaryText
+                }
+                
+                if let image = generateTintedImage(image: UIImage(bundleImageName: "Chat/Message/PollReplyIcon"), color: foregroundColor) {
+                    UIGraphicsPushContext(context)
+                    
+                    let fittedSize = image.size
+                    image.draw(in: CGRect(origin: CGPoint(x: floor((size.width - fittedSize.width) * 0.5), y: floor((size.height - fittedSize.height) * 0.5)), size: fittedSize), blendMode: .normal, alpha: 1.0)
+                    
+                    UIGraphicsPopContext()
+                }
+            })?.withRenderingMode(.alwaysTemplate)
         })
     }
     
@@ -1341,7 +1389,7 @@ public struct PresentationResourcesChat {
             })?.stretchableImage(withLeftCapWidth: Int(radius), topCapHeight: Int(radius)).withRenderingMode(.alwaysTemplate)
         })
     }
-    
+        
     public static func chatBubbleCloseIcon(_ theme: PresentationTheme) -> UIImage? {
         return theme.image(PresentationResourceKey.chatBubbleCloseIcon.rawValue, { theme in
             return generateImage(CGSize(width: 12.0, height: 12.0), rotatedContext: { size, context in
@@ -1364,6 +1412,42 @@ public struct PresentationResourcesChat {
                 context.move(to: CGPoint(x: bounds.maxX, y: bounds.minY))
                 context.addLine(to: CGPoint(x: bounds.minX, y: bounds.maxY))
                 context.strokePath()
+            })
+        })
+    }
+    
+    public static func chatAttachedContentCloseIcon(_ theme: PresentationTheme) -> UIImage? {
+        return theme.image(PresentationResourceKey.chatAttachedContentCloseIcon.rawValue, { theme in
+            return generateImage(CGSize(width: 12.0, height: 12.0), rotatedContext: { size, context in
+                context.clear(CGRect(origin: .zero, size: size))
+                
+                context.setStrokeColor(UIColor.white.cgColor)
+                context.setLineCap(.round)
+                context.setLineWidth(1.0 + UIScreenPixel)
+                
+                let bounds = CGRect(origin: .zero, size: size).insetBy(dx: 2.0, dy: 2.0)
+                
+                context.move(to: CGPoint(x: bounds.minX, y: bounds.minY))
+                context.addLine(to: CGPoint(x: bounds.maxX, y: bounds.maxY))
+                context.strokePath()
+                
+                context.move(to: CGPoint(x: bounds.maxX, y: bounds.minY))
+                context.addLine(to: CGPoint(x: bounds.minX, y: bounds.maxY))
+                context.strokePath()
+            })?.withRenderingMode(.alwaysTemplate)
+        })
+    }
+    
+    public static func chatPollAddIcon(_ theme: PresentationTheme) -> UIImage? {
+        return theme.image(PresentationResourceKey.chatPollAddIcon.rawValue, { theme in
+            return generateImage(CGSize(width: 17.0, height: 15.0), rotatedContext: { size, context in
+                context.clear(CGRect(origin: CGPoint(), size: size))
+                context.setFillColor(UIColor.white.cgColor)
+
+                let lineHeight = 2.0 - UIScreenPixel
+                context.addPath(CGPath(roundedRect: CGRect(x: 1.0, y: 7.0 - UIScreenPixel, width: 15.0, height: lineHeight), cornerWidth: lineHeight / 2.0, cornerHeight: lineHeight / 2.0, transform: nil))
+                context.addPath(CGPath(roundedRect: CGRect(x: 8.0 - UIScreenPixel, y: 0.0, width: lineHeight, height: 15.0), cornerWidth: lineHeight / 2.0, cornerHeight: lineHeight / 2.0, transform: nil))
+                context.fillPath()
             })
         })
     }
@@ -1456,6 +1540,52 @@ public struct PresentationResourcesChat {
     public static func chatServiceMessageTodoAppendedIcon(_ theme: PresentationTheme) -> UIImage? {
         return theme.image(PresentationResourceKey.chatServiceMessageTodoAppendedIcon.rawValue, { theme in
             return generateTintedImage(image: UIImage(bundleImageName: "Chat/Message/ServiceTodoAppended"), color: .white)
+        })
+    }
+    
+    public static func chatBubblePollChevronLeftIncomingIcon(_ theme: PresentationTheme) -> UIImage? {
+        return theme.image(PresentationResourceKey.chatBubblePollChevronLeftIncomingIcon.rawValue, { theme in
+            if let image = UIImage(bundleImageName: "Settings/TextArrowRight") {
+                return generateImage(image.size, contextGenerator: { size, context in
+                    context.clear(CGRect(origin: .zero, size: size))
+                    context.translateBy(x: size.width / 2.0, y: size.height / 2.0)
+                    context.scaleBy(x: -1.0, y: -1.0)
+                    context.translateBy(x: -size.width / 2.0, y: -size.height / 2.0)
+                    if let image = generateTintedImage(image: UIImage(bundleImageName: "Settings/TextArrowRight"), color: theme.chat.message.incoming.accentTextColor), let cgImage = image.cgImage {
+                        context.draw(cgImage, in: CGRect(origin: .zero, size: image.size))
+                    }
+                })
+            }
+            return nil
+        })
+    }
+    
+    public static func chatBubblePollChevronLeftOutgoingIcon(_ theme: PresentationTheme) -> UIImage? {
+        return theme.image(PresentationResourceKey.chatBubblePollChevronLeftOutgoingIcon.rawValue, { theme in
+            if let image = UIImage(bundleImageName: "Settings/TextArrowRight") {
+                return generateImage(image.size, contextGenerator: { size, context in
+                    context.clear(CGRect(origin: .zero, size: size))
+                    context.translateBy(x: size.width / 2.0, y: size.height / 2.0)
+                    context.scaleBy(x: -1.0, y: -1.0)
+                    context.translateBy(x: -size.width / 2.0, y: -size.height / 2.0)
+                    if let image = generateTintedImage(image: UIImage(bundleImageName: "Settings/TextArrowRight"), color: theme.chat.message.outgoing.accentTextColor), let cgImage = image.cgImage {
+                        context.draw(cgImage, in: CGRect(origin: .zero, size: image.size))
+                    }
+                })
+            }
+            return nil
+        })
+    }
+    
+    public static func chatBubblePollChevronRightIncomingIcon(_ theme: PresentationTheme) -> UIImage? {
+        return theme.image(PresentationResourceKey.chatBubblePollChevronRightIncomingIcon.rawValue, { theme in
+            return generateTintedImage(image: UIImage(bundleImageName: "Settings/TextArrowRight"), color: theme.chat.message.outgoing.accentTextColor)
+        })
+    }
+    
+    public static func chatBubblePollChevronRightOutgoingIcon(_ theme: PresentationTheme) -> UIImage? {
+        return theme.image(PresentationResourceKey.chatBubblePollChevronRightOutgoingIcon.rawValue, { theme in
+            return generateTintedImage(image: UIImage(bundleImageName: "Settings/TextArrowRight"), color: theme.chat.message.outgoing.accentTextColor)
         })
     }
     

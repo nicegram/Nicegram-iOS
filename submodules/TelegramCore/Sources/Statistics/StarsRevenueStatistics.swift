@@ -146,7 +146,8 @@ public extension StarsRevenueStats {
 extension StarsRevenueStats {
     init(apiStarsRevenueStats: Api.payments.StarsRevenueStats, peerId: PeerId) {
         switch apiStarsRevenueStats {
-        case let .starsRevenueStats(_, topHoursGraph, revenueGraph, balances, usdRate):
+        case let .starsRevenueStats(starsRevenueStatsData):
+            let (topHoursGraph, revenueGraph, balances, usdRate) = (starsRevenueStatsData.topHoursGraph, starsRevenueStatsData.revenueGraph, starsRevenueStatsData.status, starsRevenueStatsData.usdRate)
             self.init(topHoursGraph: topHoursGraph.flatMap { StatsGraph(apiStatsGraph: $0) }, revenueGraph: StatsGraph(apiStatsGraph: revenueGraph), balances: StarsRevenueStats.Balances(apiStarsRevenueStatus: balances), usdRate: usdRate)
         }
     }
@@ -155,7 +156,12 @@ extension StarsRevenueStats {
 extension StarsRevenueStats.Balances {
     init(apiStarsRevenueStatus: Api.StarsRevenueStatus) {
         switch apiStarsRevenueStatus {
-        case let .starsRevenueStatus(flags, currentBalance, availableBalance, overallRevenue, nextWithdrawalAt):
+        case let .starsRevenueStatus(starsRevenueStatusData):
+            let flags = starsRevenueStatusData.flags
+            let currentBalance = starsRevenueStatusData.currentBalance
+            let availableBalance = starsRevenueStatusData.availableBalance
+            let overallRevenue = starsRevenueStatusData.overallRevenue
+            let nextWithdrawalAt = starsRevenueStatusData.nextWithdrawalAt
             self.init(currentBalance: CurrencyAmount(apiAmount: currentBalance), availableBalance: CurrencyAmount(apiAmount: availableBalance), overallRevenue: CurrencyAmount(apiAmount: overallRevenue), withdrawEnabled: ((flags & (1 << 0)) != 0), nextWithdrawalTimestamp: nextWithdrawalAt)
         }
     }
@@ -408,7 +414,7 @@ func _internal_requestStarsRevenueWithdrawalUrl(account: Account, ton: Bool, pee
                 guard let kdfResult = passwordKDF(encryptionProvider: account.network.encryptionProvider, password: password, derivation: currentPasswordDerivation, srpSessionData: srpSessionData) else {
                     return .fail(.generic)
                 }
-                return .single(.inputCheckPasswordSRP(srpId: kdfResult.id, A: Buffer(data: kdfResult.A), M1: Buffer(data: kdfResult.M1)))
+                return .single(.inputCheckPasswordSRP(.init(srpId: kdfResult.id, A: Buffer(data: kdfResult.A), M1: Buffer(data: kdfResult.M1))))
             } else {
                 return .fail(.twoStepAuthMissing)
             }
@@ -447,7 +453,8 @@ func _internal_requestStarsRevenueWithdrawalUrl(account: Account, ton: Bool, pee
             }
             |> map { result -> String in
                 switch result {
-                case let .starsRevenueWithdrawalUrl(url):
+                case let .starsRevenueWithdrawalUrl(starsRevenueWithdrawalUrlData):
+                    let url = starsRevenueWithdrawalUrlData.url
                     return url
                 }
             }
@@ -472,7 +479,8 @@ func _internal_requestStarsRevenueAdsAccountlUrl(account: Account, peerId: Engin
                 return nil
             }
             switch result {
-            case let .starsRevenueAdsAccountUrl(url):
+            case let .starsRevenueAdsAccountUrl(starsRevenueAdsAccountUrlData):
+                let url = starsRevenueAdsAccountUrlData.url
                 return url
             }
         }

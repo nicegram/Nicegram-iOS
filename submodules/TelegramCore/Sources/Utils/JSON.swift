@@ -345,19 +345,25 @@ public extension JSON {
         switch (apiJson, root) {
             case (.jsonNull, false):
                 self = .null
-            case let (.jsonNumber(value), false):
+            case let (.jsonNumber(jsonNumberData), false):
+                let value = jsonNumberData.value
                 self = .number(value)
-            case let (.jsonString(value), false):
+            case let (.jsonString(jsonStringData), false):
+                let value = jsonStringData.value
                 self = .string(value)
-            case let (.jsonBool(value), false):
+            case let (.jsonBool(jsonBoolData), false):
+                let value = jsonBoolData.value
                 self = .bool(Bool(apiBool: value))
-            case let (.jsonArray(value), _):
+            case let (.jsonArray(jsonArrayData), _):
+                let value = jsonArrayData.value
                 self = .array(value.compactMap { JSON(apiJson: $0, root: false) })
-            case let (.jsonObject(value), _):
+            case let (.jsonObject(jsonObjectData), _):
+                let value = jsonObjectData.value
                 self = .dictionary(value.reduce([String: JSON]()) { dictionary, value in
                     var dictionary = dictionary
                     switch value {
-                        case let .jsonObjectValue(key, value):
+                        case let .jsonObjectValue(jsonObjectValueData):
+                            let (key, value) = (jsonObjectValueData.key, jsonObjectValueData.value)
                             if let value = JSON(apiJson: value, root: false) {
                                 dictionary[key] = value
                             }
@@ -379,21 +385,21 @@ private func apiJson(_ json: JSON, root: Bool) -> Api.JSONValue? {
         case (.null, false):
             return .jsonNull
         case let (.number(value), false):
-            return .jsonNumber(value: value)
+            return .jsonNumber(.init(value: value))
         case let (.string(value), false):
-            return .jsonString(value: value)
+            return .jsonString(.init(value: value))
         case let (.bool(value), false):
-            return .jsonBool(value: value.apiBool)
+            return .jsonBool(.init(value: value.apiBool))
         case let (.array(value), _):
-            return .jsonArray(value: value.compactMap { apiJson($0, root: false) })
+            return .jsonArray(.init(value: value.compactMap { apiJson($0, root: false) }))
         case let (.dictionary(value), _):
-            return .jsonObject(value: value.reduce([Api.JSONObjectValue]()) { objectValues, keyAndValue in
+            return .jsonObject(.init(value: value.reduce([Api.JSONObjectValue]()) { objectValues, keyAndValue in
                 var objectValues = objectValues
                 if let value = apiJson(keyAndValue.value, root: false) {
-                    objectValues.append(.jsonObjectValue(key: keyAndValue.key, value: value))
+                    objectValues.append(.jsonObjectValue(.init(key: keyAndValue.key, value: value)))
                 }
                 return objectValues
-            })
+            }))
         default:
             return nil
     }

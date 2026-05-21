@@ -6,21 +6,9 @@ import SwiftSignalKit
 import TelegramPresentationData
 import AccountContext
 import SearchUI
+import CounterControllerTitleView
 
-public enum ChannelMembersSearchControllerMode {
-    case promote
-    case ban
-    case inviteToCall
-}
-
-public enum ChannelMembersSearchFilter {
-    case exclude([EnginePeer.Id])
-    case disable([EnginePeer.Id])
-    case excludeNonMembers
-    case excludeBots
-}
-
-public final class ChannelMembersSearchController: ViewController {
+public final class ChannelMembersSearchControllerImpl: ViewController, ChannelMembersSearchController {
     private let queue = Queue()
     
     private let context: AccountContext
@@ -43,25 +31,36 @@ public final class ChannelMembersSearchController: ViewController {
     
     private var searchContentNode: NavigationBarSearchContentNode?
     
-    public init(context: AccountContext, updatedPresentationData: (initial: PresentationData, signal: Signal<PresentationData, NoError>)? = nil, peerId: EnginePeer.Id, forceTheme: PresentationTheme? = nil, mode: ChannelMembersSearchControllerMode, filters: [ChannelMembersSearchFilter] = [], openPeer: @escaping (EnginePeer, RenderedChannelParticipant?) -> Void) {
-        self.context = context
-        self.peerId = peerId
-        self.mode = mode
-        self.openPeer = openPeer
-        self.filters = filters
-        self.presentationData = updatedPresentationData?.initial ?? context.sharedContext.currentPresentationData.with { $0 }
-        self.forceTheme = forceTheme
-        if let forceTheme = forceTheme {
+    public init(params: ChannelMembersSearchControllerParams) {
+        self.context = params.context
+        self.peerId = params.peerId
+        self.mode = params.mode
+        self.openPeer = params.openPeer
+        self.filters = params.filters
+        self.presentationData = params.updatedPresentationData?.initial ?? context.sharedContext.currentPresentationData.with { $0 }
+        self.forceTheme = params.forceTheme
+        if let forceTheme = params.forceTheme {
             self.presentationData = self.presentationData.withUpdated(theme: forceTheme)
         }
         
-        super.init(navigationBarPresentationData: NavigationBarPresentationData(presentationData: self.presentationData))
+        super.init(navigationBarPresentationData: NavigationBarPresentationData(presentationData: self.presentationData, style: .glass))
         
+        self._hasGlassStyle = true
         self.navigationPresentation = .modal
         
         self.statusBar.statusBarStyle = self.presentationData.theme.rootController.statusBarStyle.style
         
-        self.title = self.presentationData.strings.Channel_Members_Title
+        let title: String
+        switch params.mode {
+        case .ownershipTransfer:
+            title = self.presentationData.strings.AppointAnotherOwner_Title
+            let titleView = CounterControllerTitleView(theme: self.presentationData.theme)
+            titleView.title = CounterControllerTitle(title: title, counter: " ")
+            self.navigationItem.titleView = titleView
+        default:
+            title = self.presentationData.strings.Channel_Members_Title
+            self.title = title
+        }
         
         self.navigationItem.leftBarButtonItem = UIBarButtonItem(title: self.presentationData.strings.Common_Cancel, style: .plain, target: self, action: #selector(self.cancelPressed))
         
@@ -79,23 +78,35 @@ public final class ChannelMembersSearchController: ViewController {
         })
         self.navigationBar?.setContentNode(self.searchContentNode, animated: false)
         
-        self.presentationDataDisposable = ((updatedPresentationData?.signal ?? context.sharedContext.presentationData)
+        self.presentationDataDisposable = ((params.updatedPresentationData?.signal ?? params.context.sharedContext.presentationData)
         |> deliverOnMainQueue).start(next: { [weak self] presentationData in
             guard let strongSelf = self else {
                 return
             }
             strongSelf.presentationData = presentationData
             strongSelf.controllerNode.updatePresentationData(presentationData)
+            
+            if let titleView = strongSelf.navigationItem.titleView as? CounterControllerTitleView {
+                titleView.theme = presentationData.theme
+            }
         })
         
-        let _ = (context.account.postbox.loadedPeerWithId(peerId)
+        let _ = (params.context.engine.data.get(TelegramEngine.EngineData.Item.Peer.Peer(id: self.peerId))
         |> take(1)
         |> deliverOnMainQueue).start(next: { [weak self] peer in
-            if let strongSelf = self {
-                if let peer = peer as? TelegramChannel, case .broadcast = peer.info {
-                    strongSelf.title = strongSelf.presentationData.strings.Channel_Subscribers_Title
+            guard let self, let peer else {
+                return
+            }
+            switch self.mode {
+            case .ownershipTransfer:
+                if let titleView = self.navigationItem.titleView as? CounterControllerTitleView {
+                    titleView.title = CounterControllerTitle(title: titleView.title.title, counter: peer.compactDisplayTitle)
+                }
+            default:
+                if case let .channel(channel) = peer, case .broadcast = channel.info {
+                    self.title = self.presentationData.strings.Channel_Subscribers_Title
                 } else {
-                    strongSelf.title = strongSelf.presentationData.strings.Channel_Members_Title
+                    self.title = self.presentationData.strings.Channel_Members_Title
                 }
             }
         })
@@ -130,7 +141,7 @@ public final class ChannelMembersSearchController: ViewController {
         
         self.displayNodeDidLoad()
         
-        self.controllerNode.listNode.visibleContentOffsetChanged = { [weak self] offset in
+        self.controllerNode.listNode.visibleContentOffsetChanged = { [weak self] offset, _ in
             if let strongSelf = self, let searchContentNode = strongSelf.searchContentNode {
                 searchContentNode.updateListVisibleContentOffset(offset)
             }

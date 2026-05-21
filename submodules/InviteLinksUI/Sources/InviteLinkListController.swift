@@ -17,7 +17,6 @@ import ContextUI
 import TelegramStringFormatting
 import ItemListPeerActionItem
 import ItemListPeerItem
-import ShareController
 import UndoUI
 import QrCodeUI
 
@@ -215,7 +214,7 @@ private enum InviteLinksListEntry: ItemListNodeEntry {
             case let .mainLinkHeader(_, text):
                 return ItemListSectionHeaderItem(presentationData: presentationData, text: text, sectionId: self.section)
             case let .mainLink(_, invite, peers, importersCount, isPublic):
-                return ItemListPermanentInviteLinkItem(context: arguments.context, presentationData: presentationData, invite: invite, count: importersCount, peers: peers, displayButton: true, separateButtons: true, displayImporters: !isPublic, buttonColor: nil, sectionId: self.section, style: .blocks, copyAction: {
+                return ItemListPermanentInviteLinkItem(context: arguments.context, presentationData: presentationData, systemStyle: .glass, invite: invite, count: importersCount, peers: peers, displayButton: true, separateButtons: true, displayImporters: !isPublic, buttonColor: nil, sectionId: self.section, style: .blocks, copyAction: {
                     if let invite = invite {
                         arguments.copyLink(invite)
                     }
@@ -236,11 +235,11 @@ private enum InviteLinksListEntry: ItemListNodeEntry {
             case let .linksHeader(_, text):
                 return ItemListSectionHeaderItem(presentationData: presentationData, text: text, sectionId: self.section)
             case let .linksCreate(theme, text):
-                return ItemListPeerActionItem(presentationData: presentationData, icon: PresentationResourcesItemList.plusIconImage(theme), title: text, sectionId: self.section, editing: false, action: {
+                return ItemListPeerActionItem(presentationData: presentationData, systemStyle: .glass, icon: PresentationResourcesItemList.plusIconImage(theme), title: text, sectionId: self.section, editing: false, action: {
                     arguments.createLink()
                 })
             case let .link(_, _, invite, canEdit, _):
-                return ItemListInviteLinkItem(context: arguments.context, presentationData: presentationData, invite: invite, share: false, sectionId: self.section, style: .blocks) { invite in
+                return ItemListInviteLinkItem(context: arguments.context, presentationData: presentationData, systemStyle: .glass, invite: invite, share: false, sectionId: self.section, style: .blocks) { invite in
                     arguments.openLink(invite)
                 } contextAction: { invite, node, gesture in
                     arguments.linkContextAction(invite, canEdit, node, gesture)
@@ -250,11 +249,11 @@ private enum InviteLinksListEntry: ItemListNodeEntry {
             case let .revokedLinksHeader(_, text):
                 return ItemListSectionHeaderItem(presentationData: presentationData, text: text, sectionId: self.section)
             case let .revokedLinksDeleteAll(theme, text):
-                return ItemListPeerActionItem(presentationData: presentationData, icon: PresentationResourcesItemList.deleteIconImage(theme), title: text, sectionId: self.section, color: .destructive, editing: false, action: {
+                return ItemListPeerActionItem(presentationData: presentationData, systemStyle: .glass, icon: PresentationResourcesItemList.deleteIconImage(theme), title: text, sectionId: self.section, color: .destructive, editing: false, action: {
                     arguments.deleteAllRevokedLinks()
                 })
             case let .revokedLink(_, _, invite):
-                return ItemListInviteLinkItem(context: arguments.context, presentationData: presentationData, invite: invite, share: false, sectionId: self.section, style: .blocks) { invite in
+                return ItemListInviteLinkItem(context: arguments.context, presentationData: presentationData, systemStyle: .glass, invite: invite, share: false, sectionId: self.section, style: .blocks) { invite in
                     arguments.openLink(invite)
                 } contextAction: { invite, node, gesture in
                     arguments.linkContextAction(invite, false, node, gesture)
@@ -262,7 +261,7 @@ private enum InviteLinksListEntry: ItemListNodeEntry {
             case let .adminsHeader(_, text):
                 return ItemListSectionHeaderItem(presentationData: presentationData, text: text, sectionId: self.section)
             case let .admin(_, _, creator):
-                return ItemListPeerItem(presentationData: presentationData, dateTimeFormat: PresentationDateTimeFormat(), nameDisplayOrder: .firstLast, context: arguments.context, peer: EnginePeer(creator.peer.peer!), height: .peerList, aliasHandling: .standard, nameColor: .primary, nameStyle: .plain, presence: nil, text: .none, label: creator.count > 1 ? .disclosure("\(creator.count)") : .none, editing: ItemListPeerItemEditing(editable: false, editing: false, revealed: nil), revealOptions: nil, switchValue: nil, enabled: true, highlighted: false, selectable: true, sectionId: self.section, action: {
+                return ItemListPeerItem(presentationData: presentationData, systemStyle: .glass, dateTimeFormat: PresentationDateTimeFormat(), nameDisplayOrder: .firstLast, context: arguments.context, peer: EnginePeer(creator.peer.peer!), height: .peerList, aliasHandling: .standard, nameColor: .primary, nameStyle: .plain, presence: nil, text: .none, label: creator.count > 1 ? .disclosure("\(creator.count)") : .none, editing: ItemListPeerItemEditing(editable: false, editing: false, revealed: nil), revealOptions: nil, switchValue: nil, enabled: true, highlighted: false, selectable: true, sectionId: self.section, action: {
                     arguments.openAdmin(creator)
                 }, setPeerIdWithRevealedOptions: { _, _ in }, removePeer: { _ in }, toggleUpdated: nil, contextAction: nil)
         }
@@ -433,8 +432,10 @@ public func inviteLinkListController(context: AccountContext, updatedPresentatio
         guard let inviteLink = invite.link else {
             return
         }
-        let shareController = ShareController(context: context, subject: .url(inviteLink), updatedPresentationData: updatedPresentationData)
-        shareController.completed = { peerIds in
+        let shareController = context.sharedContext.makeShareController(context: context, params: ShareControllerParams(subject: .url(inviteLink), updatedPresentationData: updatedPresentationData, actionCompleted: {
+            let presentationData = context.sharedContext.currentPresentationData.with { $0 }
+            presentControllerImpl?(UndoOverlayController(presentationData: presentationData, content: .linkCopied(title: nil, text: presentationData.strings.InviteLink_InviteLinkCopiedText), elevatedLayout: false, animateInAsReplacement: false, action: { _ in return false }), nil)
+        }, completed: { peerIds in
             let _ = (context.engine.data.get(
                 EngineDataList(
                     peerIds.map(TelegramEngine.EngineData.Item.Peer.Peer.init)
@@ -443,7 +444,7 @@ public func inviteLinkListController(context: AccountContext, updatedPresentatio
             |> deliverOnMainQueue).start(next: { peerList in
                 let peers = peerList.compactMap { $0 }
                 let presentationData = context.sharedContext.currentPresentationData.with { $0 }
-                
+
                 let text: String
                 var savedMessages = false
                 if peerIds.count == 1, let peerId = peerIds.first, peerId == context.account.peerId {
@@ -464,7 +465,7 @@ public func inviteLinkListController(context: AccountContext, updatedPresentatio
                         text = ""
                     }
                 }
-                
+
                 presentControllerImpl?(UndoOverlayController(presentationData: presentationData, content: .forward(savedMessages: savedMessages, text: text), elevatedLayout: false, animateInAsReplacement: true, action: { action in
                     if savedMessages, action == .info {
                         let _ = (context.engine.data.get(TelegramEngine.EngineData.Item.Peer.Peer(id: context.account.peerId))
@@ -481,11 +482,7 @@ public func inviteLinkListController(context: AccountContext, updatedPresentatio
                     return false
                 }), nil)
             })
-        }
-        shareController.actionCompleted = {
-            let presentationData = context.sharedContext.currentPresentationData.with { $0 }
-            presentControllerImpl?(UndoOverlayController(presentationData: presentationData, content: .linkCopied(title: nil, text: presentationData.strings.InviteLink_InviteLinkCopiedText), elevatedLayout: false, animateInAsReplacement: false, action: { _ in return false }), nil)
-        }
+        }))
         presentControllerImpl?(shareController, nil)
     }, openMainLink: { invite in
         let controller = InviteLinkViewController(context: context, updatedPresentationData: updatedPresentationData, peerId: peerId, invite: invite, invitationsContext: nil, revokedInvitationsContext: revokedInvitesContext, importersContext: nil)
@@ -501,109 +498,144 @@ public func inviteLinkListController(context: AccountContext, updatedPresentatio
         guard let node = node as? ContextReferenceContentNode, let controller = getControllerImpl?(), let invite = invite else {
             return
         }
-        let presentationData = context.sharedContext.currentPresentationData.with { $0 }
-        var items: [ContextMenuItem] = []
-
-        items.append(.action(ContextMenuActionItem(text: presentationData.strings.InviteLink_ContextCopy, icon: { theme in
-            return generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Copy"), color: theme.contextMenu.primaryColor)
-        }, action: { _, f in
-            f(.dismissWithoutContent)
-            
-            dismissTooltipsImpl?()
-            
-            UIPasteboard.general.string = invite.link
-            
-            let presentationData = context.sharedContext.currentPresentationData.with { $0 }
-            presentControllerImpl?(UndoOverlayController(presentationData: presentationData, content: .linkCopied(title: nil, text: presentationData.strings.InviteLink_InviteLinkCopiedText), elevatedLayout: false, animateInAsReplacement: false, action: { _ in return false }), nil)
-        })))
         
-        items.append(.action(ContextMenuActionItem(text: presentationData.strings.InviteLink_ContextGetQRCode, icon: { theme in
-            return generateTintedImage(image: UIImage(bundleImageName: "Settings/QrIcon"), color: theme.contextMenu.primaryColor)
-        }, action: { _, f in
-            f(.dismissWithoutContent)
-            
-            let _ = (context.account.postbox.loadedPeerWithId(peerId)
-            |> deliverOnMainQueue).start(next: { peer in
-                let isGroup: Bool
-                if let peer = peer as? TelegramChannel, case .broadcast = peer.info {
-                    isGroup = false
+        let creatorIsBot: Signal<Bool, NoError>
+        if let adminPeer = admin?.peer.peer as? TelegramUser {
+            creatorIsBot = .single(adminPeer.botInfo != nil)
+        } else if case let .link(_, _, _, _, _, adminId, _, _, _, _, _, _, _) = invite, adminId.toInt64() != 0 {
+            creatorIsBot = context.engine.data.get(TelegramEngine.EngineData.Item.Peer.Peer(id: adminId))
+            |> map { peer -> Bool in
+                if let peer, case let .user(user) = peer, user.botInfo != nil {
+                    return true
                 } else {
-                    isGroup = true
+                    return false
                 }
-                presentControllerImpl?(QrCodeScreen(context: context, updatedPresentationData: updatedPresentationData, subject: .invite(invite: invite, type: isGroup ? .group : .channel)), nil)
-            })
-        })))
+            }
+        } else {
+            creatorIsBot = .single(false)
+        }
         
-        if case let .link(_, _, _, _, _, adminId, _, _, _, _, _, _, _) = invite, adminId.toInt64() != 0 {
-            items.append(.action(ContextMenuActionItem(text: presentationData.strings.InviteLink_ContextRevoke, textColor: .destructive, icon: { theme in
-                return generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Delete"), color: theme.actionSheet.destructiveActionTextColor)
+        let _ = (creatorIsBot
+        |> take(1)
+        |> deliverOnMainQueue).start(next: { creatorIsBot in
+            let presentationData = context.sharedContext.currentPresentationData.with { $0 }
+            var items: [ContextMenuItem] = []
+
+            items.append(.action(ContextMenuActionItem(text: presentationData.strings.InviteLink_ContextCopy, icon: { theme in
+                return generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Copy"), color: theme.contextMenu.primaryColor)
+            }, action: { _, f in
+                f(.dismissWithoutContent)
+
+                dismissTooltipsImpl?()
+
+                UIPasteboard.general.string = invite.link
+
+                let presentationData = context.sharedContext.currentPresentationData.with { $0 }
+                presentControllerImpl?(UndoOverlayController(presentationData: presentationData, content: .linkCopied(title: nil, text: presentationData.strings.InviteLink_InviteLinkCopiedText), elevatedLayout: false, animateInAsReplacement: false, action: { _ in return false }), nil)
+            })))
+
+            items.append(.action(ContextMenuActionItem(text: presentationData.strings.InviteLink_ContextGetQRCode, icon: { theme in
+                return generateTintedImage(image: UIImage(bundleImageName: "Settings/QrIcon"), color: theme.contextMenu.primaryColor)
             }, action: { _, f in
                 f(.dismissWithoutContent)
                 
-                let _ = (context.account.postbox.loadedPeerWithId(peerId)
+                let _ = (context.engine.data.get(TelegramEngine.EngineData.Item.Peer.Peer(id: peerId))
+                |> mapToSignal { peer -> Signal<EnginePeer, NoError> in
+                    if let peer {
+                        return .single(peer)
+                    } else {
+                        return .never()
+                    }
+                }
                 |> deliverOnMainQueue).start(next: { peer in
                     let isGroup: Bool
-                    if let peer = peer as? TelegramChannel, case .broadcast = peer.info {
+                    if case let .channel(channel) = peer, case .broadcast = channel.info {
                         isGroup = false
                     } else {
                         isGroup = true
                     }
-
-                    let controller = ActionSheetController(presentationData: presentationData)
-                    let dismissAction: () -> Void = { [weak controller] in
-                        controller?.dismissAnimated()
-                    }
-                    controller.setItemGroups([
-                        ActionSheetItemGroup(items: [
-                            ActionSheetTextItem(title: isGroup ? presentationData.strings.GroupInfo_InviteLink_RevokeAlert_Text : presentationData.strings.ChannelInfo_InviteLink_RevokeAlert_Text),
-                            ActionSheetButtonItem(title: presentationData.strings.GroupInfo_InviteLink_RevokeLink, color: .destructive, action: {
-                                dismissAction()
-                                
-                                var revoke = false
-                                updateState { state in
-                                    if !state.revokingPrivateLink {
-                                        revoke = true
-                                        var updatedState = state
-                                        updatedState.revokingPrivateLink = true
-                                        return updatedState
-                                    } else {
-                                        return state
-                                    }
-                                }
-                                if revoke, let inviteLink = invite.link {
-                                    revokeLinkDisposable.set((context.engine.peers.revokePeerExportedInvitation(peerId: peerId, link: inviteLink) |> deliverOnMainQueue).start(next: { result in
-                                        updateState { state in
-                                            var updatedState = state
-                                            updatedState.revokingPrivateLink = false
-                                            return updatedState
-                                        }
-                                        if let result = result {
-                                            switch result {
-                                                case let .update(newInvite):
-                                                    invitesContext.remove(newInvite)
-                                                    revokedInvitesContext.add(newInvite)
-                                                case let .replace(previousInvite, newInvite):
-                                                    revokedInvitesContext.add(previousInvite)
-                                                    invitesContext.remove(previousInvite)
-                                                    invitesContext.add(newInvite)
-                                            }
-                                        }
-                                        
-                                        let presentationData = context.sharedContext.currentPresentationData.with { $0 }
-                                        presentControllerImpl?(UndoOverlayController(presentationData: presentationData, content: .linkRevoked(text: presentationData.strings.InviteLink_InviteLinkRevoked), elevatedLayout: false, animateInAsReplacement: false, action: { _ in return false }), nil)
-                                    }))
-                                }
-                            })
-                        ]),
-                        ActionSheetItemGroup(items: [ActionSheetButtonItem(title: presentationData.strings.Common_Cancel, action: { dismissAction() })])
-                    ])
-                    presentControllerImpl?(controller, ViewControllerPresentationArguments(presentationAnimation: .modalSheet))
+                    presentControllerImpl?(QrCodeScreen(context: context, updatedPresentationData: updatedPresentationData, subject: .invite(invite: invite, type: isGroup ? .group : .channel)), nil)
                 })
             })))
-        }
 
-        let contextController = ContextController(presentationData: presentationData, source: .reference(InviteLinkContextReferenceContentSource(controller: controller, sourceNode: node)), items: .single(ContextController.Items(content: .list(items))), gesture: gesture)
-        presentInGlobalOverlayImpl?(contextController)
+            if case let .link(_, _, _, _, _, adminId, _, _, _, _, _, _, _) = invite, adminId.toInt64() != 0, !creatorIsBot {
+                items.append(.action(ContextMenuActionItem(text: presentationData.strings.InviteLink_ContextRevoke, textColor: .destructive, icon: { theme in
+                    return generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Delete"), color: theme.actionSheet.destructiveActionTextColor)
+                }, action: { _, f in
+                    f(.dismissWithoutContent)
+
+                    let _ = (context.engine.data.get(TelegramEngine.EngineData.Item.Peer.Peer(id: peerId))
+                    |> mapToSignal { peer -> Signal<EnginePeer, NoError> in
+                        if let peer {
+                            return .single(peer)
+                        } else {
+                            return .never()
+                        }
+                    }
+                    |> deliverOnMainQueue).start(next: { peer in
+                        let isGroup: Bool
+                        if case let .channel(channel) = peer, case .broadcast = channel.info {
+                            isGroup = false
+                        } else {
+                            isGroup = true
+                        }
+
+                        let controller = ActionSheetController(presentationData: presentationData)
+                        let dismissAction: () -> Void = { [weak controller] in
+                            controller?.dismissAnimated()
+                        }
+                        controller.setItemGroups([
+                            ActionSheetItemGroup(items: [
+                                ActionSheetTextItem(title: isGroup ? presentationData.strings.GroupInfo_InviteLink_RevokeAlert_Text : presentationData.strings.ChannelInfo_InviteLink_RevokeAlert_Text),
+                                ActionSheetButtonItem(title: presentationData.strings.GroupInfo_InviteLink_RevokeLink, color: .destructive, action: {
+                                    dismissAction()
+
+                                    var revoke = false
+                                    updateState { state in
+                                        if !state.revokingPrivateLink {
+                                            revoke = true
+                                            var updatedState = state
+                                            updatedState.revokingPrivateLink = true
+                                            return updatedState
+                                        } else {
+                                            return state
+                                        }
+                                    }
+                                    if revoke, let inviteLink = invite.link {
+                                        revokeLinkDisposable.set((context.engine.peers.revokePeerExportedInvitation(peerId: peerId, link: inviteLink) |> deliverOnMainQueue).start(next: { result in
+                                            updateState { state in
+                                                var updatedState = state
+                                                updatedState.revokingPrivateLink = false
+                                                return updatedState
+                                            }
+                                            if let result = result {
+                                                switch result {
+                                                    case let .update(newInvite):
+                                                        invitesContext.remove(newInvite)
+                                                        revokedInvitesContext.add(newInvite)
+                                                    case let .replace(previousInvite, newInvite):
+                                                        revokedInvitesContext.add(previousInvite)
+                                                        invitesContext.remove(previousInvite)
+                                                    invitesContext.add(newInvite)
+                                                }
+                                            }
+
+                                            let presentationData = context.sharedContext.currentPresentationData.with { $0 }
+                                            presentControllerImpl?(UndoOverlayController(presentationData: presentationData, content: .linkRevoked(text: presentationData.strings.InviteLink_InviteLinkRevoked), elevatedLayout: false, animateInAsReplacement: false, action: { _ in return false }), nil)
+                                        }))
+                                    }
+                                })
+                            ]),
+                            ActionSheetItemGroup(items: [ActionSheetButtonItem(title: presentationData.strings.Common_Cancel, action: { dismissAction() })])
+                        ])
+                        presentControllerImpl?(controller, ViewControllerPresentationArguments(presentationAnimation: .modalSheet))
+                    })
+                })))
+            }
+
+            let contextController = makeContextController(presentationData: presentationData, source: .reference(InviteLinkContextReferenceContentSource(controller: controller, sourceNode: node)), items: .single(ContextController.Items(content: .list(items))), gesture: gesture)
+            presentInGlobalOverlayImpl?(contextController)
+        })
     }, createLink: {
         let controller = inviteLinkEditController(context: context, updatedPresentationData: updatedPresentationData, peerId: peerId, invite: nil, completion: { invite in
             if let invite = invite {
@@ -649,8 +681,10 @@ public func inviteLinkListController(context: AccountContext, updatedPresentatio
                         return
                     }
                 
-                    let shareController = ShareController(context: context, subject: .url(inviteLink), updatedPresentationData: updatedPresentationData)
-                    shareController.completed = { peerIds in
+                    let shareController = context.sharedContext.makeShareController(context: context, params: ShareControllerParams(subject: .url(inviteLink), updatedPresentationData: updatedPresentationData, actionCompleted: {
+                        let presentationData = context.sharedContext.currentPresentationData.with { $0 }
+                        presentControllerImpl?(UndoOverlayController(presentationData: presentationData, content: .linkCopied(title: nil, text: presentationData.strings.InviteLink_InviteLinkCopiedText), elevatedLayout: false, animateInAsReplacement: false, action: { _ in return false }), nil)
+                    }, completed: { peerIds in
                         let _ = (context.engine.data.get(
                             EngineDataList(
                                 peerIds.map(TelegramEngine.EngineData.Item.Peer.Peer.init)
@@ -659,7 +693,7 @@ public func inviteLinkListController(context: AccountContext, updatedPresentatio
                         |> deliverOnMainQueue).start(next: { peerList in
                             let peers = peerList.compactMap { $0 }
                             let presentationData = context.sharedContext.currentPresentationData.with { $0 }
-                            
+
                             let text: String
                             var savedMessages = false
                             if peerIds.count == 1, let peerId = peerIds.first, peerId == context.account.peerId {
@@ -680,7 +714,7 @@ public func inviteLinkListController(context: AccountContext, updatedPresentatio
                                     text = ""
                                 }
                             }
-                            
+
                             presentControllerImpl?(UndoOverlayController(presentationData: presentationData, content: .forward(savedMessages: savedMessages, text: text), elevatedLayout: false, animateInAsReplacement: true, action: { action in
                                 if savedMessages, action == .info {
                                     let _ = (context.engine.data.get(TelegramEngine.EngineData.Item.Peer.Peer(id: context.account.peerId))
@@ -697,11 +731,7 @@ public func inviteLinkListController(context: AccountContext, updatedPresentatio
                                 return false
                             }), nil)
                         })
-                    }
-                    shareController.actionCompleted = {
-                        let presentationData = context.sharedContext.currentPresentationData.with { $0 }
-                        presentControllerImpl?(UndoOverlayController(presentationData: presentationData, content: .linkCopied(title: nil, text: presentationData.strings.InviteLink_InviteLinkCopiedText), elevatedLayout: false, animateInAsReplacement: false, action: { _ in return false }), nil)
-                    }
+                    }))
                     presentControllerImpl?(shareController, nil)
                 })))
                 
@@ -710,10 +740,17 @@ public func inviteLinkListController(context: AccountContext, updatedPresentatio
                 }, action: { _, f in
                     f(.default)
                     
-                    let _ = (context.account.postbox.loadedPeerWithId(peerId)
+                    let _ = (context.engine.data.get(TelegramEngine.EngineData.Item.Peer.Peer(id: peerId))
+                    |> mapToSignal { peer -> Signal<EnginePeer, NoError> in
+                        if let peer {
+                            return .single(peer)
+                        } else {
+                            return .never()
+                        }
+                    }
                     |> deliverOnMainQueue).start(next: { peer in
                         let isGroup: Bool
-                        if let peer = peer as? TelegramChannel, case .broadcast = peer.info {
+                        if case let .channel(channel) = peer, case .broadcast = channel.info {
                             isGroup = false
                         } else {
                             isGroup = true
@@ -780,10 +817,17 @@ public func inviteLinkListController(context: AccountContext, updatedPresentatio
             }, action: { _, f in
                 f(.default)
             
-                let _ = (context.account.postbox.loadedPeerWithId(peerId)
+                let _ = (context.engine.data.get(TelegramEngine.EngineData.Item.Peer.Peer(id: peerId))
+                |> mapToSignal { peer -> Signal<EnginePeer, NoError> in
+                    if let peer {
+                        return .single(peer)
+                    } else {
+                        return .never()
+                    }
+                }
                 |> deliverOnMainQueue).start(next: { peer in
                     let isGroup: Bool
-                    if let peer = peer as? TelegramChannel, case .broadcast = peer.info {
+                    if case let .channel(channel) = peer, case .broadcast = channel.info {
                         isGroup = false
                     } else {
                         isGroup = true
@@ -820,7 +864,7 @@ public func inviteLinkListController(context: AccountContext, updatedPresentatio
             })))
         }
 
-        let contextController = ContextController(presentationData: presentationData, source: .extracted(InviteLinkContextExtractedContentSource(controller: controller, sourceNode: node, keepInPlace: false, blurBackground: true)), items: .single(ContextController.Items(content: .list(items))), gesture: gesture)
+        let contextController = makeContextController(presentationData: presentationData, source: .extracted(InviteLinkContextExtractedContentSource(controller: controller, sourceNode: node, keepInPlace: false, blurBackground: true)), items: .single(ContextController.Items(content: .list(items))), gesture: gesture)
         presentInGlobalOverlayImpl?(contextController)
     }, openAdmin: { admin in
         let controller = inviteLinkListController(context: context, peerId: peerId, admin: admin)

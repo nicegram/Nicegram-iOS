@@ -34,6 +34,10 @@ public extension TelegramEngine {
             return _internal_searchStickers(account: self.account, query: query, emoticon: emoticon, inputLanguageCode: inputLanguageCode, scope: scope)
         }
         
+        public func stickerSearchContext(query: String?, emoticon: [String], inputLanguageCode: String = "", scope: SearchStickersScope = [.installed, .remote]) -> StickerSearchContext {
+            return StickerSearchContext(account: self.account, query: query, emoticon: emoticon, inputLanguageCode: inputLanguageCode, scope: scope)
+        }
+        
         public func searchStickers(category: EmojiSearchCategories.Group, scope: SearchStickersScope = [.installed, .remote]) -> Signal<(items: [FoundStickerItem], isFinalResult: Bool), NoError> {
             return _internal_searchStickers(account: self.account, category: category, scope: scope)
         }
@@ -58,8 +62,8 @@ public extension TelegramEngine {
             return _internal_searchGifs(account: self.account, query: query, nextOffset: nextOffset)
         }
 
-        public func addStickerPackInteractively(info: StickerPackCollectionInfo, items: [StickerPackItem], positionInList: Int? = nil) -> Signal<Void, NoError> {
-            return _internal_addStickerPackInteractively(postbox: self.account.postbox, info: info, items: items, positionInList: positionInList)
+        public func addStickerPackInteractively(info: StickerPackCollectionInfo, items: [StickerPackItem], positionInList: Int? = nil, noDelay: Bool = false) -> Signal<AddStickerPackResult, NoError> {
+            return _internal_addStickerPackInteractively(postbox: self.account.postbox, info: info, items: items, positionInList: positionInList, noDelay: noDelay)
         }
 
         public func removeStickerPackInteractively(id: ItemCollectionId, option: RemoveStickerPackOption) -> Signal<(Int, [ItemCollectionItem])?, NoError> {
@@ -82,8 +86,8 @@ public extension TelegramEngine {
             return _internal_stickerPacksAttachedToMedia(account: self.account, media: media)
         }
         
-        public func uploadSticker(peer: Peer, resource: MediaResource, thumbnail: MediaResource?, alt: String, dimensions: PixelDimensions, duration: Double?, mimeType: String) -> Signal<UploadStickerStatus, UploadStickerError> {
-            return _internal_uploadSticker(account: self.account, peer: peer, resource: resource, thumbnail: thumbnail, alt: alt, dimensions: dimensions, duration: duration, mimeType: mimeType)
+        public func uploadSticker(peer: EnginePeer, resource: EngineMediaResource, thumbnail: EngineMediaResource?, alt: String, dimensions: PixelDimensions, duration: Double?, mimeType: String) -> Signal<UploadStickerStatus, UploadStickerError> {
+            return _internal_uploadSticker(account: self.account, peer: peer._asPeer(), resource: resource._asResource(), thumbnail: thumbnail?._asResource(), alt: alt, dimensions: dimensions, duration: duration, mimeType: mimeType)
         }
         
         public func createStickerSet(title: String, shortName: String, stickers: [ImportSticker], thumbnail: ImportSticker?, type: CreateStickerSetType, software: String?) -> Signal<CreateStickerSetStatus, CreateStickerSetError> {
@@ -292,6 +296,10 @@ public extension TelegramEngine {
             |> map { items, isFinalResult -> (items: [TelegramMediaFile], isFinalResult: Bool) in
                 return (items.map(\.file), isFinalResult)
             }
+        }
+        
+        public func emojiSearchContext(query: String?, emoticon: [String], inputLanguageCode: String = "", scope: SearchStickersScope = [.installed, .remote]) -> EmojiSearchContext {
+            return EmojiSearchContext(account: self.account, query: query, emoticon: emoticon, inputLanguageCode: inputLanguageCode, scope: scope)
         }
         
         public func searchEmoji(category: EmojiSearchCategories.Group) -> Signal<(items: [TelegramMediaFile], isFinalResult: Bool), NoError> {

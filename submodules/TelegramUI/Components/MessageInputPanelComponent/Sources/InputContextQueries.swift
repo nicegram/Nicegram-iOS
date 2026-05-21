@@ -22,9 +22,6 @@ func inputContextQueries(_ inputState: TextFieldComponent.InputState) -> [ChatPr
             result.append(.hashtag(query))
         } else if possibleTypes == [.mention] {
             let types: ChatInputQueryMentionTypes = [.members]
-//            if possibleQueryRange.lowerBound == 1 {
-//                types.insert(.contextBots)
-//            }
             result.append(.mention(query: query, types: types))
         } else if possibleTypes == [.command] {
             result.append(.command(query))
@@ -85,9 +82,9 @@ private func updatedContextQueryResultStateForQuery(context: AccountContext, cha
             signal = .single({ _ in return .stickers([]) })
         }
         
-        let stickerConfiguration = context.account.postbox.preferencesView(keys: [PreferencesKeys.appConfiguration])
+        let stickerConfiguration = context.engine.data.subscribe(TelegramEngine.EngineData.Item.Configuration.ApplicationSpecificPreference(key: PreferencesKeys.appConfiguration))
         |> map { preferencesView -> StickersSearchConfiguration in
-            let appConfiguration: AppConfiguration = preferencesView.values[PreferencesKeys.appConfiguration]?.get(AppConfiguration.self) ?? .defaultValue
+            let appConfiguration: AppConfiguration = preferencesView?.get(AppConfiguration.self) ?? .defaultValue
             return StickersSearchConfiguration.with(appConfiguration: appConfiguration)
         }
         let stickerSettings = context.sharedContext.accountManager.transaction { transaction -> StickerSettings in

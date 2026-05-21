@@ -192,7 +192,7 @@ final class AdjustmentSliderComponent: Component {
             let valueSize = self.value.update(
                 transition: .immediate,
                 component: AnyComponent(
-                    Text(text: valueText, font: Font.with(size: 14.0, traits: .monospacedNumbers), color: UIColor(rgb: 0xf8d74a))
+                    Text(text: valueText, font: Font.with(size: 14.0, traits: .monospacedNumbers), color: UIColor(rgb: 0xffd300))
                 ),
                 environment: {},
                 containerSize: CGSize(width: 100.0, height: 100.0)

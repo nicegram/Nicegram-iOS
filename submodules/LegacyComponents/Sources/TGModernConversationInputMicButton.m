@@ -98,6 +98,17 @@ static const CGFloat outerCircleMinScale = innerCircleRadius / outerCircleRadius
 
 @end
 
+@interface TGModernConversationInputMicButtonLockPanelViewNativeImpl : UIImageView<TGModernConversationInputMicButtonLockPanelView>
+
+@end
+
+@implementation TGModernConversationInputMicButtonLockPanelViewNativeImpl
+
+- (void)updateSize:(CGSize)size {
+}
+
+@end
+
 @interface TGModernConversationInputMicButton () <UIGestureRecognizerDelegate>
 {
     CGPoint _touchLocation;
@@ -116,7 +127,7 @@ static const CGFloat outerCircleMinScale = innerCircleRadius / outerCircleRadius
     UIImageView *_innerIconView;
     
     UIView *_lockPanelWrapperView;
-    UIView *_lockPanelView;
+    UIView<TGModernConversationInputMicButtonLockPanelView> *_lockPanelView;
     UIImageView *_lockArrowView;
     TGModernConversationInputLockView *_lockView;
     UIImage *_previousIcon;
@@ -254,7 +265,7 @@ static const CGFloat outerCircleMinScale = innerCircleRadius / outerCircleRadius
     _innerCircleView.center = centerPoint;
     _outerCircleView.center = centerPoint;
     _decoration.center = centerPoint;
-    _innerIconWrapperView.center = CGPointMake(_decoration.frame.size.width / 2.0f, _decoration.frame.size.height / 2.0f);
+    _innerIconWrapperView.center = CGPointMake(CGRectGetMidX(_decoration.bounds), CGRectGetMidY(_decoration.bounds));
     
     _lockPanelWrapperView.frame = CGRectMake(floor(centerPoint.x - _lockPanelWrapperView.frame.size.width / 2.0f), floor(centerPoint.y - 122.0f - _lockPanelWrapperView.frame.size.height / 2.0f), _lockPanelWrapperView.frame.size.width, _lockPanelWrapperView.frame.size.height);
     
@@ -353,8 +364,8 @@ static const CGFloat outerCircleMinScale = innerCircleRadius / outerCircleRadius
     return stopButtonImage;
 }
 
-- (UIView *)createLockPanelView {
-    UIImageView *view = [[UIImageView alloc] initWithFrame:CGRectMake(0.0f, 0.0f, 40.0f, 72.0f)];
+- (UIView<TGModernConversationInputMicButtonLockPanelView> *)createLockPanelView {
+    TGModernConversationInputMicButtonLockPanelViewNativeImpl *view = [[TGModernConversationInputMicButtonLockPanelViewNativeImpl alloc] initWithFrame:CGRectMake(0.0f, 0.0f, 40.0f, 72.0f)];
     view.userInteractionEnabled = true;
     view.image = [self panelBackgroundImage];
     return view;
@@ -634,6 +645,8 @@ static const CGFloat outerCircleMinScale = innerCircleRadius / outerCircleRadius
         [snapshotView removeFromSuperview];
     }];
     
+    [_lockPanelView updateSize:CGSizeMake(_lockPanelView.frame.size.width, 72.0f - 32.0f)];
+    
     [UIView animateWithDuration:0.2 animations:^
     {
         snapshotView.alpha = 0.0f;
@@ -904,6 +917,8 @@ static const CGFloat outerCircleMinScale = innerCircleRadius / outerCircleRadius
     
     _currentTranslation = MIN(0.0, _currentTranslation * 0.7f + _targetTranslation * 0.3f);
     _cancelTranslation = MIN(0.0, _cancelTranslation * 0.7f + _cancelTargetTranslation * 0.3f);
+    
+    [self updateOverlay];
     
     if (t > _animationStartTime) {
         CGFloat outerScale = outerCircleMinScale + _currentLevel * (1.0f - outerCircleMinScale);

@@ -109,7 +109,7 @@ private final class PeerInfoScreenAddressItemNode: PeerInfoScreenItemNode {
             let theme = presentationData.theme
             
             if isExtracted {
-                strongSelf.extractedBackgroundImageNode.image = generateStretchableFilledCircleImage(diameter: 28.0, color: theme.list.plainBackgroundColor)
+                strongSelf.extractedBackgroundImageNode.image = generateStretchableFilledCircleImage(diameter: 52.0, color: theme.list.plainBackgroundColor)
             }
             
             if let extractedRect = strongSelf.extractedRect, let nonExtractedRect = strongSelf.nonExtractedRect {
@@ -184,7 +184,7 @@ private final class PeerInfoScreenAddressItemNode: PeerInfoScreenItemNode {
         
         self.bottomSeparatorNode.backgroundColor = presentationData.theme.list.itemBlocksSeparatorColor
         
-        let addressItem = ItemListAddressItem(theme: presentationData.theme, label: item.label, text: item.text, imageSignal: item.imageSignal, sectionId: 0, style: .blocks, displayDecorations: false, action: nil, longTapAction: nil, linkItemAction: item.linkItemAction)
+        let addressItem = ItemListAddressItem(theme: presentationData.theme, systemStyle: .glass, label: item.label, text: item.text, imageSignal: item.imageSignal, sectionId: 0, style: .blocks, displayDecorations: false, action: nil, longTapAction: nil, linkItemAction: item.linkItemAction)
         
         let params = ListViewItemLayoutParams(width: width, leftInset: safeInsets.left, rightInset: safeInsets.right, availableHeight: 1000.0)
         
@@ -216,14 +216,16 @@ private final class PeerInfoScreenAddressItemNode: PeerInfoScreenItemNode {
         
         let height = itemNode.contentSize.height
         
-        transition.updateFrame(node: self.bottomSeparatorNode, frame: CGRect(origin: CGPoint(x: sideInset, y: height - UIScreenPixel), size: CGSize(width: width - sideInset, height: UIScreenPixel)))
+        let separatorRightInset: CGFloat = 16.0
+        
+        transition.updateFrame(node: self.bottomSeparatorNode, frame: CGRect(origin: CGPoint(x: sideInset, y: height - UIScreenPixel), size: CGSize(width: width - sideInset - separatorRightInset, height: UIScreenPixel)))
         transition.updateAlpha(node: self.bottomSeparatorNode, alpha: bottomItem == nil ? 0.0 : 1.0)
         
         let hasCorners = hasCorners && (topItem == nil || bottomItem == nil)
         let hasTopCorners = hasCorners && topItem == nil
         let hasBottomCorners = hasCorners && bottomItem == nil
         
-        self.maskNode.image = hasCorners ? PresentationResourcesItemList.cornersImage(presentationData.theme, top: hasTopCorners, bottom: hasBottomCorners) : nil
+        self.maskNode.image = hasCorners ? PresentationResourcesItemList.cornersImage(presentationData.theme, top: hasTopCorners, bottom: hasBottomCorners, glass: true) : nil
         transition.updateFrame(node: self.maskNode, frame: CGRect(origin: CGPoint(x: safeInsets.left, y: 0.0), size: CGSize(width: width - safeInsets.left - safeInsets.right, height: height)))
         self.bottomSeparatorNode.isHidden = hasBottomCorners
         

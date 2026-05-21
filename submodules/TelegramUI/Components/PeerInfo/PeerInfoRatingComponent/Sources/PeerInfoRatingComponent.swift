@@ -89,7 +89,7 @@ private func generateNumberOffsets() -> [CGPoint] {
         CGPoint(x: 0.9900000000000001, y: 0.0),
         CGPoint(x: 0.66, y: 0.0),
         CGPoint(x: 0.5775, y: 0.0),
-        CGPoint(x: 1.2375, y: 0.0),
+        CGPoint(x: 0.7425, y: 0.0),
         CGPoint(x: 0.9900000000000001, y: 0.0),
         CGPoint(x: 1.32, y: 0.0),
         CGPoint(x: 1.155, y: 0.0),
@@ -343,7 +343,7 @@ public final class PeerInfoRatingComponent: Component {
                     }
                     
                     if let url = Bundle.main.url(forResource: "profile_level\(levelIndex)_outer", withExtension: "svg"), let data = try? Data(contentsOf: url) {
-                        if let image = generateTintedImage(image: drawSvgImage(data, size, nil, nil, 0.0, false), color: component.borderColor) {
+                        if let image = generateTintedImage(image: drawSvgImage(data: data, size: size, backgroundColor: nil, foregroundColor: nil, scale: 0.0, opaque: false), color: component.borderColor) {
                             image.draw(in: CGRect(origin: CGPoint(x: 0.0, y: backgroundOffsetsY[levelIndex] ?? 0.0), size: size), blendMode: .normal, alpha: 1.0)
                         }
                     }
@@ -372,7 +372,7 @@ public final class PeerInfoRatingComponent: Component {
                     }
                     
                     if let url = Bundle.main.url(forResource: "profile_level\(levelIndex)_inner", withExtension: "svg"), let data = try? Data(contentsOf: url) {
-                        if let image = generateTintedImage(image: drawSvgImage(data, size, nil, nil, 0.0, false), color: component.backgroundColor) {
+                        if let image = generateTintedImage(image: drawSvgImage(data: data, size: size, backgroundColor: nil, foregroundColor: nil, scale: 0.0, opaque: false), color: component.backgroundColor) {
                             image.draw(in: CGRect(origin: CGPoint(x: 0.0, y: backgroundOffsetsY[levelIndex] ?? 0.0), size: size), blendMode: .normal, alpha: 1.0)
                         }
                     }

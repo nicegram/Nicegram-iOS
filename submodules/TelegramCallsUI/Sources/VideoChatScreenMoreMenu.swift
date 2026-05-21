@@ -8,7 +8,6 @@ import DeleteChatPeerActionSheetItem
 import PeerListItemComponent
 import LegacyComponents
 import LegacyUI
-import WebSearchUI
 import MapResourceToAvatarSizes
 import LegacyMediaPickerUI
 import AvatarNode
@@ -169,7 +168,7 @@ extension VideoChatScreenComponent.View {
             for peer in displayAsPeers {
                 if peer.peer.id == callState.myPeerId {
                     let avatarSize = CGSize(width: 28.0, height: 28.0)
-                    items.append(.action(ContextMenuActionItem(text: environment.strings.VoiceChat_DisplayAs, textLayout: .secondLineWithValue(EnginePeer(peer.peer).displayTitle(strings: environment.strings, displayOrder: currentCall.accountContext.sharedContext.currentPresentationData.with({ $0 }).nameDisplayOrder)), icon: { _ in nil }, iconSource: ContextMenuActionItemIconSource(size: avatarSize, signal: peerAvatarCompleteImage(account: currentCall.accountContext.account, peer: EnginePeer(peer.peer), size: avatarSize)), action: { [weak self] c, _ in
+                    items.append(.action(ContextMenuActionItem(text: environment.strings.VoiceChat_DisplayAs, textLayout: .secondLineWithValue(peer.peer.displayTitle(strings: environment.strings, displayOrder: currentCall.accountContext.sharedContext.currentPresentationData.with({ $0 }).nameDisplayOrder)), icon: { _ in nil }, iconSource: ContextMenuActionItemIconSource(size: avatarSize, signal: peerAvatarCompleteImage(account: currentCall.accountContext.account, peer: peer.peer, size: avatarSize)), action: { [weak self] c, _ in
                         guard let self else {
                             return
                         }
@@ -227,6 +226,31 @@ extension VideoChatScreenComponent.View {
                 }
                 self.openTitleEditing()
             })))
+            
+            if callState.canEnableMessages {
+                items.append(.action(ContextMenuActionItem(text: callState.messagesAreEnabled ? environment.strings.VoiceChat_ContextDisableMessages : environment.strings.VoiceChat_ContextEnableMessages, icon: { theme -> UIImage? in
+                    return generateTintedImage(image: UIImage(bundleImageName: callState.messagesAreEnabled ? "Call/MessagesDisable" : "Call/MessagesEnable"), color: theme.actionSheet.primaryTextColor)
+                }, action: { [weak self] _, f in
+                    f(.default)
+                    
+                    guard let self, let currentCall = self.currentCall else {
+                        return
+                    }
+                    let isEnabled = !callState.messagesAreEnabled
+                    currentCall.setMessagesEnabled(isEnabled: isEnabled)
+                    
+                    let iconName: String
+                    let text: String
+                    if isEnabled {
+                        iconName = "Call/ToastMessagesEnabled"
+                        text = environment.strings.VoiceChat_ToastMessagesEnabled
+                    } else {
+                        iconName = "Call/ToastMessagesDisabled"
+                        text = environment.strings.VoiceChat_ToastMessagesDisabled
+                    }
+                    self.presentToast(icon: .icon(iconName), text: text, duration: 3)
+                })))
+            }
 
             var hasPermissions = true
             if let peer = self.peer, case let .channel(chatPeer) = peer {
@@ -291,8 +315,8 @@ extension VideoChatScreenComponent.View {
             ]
             
             let videoQualityTitle = qualityList.first(where: { $0.0 == self.maxVideoQuality })?.1 ?? ""
-            items.append(.action(ContextMenuActionItem(text: environment.strings.VideoChat_IncomingVideoQuality_Title, textColor: .primary, textLayout: .secondLineWithValue(videoQualityTitle), icon: { _ in
-                return nil
+            items.append(.action(ContextMenuActionItem(text: environment.strings.VideoChat_IncomingVideoQuality_Title, textColor: .primary, textLayout: .secondLineWithValue(videoQualityTitle), icon: { theme in
+                return generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Settings"), color: theme.actionSheet.primaryTextColor)
             }, action: { [weak self] c, _ in
                 guard let self else {
                     c?.dismiss(completion: nil)
@@ -313,7 +337,7 @@ extension VideoChatScreenComponent.View {
                         if isSelected {
                             return generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Check"), color: .white)
                         } else {
-                            return nil
+                            return UIImage()
                         }
                     }, action: { [weak self] _, f in
                         f(.default)
@@ -444,7 +468,7 @@ extension VideoChatScreenComponent.View {
                                 }
                             }
 
-                            let controller = voiceChatTitleEditController(sharedContext: currentCall.accountContext.sharedContext, account: currentCall.accountContext.account, forceTheme: environment.theme, title: title, text: text, placeholder: placeholder, value: nil, maxLength: 40, apply: { [weak self] title in
+                            let controller = voiceChatTitleEditController(context: currentCall.accountContext, forceTheme: environment.theme, title: title, text: text, placeholder: placeholder, value: nil, maxLength: 40, apply: { [weak self] title in
                                 guard let self, let environment = self.environment, case let .group(groupCall) = self.currentCall, let peer = self.peer, let title else {
                                     return
                                 }
@@ -458,7 +482,7 @@ extension VideoChatScreenComponent.View {
                                     text = environment.strings.VoiceChat_RecordingStarted
                                 }
 
-                                self.presentUndoOverlay(content: .voiceChatRecording(text: text), action: { _ in return false })
+                                self.presentToast(icon: .animation("anim_vcrecord"), text: text, duration: 3)
                                 groupCall.playTone(.recordingStarted)
                             })
                             environment.controller()?.present(controller, in: .window(.root))
@@ -571,7 +595,7 @@ extension VideoChatScreenComponent.View {
         }
 
         let presentationData = currentCall.accountContext.sharedContext.currentPresentationData.with({ $0 }).withUpdated(theme: environment.theme)
-        let contextController = ContextController(presentationData: presentationData, source: .reference(VoiceChatContextReferenceContentSource(controller: controller, sourceView: sourceView)), items: .single(ContextController.Items(content: .list(items))), gesture: nil)
+        let contextController = makeContextController(presentationData: presentationData, source: .reference(VoiceChatContextReferenceContentSource(controller: controller, sourceView: sourceView)), items: .single(ContextController.Items(content: .list(items))), gesture: nil)
         controller.presentInGlobalOverlay(contextController)
     }
     
@@ -601,10 +625,10 @@ extension VideoChatScreenComponent.View {
         var isGroup = false
         if let displayAsPeers = self.displayAsPeers {
             for peer in displayAsPeers {
-                if peer.peer is TelegramGroup {
+                if case .legacyGroup = peer.peer {
                     isGroup = true
                     break
-                } else if let peer = peer.peer as? TelegramChannel, case .group = peer.info {
+                } else if case let .channel(channel) = peer.peer, case .group = channel.info {
                     isGroup = true
                     break
                 }
@@ -621,7 +645,7 @@ extension VideoChatScreenComponent.View {
                 if peer.peer.id.namespace == Namespaces.Peer.CloudUser {
                     subtitle = environment.strings.VoiceChat_PersonalAccount
                 } else if let subscribers = peer.subscribers {
-                    if let peer = peer.peer as? TelegramChannel, case .broadcast = peer.info {
+                    if case let .channel(channel) = peer.peer, case .broadcast = channel.info {
                         subtitle = environment.strings.Conversation_StatusSubscribers(subscribers)
                     } else {
                         subtitle = environment.strings.Conversation_StatusMembers(subscribers)
@@ -631,7 +655,7 @@ extension VideoChatScreenComponent.View {
                 let isSelected = peer.peer.id == myPeerId
                 let extendedAvatarSize = CGSize(width: 35.0, height: 35.0)
                 let theme = environment.theme
-                let avatarSignal = peerAvatarCompleteImage(account: groupCall.accountContext.account, peer: EnginePeer(peer.peer), size: avatarSize)
+                let avatarSignal = peerAvatarCompleteImage(account: groupCall.accountContext.account, peer: peer.peer, size: avatarSize)
                 |> map { image -> UIImage? in
                     if isSelected, let image = image {
                         return generateImage(extendedAvatarSize, rotatedContext: { size, context in
@@ -652,7 +676,7 @@ extension VideoChatScreenComponent.View {
                     }
                 }
                 
-                items.append(.action(ContextMenuActionItem(text: EnginePeer(peer.peer).displayTitle(strings: environment.strings, displayOrder: groupCall.accountContext.sharedContext.currentPresentationData.with({ $0 }).nameDisplayOrder), textLayout: subtitle.flatMap { .secondLineWithValue($0) } ?? .singleLine, icon: { _ in nil }, iconSource: ContextMenuActionItemIconSource(size: isSelected ? extendedAvatarSize : avatarSize, signal: avatarSignal), action: { [weak self] _, f in
+                items.append(.action(ContextMenuActionItem(text: peer.peer.displayTitle(strings: environment.strings, displayOrder: groupCall.accountContext.sharedContext.currentPresentationData.with({ $0 }).nameDisplayOrder), textLayout: subtitle.flatMap { .secondLineWithValue($0) } ?? .singleLine, icon: { _ in nil }, iconSource: ContextMenuActionItemIconSource(size: isSelected ? extendedAvatarSize : avatarSize, signal: avatarSignal), action: { [weak self] _, f in
                     f(.default)
                     
                     guard let self, case let .group(groupCall) = self.currentCall else {
@@ -705,7 +729,7 @@ extension VideoChatScreenComponent.View {
                 if output == currentOutput {
                     return generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Check"), color: theme.actionSheet.primaryTextColor)
                 } else {
-                    return nil
+                    return UIImage()
                 }
             }, action: { [weak self] _, f in
                 f(.default)
@@ -738,7 +762,7 @@ extension VideoChatScreenComponent.View {
             items.append(.separator)
             items.append(.action(ContextMenuActionItem(text: environment.strings.VoiceChat_SpeakPermissionEveryone, icon: { theme in
                 if isMuted {
-                    return nil
+                    return UIImage()
                 } else {
                     return generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Check"), color: theme.actionSheet.primaryTextColor)
                 }
@@ -752,7 +776,7 @@ extension VideoChatScreenComponent.View {
             })))
             items.append(.action(ContextMenuActionItem(text: environment.strings.VoiceChat_SpeakPermissionAdmin, icon: { theme in
                 if !isMuted {
-                    return nil
+                    return UIImage()
                 } else {
                     return generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Check"), color: theme.actionSheet.primaryTextColor)
                 }

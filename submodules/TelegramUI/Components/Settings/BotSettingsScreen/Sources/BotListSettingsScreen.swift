@@ -71,6 +71,7 @@ private enum BotListSettingsEntry: ItemListNodeEntry {
         case let .botItem(peer):
             return ItemListPeerItem(
                 presentationData: presentationData,
+                systemStyle: .glass,
                 dateTimeFormat: presentationData.dateTimeFormat,
                 nameDisplayOrder: presentationData.nameDisplayOrder,
                 context: arguments.context,

@@ -159,26 +159,30 @@ func managedSynchronizeEmojiSearchCategories(postbox: Postbox, network: Network,
             |> mapToSignal { result -> Signal<Never, NoError> in
                 return postbox.transaction { transaction -> Signal<Never, NoError> in
                     switch result {
-                    case let .emojiGroups(hash, groups):
+                    case let .emojiGroups(emojiGroupsData):
+                        let (hash, groups) = (emojiGroupsData.hash, emojiGroupsData.groups)
                         let categories = EmojiSearchCategories(
                             hash: hash,
                             groups: groups.compactMap { item -> EmojiSearchCategories.Group? in
                                 switch item {
-                                case let .emojiGroup(title, iconEmojiId, emoticons):
+                                case let .emojiGroup(emojiGroupData):
+                                    let (title, iconEmojiId, emoticons) = (emojiGroupData.title, emojiGroupData.iconEmojiId, emojiGroupData.emoticons)
                                     return EmojiSearchCategories.Group(
                                         id: iconEmojiId,
                                         title: title,
                                         identifiers: emoticons,
                                         kind: .generic
                                     )
-                                case let .emojiGroupGreeting(title, iconEmojiId, emoticons):
+                                case let .emojiGroupGreeting(emojiGroupGreetingData):
+                                    let (title, iconEmojiId, emoticons) = (emojiGroupGreetingData.title, emojiGroupGreetingData.iconEmojiId, emojiGroupGreetingData.emoticons)
                                     return EmojiSearchCategories.Group(
                                         id: iconEmojiId,
                                         title: title,
                                         identifiers: emoticons,
                                         kind: .greeting
                                     )
-                                case let .emojiGroupPremium(title, iconEmojiId):
+                                case let .emojiGroupPremium(emojiGroupPremiumData):
+                                    let (title, iconEmojiId) = (emojiGroupPremiumData.title, emojiGroupPremiumData.iconEmojiId)
                                     return EmojiSearchCategories.Group(
                                         id: iconEmojiId,
                                         title: title,

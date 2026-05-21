@@ -1,3 +1,6 @@
+// Nicegram
+import FeatCalls
+//
 import Foundation
 import UIKit
 import CallKit
@@ -13,6 +16,10 @@ import TelegramVoip
 private let sharedProviderDelegate: CallKitProviderDelegate? = {
     return CallKitProviderDelegate()
 }()
+
+// Nicegram Calls
+public let nicegramCallKitIntegration = sharedProviderDelegate!.nicegramCallKitIntegration
+//
 
 public final class CallKitIntegration {
     public static var isAvailable: Bool {
@@ -139,8 +146,19 @@ class CallKitProviderDelegate: NSObject, CXProviderDelegate {
         }
     }
     
+    // Nicegram Calls
+    public let nicegramCallKitIntegration: CallKitIntegrationImpl
+    //
+    
     override init() {
         self.provider = CXProvider(configuration: CallKitProviderDelegate.providerConfiguration())
+        
+        // Nicegram Calls
+        self.nicegramCallKitIntegration = CallKitIntegrationImpl(
+            callController: callController,
+            provider: self.provider
+        )
+        //
         
         super.init()
         
@@ -305,12 +323,23 @@ class CallKitProviderDelegate: NSObject, CXProviderDelegate {
     }
     
     func providerDidReset(_ provider: CXProvider) {
+        // Nicegram Calls
+        nicegramCallKitIntegration.providerDidReset(provider)
+        //
+        
         Logger.shared.log("CallKitIntegration", "providerDidReset")
         
         self.activeCalls.removeAll()
     }
     
     func provider(_ provider: CXProvider, perform action: CXStartCallAction) {
+        // Nicegram Calls
+        if nicegramCallKitIntegration.canProcess(action) {
+            nicegramCallKitIntegration.provider(provider, perform: action)
+            return
+        }
+        //
+        
         Logger.shared.log("CallKitIntegration", "provider perform start call action \(action)")
         
         guard let startCall = self.startCall, let (uuid, context) = self.currentStartCallAccount, uuid == action.callUUID else {
@@ -339,6 +368,13 @@ class CallKitProviderDelegate: NSObject, CXProviderDelegate {
     }
     
     func provider(_ provider: CXProvider, perform action: CXAnswerCallAction) {
+        // Nicegram Calls
+        if nicegramCallKitIntegration.canProcess(action) {
+            nicegramCallKitIntegration.provider(provider, perform: action)
+            return
+        }
+        //
+        
         Logger.shared.log("CallKitIntegration", "provider perform answer call action \(action)")
         
         guard let answerCall = self.answerCall else {
@@ -350,6 +386,13 @@ class CallKitProviderDelegate: NSObject, CXProviderDelegate {
     }
     
     func provider(_ provider: CXProvider, perform action: CXEndCallAction) {
+        // Nicegram Calls
+        if nicegramCallKitIntegration.canProcess(action) {
+            nicegramCallKitIntegration.provider(provider, perform: action)
+            return
+        }
+        //
+        
         Logger.shared.log("CallKitIntegration", "provider perform end call action \(action)")
         
         guard let endCall = self.endCall else {
@@ -374,6 +417,13 @@ class CallKitProviderDelegate: NSObject, CXProviderDelegate {
     }
     
     func provider(_ provider: CXProvider, perform action: CXSetMutedCallAction) {
+        // Nicegram Calls
+        if nicegramCallKitIntegration.canProcess(action) {
+            nicegramCallKitIntegration.provider(provider, perform: action)
+            return
+        }
+        //
+        
         Logger.shared.log("CallKitIntegration", "provider perform mute call action \(action)")
         
         guard let setCallMuted = self.setCallMuted else {
@@ -385,6 +435,10 @@ class CallKitProviderDelegate: NSObject, CXProviderDelegate {
     }
     
     func provider(_ provider: CXProvider, didActivate audioSession: AVAudioSession) {
+        // Nicegram Calls
+        nicegramCallKitIntegration.provider(provider, didActivate: audioSession)
+        //
+        
         Logger.shared.log("CallKitIntegration", "provider didActivate audio session")
         self.isAudioSessionActive = true
         self.audioSessionActivationChanged?(true)
@@ -397,6 +451,10 @@ class CallKitProviderDelegate: NSObject, CXProviderDelegate {
     }
     
     func provider(_ provider: CXProvider, didDeactivate audioSession: AVAudioSession) {
+        // Nicegram Calls
+        nicegramCallKitIntegration.provider(provider, didDeactivate: audioSession)
+        //
+        
         Logger.shared.log("CallKitIntegration", "provider didDeactivate audio session")
         self.isAudioSessionActive = false
         self.audioSessionActivationChanged?(false)

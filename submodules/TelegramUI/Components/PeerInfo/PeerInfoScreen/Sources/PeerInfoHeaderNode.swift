@@ -2,6 +2,7 @@
 import NGData
 import NGStrings
 import FeatGodsEye
+import FeatWhitebridge
 //
 import Foundation
 import UIKit
@@ -49,6 +50,7 @@ import ProfileLevelInfoScreen
 import PlainButtonComponent
 import BundleIconComponent
 import MarqueeComponent
+import EdgeEffect
 
 final class PeerInfoHeaderNavigationTransition {
     let sourceNavigationBar: NavigationBar
@@ -68,7 +70,7 @@ final class PeerInfoHeaderNavigationTransition {
     }
 }
 
-final class PeerInfoHeaderRegularContentNode: ASDisplayNode {
+final class PeerInfoHeaderRegularContentNode: SparseNode {
 }
 
 enum PeerInfoHeaderTextFieldNodeKey: Equatable {
@@ -93,8 +95,9 @@ final class PeerInfoHeaderNode: ASDisplayNode {
     private weak var controller: PeerInfoScreenImpl?
     private var presentationData: PresentationData?
     private var state: PeerInfoState?
-    private var peer: Peer?
+    private var peer: EnginePeer?
     private var threadData: MessageHistoryThreadData?
+    private var isSearching: Bool = false
     private var avatarSize: CGFloat?
     
     private let isOpenedFromChat: Bool
@@ -156,30 +159,31 @@ final class PeerInfoHeaderNode: ASDisplayNode {
     let usernameNode: MultiScaleTextNode
     var actionButtonNodes: [PeerInfoHeaderButtonKey: PeerInfoHeaderActionButtonNode] = [:]
     var buttonNodes: [PeerInfoHeaderButtonKey: PeerInfoHeaderButtonNode] = [:]
-    let backgroundNode: NavigationBackgroundNode
-    let expandedBackgroundNode: NavigationBackgroundNode
-    let separatorNode: ASDisplayNode
-    let navigationBackgroundNode: ASDisplayNode
-    let navigationBackgroundBackgroundNode: ASDisplayNode
+    let headerEdgeEffectContainer: UIView
+    let headerEdgeEffectView: EdgeEffectView
     var navigationTitle: String?
-    let navigationTitleNode: ImmediateTextNode
-    let navigationSeparatorNode: ASDisplayNode
     let navigationButtonContainer: PeerInfoHeaderNavigationButtonContainerNode
-    let editingNavigationBackgroundNode: NavigationBackgroundNode
-    let editingNavigationBackgroundSeparator: ASDisplayNode
+    let searchContainer: ASDisplayNode
+    var searchEdgeEffectView: EdgeEffectView?
+    let searchBarContainer: SparseNode
+    let editingEdgeEffectView: EdgeEffectView
+    
     // Nicegram NCG-7704 God's eye
+    let rightActionButtonsNode: ASDisplayNode
     let godsEyeButtonNode: ASButtonNode
+    let witebridgeButtonNode: ASButtonNode
     //
     
     var musicBackground: UIView?
     var music: ComponentView<Empty>?
     
-    var performButtonAction: ((PeerInfoHeaderButtonKey, ContextGesture?) -> Void)?
+    var performButtonAction: ((PeerInfoHeaderButtonKey, PeerInfoHeaderButtonNode?, ContextGesture?) -> Void)?
     var requestAvatarExpansion: ((Bool, [AvatarGalleryEntry], AvatarGalleryEntry?, (ASDisplayNode, CGRect, () -> (UIView?, UIView?))?) -> Void)?
     var requestOpenAvatarForEditing: ((Bool) -> Void)?
     var cancelUpload: (() -> Void)?
     var requestUpdateLayout: ((Bool) -> Void)?
     var animateOverlaysFadeIn: (() -> Void)?
+    var updateUnderHeaderContentsAlpha: ((CGFloat, ContainedViewLayoutTransition) -> Void)?
     
     var displayAvatarContextMenu: ((ASDisplayNode, ContextGesture?) -> Void)?
     var displayCopyContextMenu: ((ASDisplayNode, Bool, Bool) -> Void)?
@@ -275,6 +279,7 @@ final class PeerInfoHeaderNode: ASDisplayNode {
         self.backgroundBannerView = UIView()
         self.backgroundBannerView.clipsToBounds = true
         self.backgroundBannerView.isUserInteractionEnabled = false
+        self.backgroundBannerView.layer.allowsGroupOpacity = true
         
         self.buttonsContainerNode = SparseNode()
         self.buttonsContainerNode.clipsToBounds = true
@@ -295,38 +300,36 @@ final class PeerInfoHeaderNode: ASDisplayNode {
         self.avatarOverlayNode = PeerInfoEditingAvatarOverlayNode(context: context)
         self.avatarOverlayNode.isUserInteractionEnabled = false
         
-        self.navigationBackgroundNode = ASDisplayNode()
-        self.navigationBackgroundNode.isHidden = true
-        self.navigationBackgroundNode.isUserInteractionEnabled = false
-
-        self.navigationBackgroundBackgroundNode = ASDisplayNode()
-        self.navigationBackgroundBackgroundNode.isUserInteractionEnabled = false
-        
-        self.navigationTitleNode = ImmediateTextNode()
-        
-        self.navigationSeparatorNode = ASDisplayNode()
-        
         self.navigationButtonContainer = PeerInfoHeaderNavigationButtonContainerNode()
-        self.editingNavigationBackgroundNode = NavigationBackgroundNode(color: .clear, enableBlur: true)
-        self.editingNavigationBackgroundSeparator = ASDisplayNode()
+        self.searchBarContainer = SparseNode()
+        self.searchContainer = ASDisplayNode()
         
-        self.backgroundNode = NavigationBackgroundNode(color: .clear)
-        self.backgroundNode.isHidden = true
-        self.backgroundNode.isUserInteractionEnabled = false
-        self.expandedBackgroundNode = NavigationBackgroundNode(color: .clear)
-        self.expandedBackgroundNode.isHidden = false
-        self.expandedBackgroundNode.isUserInteractionEnabled = false
+        self.headerEdgeEffectView = EdgeEffectView()
+        self.headerEdgeEffectView.isUserInteractionEnabled = false
         
-        self.separatorNode = ASDisplayNode()
-        self.separatorNode.isLayerBacked = true
+        self.headerEdgeEffectContainer = UIView()
+        self.headerEdgeEffectContainer.addSubview(self.headerEdgeEffectView)
+        
+        self.editingEdgeEffectView = EdgeEffectView()
+        self.editingEdgeEffectView.isUserInteractionEnabled = false
         
         self.animationCache = context.animationCache
         self.animationRenderer = context.animationRenderer
         
         // Nicegram NCG-7704 God's eye
+        self.rightActionButtonsNode = ASDisplayNode()
+        self.rightActionButtonsNode.clipsToBounds = false
         self.godsEyeButtonNode = ASButtonNode()
         self.godsEyeButtonNode.displaysAsynchronously = false
         self.godsEyeButtonNode.isHidden = true
+        self.godsEyeButtonNode.accessibilityIdentifier = "button_gods_eye"
+        //
+        
+        // Nicegram Witebridge
+        self.witebridgeButtonNode = ASButtonNode()
+        self.witebridgeButtonNode.displaysAsynchronously = false
+        self.witebridgeButtonNode.isHidden = true
+        self.witebridgeButtonNode.accessibilityIdentifier = "button_witebridge"
         //
         super.init()
                 
@@ -334,8 +337,6 @@ final class PeerInfoHeaderNode: ASDisplayNode {
             self?.requestUpdateLayout?(false)
         }
         
-        self.addSubnode(self.backgroundNode)
-        self.addSubnode(self.expandedBackgroundNode)
         self.view.addSubview(self.backgroundBannerView)
         self.titleNodeContainer.addSubnode(self.titleNode)
         self.subtitleNodeContainer.addSubnode(self.subtitleNode)
@@ -360,31 +361,38 @@ final class PeerInfoHeaderNode: ASDisplayNode {
         
         self.addSubnode(self.editingContentNode)
         self.addSubnode(self.avatarOverlayNode)
-        self.addSubnode(self.navigationBackgroundNode)
-        self.navigationBackgroundNode.addSubnode(self.navigationBackgroundBackgroundNode)
-        self.navigationBackgroundNode.addSubnode(self.navigationTitleNode)
-        self.navigationBackgroundNode.addSubnode(self.navigationSeparatorNode)
-        self.addSubnode(self.editingNavigationBackgroundNode)
-        self.addSubnode(self.editingNavigationBackgroundSeparator)
+        self.view.addSubview(self.editingEdgeEffectView)
         self.addSubnode(self.navigationButtonContainer)
-        self.addSubnode(self.separatorNode)
+        
+        self.addSubnode(self.searchContainer)
+        self.addSubnode(self.searchBarContainer)
+        
         // Nicegram NCG-7704 God's eye
-        self.addSubnode(self.godsEyeButtonNode)
+        self.addSubnode(self.rightActionButtonsNode)
+        self.rightActionButtonsNode.addSubnode(self.godsEyeButtonNode)
+        self.rightActionButtonsNode.addSubnode(self.witebridgeButtonNode)
         self.godsEyeButtonNode.addTarget(self, action: #selector(self.godsEyePressed), forControlEvents: .touchUpInside)
+        self.witebridgeButtonNode.addTarget(self, action: #selector(self.whitebridgePressed), forControlEvents: .touchUpInside)
         
         let godsEyeConfigUseCase = GodsEyeModule.shared.getGodsEyeConfigUseCase()
         let godsEyeConfig = godsEyeConfigUseCase()
-                
+        let whitebridgeConfigUseCase = WhitebridgeModule.shared.getWhitebridgeConfigUseCase()
+        let whitebridgeConfig = whitebridgeConfigUseCase()
+        
         if (isMyProfile ||
             controller.peerId.namespace == Namespaces.Peer.CloudUser) &&
             controller.peerId.toInt64() != 777000 &&
             !isBot &&
-            !isSettings &&
-            godsEyeConfig.enabled {
-            self.godsEyeButtonNode.isHidden = false
+            !isSettings {
+            if godsEyeConfig.enabled {
+                self.godsEyeButtonNode.isHidden = false
+            }
+            if whitebridgeConfig.enabled {
+                self.witebridgeButtonNode.isHidden = false
+            }
         }
         //
-
+        
         self.avatarListNode.avatarContainerNode.tapped = { [weak self] in
             self?.initiateAvatarExpansion(gallery: false, first: false)
         }
@@ -539,20 +547,20 @@ final class PeerInfoHeaderNode: ASDisplayNode {
     private var currentStatusIcon: CredibilityIcon?
     
     private var currentPanelStatusData: PeerInfoStatusData?
-    func update(width: CGFloat, containerHeight: CGFloat, containerInset: CGFloat, statusBarHeight: CGFloat, navigationHeight: CGFloat, isModalOverlay: Bool, isMediaOnly: Bool, contentOffset: CGFloat, paneContainerY: CGFloat, presentationData: PresentationData, peer: Peer?, cachedData: CachedPeerData?, threadData: MessageHistoryThreadData?, peerNotificationSettings: TelegramPeerNotificationSettings?, threadNotificationSettings: TelegramPeerNotificationSettings?, globalNotificationSettings: EngineGlobalNotificationSettings?, statusData: PeerInfoStatusData?, panelStatusData: (PeerInfoStatusData?, PeerInfoStatusData?, CGFloat?), isSecretChat: Bool, isContact: Bool, isSettings: Bool, state: PeerInfoState, profileGiftsContext: ProfileGiftsContext?, screenData: PeerInfoScreenData?, metrics: LayoutMetrics, deviceMetrics: DeviceMetrics, transition: ContainedViewLayoutTransition, additive: Bool, animateHeader: Bool) -> CGFloat {
+    func update(width: CGFloat, containerHeight: CGFloat, containerInset: CGFloat, statusBarHeight: CGFloat, navigationHeight: CGFloat, isModalOverlay: Bool, isMediaOnly: Bool, contentOffset: CGFloat, paneContainerY: CGFloat, presentationData: PresentationData, peer: EnginePeer?, cachedData: CachedPeerData?, threadData: MessageHistoryThreadData?, peerNotificationSettings: TelegramPeerNotificationSettings?, threadNotificationSettings: TelegramPeerNotificationSettings?, globalNotificationSettings: EngineGlobalNotificationSettings?, statusData: PeerInfoStatusData?, panelStatusData: (PeerInfoStatusData?, PeerInfoStatusData?, CGFloat?), isSecretChat: Bool, isContact: Bool, isSettings: Bool, state: PeerInfoState, profileGiftsContext: ProfileGiftsContext?, screenData: PeerInfoScreenData?, isSearching: Bool, metrics: LayoutMetrics, deviceMetrics: DeviceMetrics, transition: ContainedViewLayoutTransition, additive: Bool, animateHeader: Bool) -> CGFloat {
         if self.appliedCustomNavigationContentNode !== self.customNavigationContentNode {
             if let previous = self.appliedCustomNavigationContentNode {
-                transition.updateAlpha(node: previous, alpha: 0.0, completion: { [weak previous] _ in
+                ComponentTransition(transition).setAlpha(view: previous.view, alpha: 0.0, completion: { [weak previous] _ in
                     previous?.removeFromSupernode()
                 })
             }
             
             self.appliedCustomNavigationContentNode = self.customNavigationContentNode
             if let customNavigationContentNode = self.customNavigationContentNode {
-                self.addSubnode(customNavigationContentNode)
+                self.searchBarContainer.addSubnode(customNavigationContentNode)
                 customNavigationContentNode.frame = CGRect(origin: CGPoint(x: 0.0, y: 0.0), size: CGSize(width: width, height: navigationHeight))
                 customNavigationContentNode.alpha = 0.0
-                transition.updateAlpha(node: customNavigationContentNode, alpha: 1.0)
+                ComponentTransition(transition).setAlpha(view: customNavigationContentNode.view, alpha: 1.0)
             }
         } else if let customNavigationContentNode = self.customNavigationContentNode {
             transition.updateFrame(node: customNavigationContentNode, frame: CGRect(origin: CGPoint(x: 0.0, y: 0.0), size: CGSize(width: width, height: navigationHeight)))
@@ -566,10 +574,14 @@ final class PeerInfoHeaderNode: ASDisplayNode {
         self.state = state
         self.peer = peer
         self.threadData = threadData
-        self.avatarListNode.listContainerNode.peer = peer.flatMap(EnginePeer.init)
+        self.isSearching = isSearching
+        self.avatarListNode.listContainerNode.peer = peer
         
         let isFirstTime = self.validLayout == nil
         self.validLayout = (width, statusBarHeight, deviceMetrics)
+        
+        self.searchBarContainer.isUserInteractionEnabled = isSearching
+        self.searchContainer.isUserInteractionEnabled = isSearching
         
         let previousPanelStatusData = self.currentPanelStatusData
         self.currentPanelStatusData = panelStatusData.0
@@ -610,8 +622,8 @@ final class PeerInfoHeaderNode: ASDisplayNode {
             }
             hasBackground = true
         } else if let peer {
-            backgroundCoverSubject = .peer(EnginePeer(peer))
-            if peer.profileColor != nil {
+            backgroundCoverSubject = .peer(peer)
+            if peer.effectiveProfileColor != nil {
                 hasBackground = true
             }
         } else {
@@ -619,7 +631,7 @@ final class PeerInfoHeaderNode: ASDisplayNode {
         }
         
         var currentSavedMusic: TelegramMediaFile?
-        if !self.isSettings, let screenData {
+        if let peer, peer.id != self.context.account.peerId || self.isMyProfile, let screenData {
             if let savedMusicState = screenData.savedMusicState {
                 currentSavedMusic = savedMusicState.files.first
             } else if let cachedUserData = screenData.cachedData as? CachedUserData {
@@ -661,13 +673,13 @@ final class PeerInfoHeaderNode: ASDisplayNode {
         }
         
         var isForum = false
-        if let channel = peer as? TelegramChannel, channel.isForumOrMonoForum {
+        if case let .channel(channel) = peer, channel.isForumOrMonoForum {
             isForum = true
         }
         
         transition.updateAlpha(node: self.regularContentNode, alpha: (state.isEditing || self.customNavigationContentNode != nil) ? 0.0 : 1.0)
         if self.navigationTransition == nil {
-            transition.updateAlpha(node: self.navigationButtonContainer, alpha: self.customNavigationContentNode != nil ? 0.0 : 1.0)
+            transition.updateAlpha(node: self.navigationButtonContainer, alpha: (self.customNavigationContentNode != nil || isSearching) ? 0.0 : 1.0)
         }
         
         self.editingContentNode.alpha = state.isEditing ? 1.0 : 0.0
@@ -678,23 +690,19 @@ final class PeerInfoHeaderNode: ASDisplayNode {
         let avatarOverlayFarme = self.editingContentNode.convert(self.editingContentNode.avatarNode.frame, to: self)
         transition.updateFrame(node: self.avatarOverlayNode, frame: avatarOverlayFarme)
         
-        var transitionSourceHeight: CGFloat = 0.0
-        var transitionFraction: CGFloat = 0.0
-        var transitionSourceAvatarFrame: CGRect?
-        var transitionSourceTitleFrame = CGRect()
-        var transitionSourceSubtitleFrame = CGRect()
+        let transitionSourceHeight: CGFloat = 0.0
+        let transitionFraction: CGFloat = 0.0
+        let transitionSourceAvatarFrame: CGRect? = nil
+        let transitionSourceTitleFrame = CGRect()
+        let transitionSourceSubtitleFrame = CGRect()
         
         let avatarFrame = CGRect(origin: CGPoint(x: floor((width - avatarSize) / 2.0), y: statusBarHeight + 22.0), size: CGSize(width: avatarSize, height: avatarSize))
         
-        self.backgroundNode.updateColor(color: presentationData.theme.rootController.navigationBar.blurredBackgroundColor, transition: .immediate)
-
-        let headerBackgroundColor: UIColor = presentationData.theme.list.blocksBackgroundColor
-        
-        let regularNavigationContentsAccentColor: UIColor = peer?.profileColor != nil ? .white : presentationData.theme.list.itemAccentColor
+        let regularNavigationContentsAccentColor: UIColor = peer?.effectiveProfileColor != nil ? .white : presentationData.theme.list.itemAccentColor
         let collapsedHeaderNavigationContentsAccentColor = presentationData.theme.list.itemAccentColor
         let expandedAvatarNavigationContentsAccentColor: UIColor = .white
         
-        let regularNavigationContentsPrimaryColor: UIColor = peer?.profileColor != nil ? .white : presentationData.theme.list.itemPrimaryTextColor
+        let regularNavigationContentsPrimaryColor: UIColor = peer?.effectiveProfileColor != nil ? .white : presentationData.theme.list.itemPrimaryTextColor
         let collapsedHeaderNavigationContentsPrimaryColor = presentationData.theme.list.itemPrimaryTextColor
         let expandedAvatarNavigationContentsPrimaryColor: UIColor = .white
         
@@ -704,9 +712,9 @@ final class PeerInfoHeaderNode: ASDisplayNode {
         
         let regularHeaderButtonBackgroundColor: UIColor
         let collapsedHeaderButtonBackgroundColor: UIColor = .clear
-        let expandedAvatarHeaderButtonBackgroundColor: UIColor = UIColor(white: 1.0, alpha: 0.1)
+        let expandedAvatarHeaderButtonBackgroundColor: UIColor = UIColor(white: 0.0, alpha: 0.5)
         
-        let regularContentButtonForegroundColor: UIColor = peer?.profileColor != nil ? UIColor.white : presentationData.theme.list.itemAccentColor
+        let regularContentButtonForegroundColor: UIColor = peer?.effectiveProfileColor != nil ? UIColor.white : presentationData.theme.list.itemAccentColor
         let collapsedHeaderContentButtonForegroundColor = presentationData.theme.list.itemAccentColor
         let expandedAvatarContentButtonForegroundColor: UIColor = .white
         
@@ -727,7 +735,7 @@ final class PeerInfoHeaderNode: ASDisplayNode {
             regularHeaderButtonBackgroundColor = baseButtonBackgroundColor.blendOver(background: secondaryColor.mixedWith(mainColor, alpha: 0.1))
             
             hasCoverColor = true
-        } else if let profileColor = peer?.profileColor {
+        } else if let profileColor = peer?.effectiveProfileColor {
             let backgroundColors = self.context.peerNameColors.getProfile(profileColor, dark: presentationData.theme.overallDarkAppearance)
             regularNavigationContentsSecondaryColor = UIColor(white: 1.0, alpha: 0.6).blitOver(backgroundColors.main.withMultiplied(hue: 1.0, saturation: 2.2, brightness: 1.5), alpha: 1.0)
             
@@ -775,61 +783,55 @@ final class PeerInfoHeaderNode: ASDisplayNode {
             navigationTransition = animateHeader ? .animated(duration: 0.2, curve: .easeInOut) : .immediate
         }
         
+        let editingEdgeEffectHeight: CGFloat = 40.0
+        let editingEdgeEffectFrame = CGRect(origin: CGPoint(x: 0.0, y: 0.0), size: CGSize(width: width, height: navigationHeight + 10.0))
+        transition.updateFrame(view: self.editingEdgeEffectView, frame: editingEdgeEffectFrame)
+        self.editingEdgeEffectView.update(content: presentationData.theme.list.blocksBackgroundColor, blur: true, rect: editingEdgeEffectFrame, edge: .top, edgeSize: editingEdgeEffectHeight, transition: ComponentTransition(transition))
         let editingBackgroundAlpha: CGFloat
         if state.isEditing {
             editingBackgroundAlpha = max(0.0, min(1.0, contentOffset / 20.0))
         } else {
             editingBackgroundAlpha = 0.0
         }
+        ComponentTransition(transition).setAlpha(view: self.editingEdgeEffectView, alpha: editingBackgroundAlpha)
         
-        self.editingNavigationBackgroundSeparator.backgroundColor = presentationData.theme.rootController.navigationBar.separatorColor
-        self.editingNavigationBackgroundNode.updateColor(color: presentationData.theme.rootController.navigationBar.blurredBackgroundColor, transition: .immediate)
-        
-        let editingNavigationBackgroundFrame = CGRect(origin: CGPoint(), size: CGSize(width: width, height: navigationHeight))
-        transition.updateFrame(node: self.editingNavigationBackgroundNode, frame: editingNavigationBackgroundFrame)
-        self.editingNavigationBackgroundNode.update(size: editingNavigationBackgroundFrame.size, transition: transition)
-        transition.updateFrame(node: self.editingNavigationBackgroundSeparator, frame: CGRect(origin: CGPoint(x: 0.0, y: editingNavigationBackgroundFrame.maxY), size: CGSize(width: width, height: UIScreenPixel)))
-        
-        transition.updateAlpha(node: self.editingNavigationBackgroundNode, alpha: editingBackgroundAlpha)
-        transition.updateAlpha(node: self.editingNavigationBackgroundSeparator, alpha: editingBackgroundAlpha)
+        if isSearching {
+            let searchNavigationHeight: CGFloat
+            if isSettings {
+                searchNavigationHeight = statusBarHeight + 10.0
+            } else {
+                searchNavigationHeight = navigationHeight + 10.0
+            }
+            
+            let searchEdgeEffectHeight: CGFloat = 40.0
+            let searchEdgeEffectFrame = CGRect(origin: CGPoint(x: 0.0, y: 0.0), size: CGSize(width: width, height: searchNavigationHeight))
+            
+            let searchEdgeEffectView: EdgeEffectView
+            var searchEdgeEffectTransition = ComponentTransition(transition)
+            if let current = self.searchEdgeEffectView {
+                searchEdgeEffectView = current
+            } else {
+                searchEdgeEffectTransition = .immediate
+                searchEdgeEffectView = EdgeEffectView()
+                self.searchEdgeEffectView = searchEdgeEffectView
+                self.searchContainer.view.superview?.insertSubview(searchEdgeEffectView, aboveSubview: self.searchContainer.view)
+                if transition.isAnimated {
+                    searchEdgeEffectView.layer.animateAlpha(from: 0.0, to: 1.0, duration: 0.2)
+                }
+            }
+            
+            transition.updateFrame(view: searchEdgeEffectView, frame: searchEdgeEffectFrame)
+            searchEdgeEffectView.update(content: presentationData.theme.list.plainBackgroundColor, blur: true, rect: searchEdgeEffectFrame, edge: .top, edgeSize: searchEdgeEffectHeight, transition: searchEdgeEffectTransition)
+        } else if let searchEdgeEffectView = self.searchEdgeEffectView {
+            self.searchEdgeEffectView = nil
+            transition.updateAlpha(layer: searchEdgeEffectView.layer, alpha: 0.0, completion: { [weak searchEdgeEffectView] _ in
+                searchEdgeEffectView?.removeFromSuperview()
+            })
+        }
         
         let backgroundBannerAlpha: CGFloat
         
-        var effectiveSeparatorAlpha: CGFloat
-        if let navigationTransition = self.navigationTransition {
-            transitionSourceHeight = navigationTransition.sourceNavigationBar.backgroundNode.bounds.height
-            transitionFraction = navigationTransition.fraction
-            
-            innerBackgroundTransitionFraction = 0.0
-            backgroundBannerAlpha = 1.0
-            
-            if let avatarNavigationNode = navigationTransition.sourceNavigationBar.rightButtonNode.singleCustomNode as? ChatAvatarNavigationNode {
-                if let statusView = avatarNavigationNode.statusView.view {
-                    transitionSourceAvatarFrame = statusView.convert(statusView.bounds, to: navigationTransition.sourceNavigationBar.view)
-                } else {
-                    transitionSourceAvatarFrame = avatarNavigationNode.avatarNode.view.convert(avatarNavigationNode.avatarNode.view.bounds, to: navigationTransition.sourceNavigationBar.view)
-                }
-                transition.updateAlpha(node: self.avatarListNode.avatarContainerNode.avatarNode, alpha: 1.0 - transitionFraction)
-            } else {
-                if deviceMetrics.hasDynamicIsland && statusBarHeight > 0.0 && !isLandscape {
-                    transitionSourceAvatarFrame = CGRect(origin: CGPoint(x: avatarFrame.minX, y: -20.0), size: avatarFrame.size).insetBy(dx: avatarSize * 0.4, dy: avatarSize * 0.4)
-                } else {
-                    transitionSourceAvatarFrame = avatarFrame.offsetBy(dx: 0.0, dy: -avatarFrame.maxY).insetBy(dx: avatarSize * 0.4, dy: avatarSize * 0.4)
-                }
-            }
-            transitionSourceTitleFrame = navigationTransition.sourceTitleFrame
-            transitionSourceSubtitleFrame = navigationTransition.sourceSubtitleFrame
-
-            transition.updateAlpha(layer: self.backgroundBannerView.layer, alpha: 1.0 - transitionFraction)
-            
-            self.expandedBackgroundNode.updateColor(color: presentationData.theme.rootController.navigationBar.blurredBackgroundColor.mixedWith(headerBackgroundColor, alpha: 1.0 - transitionFraction), forceKeepBlur: true, transition: transition)
-            effectiveSeparatorAlpha = transitionFraction
-            
-            if self.isAvatarExpanded, case .animated = transition, transitionFraction == 1.0 {
-                self.avatarListNode.animateAvatarCollapse(transition: transition)
-            }
-            self.avatarClippingNode.clipsToBounds = false
-        } else {
+        do {
             let backgroundTransitionStepDistance: CGFloat = 50.0
             var backgroundTransitionDistance: CGFloat = navigationHeight + panelWithAvatarHeight - backgroundTransitionStepDistance
             if self.isSettings || self.isMyProfile {
@@ -842,9 +844,6 @@ final class PeerInfoHeaderNode: ASDisplayNode {
                 innerBackgroundTransitionFraction = max(0.0, min(1.0, contentOffset / backgroundTransitionStepDistance))
             }
             
-            self.expandedBackgroundNode.updateColor(color: presentationData.theme.rootController.navigationBar.opaqueBackgroundColor.mixedWith(headerBackgroundColor, alpha: 1.0 - innerBackgroundTransitionFraction), forceKeepBlur: true, transition: transition)
-            navigationTransition.updateAlpha(node: self.expandedBackgroundNode, alpha: state.isEditing ? 0.0 : 1.0)
-            
             if state.isEditing {
                 backgroundBannerAlpha = 0.0
             } else {
@@ -855,8 +854,6 @@ final class PeerInfoHeaderNode: ASDisplayNode {
                 }
             }
             navigationTransition.updateAlpha(layer: self.backgroundBannerView.layer, alpha: backgroundBannerAlpha)
-            
-            effectiveSeparatorAlpha = innerBackgroundTransitionFraction
             
             self.avatarClippingNode.clipsToBounds = true
         }
@@ -929,7 +926,7 @@ final class PeerInfoHeaderNode: ASDisplayNode {
                 let patternColor = UIColor(rgb: UInt32(bitPattern: patternColorValue))
                 ratingBorderColor = patternColor.withAlphaComponent(0.1).blendOver(background: backgroundColor).mixedWith(.clear, alpha: effectiveTransitionFraction)
                 ratingForegroundColor = ratingBorderColor.mixedWith(presentationData.theme.list.itemCheckColors.foregroundColor, alpha: effectiveTransitionFraction)
-            } else if let profileColor = peer?.profileColor {
+            } else if let profileColor = peer?.effectiveProfileColor {
                 ratingBackgroundColor = UIColor(white: 1.0, alpha: 1.0).mixedWith(presentationData.theme.list.itemCheckColors.fillColor, alpha: effectiveTransitionFraction)
                 
                 let backgroundColors = self.context.peerNameColors.getProfile(profileColor, dark: presentationData.theme.overallDarkAppearance)
@@ -1191,7 +1188,10 @@ final class PeerInfoHeaderNode: ASDisplayNode {
             self.titleExpandedVerifiedIconSize = expandedIconSize
         }
         
-        self.navigationButtonContainer.updateContentsColor(backgroundContentColor: headerButtonBackgroundColor, contentsColor: navigationContentsAccentColor, canBeExpanded: navigationContentsCanBeExpanded, transition: navigationTransition)
+        var actualNavigationContentsColor = navigationContentsAccentColor
+        actualNavigationContentsColor = presentationData.theme.chat.inputPanel.panelControlColor
+        
+        self.navigationButtonContainer.updateContentsColor(backgroundContentColor: headerButtonBackgroundColor, contentsColor: actualNavigationContentsColor, isOverColoredContents: !navigationContentsCanBeExpanded, transition: navigationTransition)
         
         self.titleNode.updateTintColor(color: navigationContentsPrimaryColor, transition: navigationTransition)
         self.subtitleNode.updateTintColor(color: navigationContentsSecondaryColor, transition: navigationTransition)
@@ -1213,30 +1213,15 @@ final class PeerInfoHeaderNode: ASDisplayNode {
         
         var titleBrightness: CGFloat = 0.0
         navigationContentsPrimaryColor.getHue(nil, saturation: nil, brightness: &titleBrightness, alpha: nil)
-        self.controller?.setStatusBarStyle(titleBrightness > 0.5 ? .White : .Black, animated: !isFirstTime && animateHeader)
+        if isSearching {
+            self.controller?.setStatusBarStyle(presentationData.theme.overallDarkAppearance ? .White : .Black, animated: !isFirstTime && animateHeader)
+        } else {
+            self.controller?.setStatusBarStyle(titleBrightness > 0.5 ? .White : .Black, animated: !isFirstTime && animateHeader)
+        }
         
         self.avatarListNode.avatarContainerNode.updateTransitionFraction(transitionFraction, transition: transition)
         self.avatarListNode.listContainerNode.currentItemNode?.updateTransitionFraction(transitionFraction, transition: transition)
         self.avatarOverlayNode.updateTransitionFraction(transitionFraction, transition: transition)
-        
-        if self.navigationTitle != presentationData.strings.EditProfile_Title || themeUpdated {
-            self.navigationTitleNode.attributedText = NSAttributedString(string: presentationData.strings.EditProfile_Title, font: Font.semibold(17.0), textColor: .white)
-        }
-        
-        let navigationTitleSize = self.navigationTitleNode.updateLayout(CGSize(width: width, height: navigationHeight))
-        self.navigationTitleNode.frame = CGRect(origin: CGPoint(x: floorToScreenPixels((width - navigationTitleSize.width) / 2.0), y: navigationHeight - 44.0 + floorToScreenPixels((44.0 - navigationTitleSize.height) / 2.0)), size: navigationTitleSize)
-        
-        self.navigationBackgroundNode.frame = CGRect(origin: CGPoint(), size: CGSize(width: width, height: navigationHeight))
-        self.navigationBackgroundBackgroundNode.frame = CGRect(origin: CGPoint(), size: CGSize(width: width, height: navigationHeight))
-        self.navigationSeparatorNode.frame = CGRect(origin: CGPoint(x: 0.0, y: navigationHeight), size: CGSize(width: width, height: UIScreenPixel))
-        self.navigationBackgroundBackgroundNode.backgroundColor = presentationData.theme.rootController.navigationBar.opaqueBackgroundColor
-        self.navigationSeparatorNode.backgroundColor = presentationData.theme.rootController.navigationBar.separatorColor
-
-        let navigationSeparatorAlpha: CGFloat = 0.0
-        transition.updateAlpha(node: self.navigationBackgroundBackgroundNode, alpha: 1.0 - navigationSeparatorAlpha)
-        transition.updateAlpha(node: self.navigationSeparatorNode, alpha: navigationSeparatorAlpha)
-
-        self.separatorNode.backgroundColor = presentationData.theme.list.itemBlocksSeparatorColor
         
         let expandedAvatarControlsHeight: CGFloat = 61.0
         var expandedAvatarListHeight = min(width, containerHeight - expandedAvatarControlsHeight)
@@ -1284,7 +1269,7 @@ final class PeerInfoHeaderNode: ASDisplayNode {
             } else if let threadData = threadData {
                 title = threadData.info.title
             } else {
-                title = EnginePeer(peer).displayTitle(strings: presentationData.strings, displayOrder: presentationData.nameDisplayOrder)
+                title = peer.displayTitle(strings: presentationData.strings, displayOrder: presentationData.nameDisplayOrder)
             }
             title = title.replacingOccurrences(of: "\u{1160}", with: "").replacingOccurrences(of: "\u{3164}", with: "")
             if title.replacingOccurrences(of: "\u{fe0e}", with: "").trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
@@ -1292,7 +1277,7 @@ final class PeerInfoHeaderNode: ASDisplayNode {
             }
             if title.isEmpty {
                 // Nicegram HidePhone, hidePhoneSettings check added
-                if let peer = peer as? TelegramUser, let phone = peer.phone, !NGSettings.hidePhoneSettings {
+                if case let .user(user) = peer, let phone = user.phone, !NGSettings.hidePhoneSettings {
                     title = formatPhoneNumber(context: self.context, number: phone)
                 } else if let addressName = peer.addressName {
                     title = "@\(addressName)"
@@ -1305,7 +1290,7 @@ final class PeerInfoHeaderNode: ASDisplayNode {
             titleAttributes = MultiScaleTextState.Attributes(font: Font.medium(28.0), color: .white)
             smallTitleAttributes = MultiScaleTextState.Attributes(font: Font.medium(28.0), color: .white, shadowColor: titleShadowColor)
             
-            if self.isSettings, let user = peer as? TelegramUser {
+            if self.isSettings, case let .user(user) = peer {
                 // Nicegram HidePhone
                 var formattedPhone = formatPhoneNumber(context: self.context, number: user.phone ?? "")
                 if !formattedPhone.isEmpty && NGSettings.hidePhoneSettings {
@@ -1345,11 +1330,10 @@ final class PeerInfoHeaderNode: ASDisplayNode {
                     panelSubtitleString = (panelStatusData.text, MultiScaleTextState.Attributes(font: Font.regular(17.0), color: subtitleColor))
                 }
             } else if let _ = threadData {
-                let subtitleColor: UIColor
-                subtitleColor = UIColor.white
+                let subtitleColor: UIColor = .white
                 
                 let statusText: String
-                if let channel = peer as? TelegramChannel, channel.linkedBotId != nil {
+                if case let .user(user) = peer, user.isForum {
                     statusText = " "
                 } else {
                     statusText = peer.debugDisplayTitle
@@ -1429,7 +1413,10 @@ final class PeerInfoHeaderNode: ASDisplayNode {
         let textSideInset: CGFloat = 36.0
         let expandedAvatarHeight: CGFloat = expandedAvatarListSize.height
         
-        let titleConstrainedSize = CGSize(width: width - textSideInset * 2.0 - (isPremium || isVerified || isFake ? 20.0 : 0.0), height: .greatestFiniteMagnitude)
+        var titleConstrainedSize = CGSize(width: width - textSideInset * 2.0 - (isPremium || isVerified || isFake ? 20.0 : 0.0), height: .greatestFiniteMagnitude)
+        if self.navigationButtonContainer.rightButtonNodes.count > 1 {
+            titleConstrainedSize.width -= 60.0
+        }
         
         let titleNodeLayout = self.titleNode.updateLayout(text: titleStringText, states: [
             TitleNodeStateRegular: MultiScaleTextState(attributes: titleAttributes, constrainedSize: titleConstrainedSize),
@@ -1442,6 +1429,7 @@ final class PeerInfoHeaderNode: ASDisplayNode {
         ], mainState: TitleNodeStateRegular)
         self.subtitleNode.accessibilityLabel = subtitleStringText
         
+        var subtitleButtonHorizontalOffset: CGFloat = 0.0
         if subtitleIsButton {
             let subtitleBackgroundNode: ASDisplayNode
             if let current = self.subtitleBackgroundNode {
@@ -1478,20 +1466,21 @@ final class PeerInfoHeaderNode: ASDisplayNode {
             let subtitleArrowNode: ASImageNode
             if let current = self.subtitleArrowNode {
                 subtitleArrowNode = current
-                if themeUpdated {
-                    subtitleArrowNode.image = generateTintedImage(image: UIImage(bundleImageName: "Item List/DisclosureArrow"), color: .white)?.withRenderingMode(.alwaysTemplate)
-                }
             } else {
                 subtitleArrowNode = ASImageNode()
                 self.subtitleArrowNode = subtitleArrowNode
                 self.subtitleNode.insertSubnode(subtitleArrowNode, at: 1)
-                
-                subtitleArrowNode.image = generateTintedImage(image: UIImage(bundleImageName: "Item List/DisclosureArrow"), color: .white)?.withRenderingMode(.alwaysTemplate)
             }
-            subtitleBackgroundNode.backgroundColor = .white.withMultipliedAlpha(0.1)
+            if subtitleArrowNode.image == nil || themeUpdated {
+                subtitleArrowNode.image = generateTintedImage(image: UIImage(bundleImageName: "Item List/DisclosureArrow"), color: presentationData.theme.list.itemSecondaryTextColor)
+            }
+            self.subtitleNode.updateTintColor(color: presentationData.theme.list.itemSecondaryTextColor, transition: navigationTransition)
+            
+            transition.updateBackgroundColor(node: subtitleBackgroundNode, color: contentButtonBackgroundColor)
             let subtitleSize = subtitleNodeLayout[TitleNodeStateRegular]!.size
-            var subtitleBackgroundFrame = CGRect(origin: CGPoint(), size: subtitleSize).offsetBy(dx: -subtitleSize.width * 0.5, dy: -subtitleSize.height * 0.5).insetBy(dx: -6.0, dy: -4.0)
+            var subtitleBackgroundFrame = CGRect(origin: CGPoint(), size: subtitleSize).offsetBy(dx: -subtitleSize.width * 0.5, dy: -subtitleSize.height * 0.5).insetBy(dx: -8.0, dy: -4.0)
             subtitleBackgroundFrame.size.width += 12.0
+            subtitleButtonHorizontalOffset = subtitleBackgroundFrame.midX
             transition.updateFrame(node: subtitleBackgroundNode, frame: subtitleBackgroundFrame)
             transition.updateCornerRadius(node: subtitleBackgroundNode, cornerRadius: subtitleBackgroundFrame.height * 0.5)
             
@@ -1677,7 +1666,7 @@ final class PeerInfoHeaderNode: ASDisplayNode {
         
         let singleTitleLockOffset: CGFloat = ((peer?.id == self.context.account.peerId && !self.isMyProfile) || subtitleSize.height.isZero) ? 8.0 : 0.0
         
-        let titleLockOffset: CGFloat = 7.0 + singleTitleLockOffset
+        let titleLockOffset: CGFloat = 16.0 + singleTitleLockOffset
         let titleMaxLockOffset: CGFloat = 7.0
         let titleOffset: CGFloat
         let titleCollapseFraction: CGFloat
@@ -1698,7 +1687,7 @@ final class PeerInfoHeaderNode: ASDisplayNode {
             titleOffset = -min(titleCollapseOffset, contentOffset)
             titleCollapseFraction = max(0.0, min(1.0, contentOffset / titleCollapseOffset))
             
-            subtitleFrame = CGRect(origin: CGPoint(x: 16.0, y: minTitleFrame.maxY + 2.0), size: subtitleSize)
+            subtitleFrame = CGRect(origin: CGPoint(x: 16.0 - subtitleButtonHorizontalOffset * (1.0 - titleCollapseFraction), y: minTitleFrame.maxY + 2.0), size: subtitleSize)
             if self.subtitleRating != nil {
                 subtitleFrame.origin.x += 22.0
             }
@@ -1720,10 +1709,10 @@ final class PeerInfoHeaderNode: ASDisplayNode {
             
             let totalSubtitleWidth = effectiveSubtitleWidth + usernameSpacing + usernameSize.width
             if usernameSize.width == 0.0 {
-                subtitleFrame = CGRect(origin: CGPoint(x: floorToScreenPixels((width - effectiveSubtitleWidth) / 2.0), y: titleFrame.maxY + 1.0), size: subtitleSize)
+                subtitleFrame = CGRect(origin: CGPoint(x: floorToScreenPixels((width - effectiveSubtitleWidth) / 2.0) - subtitleButtonHorizontalOffset * (1.0 - titleCollapseFraction), y: titleFrame.maxY + 1.0), size: subtitleSize)
                 usernameFrame = CGRect(origin: CGPoint(x: floorToScreenPixels((width - usernameSize.width) / 2.0), y: subtitleFrame.maxY + 1.0), size: usernameSize)
             } else {
-                subtitleFrame = CGRect(origin: CGPoint(x: floorToScreenPixels((width - totalSubtitleWidth) / 2.0), y: titleFrame.maxY + 1.0), size: subtitleSize)
+                subtitleFrame = CGRect(origin: CGPoint(x: floorToScreenPixels((width - totalSubtitleWidth) / 2.0) - subtitleButtonHorizontalOffset * (1.0 - titleCollapseFraction), y: titleFrame.maxY + 1.0), size: subtitleSize)
                 usernameFrame = CGRect(origin: CGPoint(x: subtitleFrame.maxX + usernameSpacing, y: titleFrame.maxY + 1.0), size: usernameSize)
             }
         }
@@ -1736,38 +1725,37 @@ final class PeerInfoHeaderNode: ASDisplayNode {
 
         let paneAreaExpansionDistance: CGFloat = 32.0
         let effectiveAreaExpansionFraction: CGFloat
+        let realAreaExpansionFraction: CGFloat
         if state.isEditing {
             effectiveAreaExpansionFraction = 0.0
+            realAreaExpansionFraction = effectiveAreaExpansionFraction
         } else if isSettings || isMyProfile {
             var paneAreaExpansionDelta = (self.frame.maxY - navigationHeight) - contentOffset
             paneAreaExpansionDelta = max(0.0, min(paneAreaExpansionDelta, paneAreaExpansionDistance))
             effectiveAreaExpansionFraction = 1.0 - paneAreaExpansionDelta / paneAreaExpansionDistance
+            
+            do {
+                var paneAreaExpansionDelta = (paneContainerY - navigationHeight) - contentOffset
+                paneAreaExpansionDelta = max(0.0, min(paneAreaExpansionDelta, paneAreaExpansionDistance))
+                realAreaExpansionFraction = 1.0 - paneAreaExpansionDelta / paneAreaExpansionDistance
+            }
         } else {
             var paneAreaExpansionDelta = (paneContainerY - navigationHeight) - contentOffset
             paneAreaExpansionDelta = max(0.0, min(paneAreaExpansionDelta, paneAreaExpansionDistance))
             effectiveAreaExpansionFraction = 1.0 - paneAreaExpansionDelta / paneAreaExpansionDistance
+            realAreaExpansionFraction = effectiveAreaExpansionFraction
         }
-        
-        let secondarySeparatorAlpha = 1.0 - effectiveAreaExpansionFraction
-        if self.navigationTransition == nil && !self.isSettings && effectiveSeparatorAlpha == 1.0 && secondarySeparatorAlpha < 1.0 {
-            effectiveSeparatorAlpha = secondarySeparatorAlpha
-        }
-        if self.customNavigationContentNode != nil {
-            effectiveSeparatorAlpha = 0.0
-        }
-        if state.isEditing {
-            effectiveSeparatorAlpha = 0.0
-        }
-        transition.updateAlpha(node: self.separatorNode, alpha: effectiveSeparatorAlpha)
         
         self.titleNode.update(stateFractions: [
             TitleNodeStateRegular: self.isAvatarExpanded ? 0.0 : 1.0,
             TitleNodeStateExpanded: self.isAvatarExpanded ? 1.0 : 0.0
         ], transition: transition)
         
-        let subtitleAlpha: CGFloat
+        transition.updateAlpha(node: self.titleNode, alpha: isSearching ? 0.0 : 1.0)
+        
+        var subtitleAlpha: CGFloat
         var subtitleOffset: CGFloat = 0.0
-        let panelSubtitleAlpha: CGFloat
+        var panelSubtitleAlpha: CGFloat
         var panelSubtitleOffset: CGFloat = 0.0
         if self.isSettings {
             subtitleAlpha = 1.0 - titleCollapseFraction
@@ -1794,6 +1782,12 @@ final class PeerInfoHeaderNode: ASDisplayNode {
                 }
             }
         }
+        
+        if isSearching {
+            subtitleAlpha = 0.0
+            panelSubtitleAlpha = 0.0
+        }
+        
         self.subtitleNode.update(stateFractions: [
             TitleNodeStateRegular: self.isAvatarExpanded ? 0.0 : 1.0,
             TitleNodeStateExpanded: self.isAvatarExpanded ? 1.0 : 0.0
@@ -1932,20 +1926,14 @@ final class PeerInfoHeaderNode: ASDisplayNode {
             apparentAvatarListFrame = apparentAvatarFrame
             controlsClippingFrame = apparentAvatarFrame
         }
-        
-        let avatarClipOffset: CGFloat = !self.isAvatarExpanded && deviceMetrics.hasDynamicIsland && statusBarHeight > 0.0 && self.avatarClippingNode.clipsToBounds && !isLandscape ? 47.0 : 0.0
-        let clippingNodeTransition = ContainedViewLayoutTransition.immediate
-        clippingNodeTransition.updateFrame(layer: self.avatarClippingNode.layer, frame: CGRect(origin: CGPoint(x: 0.0, y: avatarClipOffset), size: CGSize(width: width, height: 1000.0)))
-        clippingNodeTransition.updateSublayerTransformOffset(layer: self.avatarClippingNode.layer, offset: CGPoint(x: 0.0, y: -avatarClipOffset))
-        let clippingNodeRadiusTransition = ContainedViewLayoutTransition.animated(duration: 0.15, curve: .easeInOut)
-        clippingNodeRadiusTransition.updateCornerRadius(node: self.avatarClippingNode, cornerRadius: avatarClipOffset > 0.0 ? width / 2.5 : 0.0)
-        
+                
         let _ = apparentAvatarListFrame
         transition.updateFrameAdditive(node: self.avatarListNode, frame: CGRect(origin: apparentAvatarFrame.center, size: CGSize()))
         transition.updateFrameAdditive(node: self.avatarOverlayNode, frame: CGRect(origin: apparentAvatarFrame.center, size: CGSize()))
         
-        let avatarListContainerFrame: CGRect
+        var avatarListContainerFrame: CGRect
         let avatarListContainerScale: CGFloat
+        var avatarListVerticalOffset: CGFloat = 0.0
         if self.isAvatarExpanded {
             if let transitionSourceAvatarFrame = transitionSourceAvatarFrame {
                 let neutralAvatarListContainerSize = expandedAvatarListSize
@@ -1961,12 +1949,22 @@ final class PeerInfoHeaderNode: ASDisplayNode {
                 avatarListContainerFrame = CGRect(origin: CGPoint(x: -expandedAvatarListSize.width / 2.0, y: -expandedAvatarListSize.width / 2.0), size: expandedAvatarListSize)
             }
             avatarListContainerScale = 1.0 + max(0.0, -contentOffset / avatarListContainerFrame.width)
+            let heightDelta = avatarListContainerFrame.height * avatarListContainerScale - avatarListContainerFrame.height
+            avatarListVerticalOffset = -heightDelta / 4.0
         } else {
             let expandHeightFraction = expandedAvatarListSize.height / expandedAvatarListSize.width
             avatarListContainerFrame = CGRect(origin: CGPoint(x: -apparentAvatarFrame.width / 2.0, y: -apparentAvatarFrame.width / 2.0 + expandHeightFraction * 0.0 * apparentAvatarFrame.width), size: apparentAvatarFrame.size)
             avatarListContainerScale = avatarScale
         }
         transition.updateFrame(node: self.avatarListNode.listContainerNode, frame: avatarListContainerFrame)
+        
+        let avatarClipOffset: CGFloat = !self.isAvatarExpanded && deviceMetrics.hasDynamicIsland && statusBarHeight > 0.0 && self.avatarClippingNode.clipsToBounds && !isLandscape ? 47.0 : 0.0
+        let clippingNodeTransition = ContainedViewLayoutTransition.immediate
+        clippingNodeTransition.updateFrame(layer: self.avatarClippingNode.layer, frame: CGRect(origin: CGPoint(x: 0.0, y: avatarClipOffset + avatarListVerticalOffset), size: CGSize(width: width, height: 1000.0)))
+        clippingNodeTransition.updateSublayerTransformOffset(layer: self.avatarClippingNode.layer, offset: CGPoint(x: 0.0, y: -avatarClipOffset))
+        let clippingNodeRadiusTransition = ContainedViewLayoutTransition.animated(duration: 0.15, curve: .easeInOut)
+        clippingNodeRadiusTransition.updateCornerRadius(node: self.avatarClippingNode, cornerRadius: avatarClipOffset > 0.0 ? width / 2.5 : 0.0)
+        
         let innerScale = avatarListContainerFrame.width / expandedAvatarListSize.width
         let innerDeltaX = (avatarListContainerFrame.width - expandedAvatarListSize.width) / 2.0
         var innerDeltaY = (avatarListContainerFrame.height - expandedAvatarListSize.height) / 2.0
@@ -2029,7 +2027,7 @@ final class PeerInfoHeaderNode: ASDisplayNode {
             self.avatarListNode.containerNode.view.mask = nil
         }
         
-        self.avatarListNode.listContainerNode.update(size: expandedAvatarListSize, peer: peer.flatMap(EnginePeer.init), isExpanded: self.isAvatarExpanded, transition: transition)
+        self.avatarListNode.listContainerNode.update(size: expandedAvatarListSize, peer: peer, isExpanded: self.isAvatarExpanded, transition: transition)
         if self.avatarListNode.listContainerNode.isCollapsing && !self.ignoreCollapse {
             self.avatarListNode.avatarContainerNode.canAttachVideo = false
         }
@@ -2119,7 +2117,7 @@ final class PeerInfoHeaderNode: ASDisplayNode {
                         }
                         self.controller?.push(ProfileLevelInfoScreen(
                             context: self.context,
-                            peer: EnginePeer(peer),
+                            peer: peer,
                             starRating: currentStarRating,
                             pendingStarRating: self.currentPendingStarRating,
                             customTheme: self.presentationData?.theme
@@ -2374,6 +2372,9 @@ final class PeerInfoHeaderNode: ASDisplayNode {
         transition.updateFrameAdditive(node: self.buttonsBackgroundNode, frame: CGRect(origin: CGPoint(x: 0.0, y: buttonRightOrigin.y), size: CGSize(width: width, height: buttonSize.height + 40.0)))
         self.buttonsBackgroundNode.update(size: self.buttonsBackgroundNode.bounds.size, transition: transition)
         self.buttonsBackgroundNode.updateColor(color: contentButtonBackgroundColor, enableBlur: true, transition: transition)
+        if isReduceTransparencyEnabled() {
+            self.buttonsBackgroundNode.alpha = 0.1
+        }
         
         for buttonKey in buttonKeys.reversed() {
             let buttonNode: PeerInfoHeaderButtonNode
@@ -2416,7 +2417,7 @@ final class PeerInfoHeaderNode: ASDisplayNode {
                 buttonText = presentationData.strings.PeerInfo_ButtonVideoCall
                 buttonIcon = .videoCall
             case .voiceChat:
-                if let channel = peer as? TelegramChannel, case .broadcast = channel.info {
+                if case let .channel(channel) = peer, case .broadcast = channel.info {
                     buttonText = presentationData.strings.PeerInfo_ButtonLiveStream
                 } else {
                     buttonText = presentationData.strings.PeerInfo_ButtonVoiceChat
@@ -2497,18 +2498,15 @@ final class PeerInfoHeaderNode: ASDisplayNode {
         }
         
         let backgroundFrame: CGRect
-        let separatorFrame: CGRect
         
         var resolvedHeight: CGFloat
         
         if state.isEditing {
             resolvedHeight = editingContentHeight
             backgroundFrame = CGRect(origin: CGPoint(x: 0.0, y: -2000.0 + max(navigationHeight, resolvedHeight - contentOffset)), size: CGSize(width: width, height: 2000.0))
-            separatorFrame = CGRect(origin: CGPoint(x: 0.0, y: max(navigationHeight, resolvedHeight - contentOffset)), size: CGSize(width: width, height: UIScreenPixel))
         } else {
             resolvedHeight = resolvedRegularHeight
             backgroundFrame = CGRect(origin: CGPoint(x: 0.0, y: -2000.0 + apparentHeight), size: CGSize(width: width, height: 2000.0))
-            separatorFrame = CGRect(origin: CGPoint(x: 0.0, y: apparentHeight), size: CGSize(width: width, height: UIScreenPixel))
         }
         
         transition.updateFrame(node: self.regularContentNode, frame: CGRect(origin: CGPoint(), size: CGSize(width: width, height: resolvedHeight)))
@@ -2614,19 +2612,23 @@ final class PeerInfoHeaderNode: ASDisplayNode {
             }
         }
         
+        let edgeEffectHeight: CGFloat = 60.0
+        var edgeEffectFrame = CGRect(origin: CGPoint(x: 0.0, y: -50.0), size: CGSize(width: backgroundFrame.width, height: navigationHeight + 18.0 + 50.0))
+        edgeEffectFrame.origin.y += floorToScreenPixels(realAreaExpansionFraction * 50.0)
+        
         if additive {
-            transition.updateFrameAdditive(node: self.backgroundNode, frame: backgroundFrame)
-            self.backgroundNode.update(size: self.backgroundNode.bounds.size, transition: transition)
-            transition.updateFrameAdditive(node: self.expandedBackgroundNode, frame: backgroundFrame)
-            self.expandedBackgroundNode.update(size: self.expandedBackgroundNode.bounds.size, transition: transition)
-            transition.updateFrameAdditive(node: self.separatorNode, frame: separatorFrame)
+            transition.updateFrameAdditive(layer: self.headerEdgeEffectView.layer, frame: edgeEffectFrame)
         } else {
-            transition.updateFrame(node: self.backgroundNode, frame: backgroundFrame)
-            self.backgroundNode.update(size: self.backgroundNode.bounds.size, transition: transition)
-            transition.updateFrame(node: self.expandedBackgroundNode, frame: backgroundFrame)
-            self.expandedBackgroundNode.update(size: self.expandedBackgroundNode.bounds.size, transition: transition)
-            transition.updateFrame(node: self.separatorNode, frame: separatorFrame)
+            transition.updateFrame(view: self.headerEdgeEffectView, frame: edgeEffectFrame)
         }
+        
+        if !isSettings {
+            self.updateUnderHeaderContentsAlpha?(1.0 - realAreaExpansionFraction, transition)
+        }
+        
+        self.headerEdgeEffectView.update(content: presentationData.theme.list.plainBackgroundColor, blur: true, rect: edgeEffectFrame, edge: .top, edgeSize: edgeEffectHeight, transition: ComponentTransition(transition))
+        
+        navigationTransition.updateAlpha(layer: self.headerEdgeEffectView.layer, alpha: state.isEditing ? 0.0 : 1.0)
         
         if !state.isEditing {
             if !isSettings && !isMyProfile {
@@ -2754,7 +2756,7 @@ final class PeerInfoHeaderNode: ASDisplayNode {
                 if let _ = self.navigationTransition {
                     transition.updateAlpha(layer: musicView.layer, alpha: 1.0 - transitionFraction)
                 } else {
-                    musicTransition.updateAlpha(layer: musicView.layer, alpha: backgroundBannerAlpha)
+                    ContainedViewLayoutTransition.animated(duration: 0.2, curve: .easeInOut).updateAlpha(layer: musicView.layer, alpha: backgroundBannerAlpha)
                 }
             }
         } else {
@@ -2786,29 +2788,54 @@ final class PeerInfoHeaderNode: ASDisplayNode {
         
         // Nicegram NCG-7704 God's eye
         let maxFadeDistance: CGFloat = 65
-        let font = UIFont.mainFont(ofSize: 13, weight: .semibold)
+        let sideInset: CGFloat = 15
+        let interButtonSpacing: CGFloat = 8
+        let font = UIFont.mainFont(ofSize: 11, weight: .regular)
+        let horizontalContentInset: CGFloat = 8
         var godsEyeButtonSize = CGSize(width: 48, height: 48)
-        var title = ""
-        var godsEyeYInset: CGFloat = isMyProfile ? 125 : 205
+        let godsEyeTitle = l("GodsEye.Title")
+        var rightButtonsYInset: CGFloat = isMyProfile ? 125 : 205
+        var witebridgeButtonSize = CGSize(width: 48, height: 48)
+        let witebridgeTitle = l("whitebridge.profile.button")
         
         godsEyeButtonNode.contentHorizontalAlignment = .middle
         godsEyeButtonNode.contentEdgeInsets = .zero
         godsEyeButtonNode.contentSpacing = 0
+        godsEyeButtonNode.laysOutHorizontally = false
+        
+        witebridgeButtonNode.contentHorizontalAlignment = .middle
+        witebridgeButtonNode.contentEdgeInsets = .zero
+        witebridgeButtonNode.contentSpacing = 0
+        witebridgeButtonNode.laysOutHorizontally = false
 
         if self.isAvatarExpanded {
-            title = l("GodsEye.Title")
-            let titleRect = title.boundingRect(
+            let godsEyeTitleRect = godsEyeTitle.boundingRect(
                 with: CGSize(width: 120, height: CGFloat.greatestFiniteMagnitude),
                 options: .usesLineFragmentOrigin,
                 attributes: [.font: font],
                 context: nil
             )
-            godsEyeButtonNode.contentEdgeInsets = .right(12)
             godsEyeButtonNode.contentSpacing = 4
-            godsEyeButtonNode.contentHorizontalAlignment = .right
-            godsEyeButtonSize = CGSize(width: titleRect.width + (36 + 14), height: 48)
-            godsEyeYInset = isMyProfile ? 62 : 138
+            godsEyeButtonSize = CGSize(width: max(48, ceil(godsEyeTitleRect.width) + horizontalContentInset * 2), height: 48)
+            rightButtonsYInset = isMyProfile ? 62 : 138
+            
+            witebridgeButtonNode.contentSpacing = 4
+            let witebridgeTitleRect = witebridgeTitle.boundingRect(
+                with: CGSize(width: 120, height: CGFloat.greatestFiniteMagnitude),
+                options: .usesLineFragmentOrigin,
+                attributes: [.font: font],
+                context: nil
+            )
+            witebridgeButtonSize = CGSize(width: max(48, ceil(witebridgeTitleRect.width) + horizontalContentInset * 2), height: 48)
+        } else {
+            godsEyeButtonNode.contentSpacing = 0
+            godsEyeButtonSize = CGSize(width: 48, height: 48)
+            
+            witebridgeButtonNode.contentSpacing = 0
+            witebridgeButtonSize = CGSize(width: 48, height: 48)
         }
+        
+        rightButtonsYInset += bottomInset
         
         let godsEyeBackgroundImage = generateFilledRoundedRectImage(
             size: godsEyeButtonSize,
@@ -2818,30 +2845,73 @@ final class PeerInfoHeaderNode: ASDisplayNode {
         
         godsEyeButtonNode.setBackgroundImage(godsEyeBackgroundImage, for: .normal)
         godsEyeButtonNode.setImage(UIImage(bundleImageName: "gods_eye"), for: .normal)
-        godsEyeButtonNode.setTitle(title, with: font, with: presentationData.theme.list.itemPrimaryTextColor, for: .normal)
-
-        let godsEyeButtonFrame = CGRect(
-            origin: CGPoint(x: width - (godsEyeButtonSize.width + 15), y: apparentHeight - godsEyeYInset),
-            size: godsEyeButtonSize
+        godsEyeButtonNode.setTitle(self.isAvatarExpanded ? godsEyeTitle : "", with: font, with: presentationData.theme.list.itemAccentColor, for: .normal)
+        
+        let witebridgeBackgroundImage = generateFilledRoundedRectImage(
+            size: witebridgeButtonSize,
+            cornerRadius: 12,
+            color: presentationData.theme.list.itemBlocksBackgroundColor
+        )
+        
+        witebridgeButtonNode.setBackgroundImage(witebridgeBackgroundImage, for: .normal)
+        witebridgeButtonNode.setImage(UIImage(bundleImageName: "profile_analysis"), for: .normal)
+        witebridgeButtonNode.setTitle(self.isAvatarExpanded ? witebridgeTitle : "", with: font, with: presentationData.theme.list.itemAccentColor, for: .normal)
+        
+        let isGodsEyeVisible = !self.godsEyeButtonNode.isHidden
+        let isWitebridgeVisible = !self.witebridgeButtonNode.isHidden
+        
+        var rightButtons: [(node: ASButtonNode, size: CGSize)] = []
+        if isGodsEyeVisible {
+            rightButtons.append((self.godsEyeButtonNode, godsEyeButtonSize))
+        }
+        if isWitebridgeVisible {
+            rightButtons.append((self.witebridgeButtonNode, witebridgeButtonSize))
+        }
+        
+        let rightButtonsHeight: CGFloat = rightButtons.map(\.size.height).max() ?? 0.0
+        let rightButtonsWidth: CGFloat = rightButtons.reduce(0.0, { partial, item in
+            partial + item.size.width
+        }) + max(0.0, CGFloat(max(0, rightButtons.count - 1))) * interButtonSpacing
+        
+        let rightActionButtonsFrame = CGRect(
+            origin: CGPoint(x: width - sideInset - rightButtonsWidth, y: apparentHeight - rightButtonsYInset),
+            size: CGSize(width: rightButtonsWidth, height: rightButtonsHeight)
         )
         
         if additive {
-            transition.updateFrameAdditive(node: godsEyeButtonNode, frame: godsEyeButtonFrame)
+            transition.updateFrameAdditive(node: self.rightActionButtonsNode, frame: rightActionButtonsFrame)
         } else {
-            transition.updateFrame(node: godsEyeButtonNode, frame: godsEyeButtonFrame)
+            transition.updateFrame(node: self.rightActionButtonsNode, frame: rightActionButtonsFrame)
         }
+        
+        var nextX: CGFloat = 0.0
+        for (index, item) in rightButtons.enumerated() {
+            let itemFrame = CGRect(origin: CGPoint(x: nextX, y: 0.0), size: item.size)
+            if additive {
+                transition.updateFrameAdditive(node: item.node, frame: itemFrame)
+            } else {
+                transition.updateFrame(node: item.node, frame: itemFrame)
+            }
+            nextX += item.size.width
+            if index != rightButtons.count - 1 {
+                nextX += interButtonSpacing
+            }
+        }
+        
+        transition.updateAlpha(node: witebridgeButtonNode, alpha: max(0, (maxFadeDistance - contentOffset) / maxFadeDistance))
         transition.updateAlpha(node: godsEyeButtonNode, alpha: max(0, (maxFadeDistance - contentOffset) / maxFadeDistance))
+        transition.updateAlpha(node: self.rightActionButtonsNode, alpha: rightButtons.isEmpty ? 0.0 : 1.0)
         //
         
         return resolvedHeight
     }
     
     private func buttonPressed(_ buttonNode: PeerInfoHeaderButtonNode, gesture: ContextGesture?) {
-        self.performButtonAction?(buttonNode.key, gesture)
+        self.performButtonAction?(buttonNode.key, buttonNode, gesture)
     }
     
     private func actionButtonPressed(_ buttonNode: PeerInfoHeaderActionButtonNode, gesture: ContextGesture?) {
-        self.performButtonAction?(buttonNode.key, gesture)
+        self.performButtonAction?(buttonNode.key, nil, gesture)
     }
     
     override func point(inside point: CGPoint, with event: UIEvent?) -> Bool {
@@ -2861,15 +2931,19 @@ final class PeerInfoHeaderNode: ASDisplayNode {
             return result
         }
         //
-        if !self.backgroundNode.frame.contains(point) {
-            return nil
+        
+        if self.isSearching {
+            if !result.isDescendant(of: self.searchBarContainer.view) && !result.isDescendant(of: self.searchContainer.view) {
+                return self.view
+            }
+            
+            return result
         }
         
         if let customNavigationContentNode = self.customNavigationContentNode {
             if let result = customNavigationContentNode.view.hitTest(self.view.convert(point, to: customNavigationContentNode.view), with: event) {
                 return result
             }
-            return self.view
         }
         
         let setByFrame = self.avatarListNode.listContainerNode.setByYouNode.view.convert(self.avatarListNode.listContainerNode.setByYouNode.bounds, to: self.view).insetBy(dx: -44.0, dy: 0.0)
@@ -2922,7 +2996,7 @@ final class PeerInfoHeaderNode: ASDisplayNode {
             return result
         }
         
-        if self.isSettings {
+        if self.isSettings && self.buttonsContainerNode.alpha != 0.0 {
             if self.subtitleNodeRawContainer.bounds.contains(self.view.convert(point, to: self.subtitleNodeRawContainer.view)) {
                 return self.subtitleNodeRawContainer.view
             }
@@ -2973,10 +3047,17 @@ final class PeerInfoHeaderNode: ASDisplayNode {
         let maskAnchorPoint = CGPoint(x: 0.5, y: self.isAvatarExpanded ? 0.37 : 0.5)
         transition.updateAnchorPoint(layer: self.avatarListNode.maskNode.layer, anchorPoint: maskAnchorPoint)
     }
+    
     // Nicegram NCG-7704 God's eye
     @objc func godsEyePressed() {
         self.controller?.openGodsEye()
     }
     //
-}
+    
+    // Nicegram, Whitebridge anlysis
+    @objc func whitebridgePressed() {
+        self.controller?.openWhitebridge()
+    }
+    //
 
+}

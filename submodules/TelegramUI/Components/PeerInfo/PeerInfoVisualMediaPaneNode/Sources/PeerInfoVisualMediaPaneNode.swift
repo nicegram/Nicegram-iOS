@@ -308,7 +308,7 @@ private protocol ItemLayer: SparseItemGridLayer {
     var hasContents: Bool { get set }
     func setSpoilerContents(_ contents: Any?)
     
-    func updateDuration(duration: Int32?, isMin: Bool, minFactor: CGFloat)
+    func updateDuration(duration: Int32?, isLivePhoto: Bool, isMin: Bool, minFactor: CGFloat)
     func updateSelection(theme: CheckNodeTheme, isSelected: Bool?, animated: Bool)
     func updateHasSpoiler(hasSpoiler: Bool)
     
@@ -318,6 +318,7 @@ private protocol ItemLayer: SparseItemGridLayer {
 
 private final class GenericItemLayer: CALayer, ItemLayer {
     var item: VisualMediaItem?
+    var livePhotoLayer: SimpleLayer?
     var durationLayer: DurationLayer?
     var rightShadowLayer: SimpleLayer?
     var minFactor: CGFloat = 1.0
@@ -369,9 +370,27 @@ private final class GenericItemLayer: CALayer, ItemLayer {
         self.item = item
     }
 
-    func updateDuration(duration: Int32?, isMin: Bool, minFactor: CGFloat) {
+    func updateDuration(duration: Int32?, isLivePhoto: Bool, isMin: Bool, minFactor: CGFloat) {
         self.minFactor = minFactor
 
+        if isLivePhoto && !isMin {
+            if let _ = self.livePhotoLayer {
+                
+            } else {
+                let livePhotoLayer = SimpleLayer()
+                livePhotoLayer.contentsGravity = .topLeft
+                livePhotoLayer.contentsScale = UIScreenScale
+                livePhotoLayer.contents = livePhotoImage.cgImage
+                self.addSublayer(livePhotoLayer)
+                livePhotoLayer.frame = CGRect(origin: CGPoint(x: 3.0, y: 3.0), size: livePhotoImage.size)
+                livePhotoLayer.transform = CATransform3DMakeScale(minFactor, minFactor, 1.0)
+                self.livePhotoLayer = livePhotoLayer
+            }
+        } else if let livePhotoLayer = self.livePhotoLayer {
+            self.livePhotoLayer = nil
+            livePhotoLayer.removeFromSuperlayer()
+        }
+        
         if let duration {
             if let durationLayer = self.durationLayer {
                 durationLayer.update(duration: duration, isMin: isMin)
@@ -513,7 +532,7 @@ private final class ItemView: UIView, SparseItemGridView {
         }
 
         if let item = self.item, let messageItem = self.messageItem, let itemNode = itemNode as? ListMessageFileItemNode {
-            if case let .selectable(selected) = messageItem.selection {
+            if case let .selectable(selected, _) = messageItem.selection {
                 self.interaction?.toggleMessagesSelection([item.message.id], !selected)
             } else {
                 itemNode.activateMedia()
@@ -541,7 +560,7 @@ private final class ItemView: UIView, SparseItemGridView {
             interaction: interaction,
             message: item.message,
             selection: isSelected.flatMap { isSelected in
-                return .selectable(selected: isSelected)
+                return .selectable(selected: isSelected, num: nil)
             } ?? .none,
             displayHeader: false
         )
@@ -661,6 +680,7 @@ private final class SparseItemGridBindingImpl: SparseItemGridBinding, ListShimme
     var onTagTapImpl: (() -> Void)?
     var didScrollImpl: (() -> Void)?
     var coveringInsetOffsetUpdatedImpl: ((ContainedViewLayoutTransition) -> Void)?
+    var scrollingOffsetUpdatedImpl: ((ContainedViewLayoutTransition) -> Void)?
     var onBeginFastScrollingImpl: (() -> Void)?
     var getShimmerColorsImpl: (() -> SparseItemGrid.ShimmerColors)?
     var updateShimmerLayersImpl: ((SparseItemGridDisplayItem) -> Void)?
@@ -970,12 +990,15 @@ private final class SparseItemGridBindingImpl: SparseItemGridBinding, ListShimme
                     }
 
                     var duration: Int32?
+                    var isLivePhoto = false
                     var isMin: Bool = false
-                    if let file = selectedMedia as? TelegramMediaFile, !file.isAnimated {
+                    if let image = selectedMedia as? TelegramMediaImage, let _ = image.video {
+                        isLivePhoto = true
+                    } else if let file = selectedMedia as? TelegramMediaFile, !file.isAnimated {
                         duration = file.duration.flatMap { Int32(floor($0)) }
                         isMin = layer.bounds.width < 80.0
                     }
-                    layer.updateDuration(duration: duration, isMin: isMin, minFactor: min(1.0, layer.bounds.height / 74.0))
+                    layer.updateDuration(duration: duration, isLivePhoto: isLivePhoto, isMin: isMin, minFactor: min(1.0, layer.bounds.height / 74.0))
                 }
 
                 if let selectionState = self.chatControllerInteraction.selectionState {
@@ -1032,6 +1055,7 @@ private final class SparseItemGridBindingImpl: SparseItemGridBinding, ListShimme
     }
     
     func scrollingOffsetUpdated(transition: ContainedViewLayoutTransition) {
+        self.scrollingOffsetUpdatedImpl?(transition)
     }
 
     func onBeginFastScrolling() {
@@ -1110,9 +1134,12 @@ public final class PeerInfoVisualMediaPaneNode: ASDisplayNode, PeerInfoPaneNode,
     private let contextGestureContainerNode: ContextControllerSourceNode
     private let itemGrid: SparseItemGrid
     private let itemGridBinding: SparseItemGridBindingImpl
+    private let listBackgroundView: UIImageView
+    private let listMaskView: UIImageView
     private let directMediaImageCache: DirectMediaImageCache
     private var items: SparseItemGrid.Items?
     private var didUpdateItemsOnce: Bool = false
+    private var initialMessageIndex: EngineMessage.Index?
 
     private var isDeceleratingAfterTracking = false
     
@@ -1164,7 +1191,7 @@ public final class PeerInfoVisualMediaPaneNode: ASDisplayNode, PeerInfoPaneNode,
     private var presentationData: PresentationData
     private var presentationDataDisposable: Disposable?
         
-    public init(context: AccountContext, chatControllerInteraction: ChatControllerInteraction, peerId: PeerId, chatLocation: ChatLocation, chatLocationContextHolder: Atomic<ChatLocationContextHolder?>, contentType: ContentType, captureProtected: Bool) {
+    public init(context: AccountContext, chatControllerInteraction: ChatControllerInteraction, peerId: PeerId, chatLocation: ChatLocation, chatLocationContextHolder: Atomic<ChatLocationContextHolder?>, contentType: ContentType, captureProtected: Bool, initialFocusMessageIndex: EngineMessage.Index?) {
         self.context = context
         self.peerId = peerId
         self.chatLocation = chatLocation
@@ -1173,6 +1200,7 @@ public final class PeerInfoVisualMediaPaneNode: ASDisplayNode, PeerInfoPaneNode,
         self.contentType = contentType
         self.contentTypePromise = ValuePromise<ContentType>(contentType)
         self.stateTag = tagMaskForType(contentType)
+        self.initialMessageIndex = initialFocusMessageIndex
 
         self.presentationData = self.context.sharedContext.currentPresentationData.with { $0 }
 
@@ -1201,6 +1229,7 @@ public final class PeerInfoVisualMediaPaneNode: ASDisplayNode, PeerInfoPaneNode,
             openMessageContextMenu: { message, bool, node, rect, gesture in
                 chatControllerInteraction.openMessageContextMenu(message, bool, node, rect, gesture, nil)
             },
+            toggleMediaPlayback: nil,
             toggleMessagesSelection: { messageId, selected in
                 chatControllerInteraction.toggleMessagesSelection(messageId, selected)
             },
@@ -1234,7 +1263,7 @@ public final class PeerInfoVisualMediaPaneNode: ASDisplayNode, PeerInfoPaneNode,
             threadId = message.threadId
         }
 
-        self.listSource = self.context.engine.messages.sparseMessageList(peerId: self.peerId, threadId: threadId, tag: tagMaskForType(self.contentType))
+        self.listSource = self.context.engine.messages.sparseMessageList(peerId: self.peerId, threadId: threadId, tag: tagMaskForType(self.contentType), initialMessageIndex: initialFocusMessageIndex)
         if threadId == nil {
             switch contentType {
             case .photoOrVideo, .photo, .video:
@@ -1246,7 +1275,27 @@ public final class PeerInfoVisualMediaPaneNode: ASDisplayNode, PeerInfoPaneNode,
             self.calendarSource = nil
         }
         
+        self.listBackgroundView = UIImageView()
+        self.listBackgroundView.image = generateStretchableFilledCircleImage(diameter: 26.0 * 2.0, color: .white)?.withRenderingMode(.alwaysTemplate)
+        self.listMaskView = UIImageView()
+        self.listMaskView.image = generateImage(CGSize(width: 16.0 + 26.0 * 2.0 + 16.0, height: 26.0 * 2.0), rotatedContext: { size, context in
+            context.clear(CGRect(origin: CGPoint(), size: size))
+            context.setFillColor(UIColor.white.cgColor)
+            context.fill(CGRect(origin: CGPoint(), size: size))
+            context.setFillColor(UIColor.clear.cgColor)
+            context.setBlendMode(.copy)
+            context.fillEllipse(in: CGRect(origin: CGPoint(x: 16.0, y: 0.0), size: CGSize(width: 26.0 * 2.0, height: 26.0 * 2.0)))
+        })?.stretchableImage(withLeftCapWidth: 16 + 26, topCapHeight: 26).withRenderingMode(.alwaysTemplate)
+        self.listMaskView.image = nil
+        self.listBackgroundView.isHidden = true
+        self.listMaskView.isHidden = true
+
         super.init()
+
+        if self.initialMessageIndex != nil {
+            self.didSetReady = true
+            self.ready.set(.single(true))
+        }
 
         let _ = (ApplicationSpecificNotice.getSharedMediaScrollingTooltip(accountManager: context.sharedContext.accountManager)
         |> deliverOnMainQueue).start(next: { [weak self] count in
@@ -1310,6 +1359,13 @@ public final class PeerInfoVisualMediaPaneNode: ASDisplayNode, PeerInfoPaneNode,
                 return
             }
             strongSelf.tabBarOffsetUpdated?(transition)
+        }
+
+        self.itemGridBinding.scrollingOffsetUpdatedImpl = { [weak self] transition in
+            guard let strongSelf = self else {
+                return
+            }
+            strongSelf.updateListBackground(transition: transition)
         }
 
         var processedOnBeginFastScrolling = false
@@ -1391,6 +1447,8 @@ public final class PeerInfoVisualMediaPaneNode: ASDisplayNode, PeerInfoPaneNode,
         self.contextGestureContainerNode.isGestureEnabled = !useListItems
         self.contextGestureContainerNode.addSubnode(self.itemGrid)
         self.addSubnode(self.contextGestureContainerNode)
+        self.view.insertSubview(self.listBackgroundView, at: 0)
+        self.view.addSubview(self.listMaskView)
 
         self.contextGestureContainerNode.shouldBegin = { [weak self] point in
             guard let strongSelf = self else {
@@ -1640,6 +1698,14 @@ public final class PeerInfoVisualMediaPaneNode: ASDisplayNode, PeerInfoPaneNode,
                 guard let strongSelf = self, let itemView = item.view as? ItemView else {
                     return
                 }
+                var isList = false
+                switch strongSelf.contentType {
+                case .files, .music, .voiceAndVideoMessages:
+                    isList = true
+                default:
+                    break
+                }
+                let listSideInset = isList ? (sideInset + 16.0) : sideInset
                 if let item = itemView.item {
                     itemView.bind(
                         item: item,
@@ -1649,7 +1715,7 @@ public final class PeerInfoVisualMediaPaneNode: ASDisplayNode, PeerInfoPaneNode,
                         interaction: strongSelf.itemGridBinding.listItemInteraction,
                         isSelected: strongSelf.chatControllerInteraction.selectionState?.selectedIds.contains(item.message.id),
                         size: CGSize(width: size.width, height: itemView.bounds.height),
-                        insets: UIEdgeInsets(top: topInset, left: sideInset, bottom: bottomInset, right: sideInset)
+                        insets: UIEdgeInsets(top: topInset, left: listSideInset, bottom: bottomInset, right: listSideInset)
                     )
                 }
             }
@@ -1720,6 +1786,7 @@ public final class PeerInfoVisualMediaPaneNode: ASDisplayNode, PeerInfoPaneNode,
         }
         self.isRequestingView = true
         var firstTime = true
+        var firstTimeRealData = true
         let queue = Queue()
 
         self.listDisposable.set((self.listSource.state
@@ -1728,15 +1795,20 @@ public final class PeerInfoVisualMediaPaneNode: ASDisplayNode, PeerInfoPaneNode,
 
             var mappedItems: [SparseItemGrid.Item] = []
             var mappedHoles: [SparseItemGrid.HoleAnchor] = []
-            for item in list.items {
-                switch item.content {
-                case let .message(message, isLocal):
-                    mappedItems.append(VisualMediaItem(index: item.index, message: message, localMonthTimestamp: Month(localTimestamp: message.timestamp + timezoneOffset).packedValue))
-                    if !isLocal {
-                        mappedHoles.append(VisualMediaHoleAnchor(index: item.index, messageId: message.id, localMonthTimestamp: Month(localTimestamp: message.timestamp + timezoneOffset).packedValue))
+            var totalCount = list.totalCount
+            if list.items.isEmpty && list.isLoading && list.totalCount == 0 {
+                totalCount = 100
+            } else {
+                for item in list.items {
+                    switch item.content {
+                    case let .message(message, isLocal):
+                        mappedItems.append(VisualMediaItem(index: item.index, message: message, localMonthTimestamp: Month(localTimestamp: message.timestamp + timezoneOffset).packedValue))
+                        if !isLocal {
+                            mappedHoles.append(VisualMediaHoleAnchor(index: item.index, messageId: message.id, localMonthTimestamp: Month(localTimestamp: message.timestamp + timezoneOffset).packedValue))
+                        }
+                    case let .placeholder(id, timestamp):
+                        mappedHoles.append(VisualMediaHoleAnchor(index: item.index, messageId: id, localMonthTimestamp: Month(localTimestamp: timestamp + timezoneOffset).packedValue))
                     }
-                case let .placeholder(id, timestamp):
-                    mappedHoles.append(VisualMediaHoleAnchor(index: item.index, messageId: id, localMonthTimestamp: Month(localTimestamp: timestamp + timezoneOffset).packedValue))
                 }
             }
 
@@ -1748,7 +1820,7 @@ public final class PeerInfoVisualMediaPaneNode: ASDisplayNode, PeerInfoPaneNode,
                 let items = SparseItemGrid.Items(
                     items: mappedItems,
                     holeAnchors: mappedHoles,
-                    count: list.totalCount,
+                    count: totalCount,
                     itemBinding: strongSelf.itemGridBinding,
                     headerText: nil,
                     snapTopInset: true
@@ -1756,24 +1828,34 @@ public final class PeerInfoVisualMediaPaneNode: ASDisplayNode, PeerInfoPaneNode,
 
                 let currentSynchronous = synchronous && firstTime
                 let currentReloadAtTop = reloadAtTop && firstTime
+                
+                var crossfade = currentReloadAtTop
+                if firstTimeRealData && !list.isLoading {
+                    firstTimeRealData = false
+                    if !firstTime {
+                        crossfade = true
+                    }
+                }
+                
                 firstTime = false
-                strongSelf.updateHistory(items: items, synchronous: currentSynchronous, reloadAtTop: currentReloadAtTop)
+                strongSelf.updateHistory(items: items, synchronous: currentSynchronous, crossfade: crossfade)
                 strongSelf.isRequestingView = false
             }
         }))
     }
     
-    private func updateHistory(items: SparseItemGrid.Items, synchronous: Bool, reloadAtTop: Bool) {
+    private func updateHistory(items: SparseItemGrid.Items, synchronous: Bool, crossfade: Bool) {
         self.items = items
 
         if let (size, topInset, sideInset, bottomInset, deviceMetrics, visibleHeight, isScrollingLockedAtTop, expandProgress, navigationHeight, presentationData) = self.currentParams {
             var gridSnapshot: UIView?
-            if reloadAtTop {
+            if crossfade {
                 gridSnapshot = self.itemGrid.view.snapshotView(afterScreenUpdates: false)
             }
             self.update(size: size, topInset: topInset, sideInset: sideInset, bottomInset: bottomInset, deviceMetrics: deviceMetrics, visibleHeight: visibleHeight, isScrollingLockedAtTop: isScrollingLockedAtTop, expandProgress: expandProgress, navigationHeight: navigationHeight, presentationData: presentationData, synchronous: false, transition: .immediate)
             if let gridSnapshot = gridSnapshot {
                 self.view.addSubview(gridSnapshot)
+                self.itemGrid.layer.animateAlpha(from: 0.0, to: 1.0, duration: 0.2)
                 gridSnapshot.layer.animateAlpha(from: 1.0, to: 0.0, duration: 0.2, removeOnCompletion: false, completion: { [weak gridSnapshot] _ in
                     gridSnapshot?.removeFromSuperview()
                 })
@@ -2063,6 +2145,14 @@ public final class PeerInfoVisualMediaPaneNode: ASDisplayNode, PeerInfoPaneNode,
                 guard let itemView = item.view as? ItemView, let (size, topInset, sideInset, bottomInset, _, _, _, _, _, _) = self.currentParams else {
                     return
                 }
+                var isList = false
+                switch self.contentType {
+                case .files, .music, .voiceAndVideoMessages:
+                    isList = true
+                default:
+                    break
+                }
+                let listSideInset = isList ? (sideInset + 16.0) : sideInset
                 if let item = itemView.item {
                     itemView.bind(
                         item: item,
@@ -2072,7 +2162,7 @@ public final class PeerInfoVisualMediaPaneNode: ASDisplayNode, PeerInfoPaneNode,
                         interaction: self.itemGridBinding.listItemInteraction,
                         isSelected: self.chatControllerInteraction.selectionState?.selectedIds.contains(item.message.id),
                         size: CGSize(width: size.width, height: itemView.bounds.height),
-                        insets: UIEdgeInsets(top: topInset, left: sideInset, bottom: bottomInset, right: sideInset)
+                        insets: UIEdgeInsets(top: topInset, left: listSideInset, bottom: bottomInset, right: listSideInset)
                     )
                 }
             }
@@ -2193,8 +2283,61 @@ public final class PeerInfoVisualMediaPaneNode: ASDisplayNode, PeerInfoPaneNode,
                 fixedItemHeight = nil
             }
          
-            self.itemGrid.update(size: size, insets: UIEdgeInsets(top: topInset, left: sideInset, bottom:  bottomInset, right: sideInset), useSideInsets: !isList, scrollIndicatorInsets: UIEdgeInsets(top: 0.0, left: sideInset, bottom: bottomInset, right: sideInset), lockScrollingAtTop: isScrollingLockedAtTop, fixedItemHeight: fixedItemHeight, fixedItemAspect: nil, items: items, theme: self.itemGridBinding.chatPresentationData.theme.theme, synchronous: wasFirstTime ? .full : .none)
+            let listSideInset = isList ? sideInset + 16.0 : sideInset
+            self.itemGrid.update(size: size, insets: UIEdgeInsets(top: topInset, left: listSideInset, bottom: bottomInset, right: listSideInset), useSideInsets: !isList, scrollIndicatorInsets: UIEdgeInsets(top: 0.0, left: sideInset, bottom: bottomInset, right: sideInset), lockScrollingAtTop: isScrollingLockedAtTop, fixedItemHeight: fixedItemHeight, fixedItemAspect: nil, items: items, theme: self.itemGridBinding.chatPresentationData.theme.theme, synchronous: wasFirstTime ? .full : .none)
+            if let initialMessageIndexValue = self.initialMessageIndex, items.items.contains(where: { item in
+                if let _ = item as? VisualMediaItem {
+                    return true
+                } else {
+                    return false
+                }
+            }) {
+                self.initialMessageIndex = nil
+                for item in items.items {
+                    if let item = item as? VisualMediaItem {
+                        if item.message.index <= initialMessageIndexValue {
+                            self.itemGrid.scrollToItem(at: item.index, force: true)
+                            break
+                        }
+                    }
+                }
+            }
+
+            self.listBackgroundView.isHidden = !isList
+            self.listMaskView.isHidden = !isList
+            if isList {
+                self.listBackgroundView.tintColor = presentationData.theme.list.itemBlocksBackgroundColor
+                self.listMaskView.tintColor = presentationData.theme.list.blocksBackgroundColor
+                self.updateListBackground(transition: transition)
+            }
         }
+    }
+
+    private func updateListBackground(transition: ContainedViewLayoutTransition) {
+        guard let (size, topInset, _, bottomInset, _, _, _, _, _, _) = self.currentParams else {
+            return
+        }
+        let _ = bottomInset
+        guard size.width != 0.0 else {
+            return
+        }
+
+        var distanceToTop: CGFloat = -100.0
+        var distanceToBottom: CGFloat = -100.0
+
+        let scrollingOffset = self.itemGrid.scrollingOffset
+        distanceToTop = -scrollingOffset + topInset
+
+        let contentBottomOffset = self.itemGrid.contentBottomOffset
+        distanceToBottom = -contentBottomOffset + size.height
+
+        distanceToTop = max(-100.0, distanceToTop)
+        distanceToBottom = max(-100.0, distanceToBottom)
+
+        let listBackgroundFrame = CGRect(origin: CGPoint(x: 16.0, y: distanceToTop), size: CGSize(width: max(1.0, size.width - 16.0 * 2.0), height: max(1.0, size.height - distanceToBottom - distanceToTop)))
+        let listMaskFrame = CGRect(origin: CGPoint(x: 0.0, y: listBackgroundFrame.minY), size: CGSize(width: listBackgroundFrame.width + 16.0 * 2.0, height: listBackgroundFrame.height))
+        transition.updateFrame(view: self.listBackgroundView, frame: listBackgroundFrame)
+        transition.updateFrame(view: self.listMaskView, frame: listMaskFrame)
     }
 
     public func currentTopTimestamp() -> Int32? {
@@ -2371,3 +2514,15 @@ private class MediaListSelectionRecognizer: UIPanGestureRecognizer {
         }
     }
 }
+
+private let livePhotoImage: UIImage = {
+    let baseImage = UIImage(bundleImageName: "Chat/Message/LivePhoto")!
+    let image = generateImage(baseImage.size, rotatedContext: { size, context in
+        context.clear(CGRect(origin: CGPoint(), size: size))
+        
+        UIGraphicsPushContext(context)
+        baseImage.draw(in: CGRect(origin: CGPoint(), size: size))
+        UIGraphicsPopContext()
+    })
+    return image!
+}()

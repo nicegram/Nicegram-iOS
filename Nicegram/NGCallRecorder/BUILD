@@ -7,15 +7,17 @@ swift_library(
         "Sources/**/*.swift",
     ]),
     copts = [
-        #"-warnings-as-errors",
+        "-warnings-as-errors",
     ],
     deps = [
         "//Nicegram/NGData",
         "//Nicegram/NGStrings",
+        "//Nicegram/NGUtils",
         "//submodules/AccountContext",
         "//submodules/SSignalKit/SwiftSignalKit",
         "//submodules/TelegramVoip",
         "//submodules/UndoUI",
+        "@swiftpkg_nicegram_assistant_ios//:FeatCallRecorder",
     ],
     visibility = [
         "//visibility:public",

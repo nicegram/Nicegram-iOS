@@ -27,28 +27,39 @@ private enum OptionsId: Hashable {
     case link
 }
 
-private func presentChatInputOptions(selfController: ChatControllerImpl, sourceNode: ASDisplayNode, initialId: OptionsId) {
+private func chatLocationMatchesDestination(_ chatLocation: ChatLocation, peerId: EnginePeer.Id, threadId: Int64?) -> Bool {
+    switch chatLocation {
+    case let .peer(id):
+        return id == peerId && threadId == nil
+    case let .replyThread(replyThreadMessage):
+        return replyThreadMessage.peerId == peerId && replyThreadMessage.threadId == threadId
+    case .customChatContents:
+        return false
+    }
+}
+
+private func presentChatInputOptions(selfController: ChatControllerImpl, sourceView: UIView, initialId: OptionsId) {
     var getContextController: (() -> ContextController?)?
     
     var sources: [ContextController.Source] = []
     
     let replySelectionState = Promise<ChatControllerSubject.MessageOptionsInfo.SelectionState>(ChatControllerSubject.MessageOptionsInfo.SelectionState(canQuote: false, quote: nil))
     
-    if let source = chatReplyOptions(selfController: selfController, sourceNode: sourceNode, getContextController: {
+    if let source = chatReplyOptions(selfController: selfController, sourceView: sourceView, getContextController: {
         return getContextController?()
     }, selectionState: replySelectionState) {
         sources.append(source)
     }
     
     var forwardDismissedForCancel: (() -> Void)?
-    if let (source, dismissedForCancel) = chatForwardOptions(selfController: selfController, sourceNode: sourceNode, getContextController: {
+    if let (source, dismissedForCancel) = chatForwardOptions(selfController: selfController, sourceView: sourceView, getContextController: {
         return getContextController?()
     }) {
         forwardDismissedForCancel = dismissedForCancel
         sources.append(source)
     }
     
-    if let source = chatLinkOptions(selfController: selfController, sourceNode: sourceNode, getContextController: {
+    if let source = chatLinkOptions(selfController: selfController, sourceView: sourceView, getContextController: {
         return getContextController?()
     }, replySelectionState: replySelectionState) {
         sources.append(source)
@@ -62,7 +73,7 @@ private func presentChatInputOptions(selfController: ChatControllerImpl, sourceN
 
     selfController.canReadHistory.set(false)
     
-    let contextController = ContextController(
+    let contextController = makeContextController(
         presentationData: selfController.presentationData,
         configuration: ContextController.Configuration(
             sources: sources,
@@ -84,7 +95,7 @@ private func presentChatInputOptions(selfController: ChatControllerImpl, sourceN
     selfController.presentInGlobalOverlay(contextController)
 }
 
-private func chatForwardOptions(selfController: ChatControllerImpl, sourceNode: ASDisplayNode, getContextController: @escaping () -> ContextController?) -> (ContextController.Source, () -> Void)? {
+private func chatForwardOptions(selfController: ChatControllerImpl, sourceView: UIView, getContextController: @escaping () -> ContextController?) -> (ContextController.Source, () -> Void)? {
     guard let peerId = selfController.chatLocation.peerId else {
         return nil
     }
@@ -147,10 +158,8 @@ private func chatForwardOptions(selfController: ChatControllerImpl, sourceNode: 
             }
             
             var isDice = false
-            var isMusic = false
             for media in message.media {
                 if let media = media as? TelegramMediaFile, media.isMusic {
-                    isMusic = true
                     if !message.text.isEmpty {
                         hasCaptions = true
                     }
@@ -164,7 +173,7 @@ private func chatForwardOptions(selfController: ChatControllerImpl, sourceNode: 
                     hasPaid = true
                 }
             }
-            if !isDice && !isMusic {
+            if !isDice {
                 hasOther = true
             }
         }
@@ -270,13 +279,13 @@ private func chatForwardOptions(selfController: ChatControllerImpl, sourceNode: 
     return (ContextController.Source(
         id: AnyHashable(OptionsId.forward),
         title: selfController.presentationData.strings.Conversation_MessageOptionsTabForward,
-        source: .controller(ChatContextControllerContentSourceImpl(controller: chatController, sourceNode: sourceNode, passthroughTouches: true)),
+        source: .controller(ChatContextControllerContentSourceImpl(controller: chatController, sourceView: sourceView, passthroughTouches: true)),
         items: items |> map { ContextController.Items(id: AnyHashable("forward"), content: .list($0)) }
     ), dismissedForCancel)
 }
 
-func presentChatForwardOptions(selfController: ChatControllerImpl, sourceNode: ASDisplayNode) {
-    presentChatInputOptions(selfController: selfController, sourceNode: sourceNode, initialId: .forward)
+func presentChatForwardOptions(selfController: ChatControllerImpl, sourceView: UIView) {
+    presentChatInputOptions(selfController: selfController, sourceView: sourceView, initialId: .forward)
 }
 
 private func generateChatReplyOptionItems(selfController: ChatControllerImpl, chatController: ChatControllerImpl) -> Signal<ContextController.Items, NoError> {
@@ -316,7 +325,7 @@ private func generateChatReplyOptionItems(selfController: ChatControllerImpl, ch
             quote = EngineMessageReplyQuote(text: trimmedText.string, offset: textSelection.offset, entities: trimmedText.entities, media: nil)
         }
         
-        selfController.updateChatPresentationInterfaceState(animated: false, interactive: true, { $0.updatedInterfaceState({ $0.withUpdatedReplyMessageSubject(ChatInterfaceState.ReplyMessageSubject(messageId: replySubject.messageId, quote: quote, todoItemId: nil)).withoutSelectionState() }) })
+        selfController.updateChatPresentationInterfaceState(animated: false, interactive: true, { $0.updatedInterfaceState({ $0.withUpdatedReplyMessageSubject(ChatInterfaceState.ReplyMessageSubject(messageId: replySubject.messageId, quote: quote, innerSubject: nil)).withoutSelectionState() }) })
     }
     
     let items = combineLatest(queue: .mainQueue(),
@@ -381,7 +390,7 @@ private func generateChatReplyOptionItems(selfController: ChatControllerImpl, ch
                                     quote = EngineMessageReplyQuote(text: trimmedText.string, offset: textSelection.offset, entities: trimmedText.entities, media: nil)
                                 }
                                 
-                                selfController.updateChatPresentationInterfaceState(animated: false, interactive: true, { $0.updatedInterfaceState({ $0.withUpdatedReplyMessageSubject(ChatInterfaceState.ReplyMessageSubject(messageId: replySubject.messageId, quote: quote, todoItemId: nil)).withoutSelectionState() }) })
+                                selfController.updateChatPresentationInterfaceState(animated: false, interactive: true, { $0.updatedInterfaceState({ $0.withUpdatedReplyMessageSubject(ChatInterfaceState.ReplyMessageSubject(messageId: replySubject.messageId, quote: quote, innerSubject: nil)).withoutSelectionState() }) })
                                 
                                 f(.default)
                             })))
@@ -498,7 +507,7 @@ private func generateChatReplyOptionItems(selfController: ChatControllerImpl, ch
     return items
 }
 
-private func chatReplyOptions(selfController: ChatControllerImpl, sourceNode: ASDisplayNode, getContextController: @escaping () -> ContextController?, selectionState: Promise<ChatControllerSubject.MessageOptionsInfo.SelectionState>) -> ContextController.Source? {
+private func chatReplyOptions(selfController: ChatControllerImpl, sourceView: UIView, getContextController: @escaping () -> ContextController?, selectionState: Promise<ChatControllerSubject.MessageOptionsInfo.SelectionState>) -> ContextController.Source? {
     guard let peerId = selfController.chatLocation.peerId else {
         return nil
     }
@@ -530,109 +539,119 @@ private func chatReplyOptions(selfController: ChatControllerImpl, sourceNode: AS
     
     let items = generateChatReplyOptionItems(selfController: selfController, chatController: chatController)
     
-    chatController.performTextSelectionAction = { [weak selfController] message, canCopy, text, action in
+    chatController.performTextSelectionAction = { [weak selfController] message, canCopy, text, entities, action in
         guard let selfController, let contextController = getContextController() else {
             return
         }
         
         contextController.dismiss()
         
-        selfController.controllerInteraction?.performTextSelectionAction(message, canCopy, text, action)
+        selfController.controllerInteraction?.performTextSelectionAction(message, canCopy, text, entities, action)
     }
     
     return ContextController.Source(
         id: AnyHashable(OptionsId.reply),
         title: selfController.presentationData.strings.Conversation_MessageOptionsTabReply,
-        source: .controller(ChatContextControllerContentSourceImpl(controller: chatController, sourceNode: sourceNode, passthroughTouches: true)),
+        source: .controller(ChatContextControllerContentSourceImpl(controller: chatController, sourceView: sourceView, passthroughTouches: true)),
         items: items
     )
 }
 
-func presentChatReplyOptions(selfController: ChatControllerImpl, sourceNode: ASDisplayNode) {
-    presentChatInputOptions(selfController: selfController, sourceNode: sourceNode, initialId: .reply)
+func presentChatReplyOptions(selfController: ChatControllerImpl, sourceView: UIView) {
+    presentChatInputOptions(selfController: selfController, sourceView: sourceView, initialId: .reply)
 }
 
 func moveReplyMessageToAnotherChat(selfController: ChatControllerImpl, replySubject: ChatInterfaceState.ReplyMessageSubject) {
     let _ = selfController.presentVoiceMessageDiscardAlert(action: { [weak selfController] in
-        guard let selfController else {
-            return
-        }
-        let filter: ChatListNodePeersFilter = [.onlyWriteable, .excludeDisabled, .doNotSearchMessages]
-        var attemptSelectionImpl: ((EnginePeer, ChatListDisabledPeerReason) -> Void)?
-        let controller = selfController.context.sharedContext.makePeerSelectionController(PeerSelectionControllerParams(
-            context: selfController.context,
-            updatedPresentationData: selfController.updatedPresentationData,
-            filter: filter,
-            hasFilters: true,
-            title: selfController.presentationData.strings.Conversation_MoveReplyToAnotherChatTitle,
-            attemptSelection: { peer, _, reason in
-                attemptSelectionImpl?(peer, reason)
-            },
-            multipleSelection: false,
-            forwardedMessageIds: [],
-            selectForumThreads: true
-        ))
-        let context = selfController.context
-        attemptSelectionImpl = { [weak selfController, weak controller] peer, reason in
-            guard let selfController, let controller = controller else {
+        Task { @MainActor in
+            guard let selfController else {
                 return
             }
-            let presentationData = context.sharedContext.currentPresentationData.with { $0 }
-            switch reason {
-            case .generic:
-                controller.present(textAlertController(context: context, updatedPresentationData: selfController.updatedPresentationData, title: nil, text: presentationData.strings.Forward_ErrorDisabledForChat, actions: [TextAlertAction(type: .defaultAction, title: presentationData.strings.Common_OK, action: {})]), in: .window(.root))
-            case .premiumRequired:
-                controller.forEachController { c in
-                    if let c = c as? UndoOverlayController {
-                        c.dismiss()
+            let filter: ChatListNodePeersFilter = [.onlyWriteable, .excludeDisabled, .doNotSearchMessages]
+            var attemptSelectionImpl: ((EnginePeer, ChatListDisabledPeerReason) -> Void)?
+            
+            var suggestedPeers: [EnginePeer] = []
+            if let message = await selfController.context.engine.data.get(
+                TelegramEngine.EngineData.Item.Messages.Message(id: replySubject.messageId)
+            ).get(), case let .user(author) = message.author {
+                suggestedPeers.append(.user(author))
+            }
+            
+            let controller = selfController.context.sharedContext.makePeerSelectionController(PeerSelectionControllerParams(
+                context: selfController.context,
+                updatedPresentationData: selfController.updatedPresentationData,
+                filter: filter,
+                hasFilters: true,
+                title: selfController.presentationData.strings.Conversation_MoveReplyToAnotherChatTitle,
+                attemptSelection: { peer, _, reason in
+                    attemptSelectionImpl?(peer, reason)
+                },
+                multipleSelection: false,
+                forwardedMessageIds: [],
+                selectForumThreads: true,
+                suggestedPeers: suggestedPeers
+            ))
+            let context = selfController.context
+            attemptSelectionImpl = { [weak selfController, weak controller] peer, reason in
+                guard let selfController, let controller = controller else {
+                    return
+                }
+                let presentationData = context.sharedContext.currentPresentationData.with { $0 }
+                switch reason {
+                case .generic:
+                    controller.present(textAlertController(context: context, updatedPresentationData: selfController.updatedPresentationData, title: nil, text: presentationData.strings.Forward_ErrorDisabledForChat, actions: [TextAlertAction(type: .defaultAction, title: presentationData.strings.Common_OK, action: {})]), in: .window(.root))
+                case .premiumRequired:
+                    controller.forEachController { c in
+                        if let c = c as? UndoOverlayController {
+                            c.dismiss()
+                        }
+                        return true
                     }
-                    return true
-                }
-                
-                var hasAction = false
-                let premiumConfiguration = PremiumConfiguration.with(appConfiguration: selfController.context.currentAppConfiguration.with { $0 })
-                if !premiumConfiguration.isPremiumDisabled {
-                    hasAction = true
-                }
-                
-                controller.present(UndoOverlayController(presentationData: presentationData, content: .premiumPaywall(title: nil, text: presentationData.strings.Chat_ToastMessagingRestrictedToPremium_Text(peer.compactDisplayTitle).string, customUndoText: hasAction ? presentationData.strings.Chat_ToastMessagingRestrictedToPremium_Action : nil, timeout: nil, linkAction: { _ in
-                }), elevatedLayout: false, animateInAsReplacement: true, action: { [weak selfController, weak controller] action in
-                    guard let selfController, let controller else {
+                    
+                    var hasAction = false
+                    let premiumConfiguration = PremiumConfiguration.with(appConfiguration: selfController.context.currentAppConfiguration.with { $0 })
+                    if !premiumConfiguration.isPremiumDisabled {
+                        hasAction = true
+                    }
+                    
+                    controller.present(UndoOverlayController(presentationData: presentationData, content: .premiumPaywall(title: nil, text: presentationData.strings.Chat_ToastMessagingRestrictedToPremium_Text(peer.compactDisplayTitle).string, customUndoText: hasAction ? presentationData.strings.Chat_ToastMessagingRestrictedToPremium_Action : nil, timeout: nil, linkAction: { _ in
+                    }), elevatedLayout: false, animateInAsReplacement: true, action: { [weak selfController, weak controller] action in
+                        guard let selfController, let controller else {
+                            return false
+                        }
+                        if case .undo = action {
+                            let premiumController = PremiumIntroScreen(context: selfController.context, source: .settings)
+                            controller.push(premiumController)
+                        }
                         return false
-                    }
-                    if case .undo = action {
-                        let premiumController = PremiumIntroScreen(context: selfController.context, source: .settings)
-                        controller.push(premiumController)
-                    }
-                    return false
-                }), in: .current)
+                    }), in: .current)
+                }
             }
+            controller.peerSelected = { [weak selfController, weak controller] peer, threadId in
+                guard let selfController, let strongController = controller else {
+                    return
+                }
+                let peerId = peer.id
+                
+                var isPinnedMessages = false
+                if case .pinnedMessages = selfController.presentationInterfaceState.subject {
+                    isPinnedMessages = true
+                }
+                
+                if chatLocationMatchesDestination(selfController.chatLocation, peerId: peerId, threadId: threadId), selfController.parentController == nil, !isPinnedMessages {
+                    selfController.updateChatPresentationInterfaceState(animated: false, interactive: true, { $0.updatedInterfaceState({ $0.withUpdatedReplyMessageSubject(replySubject).withoutSelectionState() }).updatedSearch(nil) })
+                    selfController.updateItemNodesSearchTextHighlightStates()
+                    selfController.searchResultsController = nil
+                    strongController.dismiss()
+                } else {
+                    moveReplyToChat(selfController: selfController, peerId: peerId, threadId: threadId, replySubject: replySubject, completion: { [weak strongController] in
+                        strongController?.dismiss()
+                    })
+                }
+            }
+            selfController.chatDisplayNode.dismissInput()
+            selfController.effectiveNavigationController?.pushViewController(controller)
         }
-        controller.peerSelected = { [weak selfController, weak controller] peer, threadId in
-            guard let selfController, let strongController = controller else {
-                return
-            }
-            let peerId = peer.id
-            //let accountPeerId = selfController.context.account.peerId
-            
-            var isPinnedMessages = false
-            if case .pinnedMessages = selfController.presentationInterfaceState.subject {
-                isPinnedMessages = true
-            }
-            
-            if case .peer(peerId) = selfController.chatLocation, selfController.parentController == nil, !isPinnedMessages {
-                selfController.updateChatPresentationInterfaceState(animated: false, interactive: true, { $0.updatedInterfaceState({ $0.withUpdatedReplyMessageSubject(replySubject).withoutSelectionState() }).updatedSearch(nil) })
-                selfController.updateItemNodesSearchTextHighlightStates()
-                selfController.searchResultsController = nil
-                strongController.dismiss()
-            } else {
-                moveReplyToChat(selfController: selfController, peerId: peerId, threadId: threadId, replySubject: replySubject, completion: { [weak strongController] in
-                    strongController?.dismiss()
-                })
-            }
-        }
-        selfController.chatDisplayNode.dismissInput()
-        selfController.effectiveNavigationController?.pushViewController(controller)
     })
 }
 
@@ -640,7 +659,7 @@ func moveReplyToChat(selfController: ChatControllerImpl, peerId: EnginePeer.Id, 
     if let navigationController = selfController.effectiveNavigationController {
         for controller in navigationController.viewControllers {
             if let maybeChat = controller as? ChatControllerImpl {
-                if case .peer(peerId) = maybeChat.chatLocation {
+                if chatLocationMatchesDestination(maybeChat.chatLocation, peerId: peerId, threadId: threadId) {
                     var isChatPinnedMessages = false
                     if case .pinnedMessages = maybeChat.presentationInterfaceState.subject {
                         isChatPinnedMessages = true
@@ -716,7 +735,7 @@ func moveReplyToChat(selfController: ChatControllerImpl, peerId: EnginePeer.Id, 
     })
 }
 
-private func chatLinkOptions(selfController: ChatControllerImpl, sourceNode: ASDisplayNode, getContextController: @escaping () -> ContextController?, replySelectionState: Promise<ChatControllerSubject.MessageOptionsInfo.SelectionState>) -> ContextController.Source? {
+private func chatLinkOptions(selfController: ChatControllerImpl, sourceView: UIView, getContextController: @escaping () -> ContextController?, replySelectionState: Promise<ChatControllerSubject.MessageOptionsInfo.SelectionState>) -> ContextController.Source? {
     guard let peerId = selfController.chatLocation.peerId else {
         return nil
     }
@@ -969,13 +988,13 @@ private func chatLinkOptions(selfController: ChatControllerImpl, sourceNode: ASD
     return ContextController.Source(
         id: AnyHashable(OptionsId.link),
         title: selfController.presentationData.strings.Conversation_MessageOptionsTabLink,
-        source: .controller(ChatContextControllerContentSourceImpl(controller: chatController, sourceNode: sourceNode, passthroughTouches: true)),
+        source: .controller(ChatContextControllerContentSourceImpl(controller: chatController, sourceView: sourceView, passthroughTouches: true)),
         items: items
     )
 }
 
-func presentChatLinkOptions(selfController: ChatControllerImpl, sourceNode: ASDisplayNode) {
-    presentChatInputOptions(selfController: selfController, sourceNode: sourceNode, initialId: .link)
+func presentChatLinkOptions(selfController: ChatControllerImpl, sourceView: UIView) {
+    presentChatInputOptions(selfController: selfController, sourceView: sourceView, initialId: .link)
 }
 
 extension ChatControllerImpl {

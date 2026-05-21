@@ -3,7 +3,6 @@ import UIKit
 import Display
 import AsyncDisplayKit
 import SwiftSignalKit
-import Postbox
 import TelegramCore
 import TelegramPresentationData
 import ItemListUI
@@ -40,6 +39,7 @@ public enum ItemListStickerPackItemControl: Equatable {
 public final class ItemListStickerPackItem: ListViewItem, ItemListItem {
     let presentationData: ItemListPresentationData
     let context: AccountContext
+    let systemStyle: ItemListSystemStyle
     let packInfo: StickerPackCollectionInfo.Accessor
     let itemCount: String
     let topItem: StickerPackItem?
@@ -51,14 +51,15 @@ public final class ItemListStickerPackItem: ListViewItem, ItemListItem {
     let style: ItemListStyle
     public let sectionId: ItemListSectionId
     let action: (() -> Void)?
-    let setPackIdWithRevealedOptions: (ItemCollectionId?, ItemCollectionId?) -> Void
+    let setPackIdWithRevealedOptions: (EngineItemCollectionId?, EngineItemCollectionId?) -> Void
     let addPack: () -> Void
     let removePack: () -> Void
     let toggleSelected: () -> Void
     
-    public init(presentationData: ItemListPresentationData, context: AccountContext, packInfo: StickerPackCollectionInfo.Accessor, itemCount: String, topItem: StickerPackItem?, unread: Bool, control: ItemListStickerPackItemControl, editing: ItemListStickerPackItemEditing, enabled: Bool, playAnimatedStickers: Bool, style: ItemListStyle = .blocks, sectionId: ItemListSectionId, action: (() -> Void)?, setPackIdWithRevealedOptions: @escaping (ItemCollectionId?, ItemCollectionId?) -> Void, addPack: @escaping () -> Void, removePack: @escaping () -> Void, toggleSelected: @escaping () -> Void) {
+    public init(presentationData: ItemListPresentationData, context: AccountContext, systemStyle: ItemListSystemStyle = .legacy, packInfo: StickerPackCollectionInfo.Accessor, itemCount: String, topItem: StickerPackItem?, unread: Bool, control: ItemListStickerPackItemControl, editing: ItemListStickerPackItemEditing, enabled: Bool, playAnimatedStickers: Bool, style: ItemListStyle = .blocks, sectionId: ItemListSectionId, action: (() -> Void)?, setPackIdWithRevealedOptions: @escaping (EngineItemCollectionId?, EngineItemCollectionId?) -> Void, addPack: @escaping () -> Void, removePack: @escaping () -> Void, toggleSelected: @escaping () -> Void) {
         self.presentationData = presentationData
         self.context = context
+        self.systemStyle = systemStyle
         self.packInfo = packInfo
         self.itemCount = itemCount
         self.topItem = topItem
@@ -124,8 +125,8 @@ public final class ItemListStickerPackItem: ListViewItem, ItemListItem {
 
 public enum StickerPackThumbnailItem: Equatable {
     case still(TelegramMediaImageRepresentation)
-    case animated(MediaResource, PixelDimensions, Bool, Bool)
-    
+    case animated(EngineMediaResource, PixelDimensions, Bool, Bool)
+
     public static func ==(lhs: StickerPackThumbnailItem, rhs: StickerPackThumbnailItem) -> Bool {
         switch lhs {
         case let .still(representation):
@@ -135,7 +136,7 @@ public enum StickerPackThumbnailItem: Equatable {
                 return false
             }
         case let .animated(lhsResource, lhsDimensions, lhsIsVideo, lhsTinted):
-            if case let .animated(rhsResource, rhsDimensions, rhsIsVideo, rhsTinted) = rhs, lhsResource.isEqual(to: rhsResource), lhsDimensions == rhsDimensions, lhsIsVideo == rhsIsVideo, lhsTinted == rhsTinted {
+            if case let .animated(rhsResource, rhsDimensions, rhsIsVideo, rhsTinted) = rhs, lhsResource == rhsResource, lhsDimensions == rhsDimensions, lhsIsVideo == rhsIsVideo, lhsTinted == rhsTinted {
                 return true
             } else {
                 return false
@@ -261,7 +262,7 @@ class ItemListStickerPackItemNode: ItemListRevealOptionsItemNode {
         
         self.activateArea = AccessibilityAreaNode()
         
-        super.init(layerBacked: false, dynamicBounce: false, rotated: false, seeThrough: false)
+        super.init(layerBacked: false, rotated: false, seeThrough: false)
         
         self.addSubnode(self.containerNode)
         
@@ -409,10 +410,19 @@ class ItemListStickerPackItemNode: ItemListRevealOptionsItemNode {
             
             let leftInset: CGFloat = 65.0 + params.leftInset
             
-            let verticalInset: CGFloat = 11.0
+            let verticalInset: CGFloat
+            switch item.systemStyle {
+            case .glass:
+                verticalInset = 13.0
+            case .legacy:
+                verticalInset = 11.0
+            }
+            
             let titleSpacing: CGFloat = 2.0
             
             let separatorHeight = UIScreenPixel
+            let separatorRightInset: CGFloat = item.systemStyle == .glass ? 16.0 : 0.0
+            
             let insets: UIEdgeInsets
             let itemBackgroundColor: UIColor
             let itemSeparatorColor: UIColor
@@ -440,7 +450,7 @@ class ItemListStickerPackItemNode: ItemListRevealOptionsItemNode {
                     if case let .check(checked) = item.control {
                         selected = checked
                     }
-                    let sizeAndApply = selectableControlLayout(item.presentationData.theme.list.itemCheckColors.strokeColor, item.presentationData.theme.list.itemCheckColors.fillColor, item.presentationData.theme.list.itemCheckColors.foregroundColor, selected, .compact)
+                    let sizeAndApply = selectableControlLayout(item.presentationData.theme.list.itemCheckColors.strokeColor, item.presentationData.theme.list.itemCheckColors.fillColor, item.presentationData.theme.list.itemCheckColors.foregroundColor, selected, .compact, nil)
                     selectableControlSizeAndApply = sizeAndApply
                     editingOffset = sizeAndApply.0
                 } else {
@@ -489,7 +499,7 @@ class ItemListStickerPackItemNode: ItemListRevealOptionsItemNode {
             var resourceReference: MediaResourceReference?
             if item.packInfo.hasThumbnail, let thumbnail = item.packInfo._parse().thumbnail {
                 if thumbnail.typeHint != .generic {
-                    thumbnailItem = .animated(thumbnail.resource, thumbnail.dimensions, thumbnail.typeHint == .video, item.packInfo.flags.contains(.isCustomTemplateEmoji))
+                    thumbnailItem = .animated(EngineMediaResource(thumbnail.resource), thumbnail.dimensions, thumbnail.typeHint == .video, item.packInfo.flags.contains(.isCustomTemplateEmoji))
                 } else {
                     thumbnailItem = .still(thumbnail)
                 }
@@ -497,7 +507,7 @@ class ItemListStickerPackItemNode: ItemListRevealOptionsItemNode {
             } else if let item = item.topItem {
                 let itemFile = item.file._parse()
                 if itemFile.isAnimatedSticker || itemFile.isVideoSticker {
-                    thumbnailItem = .animated(itemFile.resource, itemFile.dimensions ?? PixelDimensions(width: 100, height: 100), itemFile.isVideoSticker, itemFile.isCustomTemplateEmoji)
+                    thumbnailItem = .animated(EngineMediaResource(itemFile.resource), itemFile.dimensions ?? PixelDimensions(width: 100, height: 100), itemFile.isVideoSticker, itemFile.isCustomTemplateEmoji)
                     resourceReference = MediaResourceReference.media(media: .standalone(media: itemFile), resource: itemFile.resource)
                 } else if let dimensions = itemFile.dimensions, let resource = chatMessageStickerResource(file: itemFile, small: true) as? TelegramMediaResource {
                     thumbnailItem = .still(TelegramMediaImageRepresentation(dimensions: dimensions, resource: resource, progressiveSizes: [], immediateThumbnailData: nil, hasVideo: false, isPersonal: false))
@@ -506,7 +516,7 @@ class ItemListStickerPackItemNode: ItemListRevealOptionsItemNode {
             }
             
             var updatedImageSignal: Signal<(TransformImageArguments) -> DrawingContext?, NoError>?
-            var updatedFetchSignal: Signal<FetchResourceSourceType, FetchResourceError>?
+            var updatedFetchSignal: Signal<EngineFetchResourceSourceType, EngineFetchResourceError>?
             
             let imageBoundingSize = CGSize(width: 34.0, height: 34.0)
             var imageApply: (() -> Void)?
@@ -526,14 +536,14 @@ class ItemListStickerPackItemNode: ItemListRevealOptionsItemNode {
                         }
                     case let .animated(resource, dimensions, _, _):
                         imageSize = dimensions.cgSize.aspectFitted(imageBoundingSize)
-                    
+
                         if fileUpdated {
                             imageApply = makeImageLayout(TransformImageArguments(corners: ImageCorners(), imageSize: imageBoundingSize, boundingSize: imageBoundingSize, intrinsicInsets: UIEdgeInsets()))
-                            updatedImageSignal = chatMessageStickerPackThumbnail(postbox: item.context.account.postbox, resource: resource, animated: true, nilIfEmpty: true)
+                            updatedImageSignal = chatMessageStickerPackThumbnail(postbox: item.context.account.postbox, resource: resource._asResource(), animated: true, nilIfEmpty: true)
                         }
                 }
                 if fileUpdated, let resourceReference = resourceReference {
-                    updatedFetchSignal = fetchedMediaResource(mediaBox: item.context.account.postbox.mediaBox, userLocation: .other, userContentType: .sticker, reference: resourceReference)
+                    updatedFetchSignal = item.context.engine.resources.fetch(reference: resourceReference, userLocation: .other, userContentType: .sticker)
                 }
             } else {
                 updatedImageSignal = .single({ _ in return nil })
@@ -775,13 +785,13 @@ class ItemListStickerPackItemNode: ItemListRevealOptionsItemNode {
                             strongSelf.bottomStripeNode.isHidden = hasCorners
                     }
                     
-                    strongSelf.maskNode.image = hasCorners ? PresentationResourcesItemList.cornersImage(item.presentationData.theme, top: hasTopCorners, bottom: hasBottomCorners) : nil
+                    strongSelf.maskNode.image = hasCorners ? PresentationResourcesItemList.cornersImage(item.presentationData.theme, top: hasTopCorners, bottom: hasBottomCorners, glass: item.systemStyle == .glass) : nil
                     
                     strongSelf.backgroundNode.frame = CGRect(origin: CGPoint(x: 0.0, y: -min(insets.top, separatorHeight)), size: CGSize(width: params.width, height: contentSize.height + min(insets.top, separatorHeight) + min(insets.bottom, separatorHeight)))
                     strongSelf.containerNode.frame = CGRect(origin: CGPoint(), size: strongSelf.backgroundNode.frame.size)
                     strongSelf.maskNode.frame = strongSelf.backgroundNode.frame.insetBy(dx: params.leftInset, dy: 0.0)
                     transition.updateFrame(node: strongSelf.topStripeNode, frame: CGRect(origin: CGPoint(x: 0.0, y: -min(insets.top, separatorHeight)), size: CGSize(width: layoutSize.width, height: separatorHeight)))
-                    transition.updateFrame(node: strongSelf.bottomStripeNode, frame: CGRect(origin: CGPoint(x: bottomStripeInset, y: contentSize.height + bottomStripeOffset), size: CGSize(width: layoutSize.width - bottomStripeInset, height: separatorHeight)))
+                    transition.updateFrame(node: strongSelf.bottomStripeNode, frame: CGRect(origin: CGPoint(x: bottomStripeInset, y: contentSize.height + bottomStripeOffset), size: CGSize(width: layoutSize.width - bottomStripeInset - params.rightInset - separatorRightInset, height: separatorHeight)))
                     
                     if let unreadImage = unreadImage {
                         strongSelf.unreadNode.image = unreadImage
@@ -818,9 +828,9 @@ class ItemListStickerPackItemNode: ItemListRevealOptionsItemNode {
                                     }
                                     strongSelf.animationNode = animationNode
                                     strongSelf.addSubnode(animationNode)
-                                    
-                                    let pathPrefix = item.context.account.postbox.mediaBox.shortLivedResourceCachePathPrefix(resource.id)
-                                    animationNode.setup(source: AnimatedStickerResourceSource(account: item.context.account, resource: resource, isVideo: isVideo), width: 80, height: 80, playbackMode: .loop, mode: .direct(cachePathPrefix: pathPrefix))
+
+                                    let pathPrefix = item.context.engine.resources.shortLivedResourceCachePathPrefix(id: resource.id)
+                                    animationNode.setup(source: AnimatedStickerResourceSource(account: item.context.account, resource: resource._asResource(), isVideo: isVideo), width: 80, height: 80, playbackMode: .loop, mode: .direct(cachePathPrefix: pathPrefix))
                                 }
                                 animationNode.visibility = strongSelf.visibility != .none && item.playAnimatedStickers
                                 animationNode.isHidden = !item.playAnimatedStickers

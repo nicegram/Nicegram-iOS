@@ -7,13 +7,13 @@ import SwiftSignalKit
 import TelegramCore
 import TelegramPresentationData
 import AccountContext
+import ShareController
 import AlertUI
 import PresentationDataUtils
 import SearchUI
 import TelegramPermissionsUI
 import AppBundle
 import DeviceAccess
-import ShareController
 
 public class ComposeControllerImpl: ViewController, ComposeController {
     private let context: AccountContext
@@ -41,8 +41,9 @@ public class ComposeControllerImpl: ViewController, ComposeController {
         
         self.presentationData = context.sharedContext.currentPresentationData.with { $0 }
         
-        super.init(navigationBarPresentationData: NavigationBarPresentationData(presentationData: self.presentationData))
+        super.init(navigationBarPresentationData: NavigationBarPresentationData(presentationData: self.presentationData, style: .glass))
         
+        self._hasGlassStyle = true
         self.navigationPresentation = .modal
         
         self.statusBar.statusBarStyle = self.presentationData.theme.rootController.statusBarStyle.style
@@ -50,8 +51,6 @@ public class ComposeControllerImpl: ViewController, ComposeController {
         self.title = self.presentationData.strings.Compose_NewMessage
                 
         self.navigationItem.backBarButtonItem = UIBarButtonItem(title: self.presentationData.strings.Common_Back, style: .plain, target: nil, action: nil)
-        
-        self.navigationItem.leftBarButtonItem = UIBarButtonItem(title: self.presentationData.strings.Common_Cancel, style: .plain, target: self, action: #selector(cancelPressed))
         
         self.scrollToTop = { [weak self] in
             if let strongSelf = self {
@@ -93,7 +92,7 @@ public class ComposeControllerImpl: ViewController, ComposeController {
     
     private func updateThemeAndStrings() {
         self.statusBar.statusBarStyle = self.presentationData.theme.rootController.statusBarStyle.style
-        self.navigationBar?.updatePresentationData(NavigationBarPresentationData(presentationData: self.presentationData))
+        self.navigationBar?.updatePresentationData(NavigationBarPresentationData(presentationData: self.presentationData, style: .glass), transition: .immediate)
         self.searchContentNode?.updateThemeAndPlaceholder(theme: self.presentationData.theme, placeholder: self.presentationData.strings.Common_Search)
         self.title = self.presentationData.strings.Compose_NewMessage
         self.navigationItem.backBarButtonItem = UIBarButtonItem(title: self.presentationData.strings.Common_Back, style: .plain, target: nil, action: nil)
@@ -199,29 +198,37 @@ public class ComposeControllerImpl: ViewController, ComposeController {
                 }
                 
                 switch status {
-                    case .allowed:
-                        let contactData = DeviceContactExtendedData(basicData: DeviceContactBasicData(firstName: "", lastName: "", phoneNumbers: [DeviceContactPhoneNumberData(label: "_$!<Mobile>!$_", value: "+")]), middleName: "", prefix: "", suffix: "", organization: "", jobTitle: "", department: "", emailAddresses: [], urls: [], addresses: [], birthdayDate: nil, socialProfiles: [], instantMessagingProfiles: [], note: "")
-                        (strongSelf.navigationController as? NavigationController)?.pushViewController(strongSelf.context.sharedContext.makeDeviceContactInfoController(context: ShareControllerAppAccountContext(context: strongSelf.context), environment: ShareControllerAppEnvironment(sharedContext: strongSelf.context.sharedContext), subject: .create(peer: nil, contactData: contactData, isSharing: false, shareViaException: false, completion: { peer, stableId, contactData in
+                case .allowed:
+                    let controller = strongSelf.context.sharedContext.makeNewContactScreen(
+                        context: strongSelf.context,
+                        peer: nil,
+                        firstName: nil,
+                        lastName: nil,
+                        phoneNumber: nil,
+                        shareViaException: false,
+                        completion: { [weak self] peer, stableId, contactData in
                             guard let strongSelf = self else {
                                 return
                             }
                             if let peer = peer {
                                 DispatchQueue.main.async {
                                     if let navigationController = strongSelf.navigationController as? NavigationController {
-                                        strongSelf.context.sharedContext.navigateToChatController(NavigateToChatControllerParams(navigationController: navigationController, context: strongSelf.context, chatLocation: .peer(EnginePeer(peer))))
+                                        strongSelf.context.sharedContext.navigateToChatController(NavigateToChatControllerParams(navigationController: navigationController, context: strongSelf.context, chatLocation: .peer(peer)))
                                     }
                                 }
-                            } else {
+                            } else if let stableId, let contactData {
                                 (strongSelf.navigationController as? NavigationController)?.replaceAllButRootController(strongSelf.context.sharedContext.makeDeviceContactInfoController(context: ShareControllerAppAccountContext(context: strongSelf.context), environment: ShareControllerAppEnvironment(sharedContext: strongSelf.context.sharedContext), subject: .vcard(nil, stableId, contactData), completed: nil, cancelled: nil), animated: true)
                             }
-                        }), completed: nil, cancelled: nil))
-                    case .notDetermined:
-                        DeviceAccess.authorizeAccess(to: .contacts)
-                    default:
-                        let presentationData = strongSelf.presentationData
-                        strongSelf.present(textAlertController(context: strongSelf.context, title: presentationData.strings.AccessDenied_Title, text: presentationData.strings.Contacts_AccessDeniedError, actions: [TextAlertAction(type: .defaultAction, title: presentationData.strings.Common_NotNow, action: {}), TextAlertAction(type: .genericAction, title: presentationData.strings.AccessDenied_Settings, action: {
-                            self?.context.sharedContext.applicationBindings.openSettings()
-                        })]), in: .window(.root))
+                        }
+                    )
+                    (strongSelf.navigationController as? NavigationController)?.pushViewController(controller)
+                case .notDetermined:
+                    DeviceAccess.authorizeAccess(to: .contacts)
+                default:
+                    let presentationData = strongSelf.presentationData
+                    strongSelf.present(textAlertController(context: strongSelf.context, title: presentationData.strings.AccessDenied_Title, text: presentationData.strings.Contacts_AccessDeniedError, actions: [TextAlertAction(type: .genericAction, title: presentationData.strings.Common_NotNow, action: {}), TextAlertAction(type: .defaultAction, title: presentationData.strings.AccessDenied_Settings, action: {
+                        self?.context.sharedContext.applicationBindings.openSettings()
+                    })]), in: .window(.root))
                 }
             })
         }

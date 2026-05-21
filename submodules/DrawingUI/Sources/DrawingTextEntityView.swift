@@ -544,7 +544,7 @@ public final class DrawingTextEntityView: DrawingEntityView, UITextViewDelegate 
             self.textView.frameColor = nil
         case .filled:
             self.textView.textColor = color.lightness > 0.99 ? UIColor.black : UIColor.white
-            cursorColor = color.lightness > 0.99 ? UIColor(rgb: 0x007aff) : UIColor.white
+            cursorColor = color.lightness > 0.99 ? UIColor(rgb: 0x0088ff) : UIColor.white
             self.textView.strokeColor = nil
             self.textView.frameColor = color
         case .semi:

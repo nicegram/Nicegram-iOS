@@ -59,7 +59,7 @@ private enum PhoneLabelEntry: ItemListNodeEntry {
         let arguments = arguments as! PhoneLabelArguments
         switch self {
         case let .label(_, _, value, text, selected):
-            return ItemListCheckboxItem(presentationData: presentationData, title: text, style: .left, checked: selected, zeroSeparatorInsets: false, sectionId: self.section, action: {
+            return ItemListCheckboxItem(presentationData: presentationData, systemStyle: .glass, title: text, style: .left, checked: selected, zeroSeparatorInsets: false, sectionId: self.section, action: {
                 arguments.selectLabel(value)
             })
         }

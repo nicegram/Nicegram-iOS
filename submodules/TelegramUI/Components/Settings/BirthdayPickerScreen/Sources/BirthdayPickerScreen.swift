@@ -4,34 +4,48 @@ import Display
 import ComponentFlow
 import SwiftSignalKit
 import ViewControllerComponent
+import TelegramCore
 import AccountContext
 import SheetComponent
 import ButtonComponent
-import TelegramCore
+import GlassBarButtonComponent
+import BundleIconComponent
 
 private final class BirthdayPickerSheetContentComponent: Component {
     typealias EnvironmentType = ViewControllerComponentContainer.Environment
     
+    let context: AccountContext
+    let mode: BirthdayPickerScreen.Mode
     let settings: Signal<AccountPrivacySettings?, NoError>
+    let canHideYear: Bool
     let openSettings: () -> Void
     let dismiss: () -> Void
     let action: (TelegramBirthday) -> Void
+    let requestHideYear: (ComponentTransition) -> Void
     
     init(
+        context: AccountContext,
+        mode: BirthdayPickerScreen.Mode,
         settings: Signal<AccountPrivacySettings?, NoError>,
+        canHideYear: Bool,
         openSettings: @escaping () -> Void,
         dismiss: @escaping () -> Void,
-        action: @escaping (TelegramBirthday) -> Void
+        action: @escaping (TelegramBirthday) -> Void,
+        requestHideYear: @escaping (ComponentTransition) -> Void
     ) {
+        self.context = context
+        self.mode = mode
         self.settings = settings
+        self.canHideYear = canHideYear
         self.openSettings = openSettings
         self.dismiss = dismiss
         self.action = action
+        self.requestHideYear = requestHideYear
     }
     
     static func ==(lhs: BirthdayPickerSheetContentComponent, rhs: BirthdayPickerSheetContentComponent) -> Bool {
-        if lhs !== rhs {
-            return true
+        if lhs.canHideYear != rhs.canHideYear {
+            return false
         }
         return true
     }
@@ -44,6 +58,7 @@ private final class BirthdayPickerSheetContentComponent: Component {
         private var birthday = TelegramBirthday(day: 1, month: 1, year: nil)
         
         private var component: BirthdayPickerSheetContentComponent?
+        private var state: EmptyComponentState?
         
         override init(frame: CGRect) {
             super.init(frame: frame)
@@ -52,10 +67,17 @@ private final class BirthdayPickerSheetContentComponent: Component {
         required init?(coder: NSCoder) {
             fatalError("init(coder:) has not been implemented")
         }
-        
+                
         func update(component: BirthdayPickerSheetContentComponent, availableSize: CGSize, state: EmptyComponentState, environment: Environment<EnvironmentType>, transition: ComponentTransition) -> CGSize {
-            self.component = component
+            if self.component == nil {
+                if case let .acceptSuggestion(birthday) = component.mode {
+                    self.birthday = birthday
+                }
+            }
             
+            self.component = component
+            self.state = state
+                        
             let environment = environment[EnvironmentType.self].value
             
             let sideInset: CGFloat = 16.0
@@ -66,17 +88,21 @@ private final class BirthdayPickerSheetContentComponent: Component {
             let contentSize = self.content.update(
                 transition: transition,
                 component: AnyComponent(BirthdayPickerContentComponent(
+                    context: component.context,
+                    mode: component.mode,
                     theme: environment.theme,
                     strings: environment.strings, 
                     settings: component.settings,
                     value: self.birthday,
+                    canHideYear: component.canHideYear,
                     updateValue: { [weak self] value in
                         if let self {
                             self.birthday = value
                         }
                     },
                     dismiss: component.dismiss,
-                    openSettings: component.openSettings
+                    openSettings: component.openSettings,
+                    requestHideYear: component.requestHideYear
                 )),
                 environment: {},
                 containerSize: CGSize(width: availableSize.width - sideInset * 2.0, height: availableSize.height)
@@ -92,18 +118,29 @@ private final class BirthdayPickerSheetContentComponent: Component {
             
             let cancelSize = self.cancel.update(
                 transition: transition,
-                component: AnyComponent(Button(
-                    content: AnyComponent(Text(text: environment.strings.Common_Cancel, font: Font.regular(17.0), color: environment.theme.list.itemAccentColor)),
-                    action: { [weak self] in
-                        if let self, let component = self.component {
-                            component.dismiss()
+                component: AnyComponent(
+                    GlassBarButtonComponent(
+                        size: CGSize(width: 44.0, height: 44.0),
+                        backgroundColor: nil,
+                        isDark: environment.theme.overallDarkAppearance,
+                        state: .glass,
+                        component: AnyComponentWithIdentity(id: "close", component: AnyComponent(
+                            BundleIconComponent(
+                                name: "Navigation/Close",
+                                tintColor: environment.theme.chat.inputPanel.panelControlColor
+                            )
+                        )),
+                        action: { [weak self] _ in
+                            if let self, let component = self.component {
+                                component.dismiss()
+                            }
                         }
-                    }
-                ).minSize(CGSize(width: 32.0, height: 32.0))),
+                    )
+                ),
                 environment: {},
-                containerSize: CGSize(width: availableSize.width, height: 32.0)
+                containerSize: CGSize(width: 44.0, height: 44.0)
             )
-            let cancelFrame = CGRect(origin: CGPoint(x: sideInset, y: 13.0), size: cancelSize)
+            let cancelFrame = CGRect(origin: CGPoint(x: 16.0, y: 16.0), size: cancelSize)
             if let cancelView = self.cancel.view {
                 if cancelView.superview == nil {
                     self.addSubview(cancelView)
@@ -111,16 +148,28 @@ private final class BirthdayPickerSheetContentComponent: Component {
                 transition.setFrame(view: cancelView, frame: cancelFrame)
             }
             
+            let buttonTitle: String
+            switch component.mode {
+            case .generic:
+                buttonTitle = environment.strings.Birthday_Save
+            case .suggest:
+                buttonTitle = environment.strings.SuggestBirthdate_Suggest_Action
+            case .acceptSuggestion:
+                buttonTitle = environment.strings.SuggestBirthdate_Accept_Action
+            }
+            
+            let bottomInsets = ContainerViewLayout.concentricInsets(bottomInset: environment.safeInsets.bottom, innerDiameter: 52.0, sideInset: 30.0)
             let buttonSize = self.button.update(
                 transition: transition,
                 component: AnyComponent(ButtonComponent(
                     background: ButtonComponent.Background(
+                        style: .glass,
                         color: environment.theme.list.itemCheckColors.fillColor,
                         foreground: environment.theme.list.itemCheckColors.foregroundColor,
                         pressedColor: environment.theme.list.itemCheckColors.fillColor.withMultipliedAlpha(0.8)
                     ),
                     content: AnyComponentWithIdentity(id: AnyHashable(0 as Int), component: AnyComponent(
-                        Text(text: environment.strings.Birthday_Save, font: Font.semibold(17.0), color: environment.theme.list.itemCheckColors.foregroundColor)
+                        Text(text: buttonTitle, font: Font.semibold(17.0), color: environment.theme.list.itemCheckColors.foregroundColor)
                     )),
                     isEnabled: true,
                     displaysProgress: false,
@@ -132,9 +181,9 @@ private final class BirthdayPickerSheetContentComponent: Component {
                     }
                 )),
                 environment: {},
-                containerSize: CGSize(width: availableSize.width - sideInset * 2.0, height: 50.0)
+                containerSize: CGSize(width: availableSize.width - bottomInsets.left - bottomInsets.right, height: 52.0)
             )
-            let buttonFrame = CGRect(origin: CGPoint(x: sideInset, y: contentHeight), size: buttonSize)
+            let buttonFrame = CGRect(origin: CGPoint(x: bottomInsets.left, y: contentHeight), size: buttonSize)
             if let buttonView = self.button.view {
                 if buttonView.superview == nil {
                     self.addSubview(buttonView)
@@ -142,13 +191,8 @@ private final class BirthdayPickerSheetContentComponent: Component {
                 transition.setFrame(view: buttonView, frame: buttonFrame)
             }
             contentHeight += buttonSize.height
-            
-            if environment.safeInsets.bottom.isZero {
-                contentHeight += 16.0
-            } else {
-                contentHeight += environment.safeInsets.bottom + 14.0
-            }
-            
+            contentHeight += bottomInsets.bottom
+                        
             return CGSize(width: availableSize.width, height: contentHeight)
         }
     }
@@ -166,17 +210,20 @@ private final class BirthdayPickerScreenComponent: Component {
     typealias EnvironmentType = ViewControllerComponentContainer.Environment
     
     let context: AccountContext
+    let mode: BirthdayPickerScreen.Mode
     let settings: Signal<AccountPrivacySettings?, NoError>
     let openSettings: (() -> Void)?
     let completion: ((TelegramBirthday) -> Void)?
     
     init(
         context: AccountContext,
+        mode: BirthdayPickerScreen.Mode,
         settings: Signal<AccountPrivacySettings?, NoError>,
         openSettings: (() -> Void)?,
         completion: ((TelegramBirthday) -> Void)?
     ) {
         self.context = context
+        self.mode = mode
         self.settings = settings
         self.openSettings = openSettings
         self.completion = completion
@@ -193,6 +240,8 @@ private final class BirthdayPickerScreenComponent: Component {
         private let sheet = ComponentView<(ViewControllerComponentContainer.Environment, SheetComponentEnvironment)>()
         private let sheetAnimateOut = ActionSlot<Action<Void>>()
         
+        private var canHideYear = false
+        
         private var component: BirthdayPickerScreenComponent?
         private var environment: EnvironmentType?
                 
@@ -206,6 +255,11 @@ private final class BirthdayPickerScreenComponent: Component {
         
         private var didAppear = false
         func update(component: BirthdayPickerScreenComponent, availableSize: CGSize, state: EmptyComponentState, environment: Environment<ViewControllerComponentContainer.Environment>, transition: ComponentTransition) -> CGSize {
+            if self.component == nil {
+                if case let .acceptSuggestion(birthday) = component.mode, let _ = birthday.year {
+                    self.canHideYear = true
+                }
+            }
             self.component = component
             
             let environment = environment[ViewControllerComponentContainer.Environment.self].value
@@ -216,6 +270,8 @@ private final class BirthdayPickerScreenComponent: Component {
             }
             
             let sheetEnvironment = SheetComponentEnvironment(
+                metrics: environment.metrics,
+                deviceMetrics: environment.deviceMetrics,
                 isDisplaying: self.didAppear || environment.isVisible,
                 isCentered: environment.metrics.widthClass == .regular,
                 hasInputHeight: !environment.inputHeight.isZero,
@@ -235,7 +291,10 @@ private final class BirthdayPickerScreenComponent: Component {
                 transition: transition,
                 component: AnyComponent(SheetComponent(
                     content: AnyComponent(BirthdayPickerSheetContentComponent(
+                        context: component.context,
+                        mode: component.mode,
                         settings: component.settings,
+                        canHideYear: self.canHideYear,
                         openSettings: { [weak self] in
                             guard let self, let component = self.component else {
                                 return
@@ -251,7 +310,8 @@ private final class BirthdayPickerScreenComponent: Component {
                                     controller.dismiss(completion: nil)
                                 }
                             })
-                        }, action: { [weak self] value in
+                        },
+                        action: { [weak self] value in
                             guard let self else {
                                 return
                             }
@@ -264,9 +324,18 @@ private final class BirthdayPickerScreenComponent: Component {
                                 }
                                 self.component?.completion?(value)
                             })
+                        },
+                        requestHideYear: { [weak self] transition in
+                            guard let self, let controller = self.environment?.controller() as? BirthdayPickerScreen else {
+                                return
+                            }
+                            self.canHideYear = false
+                            controller.requestLayout(forceUpdate: true, transition: transition)
                         }
                     )),
-                    backgroundColor: .color(environment.theme.list.plainBackgroundColor),
+                    style: .glass,
+                    backgroundColor: .color(environment.theme.list.modalPlainBackgroundColor),
+                    followContentSizeChanges: true,
                     isScrollEnabled: false,
                     animateOut: self.sheetAnimateOut
                 )),
@@ -297,9 +366,15 @@ private final class BirthdayPickerScreenComponent: Component {
 }
 
 public class BirthdayPickerScreen: ViewControllerComponentContainer {
-    public init(context: AccountContext, settings: Signal<AccountPrivacySettings?, NoError>, openSettings: (() -> Void)?, completion: ((TelegramBirthday) -> Void)? = nil) {
+    public enum Mode: Equatable {
+        case generic
+        case suggest(EnginePeer.Id)
+        case acceptSuggestion(TelegramBirthday)
+    }
+    public init(context: AccountContext, mode: Mode = .generic, settings: Signal<AccountPrivacySettings?, NoError>, openSettings: (() -> Void)?, completion: ((TelegramBirthday) -> Void)? = nil) {
         super.init(context: context, component: BirthdayPickerScreenComponent(
             context: context,
+            mode: mode,
             settings: settings,
             openSettings: openSettings,
             completion: completion

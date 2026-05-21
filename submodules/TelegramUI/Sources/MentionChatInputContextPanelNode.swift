@@ -1,7 +1,3 @@
-// Nicegram Imports
-import FeatPremiumUI
-import NGData
-//
 import Foundation
 import UIKit
 import AsyncDisplayKit
@@ -18,14 +14,17 @@ import ChatPresentationInterfaceState
 import ChatControllerInteraction
 import ChatContextQuery
 import ChatInputContextPanelNode
+import ComponentFlow
+import ComponentDisplayAdapters
+import GlassBackgroundComponent
 
 private struct MentionChatInputContextPanelEntry: Comparable, Identifiable {
     let index: Int
-    let peer: EnginePeer?
+    let peer: EnginePeer
     let revealed: Bool
     
-    var stableId: Int64? {
-        return self.peer?.id.toInt64()
+    var stableId: Int64 {
+        return self.peer.id.toInt64()
     }
     
     static func ==(lhs: MentionChatInputContextPanelEntry, rhs: MentionChatInputContextPanelEntry) -> Bool {
@@ -36,8 +35,8 @@ private struct MentionChatInputContextPanelEntry: Comparable, Identifiable {
         return lhs.index < rhs.index
     }
     
-    func item(context: AccountContext, presentationData: PresentationData, inverted: Bool, setPeerIdRevealed: @escaping (EnginePeer.Id?) -> Void, peerSelected: @escaping (EnginePeer?) -> Void, removeRequested: @escaping (EnginePeer.Id) -> Void) -> ListViewItem {
-        return MentionChatInputPanelItem(context: context, presentationData: ItemListPresentationData(presentationData), inverted: inverted, peer: self.peer?._asPeer(), revealed: self.revealed, setPeerIdRevealed: setPeerIdRevealed, peerSelected: peerSelected, removeRequested: removeRequested)
+    func item(context: AccountContext, presentationData: PresentationData, inverted: Bool, setPeerIdRevealed: @escaping (EnginePeer.Id?) -> Void, peerSelected: @escaping (EnginePeer) -> Void, removeRequested: @escaping (EnginePeer.Id) -> Void) -> ListViewItem {
+        return MentionChatInputPanelItem(context: context, presentationData: ItemListPresentationData(presentationData), inverted: inverted, peer: self.peer, revealed: self.revealed, setPeerIdRevealed: setPeerIdRevealed, peerSelected: peerSelected, removeRequested: removeRequested)
     }
 }
 
@@ -47,7 +46,7 @@ private struct CommandChatInputContextPanelTransition {
     let updates: [ListViewUpdateItem]
 }
 
-private func preparedTransition(from fromEntries: [MentionChatInputContextPanelEntry], to toEntries: [MentionChatInputContextPanelEntry], context: AccountContext, presentationData: PresentationData, inverted: Bool, forceUpdate: Bool, setPeerIdRevealed: @escaping (EnginePeer.Id?) -> Void, peerSelected: @escaping (EnginePeer?) -> Void, removeRequested: @escaping (EnginePeer.Id) -> Void) -> CommandChatInputContextPanelTransition {
+private func preparedTransition(from fromEntries: [MentionChatInputContextPanelEntry], to toEntries: [MentionChatInputContextPanelEntry], context: AccountContext, presentationData: PresentationData, inverted: Bool, forceUpdate: Bool, setPeerIdRevealed: @escaping (EnginePeer.Id?) -> Void, peerSelected: @escaping (EnginePeer) -> Void, removeRequested: @escaping (EnginePeer.Id) -> Void) -> CommandChatInputContextPanelTransition {
     let (deleteIndices, indicesAndItems, updateIndices) = mergeListsStableWithUpdates(leftList: fromEntries, rightList: toEntries, allUpdated: forceUpdate)
     
     let deletions = deleteIndices.map { ListViewDeleteItem(index: $0, directionHint: nil) }
@@ -65,6 +64,7 @@ enum MentionChatInputContextPanelMode {
 final class MentionChatInputContextPanelNode: ChatInputContextPanelNode {
     let mode: MentionChatInputContextPanelMode
     
+    private let backgroundView: GlassBackgroundView
     private let listView: ListView
     private var currentEntries: [MentionChatInputContextPanelEntry]?
     
@@ -77,10 +77,12 @@ final class MentionChatInputContextPanelNode: ChatInputContextPanelNode {
     init(context: AccountContext, theme: PresentationTheme, strings: PresentationStrings, fontSize: PresentationFontSize, mode: MentionChatInputContextPanelMode, chatPresentationContext: ChatPresentationContext) {
         self.mode = mode
         
-        self.listView = ListView()
+        self.backgroundView = GlassBackgroundView()
+        self.backgroundView.layer.anchorPoint = CGPoint()
+        
+        self.listView = ListViewImpl()
         self.listView.isOpaque = false
         self.listView.stackFromBottom = true
-        self.listView.keepBottomItemOverscrollBackground = theme.list.plainBackgroundColor
         self.listView.limitHitTestToNodes = true
         self.listView.view.disablesInteractiveTransitionGestureRecognizer = true
         self.listView.accessibilityPageScrolledString = { row, count in
@@ -90,12 +92,31 @@ final class MentionChatInputContextPanelNode: ChatInputContextPanelNode {
         super.init(context: context, theme: theme, strings: strings, fontSize: fontSize, chatPresentationContext: chatPresentationContext)
         
         self.isOpaque = false
-        self.clipsToBounds = true
         
+        self.view.addSubview(self.backgroundView)
         self.addSubnode(self.listView)
         
         if mode == .search {
             self.transform = CATransform3DMakeRotation(CGFloat(Double.pi), 0.0, 0.0, 1.0)
+        }
+        
+        self.backgroundView.isHidden = true
+        self.listView.visibleContentOffsetChanged = { [weak self] offset, _ in
+            guard let self else {
+                return
+            }
+            var topOffset: CGFloat = 0.0
+            switch offset {
+            case let .known(offset):
+                topOffset = max(0.0, -offset + self.listView.insets.top)
+            case .unknown:
+                break
+            case .none:
+                break
+            }
+            
+            self.backgroundView.isHidden = false
+            self.backgroundView.layer.position = CGPoint(x: 0.0, y: topOffset)
         }
     }
     
@@ -105,35 +126,6 @@ final class MentionChatInputContextPanelNode: ChatInputContextPanelNode {
         var entries: [MentionChatInputContextPanelEntry] = []
         var index = 0
         var peerIdSet = Set<Int64>()
-        
-        // Nicegram changes
-        let telegramUsers = results.compactMap { peer -> TelegramUser? in
-            switch peer {
-            case .user(let user):
-                if user.botInfo == nil {
-                    return user
-                } else {
-                    return nil
-                }
-            default:
-                return nil
-            }
-        }
-        // Nicegram MentionAll
-        let currentModeSupportsMentionAll: Bool
-        switch mode {
-        case .input:
-            currentModeSupportsMentionAll = true
-        case .search:
-            currentModeSupportsMentionAll = false
-        }
-        if currentModeSupportsMentionAll, telegramUsers.count > 1 {
-            index += 1
-            entries.append(MentionChatInputContextPanelEntry(index: index, peer: nil, revealed: false))
-            print("User count is \(telegramUsers.count)")
-        }
-        //
-    
         for peer in results {
             let peerId = peer.id.toInt64()
             if peerIdSet.contains(peerId) {
@@ -169,52 +161,7 @@ final class MentionChatInputContextPanelNode: ChatInputContextPanelNode {
                             
                             if let range = mentionQueryRange {
                                 let inputText = NSMutableAttributedString(attributedString: textInputState.inputText)
-                                // Nicegram changes
-                                guard let peer = peer else {
-                                    let entries = entries
-                                        .map { entry in
-                                            let isBot: Bool
-                                            if case let .user(user) = entry.peer {
-                                                isBot = (user.botInfo != nil)
-                                            } else {
-                                                isBot = false
-                                            }
-                                            
-                                            let orderValue = isBot ? 1 : 0
-                                            
-                                            return (entry, orderValue)
-                                        }
-                                        .sorted { $0.1 < $1.1 }
-                                        .map(\.0)
-                                    
-                                    guard isPremium() else {
-                                        PremiumUITgHelper.routeToPremium(
-                                            source: .mentionAll
-                                        )
-                                        return (textInputState, inputMode)
-                                    }
-                                    let addressNames = NSMutableAttributedString()
-                                    for entry in entries {
-                                        switch entry.peer {
-                                        case .user(let userInfo):
-                                            if let addressName = userInfo.addressName, !addressName.isEmpty {
-                                                addressNames.append(NSAttributedString(string: "@\(addressName) "))
-                                            } else if let peer = entry.peer, !peer.compactDisplayTitle.isEmpty {
-                                                let appendText = NSMutableAttributedString()
-                                                appendText.append(NSAttributedString(string: peer.compactDisplayTitle, attributes: [ChatTextInputAttributes.textMention: ChatTextInputTextMentionAttribute(peerId: peer.id)]))
-                                                appendText.append(NSAttributedString(string: " "))
-                                                
-                                                addressNames.append(appendText)
-                                            }
-                                        default:
-                                            break
-                                        }
-                                    }
-                                    let updatedRange = NSRange(location: range.location - 1, length: range.length + 1)
-                                    inputText.replaceCharacters(in: updatedRange, with: addressNames)
-                                    let selectionPosition = range.lowerBound + addressNames.length
-                                    return (ChatTextInputState(inputText: inputText, selectionRange: selectionPosition ..< selectionPosition), inputMode)
-                                }
+                                
                                 if let addressName = peer.addressName, !addressName.isEmpty {
                                     let replacementText = addressName + " "
                                     
@@ -239,11 +186,8 @@ final class MentionChatInputContextPanelNode: ChatInputContextPanelNode {
                             }
                             return (textInputState, inputMode)
                         }
-                    // Nicegram changes
-                case .search:
-                    if let peer = peer {
+                    case .search:
                         interfaceInteraction.beginMessageSearch(.member(peer._asPeer()), "")
-                    } 
                 }
             }
         }, removeRequested: { [weak self] peerId in
@@ -283,9 +227,10 @@ final class MentionChatInputContextPanelNode: ChatInputContextPanelNode {
             }
             
             var insets = UIEdgeInsets()
-            insets.top = topInsetForLayout(size: validLayout.0)
+            insets.top = topInsetForLayout(size: validLayout.0, bottomInset: validLayout.3)
             insets.left = validLayout.1
             insets.right = validLayout.2
+            insets.bottom = validLayout.3
             
             let updateSizeAndInsets = ListViewUpdateSizeAndInsets(size: validLayout.0, insets: insets, duration: 0.0, curve: .Default(duration: nil))
             
@@ -298,22 +243,21 @@ final class MentionChatInputContextPanelNode: ChatInputContextPanelNode {
                         }
                     }
                     
-                    if let topItemOffset = topItemOffset {
-                        let position = strongSelf.listView.layer.position
-                        strongSelf.listView.position = CGPoint(x: position.x, y: position.y + (strongSelf.listView.bounds.size.height - topItemOffset))
-                        ContainedViewLayoutTransition.animated(duration: 0.3, curve: .spring).animateView {
-                            strongSelf.listView.position = position
-                        }
+                    if let topItemOffset {
+                        let offset = strongSelf.listView.bounds.size.height - topItemOffset
+                        let transition = ContainedViewLayoutTransition.animated(duration: 0.3, curve: .spring)
+                        transition.animatePositionAdditive(layer: strongSelf.listView.layer, offset: CGPoint(x: 0.0, y: offset))
+                        transition.animatePositionAdditive(layer: strongSelf.backgroundView.layer, offset: CGPoint(x: 0.0, y: offset))
                     }
                 }
             })
         }
     }
     
-    private func topInsetForLayout(size: CGSize) -> CGFloat {
+    private func topInsetForLayout(size: CGSize, bottomInset: CGFloat) -> CGFloat {
         let minimumItemHeights: CGFloat = floor(MentionChatInputPanelItemNode.itemHeight * 3.5)
         
-        return max(size.height - minimumItemHeights, 0.0)
+        return max(size.height - bottomInset - minimumItemHeights, 0.0)
     }
     
     override func updateLayout(size: CGSize, leftInset: CGFloat, rightInset: CGFloat, bottomInset: CGFloat, transition: ContainedViewLayoutTransition, interfaceState: ChatPresentationInterfaceState) {
@@ -322,22 +266,31 @@ final class MentionChatInputContextPanelNode: ChatInputContextPanelNode {
         
         if self.theme !== interfaceState.theme {
             self.theme = interfaceState.theme
-            self.listView.keepBottomItemOverscrollBackground = self.theme.list.plainBackgroundColor
             
             if let currentEntries = self.currentEntries {
                 self.updateToEntries(entries: currentEntries, forceUpdate: true)
             }
         }
         
+        transition.updateBounds(layer: self.backgroundView.layer, bounds: CGRect(origin: CGPoint(), size: CGSize(width: size.width, height: size.height + 32.0)))
+        self.backgroundView.update(
+            size: self.backgroundView.bounds.size,
+            cornerRadius: 20.0,
+            isDark: interfaceState.theme.overallDarkAppearance,
+            tintColor: .init(kind: .panel),
+            transition: ComponentTransition(transition)
+        )
+        
         var insets = UIEdgeInsets()
-        insets.top = topInsetForLayout(size: size)
+        insets.top = topInsetForLayout(size: size, bottomInset: bottomInset)
         insets.left = leftInset
         insets.right = rightInset
+        insets.bottom = bottomInset
         
         transition.updateFrame(node: self.listView, frame: CGRect(x: 0.0, y: 0.0, width: size.width, height: size.height))
         
         let (duration, curve) = listViewAnimationDurationAndCurve(transition: transition)
-        let updateSizeAndInsets = ListViewUpdateSizeAndInsets(size: size, insets: insets, duration: duration, curve: curve)
+        let updateSizeAndInsets = ListViewUpdateSizeAndInsets(size: size, insets: insets, duration: duration, curve: curve, customAnimationTransition: nil)
         
         self.listView.transaction(deleteIndices: [], insertIndicesAndItems: [], updateIndicesAndItems: [], options: [.Synchronous, .LowLatency], scrollToItem: nil, updateSizeAndInsets: updateSizeAndInsets, stationaryItemRange: nil, updateOpaqueState: nil, completion: { _ in })
         
@@ -356,11 +309,13 @@ final class MentionChatInputContextPanelNode: ChatInputContextPanelNode {
             }
         }
         
-        if let topItemOffset = topItemOffset {
-            let position = self.listView.layer.position
-            self.listView.layer.animatePosition(from: position, to: CGPoint(x: position.x, y: position.y + (self.listView.bounds.size.height - topItemOffset)), duration: 0.3, timingFunction: kCAMediaTimingFunctionSpring, removeOnCompletion: false, completion: { _ in
+        if let topItemOffset {
+            let offset = (self.listView.bounds.size.height - topItemOffset)
+            
+            self.listView.layer.animatePosition(from: CGPoint(), to: CGPoint(x: 0.0, y: offset), duration: 0.3, timingFunction: kCAMediaTimingFunctionSpring, removeOnCompletion: false, additive: true, completion: { _ in
                 completion()
             })
+            self.backgroundView.layer.animatePosition(from: CGPoint(), to: CGPoint(x: 0.0, y: offset), duration: 0.3, timingFunction: kCAMediaTimingFunctionSpring, removeOnCompletion: false, additive: true)
         } else {
             completion()
         }

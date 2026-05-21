@@ -74,7 +74,7 @@ class BotPaymentItemNode: ASDisplayNode {
             self.bottomSeparatorNode.isHidden = hasCorners
         }
         
-        self.maskNode.image = hasCorners ? PresentationResourcesItemList.cornersImage(theme, top: hasTopCorners, bottom: hasBottomCorners) : nil
+        self.maskNode.image = hasCorners ? PresentationResourcesItemList.cornersImage(theme, top: hasTopCorners, bottom: hasBottomCorners, glass: true) : nil
         
         transition.updateFrame(node: self.backgroundNode, frame: CGRect(origin: CGPoint(), size: CGSize(width: width, height: height)))
         transition.updateFrame(node: self.maskNode, frame: self.backgroundNode.frame.insetBy(dx: sideInset, dy: 0.0))

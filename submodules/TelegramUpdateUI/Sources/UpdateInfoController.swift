@@ -74,7 +74,7 @@ private enum UpdateInfoControllerEntry: ItemListNodeEntry {
                     arguments.linkAction(action, itemLink)
                 })
             case let .update(_, title):
-                return ItemListActionItem(presentationData: presentationData, title: title, kind: .generic, alignment: .center, sectionId: self.section, style: .blocks, action: {
+                return ItemListActionItem(presentationData: presentationData, systemStyle: .glass, title: title, kind: .generic, alignment: .center, sectionId: self.section, style: .blocks, action: {
                     arguments.openAppStorePage()
                 })
         }

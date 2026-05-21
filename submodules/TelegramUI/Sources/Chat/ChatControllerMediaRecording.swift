@@ -18,10 +18,8 @@ import AccountContext
 import TelegramStringFormatting
 import OverlayStatusController
 import DeviceLocationManager
-import ShareController
 import UrlEscaping
 import ContextUI
-import ComposePollUI
 import AlertUI
 import PresentationDataUtils
 import UndoUI
@@ -133,7 +131,7 @@ extension ChatControllerImpl {
             }
             
             var resumeData: AudioRecorderResumeData?
-            if let existingDraft, let path = self.context.account.postbox.mediaBox.completedResourcePath(existingDraft.resource), let compressedData = try? Data(contentsOf: URL(fileURLWithPath: path), options: [.mappedIfSafe]), let recorderResumeData = existingDraft.resumeData {
+            if let existingDraft, let path = self.context.engine.resources.completedResourcePath(id: EngineMediaResource.Id(existingDraft.resource.id)), let compressedData = try? Data(contentsOf: URL(fileURLWithPath: path), options: [.mappedIfSafe]), let recorderResumeData = existingDraft.resumeData {
                 resumeData = AudioRecorderResumeData(compressedData: compressedData, resumeData: recorderResumeData)
             }
             
@@ -184,7 +182,7 @@ extension ChatControllerImpl {
                     viewOnceAvailable: viewOnceAvailable,
                     inputPanelFrame: (currentInputPanelFrame, self.chatDisplayNode.inputNode != nil),
                     chatNode: self.chatDisplayNode.historyNode,
-                    completion: { [weak self] message, silentPosting, scheduleTime in
+                    completion: { [weak self] message, silentPosting, scheduleTime, repeatPeriod in
                         guard let self, let videoController = self.videoRecorderValue else {
                             return
                         }
@@ -232,14 +230,8 @@ extension ChatControllerImpl {
                         }, usedCorrelationId ? correlationId : nil)
                         
                         let messages = [message]
-                        let transformedMessages: [EnqueueMessage]
-                        if let silentPosting {
-                            transformedMessages = self.transformEnqueueMessages(messages, silentPosting: silentPosting)
-                        } else if let scheduleTime {
-                            transformedMessages = self.transformEnqueueMessages(messages, silentPosting: false, scheduleTime: scheduleTime)
-                        } else {
-                            transformedMessages = self.transformEnqueueMessages(messages)
-                        }
+                        let effectiveSilentPosting = silentPosting ?? self.presentationInterfaceState.interfaceState.silentPosting
+                        let transformedMessages = self.transformEnqueueMessages(messages, silentPosting: effectiveSilentPosting, scheduleTime: scheduleTime, repeatPeriod: repeatPeriod)
                         
                         self.sendMessages(transformedMessages)
                     }
@@ -313,7 +305,7 @@ extension ChatControllerImpl {
                                 } else if let waveform = data.waveform {
                                     if resource == nil {
                                         resource = LocalFileMediaResource(fileId: Int64.random(in: Int64.min ... Int64.max), size: Int64(data.compressedData.count))
-                                        strongSelf.context.account.postbox.mediaBox.storeResourceData(resource!.id, data: data.compressedData)
+                                        strongSelf.context.engine.resources.storeResourceData(id: EngineMediaResource.Id(resource!.id), data: data.compressedData)
                                     }
                                     
                                     let audioWaveform: AudioWaveform
@@ -363,7 +355,7 @@ extension ChatControllerImpl {
                             let randomId = Int64.random(in: Int64.min ... Int64.max)
                             
                             let resource = LocalFileMediaResource(fileId: randomId)
-                            strongSelf.context.account.postbox.mediaBox.storeResourceData(resource.id, data: data.compressedData)
+                            strongSelf.context.engine.resources.storeResourceData(id: EngineMediaResource.Id(resource.id), data: data.compressedData)
                             
                             let waveformBuffer: Data? = data.waveform
                             
@@ -479,6 +471,9 @@ extension ChatControllerImpl {
             if let _ = self.presentationInterfaceState.inputTextPanelState.mediaRecordingState {
                 self.dismissMediaRecorder(pause ? .pause : .preview)
             } else {
+                if case .video = self.presentationInterfaceState.interfaceState.mediaDraftState {
+                    return
+                }
                 self.videoRecorder.set(.single(nil))
             }
         }
@@ -497,6 +492,10 @@ extension ChatControllerImpl {
                 }.updatedInterfaceState { $0.withUpdatedMediaDraftState(nil) }
             })
         } else {
+            if case .video = self.presentationInterfaceState.interfaceState.mediaDraftState {
+                return
+            }
+
             let proceed = {
                 self.withAudioRecorder(resuming: true, { audioRecorder in
                     audioRecorder.resume()
@@ -608,7 +607,11 @@ extension ChatControllerImpl {
             }
         }
         
-        let location = CGRect(origin: CGPoint(x: screenWidth - layout.safeInsets.right - 42.0 - UIScreenPixel, y: layout.size.height - insets.bottom - 122.0), size: CGSize())
+        var sideOffset: CGFloat = 18.0
+        if let inputHeight = layout.inputHeight, inputHeight > 0.0 {
+            sideOffset = 0.0
+        }
+        let location = CGRect(origin: CGPoint(x: screenWidth - layout.safeInsets.right - 50.0 - sideOffset, y: layout.size.height - insets.bottom - 128.0), size: CGSize())
         
         let tooltipController = TooltipScreen(
             account: self.context.account,
@@ -684,6 +687,7 @@ extension ChatControllerImpl {
     func sendMediaRecording(
         silentPosting: Bool? = nil,
         scheduleTime: Int32? = nil,
+        repeatPeriod: Int32? = nil,
         viewOnce: Bool = false,
         messageEffect: ChatSendMessageEffect? = nil,
         postpone: Bool = false
@@ -709,8 +713,6 @@ extension ChatControllerImpl {
                 }
                 return
             }
-            
-            
             
             self.chatDisplayNode.setupSendActionOnViewUpdate({ [weak self] in
                 if let strongSelf = self {
@@ -739,7 +741,7 @@ extension ChatControllerImpl {
                 let randomId = Int64.random(in: Int64.min ... Int64.max)
                 let tempPath = NSTemporaryDirectory() + "\(Int64.random(in: 0 ..< .max)).ogg"
                 resource = LocalFileAudioMediaResource(randomId: randomId, path: tempPath, trimRange: trimRange)
-                self.context.account.postbox.mediaBox.moveResourceData(audio.resource.id, toTempPath: tempPath)
+                self.context.engine.resources.moveResourceData(id: EngineMediaResource.Id(audio.resource.id), toTempPath: tempPath)
                 waveform = waveform.subwaveform(from: trimRange.lowerBound / Double(audio.duration), to: trimRange.upperBound / Double(audio.duration))
                 finalDuration = Int(trimRange.upperBound - trimRange.lowerBound)
             } else {
@@ -750,14 +752,8 @@ extension ChatControllerImpl {
             
             let messages: [EnqueueMessage] = [.message(text: "", attributes: attributes, inlineStickers: [:], mediaReference: .standalone(media: TelegramMediaFile(fileId: MediaId(namespace: Namespaces.Media.LocalFile, id: Int64.random(in: Int64.min ... Int64.max)), partialReference: nil, resource: resource, previewRepresentations: [], videoThumbnails: [], immediateThumbnailData: nil, mimeType: "audio/ogg", size: Int64(audio.fileSize), attributes: [.Audio(isVoice: true, duration: finalDuration, title: nil, performer: nil, waveform: waveformBuffer)], alternativeRepresentations: [])), threadId: self.chatLocation.threadId, replyToMessageId: self.presentationInterfaceState.interfaceState.replyMessageSubject?.subjectModel, replyToStoryId: nil, localGroupingKey: nil, correlationId: nil, bubbleUpEmojiOrStickersets: [])]
             
-            let transformedMessages: [EnqueueMessage]
-            if let silentPosting = silentPosting {
-                transformedMessages = self.transformEnqueueMessages(messages, silentPosting: silentPosting, postpone: postpone)
-            } else if let scheduleTime = scheduleTime {
-                transformedMessages = self.transformEnqueueMessages(messages, silentPosting: false, scheduleTime: scheduleTime, postpone: postpone)
-            } else {
-                transformedMessages = self.transformEnqueueMessages(messages)
-            }
+            let effectiveSilentPosting = silentPosting ?? self.presentationInterfaceState.interfaceState.silentPosting
+            let transformedMessages = self.transformEnqueueMessages(messages, silentPosting: effectiveSilentPosting, scheduleTime: scheduleTime, repeatPeriod: repeatPeriod, postpone: postpone)
             
             guard let peerId = self.chatLocation.peerId else {
                 return
@@ -772,7 +768,10 @@ extension ChatControllerImpl {
             
             donateSendMessageIntent(account: self.context.account, sharedContext: self.context.sharedContext, intentContext: .chat, peerIds: [peerId])
         case .video:
-            self.videoRecorderValue?.sendVideoRecording(silentPosting: silentPosting, scheduleTime: scheduleTime, messageEffect: messageEffect)
+            guard let videoRecorderValue = self.videoRecorderValue else {
+                return
+            }
+            videoRecorderValue.sendVideoRecording(silentPosting: silentPosting, scheduleTime: scheduleTime, repeatPeriod: repeatPeriod, messageEffect: messageEffect)
         }
     }
 }

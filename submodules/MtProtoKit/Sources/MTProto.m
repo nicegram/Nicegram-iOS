@@ -1800,15 +1800,30 @@ static const NSUInteger MTMaxUnacknowledgedMessageCount = 64;
         
         MTInputStream *is = [[MTInputStream alloc] initWithData:data];
         
-        int64_t keyId = [is readInt64];
+        bool readingError = false;
+        
+        int64_t keyId = [is readInt64:&readingError];
+        if (readingError) {
+            return;
+        }
         
         if (keyId == authKey.authKeyId)
         {
-            NSData *messageKey = [is readData:16];
+            
+            NSData *messageKey = [is readData:16 failed:&readingError];
+            if (readingError) {
+                return;
+            }
 
             MTMessageEncryptionKey *encryptionKey = [MTMessageEncryptionKey messageEncryptionKeyV2ForAuthKey:effectiveAuthKey.authKey messageKey:messageKey toClient:true];
+            if (data.length <= 24) {
+                return;
+            }
+            NSMutableData *encryptedMessageData = [is readMutableData:(data.length - 24) failed:&readingError];
+            if (readingError) {
+                return;
+            }
             
-            NSMutableData *encryptedMessageData = [is readMutableData:(data.length - 24)];
             while (encryptedMessageData.length % 16 != 0) {
                    [encryptedMessageData setLength:encryptedMessageData.length - 1];
             }
@@ -1817,47 +1832,36 @@ static const NSUInteger MTMaxUnacknowledgedMessageCount = 64;
                 NSData *decryptedData = MTAesDecrypt(encryptedMessageData, encryptionKey.key, encryptionKey.iv);
                 
                 MTInputStream *messageIs = [[MTInputStream alloc] initWithData:decryptedData];
-                [messageIs readInt64];
-                [messageIs readInt64];
-                
-                [messageIs readInt64];
-                [messageIs readInt32];
-                [messageIs readInt32];
                 
                 bool stop = false;
+                if (!stop) {
+                    [messageIs readInt64:&stop];
+                }
+                if (!stop) {
+                    [messageIs readInt64:&stop];
+                }
+                if (!stop) {
+                    [messageIs readInt64:&stop];
+                }
+                if (!stop) {
+                    [messageIs readInt32:&stop];
+                }
+                if (!stop) {
+                    [messageIs readInt32:&stop];
+                }
+                
                 int64_t reqMsgId = 0;
                 
-                /*if (true)
-                {*/
-                    while (!stop && reqMsgId == 0)
-                    {
-                        int32_t signature = [messageIs readInt32:&stop];
+                while (!stop && reqMsgId == 0) {
+                    int32_t signature = [messageIs readInt32:&stop];
+                    if (!stop) {
                         [self findReqMsgId:messageIs signature:signature reqMsgId:&reqMsgId failed:&stop];
                     }
-                /*}
-                else
-                {
-                    int32_t signature = [messageIs readInt32];
-                    if (signature == (int)0xf35c6d01)
-                        reqMsgId = [messageIs readInt64];
-                    else if (signature == (int)0x73f1f8dc)
-                    {
-                        int count = [messageIs readInt32];
-                        if (count != 0)
-                        {
-                            [messageIs readInt64];
-                            [messageIs readInt32];
-                            [messageIs readInt32];
-                            
-                            signature = [messageIs readInt32];
-                            if (signature == (int)0xf35c6d01)
-                                reqMsgId = [messageIs readInt64];
-                        }
-                    }
-                }*/
+                }
                 
-                if (reqMsgId != 0)
+                if (reqMsgId != 0) {
                     completion(token, @(reqMsgId));
+                }
             }
         }
     }];
@@ -2304,38 +2308,48 @@ static bool isDataEqualToDataConstTime(NSData *data1, NSData *data2) {
     
     if (_useUnauthorizedMode)
     {
-        int64_t authKeyId = [is readInt64];
+        bool readingError = false;
+        int64_t authKeyId = [is readInt64:&readingError];
+        if (readingError) {
+            if (parseError != NULL) {
+                *parseError = true;
+            }
+            return nil;
+        }
         if (authKeyId != 0)
         {
-            if (parseError != NULL)
+            if (parseError != NULL) {
                 *parseError = true;
+            }
             return nil;
         }
         
         embeddedMessageId = [is readInt64:&readError];
         if (readError)
         {
-            if (parseError != NULL)
+            if (parseError != NULL) {
                 *parseError = true;
+            }
             return nil;
         }
         
         topMessageSize = [is readInt32:&readError];
         if (readError || topMessageSize < 4)
         {
-            if (parseError != NULL)
+            if (parseError != NULL) {
                 *parseError = true;
+            }
             return nil;
         }
         
-        if (dataMessageId != 0)
+        if (dataMessageId != 0) {
             *dataMessageId = embeddedMessageId;
+        }
     }
     else
     {
         embeddedSalt = [is readInt64:&readError];
-        if (readError)
-        {
+        if (readError) {
             if (parseError != NULL)
                 *parseError = true;
             return nil;
@@ -2344,39 +2358,44 @@ static bool isDataEqualToDataConstTime(NSData *data1, NSData *data2) {
         embeddedSessionId = [is readInt64:&readError];
         if (readError)
         {
-            if (parseError != NULL)
+            if (parseError != NULL) {
                 *parseError = true;
+            }
             return nil;
         }
         
         if (embeddedSessionId != _sessionInfo.sessionId)
         {
-            if (parseError != NULL)
+            if (parseError != NULL) {
                 *parseError = true;
+            }
             return nil;
         }
         
         embeddedMessageId = [is readInt64:&readError];
         if (readError)
         {
-            if (parseError != NULL)
+            if (parseError != NULL) {
                 *parseError = true;
+            }
             return nil;
         }
         
         embeddedSeqNo = [is readInt32:&readError];
         if (readError)
         {
-            if (parseError != NULL)
+            if (parseError != NULL) {
                 *parseError = true;
+            }
             return nil;
         }
         
         [is readInt32:&readError];
         if (readError)
         {
-            if (parseError != NULL)
+            if (parseError != NULL) {
                 *parseError = true;
+            }
             return nil;
         }
     }
@@ -2386,31 +2405,33 @@ static bool isDataEqualToDataConstTime(NSData *data1, NSData *data2) {
     while (true)
     {
         NSInteger readBytes = [[is wrappedInputStream] read:buffer maxLength:128];
-        if (readBytes <= 0)
+        if (readBytes <= 0) {
             break;
+        }
         [topMessageData appendBytes:buffer length:readBytes];
     }
     
     id topObject = [self parseMessage:topMessageData];
     if (topObject == nil)
     {
-        if (parseError != NULL)
+        if (parseError != NULL) {
             *parseError = true;
+        }
         return nil;
     }
     
     NSMutableArray *messages = [[NSMutableArray alloc] init];
     NSTimeInterval timestamp = embeddedMessageId / 4294967296.0;
     
-    if ([topObject isKindOfClass:[MTMsgContainerMessage class]])
-    {
+    if ([topObject isKindOfClass:[MTMsgContainerMessage class]]) {
         for (MTMessage *subMessage in ((MTMsgContainerMessage *)topObject).messages)
         {
             id subObject = [self parseMessage:subMessage.data];
             if (subObject == nil)
             {
-                if (parseError != NULL)
+                if (parseError != NULL) {
                     *parseError = true;
+                }
                 return nil;
             }
             
@@ -2419,15 +2440,14 @@ static bool isDataEqualToDataConstTime(NSData *data1, NSData *data2) {
             int32_t subMessageLength = (int32_t)subMessage.data.length;
             [messages addObject:[[MTIncomingMessage alloc] initWithMessageId:subMessageId seqNo:subMessageSeqNo authKeyId:embeddedAuthKeyId sessionId:embeddedSessionId salt:embeddedSalt timestamp:timestamp size:subMessageLength body:subObject]];
         }
-    }
-    else if ([topObject isKindOfClass:[MTMessage class]])
-    {
+    } else if ([topObject isKindOfClass:[MTMessage class]]) {
         MTMessage *message = topObject;
         id subObject = [self parseMessage:message.data];
         if (subObject == nil)
         {
-            if (parseError != NULL)
+            if (parseError != NULL) {
                 *parseError = true;
+            }
             return nil;
         }
         
@@ -2435,9 +2455,9 @@ static bool isDataEqualToDataConstTime(NSData *data1, NSData *data2) {
         int32_t subMessageSeqNo = message.seqNo;
         int32_t subMessageLength = (int32_t)message.data.length;
         [messages addObject:[[MTIncomingMessage alloc] initWithMessageId:subMessageId seqNo:subMessageSeqNo authKeyId:embeddedAuthKeyId sessionId:embeddedSessionId salt:embeddedSalt timestamp:timestamp size:subMessageLength body:subObject]];
-    }
-    else
+    } else {
         [messages addObject:[[MTIncomingMessage alloc] initWithMessageId:embeddedMessageId seqNo:embeddedSeqNo authKeyId:embeddedAuthKeyId sessionId:embeddedSessionId salt:embeddedSalt timestamp:timestamp size:topMessageSize body:topObject]];
+    }
     
     return messages;
 }

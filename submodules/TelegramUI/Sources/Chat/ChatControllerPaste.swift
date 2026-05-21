@@ -10,7 +10,6 @@ import MediaPickerUI
 import MediaPasteboardUI
 import LegacyMediaPickerUI
 import MediaEditor
-import ChatEntityKeyboardInputNode
 
 extension ChatControllerImpl {
     func displayPasteMenu(_ subjects: [MediaPickerScreenImpl.Subject.Media]) {
@@ -24,6 +23,7 @@ extension ChatControllerImpl {
                 if strongSelf.presentationInterfaceState.interfaceState.postSuggestionState != nil {
                     enableMultiselection = false
                 }
+                let inputText = strongSelf.presentationInterfaceState.interfaceState.effectiveInputState.inputText
                 
                 strongSelf.chatDisplayNode.dismissInput()
                 let controller = mediaPasteboardScreen(
@@ -33,18 +33,21 @@ extension ChatControllerImpl {
                     subjects: subjects,
                     presentMediaPicker: { [weak self] subject, saveEditedPhotos, bannedSendPhotos, bannedSendVideos, present in
                         if let strongSelf = self {
-                            strongSelf.presentMediaPicker(subject: subject, saveEditedPhotos: saveEditedPhotos, bannedSendPhotos: bannedSendPhotos, bannedSendVideos: bannedSendVideos, enableMultiselection: enableMultiselection, present: present, updateMediaPickerContext: { _ in }, completion: { [weak self] fromGallery, signals, silentPosting, scheduleTime, parameters, getAnimatedTransitionSource, completion in
+                            strongSelf.presentMediaPicker(subject: subject, saveEditedPhotos: saveEditedPhotos, bannedSendPhotos: bannedSendPhotos, bannedSendVideos: bannedSendVideos, enableMultiselection: enableMultiselection, present: { controller, mediaPickerContext in
+                                if !inputText.string.isEmpty {
+                                    mediaPickerContext?.setCaption(inputText)
+                                }
+                                present(controller, mediaPickerContext)
+                            }, updateMediaPickerContext: { _ in }, completion: { [weak self] fromGallery, signals, silentPosting, scheduleTime, parameters, getAnimatedTransitionSource, completion in
+                                if !inputText.string.isEmpty {
+                                    self?.clearInputText()
+                                }
                                 self?.enqueueMediaMessages(fromGallery: fromGallery, signals: signals, silentPosting: silentPosting, scheduleTime: scheduleTime, parameters: parameters, getAnimatedTransitionSource: getAnimatedTransitionSource, completion: completion)
                             })
                         }
                     },
                     getSourceRect: nil,
-                    makeEntityInputView: { [weak self] in
-                        guard let self else {
-                            return nil
-                        }
-                        return EntityInputView(context: self.context, isDark: false, areCustomEmojiEnabled: self.presentationInterfaceState.customEmojiAvailable)
-                    }
+                    customEmojiAvailable: strongSelf.presentationInterfaceState.customEmojiAvailable
                 )
                 controller.navigationPresentation = .flatModal
                 strongSelf.push(controller)
@@ -103,7 +106,7 @@ extension ChatControllerImpl {
         self.enqueueMediaMessageDisposable.set((convertToWebP(image: image, targetSize: size, targetBoundingSize: size, quality: 0.9) |> deliverOnMainQueue).startStrict(next: { [weak self] data in
             if let strongSelf = self, !data.isEmpty {
                 let resource = LocalFileMediaResource(fileId: Int64.random(in: Int64.min ... Int64.max))
-                strongSelf.context.account.postbox.mediaBox.storeResourceData(resource.id, data: data)
+                strongSelf.context.engine.resources.storeResourceData(id: EngineMediaResource.Id(resource.id), data: data)
                 
                 var fileAttributes: [TelegramMediaFileAttribute] = []
                 fileAttributes.append(.FileName(fileName: "sticker.webp"))
@@ -195,6 +198,7 @@ extension ChatControllerImpl {
             cropOrientation: .up,
             gradientColors: [.clear, .clear],
             videoTrimRange: nil,
+            videoBounce: false,
             videoIsMuted: false,
             videoIsFullHd: false,
             videoIsMirrored: false,
@@ -250,7 +254,7 @@ extension ChatControllerImpl {
                 let previewRepresentations: [TelegramMediaImageRepresentation] = []
 
                 let resource = LocalFileMediaResource(fileId: Int64.random(in: Int64.min ... Int64.max))
-                self.context.account.postbox.mediaBox.copyResourceData(resource.id, fromTempPath: path)
+                self.context.engine.resources.copyResourceData(id: EngineMediaResource.Id(resource.id), fromTempPath: path)
                 
                 let file = TelegramMediaFile(fileId: MediaId(namespace: Namespaces.Media.LocalFile, id: Int64.random(in: Int64.min ... Int64.max)), partialReference: nil, resource: resource, previewRepresentations: previewRepresentations, videoThumbnails: [], immediateThumbnailData: nil, mimeType: "video/webm", size: 0, attributes: fileAttributes, alternativeRepresentations: [])
                 self.enqueueStickerFile(file)

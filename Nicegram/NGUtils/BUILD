@@ -6,13 +6,21 @@ swift_library(
     srcs = glob([
         "Sources/**/*.swift",
     ]),
+    copts = [
+        "-warnings-as-errors",
+    ],
     deps = [
-        "//submodules/AccountContext:AccountContext",
-        "//submodules/ItemListUI:ItemListUI",
-        "@swiftpkg_firebase_ios_sdk//:FirebaseAnalytics",
+        "//submodules/AccountContext",
+        "//submodules/ItemListUI",
+        "//submodules/PhoneNumberFormat",
+        "//third-party/webrtc:webrtc_objc",
+        "@swiftpkg_nicegram_assistant_ios//:CoreAnalytics",
+        "@swiftpkg_nicegram_assistant_ios//:FeatWhitebridge",
         "@swiftpkg_nicegram_assistant_ios//:FeatAiChatAnalysis",
         "@swiftpkg_nicegram_assistant_ios//:FeatAttentionEconomy",
-        "@swiftpkg_nicegram_assistant_ios//:NGAnalytics",
+        "@swiftpkg_nicegram_assistant_ios//:FeatCalls",
+        "@swiftpkg_nicegram_assistant_ios//:FeatSensitiveContentAccess",
+        "@swiftpkg_nicegram_assistant_ios//:FeatUserArchetype",
         "@swiftpkg_nicegram_wallet_ios//:NicegramWallet",
     ],
     visibility = [

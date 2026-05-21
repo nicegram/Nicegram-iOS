@@ -12,7 +12,8 @@ func updateAppConfigurationOnce(postbox: Postbox, network: Network) -> Signal<Vo
         return network.request(Api.functions.help.getAppConfig(hash: hash))
         |> map { result -> (data: Api.JSONValue, hash: Int32)? in
             switch result {
-            case let .appConfig(updatedHash, config):
+            case let .appConfig(appConfigData):
+                let (updatedHash, config) = (appConfigData.hash, appConfigData.config)
                 return (config, updatedHash)
             case .appConfigNotModified:
                 return nil

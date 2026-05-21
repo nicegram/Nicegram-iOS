@@ -381,28 +381,28 @@ public final class AddGiftsScreen: ViewControllerComponentContainer {
             }
             
             items.append(.action(ContextMenuActionItem(text: strings.PeerInfo_Gifts_Unlimited, icon: { theme in
-                return filter.contains(.unlimited) ? generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Check"), color: theme.contextMenu.primaryColor) : nil
+                return filter.contains(.unlimited) ? generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Check"), color: theme.contextMenu.primaryColor) : UIImage()
             }, action: { _, f in
                 toggleFilter(.unlimited)
             }, longPressAction: { _, f in
                 switchToFilter(.unlimited)
             })))
             items.append(.action(ContextMenuActionItem(text: strings.PeerInfo_Gifts_Limited, icon: { theme in
-                return filter.contains(.limitedNonUpgradable) ? generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Check"), color: theme.contextMenu.primaryColor) : nil
+                return filter.contains(.limitedNonUpgradable) ? generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Check"), color: theme.contextMenu.primaryColor) : UIImage()
             }, action: { _, f in
                 toggleFilter(.limitedNonUpgradable)
             }, longPressAction: { _, f in
                 switchToFilter(.limitedNonUpgradable)
             })))
             items.append(.action(ContextMenuActionItem(text: strings.PeerInfo_Gifts_Upgradable, icon: { theme in
-                return filter.contains(.limitedUpgradable) ? generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Check"), color: theme.contextMenu.primaryColor) : nil
+                return filter.contains(.limitedUpgradable) ? generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Check"), color: theme.contextMenu.primaryColor) : UIImage()
             }, action: { _, f in
                 toggleFilter(.limitedUpgradable)
             }, longPressAction: { _, f in
                 switchToFilter(.limitedUpgradable)
             })))
             items.append(.action(ContextMenuActionItem(text: strings.PeerInfo_Gifts_Unique, icon: { theme in
-                return filter.contains(.unique) ? generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Check"), color: theme.contextMenu.primaryColor) : nil
+                return filter.contains(.unique) ? generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Check"), color: theme.contextMenu.primaryColor) : UIImage()
             }, action: { _, f in
                 toggleFilter(.unique)
             }, longPressAction: { _, f in
@@ -412,14 +412,14 @@ public final class AddGiftsScreen: ViewControllerComponentContainer {
             items.append(.separator)
             
             items.append(.action(ContextMenuActionItem(text: strings.PeerInfo_Gifts_Displayed, icon: { theme in
-                return filter.contains(.displayed) ? generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Check"), color: theme.contextMenu.primaryColor) : nil
+                return filter.contains(.displayed) ? generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Check"), color: theme.contextMenu.primaryColor) : UIImage()
             }, action: { _, f in
                 toggleFilter(.displayed)
             }, longPressAction: { _, f in
                 switchToVisiblityFilter(.displayed)
             })))
             items.append(.action(ContextMenuActionItem(text: strings.PeerInfo_Gifts_Hidden, icon: { theme in
-                return filter.contains(.hidden) ? generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Check"), color: theme.contextMenu.primaryColor) : nil
+                return filter.contains(.hidden) ? generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Check"), color: theme.contextMenu.primaryColor) : UIImage()
             }, action: { _, f in
                 toggleFilter(.hidden)
             }, longPressAction: { _, f in
@@ -429,7 +429,7 @@ public final class AddGiftsScreen: ViewControllerComponentContainer {
             return ContextController.Items(content: .list(items))
         }
         
-        let contextController = ContextController(presentationData: presentationData, source: .reference(HeaderContextReferenceContentSource(controller: self, sourceView: sourceView)), items: items, gesture: gesture)
+        let contextController = makeContextController(presentationData: presentationData, source: .reference(HeaderContextReferenceContentSource(controller: self, sourceView: sourceView)), items: items, gesture: gesture)
         self.presentInGlobalOverlay(contextController)
     }
     
@@ -484,18 +484,18 @@ private final class FilterHeaderButton: HighlightableButtonNode {
             component: AnyComponent(
                 BundleIconComponent(
                     name: "Peer Info/SortIcon",
-                    tintColor: theme.rootController.navigationBar.accentTextColor
+                    tintColor: theme.chat.inputPanel.panelControlColor
                 )
             ),
             environment: {},
-            containerSize: CGSize(width: 30.0, height: 30.0)
+            containerSize: CGSize(width: 44.0, height: 44.0)
         )
         if let view = self.icon.view {
             if view.superview == nil {
                 view.isUserInteractionEnabled = false
                 self.referenceNode.view.addSubview(view)
             }
-            view.frame = CGRect(origin: CGPoint(x: 14.0, y: 7.0), size: iconSize)
+            view.frame = CGRect(origin: CGPoint(x: 7.0, y: 7.0), size: iconSize)
         }
         
         self.containerNode.frame = CGRect(origin: CGPoint(), size: CGSize(width: 44.0, height: 44.0))

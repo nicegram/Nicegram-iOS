@@ -425,6 +425,7 @@ private final class CollectibleItemInfoScreenContentComponent: Component {
                 transition: transition,
                 component: AnyComponent(ButtonComponent(
                     background: ButtonComponent.Background(
+                        style: .glass,
                         color: environment.theme.list.itemCheckColors.fillColor,
                         foreground: environment.theme.list.itemCheckColors.foregroundColor,
                         pressedColor: environment.theme.list.itemCheckColors.fillColor.withMultipliedAlpha(0.8)
@@ -450,9 +451,9 @@ private final class CollectibleItemInfoScreenContentComponent: Component {
                     }
                 )),
                 environment: {},
-                containerSize: CGSize(width: availableSize.width - sideInset * 2.0, height: 50.0)
+                containerSize: CGSize(width: availableSize.width - 30.0 * 2.0, height: 52.0)
             )
-            let buttonFrame = CGRect(origin: CGPoint(x: sideInset, y: contentHeight), size: buttonSize)
+            let buttonFrame = CGRect(origin: CGPoint(x: 30.0, y: contentHeight), size: buttonSize)
             if let buttonView = self.button.view {
                 if buttonView.superview == nil {
                     self.addSubview(buttonView)
@@ -521,7 +522,7 @@ private final class CollectibleItemInfoScreenContentComponent: Component {
             if environment.safeInsets.bottom.isZero {
                 contentHeight += 16.0
             } else {
-                contentHeight += environment.safeInsets.bottom + 14.0
+                contentHeight += environment.safeInsets.bottom + 1.0
             }
             
             return CGSize(width: availableSize.width, height: contentHeight)
@@ -580,6 +581,8 @@ private final class CollectibleItemInfoScreenComponent: Component {
             self.environment = environment
             
             let sheetEnvironment = SheetComponentEnvironment(
+                metrics: environment.metrics,
+                deviceMetrics: environment.deviceMetrics,
                 isDisplaying: environment.isVisible,
                 isCentered: environment.metrics.widthClass == .regular,
                 hasInputHeight: !environment.inputHeight.isZero,
@@ -618,7 +621,8 @@ private final class CollectibleItemInfoScreenComponent: Component {
                             })
                         }
                     )),
-                    backgroundColor: .color(environment.theme.list.plainBackgroundColor),
+                    style: .glass,
+                    backgroundColor: .color(environment.theme.list.modalPlainBackgroundColor),
                     animateOut: self.sheetAnimateOut
                 )),
                 environment: {

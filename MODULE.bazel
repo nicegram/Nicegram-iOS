@@ -1,7 +1,7 @@
 http_file = use_repo_rule("@bazel_tools//tools/build_defs/repo:http.bzl", "http_file")
 
-bazel_dep(name = "bazel_features", version = "1.30.0")
-bazel_dep(name = "bazel_skylib", version = "1.7.1")
+bazel_dep(name = "bazel_features", version = "1.33.0")
+bazel_dep(name = "bazel_skylib", version = "1.8.1")
 bazel_dep(name = "platforms", version = "0.0.11")
 bazel_dep(name = "rules_xcodeproj")
 local_path_override(
@@ -29,8 +29,8 @@ local_path_override(
 
 http_file(
     name = "cmake_tar_gz",
-    sha256 = "f794ed92ccb4e9b6619a77328f313497d7decf8fb7e047ba35a348b838e0e1e2",
-    urls = ["https://github.com/Kitware/CMake/releases/download/v3.23.1/cmake-3.23.1-macos-universal.tar.gz"],
+    urls = ["https://github.com/Kitware/CMake/releases/download/v4.1.2/cmake-4.1.2-macos-universal.tar.gz"],
+    sha256 = "3be85f5b999e327b1ac7d804cbc9acd767059e9f603c42ec2765f6ab68fbd367",
 )
 
 http_file(
@@ -62,15 +62,27 @@ local_path_override(
     path = "./build-input/configuration-repository",
 )
 
+bazel_dep(name = "sourcekit_bazel_bsp", version = "0.7.1")
+local_path_override(
+    module_name = "sourcekit_bazel_bsp",
+    path = "build-system/bazel-rules/sourcekit-bazel-bsp",
+)
+
 # Nicegram, rules_swift_package_manager
 bazel_dep(
     name = "rules_swift_package_manager",
-    version = "1.4.0",
+    version = "1.17.1",
 )
-git_override(
+
+# See the patch file for the rationale. Remove this override together with the
+# patch once https://github.com/cgrindel/rules_swift_package_manager/issues/2216
+# lands upstream.
+single_version_override(
     module_name = "rules_swift_package_manager",
-    remote = "https://github.com/denis15yo/rules_swift_package_manager",
-    commit = "32ead4e042afc5e7dded0e1a357b4ff077a09a5f",
+    patch_strip = 1,
+    patches = [
+        "//spm-patches/rules_swift_package_manager:0001-drop-static-xcframework-alwayslink.patch",
+    ],
 )
 
 swift_deps = use_extension(
@@ -78,9 +90,19 @@ swift_deps = use_extension(
     "swift_deps",
 )
 swift_deps.from_package(
+    declare_swift_package = False,
     resolved = "//:Package.resolved",
     swift = "//:Package.swift",
 )
+
+swift_deps.configure_package(
+    name = "tweetnacl-swiftwrap",
+    patch_args = ["-p1"],
+    patches = [
+        "//spm-patches/tweetnacl-swiftwrap:0001-rename-modulemap-file.patch",
+    ],
+)
+
 use_repo(
     swift_deps,
     "swiftpkg_firebase_ios_sdk",
