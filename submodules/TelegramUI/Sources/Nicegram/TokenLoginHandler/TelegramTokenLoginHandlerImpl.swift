@@ -2,7 +2,9 @@ import AccountContext
 import Foundation
 import MemberwiseInit
 import NGCore
+import NGUtils
 import SwiftSignalKit
+import TelegramAccountAuxiliaryMethods
 import TelegramBridge
 import TelegramCore
 
@@ -16,11 +18,17 @@ extension TelegramTokenLoginHandlerImpl: TelegramTokenLoginHandler {
         approveToken: (Data) async throws -> Void,
         twofaPassword: String?
     ) async throws {
-        let suppressionToken = TelegramAuthUISuppressor.shared.suppress()
-        defer { suppressionToken.cancel() }
-        
         let sharedContext = try await sharedContextProvider.sharedContext()
-        var account = try await getOrCreateUnauthorizedAccount(sharedContext: sharedContext)
+        
+        let accountId = generateAccountRecordId()
+        
+        TelegramSilentAuthRegistry.shared.add(accountId)
+        defer { TelegramSilentAuthRegistry.shared.remove(accountId) }
+        
+        var account = try await createSilentUnauthorizedAccount(
+            accountId: accountId,
+            sharedContext: sharedContext
+        )
         
         let token = try await generateToken(
             account: &account,
@@ -85,37 +93,36 @@ private extension TelegramTokenLoginHandlerImpl {
 //  MARK: - Helpers
 
 private extension TelegramTokenLoginHandlerImpl {
-    func getOrCreateUnauthorizedAccount(
+    func createSilentUnauthorizedAccount(
+        accountId: AccountRecordId,
         sharedContext: SharedAccountContext
     ) async throws -> UnauthorizedAccount {
-        let currentAuth = try await sharedContext.activeAccountContexts.awaitForFirstValue().currentAuth
-        if let currentAuth {
-            return currentAuth
-        } else {
-            return try await createAuth(sharedContext: sharedContext)
-        }
-    }
-    
-    func createAuth(
-        sharedContext: SharedAccountContext
-    ) async throws -> UnauthorizedAccount {
-        _ = try await sharedContext.accountManager
-            .transaction { $0.createAuth([]) }
-            .awaitForFirstValue()
-            .unwrap()
+        let sharedContext = try (sharedContext as? SharedAccountContextImpl).unwrap()
         
-        let createdAuthSignal = sharedContext.activeAccountContexts
-        |> mapToSignal { _, _, currentAuth in
-            if let currentAuth {
-                return .single(currentAuth)
+        let accountSignal = accountWithId(
+            accountManager: sharedContext.accountManager,
+            networkArguments: sharedContext.networkArguments,
+            id: accountId,
+            encryptionParameters: sharedContext.encryptionParameters,
+            supplementary: false,
+            isSupportUser: false,
+            rootPath: sharedContext.rootPath,
+            beginWithTestingEnvironment: false,
+            backupData: nil,
+            auxiliaryMethods: makeTelegramAccountAuxiliaryMethods(uploadInBackground: nil)
+        )
+        |> mapToSignal { result in
+            if case let .unauthorized(unauthorizedAccount) = result {
+                return .single(unauthorizedAccount)
             } else {
                 return .complete()
             }
         }
-        |> timeout(5, queue: .mainQueue(), alternate: .complete())
-        let createdAuth = try await createdAuthSignal.awaitForFirstValue()
+        let account = try await accountSignal.awaitForFirstValue()
         
-        return createdAuth
+        account.shouldBeServiceTaskMaster.set(.single(.always))
+        
+        return account
     }
     
     func internalExportLoginToken(

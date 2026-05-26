@@ -1717,13 +1717,7 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
         let authContextReadyDisposable = MetaDisposable()
         
         self.authContextDisposable.set((self.authContext.get()
-        |> deliverOnMainQueue).start(next: { context in
-            // Nicegram
-            if TelegramAuthUISuppressor.shared.isSuppressed() {
-                return
-            }
-            //
-            
+        |> deliverOnMainQueue).start(next: { context in 
             var network: Network?
             if let context = context {
                 network = context.account.network

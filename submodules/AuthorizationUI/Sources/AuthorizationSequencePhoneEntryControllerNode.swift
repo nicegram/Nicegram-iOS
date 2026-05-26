@@ -511,8 +511,12 @@ final class AuthorizationSequencePhoneEntryControllerNode: ASDisplayNode {
             }
         }
         
-        // Nicegram, updateLoginTokenEvents subscription removed
-        // Conflicts with token-based login in the TgAccountShop feature
+        if let account = account {
+            self.tokenEventsDisposable.set((account.updateLoginTokenEvents
+            |> deliverOnMainQueue).startStrict(next: { [weak self] _ in
+                self?.refreshQrToken()
+            }))
+        }
         
         self.proceedNode.pressed = { [weak self] in
             self?.checkPhone?()

@@ -454,15 +454,9 @@ private final class FetchManagerCategoryContext {
                                 let _ = (saveToCameraRoll(context: context, userLocation: userLocation, mediaReference: mediaReference)
                                          |> deliverOnMainQueue).start(completed: {
                                     if #available(iOS 13.0, *) {
-                                        Task {
+                                        Task { @MainActor in
                                             try? await Task.sleep(seconds: 0.2)
-                                            await Toasts.show(
-                                                ToastState(
-                                                    image: nil,
-                                                    title: "The video is downloaded to your phone gallery",
-                                                    backgroundColor: UIColor(rgb: 0x474747)
-                                                )
-                                            )
+                                            Toasts.show(.success(title: "The video is downloaded to your phone gallery"))
                                         }
                                     }
                                 })

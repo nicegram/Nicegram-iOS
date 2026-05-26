@@ -275,8 +275,8 @@
       "kind" : "remoteSourceControl",
       "location" : "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
       "state" : {
-        "branch" : "feat/tg-account-shop",
-        "revision" : "3ff38b7f0e37000c785f76bacb9bcc8b5f3a3f52"
+        "branch" : "build/681",
+        "revision" : "6003c474f3ebb87df788d80c33354ea538908b52"
       }
     },
     {
@@ -284,8 +284,8 @@
       "kind" : "remoteSourceControl",
       "location" : "git@bitbucket.org:mobyrix/nicegram-wallet-ios.git",
       "state" : {
-        "branch" : "develop",
-        "revision" : "d87d57e11554dc58fcfa2fb4f34bfb3488a90bfe"
+        "branch" : "refactor/optimize-api-requests",
+        "revision" : "040d562b5db8b7ed3769a9a52cb0f4c4e7e0b9ec"
       }
     },
     {
@@ -410,8 +410,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/apple/swift-argument-parser",
       "state" : {
-        "revision" : "626b5b7b2f45e1b0b1c6f4a309296d1d21d7311b",
-        "version" : "1.7.1"
+        "revision" : "5e0406d68a4937f21ae5f670b8f89dad1d156a1c",
+        "version" : "1.8.0"
       }
     },
     {
@@ -608,8 +608,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/trustwallet/wallet-core.git",
       "state" : {
-        "revision" : "62ef27c56c6769b3aec3c5167d925dc085646a5c",
-        "version" : "4.6.9"
+        "revision" : "e455fe9e53a1a6866b3fef97f3c11e68f31fd2ab",
+        "version" : "4.6.10"
       }
     },
     {

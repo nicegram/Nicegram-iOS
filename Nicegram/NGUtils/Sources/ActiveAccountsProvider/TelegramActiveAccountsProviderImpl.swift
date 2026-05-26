@@ -15,7 +15,9 @@ extension TelegramActiveAccountsProviderImpl: TelegramActiveAccountsProvider {
             sharedContext.activeAccountsWithInfo
             |> map {
                 $0.accounts.map { account in
-                    TelegramActiveAccount(telegramId: .init(account.peer.id))
+                    TelegramActiveAccount(
+                        peer: account.peer._asPeer().toTelegramBridgePeer()
+                    )
                 }
             }
         }
