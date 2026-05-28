@@ -12,6 +12,7 @@ swift_library(
     deps = [
         "//submodules/AccountContext",
         "//submodules/ItemListUI",
+        "//submodules/PhoneNumberFormat",
         "//third-party/webrtc:webrtc_objc",
         "@swiftpkg_nicegram_assistant_ios//:CoreAnalytics",
         "@swiftpkg_nicegram_assistant_ios//:FeatWhitebridge",
