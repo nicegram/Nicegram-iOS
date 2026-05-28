@@ -458,12 +458,6 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
             keywordsBridge: {
                 KeywordsBridgeImpl(contextProvider: contextProvider)
             },
-            phoneNumberFormatter: {
-                PhoneNumberFormatterImpl()
-            },
-            telegramActiveAccountsProvider: {
-                TelegramActiveAccountsProviderImpl(sharedContextProvider: sharedContextProvider)
-            },
             telegramChatHistoryProvider: {
                 TelegramChatHistoryProviderImpl(contextProvider: contextProvider)
             },
@@ -499,9 +493,6 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
             },
             telegramThemeProvider: {
                 TelegramThemeProviderImpl(sharedContextProvider: sharedContextProvider)
-            },
-            telegramTokenLoginHandler: {
-                TelegramTokenLoginHandlerImpl(sharedContextProvider: sharedContextProvider)
             },
             telegramWebAppOpener: {
                 TelegramWebAppOpenerImpl(contextProvider: contextProvider)
@@ -1717,7 +1708,7 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
         let authContextReadyDisposable = MetaDisposable()
         
         self.authContextDisposable.set((self.authContext.get()
-        |> deliverOnMainQueue).start(next: { context in 
+        |> deliverOnMainQueue).start(next: { context in
             var network: Network?
             if let context = context {
                 network = context.account.network

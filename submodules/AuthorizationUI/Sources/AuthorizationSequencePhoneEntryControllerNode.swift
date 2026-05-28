@@ -322,6 +322,8 @@ final class AuthorizationSequencePhoneEntryControllerNode: ASDisplayNode {
     //
     
     // Nicegram Onboarding
+    let ngGuideButtonNode = ASDisplayNode { UIView() }
+    
     let isNgOnboarding: Bool
     //
     
@@ -466,6 +468,11 @@ final class AuthorizationSequencePhoneEntryControllerNode: ASDisplayNode {
         // Nicegram PhoneEntryBanner
         ngBannerNode.isHidden = true
         self.addSubnode(ngBannerNode)
+        //
+        
+        // Nicegram Onboarding
+        ngGuideButtonNode.isHidden = true
+        self.addSubnode(self.ngGuideButtonNode)
         //
         
         self.addSubnode(self.titleNode)
@@ -665,16 +672,26 @@ final class AuthorizationSequencePhoneEntryControllerNode: ASDisplayNode {
         ]
         
         // Nicegram PhoneEntryBanner
-        if let index = items.firstIndex(where: { $0.node === phoneAndCountryNode}) {
-            let bannerItem = AuthorizationLayoutItem(
-                node: self.ngBannerNode,
-                size: CGSize(width: maximumWidth, height: 110),
-                spacingBefore: AuthorizationLayoutItemSpacing(weight: 0, maxValue: 0),
-                spacingAfter: AuthorizationLayoutItemSpacing(weight: 0, maxValue: 0)
-            )
-            items.insert(bannerItem, at: index)
-            
-            ngBannerNode.isHidden = false
+        var showBanner = true
+        if #unavailable(iOS 15.0) {
+            showBanner = false
+        }
+        if isNgOnboarding {
+            showBanner = false
+        }
+        
+        if showBanner {
+            if let index = items.firstIndex(where: { $0.node === phoneAndCountryNode}) {
+                let bannerItem = AuthorizationLayoutItem(
+                    node: self.ngBannerNode,
+                    size: CGSize(width: maximumWidth, height: 110),
+                    spacingBefore: AuthorizationLayoutItemSpacing(weight: 0, maxValue: 0),
+                    spacingAfter: AuthorizationLayoutItemSpacing(weight: 0, maxValue: 0)
+                )
+                items.insert(bannerItem, at: index)
+                
+                ngBannerNode.isHidden = false
+            }
         }
         //
         
@@ -698,18 +715,39 @@ final class AuthorizationSequencePhoneEntryControllerNode: ASDisplayNode {
             self.contactSyncNode.isHidden = true
         }
         
-        let buttonFrame: CGRect
+        // Nicegram Onboarding
+        if #available(iOS 15.0, *), self.isNgOnboarding {
+            let ngGuideButtonHeight = PhoneEntryGuideButtonConstants.HEIGHT
+            transition.updateFrame(
+                node: self.ngGuideButtonNode,
+                frame: CGRect(
+                    x: floorToScreenPixels((layout.size.width - proceedSize.width) / 2.0),
+                    y: layout.size.height - insets.bottom - ngGuideButtonHeight - inset,
+                    width: proceedSize.width,
+                    height: ngGuideButtonHeight
+                )
+            )
+            self.ngGuideButtonNode.isHidden = false
+        }
+        //
+        
+        // Nicegram Onboarding, changed 'let' to 'var'
+        var buttonFrame: CGRect
         if let forcedButtonFrame = self.forcedButtonFrame, (layout.inputHeight ?? 0.0).isZero {
             buttonFrame = forcedButtonFrame
         } else {
             buttonFrame = CGRect(origin: CGPoint(x: floorToScreenPixels((layout.size.width - proceedSize.width) / 2.0), y: layout.size.height - insets.bottom - proceedSize.height - inset), size: proceedSize)
+            // Nicegram Onboarding
+            buttonFrame.origin.y -= self.ngGuideButtonNode.frame.height
+            //
         }
         
         transition.updateFrame(node: self.proceedNode, frame: buttonFrame)
         
         self.animationNode.updateLayout(size: animationSize)
         
-        let _ = layoutAuthorizationItems(bounds: CGRect(origin: CGPoint(x: 0.0, y: insets.top), size: CGSize(width: layout.size.width, height: layout.size.height - insets.top - insets.bottom - additionalBottomInset)), items: items, transition: transition, failIfDoesNotFit: false)
+        // Nicegram PhoneEntryBanner, reduce height by (buttonFrame.height + self.ngGuideButtonNode.frame.height)
+        let _ = layoutAuthorizationItems(bounds: CGRect(origin: CGPoint(x: 0.0, y: insets.top), size: CGSize(width: layout.size.width, height: layout.size.height - insets.top - insets.bottom - additionalBottomInset - buttonFrame.height - self.ngGuideButtonNode.frame.height)), items: items, transition: transition, failIfDoesNotFit: false)
         
         transition.updateFrame(node: self.managedAnimationNode, frame: self.animationNode.frame)
         

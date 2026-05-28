@@ -122,7 +122,6 @@ public struct PresentationResourcesSettings {
     public static let ngAuditIcon = renderSettingsIcon(name: "ng-settings/audit")
     public static let ngPremiumIcon = renderSettingsIcon(name: "ng-settings/premium")
     public static let ngSettingsIcon = renderSettingsIcon(name: "ng-settings/settings")
-    public static let ngTgAccountShopIcon = renderSettingsIcon(name: "ng-settings/tg-account-shop")
     public static let ngWalletIcon = renderSettingsIcon(name: "ng-settings/wallet")
     //
     

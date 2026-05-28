@@ -585,13 +585,6 @@ public func managedCleanupAccounts(networkArguments: NetworkInitializationArgume
                 validPaths.insert("\(accountRecordIdPathName(record.id))")
             }
             
-            // Nicegram
-            let silentAuthIds = TelegramSilentAuthRegistry.shared.getAll()
-            for silentAuthId in silentAuthIds {
-                validPaths.insert(accountRecordIdPathName(silentAuthId))
-            }
-            //
-            
             DispatchQueue.global(qos: .utility).async {
                 if let files = try? FileManager.default.contentsOfDirectory(at: URL(fileURLWithPath: rootPath), includingPropertiesForKeys: [], options: []) {
                     for url in files {

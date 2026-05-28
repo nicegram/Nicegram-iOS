@@ -1,6 +1,5 @@
 // Nicegram
 import CoreRemoteConfig
-import FeatTgAccountShop
 import FeatTgAppsCenter
 import FeatWallet
 import NGAiChatUI
@@ -222,20 +221,7 @@ func settingsItems(data: PeerInfoScreenData?, context: AccountContext, presentat
     items[.nicegram]!.append(PeerInfoScreenDisclosureItem(id: ngId, text: l("AppName"), icon: PresentationResourcesSettings.ngSettingsIcon, action: {
         interaction.openSettings(.nicegram)
     }))
-    ngId += 1
-
-    // Nicegram TgAccountShop
-    let getTgAccountShopConfigUseCase = FeatTgAccountShop.Module.shared.getConfigUseCase()
-    if getTgAccountShopConfigUseCase.isFeatureEnabled() {
-        items[.nicegram]!.append(PeerInfoScreenDisclosureItem(id: ngId, text: FeatTgAccountShop.strings.entryPointSettings(), icon: PresentationResourcesSettings.ngTgAccountShopIcon, action: {
-            Task { @MainActor in
-                FeatTgAccountShop.AccountListPresenter().present(from: .settings)
-            }
-        }))
-        ngId += 1
-    }
-    //
-
+    
     // Nicegram Wallet
     let getWalletAvailabilityUseCase = WalletContainer.shared.getWalletAvailabilityUseCase()
     let getAuditConfigUseCase = RemoteConfigContainer.shared.getAuditConfigUseCase()
