@@ -73,10 +73,16 @@ bazel_dep(
     name = "rules_swift_package_manager",
     version = "1.17.1",
 )
-git_override(
+
+# See the patch file for the rationale. Remove this override together with the
+# patch once https://github.com/cgrindel/rules_swift_package_manager/issues/2216
+# lands upstream.
+single_version_override(
     module_name = "rules_swift_package_manager",
-    commit = "59e2bbe7fe8b763ad0992f2d0889b85b57702a96",
-    remote = "https://github.com/denis15yo/rules_swift_package_manager",
+    patch_strip = 1,
+    patches = [
+        "//spm-patches/rules_swift_package_manager:0001-drop-static-xcframework-alwayslink.patch",
+    ],
 )
 
 swift_deps = use_extension(

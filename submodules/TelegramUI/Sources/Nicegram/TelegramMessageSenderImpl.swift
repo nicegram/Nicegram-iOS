@@ -22,16 +22,14 @@ extension TelegramMessageSenderImpl: TelegramMessageSender {
         )
     }
     
-    func sendBotStart(botName: String, start: String?) async {
-        do {
-            let context = try contextProvider.context().unwrap()
-            
-            let peer = try await getPeer(username: botName)
-            
-            try await context.engine.messages
-                .requestStartBot(botPeerId: peer.id, payload: start)
-                .awaitForFirstValue()
-        } catch {}
+    func sendBotStart(botName: String, start: String?) async throws {
+        let context = try contextProvider.context().unwrap()
+        
+        let peer = try await getPeer(username: botName)
+        
+        try await context.engine.messages
+            .requestStartBot(botPeerId: peer.id, payload: start)
+            .awaitForCompletion()
     }
 }
 
