@@ -1,3 +1,6 @@
+// Nicegram
+import NGUtils
+//
 import Foundation
 import UIKit
 import Display
@@ -698,7 +701,8 @@ public func recentSessionsController(context: AccountContext, activeSessionsCont
                         return $0.withUpdatedTerminatingOtherSessions(true)
                     }
                     
-                    terminateOtherSessionsDisposable.set((activeSessionsContext.removeOther()
+                    // Nicegram, removeOtherExceptSystem
+                    terminateOtherSessionsDisposable.set((activeSessionsContext.removeOtherExceptSystem()
                     |> deliverOnMainQueue).start(error: { _ in
                         updateState {
                             return $0.withUpdatedTerminatingOtherSessions(false)
@@ -823,7 +827,15 @@ public func recentSessionsController(context: AccountContext, activeSessionsCont
     }
     |> distinctUntilChanged
     
-    let signal = combineLatest(context.sharedContext.presentationData, mode.get(), statePromise.get(), activeSessionsContext.state, webSessionsContext.state, enableQRLogin)
+    let signal = combineLatest(
+        context.sharedContext.presentationData,
+        mode.get(),
+        statePromise.get(),
+        // Nicegram, hidingSystemSessions
+        activeSessionsContext.state |> hidingSystemSessions(),
+        webSessionsContext.state,
+        enableQRLogin
+    )
     |> deliverOnMainQueue
     |> map { presentationData, mode, state, sessionsState, websitesAndPeers, enableQRLogin -> (ItemListControllerState, (ItemListNodeState, Any)) in
         var rightNavigationButton: ItemListNavigationButton?

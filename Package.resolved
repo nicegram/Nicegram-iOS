@@ -167,8 +167,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/groue/GRDB.swift.git",
       "state" : {
-        "revision" : "36e30a6f1ef10e4194f6af0cff90888526f0c115",
-        "version" : "7.10.0"
+        "revision" : "9ed8c8457e00ff9c7aedb3bf213f20a2cfdf509e",
+        "version" : "7.11.0"
       }
     },
     {
@@ -212,8 +212,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/adjust/ios_sdk.git",
       "state" : {
-        "revision" : "0a8cccacfb354c36f8f7fbc57331e7d3a52ed9e5",
-        "version" : "5.6.2"
+        "revision" : "ff8a74823dc020b09f08b670735e24ccbcb5095a",
+        "version" : "5.7.0"
       }
     },
     {
@@ -276,7 +276,7 @@
       "location" : "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
       "state" : {
         "branch" : "feat/tg-account-shop",
-        "revision" : "c1a65399ec0b1465898cf0038648c3ab54e09af1"
+        "revision" : "239314b3c28c5b6c9c2149181ef7118219ffb12a"
       }
     },
     {
@@ -608,8 +608,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/trustwallet/wallet-core.git",
       "state" : {
-        "revision" : "0ed5dc64e8b4c9746a35d113a9c83c73e9c6a73f",
-        "version" : "4.6.12"
+        "revision" : "4edc4a142b7869201ee5b24ea92f939c617387c6",
+        "version" : "4.6.13"
       }
     },
     {

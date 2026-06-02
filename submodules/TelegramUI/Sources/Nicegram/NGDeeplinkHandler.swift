@@ -7,6 +7,7 @@ import AccountContext
 import Display
 import FeatOnboarding
 import FeatPaywall
+import FeatTgAccountShop
 import FeatUserArchetype
 import NGAiChatUI
 import NGEntryPoint
@@ -76,6 +77,9 @@ class NGDeeplinkHandler {
             return handleOnboarding(url: url)
         case "specialOffer":
             return handleSpecialOffer(url: url)
+        case "tgAccountShop":
+            FeatTgAccountShop.AccountListPresenter().present(from: .link)
+            return true
         case "tgAuthSuccess":
             if #available(iOS 15.0, *) {
                 AssistantTgHelper.routeToAssistant(source: .generic)

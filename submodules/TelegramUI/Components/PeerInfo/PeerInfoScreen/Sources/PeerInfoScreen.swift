@@ -6660,6 +6660,9 @@ public final class PeerInfoScreenImpl: ViewController, PeerInfoScreen, KeyShortc
                 let activeSessionsContext = context.engine.privacy.activeSessions()
                 let webSessionsContext = context.engine.privacy.webSessions()
                 let otherSessionCount = activeSessionsContext.state
+                // Nicegram
+                |> hidingSystemSessions()
+                //
                 |> map { state -> Int in
                     return state.sessions.filter({ !$0.isCurrent }).count
                 }
