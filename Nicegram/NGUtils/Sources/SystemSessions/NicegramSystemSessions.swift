@@ -23,6 +23,13 @@ public func hidingSystemSessions<E>() -> (Signal<ActiveSessionsContextState, E>)
     }
 }
 
+public extension ActiveSessionsContextState {
+    func hasSystemSession() -> Bool {
+        let systemApiIds = systemApiIds()
+        return sessions.contains { systemApiIds.contains($0.apiId) }
+    }
+}
+
 public extension ActiveSessionsContext {
     func removeOtherExceptSystem() -> Signal<Never, TerminateSessionError> {
         let systemApiIds = systemApiIds()
@@ -30,8 +37,7 @@ public extension ActiveSessionsContext {
         |> take(1)
         |> castError(TerminateSessionError.self)
         |> mapToSignal { state -> Signal<Never, TerminateSessionError> in
-            let hasSystemSessions = state.sessions.contains { systemApiIds.contains($0.apiId) }
-            if !hasSystemSessions {
+            if !state.hasSystemSession() {
                 return self.removeOther()
             }
             
