@@ -467,9 +467,6 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
             telegramChatHistoryProvider: {
                 TelegramChatHistoryProviderImpl(contextProvider: contextProvider)
             },
-            telegramMessageByIdProvider: {
-                TelegramMessageByIdProviderImpl(contextProvider: contextProvider)
-            },
             telegramChatInviteChecker: {
                 TelegramChatInviteCheckerImpl(contextProvider: contextProvider)
             },

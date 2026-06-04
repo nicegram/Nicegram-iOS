@@ -1,18 +1,10 @@
 import ChatHistoryEntry
-import FeatAdsgram
 import NicegramWallet
 
-func nicegramMapChatHistoryEntries(
-    entries: [ChatHistoryEntry],
-    ngMessageAd: ChatHistoryEntry.NicegramAd?
-) -> [ChatHistoryEntry] {
+func nicegramMapChatHistoryEntries(entries: [ChatHistoryEntry]) -> [ChatHistoryEntry] {
     var result = entries
     
     result = parseWalletTransactions(result)
-
-    if #available(iOS 16.0, *), let ngMessageAd {
-        result.append(.nicegramAd(ngMessageAd))
-    }
     
     return result
 }

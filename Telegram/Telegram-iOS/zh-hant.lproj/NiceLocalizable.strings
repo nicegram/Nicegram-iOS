@@ -256,11 +256,3 @@
 "whitebridge.profile.button" = "WhiteBridge";
 "whitebridge.profile.hint" = "取得結構化總覽：來自網路的公開資訊——個人檔案、背景、社群動態等更多內容！";
 "whitebridge.chats.quick.action" = "查看 WhiteBridge 報告";
-
-/*AI Reply*/
-"aiReply.contextMenu.title" = "起草回覆";
-"aiReply.hint" = "幾秒內起草回覆 ✨\n在先進 AI 的即時協助下，把你的想法變成精緻、隨時可傳送的訊息。";
-
-/*Voice Typing*/
-"voiceTyping.hint.title" = "用說的代替打字";
-"voiceTyping.hint.subtitle" = "你一開口，語音就會立刻變成文字，讓你專注在自己的想法上。";

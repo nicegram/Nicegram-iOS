@@ -2,7 +2,6 @@ import Postbox
 
 protocol ChatStateObserver {
     func update(hasTelegramHeaderAd: Bool)
-    func update(hasTelegramMessageAd: Bool)
     func update(isScreenVisible: Bool)
     func update(peerView: PeerView?)
 }
@@ -19,12 +18,6 @@ extension ChatNicegramContext: ChatStateObserver {
     func update(hasTelegramHeaderAd: Bool) {
         stateObservers.forEach {
             $0.update(hasTelegramHeaderAd: hasTelegramHeaderAd)
-        }
-    }
-    
-    func update(hasTelegramMessageAd: Bool) {
-        stateObservers.forEach {
-            $0.update(hasTelegramMessageAd: hasTelegramMessageAd)
         }
     }
     
