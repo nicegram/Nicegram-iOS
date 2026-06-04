@@ -275,8 +275,8 @@
       "kind" : "remoteSourceControl",
       "location" : "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
       "state" : {
-        "branch" : "feat/tg-account-shop",
-        "revision" : "239314b3c28c5b6c9c2149181ef7118219ffb12a"
+        "branch" : "feat/chat-ad-migration-to-att",
+        "revision" : "14dcb554eba08e346a052d3f8ab92c06459fc71e"
       }
     },
     {
@@ -284,8 +284,8 @@
       "kind" : "remoteSourceControl",
       "location" : "git@bitbucket.org:mobyrix/nicegram-wallet-ios.git",
       "state" : {
-        "branch" : "feat/tg-account-shop",
-        "revision" : "aca0b7b6ccc6e052c26d76eafade8800aa484cd5"
+        "branch" : "develop",
+        "revision" : "9090a4ad3f84d7e8b01b47a7a0c435736150028b"
       }
     },
     {

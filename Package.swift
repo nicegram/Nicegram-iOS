@@ -5,6 +5,6 @@ import PackageDescription
 let package = Package(
     name: "nicegram-package",
     dependencies: [
-        .package(url: "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git", branch: "feat/tg-account-shop"),
+        .package(url: "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git", branch: "feat/chat-ad-migration-to-att"),
     ]
 )
