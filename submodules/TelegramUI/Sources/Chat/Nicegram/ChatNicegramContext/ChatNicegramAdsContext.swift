@@ -1,20 +1,33 @@
-import FeatAttentionEconomy
+import FeatAdsgram
 import Postbox
 import TelegramCore
 
 final class ChatNicegramAdsContext {
     let headerAdViewModel = ChatHeaderAdViewModel()
+    let messageAdViewModel = ChatMessageAdViewModel()
 }
 
 extension ChatNicegramAdsContext: ChatStateObserver {
     func update(hasTelegramHeaderAd: Bool) {
-        updateChatContext {
+        updatePlacementContext {
             $0.telegramAdsState.hasHeaderAd = hasTelegramHeaderAd
         }
     }
     
+    func update(hasTelegramMessageAd: Bool) {
+        updatePlacementContext {
+            $0.telegramAdsState.hasLastMessageAd = hasTelegramMessageAd
+        }
+    }
+    
     func update(isScreenVisible: Bool) {
-        headerAdViewModel.update(isHostVisible: isScreenVisible)
+        headerAdViewModel.updateVisibility {
+            $0.isHostVisible = isScreenVisible
+            $0.visibleFraction = 1
+        }
+        messageAdViewModel.updateVisibility {
+            $0.isHostVisible = isScreenVisible
+        }
     }
     
     func update(peerView: PeerView?) {
@@ -24,7 +37,7 @@ extension ChatNicegramAdsContext: ChatStateObserver {
         }
         
         let participantsCount: Int
-        let type: FeatAttentionEconomy.ChatContext.PeerType
+        let type: FeatAdsgram.ChatContext.PeerType
         switch peer {
         case let user as TelegramUser:
             participantsCount = 2
@@ -46,20 +59,22 @@ extension ChatNicegramAdsContext: ChatStateObserver {
             return
         }
         
-        let resolvedPeer = FeatAttentionEconomy.ChatContext.Peer(
+        let resolvedPeer = FeatAdsgram.ChatContext.Peer(
+            id: peer.id.ng_toInt64(),
             participantsCount: participantsCount,
             type: type,
             username: peer.addressName
         )
         
-        updateChatContext {
+        updatePlacementContext {
             $0.peer = resolvedPeer
         }
     }
 }
 
 private extension ChatNicegramAdsContext {
-    func updateChatContext(_ updater: (inout FeatAttentionEconomy.ChatContext) -> Void) {
-        headerAdViewModel.updateChatContext(updater)
+    func updatePlacementContext(_ updater: (inout FeatAdsgram.ChatContext) -> Void) {
+        headerAdViewModel.updatePlacementContext(updater)
+        messageAdViewModel.updatePlacementContext(updater)
     }
 }

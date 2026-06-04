@@ -275,8 +275,8 @@
       "kind" : "remoteSourceControl",
       "location" : "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
       "state" : {
-        "branch" : "feat/chat-ad-migration-to-att",
-        "revision" : "14dcb554eba08e346a052d3f8ab92c06459fc71e"
+        "branch" : "feat/ai-tokens",
+        "revision" : "ce0f9f8fc88d4a315e29b3f253518e2ead636fc1"
       }
     },
     {

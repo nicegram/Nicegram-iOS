@@ -1,5 +1,5 @@
 import ComponentFlow
-import FeatAttentionEconomy
+import FeatAdsgram
 import UIKit
 
 @available(iOS 16.0, *)
