@@ -210,7 +210,7 @@ public final class AuthorizationSequencePhoneEntryController: ViewController, MF
         }
         
         // Nicegram PhoneEntryBanner
-        if controllerNode.shouldShowNgBanner {
+        if #available(iOS 15.0, *) {
             setupPhoneEntryBanner(
                 view: self.controllerNode.ngBannerNode.view,
                 controller: self

@@ -319,7 +319,7 @@ final class AuthorizationSequencePhoneEntryControllerNode: ASDisplayNode {
     
     // Nicegram PhoneEntryBanner
     let ngBannerNode = ASDisplayNode { UIView() }
-    let shouldShowNgBanner = shouldShowPhoneEntryBanner()
+    private lazy var showNgBanner = shouldShowPhoneEntryBanner()
     //
     
     // Nicegram Onboarding
@@ -666,7 +666,7 @@ final class AuthorizationSequencePhoneEntryControllerNode: ASDisplayNode {
         ]
         
         // Nicegram PhoneEntryBanner
-        if shouldShowNgBanner,
+        if showNgBanner,
            let index = items.firstIndex(where: { $0.node === phoneAndCountryNode}) {
             let bannerItem = AuthorizationLayoutItem(
                 node: self.ngBannerNode,
