@@ -6,7 +6,7 @@ NGDEPS = [
     "//Nicegram/NGTranslate:NGTranslate",
     "//Nicegram/NGUI:NGUI",
     "//Nicegram/NGSpeechToText:NGSpeechToText",
-    "@swiftpkg_nicegram_assistant_ios//:FeatPaywall",
+    "@swiftpkg_nicegram_assistant_ios//:FeatPremiumUI",
 ]
 
 swift_library(

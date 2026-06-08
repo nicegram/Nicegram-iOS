@@ -21,7 +21,7 @@ swift_library(
         "//submodules/TranslateUI:TranslateUI",
         "//submodules/Media/ConvertOpusToAAC",
         "//Nicegram/NGUI:NGUI",
-        "@swiftpkg_nicegram_assistant_ios//:FeatPaywall",
+        "@swiftpkg_nicegram_assistant_ios//:FeatPremiumUI",
     ],
     visibility = [
         "//visibility:public",
