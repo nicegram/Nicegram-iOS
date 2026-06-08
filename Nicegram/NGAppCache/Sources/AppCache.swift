@@ -26,6 +26,12 @@ public final class AppCache {
     @UserDefaultsBacked(key: "whitebridgeChatBannerDismissed", storage: .standard, defaultValue: false)
     public static var whitebridgeChatBannerDismissed: Bool
 
+    @UserDefaultsBacked(key: "aiReplyChatTooltipShown", storage: .standard, defaultValue: false)
+    public static var aiReplyChatTooltipShown: Bool
+    
+    @UserDefaultsBacked(key: "voiceTypingChatTooltipShown", storage: .standard, defaultValue: false)
+    public static var voiceTypingChatTooltipShown: Bool
+
     public static var wasLauchedBefore: Bool {
         get {
             return _wasLauchedBefore

@@ -318,6 +318,10 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
     private var cancellables = Set<AnyCancellable>()
     //
     
+    // Nicegram Voice Typing
+    private var voiceTypingHostingController: UIViewController?
+    //
+    
     // Nicegram AiChat
     private lazy var tgChatAiViewModel = {
         TgChatAiViewModel(
@@ -1240,6 +1244,61 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
         self.textInputPanelNode?.displayAttachmentMenu = { [weak self] in
             self?.displayAttachmentMenu()
         }
+        
+        // Nicegram AI Reply
+        self.textInputPanelNode?.displayAIReplyFlow = { [weak self] in
+            guard let self, let interfaceInteraction = self.interfaceInteraction else {
+                return
+            }
+            
+            guard AiReplyHelper.isEnabled() else {
+                return
+            }
+            
+            guard self.chatPresentationInterfaceState.replyMessage?.flags.contains(.Incoming) ?? false else {
+                return
+            }
+            
+            guard let messageId = self.chatPresentationInterfaceState.interfaceState.replyMessageSubject?.subjectModel.messageId else {
+                return
+            }
+            
+            AiReplyHelper(context: self.context).present(
+                messageId: messageId,
+                draftText: self.chatPresentationInterfaceState.interfaceState.effectiveInputState.inputText.string,
+                onSelectReply: { reply in
+                    interfaceInteraction.updateTextInputStateAndMode { _, inputMode in
+                        var inputMode = inputMode
+                        if inputMode == .none {
+                            inputMode = .text
+                        }
+                        return (ChatTextInputState(inputText: NSAttributedString(string: reply)), inputMode)
+                    }
+                }
+            )
+        }
+        //
+        
+        // Nicegram Voice Typing
+        self.textInputPanelNode?.displayVoiceTypingFlow = { [weak self] in
+            guard let self else {
+                return
+            }
+            
+            guard VoiceTypingHelper.isEnabled() else {
+                return
+            }
+            
+            VoiceTypingHelper().present(
+                onReadyToRecord: { [weak self] in
+                    guard let self else { return }
+                    guard #available(iOS 15.0, *) else { return }
+                    self.showVoiceTypingOverlay()
+                }
+            )
+        }
+        //
+        
         self.textInputPanelNode?.updateActivity = { [weak self] in
             self?.updateTypingActivity(true)
         }
@@ -1285,9 +1344,76 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
         self.inputMediaNodeDataDisposable?.dispose()
         self.inlineSearchResultsReadyDisposable?.dispose()
         self.loadMoreSearchResultsDisposable?.dispose()
+        
+        // Nicegram Voice Typing
+        if #available(iOS 15.0, *) {
+            self.hideVoiceTypingOverlay()
+        }
+        //
     }
-
-    // Nicegram
+    
+    // Nicegram Voice Typing
+    @available(iOS 15.0, *)
+    private func showVoiceTypingOverlay() {
+        guard voiceTypingHostingController == nil else {
+            return
+        }
+        
+        let hostingController = VoiceTypingOverlayHostingControllerFactory.make(
+            eventsHandler: { [weak self] event in
+                guard let self else { return }
+                
+                switch event {
+                case .onCancel:
+                    self.hideVoiceTypingOverlay()
+                case .onRecordingFinished:
+                    break
+                case .onRecognizingFinished(let text):
+                    self.hideVoiceTypingOverlay()
+                    guard let interfaceInteraction = self.interfaceInteraction else {
+                        return
+                    }
+                    interfaceInteraction.updateTextInputStateAndMode { textInputState, inputMode in
+                        var inputMode = inputMode
+                        if inputMode == .none {
+                            inputMode = .text
+                        }
+                        guard !text.isEmpty else {
+                            return (textInputState, inputMode)
+                        }
+                        let inputText = NSMutableAttributedString(attributedString: textInputState.inputText)
+                        let existing = inputText.string
+                        if !existing.isEmpty {
+                            let needsSpace = !existing.hasSuffix(" ") && !text.hasPrefix(" ") && !text.hasPrefix("\n")
+                            if needsSpace {
+                                inputText.append(NSAttributedString(string: " "))
+                            }
+                        }
+                        inputText.append(NSAttributedString(string: text))
+                        let selectionPosition = inputText.length
+                        return (ChatTextInputState(inputText: inputText, selectionRange: selectionPosition ..< selectionPosition), inputMode)
+                    }
+                }
+            }
+        )
+        
+        voiceTypingHostingController = hostingController
+        self.textInputPanelNode?.setVoiceTypingOverlayView(hostingController.view)
+    }
+    
+    // Nicegram Voice Typing
+    @available(iOS 15.0, *)
+    private func hideVoiceTypingOverlay() {
+        guard let hostingController = voiceTypingHostingController else {
+            return
+        }
+        
+        voiceTypingHostingController = nil
+        self.textInputPanelNode?.setVoiceTypingOverlayView(nil)
+        hostingController.view.removeFromSuperview()
+    }
+    //
+    
     @available(iOS 15.0, *)
     @objc private func openNicegramWallet() {
         Task {

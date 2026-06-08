@@ -534,7 +534,7 @@ final class ChatSendMessageContextScreenComponent: Component {
                             
                             let request = TgChatAiRequst(
                                 peerId: component.peerId?.id._internalGetInt64Value(),
-                                command: command,
+                                prompt: command,
                                 text: textString.string
                             )
                             TgChatAiHelper.send(request: request)
