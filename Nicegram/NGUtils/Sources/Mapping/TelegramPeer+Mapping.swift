@@ -38,8 +38,11 @@ public extension Postbox.Peer {
             return TelegramBridge.TelegramUser(
                 botInfo: user.botInfo.flatMap { _ in .init() },
                 displayName: displayName,
+                firstName: user.firstName,
                 id: id,
                 isPremium: user.flags.contains(.isPremium),
+                lastName: user.lastName,
+                phone: user.phone,
                 username: username
             )
         }

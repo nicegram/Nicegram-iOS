@@ -218,23 +218,6 @@ public final class AuthorizationSequencePhoneEntryController: ViewController, MF
         }
         //
         
-        // Nicegram Onboarding
-        if #available(iOS 15.0, *) {
-            let proceedNode = self.controllerNode.proceedNode
-            setupPhoneEntryGuideButton(
-                config: PhoneEntryGuideButtonConfig(
-                    buttonBackgroundColor: proceedNode.theme.disabledBackgroundColor ?? .clear,
-                    buttonForegroundColor: .label,
-                    buttonHeight: proceedNode.buttonHeight,
-                    buttonCornerRadius: proceedNode.buttonCornerRadius,
-                    separatorColor: self.presentationData.theme.list.itemPlainSeparatorColor
-                ),
-               view: self.controllerNode.ngGuideButtonNode.view,
-               controller: self
-           )
-        }
-        //
-        
         self.loadAndPresentPasskey(force: false)
     }
     

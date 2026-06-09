@@ -1,3 +1,6 @@
+// Nicegram
+import NGUtils
+//
 import Foundation
 import UIKit
 import Display
@@ -29,12 +32,13 @@ private final class RecentSessionsControllerArguments {
     let addDevice: () -> Void
     
     let openOtherAppsUrl: () -> Void
-    let setupAuthorizationTTL: () -> Void
+    // Nicegram, async
+    let setupAuthorizationTTL: () async -> Void
     
     let openDesktopLink: () -> Void
     let openWebLink: () -> Void
     
-    init(context: AccountContext, setSessionIdWithRevealedOptions: @escaping (Int64?, Int64?) -> Void, removeSession: @escaping (Int64) -> Void, terminateOtherSessions: @escaping () -> Void, openSession: @escaping (RecentAccountSession) -> Void, openWebSession: @escaping (WebAuthorization, EnginePeer?) -> Void, removeWebSession: @escaping (Int64) -> Void, terminateAllWebSessions: @escaping () -> Void, addDevice: @escaping () -> Void, openOtherAppsUrl: @escaping () -> Void, setupAuthorizationTTL: @escaping () -> Void, openDesktopLink: @escaping () -> Void, openWebLink: @escaping () -> Void) {
+    init(context: AccountContext, setSessionIdWithRevealedOptions: @escaping (Int64?, Int64?) -> Void, removeSession: @escaping (Int64) -> Void, terminateOtherSessions: @escaping () -> Void, openSession: @escaping (RecentAccountSession) -> Void, openWebSession: @escaping (WebAuthorization, EnginePeer?) -> Void, removeWebSession: @escaping (Int64) -> Void, terminateAllWebSessions: @escaping () -> Void, addDevice: @escaping () -> Void, openOtherAppsUrl: @escaping () -> Void, setupAuthorizationTTL: @escaping () async -> Void, openDesktopLink: @escaping () -> Void, openWebLink: @escaping () -> Void) {
         self.context = context
         self.setSessionIdWithRevealedOptions = setSessionIdWithRevealedOptions
         self.removeSession = removeSession
@@ -416,7 +420,10 @@ private enum RecentSessionsEntry: ItemListNodeEntry {
             return ItemListSectionHeaderItem(presentationData: presentationData, text: text, sectionId: self.section)
         case let .ttlTimeout(_, text, value):
             return ItemListDisclosureItem(presentationData: presentationData, systemStyle: .glass, title: text, label: value, sectionId: self.section, style: .blocks, action: {
-                arguments.setupAuthorizationTTL()
+                // Nicegram, wrap async call in Task
+                Task {
+                    await arguments.setupAuthorizationTTL()
+                }
             }, tag: RecentSessionsEntryTag.autoTerminate)
         }
     }
@@ -698,7 +705,8 @@ public func recentSessionsController(context: AccountContext, activeSessionsCont
                         return $0.withUpdatedTerminatingOtherSessions(true)
                     }
                     
-                    terminateOtherSessionsDisposable.set((activeSessionsContext.removeOther()
+                    // Nicegram, removeOtherExceptSystem
+                    terminateOtherSessionsDisposable.set((activeSessionsContext.removeOtherExceptSystem()
                     |> deliverOnMainQueue).start(error: { _ in
                         updateState {
                             return $0.withUpdatedTerminatingOtherSessions(false)
@@ -777,7 +785,7 @@ public func recentSessionsController(context: AccountContext, activeSessionsCont
         })
     }, openOtherAppsUrl: {
         context.sharedContext.openExternalUrl(context: context, urlContext: .generic, url: "https://telegram.org/apps", forceExternal: true, presentationData: context.sharedContext.currentPresentationData.with { $0 }, navigationController: nil, dismissInput: {})
-    }, setupAuthorizationTTL: {
+    }, setupAuthorizationTTL: { @MainActor in
         let presentationData = context.sharedContext.currentPresentationData.with { $0 }
         let controller = ActionSheetController(presentationData: presentationData)
         let dismissAction: () -> Void = { [weak controller] in
@@ -786,12 +794,25 @@ public func recentSessionsController(context: AccountContext, activeSessionsCont
         let ttlAction: (Int32) -> Void = { ttl in
             updateAuthorizationTTLDisposable.set(activeSessionsContext.updateAuthorizationTTL(days: ttl).start())
         }
-        let timeoutValues: [Int32] = [
+        // Nicegram, change 'let' to 'var'
+        var timeoutValues: [Int32] = [
             7,
             30,
             90,
             180
         ]
+        
+        // Nicegram, a purchased account must keep its system session alive, so we
+        // only offer the long windows (180d / 365d) and hide the shorter options
+        // that would let Telegram auto-terminate it.
+        do {
+            let state = try await activeSessionsContext.state.awaitForFirstValue()
+            if state.hasSystemSession() {
+                timeoutValues = [180, 365]
+            }
+        } catch {}
+        //
+        
         let timeoutItems: [ActionSheetItem] = timeoutValues.map { value in
             return ActionSheetButtonItem(title: timeIntervalString(strings: presentationData.strings, value: value * 24 * 60 * 60), action: {
                 dismissAction()
@@ -823,7 +844,15 @@ public func recentSessionsController(context: AccountContext, activeSessionsCont
     }
     |> distinctUntilChanged
     
-    let signal = combineLatest(context.sharedContext.presentationData, mode.get(), statePromise.get(), activeSessionsContext.state, webSessionsContext.state, enableQRLogin)
+    let signal = combineLatest(
+        context.sharedContext.presentationData,
+        mode.get(),
+        statePromise.get(),
+        // Nicegram, hidingSystemSessions
+        activeSessionsContext.state |> hidingSystemSessions(),
+        webSessionsContext.state,
+        enableQRLogin
+    )
     |> deliverOnMainQueue
     |> map { presentationData, mode, state, sessionsState, websitesAndPeers, enableQRLogin -> (ItemListControllerState, (ItemListNodeState, Any)) in
         var rightNavigationButton: ItemListNavigationButton?

@@ -292,8 +292,8 @@ public final class SharedAccountContextImpl: SharedAccountContext {
     private var widgetDataContext: WidgetDataContext?
     
     // Nicegram DB Changes, additional properties
-    private let encryptionParameters: ValueBoxEncryptionParameters
-    private let rootPath: String
+    let encryptionParameters: ValueBoxEncryptionParameters
+    let rootPath: String
     
     public let openDoubleBottomFlow: (AccountContext) -> Void
     private var activeAccountsSettingsDisposable: Disposable?
