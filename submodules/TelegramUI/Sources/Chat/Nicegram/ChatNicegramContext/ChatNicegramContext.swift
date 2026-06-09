@@ -1,3 +1,4 @@
+import AccountContext
 import Postbox
 
 protocol ChatStateObserver {
@@ -7,10 +8,13 @@ protocol ChatStateObserver {
 }
 
 public final class ChatNicegramContext {
-    let ads = ChatNicegramAdsContext()
+    let ads: ChatNicegramAdsContext
     
-    private var stateObservers: [ChatStateObserver] {
-        [ads]
+    private let stateObservers: [ChatStateObserver]
+    
+    init(accountContext: AccountContext) {
+        self.ads = ChatNicegramAdsContext(accountContext: accountContext)
+        self.stateObservers = [ ads ]
     }
 }
 

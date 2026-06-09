@@ -249,7 +249,7 @@ struct ScrolledToMessageId: Equatable {
 
 public final class ChatControllerImpl: TelegramBaseController, ChatController, GalleryHiddenMediaTarget, UIDropInteractionDelegate {    
     // Nicegram
-    let nicegramContext = ChatNicegramContext()
+    let nicegramContext: ChatNicegramContext
     
     var cancellables = Set<AnyCancellable>()
     //
@@ -662,6 +662,9 @@ public final class ChatControllerImpl: TelegramBaseController, ChatController, G
         initialTextInputState: ChatTextInputState? = nil,
         params: ChatControllerParams? = nil
     ) {
+        // Nicegram
+        self.nicegramContext = ChatNicegramContext(accountContext: context)
+        //
         self.initTimestamp = CFAbsoluteTimeGetCurrent()
         
         let _ = ChatControllerCount.modify { value in

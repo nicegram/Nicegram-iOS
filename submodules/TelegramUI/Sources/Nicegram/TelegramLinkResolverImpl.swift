@@ -45,7 +45,7 @@ extension TelegramLinkResolverImpl: TelegramLinkResolver {
         }
     }
     
-    func resolvePeer(link: String) async throws -> (any TelegramPeer)? {
+    func resolvePeer(link: String) async throws -> TelegramLinkPeerResolution? {
         let resolvedUrl = try await resolve(telegramUrl: link)
         
         switch resolvedUrl {
@@ -86,11 +86,11 @@ private extension TelegramLinkResolverImpl {
 }
 
 private extension TelegramLinkResolverImpl {
-    func resolvePeer(peer: Peer?) -> (any TelegramPeer)? {
-        peer?.toTelegramBridgePeer()
+    func resolvePeer(peer: Peer?) -> TelegramLinkPeerResolution? {
+        peer.flatMap { .peer($0.toTelegramBridgePeer()) }
     }
     
-    func resolvePeer(peerId: PeerId) async -> (any TelegramPeer)? {
+    func resolvePeer(peerId: PeerId) async -> TelegramLinkPeerResolution? {
         do {
             let context = try contextProvider.context().unwrap()
             
@@ -104,11 +104,11 @@ private extension TelegramLinkResolverImpl {
         }
     }
     
-    func resolvePeer(messageId: MessageId) async -> (any TelegramPeer)? {
+    func resolvePeer(messageId: MessageId) async -> TelegramLinkPeerResolution? {
         await resolvePeer(peerId: messageId.peerId)
     }
     
-    func resolvePeer(joinLink: String) async throws -> (any TelegramPeer)? {
+    func resolvePeer(joinLink: String) async throws -> TelegramLinkPeerResolution? {
         let context = try contextProvider.context().unwrap()
         
         let state = try await context.engine.peers
@@ -120,7 +120,14 @@ private extension TelegramLinkResolverImpl {
             return resolvePeer(peer: peer._asPeer())
         case let .peek(peer, _):
             return resolvePeer(peer: peer._asPeer())
-        case .invite, .invalidHash:
+        case let .invite(invite):
+            return .requestToJoin(
+                .init(
+                    peerType: invite.flags.isBroadcast ? .channel : .group,
+                    title: invite.title
+                )
+            )
+        case .invalidHash:
             return nil
         }
     }

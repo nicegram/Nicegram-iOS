@@ -276,7 +276,7 @@
       "location" : "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
       "state" : {
         "branch" : "feat/update-sensitive-unlock",
-        "revision" : "78f0b93d81a95c742e50d83bd8a72cb661336648"
+        "revision" : "5c5feadbf85dea42f511fec04ffdc36ef7e943a3"
       }
     },
     {
@@ -302,8 +302,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/qonversion/qonversion-ios-sdk.git",
       "state" : {
-        "revision" : "1a76b8bb898f03479ee38ca02e3ebfb3816e6ffc",
-        "version" : "6.11.0"
+        "revision" : "5f6684b2b11de4c5075bbfa4bace146c1e4ececc",
+        "version" : "6.11.1"
       }
     },
     {
@@ -446,8 +446,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/apple/swift-collections",
       "state" : {
-        "revision" : "fea17c02d767f46b23070fdfdacc28a03a39232a",
-        "version" : "1.5.1"
+        "revision" : "a0cb0954ecb21e4e31b0070e6ed5674e8556685a",
+        "version" : "1.6.0"
       }
     },
     {
