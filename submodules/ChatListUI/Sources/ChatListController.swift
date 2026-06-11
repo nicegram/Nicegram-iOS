@@ -120,6 +120,10 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
     // Nicegram
     private var cancellables = Set<AnyCancellable>()
     //
+
+    // Nicegram FolderForKeywords
+    private(set) var hasKeywords = false
+    //
     
     // Nicegram, ChatListWidget
     @Injected(\ChatListWidgetModule.chatListWidgetViewModel)
@@ -196,7 +200,8 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
         if let tabContainerData = self.tabContainerData {
             // Nicegram FolderForKeywords
             let id = self.context.account.peerId.toInt64()
-            let count = ((getNicegramSettings().keywords.show[id] ?? true) ? 0 : 1)
+            let showFolderForKeywords = (getNicegramSettings().keywords.show[id] ?? true) && self.hasKeywords
+            let count = (showFolderForKeywords ? 0 : 1)
             // Nicegram FolderForKeywords, count
             let isEmpty = tabContainerData.0.count <= count || tabContainerData.1
             return !isEmpty
@@ -324,6 +329,17 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
         self.isVisiblePublisher
             .sink { [weak self] isVisible in
                 self?.updateChatListNode(isVisible: isVisible)
+            }
+            .store(in: &cancellables)
+        //
+
+        // Nicegram FolderForKeywords
+        KeywordsModule.shared.hasKeywordsUseCase()(with: context.account.peerId.toInt64())
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] hasKeywords in
+                guard let self, self.hasKeywords != hasKeywords else { return }
+                self.hasKeywords = hasKeywords
+                self.requestLayout(transition: .immediate)
             }
             .store(in: &cancellables)
         //

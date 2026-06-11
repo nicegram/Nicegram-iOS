@@ -322,10 +322,6 @@ final class AuthorizationSequencePhoneEntryControllerNode: ASDisplayNode {
     private lazy var showNgBanner = shouldShowPhoneEntryBanner()
     //
     
-    // Nicegram Onboarding
-    let isNgOnboarding: Bool
-    //
-    
     private let animationNode: AnimatedStickerNode
     private let managedAnimationNode: ManagedPhoneAnimationNode
     private let titleNode: ASTextNode
@@ -435,16 +431,7 @@ final class AuthorizationSequencePhoneEntryControllerNode: ASDisplayNode {
         self.noticeActivateAreaNode = AccessibilityAreaNode()
         self.noticeActivateAreaNode.accessibilityTraits = .staticText
         
-        // Nicegram Onboarding
-        let isNgOnboarding = !hasOtherAccounts
-        self.isNgOnboarding = isNgOnboarding
-        //
-        
-        // Nicegram Onboarding, overwrite 'notice' if isNgOnboarding
-        var notice = account == nil ? strings.ChangePhoneNumberNumber_Help : strings.Login_PhoneAndCountryHelp
-        if isNgOnboarding {
-            notice = FeatOnboardingCore.strings.phoneEntryDesc()
-        }
+        let notice = account == nil ? strings.ChangePhoneNumberNumber_Help : strings.Login_PhoneAndCountryHelp
         self.noticeNode.attributedText = NSAttributedString(string: notice, font: Font.regular(17.0), textColor: theme.list.itemPrimaryTextColor, paragraphAlignment: .center)
         
         self.contactSyncNode = ContactSyncNode(theme: theme, strings: strings)
@@ -640,11 +627,7 @@ final class AuthorizationSequencePhoneEntryControllerNode: ASDisplayNode {
         let titleInset: CGFloat = layout.size.width > 320.0 ? 18.0 : 0.0
         let additionalBottomInset: CGFloat = layout.size.width > 320.0 ? 80.0 : 10.0
         
-        // Nicegram Onboarding, overwrite 'title' if isNgOnboarding
-        var title = self.account == nil ? self.strings.Login_NewNumber : self.strings.Login_PhoneTitle
-        if self.isNgOnboarding {
-            title = FeatOnboardingCore.strings.phoneEntryTitle()
-        }
+        let title = self.account == nil ? self.strings.Login_NewNumber : self.strings.Login_PhoneTitle
         self.titleNode.attributedText = NSAttributedString(string: title, font: Font.bold(28.0), textColor: self.theme.list.itemPrimaryTextColor)
         self.titleActivateAreaNode.accessibilityLabel = self.titleNode.attributedText?.string ?? ""
         
