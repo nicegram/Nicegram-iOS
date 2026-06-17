@@ -19,9 +19,7 @@ swift_library(
         "//submodules/ItemListUI:ItemListUI",
         "//submodules/SolidRoundedButtonNode:SolidRoundedButtonNode",
         "//submodules/OverlayStatusController:OverlayStatusController",
-        "//submodules/UrlWhitelist:UrlWhitelist",
         "//submodules/TelegramUI/Components/AlertComponent",
-        "//submodules/UrlHandling",
     ],
     visibility = [
         "//visibility:public",

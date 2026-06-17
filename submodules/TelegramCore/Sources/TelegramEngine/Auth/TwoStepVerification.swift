@@ -337,13 +337,6 @@ func _internal_requestTwoStepVerificationPasswordRecoveryCode(network: Network) 
     }
 }
 
-public enum RecoverTwoStepVerificationPasswordError {
-    case generic
-    case codeExpired
-    case limitExceeded
-    case invalidCode
-}
-
 func _internal_cachedTwoStepPasswordToken(postbox: Postbox) -> Signal<TemporaryTwoStepPasswordToken?, NoError> {
     return postbox.transaction { transaction -> TemporaryTwoStepPasswordToken? in
         let key = ValueBoxKey(length: 1)

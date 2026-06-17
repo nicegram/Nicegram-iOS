@@ -35,7 +35,7 @@ swift_library(
         "//submodules/TextFormat",
         "//submodules/UIKitRuntimeUtils",
         "//submodules/TelegramUI/Components/Settings/TimezoneSelectionScreen",
-        "//submodules/TelegramUI/Components/TimeSelectionActionSheet",
+        "//submodules/TelegramUI/Components/ChatTimerScreen",
     ],
     visibility = [
         "//visibility:public",

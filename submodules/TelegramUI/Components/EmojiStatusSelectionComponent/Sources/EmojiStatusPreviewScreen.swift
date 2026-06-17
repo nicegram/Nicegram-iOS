@@ -10,8 +10,9 @@ import ComponentDisplayAdapters
 import MultilineTextComponent
 import EmojiStatusComponent
 import TelegramStringFormatting
-import SolidRoundedButtonComponent
 import PresentationDataUtils
+import ChatTimerScreen
+import SheetComponent
 
 protocol ContextMenuItemWithAction: AnyObject {
     func performAction() -> ContextMenuPerformActionResult
@@ -347,173 +348,116 @@ private final class ContextMenuActionsComponent: Component {
 private final class TimeSelectionControlComponent: Component {
     let theme: PresentationTheme
     let strings: PresentationStrings
+    let dateTimeFormat: PresentationDateTimeFormat
     let bottomInset: CGFloat
+    let screenCornerRadius: CGFloat
     let apply: (Int32) -> Void
     let cancel: () -> Void
     
     init(
         theme: PresentationTheme,
         strings: PresentationStrings,
+        dateTimeFormat: PresentationDateTimeFormat,
         bottomInset: CGFloat,
+        screenCornerRadius: CGFloat,
         apply: @escaping (Int32) -> Void,
         cancel: @escaping () -> Void
     ) {
         self.theme = theme
         self.strings = strings
+        self.dateTimeFormat = dateTimeFormat
         self.bottomInset = bottomInset
+        self.screenCornerRadius = screenCornerRadius
         self.apply = apply
         self.cancel = cancel
     }
     
     static func ==(lhs: TimeSelectionControlComponent, rhs: TimeSelectionControlComponent) -> Bool {
-        if lhs.theme !== rhs.theme {
-            return false
-        }
-        if lhs.strings !== rhs.strings {
-            return false
-        }
-        if lhs.bottomInset != rhs.bottomInset {
-            return false
-        }
-        return true
+        return false
     }
     
     final class View: UIView {
-        private let backgroundView: BlurredBackgroundView
-        private let pickerView: UIDatePicker
-        private let titleView: ComponentView<Empty>
-        private let leftButtonView: ComponentView<Empty>
-        private let actionButtonView: ComponentView<Empty>
+        private let backgroundView: SheetBackgroundView
+        private let contentView: ComponentView<Empty>
         
         private var component: TimeSelectionControlComponent?
         
         override init(frame: CGRect) {
-            self.backgroundView = BlurredBackgroundView(color: .clear, enableBlur: true)
-            self.pickerView = UIDatePicker()
-            
-            self.titleView = ComponentView<Empty>()
-            self.leftButtonView = ComponentView<Empty>()
-            self.actionButtonView = ComponentView<Empty>()
+            self.backgroundView = SheetBackgroundView()
+            self.contentView = ComponentView<Empty>()
             
             super.init(frame: frame)
             
             self.addSubview(self.backgroundView)
-            
-            self.pickerView.timeZone = TimeZone(secondsFromGMT: 0)
-            self.pickerView.datePickerMode = .countDownTimer
-            self.pickerView.datePickerMode = .dateAndTime
-            if #available(iOS 13.4, *) {
-                self.pickerView.preferredDatePickerStyle = .wheels
-            }
-            self.pickerView.minimumDate = Date(timeIntervalSince1970: Date().timeIntervalSince1970 + Double(TimeZone.current.secondsFromGMT()))
-            self.pickerView.maximumDate = Date(timeIntervalSince1970: Double(Int32.max - 1))
-            
-            self.addSubview(self.pickerView)
-            self.pickerView.addTarget(self, action: #selector(self.datePickerUpdated), for: .valueChanged)
         }
         
         required init?(coder: NSCoder) {
             fatalError("init(coder:) has not been implemented")
         }
         
-        @objc private func datePickerUpdated() {
-        }
-        
         func update(component: TimeSelectionControlComponent, availableSize: CGSize, state: EmptyComponentState, environment: Environment<Empty>, transition: ComponentTransition) -> CGSize {
-            if self.component?.theme !== component.theme {
-                UILabel.setDateLabel(component.theme.list.itemPrimaryTextColor)
-                
-                self.pickerView.setValue(component.theme.list.itemPrimaryTextColor, forKey: "textColor")
-                
-                self.backgroundView.updateColor(color: component.theme.contextMenu.backgroundColor, transition: .immediate)
-            }
-            
             self.component = component
             
-            let topPanelHeight: CGFloat = 54.0
-            let pickerSpacing: CGFloat = 10.0
-            
-            let pickerSize = CGSize(width: availableSize.width, height: 216.0)
-            let pickerFrame = CGRect(origin: CGPoint(x: 0.0, y: topPanelHeight + pickerSpacing), size: pickerSize)
-            
-            let titleSize = self.titleView.update(
+            let glassInset: CGFloat = availableSize.width < availableSize.height ? 6.0 : 0.0
+            let topCornerRadius: CGFloat = 38.0
+            let bottomCornerRadius: CGFloat = max(24.0, component.screenCornerRadius) - 2.0
+
+            self.contentView.parentState = state
+            let contentSize = self.contentView.update(
                 transition: transition,
-                component: AnyComponent(Text(text: component.strings.EmojiStatusSetup_SetUntil, font: Font.semibold(17.0), color: component.theme.list.itemPrimaryTextColor)),
-                environment: {},
-                containerSize: CGSize(width: availableSize.width, height: 100.0)
-            )
-            if let titleComponentView = self.titleView.view {
-                if titleComponentView.superview == nil {
-                    self.addSubview(titleComponentView)
-                }
-                transition.setFrame(view: titleComponentView, frame: CGRect(origin: CGPoint(x: floor((availableSize.width - titleSize.width) / 2.0), y: floor((topPanelHeight - titleSize.height) / 2.0)), size: titleSize))
-            }
-            
-            let leftButtonSize = self.leftButtonView.update(
-                transition: transition,
-                component: AnyComponent(Button(
-                    content: AnyComponent(Text(
-                        text: component.strings.Common_Cancel,
-                        font: Font.regular(17.0),
-                        color: component.theme.list.itemAccentColor
-                    )),
-                    action: { [weak self] in
-                        self?.component?.cancel()
-                    }
-                ).minSize(CGSize(width: 16.0, height: topPanelHeight))),
-                environment: {},
-                containerSize: CGSize(width: availableSize.width, height: 100.0)
-            )
-            if let leftButtonComponentView = self.leftButtonView.view {
-                if leftButtonComponentView.superview == nil {
-                    self.addSubview(leftButtonComponentView)
-                }
-                transition.setFrame(view: leftButtonComponentView, frame: CGRect(origin: CGPoint(x: 16.0, y: floor((topPanelHeight - leftButtonSize.height) / 2.0)), size: leftButtonSize))
-            }
-            
-            let actionButtonSize = self.actionButtonView.update(
-                transition: transition,
-                component: AnyComponent(SolidRoundedButtonComponent(
-                    title: component.strings.EmojiStatusSetup_SetUntil,
-                    icon: nil,
-                    theme: SolidRoundedButtonComponent.Theme(theme: component.theme),
-                    font: .bold,
-                    fontSize: 17.0,
-                    height: 50.0,
-                    cornerRadius: 10.0,
-                    gloss: false,
-                    action: { [weak self] in
-                        guard let strongSelf = self, let component = strongSelf.component else {
+                component: AnyComponent(ChatTimerPickerContentComponent(
+                    configuration: ChatTimerScreen.Configuration(
+                        style: .default,
+                        title: { strings in
+                            strings.EmojiStatusSetup_SetUntil
+                        },
+                        picker: .dateTime,
+                        currentValue: nil,
+                        minimumDate: Date(),
+                        pickerValueMapping: .rawTimestamp,
+                        primaryActionTitle: { strings, _, _ in
+                            strings.EmojiStatusSetup_SetUntil
+                        }
+                    ),
+                    theme: component.theme,
+                    strings: component.strings,
+                    dateTimeFormat: component.dateTimeFormat,
+                    safeInsets: UIEdgeInsets(top: 0.0, left: 0.0, bottom: component.bottomInset, right: 0.0),
+                    leadingAction: ChatTimerPickerContentComponent.LeadingAction(
+                        icon: .back,
+                        action: { [weak self] in
+                            self?.component?.cancel()
+                        }
+                    ),
+                    completion: { [weak self] value in
+                        guard let self, let value else {
                             return
                         }
-                        
-                        let timestamp = Int32(strongSelf.pickerView.date.timeIntervalSince1970 - Double(TimeZone.current.secondsFromGMT()))
-                        component.apply(timestamp)
+                        self.component?.apply(value)
                     }
                 )),
                 environment: {},
-                containerSize: CGSize(width: availableSize.width - 16.0 * 2.0, height: 50.0)
+                containerSize: CGSize(width: availableSize.width - glassInset * 2.0, height: availableSize.height)
             )
-            let actionButtonFrame = CGRect(origin: CGPoint(x: floor((availableSize.width - actionButtonSize.width) / 2.0), y: pickerFrame.maxY + pickerSpacing), size: actionButtonSize)
-            if let actionButtonComponentView = self.actionButtonView.view {
-                if actionButtonComponentView.superview == nil {
-                    self.addSubview(actionButtonComponentView)
+            let panelFrame = CGRect(origin: CGPoint(x: glassInset, y: 0.0), size: contentSize)
+
+            self.backgroundView.update(
+                size: contentSize,
+                color: component.theme.actionSheet.opaqueItemBackgroundColor,
+                topCornerRadius: topCornerRadius,
+                bottomCornerRadius: bottomCornerRadius,
+                transition: transition
+            )
+            transition.setFrame(view: self.backgroundView, frame: panelFrame)
+
+            if let contentComponentView = self.contentView.view {
+                if contentComponentView.superview == nil {
+                    self.addSubview(contentComponentView)
                 }
-                transition.setFrame(view: actionButtonComponentView, frame: actionButtonFrame)
+                transition.setFrame(view: contentComponentView, frame: panelFrame)
             }
-            
-            self.pickerView.frame = pickerFrame
-            
-            var size = CGSize(width: availableSize.width, height: actionButtonFrame.maxY)
-            if component.bottomInset.isZero {
-                size.height += 10.0
-            } else {
-                size.height += max(10.0, component.bottomInset)
-            }
-            
-            self.backgroundView.update(size: size, cornerRadius: 10.0, maskedCorners: [.layerMinXMinYCorner, .layerMaxXMinYCorner], transition: transition.containedViewLayoutTransition)
-            
-            return size
+
+            return CGSize(width: availableSize.width, height: contentSize.height + glassInset)
         }
     }
     
@@ -553,20 +497,26 @@ final class EmojiStatusPreviewScreenComponent: Component {
     
     let theme: PresentationTheme
     let strings: PresentationStrings
+    let dateTimeFormat: PresentationDateTimeFormat
     let bottomInset: CGFloat
+    let screenCornerRadius: CGFloat
     let item: EmojiStatusComponent
     let dismiss: (StatusResult?) -> Void
     
     init(
         theme: PresentationTheme,
         strings: PresentationStrings,
+        dateTimeFormat: PresentationDateTimeFormat,
         bottomInset: CGFloat,
+        screenCornerRadius: CGFloat,
         item: EmojiStatusComponent,
         dismiss: @escaping (StatusResult?) -> Void
     ) {
         self.theme = theme
         self.strings = strings
+        self.dateTimeFormat = dateTimeFormat
         self.bottomInset = bottomInset
+        self.screenCornerRadius = screenCornerRadius
         self.item = item
         self.dismiss = dismiss
     }
@@ -578,7 +528,13 @@ final class EmojiStatusPreviewScreenComponent: Component {
         if lhs.strings !== rhs.strings {
             return false
         }
+        if lhs.dateTimeFormat != rhs.dateTimeFormat {
+            return false
+        }
         if lhs.bottomInset != rhs.bottomInset {
+            return false
+        }
+        if lhs.screenCornerRadius != rhs.screenCornerRadius {
             return false
         }
         if lhs.item != rhs.item {
@@ -694,7 +650,9 @@ final class EmojiStatusPreviewScreenComponent: Component {
                 component: AnyComponent(TimeSelectionControlComponent(
                     theme: component.theme,
                     strings: component.strings,
+                    dateTimeFormat: component.dateTimeFormat,
                     bottomInset: component.bottomInset,
+                    screenCornerRadius: component.screenCornerRadius,
                     apply: { [weak self] timestamp in
                         guard let strongSelf = self, let component = strongSelf.component else {
                             return

@@ -1,5 +1,4 @@
 import Foundation
-import Postbox
 import TelegramCore
 import SwiftSignalKit
 
@@ -90,7 +89,7 @@ public func updateWebBrowserSettingsInteractively(accountManager: AccountManager
             } else {
                 currentSettings = WebBrowserSettings.defaultSettings
             }
-            return PreferencesEntry(f(currentSettings))
+            return EnginePreferencesEntry(f(currentSettings))
         })
     }
 }

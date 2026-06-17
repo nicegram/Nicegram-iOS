@@ -1,8 +1,6 @@
- 
-objc_library(
+
+cc_library(
     name = "ogg",
-    enable_modules = True,
-    module_name = "ogg",
     srcs = glob([
         "Sources/*.c",
         "Sources/*.h",

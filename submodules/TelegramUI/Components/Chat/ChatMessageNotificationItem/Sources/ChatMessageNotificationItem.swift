@@ -2,7 +2,6 @@ import Foundation
 import UIKit
 import AsyncDisplayKit
 import Display
-import Postbox
 import TelegramCore
 import SwiftSignalKit
 import TelegramPresentationData
@@ -24,8 +23,8 @@ public final class ChatMessageNotificationItem: NotificationItem {
     public let strings: PresentationStrings
     public let dateTimeFormat: PresentationDateTimeFormat
     public let nameDisplayOrder: PresentationPersonNameOrder
-    public let messages: [Message]
-    public let threadData: MessageHistoryThreadData?
+    public let messages: [EngineRawMessage]
+    public let threadData: EngineMessageHistoryThreadData?
     public let tapAction: () -> Bool
     public let expandAction: (@escaping () -> (ASDisplayNode?, () -> Void)) -> Void
     
@@ -33,7 +32,7 @@ public final class ChatMessageNotificationItem: NotificationItem {
         return messages.first?.id.peerId
     }
     
-    public init(context: AccountContext, strings: PresentationStrings, dateTimeFormat: PresentationDateTimeFormat, nameDisplayOrder: PresentationPersonNameOrder, messages: [Message], threadData: MessageHistoryThreadData?, tapAction: @escaping () -> Bool, expandAction: @escaping (() -> (ASDisplayNode?, () -> Void)) -> Void) {
+    public init(context: AccountContext, strings: PresentationStrings, dateTimeFormat: PresentationDateTimeFormat, nameDisplayOrder: PresentationPersonNameOrder, messages: [EngineRawMessage], threadData: EngineMessageHistoryThreadData?, tapAction: @escaping () -> Bool, expandAction: @escaping (() -> (ASDisplayNode?, () -> Void)) -> Void) {
         self.context = context
         self.strings = strings
         self.dateTimeFormat = dateTimeFormat
@@ -187,7 +186,7 @@ final class ChatMessageNotificationItemNode: NotificationItemNode {
             self.avatarNode.setPeer(context: item.context, theme: presentationData.theme, peer: avatarPeer, overrideImage: peer.id == item.context.account.peerId ? .savedMessagesIcon : nil, emptyColor: presentationData.theme.list.mediaPlaceholderColor)
         }
         
-        var updatedMedia: Media?
+        var updatedMedia: EngineRawMedia?
         var imageDimensions: CGSize?
         var isRound = false
         var messageText: String

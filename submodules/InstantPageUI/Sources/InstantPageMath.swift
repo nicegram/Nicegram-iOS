@@ -2,27 +2,27 @@ import Foundation
 import UIKit
 import SwiftMath
 
-enum InstantPageMathMode {
+public enum InstantPageMathMode {
     case inline
     case block
 }
 
-struct InstantPageMathRenderResult {
-    let image: UIImage
-    let size: CGSize
-    let width: CGFloat
-    let ascent: CGFloat
-    let descent: CGFloat
+public struct InstantPageMathRenderResult {
+    public let image: UIImage
+    public let size: CGSize
+    public let width: CGFloat
+    public let ascent: CGFloat
+    public let descent: CGFloat
 }
 
-final class InstantPageMathAttachment: NSObject {
-    let latex: String
-    let fontSize: CGFloat
-    let textColor: UIColor
-    let mode: InstantPageMathMode
-    let rendered: InstantPageMathRenderResult
+public final class InstantPageMathAttachment: NSObject {
+    public let latex: String
+    public let fontSize: CGFloat
+    public let textColor: UIColor
+    public let mode: InstantPageMathMode
+    public let rendered: InstantPageMathRenderResult
 
-    init(latex: String, fontSize: CGFloat, textColor: UIColor, mode: InstantPageMathMode, rendered: InstantPageMathRenderResult) {
+    public init(latex: String, fontSize: CGFloat, textColor: UIColor, mode: InstantPageMathMode, rendered: InstantPageMathRenderResult) {
         self.latex = latex
         self.fontSize = fontSize
         self.textColor = textColor

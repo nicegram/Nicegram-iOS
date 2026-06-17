@@ -24,6 +24,7 @@ swift_library(
         "//submodules/AccountContext:AccountContext",
         "//submodules/LegacyComponents:LegacyComponents",
         "//submodules/LegacyUI:LegacyUI",
+        "//submodules/ContextUI:ContextUI",
         "//submodules/MimeTypes:MimeTypes",
         "//submodules/LocalMediaResources:LocalMediaResources",
         "//submodules/SearchPeerMembers:SearchPeerMembers",

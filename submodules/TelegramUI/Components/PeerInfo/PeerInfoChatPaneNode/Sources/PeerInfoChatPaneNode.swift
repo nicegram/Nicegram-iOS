@@ -3,7 +3,6 @@ import AsyncDisplayKit
 import Display
 import TelegramCore
 import SwiftSignalKit
-import Postbox
 import TelegramPresentationData
 import AccountContext
 import TelegramStringFormatting
@@ -141,7 +140,7 @@ public final class PeerInfoChatPaneNode: ASDisplayNode, PeerInfoPaneNode, ASScro
     private var presentationData: PresentationData
     private var presentationDataDisposable: Disposable?
         
-    public init(context: AccountContext, chatLocation: ChatLocation, tag: MessageTags?, navigationController: @escaping () -> NavigationController?) {
+    public init(context: AccountContext, chatLocation: ChatLocation, tag: EngineMessage.Tags?, navigationController: @escaping () -> NavigationController?) {
         self.context = context
         self.navigationController = navigationController
         self.presentationData = context.sharedContext.currentPresentationData.with { $0 }
@@ -224,7 +223,7 @@ public final class PeerInfoChatPaneNode: ASDisplayNode, PeerInfoPaneNode, ASScro
         self.presentationDataDisposable?.dispose()
     }
 
-    public func ensureMessageIsVisible(id: MessageId) {
+    public func ensureMessageIsVisible(id: EngineMessage.Id) {
     }
     
     public func scrollToTop() -> Bool {
@@ -238,7 +237,7 @@ public final class PeerInfoChatPaneNode: ASDisplayNode, PeerInfoPaneNode, ASScro
     public func brieflyDisableTouchActions() {
     }
     
-    public func findLoadedMessage(id: MessageId) -> Message? {
+    public func findLoadedMessage(id: EngineMessage.Id) -> EngineMessage? {
         return nil
     }
     
@@ -254,7 +253,7 @@ public final class PeerInfoChatPaneNode: ASDisplayNode, PeerInfoPaneNode, ASScro
     public func cancelPreviewGestures() {
     }
     
-    public func transitionNodeForGallery(messageId: MessageId, media: Media) -> (ASDisplayNode, CGRect, () -> (UIView?, UIView?))? {
+    public func transitionNodeForGallery(messageId: EngineMessage.Id, media: EngineMedia) -> (ASDisplayNode, CGRect, () -> (UIView?, UIView?))? {
         return nil
     }
     

@@ -35,6 +35,7 @@ swift_library(
         "//submodules/TelegramUI/Components/TextNodeWithEntities",
         "//submodules/TelegramUI/Components/ListItemComponentAdaptor",
         "//submodules/TelegramUI/Components/GlassBackgroundComponent",
+        "//submodules/TelegramUI/Components/GlassControls",
         "//submodules/TelegramUI/Components/HorizontalTabsComponent",
     ],
     visibility = [

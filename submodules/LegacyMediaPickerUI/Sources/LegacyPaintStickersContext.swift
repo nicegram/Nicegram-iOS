@@ -13,6 +13,7 @@ import SolidRoundedButtonNode
 import MediaEditor
 import DrawingUI
 import TelegramPresentationData
+import ContextUI
 import AnimatedCountLabelNode
 import CoreMedia
 
@@ -571,15 +572,118 @@ public final class LegacyPaintEntityRenderer: NSObject, TGPhotoPaintEntityRender
     }
 }
 
+public typealias LegacyMediaPickerSendActionMenuPresenter = (
+    UIView,
+    Bool,
+    Bool,
+    Bool,
+    Bool,
+    Bool,
+    @escaping () -> Void,
+    @escaping () -> Void,
+    @escaping () -> Void,
+    @escaping () -> Void
+) -> Bool
+
+private final class LegacyMediaPickerSendActionMenuReferenceContentSource: ContextReferenceContentSource {
+    private weak var sourceView: UIView?
+
+    init(sourceView: UIView) {
+        self.sourceView = sourceView
+    }
+
+    func transitionInfo() -> ContextControllerReferenceViewInfo? {
+        guard let sourceView = self.sourceView else {
+            return nil
+        }
+        return ContextControllerReferenceViewInfo(referenceView: sourceView, contentAreaInScreenSpace: UIScreen.main.bounds, actionsPosition: .top)
+    }
+}
+
+public func makeLegacyMediaPickerSendActionMenuPresenter(
+    context: AccountContext,
+    presentationData: PresentationData? = nil,
+    presentInGlobalOverlay: ((ViewController) -> Void)? = nil
+) -> LegacyMediaPickerSendActionMenuPresenter {
+    return { sourceView, canSendSilently, canSendWhenOnline, canSchedule, reminder, hasTimer, sendSilently, sendWhenOnline, schedule, sendWithTimer in
+        guard sourceView.window != nil else {
+            return false
+        }
+
+        let presentationData = (presentationData ?? context.sharedContext.currentPresentationData.with { $0 }).withUpdated(theme: defaultDarkPresentationTheme)
+        var items: [ContextMenuItem] = []
+
+        if canSendSilently {
+            items.append(.action(ContextMenuActionItem(text: presentationData.strings.Conversation_SendMessage_SendSilently, icon: { theme in
+                return generateTintedImage(image: UIImage(bundleImageName: "Chat/Input/Menu/SilentIcon"), color: theme.contextMenu.primaryColor)
+            }, action: { _, f in
+                f(.default)
+                sendSilently()
+            })))
+        }
+
+        if canSendWhenOnline {
+            items.append(.action(ContextMenuActionItem(text: presentationData.strings.Conversation_SendMessage_SendWhenOnline, icon: { theme in
+                return generateTintedImage(image: UIImage(bundleImageName: "Chat/Input/Menu/WhenOnlineIcon"), color: theme.contextMenu.primaryColor)
+            }, action: { _, f in
+                f(.default)
+                sendWhenOnline()
+            })))
+        }
+
+        if canSchedule {
+            items.append(.action(ContextMenuActionItem(text: reminder ? presentationData.strings.Conversation_SendMessage_SetReminder : presentationData.strings.Conversation_SendMessage_ScheduleMessage, icon: { theme in
+                return generateTintedImage(image: UIImage(bundleImageName: "Chat/Input/Menu/ScheduleIcon"), color: theme.contextMenu.primaryColor)
+            }, action: { _, f in
+                f(.default)
+                schedule()
+            })))
+        }
+
+        if hasTimer {
+            items.append(.action(ContextMenuActionItem(text: presentationData.strings.Conversation_Timer_Send, icon: { theme in
+                return generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Timer"), color: theme.contextMenu.primaryColor)
+            }, action: { _, f in
+                f(.default)
+                sendWithTimer()
+            })))
+        }
+
+        guard !items.isEmpty else {
+            return false
+        }
+
+        let contextController = makeContextController(
+            presentationData: presentationData,
+            source: .reference(LegacyMediaPickerSendActionMenuReferenceContentSource(sourceView: sourceView)),
+            items: .single(ContextController.Items(content: .list(items))),
+            gesture: nil
+        )
+        if let presentInGlobalOverlay {
+            presentInGlobalOverlay(contextController)
+        } else if let mainWindow = context.sharedContext.mainWindow {
+            mainWindow.presentInGlobalOverlay(contextController)
+        } else {
+            context.sharedContext.presentGlobalController(contextController, nil)
+        }
+        return true
+    }
+}
+
 public final class LegacyPaintStickersContext: NSObject, TGPhotoPaintStickersContext {
     public var captionPanelView: (() -> TGCaptionPanelView?)?
     public var livePhotoButton: (() -> TGLivePhotoButton?)?
+    public var photoToolbarView: ((TGPhotoEditorBackButton, TGPhotoEditorDoneButton, Bool, Bool) -> (UIView & TGPhotoToolbarViewProtocol)?)?
+    public var presentMediaPickerSendActionMenu: LegacyMediaPickerSendActionMenuPresenter?
     public var editCover: ((CGSize, @escaping (UIImage) -> Void) -> Void)?
-    
+
     private let context: AccountContext
-    
+
     public init(context: AccountContext) {
         self.context = context
+        super.init()
+
+        self.presentMediaPickerSendActionMenu = makeLegacyMediaPickerSendActionMenuPresenter(context: context)
     }
     
     class LegacyDrawingAdapter: NSObject, TGPhotoDrawingAdapter {

@@ -3,7 +3,6 @@ import TelegramUI
 import BuildConfig
 import ShareExtensionContext
 import SwiftSignalKit
-import Postbox
 import TelegramCore
 
 @objc(ShareRootController)
@@ -56,10 +55,10 @@ class ShareRootController: UIViewController {
                     appGroupPath: appGroupUrl.path,
                     accountManager: accountManager,
                     appLockContext: appLockContext,
-                    encryptionParameters: ValueBoxEncryptionParameters(
+                    encryptionParameters: EngineValueBoxEncryptionParameters(
                         forceEncryptionIfNoSet: false,
-                        key: ValueBoxEncryptionParameters.Key(data: encryptionParameters.0)!,
-                        salt: ValueBoxEncryptionParameters.Salt(data: encryptionParameters.1)!
+                        key: EngineValueBoxEncryptionParameters.Key(data: encryptionParameters.0)!,
+                        salt: EngineValueBoxEncryptionParameters.Salt(data: encryptionParameters.1)!
                     ),
                     applicationBindings: applicationBindings,
                     initialPresentationDataAndSettings: InitialPresentationDataAndSettings,

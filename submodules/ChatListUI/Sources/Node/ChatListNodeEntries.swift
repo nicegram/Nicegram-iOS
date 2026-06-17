@@ -3,7 +3,6 @@ import FeatPinnedChats
 //
 import Foundation
 import UIKit
-import Postbox
 import TelegramCore
 import TelegramPresentationData
 import MergeLists
@@ -976,14 +975,14 @@ func chatListNodeEntriesForView(view: EngineChatList, state: ChatListNodeState, 
         
         // Nicegram PinnedChats
         for nicegramItem in nicegramItems {
-            let peerId = PeerId(0)
+            let peerId = EnginePeer.Id(0)
             result.append(.PeerEntry(ChatListNodeEntry.PeerEntryData(
                 nicegramItem: nicegramItem,
                 index: .chatList(
-                    ChatListIndex(
+                    EngineChatListIndex(
                         pinningIndex: pinningIndex,
-                        messageIndex: MessageIndex(
-                            id: MessageId(
+                        messageIndex: EngineMessage.Index(
+                            id: EngineMessage.Id(
                                 peerId: peerId,
                                 namespace: 0,
                                 id: 0

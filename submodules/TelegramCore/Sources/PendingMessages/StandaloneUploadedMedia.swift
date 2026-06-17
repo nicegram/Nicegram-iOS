@@ -8,12 +8,6 @@ public enum StandaloneUploadMediaError {
     case generic
 }
 
-public struct StandaloneUploadSecretFile {
-    let file: Api.InputEncryptedFile
-    let size: Int32
-    let key: SecretFileEncryptionKey
-}
-
 public enum StandaloneUploadMediaThumbnailResult {
     case pending
     case file(Api.InputFile)

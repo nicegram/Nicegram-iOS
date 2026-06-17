@@ -31,6 +31,8 @@ private enum PendingMessageState {
     case waitingForUploadToStart(groupId: Int64?, upload: Signal<PendingMessageUploadedContentResult, PendingMessageUploadError>)
     case uploading(groupId: Int64?)
     case waitingToBeSent(groupId: Int64?, content: PendingMessageUploadedContentAndReuploadInfo)
+    case waitingForSendGate(groupId: Int64?, content: PendingMessageUploadedContentAndReuploadInfo)
+    case waitingForForwardSendGate
     case sending(groupId: Int64?)
     case waitingForNewTopic(message: Message)
     
@@ -46,6 +48,10 @@ private enum PendingMessageState {
             return groupId
         case let .waitingToBeSent(groupId, _):
             return groupId
+        case let .waitingForSendGate(groupId, _):
+            return groupId
+        case .waitingForForwardSendGate:
+            return nil
         case let .sending(groupId):
             return groupId
         case let .waitingForNewTopic(message):
@@ -230,6 +236,9 @@ public final class PendingMessageManager {
     
     private var messageContexts: [MessageId: PendingMessageContext] = [:]
     private var pendingMessageIds = Set<MessageId>()
+    private var liveTypingDraftKeys: Set<PeerAndThreadId> = []
+    private let allTypingDraftsDisposable = MetaDisposable()
+    private var forwardSendGateGroups: [PeerAndThreadId: [[(PendingMessageContext, Message, ForwardSourceInfoAttribute)]]] = [:]
     private let beginSendingMessagesDisposables = DisposableSet()
     
     private var newTopicDisposables: [PeerId: Disposable] = [:]
@@ -250,6 +259,14 @@ public final class PendingMessageManager {
         self.localInputActivityManager = localInputActivityManager
         self.messageMediaPreuploadManager = messageMediaPreuploadManager
         self.revalidationContext = revalidationContext
+
+        let queue = self.queue
+        self.allTypingDraftsDisposable.set(
+            (postbox.combinedView(keys: [.allTypingDrafts])
+            |> deliverOn(queue)).start(next: { [weak self] view in
+                self?.handleLiveTypingDraftsUpdate(view)
+            })
+        )
     }
     
     deinit {
@@ -257,8 +274,117 @@ public final class PendingMessageManager {
         for (_, disposable) in self.newTopicDisposables {
             disposable.dispose()
         }
+        self.allTypingDraftsDisposable.dispose()
     }
     
+    private func handleLiveTypingDraftsUpdate(_ combined: CombinedView) {
+        assert(self.queue.isCurrent())
+
+        let new: Set<PeerAndThreadId>
+        if let view = combined.views[.allTypingDrafts] as? AllTypingDraftsView {
+            new = view.keys
+        } else {
+            new = []
+        }
+        let cleared = self.liveTypingDraftKeys.subtracting(new)
+        self.liveTypingDraftKeys = new
+        for key in cleared {
+            self.drainSendGate(key: key)
+        }
+    }
+
+    private func shouldGateSend(messageId: MessageId, threadId: Int64?) -> Bool {
+        if messageId.namespace == Namespaces.Message.ScheduledCloud {
+            return false
+        }
+        if messageId.peerId.namespace == Namespaces.Peer.SecretChat {
+            return false
+        }
+        if messageId.peerId == self.accountPeerId {
+            return false
+        }
+        if threadId == Message.newTopicThreadId {
+            return false
+        }
+        return true
+    }
+
+    private func isSendGateOpen(for key: PeerAndThreadId) -> Bool {
+        return !self.liveTypingDraftKeys.contains(key)
+    }
+
+    private func drainSendGate(key: PeerAndThreadId) {
+        assert(self.queue.isCurrent())
+
+        // (1) Single-message drain: snapshot then commit in messageId.id order.
+        var singleDrains: [(context: PendingMessageContext, messageId: MessageId, content: PendingMessageUploadedContentAndReuploadInfo)] = []
+        for (id, context) in self.messageContexts {
+            if id.peerId != key.peerId {
+                continue
+            }
+            if context.threadId != key.threadId {
+                continue
+            }
+            if case let .waitingForSendGate(groupId, content) = context.state, groupId == nil {
+                singleDrains.append((context, id, content))
+            }
+        }
+        singleDrains.sort(by: { $0.messageId.id < $1.messageId.id })
+        for entry in singleDrains {
+            self.commitSendingSingleMessage(messageContext: entry.context, messageId: entry.messageId, content: entry.content)
+        }
+
+        // (2) Grouped-album drain: collect distinct groupIds whose members match the key,
+        // iterate ascending by min messageId.id, fire commitSendingMessageGroup.
+        var groupKeys: [(groupId: Int64, minMessageId: Int32)] = []
+        var seenGroupIds = Set<Int64>()
+        for (id, context) in self.messageContexts {
+            if id.peerId != key.peerId {
+                continue
+            }
+            if context.threadId != key.threadId {
+                continue
+            }
+            if case let .waitingForSendGate(groupId, _) = context.state, let groupId = groupId {
+                if !seenGroupIds.contains(groupId) {
+                    seenGroupIds.insert(groupId)
+                    groupKeys.append((groupId, id.id))
+                } else {
+                    if let index = groupKeys.firstIndex(where: { $0.groupId == groupId }), id.id < groupKeys[index].minMessageId {
+                        groupKeys[index].minMessageId = id.id
+                    }
+                }
+            }
+        }
+        groupKeys.sort(by: { $0.minMessageId < $1.minMessageId })
+        for (groupId, _) in groupKeys {
+            if let data = self.dataForPendingMessageGroup(groupId) {
+                self.commitSendingMessageGroup(groupId: groupId, messages: data)
+            }
+        }
+
+        // (3) Forward drain: pop parked groups for this key in FIFO order; fire each.
+        if let parkedGroups = self.forwardSendGateGroups.removeValue(forKey: key) {
+            for messages in parkedGroups {
+                for (context, _, _) in messages {
+                    context.state = .sending(groupId: nil)
+                }
+                let sendMessage: Signal<PendingMessageResult, NoError> = self.sendGroupMessagesContent(network: self.network, postbox: self.postbox, stateManager: self.stateManager, accountPeerId: self.accountPeerId, group: messages.map { data in
+                    let (_, message, forwardInfo) = data
+                    return (message.id, PendingMessageUploadedContentAndReuploadInfo(content: .forward(forwardInfo), reuploadInfo: nil, cacheReferenceKey: nil))
+                })
+                |> map { _ -> PendingMessageResult in
+                    return .progress(1.0)
+                }
+                messages[0].0.sendDisposable.set((sendMessage
+                |> deliverOn(self.queue)).start())
+            }
+        }
+
+        self.updateWaitingUploads(peerId: key.peerId)
+        self.updatePendingMediaUploads()
+    }
+
     private func updatePendingMediaUploads() {
         assert(self.queue.isCurrent())
         
@@ -321,7 +447,29 @@ public final class PendingMessageManager {
                     }
                 }
             }
-            
+
+            if !removedMessageIds.isEmpty && !self.forwardSendGateGroups.isEmpty {
+                for key in Array(self.forwardSendGateGroups.keys) {
+                    guard let parkedGroups = self.forwardSendGateGroups[key] else {
+                        continue
+                    }
+                    var rebuilt: [[(PendingMessageContext, Message, ForwardSourceInfoAttribute)]] = []
+                    for group in parkedGroups {
+                        let filtered = group.filter { entry in
+                            return !removedMessageIds.contains(entry.1.id)
+                        }
+                        if !filtered.isEmpty {
+                            rebuilt.append(filtered)
+                        }
+                    }
+                    if rebuilt.isEmpty {
+                        self.forwardSendGateGroups.removeValue(forKey: key)
+                    } else {
+                        self.forwardSendGateGroups[key] = rebuilt
+                    }
+                }
+            }
+
             if !addedMessageIds.isEmpty {
                 Logger.shared.log("PendingMessageManager", "added messages: \(addedMessageIds)")
                 self.beginSendingMessages(Array(addedMessageIds).sorted())
@@ -715,11 +863,24 @@ public final class PendingMessageManager {
                         if messages.isEmpty {
                             continue
                         }
-                        
+
+                        let firstMessage = messages[0].1
+                        let key = PeerAndThreadId(peerId: firstMessage.id.peerId, threadId: firstMessage.threadId)
+                        if strongSelf.shouldGateSend(messageId: firstMessage.id, threadId: firstMessage.threadId) && !strongSelf.isSendGateOpen(for: key) {
+                            for (context, _, _) in messages {
+                                context.state = .waitingForForwardSendGate
+                            }
+                            if strongSelf.forwardSendGateGroups[key] == nil {
+                                strongSelf.forwardSendGateGroups[key] = []
+                            }
+                            strongSelf.forwardSendGateGroups[key]!.append(messages)
+                            continue
+                        }
+
                         for (context, _, _) in messages {
                             context.state = .sending(groupId: nil)
                         }
-                        
+
                         let sendMessage: Signal<PendingMessageResult, NoError> = strongSelf.sendGroupMessagesContent(network: strongSelf.network, postbox: strongSelf.postbox, stateManager: strongSelf.stateManager, accountPeerId: strongSelf.accountPeerId, group: messages.map { data in
                             let (_, message, forwardInfo) = data
                             return (message.id, PendingMessageUploadedContentAndReuploadInfo(content: .forward(forwardInfo), reuploadInfo: nil, cacheReferenceKey: nil))
@@ -739,7 +900,12 @@ public final class PendingMessageManager {
         if let groupId = groupId {
             messageContext.state = .waitingToBeSent(groupId: groupId, content: content)
         } else {
-            self.commitSendingSingleMessage(messageContext: messageContext, messageId: messageId, content: content)
+            let key = PeerAndThreadId(peerId: messageId.peerId, threadId: messageContext.threadId)
+            if self.shouldGateSend(messageId: messageId, threadId: messageContext.threadId) && !self.isSendGateOpen(for: key) {
+                messageContext.state = .waitingForSendGate(groupId: nil, content: content)
+            } else {
+                self.commitSendingSingleMessage(messageContext: messageContext, messageId: messageId, content: content)
+            }
         }
         self.updatePendingMediaUploads()
     }
@@ -757,6 +923,8 @@ public final class PendingMessageManager {
             switch context.state {
             case .none:
                 continue loop
+            case .waitingForForwardSendGate:
+                continue loop
             case let .collectingInfo(message):
                 if message.groupingKey == groupId {
                     return nil
@@ -770,6 +938,10 @@ public final class PendingMessageManager {
                     return nil
                 }
             case let .waitingToBeSent(contextGroupId, content):
+                if contextGroupId == groupId {
+                    result.append((context, id, content))
+                }
+            case let .waitingForSendGate(contextGroupId, content):
                 if contextGroupId == groupId {
                     result.append((context, id, content))
                 }
@@ -792,6 +964,16 @@ public final class PendingMessageManager {
     }
     
     private func commitSendingMessageGroup(groupId: Int64, messages: [(messageContext: PendingMessageContext, messageId: MessageId, content: PendingMessageUploadedContentAndReuploadInfo)]) {
+        let firstMessageId = messages[0].messageId
+        let firstThreadId = messages[0].messageContext.threadId
+        let key = PeerAndThreadId(peerId: firstMessageId.peerId, threadId: firstThreadId)
+        if self.shouldGateSend(messageId: firstMessageId, threadId: firstThreadId) && !self.isSendGateOpen(for: key) {
+            for entry in messages {
+                entry.messageContext.state = .waitingForSendGate(groupId: groupId, content: entry.content)
+            }
+            return
+        }
+
         for (context, _, _) in messages {
             context.state = .sending(groupId: groupId)
         }
@@ -1538,6 +1720,7 @@ public final class PendingMessageManager {
                 var uniqueId: Int64 = 0
                 var forwardSourceInfoAttribute: ForwardSourceInfoAttribute?
                 var messageEntities: [Api.MessageEntity]?
+                var apiRichMessage: Api.InputRichMessage?
                 var replyMessageId: Int32?
                 var replyPeerId: PeerId?
                 var replyQuote: EngineMessageReplyQuote?
@@ -1621,6 +1804,9 @@ public final class PendingMessageManager {
                         allowPaidStars = attribute.stars.value
                     } else if let attribute = attribute as? SuggestedPostMessageAttribute {
                         suggestedPost = attribute.apiSuggestedPost(fixMinTime: Int32(Date().timeIntervalSince1970 + 10))
+                    } else if let attribute = attribute as? RichTextMessageAttribute {
+                        apiRichMessage = attribute.apiInputRichMessage()
+                        flags |= Int32(1 << 23)
                     }
                 }
                 
@@ -1746,7 +1932,7 @@ public final class PendingMessageManager {
                             flags |= 1 << 22
                         }
                     
-                        sendMessageRequest = network.requestWithAdditionalInfo(Api.functions.messages.sendMessage(flags: flags, peer: inputPeer, replyTo: replyTo, message: message.text, randomId: uniqueId, replyMarkup: nil, entities: messageEntities, scheduleDate: scheduleTime, scheduleRepeatPeriod: scheduleRepeatPeriod, sendAs: sendAsInputPeer, quickReplyShortcut: quickReplyShortcut, effect: messageEffectId, allowPaidStars: allowPaidStars, suggestedPost: suggestedPost), info: .acknowledgement, tag: dependencyTag)
+                        sendMessageRequest = network.requestWithAdditionalInfo(Api.functions.messages.sendMessage(flags: flags, peer: inputPeer, replyTo: replyTo, message: message.text, randomId: uniqueId, replyMarkup: nil, entities: messageEntities, scheduleDate: scheduleTime, scheduleRepeatPeriod: scheduleRepeatPeriod, sendAs: sendAsInputPeer, quickReplyShortcut: quickReplyShortcut, effect: messageEffectId, allowPaidStars: allowPaidStars, suggestedPost: suggestedPost, richMessage: apiRichMessage), info: .acknowledgement, tag: dependencyTag)
                     case let .media(inputMedia, text):
                         if bubbleUpEmojiOrStickersets {
                             flags |= Int32(1 << 15)

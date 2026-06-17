@@ -1077,13 +1077,13 @@ final class BotCheckoutControllerNode: ItemListControllerNode, PKPaymentAuthoriz
                 if methods.isEmpty {
                     openNewCard(nil, nil)
                 } else {
-                    strongSelf.present(BotCheckoutPaymentMethodSheetController(context: strongSelf.context, currentMethod: strongSelf.currentPaymentMethod, methods: methods, applyValue: { method in
+                    strongSelf.controller?.push(BotCheckoutPaymentMethodScreen(context: strongSelf.context, currentMethod: strongSelf.currentPaymentMethod, methods: methods, applyValue: { method in
                         applyPaymentMethod(method)
                     }, newCard: {
                         openNewCard(nil, nil)
                     }, otherMethod: { url, title in
                         openNewCard(url, title)
-                    }), ViewControllerPresentationArguments(presentationAnimation: .modalSheet))
+                    }))
                 }
             }
         }
@@ -1091,14 +1091,14 @@ final class BotCheckoutControllerNode: ItemListControllerNode, PKPaymentAuthoriz
         openShippingMethodImpl = { [weak self] in
             if let strongSelf = self, let paymentFormValue = strongSelf.paymentFormValue, let shippingOptions = strongSelf.currentValidatedFormInfo?.shippingOptions, !shippingOptions.isEmpty {
                 strongSelf.controller?.view.endEditing(true)
-                strongSelf.present(BotCheckoutPaymentShippingOptionSheetController(context: strongSelf.context, currency: paymentFormValue.invoice.currency, options: shippingOptions, currentId: strongSelf.currentShippingOptionId, applyValue: { id in
+                strongSelf.controller?.push(BotCheckoutShippingOptionScreen(context: strongSelf.context, currency: paymentFormValue.invoice.currency, options: shippingOptions, currentId: strongSelf.currentShippingOptionId, applyValue: { id in
                     if let strongSelf = self, let paymentFormValue = strongSelf.paymentFormValue, let currentFormInfo = strongSelf.currentFormInfo {
                         strongSelf.currentShippingOptionId = id
                         strongSelf.paymentFormAndInfo.set(.single((paymentFormValue, currentFormInfo, strongSelf.currentValidatedFormInfo, strongSelf.currentShippingOptionId, strongSelf.currentPaymentMethod, strongSelf.currentTipAmount)))
                         
                         strongSelf.updateActionButton()
                     }
-                }), ViewControllerPresentationArguments(presentationAnimation: .modalSheet))
+                }))
             }
         }
         

@@ -16,18 +16,36 @@ private let dateFont = Font.regular(12.0)
 
 public final class GalleryTitleView: UIView, NavigationBarTitleView {
     public final class Content: Equatable {
-        let message: EngineMessage
+        let message: EngineMessage?
+        let authorTitle: String?
+        let dateTitle: String?
         let title: String?
         let action: (() -> Void)?
-        
+
         public init(message: EngineMessage, title: String?, action: (() -> Void)?) {
             self.message = message
+            self.authorTitle = nil
+            self.dateTitle = nil
+            self.title = title
+            self.action = action
+        }
+
+        public init(authorTitle: String?, dateTitle: String?, title: String?, action: (() -> Void)?) {
+            self.message = nil
+            self.authorTitle = authorTitle
+            self.dateTitle = dateTitle
             self.title = title
             self.action = action
         }
         
         public static func ==(lhs: Content, rhs: Content) -> Bool {
             if lhs.message != rhs.message {
+                return false
+            }
+            if lhs.authorTitle != rhs.authorTitle {
+                return false
+            }
+            if lhs.dateTitle != rhs.dateTitle {
                 return false
             }
             if lhs.title != rhs.title {
@@ -114,18 +132,38 @@ public final class GalleryTitleView: UIView, NavigationBarTitleView {
     public func setContent(content: Content?) {
         self.content = content
         
-        self.backgroundContainer.isHidden = self.content == nil
+        let authorNameText: String?
+        let dateText: String?
         
         if let content {
-            let authorNameText = stringForFullAuthorName(message: content.message, strings: self.presentationData.strings, nameDisplayOrder: self.presentationData.nameDisplayOrder, accountPeerId: self.context.account.peerId).first ?? ""
-            let dateText = humanReadableStringForTimestamp(strings: self.presentationData.strings, dateTimeFormat: self.presentationData.dateTimeFormat, timestamp: content.message.timestamp).string
-            
-            self.authorNameNode.attributedText = NSAttributedString(string: authorNameText, font: titleFont, textColor: .white)
-            self.dateNode.attributedText = NSAttributedString(string: dateText, font: dateFont, textColor: UIColor(white: 1.0, alpha: 0.5))
+            if let message = content.message {
+                authorNameText = stringForFullAuthorName(message: message, strings: self.presentationData.strings, nameDisplayOrder: self.presentationData.nameDisplayOrder, accountPeerId: self.context.account.peerId).first ?? ""
+                dateText = humanReadableStringForTimestamp(strings: self.presentationData.strings, dateTimeFormat: self.presentationData.dateTimeFormat, timestamp: message.timestamp).string
+            } else {
+                authorNameText = content.authorTitle
+                dateText = content.dateTitle
+            }
+        } else {
+            authorNameText = nil
+            dateText = nil
         }
-        
+
+        if let authorNameText {
+            self.authorNameNode.attributedText = NSAttributedString(string: authorNameText, font: titleFont, textColor: .white)
+        } else {
+            self.authorNameNode.attributedText = nil
+        }
+
+        if let dateText {
+            self.dateNode.attributedText = NSAttributedString(string: dateText, font: dateFont, textColor: UIColor(white: 1.0, alpha: 0.5))
+        } else {
+            self.dateNode.attributedText = nil
+        }
+
+        self.backgroundContainer.isHidden = (authorNameText?.isEmpty ?? true) && (dateText?.isEmpty ?? true)
+
         self.titleString = content?.title
-        
+
         if !self.bounds.isEmpty {
             let _ = self.updateLayout(availableSize: self.bounds.size, transition: .immediate)
         }

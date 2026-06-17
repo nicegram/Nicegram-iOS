@@ -3,7 +3,6 @@ import UIKit
 import AsyncDisplayKit
 import Display
 import SwiftSignalKit
-import Postbox
 import TelegramCore
 import LegacyComponents
 import TelegramPresentationData
@@ -32,14 +31,14 @@ private final class AttachmentFileControllerArguments {
     let scanDocument: () -> Void
     let expandSavedMusic: () -> Void
     let expandRecentMusic: () -> Void
-    let send: (Message) -> Void
-    let toggleMediaPlayback: (Message) -> Void
+    let send: (EngineRawMessage) -> Void
+    let toggleMediaPlayback: (EngineRawMessage) -> Void
     let isSelectionActive: () -> Bool
-    let toggleMessageSelection: (Message) -> Void
-    let setMessageSelection: ([MessageId], Message?, Bool) -> Void
+    let toggleMessageSelection: (EngineRawMessage) -> Void
+    let setMessageSelection: ([EngineMessage.Id], EngineRawMessage?, Bool) -> Void
     let openMessageContextAction: ((EngineMessage, ASDisplayNode?, CGRect?, UIGestureRecognizer?) -> Void)
 
-    init(context: AccountContext, isAudio: Bool, isAttach: Bool, openGallery: @escaping () -> Void, openFiles: @escaping () -> Void, scanDocument: @escaping () -> Void, expandSavedMusic: @escaping () -> Void, expandRecentMusic: @escaping () -> Void, send: @escaping (Message) -> Void, toggleMediaPlayback: @escaping (Message) -> Void, isSelectionActive: @escaping () -> Bool, toggleMessageSelection: @escaping (Message) -> Void, setMessageSelection: @escaping ([MessageId], Message?, Bool) -> Void, openMessageContextAction: @escaping ((EngineMessage, ASDisplayNode?, CGRect?, UIGestureRecognizer?) -> Void)) {
+    init(context: AccountContext, isAudio: Bool, isAttach: Bool, openGallery: @escaping () -> Void, openFiles: @escaping () -> Void, scanDocument: @escaping () -> Void, expandSavedMusic: @escaping () -> Void, expandRecentMusic: @escaping () -> Void, send: @escaping (EngineRawMessage) -> Void, toggleMediaPlayback: @escaping (EngineRawMessage) -> Void, isSelectionActive: @escaping () -> Bool, toggleMessageSelection: @escaping (EngineRawMessage) -> Void, setMessageSelection: @escaping ([EngineMessage.Id], EngineRawMessage?, Bool) -> Void, openMessageContextAction: @escaping ((EngineMessage, ASDisplayNode?, CGRect?, UIGestureRecognizer?) -> Void)) {
         self.context = context
         self.isAudio = isAudio
         self.isAttach = isAttach
@@ -64,7 +63,7 @@ private enum AttachmentFileSection: Int32 {
     case global
 }
 
-private func areMessagesEqual(_ lhsMessage: Message?, _ rhsMessage: Message?) -> Bool {
+private func areMessagesEqual(_ lhsMessage: EngineRawMessage?, _ rhsMessage: EngineRawMessage?) -> Bool {
     guard let lhsMessage = lhsMessage, let rhsMessage = rhsMessage else {
         return lhsMessage == nil && rhsMessage == nil
     }
@@ -83,15 +82,15 @@ private enum AttachmentFileEntry: ItemListNodeEntry {
     case scanDocument(PresentationTheme, String)
 
     case savedHeader(PresentationTheme, String)
-    case savedFile(Int32, PresentationTheme, Message?, ChatHistoryMessageSelection)
+    case savedFile(Int32, PresentationTheme, EngineRawMessage?, ChatHistoryMessageSelection)
     case savedShowMore(PresentationTheme, String)
 
     case recentHeader(PresentationTheme, String)
-    case recentFile(Int32, PresentationTheme, Message?, ChatHistoryMessageSelection)
+    case recentFile(Int32, PresentationTheme, EngineRawMessage?, ChatHistoryMessageSelection)
     case recentShowMore(PresentationTheme, String)
 
     case globalHeader(PresentationTheme, String)
-    case globalFile(Int32, PresentationTheme, Message?, ChatHistoryMessageSelection)
+    case globalFile(Int32, PresentationTheme, EngineRawMessage?, ChatHistoryMessageSelection)
     case globalShowMore(PresentationTheme, String)
 
     var section: ItemListSectionId {
@@ -277,7 +276,7 @@ private enum AttachmentFileEntry: ItemListNodeEntry {
 
             let dateTimeFormat = arguments.context.sharedContext.currentPresentationData.with({$0}).dateTimeFormat
             let chatPresentationData = ChatPresentationData(theme: ChatPresentationThemeData(theme: presentationData.theme, wallpaper: .color(0)), fontSize: presentationData.fontSize, strings: presentationData.strings, dateTimeFormat: dateTimeFormat, nameDisplayOrder: .firstLast, disableAnimations: false, largeEmoji: false, chatBubbleCorners: PresentationChatBubbleCorners(mainRadius: 0, auxiliaryRadius: 0, mergeBubbleCorners: false))
-            return ListMessageItem(presentationData: chatPresentationData, systemStyle: .glass, context: arguments.context, chatLocation: .peer(id: PeerId(0)), interaction: interaction, message: message, selection: selection, displayHeader: false, isDownloadList: arguments.isAudio, isStoryMusic: true, isAttachMusic: arguments.isAttach, displayFileInfo: true, displayBackground: true, style: .blocks, sectionId: self.section)
+            return ListMessageItem(presentationData: chatPresentationData, systemStyle: .glass, context: arguments.context, chatLocation: .peer(id: EnginePeer.Id(0)), interaction: interaction, message: message, selection: selection, displayHeader: false, isDownloadList: arguments.isAudio, isStoryMusic: true, isAttachMusic: arguments.isAttach, displayFileInfo: true, displayBackground: true, style: .blocks, sectionId: self.section)
         case let .recentShowMore(theme, text):
             return ItemListPeerActionItem(presentationData: presentationData, systemStyle: .glass, icon: PresentationResourcesItemList.downArrowImage(theme), title: text, sectionId: self.section, editing: false, action: {
                 arguments.expandRecentMusic()
@@ -302,7 +301,7 @@ private enum AttachmentFileEntry: ItemListNodeEntry {
 
             let dateTimeFormat = arguments.context.sharedContext.currentPresentationData.with({$0}).dateTimeFormat
             let chatPresentationData = ChatPresentationData(theme: ChatPresentationThemeData(theme: presentationData.theme, wallpaper: .color(0)), fontSize: presentationData.fontSize, strings: presentationData.strings, dateTimeFormat: dateTimeFormat, nameDisplayOrder: .firstLast, disableAnimations: false, largeEmoji: false, chatBubbleCorners: PresentationChatBubbleCorners(mainRadius: 0, auxiliaryRadius: 0, mergeBubbleCorners: false))
-            return ListMessageItem(presentationData: chatPresentationData, systemStyle: .glass, context: arguments.context, chatLocation: .peer(id: PeerId(0)), interaction: interaction, message: message, selection: selection, displayHeader: false, isDownloadList: arguments.isAudio, isStoryMusic: true, isAttachMusic: arguments.isAttach, displayFileInfo: true, displayBackground: true, style: .blocks, sectionId: self.section)
+            return ListMessageItem(presentationData: chatPresentationData, systemStyle: .glass, context: arguments.context, chatLocation: .peer(id: EnginePeer.Id(0)), interaction: interaction, message: message, selection: selection, displayHeader: false, isDownloadList: arguments.isAudio, isStoryMusic: true, isAttachMusic: arguments.isAttach, displayFileInfo: true, displayBackground: true, style: .blocks, sectionId: self.section)
         case let .globalShowMore(theme, text):
             return ItemListPeerActionItem(presentationData: presentationData, systemStyle: .glass, icon: PresentationResourcesItemList.downArrowImage(theme), title: text, sectionId: self.section, editing: false, action: {
 
@@ -315,8 +314,8 @@ private func attachmentFileControllerEntries(
     presentationData: PresentationData,
     mode: AttachmentFileControllerMode,
     state: AttachmentFileControllerState,
-    savedMusic: [Message]?,
-    recentDocuments: [Message]?,
+    savedMusic: [EngineRawMessage]?,
+    recentDocuments: [EngineRawMessage]?,
     hasScan: Bool,
     empty: Bool
 ) -> [AttachmentFileEntry] {
@@ -513,11 +512,11 @@ private struct AttachmentFileControllerState: Equatable {
     var searching: Bool
     var savedMusicExpanded: Bool
     var recentMusicExpanded: Bool
-    var selectedMessageIds: [MessageId]?
-    var messageMap: [MessageId: EngineMessage]
+    var selectedMessageIds: [EngineMessage.Id]?
+    var messageMap: [EngineMessage.Id: EngineMessage]
 }
 
-private func messageSelectionState(state: AttachmentFileControllerState, message: Message?) -> ChatHistoryMessageSelection {
+private func messageSelectionState(state: AttachmentFileControllerState, message: EngineRawMessage?) -> ChatHistoryMessageSelection {
     guard let message, let selectedMessageIds = state.selectedMessageIds else {
         return .none
     }
@@ -641,7 +640,7 @@ public func makeAttachmentFileControllerImpl(
                 |> `catch` { _ in
                     return .single(.result([]))
                 }
-                |> mapToSignal { result -> Signal<[Message], NoError> in
+                |> mapToSignal { result -> Signal<[EngineRawMessage], NoError> in
                     guard case let .result(result) = result else {
                         return .complete()
                     }
@@ -739,15 +738,15 @@ public func makeAttachmentFileControllerImpl(
         }
     )
 
-    let recentDocuments: Signal<[Message]?, NoError>
+    let recentDocuments: Signal<[EngineRawMessage]?, NoError>
     let savedMusicContext: ProfileSavedMusicContext?
-    let savedMusic: Signal<[Message]?, NoError>
+    let savedMusic: Signal<[EngineRawMessage]?, NoError>
     switch mode {
     case .recent:
         recentDocuments = .single(nil)
         |> then(
             context.engine.messages.searchMessages(location: .sentMedia(tags: [.file]), query: "", state: nil)
-            |> map { result -> [Message]? in
+            |> map { result -> [EngineRawMessage]? in
                 return result.0.messages
             }
         )
@@ -757,7 +756,7 @@ public func makeAttachmentFileControllerImpl(
         recentDocuments = .single(nil)
         |> then(
             context.engine.messages.searchMessages(location: .general(scope: .everywhere, groupId: nil, tags: [.music], minDate: nil, maxDate: nil, folderId: nil), query: "", state: nil)
-            |> map { result -> [Message]? in
+            |> map { result -> [EngineRawMessage]? in
                 return result.0.messages
             }
         )
@@ -767,11 +766,11 @@ public func makeAttachmentFileControllerImpl(
             savedMusicContext!.state
             |> map { state in
                 let peerId = context.account.peerId
-                var messages: [Message] = []
-                let peers = SimpleDictionary<PeerId, Peer>()
+                var messages: [EngineRawMessage] = []
+                let peers = EngineSimpleDictionary<EnginePeer.Id, EngineRawPeer>()
                 for file in state.files {
                     let stableId = UInt32(clamping: file.fileId.id % Int64(Int32.max))
-                    messages.append(Message(stableId: stableId, stableVersion: 0, id: MessageId(peerId: peerId, namespace: Namespaces.Message.Local, id: Int32(stableId)), globallyUniqueId: nil, groupingKey: nil, groupInfo: nil, threadId: nil, timestamp: 0, flags: [], tags: [.music], globalTags: [], localTags: [], customTags: [], forwardInfo: nil, author: nil, text: "", attributes: [], media: [file], peers: peers, associatedMessages: SimpleDictionary(), associatedMessageIds: [], associatedMedia: [:], associatedThreadInfo: nil, associatedStories: [:]))
+                    messages.append(EngineRawMessage(stableId: stableId, stableVersion: 0, id: EngineMessage.Id(peerId: peerId, namespace: Namespaces.Message.Local, id: Int32(stableId)), globallyUniqueId: nil, groupingKey: nil, groupInfo: nil, threadId: nil, timestamp: 0, flags: [], tags: [.music], globalTags: [], localTags: [], customTags: [], forwardInfo: nil, author: nil, text: "", attributes: [], media: [file], peers: peers, associatedMessages: EngineSimpleDictionary(), associatedMessageIds: [], associatedMedia: [:], associatedThreadInfo: nil, associatedStories: [:]))
                 }
                 return messages
             }
@@ -783,7 +782,7 @@ public func makeAttachmentFileControllerImpl(
     let existingCloseButton = Atomic<BarComponentHostNode?>(value: nil)
     let existingSearchButton = Atomic<BarComponentHostNode?>(value: nil)
     
-    let previousRecentDocuments = Atomic<[Message]?>(value: nil)
+    let previousRecentDocuments = Atomic<[EngineRawMessage]?>(value: nil)
     let signal = combineLatest(queue: Queue.mainQueue(),
         presentationData,
         recentDocuments,
@@ -960,7 +959,7 @@ public func makeAttachmentFileControllerImpl(
     controller.mulitpleCompletion = { sendMode, _, _, caption in
         let _ = stateValue.with({ state in
             if let selectedMessageIds = state.selectedMessageIds {
-                var remoteMessageIds: [MessageId] = []
+                var remoteMessageIds: [EngineMessage.Id] = []
                 for id in selectedMessageIds {
                     if let message = state.messageMap[id]?._asMessage() {
                         if message.id.namespace == Namespaces.Message.Cloud {
@@ -974,7 +973,7 @@ public func makeAttachmentFileControllerImpl(
                     |> `catch` { _ in
                         return .single(.result([]))
                     }
-                    |> mapToSignal { result -> Signal<[Message], NoError> in
+                    |> mapToSignal { result -> Signal<[EngineRawMessage], NoError> in
                     guard case let .result(result) = result else {
                         return .complete()
                     }
@@ -984,7 +983,7 @@ public func makeAttachmentFileControllerImpl(
                     guard let peer, let peerReference = PeerReference(peer) else {
                         return
                     }
-                    var messageMap: [MessageId: Message] = [:]
+                    var messageMap: [EngineMessage.Id: EngineRawMessage] = [:]
                     for message in remoteMessages {
                         messageMap[message.id] = message
                     }

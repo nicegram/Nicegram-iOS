@@ -88,6 +88,12 @@ final class ActionSheetControllerNode: ASDisplayNode, ASScrollViewDelegate {
         }
     }
     
+    override func didLoad() {
+        super.didLoad()
+        
+        self.scrollNode.view.scrollsToTop = false
+    }
+    
     func performHighlightedAction() {
         self.itemGroupsContainerNode.performHighlightedAction()
     }

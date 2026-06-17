@@ -1548,7 +1548,7 @@ static CGPoint TGCameraControllerClampPointToScreenSize(__unused id self, __unus
         __weak TGModernGalleryController *weakGalleryController = galleryController;
         __weak TGMediaPickerGalleryModel *weakModel = model;
         
-        model.interfaceView.doneLongPressed = ^(TGMediaPickerGalleryItem *item) {
+        model.interfaceView.doneLongPressed = ^(TGMediaPickerGalleryItem *item, UIView *sourceView) {
             __strong TGCameraController *strongSelf = weakSelf;
             __strong TGMediaPickerGalleryModel *strongModel = weakModel;
             if (strongSelf == nil || !(strongSelf.hasSilentPosting || strongSelf.hasSchedule) || strongSelf->_shortcut)
@@ -1720,6 +1720,21 @@ static CGPoint TGCameraControllerClampPointToScreenSize(__unused id self, __unus
                     [strongSelf _dismissTransitionForResultController:strongController];
                 });
             };
+            if (sourceView != nil && strongSelf.stickersContext.presentMediaPickerSendActionMenu != nil && strongSelf.stickersContext.presentMediaPickerSendActionMenu(sourceView, strongSelf->_hasSilentPosting, effectiveHasSchedule, effectiveHasSchedule, strongSelf->_reminder, strongSelf->_hasTimer, ^{
+                if (controller.sendSilently != nil)
+                    controller.sendSilently();
+            }, ^{
+                if (controller.sendWhenOnline != nil)
+                    controller.sendWhenOnline();
+            }, ^{
+                if (controller.schedule != nil)
+                    controller.schedule();
+            }, ^{
+                if (controller.sendWithTimer != nil)
+                    controller.sendWithTimer();
+            })) {
+                return;
+            }
             
             id<LegacyComponentsOverlayWindowManager> windowManager = nil;
             windowManager = [strongSelf->_context makeOverlayWindowManager];

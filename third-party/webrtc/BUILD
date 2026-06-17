@@ -15,7 +15,6 @@ optimization_flags = select({
 })
 
 webrtc_objcpp_sources = [
-    "rtc_base/system/cocoa_threading.mm",
 ]
 
 webrtc_headers = [
@@ -2780,35 +2779,44 @@ arm64_specific_sources = ["webrtc/" + path for path in [
 arch_specific_sources = select({
     "@build_bazel_rules_apple//apple:ios_arm64": common_arm_specific_sources + arm64_specific_sources,
     "//build-system:ios_sim_arm64": common_arm_specific_sources + arm64_specific_sources,
+    "//conditions:default": common_arm_specific_sources + arm64_specific_sources,
 })
 
-common_flags = [
-    "-DWEBRTC_IOS",
-    "-DWEBRTC_MAC",
+platform_shared_flags = [
     "-DWEBRTC_POSIX",
     "-DHAVE_WEBRTC_VIDEO",
     "-DRTC_ENABLE_VP9",
     "-DRTC_ENABLE_H265",
     "-DWEBRTC_USE_H264",
+    "-DWEBRTC_USE_H264_DECODER",
     "-DHAVE_SCTP",
     "-DWEBRTC_HAVE_DCSCTP",
     "-DWEBRTC_HAVE_SCTP",
     "-DWEBRTC_NS_FLOAT",
     "-DRTC_DISABLE_TRACE_EVENTS",
-    #"-DWEBRTC_OPUS_SUPPORT_120MS_PTIME=1",
     "-DWEBRTC_APM_DEBUG_DUMP=0",
     "-DBWE_TEST_LOGGING_COMPILE_TIME_ENABLE=0",
     "-DABSL_ALLOCATOR_NOTHROW=1",
     "-DDYNAMIC_ANNOTATIONS_ENABLED=0",
-    #"-DNS_BLOCK_ASSERTIONS=1",
     "-DWEBRTC_ENABLE_PROTOBUF=0",
-    "-DWEBRTC_ENABLE_AVX2",
     "-DWEBRTC_NON_STATIC_TRACE_EVENT_HANDLERS=0",
-    "-Wno-shorten-64-to-32",
-    "-Wno-macro-redefined",
-    "-D__APPLE__",
     "-DWEBRTC_OPUS_USE_CODEC_PLC",
     "-DWEBRTC_OPUS_SUPPORT_DRED",
+]
+
+apple_specific_flags = [
+    "-DWEBRTC_IOS",
+    "-DWEBRTC_MAC",
+    "-D__APPLE__",
+    "-D__Userspace_os_Darwin",
+    "-DWEBRTC_ENABLE_AVX2",
+    "-Wno-shorten-64-to-32",
+    "-Wno-macro-redefined",
+]
+
+linux_specific_flags = [
+    "-DWEBRTC_LINUX",
+    "-D__Userspace_os_Linux",
 ]
 
 arm64_specific_flags = [
@@ -2817,9 +2825,12 @@ arm64_specific_flags = [
     "-DLIBYUV_NEON",
 ]
 
+# Flatten platform + arch flags into a single select to avoid nested selects
 arch_specific_cflags = select({
-    "@build_bazel_rules_apple//apple:ios_arm64": common_flags + arm64_specific_flags,
-    "//build-system:ios_sim_arm64": common_flags + arm64_specific_flags,
+    "@build_bazel_rules_apple//apple:ios_arm64": platform_shared_flags + apple_specific_flags + arm64_specific_flags,
+    "//build-system:ios_sim_arm64": platform_shared_flags + apple_specific_flags + arm64_specific_flags,
+    "@platforms//os:linux": platform_shared_flags + linux_specific_flags + arm64_specific_flags,
+    "//conditions:default": platform_shared_flags + apple_specific_flags + arm64_specific_flags,
 })
 
 dcsctp_sources = [ "webrtc/net/dcsctp/" + path for path in [
@@ -2994,10 +3005,43 @@ fft4g_sources = [
     "fft4g/fft4g.cc",
 ]
 
-raw_combined_sources = webrtc_headers + webrtc_sources + webrtc_objcpp_sources
-combined_sources = [
-    "webrtc/" + path for path in raw_combined_sources
+raw_combined_cpp_sources = webrtc_headers + webrtc_sources
+raw_combined_objcpp_sources = webrtc_objcpp_sources
+
+# Platform-specific source files: GCD task queue on Apple, stdlib on Linux
+apple_only_cpp_sources = [
+    "webrtc/rtc_base/task_queue_gcd.cc",
+    "webrtc/rtc_base/task_queue_gcd.h",
+    "webrtc/api/task_queue/default_task_queue_factory_gcd.cc",
+    "webrtc/rtc_base/mac_ifaddrs_converter.cc",
+]
+
+linux_only_cpp_sources = [
+    "webrtc/rtc_base/task_queue_stdlib.cc",
+    "webrtc/rtc_base/task_queue_stdlib.h",
+    "webrtc/api/task_queue/default_task_queue_factory_stdlib.cc",
+]
+
+# Files excluded from common sources because they are platform-specific
+platform_specific_excludes = [
+    "rtc_base/task_queue_gcd.cc", "rtc_base/task_queue_gcd.h",
+    "rtc_base/task_queue_stdlib.cc", "rtc_base/task_queue_stdlib.h",
+    "rtc_base/mac_ifaddrs_converter.cc",
+    "api/task_queue/default_task_queue_factory_gcd.cc",
+    "api/task_queue/default_task_queue_factory_stdlib.cc",
+    "api/task_queue/default_task_queue_factory_libevent.cc",
+    "api/task_queue/default_task_queue_factory_win.cc",
+    "api/task_queue/default_task_queue_factory_stdlib_or_libevent_experiment.cc",
+]
+
+combined_cpp_sources = [
+    "webrtc/" + path for path in raw_combined_cpp_sources
+    if path not in platform_specific_excludes
 ] + arch_specific_sources + fft4g_sources + dcsctp_sources
+
+combined_objcpp_sources = [
+    "webrtc/" + path for path in raw_combined_objcpp_sources
+]
 
 genrule(
     name = "generate_field_trials_header",
@@ -3158,13 +3202,15 @@ objc_library(
     visibility = ["//visibility:public"],
 )
 
-objc_library(
+cc_library(
     name = "webrtc",
-    enable_modules = True,
-    module_name = "webrtc",
-    srcs = combined_sources,
+    srcs = combined_cpp_sources + select({
+        "@platforms//os:linux": linux_only_cpp_sources,
+        "//conditions:default": combined_objcpp_sources + apple_only_cpp_sources,
+    }),
     copts = [
         "-w",
+        "-include", "stdint.h",
         "-Ithird-party/webrtc/libsrtp/third_party/libsrtp/include",
         "-Ithird-party/webrtc/libsrtp/third_party/libsrtp/crypto/include",
         "-Ithird-party/webrtc/libsrtp",
@@ -3180,7 +3226,6 @@ objc_library(
         "-DSCTP_SIMPLE_ALLOCATOR",
         "-DSCTP_PROCESS_LEVEL_LOCKS",
         "-D__Userspace__",
-        "-D__Userspace_os_Darwin",
         "-DPACKAGE_VERSION=\\\"\\\"",
         "-DHAVE_SCTP",
         "-DWEBRTC_HAVE_DCSCTP",
@@ -3208,20 +3253,51 @@ objc_library(
         "//third-party/webrtc/pffft",
         "//third-party/webrtc/libsrtp",
         "//third-party/webrtc/absl",
+    ] + select({
+        "@platforms//os:linux": [],
+        "//conditions:default": [":webrtc_platform_helpers"],
+    }),
+    linkopts = select({
+        "@platforms//os:linux": ["-lpthread", "-lm"],
+        "//conditions:default": [
+            "-framework AVFoundation",
+            "-framework AudioToolbox",
+            "-framework VideoToolbox",
+            "-framework CoreMedia",
+            "-framework CoreVideo",
+            "-framework CoreGraphics",
+            "-framework QuartzCore",
+            "-weak_framework Network",
+            "-weak_framework Metal",
+        ],
+    }) + select({
+        "@platforms//os:macos": ["-framework AppKit"],
+        "//conditions:default": [],
+    }),
+    visibility = ["//visibility:public"],
+)
+
+# Minimal helpers needed by tgcalls C++ code on non-iOS platforms.
+# Separate from webrtc_objc to avoid pulling in iOS SDK dependencies.
+objc_library(
+    name = "webrtc_platform_helpers",
+    srcs = [
+        "webrtc/rtc_base/system/gcd_helpers.m",
+        "webrtc/rtc_base/system/cocoa_threading.mm",
     ],
-    sdk_frameworks = [
-        "AVFoundation",
-        "AudioToolbox",
-        "VideoToolbox",
-        "UIKit",
-        "CoreMedia",
-        "CoreVideo",
-        "CoreGraphics",
-        "QuartzCore",
+    hdrs = [
+        "webrtc/rtc_base/system/gcd_helpers.h",
+        "webrtc/rtc_base/system/cocoa_threading.h",
     ],
-    weak_sdk_frameworks = [
-        "Network",
-        "Metal",
+    copts = [
+        "-w",
+        "-Ithird-party/webrtc/webrtc/",
+        "-Ithird-party/webrtc/absl",
+        "-DWEBRTC_MAC",
+        "-DWEBRTC_IOS",
+    ],
+    deps = [
+        "//third-party/webrtc/absl",
     ],
     visibility = ["//visibility:public"],
 )

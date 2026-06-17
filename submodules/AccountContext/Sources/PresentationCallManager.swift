@@ -310,22 +310,6 @@ public struct PresentationGroupCallSummaryState: Equatable {
     }
 }
 
-public struct PresentationGroupCallMemberState: Equatable {
-    public var ssrc: UInt32
-    public var muteState: GroupCallParticipantsContext.Participant.MuteState?
-    public var speaking: Bool
-    
-    public init(
-        ssrc: UInt32,
-        muteState: GroupCallParticipantsContext.Participant.MuteState?,
-        speaking: Bool
-    ) {
-        self.ssrc = ssrc
-        self.muteState = muteState
-        self.speaking = speaking
-    }
-}
-
 public enum PresentationGroupCallMuteAction: Equatable {
     case muted(isPushToTalkActive: Bool)
     case unmuted

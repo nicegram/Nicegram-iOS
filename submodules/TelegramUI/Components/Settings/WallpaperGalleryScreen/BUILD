@@ -32,6 +32,9 @@ swift_library(
         "//submodules/LegacyMediaPickerUI",
         "//submodules/TelegramUI/Components/Settings/SettingsThemeWallpaperNode",
         "//submodules/TelegramUI/Components/PremiumLockButtonSubtitleComponent",
+        "//submodules/TelegramUI/Components/ButtonComponent",
+        "//submodules/TelegramUI/Components/GlassBackgroundComponent",
+        "//submodules/TelegramUI/Components/GlassControls",
     ],
     visibility = [
         "//visibility:public",

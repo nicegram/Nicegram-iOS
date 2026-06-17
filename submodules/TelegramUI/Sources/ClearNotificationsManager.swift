@@ -1,12 +1,12 @@
 import Foundation
 import SwiftSignalKit
-import Postbox
+import TelegramCore
 
 private let messageNotificationKeyExpr = try? NSRegularExpression(pattern: "m([-\\d]+):([-\\d]+):([-\\d]+)_?", options: [])
 
 public enum NotificationManagedNotificationRequestId: Hashable {
-    case messageId(MessageId)
-    case globallyUniqueId(Int64, PeerId?)
+    case messageId(EngineMessage.Id)
+    case globallyUniqueId(Int64, EnginePeer.Id?)
     
     public init?(string: String) {
         if string.hasPrefix("m") {
@@ -26,7 +26,7 @@ public enum NotificationManagedNotificationRequestId: Hashable {
                 guard let id = Int32(idString) else {
                     return nil
                 }
-                self = .messageId(MessageId(peerId: PeerId(peerId), namespace: namespace, id: id))
+                self = .messageId(EngineMessage.Id(peerId: EnginePeer.Id(peerId), namespace: namespace, id: id))
                 return
             }
         }
@@ -48,7 +48,7 @@ public final class ClearNotificationsManager {
     private let removeNotificationIds: ([String]) -> Void
     private let removePendingNotificationIds: ([String]) -> Void
     
-    private var ids: [PeerId: MessageId] = [:]
+    private var ids: [EnginePeer.Id: EngineMessage.Id] = [:]
     
     private var timer: SwiftSignalKit.Timer?
     
@@ -91,7 +91,7 @@ public final class ClearNotificationsManager {
         })
     }
     
-    public func append(_ id: MessageId) {
+    public func append(_ id: EngineMessage.Id) {
         if let current = self.ids[id.peerId] {
             if current < id {
                 self.ids[id.peerId] = id

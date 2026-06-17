@@ -20,7 +20,7 @@ public func searchPeerMembers(context: AccountContext, peerId: EnginePeer.Id, ch
         |> mapToSignal { participantCount -> Signal<([EnginePeer], Bool), NoError> in
             if case .peer = chatLocation, let memberCount = participantCount, memberCount <= 64 {
                 return Signal { subscriber in
-                    let (disposable, _) = context.peerChannelMemberCategoriesContextsManager.recent(engine: context.engine, postbox: context.account.postbox, network: context.account.network, accountPeerId: context.account.peerId, peerId: peerId, searchQuery: nil, requestUpdate: false, updated: { state in
+                    let (disposable, _) = context.peerChannelMemberCategoriesContextsManager.recent(engine: context.engine, accountPeerId: context.account.peerId, peerId: peerId, searchQuery: nil, requestUpdate: false, updated: { state in
                         if case .ready = state.loadingState {
                             subscriber.putNext((state.list.compactMap { participant -> EnginePeer? in
                                 if participant.peer.isDeleted {
@@ -52,7 +52,7 @@ public func searchPeerMembers(context: AccountContext, peerId: EnginePeer.Id, ch
             return Signal { subscriber in
                 switch chatLocation {
                 case let .peer(peerId):
-                    let (disposable, _) = context.peerChannelMemberCategoriesContextsManager.recent(engine: context.engine, postbox: context.account.postbox, network: context.account.network, accountPeerId: context.account.peerId, peerId: peerId, searchQuery: normalizedQuery.isEmpty ? nil : normalizedQuery, updated: { state in
+                    let (disposable, _) = context.peerChannelMemberCategoriesContextsManager.recent(engine: context.engine, accountPeerId: context.account.peerId, peerId: peerId, searchQuery: normalizedQuery.isEmpty ? nil : normalizedQuery, updated: { state in
                         if case .ready = state.loadingState {
                             subscriber.putNext((state.list.compactMap { participant in
                                 if participant.peer.isDeleted {
@@ -67,7 +67,7 @@ public func searchPeerMembers(context: AccountContext, peerId: EnginePeer.Id, ch
                         disposable.dispose()
                     }
                 case let .replyThread(replyThreadMessage):
-                    let (disposable, _) = context.peerChannelMemberCategoriesContextsManager.mentions(engine: context.engine, postbox: context.account.postbox, network: context.account.network, accountPeerId: context.account.peerId, peerId: peerId, threadMessageId: EngineMessage.Id(peerId: replyThreadMessage.peerId, namespace: Namespaces.Message.Cloud, id: Int32(clamping: replyThreadMessage.threadId)), searchQuery: normalizedQuery.isEmpty ? nil : normalizedQuery, updated: { state in
+                    let (disposable, _) = context.peerChannelMemberCategoriesContextsManager.mentions(engine: context.engine, accountPeerId: context.account.peerId, peerId: peerId, threadMessageId: EngineMessage.Id(peerId: replyThreadMessage.peerId, namespace: Namespaces.Message.Cloud, id: Int32(clamping: replyThreadMessage.threadId)), searchQuery: normalizedQuery.isEmpty ? nil : normalizedQuery, updated: { state in
                         if case .ready = state.loadingState {
                             subscriber.putNext((state.list.compactMap { participant in
                                 if participant.peer.isDeleted {

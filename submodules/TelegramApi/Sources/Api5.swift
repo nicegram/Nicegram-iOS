@@ -1094,14 +1094,20 @@ public extension Api {
             public var botId: Int64
             public var recipients: Api.BusinessBotRecipients
             public var rights: Api.BusinessBotRights
-            public init(flags: Int32, botId: Int64, recipients: Api.BusinessBotRecipients, rights: Api.BusinessBotRights) {
+            public var device: String?
+            public var date: Int32?
+            public var location: String?
+            public init(flags: Int32, botId: Int64, recipients: Api.BusinessBotRecipients, rights: Api.BusinessBotRights, device: String?, date: Int32?, location: String?) {
                 self.flags = flags
                 self.botId = botId
                 self.recipients = recipients
                 self.rights = rights
+                self.device = device
+                self.date = date
+                self.location = location
             }
             public func descriptionFields() -> (String, [(String, ConstructorParameterDescription)]) {
-                return ("connectedBot", [("flags", ConstructorParameterDescription(self.flags)), ("botId", ConstructorParameterDescription(self.botId)), ("recipients", ConstructorParameterDescription(self.recipients)), ("rights", ConstructorParameterDescription(self.rights))])
+                return ("connectedBot", [("flags", ConstructorParameterDescription(self.flags)), ("botId", ConstructorParameterDescription(self.botId)), ("recipients", ConstructorParameterDescription(self.recipients)), ("rights", ConstructorParameterDescription(self.rights)), ("device", ConstructorParameterDescription(self.device)), ("date", ConstructorParameterDescription(self.date)), ("location", ConstructorParameterDescription(self.location))])
             }
         }
         case connectedBot(Cons_connectedBot)
@@ -1110,12 +1116,21 @@ public extension Api {
             switch self {
             case .connectedBot(let _data):
                 if boxed {
-                    buffer.appendInt32(-849058964)
+                    buffer.appendInt32(54448129)
                 }
                 serializeInt32(_data.flags, buffer: buffer, boxed: false)
                 serializeInt64(_data.botId, buffer: buffer, boxed: false)
                 _data.recipients.serialize(buffer, true)
                 _data.rights.serialize(buffer, true)
+                if Int(_data.flags) & Int(1 << 0) != 0 {
+                    serializeString(_data.device!, buffer: buffer, boxed: false)
+                }
+                if Int(_data.flags) & Int(1 << 1) != 0 {
+                    serializeInt32(_data.date!, buffer: buffer, boxed: false)
+                }
+                if Int(_data.flags) & Int(1 << 2) != 0 {
+                    serializeString(_data.location!, buffer: buffer, boxed: false)
+                }
                 break
             }
         }
@@ -1123,7 +1138,7 @@ public extension Api {
         public func descriptionFields() -> (String, [(String, ConstructorParameterDescription)]) {
             switch self {
             case .connectedBot(let _data):
-                return ("connectedBot", [("flags", ConstructorParameterDescription(_data.flags)), ("botId", ConstructorParameterDescription(_data.botId)), ("recipients", ConstructorParameterDescription(_data.recipients)), ("rights", ConstructorParameterDescription(_data.rights))])
+                return ("connectedBot", [("flags", ConstructorParameterDescription(_data.flags)), ("botId", ConstructorParameterDescription(_data.botId)), ("recipients", ConstructorParameterDescription(_data.recipients)), ("rights", ConstructorParameterDescription(_data.rights)), ("device", ConstructorParameterDescription(_data.device)), ("date", ConstructorParameterDescription(_data.date)), ("location", ConstructorParameterDescription(_data.location))])
             }
         }
 
@@ -1140,12 +1155,27 @@ public extension Api {
             if let signature = reader.readInt32() {
                 _4 = Api.parse(reader, signature: signature) as? Api.BusinessBotRights
             }
+            var _5: String?
+            if Int(_1 ?? 0) & Int(1 << 0) != 0 {
+                _5 = parseString(reader)
+            }
+            var _6: Int32?
+            if Int(_1 ?? 0) & Int(1 << 1) != 0 {
+                _6 = reader.readInt32()
+            }
+            var _7: String?
+            if Int(_1 ?? 0) & Int(1 << 2) != 0 {
+                _7 = parseString(reader)
+            }
             let _c1 = _1 != nil
             let _c2 = _2 != nil
             let _c3 = _3 != nil
             let _c4 = _4 != nil
-            if _c1 && _c2 && _c3 && _c4 {
-                return Api.ConnectedBot.connectedBot(Cons_connectedBot(flags: _1!, botId: _2!, recipients: _3!, rights: _4!))
+            let _c5 = (Int(_1 ?? 0) & Int(1 << 0) == 0) || _5 != nil
+            let _c6 = (Int(_1 ?? 0) & Int(1 << 1) == 0) || _6 != nil
+            let _c7 = (Int(_1 ?? 0) & Int(1 << 2) == 0) || _7 != nil
+            if _c1 && _c2 && _c3 && _c4 && _c5 && _c6 && _c7 {
+                return Api.ConnectedBot.connectedBot(Cons_connectedBot(flags: _1!, botId: _2!, recipients: _3!, rights: _4!, device: _5, date: _6, location: _7))
             }
             else {
                 return nil

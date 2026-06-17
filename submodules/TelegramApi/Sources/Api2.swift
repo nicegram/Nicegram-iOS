@@ -759,6 +759,19 @@ public extension Api {
                 return ("botInlineMessageMediaWebPage", [("flags", ConstructorParameterDescription(self.flags)), ("message", ConstructorParameterDescription(self.message)), ("entities", ConstructorParameterDescription(self.entities)), ("url", ConstructorParameterDescription(self.url)), ("replyMarkup", ConstructorParameterDescription(self.replyMarkup))])
             }
         }
+        public class Cons_botInlineMessageRichMessage: TypeConstructorDescription {
+            public var flags: Int32
+            public var replyMarkup: Api.ReplyMarkup?
+            public var richMessage: Api.RichMessage
+            public init(flags: Int32, replyMarkup: Api.ReplyMarkup?, richMessage: Api.RichMessage) {
+                self.flags = flags
+                self.replyMarkup = replyMarkup
+                self.richMessage = richMessage
+            }
+            public func descriptionFields() -> (String, [(String, ConstructorParameterDescription)]) {
+                return ("botInlineMessageRichMessage", [("flags", ConstructorParameterDescription(self.flags)), ("replyMarkup", ConstructorParameterDescription(self.replyMarkup)), ("richMessage", ConstructorParameterDescription(self.richMessage))])
+            }
+        }
         public class Cons_botInlineMessageText: TypeConstructorDescription {
             public var flags: Int32
             public var message: String
@@ -780,6 +793,7 @@ public extension Api {
         case botInlineMessageMediaInvoice(Cons_botInlineMessageMediaInvoice)
         case botInlineMessageMediaVenue(Cons_botInlineMessageMediaVenue)
         case botInlineMessageMediaWebPage(Cons_botInlineMessageMediaWebPage)
+        case botInlineMessageRichMessage(Cons_botInlineMessageRichMessage)
         case botInlineMessageText(Cons_botInlineMessageText)
 
         public func serialize(_ buffer: Buffer, _ boxed: Swift.Bool) {
@@ -882,6 +896,16 @@ public extension Api {
                     _data.replyMarkup!.serialize(buffer, true)
                 }
                 break
+            case .botInlineMessageRichMessage(let _data):
+                if boxed {
+                    buffer.appendInt32(174161531)
+                }
+                serializeInt32(_data.flags, buffer: buffer, boxed: false)
+                if Int(_data.flags) & Int(1 << 2) != 0 {
+                    _data.replyMarkup!.serialize(buffer, true)
+                }
+                _data.richMessage.serialize(buffer, true)
+                break
             case .botInlineMessageText(let _data):
                 if boxed {
                     buffer.appendInt32(-1937807902)
@@ -916,6 +940,8 @@ public extension Api {
                 return ("botInlineMessageMediaVenue", [("flags", ConstructorParameterDescription(_data.flags)), ("geo", ConstructorParameterDescription(_data.geo)), ("title", ConstructorParameterDescription(_data.title)), ("address", ConstructorParameterDescription(_data.address)), ("provider", ConstructorParameterDescription(_data.provider)), ("venueId", ConstructorParameterDescription(_data.venueId)), ("venueType", ConstructorParameterDescription(_data.venueType)), ("replyMarkup", ConstructorParameterDescription(_data.replyMarkup))])
             case .botInlineMessageMediaWebPage(let _data):
                 return ("botInlineMessageMediaWebPage", [("flags", ConstructorParameterDescription(_data.flags)), ("message", ConstructorParameterDescription(_data.message)), ("entities", ConstructorParameterDescription(_data.entities)), ("url", ConstructorParameterDescription(_data.url)), ("replyMarkup", ConstructorParameterDescription(_data.replyMarkup))])
+            case .botInlineMessageRichMessage(let _data):
+                return ("botInlineMessageRichMessage", [("flags", ConstructorParameterDescription(_data.flags)), ("replyMarkup", ConstructorParameterDescription(_data.replyMarkup)), ("richMessage", ConstructorParameterDescription(_data.richMessage))])
             case .botInlineMessageText(let _data):
                 return ("botInlineMessageText", [("flags", ConstructorParameterDescription(_data.flags)), ("message", ConstructorParameterDescription(_data.message)), ("entities", ConstructorParameterDescription(_data.entities)), ("replyMarkup", ConstructorParameterDescription(_data.replyMarkup))])
             }
@@ -1118,6 +1144,29 @@ public extension Api {
             let _c5 = (Int(_1 ?? 0) & Int(1 << 2) == 0) || _5 != nil
             if _c1 && _c2 && _c3 && _c4 && _c5 {
                 return Api.BotInlineMessage.botInlineMessageMediaWebPage(Cons_botInlineMessageMediaWebPage(flags: _1!, message: _2!, entities: _3, url: _4!, replyMarkup: _5))
+            }
+            else {
+                return nil
+            }
+        }
+        public static func parse_botInlineMessageRichMessage(_ reader: BufferReader) -> BotInlineMessage? {
+            var _1: Int32?
+            _1 = reader.readInt32()
+            var _2: Api.ReplyMarkup?
+            if Int(_1 ?? 0) & Int(1 << 2) != 0 {
+                if let signature = reader.readInt32() {
+                    _2 = Api.parse(reader, signature: signature) as? Api.ReplyMarkup
+                }
+            }
+            var _3: Api.RichMessage?
+            if let signature = reader.readInt32() {
+                _3 = Api.parse(reader, signature: signature) as? Api.RichMessage
+            }
+            let _c1 = _1 != nil
+            let _c2 = (Int(_1 ?? 0) & Int(1 << 2) == 0) || _2 != nil
+            let _c3 = _3 != nil
+            if _c1 && _c2 && _c3 {
+                return Api.BotInlineMessage.botInlineMessageRichMessage(Cons_botInlineMessageRichMessage(flags: _1!, replyMarkup: _2, richMessage: _3!))
             }
             else {
                 return nil

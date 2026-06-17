@@ -3,7 +3,6 @@ import UIKit
 import Display
 import AsyncDisplayKit
 import SwiftSignalKit
-import Postbox
 import TelegramCore
 import TelegramPresentationData
 import TelegramUIPreferences
@@ -614,7 +613,7 @@ public func threadNotificationExceptionsScreen(context: AccountContext, peerId: 
         if !state.notificationExceptions.isEmpty {
             if state.editing {
                 leftNavigationButton = ItemListNavigationButton(content: .none, style: .regular, enabled: false, action: {})
-                rightNavigationButton = ItemListNavigationButton(content: .text(presentationData.strings.Common_Done), style: .bold, enabled: true, action: {
+                rightNavigationButton = ItemListNavigationButton(content: .icon(.done), style: .bold, enabled: true, action: {
                     updateState { value in
                         var value = value
                         value.editing = false

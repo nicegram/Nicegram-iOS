@@ -2,7 +2,6 @@ import Foundation
 import UIKit
 import Display
 import SwiftSignalKit
-import Postbox
 import TelegramCore
 import TelegramPresentationData
 import TelegramUIPreferences
@@ -37,7 +36,7 @@ private enum GroupStickerPackSection: Int32 {
 
 private enum GroupStickerPackEntryId: Hashable {
     case index(Int32)
-    case pack(ItemCollectionId)
+    case pack(EngineItemCollectionId)
     
     static func ==(lhs: GroupStickerPackEntryId, rhs: GroupStickerPackEntryId) -> Bool {
         switch lhs {
@@ -265,7 +264,7 @@ private struct GroupStickerPackSetupControllerState: Equatable {
     var searchingPacks: Bool
 }
 
-private func groupStickerPackSetupControllerEntries(context: AccountContext, presentationData: PresentationData, searchText: String, view: CombinedView, initialData: InitialStickerPackData?, searchState: GroupStickerPackSearchState, stickerSettings: StickerSettings, isEmoji: Bool) -> [GroupStickerPackEntry] {
+private func groupStickerPackSetupControllerEntries(context: AccountContext, presentationData: PresentationData, searchText: String, packsEntries: [EngineRawItemCollectionInfoEntry], initialData: InitialStickerPackData?, searchState: GroupStickerPackSearchState, stickerSettings: StickerSettings, isEmoji: Bool) -> [GroupStickerPackEntry] {
     if initialData == nil {
         return []
     }
@@ -284,39 +283,34 @@ private func groupStickerPackSetupControllerEntries(context: AccountContext, pre
     }
     entries.append(.searchInfo(presentationData.theme, isEmoji ? presentationData.strings.Group_Emoji_Info : presentationData.strings.Channel_Stickers_CreateYourOwn))
     
-    let namespace = isEmoji ? Namespaces.ItemCollection.CloudEmojiPacks : Namespaces.ItemCollection.CloudStickerPacks
-    if let stickerPacksView = view.views[.itemCollectionInfos(namespaces: [namespace])] as? ItemCollectionInfosView {
-        if let packsEntries = stickerPacksView.entriesByNamespace[namespace] {
-            if !packsEntries.isEmpty {
-                entries.append(.packsTitle(presentationData.theme, isEmoji ? presentationData.strings.Group_Emoji_YourEmoji : presentationData.strings.Channel_Stickers_YourStickers))
+    if !packsEntries.isEmpty {
+        entries.append(.packsTitle(presentationData.theme, isEmoji ? presentationData.strings.Group_Emoji_YourEmoji : presentationData.strings.Channel_Stickers_YourStickers))
+    }
+
+    var index: Int32 = 0
+    for entry in packsEntries {
+        if let info = entry.info as? StickerPackCollectionInfo {
+            var selected = false
+            if case let .found(found) = searchState {
+                selected = found.info.id == info.id
             }
-            
-            var index: Int32 = 0
-            for entry in packsEntries {
-                if let info = entry.info as? StickerPackCollectionInfo {
-                    var selected = false
-                    if case let .found(found) = searchState {
-                        selected = found.info.id == info.id
-                    }
-                    let count = info.count == 0 ? entry.count : info.count
-                    
-                    let thumbnail: StickerPackItem?
-                    if let thumbnailRep = info.thumbnail {
-                        thumbnail = StickerPackItem(index: ItemCollectionItemIndex(index: 0, id: 0), file: TelegramMediaFile(fileId: MediaId(namespace: 0, id: 0), partialReference: nil, resource: thumbnailRep.resource, previewRepresentations: [], videoThumbnails: [], immediateThumbnailData: info.immediateThumbnailData, mimeType: "", size: nil, attributes: [], alternativeRepresentations: []), indexKeys: [])
-                    } else {
-                        thumbnail = entry.firstItem as? StickerPackItem
-                    }
-                    entries.append(.pack(index, presentationData.theme, presentationData.strings, info, thumbnail, isEmoji ? presentationData.strings.StickerPack_EmojiCount(count) : presentationData.strings.StickerPack_StickerCount(count), context.sharedContext.energyUsageSettings.loopStickers, selected))
-                    index += 1
-                }
+            let count = info.count == 0 ? entry.count : info.count
+
+            let thumbnail: StickerPackItem?
+            if let thumbnailRep = info.thumbnail {
+                thumbnail = StickerPackItem(index: EngineItemCollectionItemIndex(index: 0, id: 0), file: TelegramMediaFile(fileId: EngineMedia.Id(namespace: 0, id: 0), partialReference: nil, resource: thumbnailRep.resource, previewRepresentations: [], videoThumbnails: [], immediateThumbnailData: info.immediateThumbnailData, mimeType: "", size: nil, attributes: [], alternativeRepresentations: []), indexKeys: [])
+            } else {
+                thumbnail = entry.firstItem as? StickerPackItem
             }
+            entries.append(.pack(index, presentationData.theme, presentationData.strings, info, thumbnail, isEmoji ? presentationData.strings.StickerPack_EmojiCount(count) : presentationData.strings.StickerPack_StickerCount(count), context.sharedContext.energyUsageSettings.loopStickers, selected))
+            index += 1
         }
     }
     
     return entries
 }
 
-public func groupStickerPackSetupController(context: AccountContext, updatedPresentationData: (initial: PresentationData, signal: Signal<PresentationData, NoError>)? = nil, peerId: PeerId, isEmoji: Bool = false, currentPackInfo: StickerPackCollectionInfo?, completion: ((StickerPackCollectionInfo?) -> Void)? = nil) -> ViewController {
+public func groupStickerPackSetupController(context: AccountContext, updatedPresentationData: (initial: PresentationData, signal: Signal<PresentationData, NoError>)? = nil, peerId: EnginePeer.Id, isEmoji: Bool = false, currentPackInfo: StickerPackCollectionInfo?, completion: ((StickerPackCollectionInfo?) -> Void)? = nil) -> ViewController {
     let initialState = GroupStickerPackSetupControllerState(isSaving: false, searchingPacks: false)
     
     let statePromise = ValuePromise(initialState, ignoreRepeated: true)
@@ -353,12 +347,12 @@ public func groupStickerPackSetupController(context: AccountContext, updatedPres
         }
     }
     
-    let stickerPacks = Promise<CombinedView>()
-    stickerPacks.set(context.account.postbox.combinedView(keys: [.itemCollectionInfos(namespaces: [isEmoji ? Namespaces.ItemCollection.CloudEmojiPacks : Namespaces.ItemCollection.CloudStickerPacks])]))
+    let stickerPacks = Promise<[EngineRawItemCollectionInfoEntry]>()
+    stickerPacks.set(context.engine.data.subscribe(TelegramEngine.EngineData.Item.ItemCollections.InstalledPackInfos(namespace: isEmoji ? Namespaces.ItemCollection.CloudEmojiPacks : Namespaces.ItemCollection.CloudStickerPacks)))
     
     let searchState = Promise<(String, GroupStickerPackSearchState)>()
     searchState.set(combineLatest(searchText.get(), initialData.get(), stickerPacks.get())
-    |> mapToSignal { searchText, initialData, view -> Signal<(String, GroupStickerPackSearchState), NoError> in
+    |> mapToSignal { searchText, initialData, packsEntries -> Signal<(String, GroupStickerPackSearchState), NoError> in
         if let initialData = initialData {
             if searchText.isEmpty {
                 return .single((searchText, .none))
@@ -368,15 +362,10 @@ public func groupStickerPackSetupController(context: AccountContext, updatedPres
                 }
                 return .single((searchText, .found(StickerPackData(info: data.info, item: data.item))))
             } else {
-                let namespace = isEmoji ? Namespaces.ItemCollection.CloudEmojiPacks : Namespaces.ItemCollection.CloudStickerPacks
-                if let stickerPacksView = view.views[.itemCollectionInfos(namespaces: [namespace])] as? ItemCollectionInfosView {
-                    if let packsEntries = stickerPacksView.entriesByNamespace[namespace] {
-                        for entry in packsEntries {
-                            if let info = entry.info as? StickerPackCollectionInfo {
-                                if info.shortName.lowercased() == searchText.lowercased() {
-                                    return .single((searchText, .found(StickerPackData(info: info, item: entry.firstItem as? StickerPackItem))))
-                                }
-                            }
+                for entry in packsEntries {
+                    if let info = entry.info as? StickerPackCollectionInfo {
+                        if info.shortName.lowercased() == searchText.lowercased() {
+                            return .single((searchText, .found(StickerPackData(info: info, item: entry.firstItem as? StickerPackItem))))
                         }
                     }
                 }
@@ -405,7 +394,7 @@ public func groupStickerPackSetupController(context: AccountContext, updatedPres
         }
     })
     
-    var navigateToChatControllerImpl: ((PeerId) -> Void)?
+    var navigateToChatControllerImpl: ((EnginePeer.Id) -> Void)?
     var dismissInputImpl: (() -> Void)?
     var dismissImpl: (() -> Void)?
     
@@ -449,7 +438,7 @@ public func groupStickerPackSetupController(context: AccountContext, updatedPres
     
     let presentationData = updatedPresentationData?.signal ?? context.sharedContext.presentationData
     let signal = combineLatest(presentationData, statePromise.get() |> deliverOnMainQueue, initialData.get() |> deliverOnMainQueue, stickerPacks.get() |> deliverOnMainQueue, searchState.get() |> deliverOnMainQueue, context.sharedContext.accountManager.sharedData(keys: [ApplicationSpecificSharedDataKeys.stickerSettings]) |> deliverOnMainQueue)
-    |> map { presentationData, state, initialData, view, searchState, sharedData -> (ItemListControllerState, (ItemListNodeState, Any)) in
+    |> map { presentationData, state, initialData, packsEntries, searchState, sharedData -> (ItemListControllerState, (ItemListNodeState, Any)) in
         var stickerSettings = StickerSettings.defaultSettings
         if let value = sharedData.entries[ApplicationSpecificSharedDataKeys.stickerSettings]?.get(StickerSettings.self) {
             stickerSettings = value
@@ -459,7 +448,7 @@ public func groupStickerPackSetupController(context: AccountContext, updatedPres
         if isEmoji {
             leftNavigationButton = nil
         } else {
-            leftNavigationButton = ItemListNavigationButton(content: .text(presentationData.strings.Common_Cancel), style: .regular, enabled: true, action: {
+            leftNavigationButton = ItemListNavigationButton(content: .icon(.close), style: .regular, enabled: true, action: {
                 dismissImpl?()
             })
         }
@@ -489,7 +478,7 @@ public func groupStickerPackSetupController(context: AccountContext, updatedPres
                         enabled = true
                         info = data.info
                     }
-                    rightNavigationButton = ItemListNavigationButton(content: .text(presentationData.strings.Common_Done), style: .bold, enabled: enabled, action: {
+                    rightNavigationButton = ItemListNavigationButton(content: .icon(.done), style: .bold, enabled: enabled, action: {
                         if info?.id == currentPackInfo?.id {
                             dismissImpl?()
                         } else {
@@ -539,7 +528,7 @@ public func groupStickerPackSetupController(context: AccountContext, updatedPres
             emptyStateItem = ItemListLoadingIndicatorEmptyStateItem(theme: presentationData.theme)
         }
         
-        let listState = ItemListNodeState(presentationData: ItemListPresentationData(presentationData), entries: groupStickerPackSetupControllerEntries(context: context, presentationData: presentationData, searchText: searchState.0, view: view, initialData: initialData, searchState: searchState.1, stickerSettings: stickerSettings, isEmoji: isEmoji), style: .blocks, emptyStateItem: emptyStateItem, searchItem: searchItem, animateChanges: hasData && hadData)
+        let listState = ItemListNodeState(presentationData: ItemListPresentationData(presentationData), entries: groupStickerPackSetupControllerEntries(context: context, presentationData: presentationData, searchText: searchState.0, packsEntries: packsEntries, initialData: initialData, searchState: searchState.1, stickerSettings: stickerSettings, isEmoji: isEmoji), style: .blocks, emptyStateItem: emptyStateItem, searchItem: searchItem, animateChanges: hasData && hadData)
         return (controllerState, (listState, arguments))
     } |> afterDisposed {
         actionsDisposable.dispose()

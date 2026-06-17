@@ -164,7 +164,7 @@ private final class CreateExternalMediaStreamScreenComponent: CombinedComponent 
                     
                     let text: String
                     text = presentationData.strings.Login_UnknownError
-                    baseController?.present(textAlertController(context: strongSelf.context, updatedPresentationData: nil, title: nil, text: text, actions: [TextAlertAction(type: .defaultAction, title: presentationData.strings.Common_OK, action: {})]), in: .window(.root))
+                    baseController?.present(textAlertController(context: strongSelf.context, forceTheme: defaultDarkPresentationTheme, title: nil, text: text, actions: [TextAlertAction(type: .defaultAction, title: presentationData.strings.Common_OK, action: {})]), in: .window(.root))
                 }))
             }
             
@@ -190,17 +190,6 @@ private final class CreateExternalMediaStreamScreenComponent: CombinedComponent 
         let activityIndicator = Child(ActivityIndicatorComponent.self)
         
         let credentialsSection = Child(ListSectionComponent.self)
-        
-//        let credentialsBackground = Child(RoundedRectangle.self)
-//        let credentialsStripe = Child(Rectangle.self)
-//        let credentialsURLTitle = Child(MultilineTextComponent.self)
-//        let credentialsURLText = Child(MultilineTextComponent.self)
-//        
-//        let credentialsKeyTitle = Child(MultilineTextComponent.self)
-//        let credentialsKeyText = Child(MultilineTextComponent.self)
-//        
-//        let credentialsCopyURLButton = Child(Button.self)
-//        let credentialsCopyKeyButton = Child(Button.self)
         
         return { context in
             let topInset: CGFloat = 16.0
@@ -477,12 +466,13 @@ private final class CreateExternalMediaStreamScreenComponent: CombinedComponent 
                                 maximumNumberOfLines: 1
                             )),
                             titleAlignment: .center,
+                            accessory: .none,
                             action: { [weak state] _ in
                                 guard let state = state else {
                                     return
                                 }
-                                let alertController = textAlertController(context: component.context, title: nil, text: environment.strings.CreateExternalStream_Revoke_Text, actions: [TextAlertAction(type: .genericAction, title: environment.strings.Common_Cancel, action: {
-                                }), TextAlertAction(type: .defaultAction, title: environment.strings.CreateExternalStream_Revoke_Revoke, action: { [weak state] in
+                                let alertController = textAlertController(context: component.context, forceTheme: theme, title: nil, text: environment.strings.CreateExternalStream_Revoke_Text, actions: [TextAlertAction(type: .genericAction, title: environment.strings.Common_Cancel, action: {
+                                }), TextAlertAction(type: .defaultDestructiveAction, title: environment.strings.CreateExternalStream_Revoke_Revoke, action: { [weak state] in
                                     state?.getCredentials(revoke: true)
                                 })])
                                 environment.controller()?.present(alertController, in: .window(.root))

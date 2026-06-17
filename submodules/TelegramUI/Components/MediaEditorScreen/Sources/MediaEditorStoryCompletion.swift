@@ -9,6 +9,21 @@ import Photos
 import MediaEditor
 import DrawingUI
 
+private func additionalVideoMirroring(at timestamp: Double, changes: [VideoMirroringChange]) -> Bool {
+    guard let firstChange = changes.first else {
+        return false
+    }
+    var isMirrored = firstChange.isMirrored
+    for change in changes {
+        if timestamp >= change.timestamp {
+            isMirrored = change.isMirrored
+        } else {
+            break
+        }
+    }
+    return isMirrored
+}
+
 extension MediaEditorScreenImpl {
     func requestStoryCompletion(animated: Bool) {
         guard let mediaEditor = self.node.mediaEditor, !self.didComplete else {
@@ -161,6 +176,10 @@ extension MediaEditorScreenImpl {
             } else {
                 firstFrameTime = CMTime(seconds: mediaEditor.values.videoTrimRange?.lowerBound ?? 0.0, preferredTimescale: CMTimeScale(60))
             }
+            let additionalFirstFrameTime = CMTime(
+                seconds: max(0.0, firstFrameTime.seconds + (mediaEditor.values.additionalVideoOffset ?? 0.0)),
+                preferredTimescale: firstFrameTime.timescale
+            )
             let videoResult: Signal<MediaResult.VideoResult, NoError>
             var videoIsMirrored = false
             let duration: Double
@@ -210,7 +229,7 @@ extension MediaEditorScreenImpl {
                                 let avAsset = AVURLAsset(url: URL(fileURLWithPath: additionalPath))
                                 let avAssetGenerator = AVAssetImageGenerator(asset: avAsset)
                                 avAssetGenerator.appliesPreferredTrackTransform = true
-                                avAssetGenerator.generateCGImagesAsynchronously(forTimes: [NSValue(time: firstFrameTime)], completionHandler: { _, additionalCGImage, _, _, _ in
+                                avAssetGenerator.generateCGImagesAsynchronously(forTimes: [NSValue(time: additionalFirstFrameTime)], completionHandler: { _, additionalCGImage, _, _, _ in
                                     if let additionalCGImage {
                                         subscriber.putNext((UIImage(cgImage: cgImage), UIImage(cgImage: additionalCGImage)))
                                         subscriber.putCompletion()
@@ -302,7 +321,7 @@ extension MediaEditorScreenImpl {
                                             let avAsset = AVURLAsset(url: URL(fileURLWithPath: additionalPath))
                                             let avAssetGenerator = AVAssetImageGenerator(asset: avAsset)
                                             avAssetGenerator.appliesPreferredTrackTransform = true
-                                            avAssetGenerator.generateCGImagesAsynchronously(forTimes: [NSValue(time: firstFrameTime)], completionHandler: { _, additionalCGImage, _, _, _ in
+                                            avAssetGenerator.generateCGImagesAsynchronously(forTimes: [NSValue(time: additionalFirstFrameTime)], completionHandler: { _, additionalCGImage, _, _, _ in
                                                 if let additionalCGImage {
                                                     subscriber.putNext((UIImage(cgImage: cgImage), UIImage(cgImage: additionalCGImage)))
                                                     subscriber.putCompletion()
@@ -328,7 +347,7 @@ extension MediaEditorScreenImpl {
                                     let avAsset = AVURLAsset(url: URL(fileURLWithPath: additionalPath))
                                     let avAssetGenerator = AVAssetImageGenerator(asset: avAsset)
                                     avAssetGenerator.appliesPreferredTrackTransform = true
-                                    avAssetGenerator.generateCGImagesAsynchronously(forTimes: [NSValue(time: firstFrameTime)], completionHandler: { _, additionalCGImage, _, _, _ in
+                                    avAssetGenerator.generateCGImagesAsynchronously(forTimes: [NSValue(time: additionalFirstFrameTime)], completionHandler: { _, additionalCGImage, _, _, _ in
                                         if let additionalCGImage {
                                             subscriber.putNext((image, UIImage(cgImage: additionalCGImage)))
                                             subscriber.putCompletion()
@@ -437,7 +456,15 @@ extension MediaEditorScreenImpl {
                     let (image, additionalImage) = images
                     var currentImage = mediaEditor.resultImage
                     if let image {
-                        mediaEditor.replaceSource(image, additionalImage: additionalImage, time: firstFrameTime, mirror: true)
+                        mediaEditor.replaceSource(
+                            image,
+                            additionalImage: additionalImage,
+                            time: firstFrameTime,
+                            mirror: additionalVideoMirroring(
+                                at: additionalFirstFrameTime.seconds,
+                                changes: mediaEditor.values.additionalVideoMirroringChanges
+                            )
+                        )
                         if let updatedImage = mediaEditor.getResultImage(mirror: videoIsMirrored) {
                             currentImage = updatedImage
                         }

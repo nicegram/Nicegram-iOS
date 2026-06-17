@@ -2,7 +2,6 @@ import Foundation
 import UIKit
 import Display
 import SwiftSignalKit
-import Postbox
 import TelegramCore
 import AccountContext
 import TextFormat
@@ -51,7 +50,7 @@ public extension MediaEditorScreenImpl {
                             duration = file.duration
                         }
                         let symlinkPath = data.path + ".mp4"
-                        if fileSize(symlinkPath) == nil {
+                        if engineFileSize(symlinkPath) == nil {
                             let _ = try? FileManager.default.linkItem(atPath: data.path, toPath: symlinkPath)
                         }
                         return .single(nil)
@@ -183,9 +182,9 @@ public extension MediaEditorScreenImpl {
                         case let .image(image, dimensions):
                             updateProgressImpl?(0.0)
                             
-                            let tempFile = TempBox.shared.tempFile(fileName: "file")
+                            let tempFile = EngineTempBox.shared.tempFile(fileName: "file")
                             defer {
-                                TempBox.shared.dispose(tempFile)
+                                EngineTempBox.shared.dispose(tempFile)
                             }
                             if let imageData = compressImageToJPEG(image, quality: 0.7, tempFilePath: tempFile.path) {
                                 update((context.engine.messages.editStory(peerId: peer.id, id: storyItem.id, media: .image(dimensions: dimensions, data: imageData, stickers: result.stickers), mediaAreas: result.mediaAreas, text: updatedText, entities: updatedEntities, privacy: nil)
@@ -208,8 +207,8 @@ public extension MediaEditorScreenImpl {
                             updateProgressImpl?(0.0)
                             
                             if let valuesData = try? JSONEncoder().encode(values) {
-                                let data = MemoryBuffer(data: valuesData)
-                                let digest = MemoryBuffer(data: data.md5Digest())
+                                let data = EngineMemoryBuffer(data: valuesData)
+                                let digest = EngineMemoryBuffer(data: data.md5Digest())
                                 let adjustments = VideoMediaResourceAdjustments(data: data, digest: digest, isStory: true)
                                 
                                 let resource: TelegramMediaResource
@@ -222,13 +221,13 @@ public extension MediaEditorScreenImpl {
                                     resource = VideoLibraryMediaResource(localIdentifier: localIdentifier, conversion: .compress(adjustments))
                                 }
                                 
-                                let tempFile = TempBox.shared.tempFile(fileName: "file")
+                                let tempFile = EngineTempBox.shared.tempFile(fileName: "file")
                                 defer {
-                                    TempBox.shared.dispose(tempFile)
+                                    EngineTempBox.shared.dispose(tempFile)
                                 }
                                 let firstFrameImageData = firstFrameImage.flatMap { compressImageToJPEG($0, quality: 0.6, tempFilePath: tempFile.path) }
-                                let firstFrameFile = firstFrameImageData.flatMap { data -> TempBoxFile? in
-                                    let file = TempBox.shared.tempFile(fileName: "image.jpg")
+                                let firstFrameFile = firstFrameImageData.flatMap { data -> EngineTempBoxFile? in
+                                    let file = EngineTempBox.shared.tempFile(fileName: "image.jpg")
                                     if let _ = try? data.write(to: URL(fileURLWithPath: file.path)) {
                                         return file
                                     } else {

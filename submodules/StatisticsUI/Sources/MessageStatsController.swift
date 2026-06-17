@@ -3,7 +3,6 @@ import UIKit
 import Display
 import SwiftSignalKit
 import AsyncDisplayKit
-import Postbox
 import TelegramCore
 import TelegramPresentationData
 import TelegramUIPreferences
@@ -510,7 +509,7 @@ public func messageStatsController(context: AccountContext, updatedPresentationD
         })
     }
     openStoryImpl = { [weak controller] peerId, story, sourceView in
-        let storyContent = SingleStoryContentContextImpl(context: context, storyId: StoryId(peerId: peerId, id: story.id), storyItem: story, readGlobally: false)
+        let storyContent = SingleStoryContentContextImpl(context: context, storyId: EngineStoryId(peerId: peerId, id: story.id), storyItem: story, readGlobally: false)
         let _ = (storyContent.state
         |> take(1)
         |> deliverOnMainQueue).startStandalone(next: { [weak controller, weak sourceView] _ in

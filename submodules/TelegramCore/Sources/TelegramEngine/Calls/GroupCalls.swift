@@ -3415,10 +3415,6 @@ func _internal_revokeConferenceInviteLink(account: Account, reference: InternalG
     }
 }
 
-public enum ConfirmAddConferenceParticipantError {
-    case generic
-}
-
 func _internal_pollConferenceCallBlockchain(network: Network, reference: InternalGroupCallReference, subChainId: Int, offset: Int, limit: Int) -> Signal<(blocks: [Data], nextOffset: Int)?, NoError> {
     return network.request(Api.functions.phone.getGroupCallChainBlocks(call: reference.apiInputGroupCall, subChainId: Int32(subChainId), offset: Int32(offset), limit: Int32(limit)))
     |> map(Optional.init)

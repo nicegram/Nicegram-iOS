@@ -33,7 +33,7 @@ class ChatAnimationGalleryItem: GalleryItem {
     func node(synchronous: Bool) -> GalleryItemNode {
         let node = ChatAnimationGalleryItemNode(context: self.context, presentationData: self.presentationData)
 
-        for media in self.message.media {
+        for media in self.message.effectiveMedia {
             if let file = media as? TelegramMediaFile {
                 node.setFile(context: self.context, fileReference: .message(message: MessageReference(self.message), media: file))
                 break

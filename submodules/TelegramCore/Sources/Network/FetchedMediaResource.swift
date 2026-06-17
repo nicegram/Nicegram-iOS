@@ -240,7 +240,7 @@ private func findMediaResource(media: Media, previousMedia: Media?, resource: Me
 }
 
 public func findMediaResourceById(message: EngineMessage, resourceId: MediaResourceId) -> TelegramMediaResource? {
-    for media in message.media {
+    for media in message.effectiveMedia {
         if let result = findMediaResourceById(media: media, resourceId: resourceId) {
             return result
         }
@@ -671,7 +671,7 @@ final class MediaReferenceRevalidationContext {
                 }
                 |> map { [$0] }
             } else {
-                signal = telegramWallpapers(postbox: postbox, network: network, forceUpdate: true)
+                signal = _internal_telegramWallpapers(postbox: postbox, network: network, forceUpdate: true)
                 |> last
                 |> mapError { _ -> RevalidateMediaReferenceError in
                 }
@@ -697,7 +697,7 @@ final class MediaReferenceRevalidationContext {
     
     func themes(postbox: Postbox, network: Network, background: Bool) -> Signal<[TelegramTheme], RevalidateMediaReferenceError> {
         return self.genericItem(key: .themes, background: background, request: { next, error in
-            return (telegramThemes(postbox: postbox, network: network, accountManager: nil, forceUpdate: true)
+            return (_internal_telegramThemes(postbox: postbox, network: network, accountManager: nil, forceUpdate: true)
             |> take(1)
             |> mapError { _ -> RevalidateMediaReferenceError in
             }).start(next: { value in
@@ -899,6 +899,18 @@ func revalidateMediaResourceReference(accountPeerId: PeerId, postbox: Postbox, n
                         for media in message.media {
                             if let updatedResource = findUpdatedMediaResource(media: media, previousMedia: previousMedia, resource: resource) {
                                 return .single(RevalidatedMediaResource(updatedResource: updatedResource, updatedReference: nil))
+                            }
+                        }
+                        // Rich-text messages (`RichTextMessageAttribute`) embed their media in the
+                        // attribute's `InstantPage`, not in `message.media` — search there too so a
+                        // stale instant-page audio/image file reference can revalidate.
+                        for attribute in message.attributes {
+                            if let attribute = attribute as? RichTextMessageAttribute {
+                                for (_, pageMedia) in attribute.instantPage.media {
+                                    if let updatedResource = findUpdatedMediaResource(media: pageMedia, previousMedia: previousMedia, resource: resource) {
+                                        return .single(RevalidatedMediaResource(updatedResource: updatedResource, updatedReference: nil))
+                                    }
+                                }
                             }
                         }
                         return .fail(.generic)

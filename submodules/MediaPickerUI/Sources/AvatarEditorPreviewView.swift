@@ -3,7 +3,6 @@ import UIKit
 import Display
 import SwiftSignalKit
 import TelegramCore
-import Postbox
 import AvatarBackground
 import AccountContext
 import EmojiTextAttachmentView
@@ -37,27 +36,24 @@ final class AvatarEditorPreviewView: UIView {
         
         self.addSubview(self.backgroundView)
         
-        let stickersKey: PostboxViewKey = .orderedItemList(id: Namespaces.OrderedItemList.CloudFeaturedProfilePhotoEmoji)
-        self.disposable = (context.account.postbox.combinedView(keys: [stickersKey])
+        self.disposable = (context.engine.data.subscribe(TelegramEngine.EngineData.Item.OrderedLists.ListItems(collectionId: Namespaces.OrderedItemList.CloudFeaturedProfilePhotoEmoji))
         |> runOn(Queue.concurrentDefaultQueue())
-        |> deliverOnMainQueue).start(next: { [weak self] views in
+        |> deliverOnMainQueue).start(next: { [weak self] items in
             guard let self else {
                 return
             }
-            if let view = views.views[stickersKey] as? OrderedItemListView {
-                var files: [TelegramMediaFile] = []
-                for item in view.items.prefix(8) {
-                    if let mediaItem = item.contents.get(RecentMediaItem.self) {
-                        let file = mediaItem.media._parse()
-                        files.append(file)
-                        
-                        self.preloadDisposableSet.add(freeMediaFileResourceInteractiveFetched(account: context.account, userLocation: .other, fileReference: .standalone(media: file), resource: file.resource).start())
-                    }
+            var files: [TelegramMediaFile] = []
+            for item in items.prefix(8) {
+                if let mediaItem = item.contents.get(RecentMediaItem.self) {
+                    let file = mediaItem.media._parse()
+                    files.append(file)
+
+                    self.preloadDisposableSet.add(freeMediaFileResourceInteractiveFetched(account: context.account, userLocation: .other, fileReference: .standalone(media: file), resource: file.resource).start())
                 }
-                self.files = files
-                if let size = self.currentSize {
-                    self.updateLayout(size: size)
-                }
+            }
+            self.files = files
+            if let size = self.currentSize {
+                self.updateLayout(size: size)
             }
         })
         

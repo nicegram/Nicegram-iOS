@@ -31,6 +31,7 @@
     
     bool _animatingCancelDoneButtons;
 }
+
 @end
 
 @implementation TGPhotoToolbarView
@@ -633,6 +634,34 @@
             return button;
     }
     return nil;
+}
+
+- (UIView *)viewForTab:(TGPhotoEditorTab)tab
+{
+    return [self buttonForTab:tab];
+}
+
+- (void)setQualityButtonIsPhoto:(bool)isPhoto highQuality:(bool)highQuality videoPreset:(NSInteger)videoPreset
+{
+    TGPhotoEditorButton *qualityButton = [self buttonForTab:TGPhotoEditorQualityTab];
+    if (qualityButton == nil)
+        return;
+
+    if (isPhoto)
+        qualityButton.iconImage = [TGPhotoEditorInterfaceAssets qualityIconForHighQuality:highQuality filled:false];
+    else
+        qualityButton.iconImage = [TGPhotoEditorInterfaceAssets qualityIconForPreset:(TGMediaVideoConversionPreset)videoPreset];
+}
+
+- (void)setTimerButtonValue:(NSInteger)value
+{
+    TGPhotoEditorButton *timerButton = [self buttonForTab:TGPhotoEditorTimerTab];
+    if (timerButton == nil)
+        return;
+
+    UIImage *defaultIcon = [TGPhotoEditorInterfaceAssets timerIconForValue:0];
+    UIImage *activeIcon = [TGPhotoEditorInterfaceAssets timerIconForValue:value];
+    [timerButton setIconImage:defaultIcon activeIconImage:activeIcon];
 }
 
 - (void)layoutSubviews

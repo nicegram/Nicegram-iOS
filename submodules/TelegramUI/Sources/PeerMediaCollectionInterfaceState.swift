@@ -1,5 +1,5 @@
 import Foundation
-import Postbox
+import TelegramCore
 import TelegramPresentationData
 import ChatInterfaceState
 
@@ -11,12 +11,12 @@ enum PeerMediaCollectionMode: Int32 {
 }
 
 struct PeerMediaCollectionInterfaceState: Equatable {
-    let peer: Peer?
+    let peer: EnginePeer?
     let selectionState: ChatInterfaceSelectionState?
     let mode: PeerMediaCollectionMode
     let theme: PresentationTheme
     let strings: PresentationStrings
-    
+
     init(theme: PresentationTheme, strings: PresentationStrings) {
         self.theme = theme
         self.strings = strings
@@ -24,21 +24,17 @@ struct PeerMediaCollectionInterfaceState: Equatable {
         self.selectionState = nil
         self.mode = .photoOrVideo
     }
-    
-    init(peer: Peer?, selectionState: ChatInterfaceSelectionState?, mode: PeerMediaCollectionMode, theme: PresentationTheme, strings: PresentationStrings) {
+
+    init(peer: EnginePeer?, selectionState: ChatInterfaceSelectionState?, mode: PeerMediaCollectionMode, theme: PresentationTheme, strings: PresentationStrings) {
         self.peer = peer
         self.selectionState = selectionState
         self.mode = mode
         self.theme = theme
         self.strings = strings
     }
-    
+
     static func ==(lhs: PeerMediaCollectionInterfaceState, rhs: PeerMediaCollectionInterfaceState) -> Bool {
-        if let peer = lhs.peer {
-            if rhs.peer == nil || !peer.isEqual(rhs.peer!) {
-                return false
-            }
-        } else if let _ = rhs.peer {
+        if lhs.peer != rhs.peer {
             return false
         }
         
@@ -61,8 +57,8 @@ struct PeerMediaCollectionInterfaceState: Equatable {
         return true
     }
     
-    func withUpdatedSelectedMessages(_ messageIds: [MessageId]) -> PeerMediaCollectionInterfaceState {
-        var selectedIds = Set<MessageId>()
+    func withUpdatedSelectedMessages(_ messageIds: [EngineMessage.Id]) -> PeerMediaCollectionInterfaceState {
+        var selectedIds = Set<EngineMessage.Id>()
         if let selectionState = self.selectionState {
             selectedIds.formUnion(selectionState.selectedIds)
         }
@@ -72,8 +68,8 @@ struct PeerMediaCollectionInterfaceState: Equatable {
         return PeerMediaCollectionInterfaceState(peer: self.peer, selectionState: ChatInterfaceSelectionState(selectedIds: selectedIds), mode: self.mode, theme: self.theme, strings: self.strings)
     }
     
-    func withToggledSelectedMessages(_ messageIds: [MessageId], value: Bool) -> PeerMediaCollectionInterfaceState {
-        var selectedIds = Set<MessageId>()
+    func withToggledSelectedMessages(_ messageIds: [EngineMessage.Id], value: Bool) -> PeerMediaCollectionInterfaceState {
+        var selectedIds = Set<EngineMessage.Id>()
         if let selectionState = self.selectionState {
             selectedIds.formUnion(selectionState.selectedIds)
         }
@@ -95,7 +91,7 @@ struct PeerMediaCollectionInterfaceState: Equatable {
         return PeerMediaCollectionInterfaceState(peer: self.peer, selectionState: nil, mode: self.mode, theme: self.theme, strings: self.strings)
     }
     
-    func withUpdatedPeer(_ peer: Peer?) -> PeerMediaCollectionInterfaceState {
+    func withUpdatedPeer(_ peer: EnginePeer?) -> PeerMediaCollectionInterfaceState {
         return PeerMediaCollectionInterfaceState(peer: peer, selectionState: self.selectionState, mode: self.mode, theme: self.theme, strings: self.strings)
     }
     

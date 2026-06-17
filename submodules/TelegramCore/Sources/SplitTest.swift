@@ -24,7 +24,7 @@ extension SplitTest {
     public func addEvent(_ event: Self.Event, data: JSON = []) {
         if let bucket = self.bucket {
             //TODO: merge additional data
-            addAppLogEvent(postbox: self.postbox, type: event.rawValue, data: ["bucket": bucket])
+            _internal_addAppLogEvent(postbox: self.postbox, type: event.rawValue, data: ["bucket": bucket])
         }
     }
 }

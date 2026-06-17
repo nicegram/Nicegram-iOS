@@ -4,7 +4,7 @@ import SwiftSignalKit
 import MtProtoKit
 
 
-public func addAppLogEvent(postbox: Postbox, time: Double = Date().timeIntervalSince1970, type: String, peerId: PeerId? = nil, data: JSON = .dictionary([:])) {
+func _internal_addAppLogEvent(postbox: Postbox, time: Double = Date().timeIntervalSince1970, type: String, peerId: PeerId? = nil, data: JSON = .dictionary([:])) {
     let tag: PeerOperationLogTag = OperationLogTags.SynchronizeAppLogEvents
     let peerId = PeerId(0)
     let _ = (postbox.transaction { transaction in

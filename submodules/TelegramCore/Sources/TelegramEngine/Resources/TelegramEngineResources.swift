@@ -274,8 +274,8 @@ public extension TelegramEngine {
             _internal_clearStorage(account: self.account, messages: messages.map { $0._asMessage() })
         }
 
-        public func clearCachedMediaResources(mediaResourceIds: Set<MediaResourceId>) -> Signal<Float, NoError> {
-            return _internal_clearCachedMediaResources(account: self.account, mediaResourceIds: mediaResourceIds)
+        public func clearCachedMediaResources(mediaResourceIds: Set<EngineMediaResource.Id>) -> Signal<Float, NoError> {
+            return _internal_clearCachedMediaResources(account: self.account, mediaResourceIds: Set(mediaResourceIds.map { MediaResourceId($0.stringRepresentation) }))
         }
         
         public func reindexCacheInBackground(lowImpact: Bool) -> Signal<Never, NoError> {

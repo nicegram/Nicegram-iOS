@@ -1082,13 +1082,13 @@ public final class ChatMessageAvatarHeaderNodeImpl: ListViewItemHeaderNode, Chat
         }
         
         if peer.isPremium && context.sharedContext.energyUsageSettings.autoplayVideo {
-            self.cachedDataDisposable.set((context.account.postbox.peerView(id: peer.id)
-            |> deliverOnMainQueue).startStrict(next: { [weak self] peerView in
+            self.cachedDataDisposable.set((context.engine.data.subscribe(TelegramEngine.EngineData.Item.Peer.CachedData(id: peer.id))
+            |> deliverOnMainQueue).startStrict(next: { [weak self] cachedData in
                 guard let strongSelf = self else {
                     return
                 }
-                
-                let cachedPeerData = peerView.cachedData as? CachedUserData
+
+                let cachedPeerData = cachedData as? CachedUserData
                 var personalPhoto: TelegramMediaImage?
                 var profilePhoto: TelegramMediaImage?
                 var isKnown = false

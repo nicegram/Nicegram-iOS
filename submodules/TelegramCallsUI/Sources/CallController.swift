@@ -2,7 +2,6 @@ import Foundation
 import UIKit
 import Display
 import AsyncDisplayKit
-import Postbox
 import TelegramCore
 import SwiftSignalKit
 import TelegramPresentationData
@@ -33,7 +32,7 @@ protocol CallControllerNodeProtocol: AnyObject {
     
     func updateAudioOutputs(availableOutputs: [AudioSessionOutput], currentOutput: AudioSessionOutput?)
     func updateCallState(_ callState: PresentationCallState)
-    func updatePeer(accountPeer: Peer, peer: Peer, hasOther: Bool)
+    func updatePeer(accountPeer: EnginePeer, peer: EnginePeer, hasOther: Bool)
     
     func animateIn()
     func animateOut(completion: @escaping () -> Void)
@@ -62,8 +61,6 @@ public final class CallController: ViewController {
     
     private var presentationData: PresentationData
     private var didPlayPresentationAnimation = false
-    
-    private var peer: Peer?
     
     private var peerDisposable: Disposable?
     private var disposable: Disposable?
@@ -164,7 +161,6 @@ public final class CallController: ViewController {
     override public func loadDisplayNode() {
         let displayNode = CallControllerNodeV2(
             sharedContext: self.sharedContext,
-            account: self.account,
             presentationData: self.presentationData,
             statusBar: self.statusBar,
             debugInfo: self.call.debugInfo(),
@@ -317,34 +313,34 @@ public final class CallController: ViewController {
             }
         }
         
-        self.controllerNode.callEnded = { [weak self] didPresentRating in
-            if let strongSelf = self, !didPresentRating {
-                let _ = (combineLatest(strongSelf.sharedContext.accountManager.sharedData(keys: [ApplicationSpecificSharedDataKeys.callListSettings]), ApplicationSpecificNotice.getCallsTabTip(accountManager: strongSelf.sharedContext.accountManager))
-                |> map { sharedData, callsTabTip -> Int32 in
-                    var value = false
-                    if let settings = sharedData.entries[ApplicationSpecificSharedDataKeys.callListSettings]?.get(CallListSettings.self) {
-                        value = settings.showTab
-                    }
-                    if value {
-                        return 3
-                    } else {
-                        return callsTabTip
-                    }
-                } |> deliverOnMainQueue).start(next: { [weak self] callsTabTip in
-                    if let strongSelf = self {
-                        if callsTabTip == 2 {
-                            Queue.mainQueue().after(1.0) {
-                                let controller = callSuggestTabController(sharedContext: strongSelf.sharedContext)
-                                strongSelf.present(controller, in: .window(.root))
-                            }
-                        }
-                        if callsTabTip < 3 {
-                            let _ = ApplicationSpecificNotice.incrementCallsTabTips(accountManager: strongSelf.sharedContext.accountManager).start()
-                        }
-                    }
-                })
-            }
-        }
+//        self.controllerNode.callEnded = { [weak self] didPresentRating in
+//            if let strongSelf = self, !didPresentRating {
+//                let _ = (combineLatest(strongSelf.sharedContext.accountManager.sharedData(keys: [ApplicationSpecificSharedDataKeys.callListSettings]), ApplicationSpecificNotice.getCallsTabTip(accountManager: strongSelf.sharedContext.accountManager))
+//                |> map { sharedData, callsTabTip -> Int32 in
+//                    var value = false
+//                    if let settings = sharedData.entries[ApplicationSpecificSharedDataKeys.callListSettings]?.get(CallListSettings.self) {
+//                        value = settings.showTab
+//                    }
+//                    if value {
+//                        return 3
+//                    } else {
+//                        return callsTabTip
+//                    }
+//                } |> deliverOnMainQueue).start(next: { [weak self] callsTabTip in
+//                    if let strongSelf = self {
+//                        if callsTabTip == 2 {
+//                            Queue.mainQueue().after(1.0) {
+//                                let controller = callSuggestTabController(sharedContext: strongSelf.sharedContext)
+//                                strongSelf.present(controller, in: .window(.root))
+//                            }
+//                        }
+//                        if callsTabTip < 3 {
+//                            let _ = ApplicationSpecificNotice.incrementCallsTabTips(accountManager: strongSelf.sharedContext.accountManager).start()
+//                        }
+//                    }
+//                })
+//            }
+//        }
         
         self.controllerNode.willBeDismissedInteractively = { [weak self] in
             guard let self else {
@@ -360,21 +356,20 @@ public final class CallController: ViewController {
             self.superDismiss()
         }
         
-        let callPeerView: Signal<PeerView?, NoError>
-        callPeerView = self.account.postbox.peerView(id: self.call.peerId) |> map(Optional.init)
-        
+        let callPeerView: Signal<EnginePeer?, NoError>
+        callPeerView = TelegramEngine(account: self.account).data.subscribe(TelegramEngine.EngineData.Item.Peer.Peer(id: self.call.peerId))
+
         self.peerDisposable = (combineLatest(queue: .mainQueue(),
-            self.account.postbox.peerView(id: self.account.peerId) |> take(1),
+            TelegramEngine(account: self.account).data.subscribe(TelegramEngine.EngineData.Item.Peer.Peer(id: self.account.peerId)) |> take(1),
             callPeerView,
             self.sharedContext.activeAccountsWithInfo |> take(1)
         )
         |> deliverOnMainQueue).start(next: { [weak self] accountView, view, activeAccountsWithInfo in
             if let strongSelf = self {
                 if let view {
-                    if let accountPeer = accountView.peers[accountView.peerId], let peer = view.peers[view.peerId] {
-                        strongSelf.peer = peer
+                    if let accountPeer = accountView {
                         // Nicegram DB Changes, 'hasOther' changed
-                        strongSelf.controllerNode.updatePeer(accountPeer: accountPeer, peer: peer, hasOther: activeAccountsWithInfo.accounts.filter { !$0.account.isHidden }.count > 1)
+                        strongSelf.controllerNode.updatePeer(accountPeer: accountPeer, peer: view, hasOther: activeAccountsWithInfo.accounts.filter { !$0.account.isHidden }.count > 1)
                         strongSelf.isDataReady.set(.single(true))
                     }
                 } else {

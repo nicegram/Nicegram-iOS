@@ -33,7 +33,6 @@ public struct PeerStatusSettings: PostboxCoding, Equatable {
     }
     
     public var flags: PeerStatusSettings.Flags
-    public var geoDistance: Int32?
     public var requestChatTitle: String?
     public var requestChatDate: Int32?
     public var requestChatIsChannel: Bool?
@@ -46,7 +45,6 @@ public struct PeerStatusSettings: PostboxCoding, Equatable {
     
     public init() {
         self.flags = PeerStatusSettings.Flags()
-        self.geoDistance = nil
         self.requestChatTitle = nil
         self.requestChatDate = nil
         self.managingBot = nil
@@ -59,7 +57,6 @@ public struct PeerStatusSettings: PostboxCoding, Equatable {
     
     public init(
         flags: PeerStatusSettings.Flags,
-        geoDistance: Int32? = nil,
         requestChatTitle: String? = nil,
         requestChatDate: Int32? = nil,
         requestChatIsChannel: Bool? = nil,
@@ -71,7 +68,6 @@ public struct PeerStatusSettings: PostboxCoding, Equatable {
         photoChangeDate: Int32? = nil
     ) {
         self.flags = flags
-        self.geoDistance = geoDistance
         self.requestChatTitle = requestChatTitle
         self.requestChatDate = requestChatDate
         self.requestChatIsChannel = requestChatIsChannel
@@ -85,7 +81,6 @@ public struct PeerStatusSettings: PostboxCoding, Equatable {
     
     public init(decoder: PostboxDecoder) {
         self.flags = Flags(rawValue: decoder.decodeInt32ForKey("flags", orElse: 0))
-        self.geoDistance = decoder.decodeOptionalInt32ForKey("geoDistance")
         self.requestChatTitle = decoder.decodeOptionalStringForKey("requestChatTitle")
         self.requestChatDate = decoder.decodeOptionalInt32ForKey("requestChatDate")
         self.requestChatIsChannel = decoder.decodeOptionalBoolForKey("requestChatIsChannel")
@@ -99,11 +94,6 @@ public struct PeerStatusSettings: PostboxCoding, Equatable {
     
     public func encode(_ encoder: PostboxEncoder) {
         encoder.encodeInt32(self.flags.rawValue, forKey: "flags")
-        if let geoDistance = self.geoDistance {
-            encoder.encodeInt32(geoDistance, forKey: "geoDistance")
-        } else {
-            encoder.encodeNil(forKey: "geoDistance")
-        }
         if let requestChatTitle = self.requestChatTitle {
             encoder.encodeString(requestChatTitle, forKey: "requestChatTitle")
         } else {

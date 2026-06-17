@@ -16,13 +16,42 @@ extension InstantPageCaption {
 public extension InstantPageListItem {
     var num: String? {
         switch self {
-            case let .text(_, num):
+            case let .text(_, num, _):
                 return num
-            case let .blocks(_, num):
+            case let .blocks(_, num, _):
                 return num
             default:
                 return nil
         }
+    }
+
+    var checked: Bool? {
+        switch self {
+            case let .text(_, _, checked):
+                return checked
+            case let .blocks(_, _, checked):
+                return checked
+            default:
+                return nil
+        }
+    }
+
+    static func checkedFromApiFlags(_ flags: Int32) -> Bool? {
+        guard (flags & (1 << 0)) != 0 else {
+            return nil
+        }
+        return (flags & (1 << 1)) != 0
+    }
+
+    static func apiFlags(fromChecked checked: Bool?) -> Int32 {
+        guard let checked else {
+            return 0
+        }
+        var flags: Int32 = 1 << 0
+        if checked {
+            flags |= (1 << 1)
+        }
+        return flags
     }
 }
 
@@ -31,10 +60,10 @@ extension InstantPageListItem {
         switch apiListItem {
             case let .pageListItemText(pageListItemTextData):
                 let text = pageListItemTextData.text
-                self = .text(RichText(apiText: text), nil)
+                self = .text(RichText(apiText: text), nil, InstantPageListItem.checkedFromApiFlags(pageListItemTextData.flags))
             case let .pageListItemBlocks(pageListItemBlocksData):
                 let blocks = pageListItemBlocksData.blocks
-                self = .blocks(blocks.map({ InstantPageBlock(apiBlock: $0) }), nil)
+                self = .blocks(blocks.map({ InstantPageBlock(apiBlock: $0) }), nil, InstantPageListItem.checkedFromApiFlags(pageListItemBlocksData.flags))
         }
     }
     
@@ -42,10 +71,43 @@ extension InstantPageListItem {
         switch apiListOrderedItem {
             case let .pageListOrderedItemText(pageListOrderedItemTextData):
                 let (num, text) = (pageListOrderedItemTextData.num, pageListOrderedItemTextData.text)
-                self = .text(RichText(apiText: text), num)
+                self = .text(RichText(apiText: text), num, InstantPageListItem.checkedFromApiFlags(pageListOrderedItemTextData.flags))
             case let .pageListOrderedItemBlocks(pageListOrderedItemBlocksData):
                 let (num, blocks) = (pageListOrderedItemBlocksData.num, pageListOrderedItemBlocksData.blocks)
-                self = .blocks(blocks.map({ InstantPageBlock(apiBlock: $0) }), num)
+                self = .blocks(blocks.map({ InstantPageBlock(apiBlock: $0) }), num, InstantPageListItem.checkedFromApiFlags(pageListOrderedItemBlocksData.flags))
+        }
+    }
+    
+    func apiInputPageListItem() -> Api.PageListItem {
+        switch self {
+        case let .text(value, _, checked):
+            return .pageListItemText(Api.PageListItem.Cons_pageListItemText(flags: InstantPageListItem.apiFlags(fromChecked: checked), text: value.apiRichText()))
+        case let .blocks(blocks, _, checked):
+            return .pageListItemBlocks(Api.PageListItem.Cons_pageListItemBlocks(flags: InstantPageListItem.apiFlags(fromChecked: checked), blocks: blocks.compactMap { $0.apiInputBlock() }))
+        case .unknown:
+            return .pageListItemText(Api.PageListItem.Cons_pageListItemText(flags: 0, text: .textPlain(Api.RichText.Cons_textPlain(text: ""))))
+        }
+    }
+    
+    func apiInputPageOrderedListItem() -> Api.PageListOrderedItem {
+        switch self {
+        case let .text(value, num, checked):
+            var flags: Int32 = InstantPageListItem.apiFlags(fromChecked: checked)
+
+            if num != nil {
+                flags |= (1 << 2)
+            }
+            return .pageListOrderedItemText(Api.PageListOrderedItem.Cons_pageListOrderedItemText(flags: flags, num: num, text: value.apiRichText(), value: nil, type: nil))
+        case let .blocks(blocks, num, checked):
+            var flags: Int32 = InstantPageListItem.apiFlags(fromChecked: checked)
+
+            if num != nil {
+                flags |= (1 << 2)
+            }
+
+            return .pageListOrderedItemBlocks(Api.PageListOrderedItem.Cons_pageListOrderedItemBlocks(flags: flags, num: num, blocks: blocks.compactMap { $0.apiInputBlock() }, value: nil, type: nil))
+        case .unknown:
+            return .pageListOrderedItemText(Api.PageListOrderedItem.Cons_pageListOrderedItemText(flags: 0, num: nil, text: .textPlain(Api.RichText.Cons_textPlain(text: "")), value: nil, type: nil))
         }
     }
 }
@@ -53,32 +115,84 @@ extension InstantPageListItem {
 extension InstantPageTableCell {
     convenience init(apiTableCell: Api.PageTableCell) {
         switch apiTableCell {
-            case let .pageTableCell(pageTableCellData):
-                let (flags, text, colspan, rowspan) = (pageTableCellData.flags, pageTableCellData.text, pageTableCellData.colspan, pageTableCellData.rowspan)
-                var alignment = TableHorizontalAlignment.left
-                if (flags & (1 << 3)) != 0 {
-                    alignment = .center
-                } else if (flags & (1 << 4)) != 0 {
-                    alignment = .right
-                }
-                var verticalAlignment = TableVerticalAlignment.top
-                if (flags & (1 << 5)) != 0 {
-                    verticalAlignment = .middle
-                } else if (flags & (1 << 6)) != 0 {
-                    verticalAlignment = .bottom
-                }
-                self.init(text: text != nil ? RichText(apiText: text!) : nil, header: (flags & (1 << 0)) != 0, alignment: alignment, verticalAlignment: verticalAlignment, colspan: colspan ?? 0, rowspan: rowspan ?? 0)
+        case let .pageTableCell(pageTableCellData):
+            let (flags, text, colspan, rowspan) = (pageTableCellData.flags, pageTableCellData.text, pageTableCellData.colspan, pageTableCellData.rowspan)
+            var alignment = TableHorizontalAlignment.left
+            if (flags & (1 << 3)) != 0 {
+                alignment = .center
+            } else if (flags & (1 << 4)) != 0 {
+                alignment = .right
+            }
+            var verticalAlignment = TableVerticalAlignment.top
+            if (flags & (1 << 5)) != 0 {
+                verticalAlignment = .middle
+            } else if (flags & (1 << 6)) != 0 {
+                verticalAlignment = .bottom
+            }
+            self.init(text: text != nil ? RichText(apiText: text!) : nil, header: (flags & (1 << 0)) != 0, alignment: alignment, verticalAlignment: verticalAlignment, colspan: colspan ?? 0, rowspan: rowspan ?? 0)
         }
+    }
+    
+    func inputPageTableCell() -> Api.PageTableCell {
+        var flags: Int32 = 0
+        
+        switch self.alignment {
+        case .left:
+            break
+        case .center:
+            flags |= (1 << 3)
+        case .right:
+            flags |= (1 << 4)
+        }
+        
+        switch self.verticalAlignment {
+        case .top:
+            break
+        case .middle:
+            flags |= (1 << 5)
+        case .bottom:
+            flags |= (1 << 6)
+        }
+        
+        if self.header {
+            flags |= (1 << 0)
+        }
+        
+        var inputText: Api.RichText?
+        if let text = self.text {
+            inputText = text.apiRichText()
+            if inputText != nil {
+                flags |= (1 << 7)
+            }
+        }
+        
+        var inputColspan: Int32?
+        if self.colspan != 0 {
+            inputColspan = self.colspan
+            flags |= (1 << 1)
+        }
+        
+        var inputRowspan: Int32?
+        if self.rowspan != 0 {
+            inputRowspan = self.rowspan
+            flags |= (1 << 2)
+        }
+        
+        return .pageTableCell(Api.PageTableCell.Cons_pageTableCell(flags: flags, text: inputText, colspan: inputColspan, rowspan: inputRowspan))
     }
 }
 
 extension InstantPageTableRow {
     convenience init(apiTableRow: Api.PageTableRow) {
         switch apiTableRow {
-            case let .pageTableRow(pageTableRowData):
-                let cells = pageTableRowData.cells
-                self.init(cells: cells.map({ InstantPageTableCell(apiTableCell: $0) }))
+        case let .pageTableRow(pageTableRowData):
+            let cells = pageTableRowData.cells
+            self.init(cells: cells.map({ InstantPageTableCell(apiTableCell: $0) }))
         }
+    }
+    
+    func inputPageTableRow() -> Api.PageTableRow {
+        return .pageTableRow(Api.PageTableRow.Cons_pageTableRow(cells: self.cells.map { $0.inputPageTableCell() }))
     }
 }
 
@@ -132,7 +246,9 @@ extension InstantPageBlock {
                 self = .anchor(name)
             case let .pageBlockBlockquote(pageBlockBlockquoteData):
                 let (text, caption) = (pageBlockBlockquoteData.text, pageBlockBlockquoteData.caption)
-                self = .blockQuote(text: RichText(apiText: text), caption: RichText(apiText: caption))
+                self = .blockQuote(blocks: [.paragraph(RichText(apiText: text))], caption: RichText(apiText: caption))
+            case let .pageBlockBlockquoteBlocks(pageBlockBlockquoteBlocksData):
+                self = .blockQuote(blocks: pageBlockBlockquoteBlocksData.blocks.map { InstantPageBlock(apiBlock: $0) }, caption: RichText(apiText: pageBlockBlockquoteBlocksData.caption))
             case let .pageBlockPullquote(pageBlockPullquoteData):
                 let (text, caption) = (pageBlockPullquoteData.text, pageBlockPullquoteData.caption)
                 self = .pullQuote(text: RichText(apiText: text), caption: RichText(apiText: caption))
@@ -198,6 +314,114 @@ extension InstantPageBlock {
                     default:
                         self = .unsupported
                 }
+            case let .pageBlockHeading1(pageBlockHeading1):
+                self = .heading(text: RichText(apiText: pageBlockHeading1.text), level: 1)
+            case let .pageBlockHeading2(pageBlockHeading2):
+                self = .heading(text: RichText(apiText: pageBlockHeading2.text), level: 2)
+            case let .pageBlockHeading3(pageBlockHeading3):
+                self = .heading(text: RichText(apiText: pageBlockHeading3.text), level: 3)
+            case let .pageBlockHeading4(pageBlockHeading4):
+                self = .heading(text: RichText(apiText: pageBlockHeading4.text), level: 4)
+            case let .pageBlockHeading5(pageBlockHeading5):
+                self = .heading(text: RichText(apiText: pageBlockHeading5.text), level: 5)
+            case let .pageBlockHeading6(pageBlockHeading6):
+                self = .heading(text: RichText(apiText: pageBlockHeading6.text), level: 6)
+            case let .pageBlockMath(pageBlockMath):
+                self = .formula(latex: pageBlockMath.source)
+            case let .pageBlockThinking(pageBlockThinking):
+                self = .thinking(RichText(apiText: pageBlockThinking.text))
+            case .inputPageBlockMap:
+                self = .unsupported
+        }
+    }
+    
+    func apiInputBlock() -> Api.PageBlock? {
+        switch self {
+        case .unsupported, .title, .subtitle, .kicker, .header, .subheader, .cover, .channelBanner, .authorDate, .relatedArticles, .webEmbed, .postEmbed, .thinking:
+            return nil
+        case let .heading(text, level):
+            let block: Api.PageBlock
+            switch level {
+            case 0, 1:
+                block = .pageBlockHeading1(Api.PageBlock.Cons_pageBlockHeading1(text: text.apiRichText()))
+            case 2:
+                block = .pageBlockHeading2(Api.PageBlock.Cons_pageBlockHeading2(text: text.apiRichText()))
+            case 3:
+                block = .pageBlockHeading3(Api.PageBlock.Cons_pageBlockHeading3(text: text.apiRichText()))
+            case 4:
+                block = .pageBlockHeading4(Api.PageBlock.Cons_pageBlockHeading4(text: text.apiRichText()))
+            case 5:
+                block = .pageBlockHeading5(Api.PageBlock.Cons_pageBlockHeading5(text: text.apiRichText()))
+            default:
+                block = .pageBlockHeading6(Api.PageBlock.Cons_pageBlockHeading6(text: text.apiRichText()))
+            }
+            return block
+        case let .formula(latex):
+            return .pageBlockMath(Api.PageBlock.Cons_pageBlockMath(source: latex))
+        case let .paragraph(value):
+            return .pageBlockParagraph(Api.PageBlock.Cons_pageBlockParagraph(text: value.apiRichText()))
+        case let .preformatted(text, language):
+            return .pageBlockPreformatted(Api.PageBlock.Cons_pageBlockPreformatted(text: text.apiRichText(), language: language ?? ""))
+        case let .footer(value):
+            return .pageBlockFooter(Api.PageBlock.Cons_pageBlockFooter(text: value.apiRichText()))
+        case .divider:
+            return .pageBlockDivider
+        case let .anchor(value):
+            return .pageBlockAnchor(Api.PageBlock.Cons_pageBlockAnchor(name: value))
+        case let .list(items, ordered):
+            if ordered {
+                return .pageBlockOrderedList(Api.PageBlock.Cons_pageBlockOrderedList(flags: 0, items: items.map { $0.apiInputPageOrderedListItem() }, start: nil, type: nil))
+            } else {
+                return .pageBlockList(Api.PageBlock.Cons_pageBlockList(items: items.map { $0.apiInputPageListItem() }))
+            }
+        case let .blockQuote(blocks, caption):
+            if blocks.isEmpty {
+                return .pageBlockBlockquote(Api.PageBlock.Cons_pageBlockBlockquote(text: RichText.empty.apiRichText(), caption: caption.apiRichText()))
+            }
+            if blocks.count == 1, case let .paragraph(text) = blocks[0] {
+                return .pageBlockBlockquote(Api.PageBlock.Cons_pageBlockBlockquote(text: text.apiRichText(), caption: caption.apiRichText()))
+            }
+            return .pageBlockBlockquoteBlocks(Api.PageBlock.Cons_pageBlockBlockquoteBlocks(blocks: blocks.compactMap { $0.apiInputBlock() }, caption: caption.apiRichText()))
+        case let .pullQuote(text, caption):
+            return .pageBlockPullquote(Api.PageBlock.Cons_pageBlockPullquote(text: text.apiRichText(), caption: caption.apiRichText()))
+        case let .image(id, caption, url, webpageId):
+            var flags: Int32 = 0
+            if url != nil && webpageId != nil {
+                flags |= 1 << 0
+            }
+            return .pageBlockPhoto(Api.PageBlock.Cons_pageBlockPhoto(flags: flags, photoId: id.id, caption: .pageCaption(Api.PageCaption.Cons_pageCaption(text: caption.text.apiRichText(), credit: caption.credit.apiRichText())), url: url, webpageId: webpageId?.id))
+        case let .video(id, caption, autoplay, loop):
+            var flags: Int32 = 0
+            if autoplay {
+                flags |= 1 << 0
+            }
+            if loop {
+                flags |= 1 << 1
+            }
+            return .pageBlockVideo(Api.PageBlock.Cons_pageBlockVideo(flags: flags, videoId: id.id, caption: .pageCaption(Api.PageCaption.Cons_pageCaption(text: caption.text.apiRichText(), credit: caption.credit.apiRichText()))))
+        case let .audio(id, caption):
+            return .pageBlockAudio(Api.PageBlock.Cons_pageBlockAudio(audioId: id.id, caption: .pageCaption(Api.PageCaption.Cons_pageCaption(text: caption.text.apiRichText(), credit: caption.credit.apiRichText()))))
+        case let .collage(items, caption):
+            return .pageBlockCollage(Api.PageBlock.Cons_pageBlockCollage(items: items.compactMap { $0.apiInputBlock() }, caption: .pageCaption(Api.PageCaption.Cons_pageCaption(text: caption.text.apiRichText(), credit: caption.credit.apiRichText()))))
+        case let .slideshow(items, caption):
+            return .pageBlockSlideshow(Api.PageBlock.Cons_pageBlockSlideshow(items: items.compactMap { $0.apiInputBlock() }, caption: .pageCaption(Api.PageCaption.Cons_pageCaption(text: caption.text.apiRichText(), credit: caption.credit.apiRichText()))))
+        case let .table(title, rows, bordered, striped):
+            var flags: Int32 = 0
+            if bordered {
+                flags |= (1 << 0)
+            }
+            if striped {
+                flags |= (1 << 1)
+            }
+            return .pageBlockTable(Api.PageBlock.Cons_pageBlockTable(flags: flags, title: title.apiRichText(), rows: rows.map { $0.inputPageTableRow() }))
+        case let .details(title, blocks, expanded):
+            var flags: Int32 = 0
+            if expanded {
+                flags |= (1 << 0)
+            }
+            return .pageBlockDetails(Api.PageBlock.Cons_pageBlockDetails(flags: flags, blocks: blocks.compactMap { $0.apiInputBlock() }, title: title.apiRichText()))
+        case let .map(latitude, longitude, zoom, dimensions, caption):
+            return .inputPageBlockMap(Api.PageBlock.Cons_inputPageBlockMap(geo: .inputGeoPoint(Api.InputGeoPoint.Cons_inputGeoPoint(flags: 0, lat: latitude, long: longitude, accuracyRadius: nil)), zoom: zoom, w: dimensions.width, h: dimensions.height, caption: .pageCaption(Api.PageCaption.Cons_pageCaption(text: caption.text.apiRichText(), credit: caption.credit.apiRichText()))))
         }
     }
 }
@@ -212,15 +436,15 @@ extension InstantPage {
         let url: String
         let views: Int32?
         switch apiPage {
-            case let .page(pageData):
-                let (flags, pageUrl, pageBlocks, pagePhotos, pageDocuments, pageViews) = (pageData.flags, pageData.url, pageData.blocks, pageData.photos, pageData.documents, pageData.views)
-                url = pageUrl
-                blocks = pageBlocks
-                photos = pagePhotos
-                files = pageDocuments
-                isComplete = (flags & (1 << 0)) == 0
-                rtl = (flags & (1 << 1)) != 0
-                views = pageViews
+        case let .page(pageData):
+            let (flags, pageUrl, pageBlocks, pagePhotos, pageDocuments, pageViews) = (pageData.flags, pageData.url, pageData.blocks, pageData.photos, pageData.documents, pageData.views)
+            url = pageUrl
+            blocks = pageBlocks
+            photos = pagePhotos
+            files = pageDocuments
+            isComplete = (flags & (1 << 0)) == 0
+            rtl = (flags & (1 << 1)) != 0
+            views = pageViews
         }
         var media: [MediaId: Media] = [:]
         for photo in photos {

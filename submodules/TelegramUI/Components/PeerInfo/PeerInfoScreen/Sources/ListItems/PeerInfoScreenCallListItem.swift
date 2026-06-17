@@ -6,17 +6,17 @@ import TelegramPresentationData
 import ItemListAddressItem
 import SwiftSignalKit
 import AccountContext
-import Postbox
+import TelegramCore
 import PeerInfoUI
 import ItemListUI
 
 final class PeerInfoScreenCallListItem: PeerInfoScreenItem {
     let id: AnyHashable
-    let messages: [Message]
-    
+    let messages: [EngineMessage]
+
     init(
         id: AnyHashable,
-        messages: [Message]
+        messages: [EngineMessage]
     ) {
         self.id = id
         self.messages = messages

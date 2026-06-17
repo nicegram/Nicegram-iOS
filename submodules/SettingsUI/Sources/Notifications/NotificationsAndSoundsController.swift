@@ -2,7 +2,6 @@ import Foundation
 import UIKit
 import Display
 import SwiftSignalKit
-import Postbox
 import TelegramCore
 import TelegramPresentationData
 import TelegramUIPreferences
@@ -24,7 +23,7 @@ private struct CounterTagSettings: OptionSet {
         self.rawValue = rawValue
     }
     
-    init(summaryTags: PeerSummaryCounterTags) {
+    init(summaryTags: EnginePeerSummaryCounterTags) {
         var result = CounterTagSettings()
         if summaryTags.contains(.contact) {
             result.insert(.regularChatsAndGroups)
@@ -35,8 +34,8 @@ private struct CounterTagSettings: OptionSet {
         self = result
     }
     
-    func toSumaryTags() -> PeerSummaryCounterTags {
-        var result = PeerSummaryCounterTags()
+    func toSumaryTags() -> EnginePeerSummaryCounterTags {
+        var result = EnginePeerSummaryCounterTags()
         if self.contains(.regularChatsAndGroups) {
             result.insert(.contact)
             result.insert(.nonContact)
@@ -786,10 +785,10 @@ public func notificationsAndSoundsController(context: AccountContext, exceptions
     let defaultStorySettings = PeerStoryNotificationSettings.default
     
     notificationExceptions.set(exceptionsSignal |> map { list -> (NotificationExceptionMode, NotificationExceptionMode, NotificationExceptionMode, NotificationExceptionMode) in
-        var users:[PeerId : NotificationExceptionWrapper] = [:]
-        var groups: [PeerId : NotificationExceptionWrapper] = [:]
-        var channels: [PeerId : NotificationExceptionWrapper] = [:]
-        var stories: [PeerId : NotificationExceptionWrapper] = [:]
+        var users:[EnginePeer.Id : NotificationExceptionWrapper] = [:]
+        var groups: [EnginePeer.Id : NotificationExceptionWrapper] = [:]
+        var channels: [EnginePeer.Id : NotificationExceptionWrapper] = [:]
+        var stories: [EnginePeer.Id : NotificationExceptionWrapper] = [:]
         if let list = list {
             for (key, value) in list.settings {
                 if let peer = list.peers[key], !peer.debugDisplayTitle.isEmpty, peer.id != context.account.peerId {

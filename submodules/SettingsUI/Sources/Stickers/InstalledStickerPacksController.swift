@@ -2,7 +2,6 @@ import Foundation
 import UIKit
 import Display
 import SwiftSignalKit
-import Postbox
 import TelegramCore
 import TelegramPresentationData
 import TelegramUIPreferences
@@ -14,6 +13,7 @@ import StickerPackPreviewUI
 import ItemListStickerPackItem
 import ItemListPeerActionItem
 import UndoUI
+import ContextUI
 
 import WebPBinding
 import ReactionImageComponent
@@ -24,7 +24,7 @@ private final class InstalledStickerPacksControllerArguments {
     let context: AccountContext
     
     let openStickerPack: (StickerPackCollectionInfo) -> Void
-    let setPackIdWithRevealedOptions: (ItemCollectionId?, ItemCollectionId?) -> Void
+    let setPackIdWithRevealedOptions: (EngineItemCollectionId?, EngineItemCollectionId?) -> Void
     let removePack: (ArchivedStickerPackItem) -> Void
     let openStickersBot: () -> Void
     let openMasks: () -> Void
@@ -34,12 +34,12 @@ private final class InstalledStickerPacksControllerArguments {
     let openArchived: ([ArchivedStickerPackItem]?) -> Void
     let openSuggestOptions: () -> Void
     let toggleSuggestAnimatedEmoji: (Bool) -> Void
-    let togglePackSelected: (ItemCollectionId) -> Void
+    let togglePackSelected: (EngineItemCollectionId) -> Void
     let toggleLargeEmoji: (Bool) -> Void
     let toggleDynamicPackOrder: (Bool) -> Void
     let addPack: (StickerPackCollectionInfo) -> Void
     
-    init(context: AccountContext, openStickerPack: @escaping (StickerPackCollectionInfo) -> Void, setPackIdWithRevealedOptions: @escaping (ItemCollectionId?, ItemCollectionId?) -> Void, removePack: @escaping (ArchivedStickerPackItem) -> Void, openStickersBot: @escaping () -> Void, openMasks: @escaping () -> Void, openEmoji: @escaping () -> Void, openQuickReaction: @escaping () -> Void, openFeatured: @escaping () -> Void, openArchived: @escaping ([ArchivedStickerPackItem]?) -> Void, openSuggestOptions: @escaping () -> Void, toggleSuggestAnimatedEmoji: @escaping (Bool) -> Void, togglePackSelected: @escaping (ItemCollectionId) -> Void, toggleLargeEmoji: @escaping (Bool) -> Void, toggleDynamicPackOrder: @escaping (Bool) -> Void, addPack: @escaping (StickerPackCollectionInfo) -> Void) {
+    init(context: AccountContext, openStickerPack: @escaping (StickerPackCollectionInfo) -> Void, setPackIdWithRevealedOptions: @escaping (EngineItemCollectionId?, EngineItemCollectionId?) -> Void, removePack: @escaping (ArchivedStickerPackItem) -> Void, openStickersBot: @escaping () -> Void, openMasks: @escaping () -> Void, openEmoji: @escaping () -> Void, openQuickReaction: @escaping () -> Void, openFeatured: @escaping () -> Void, openArchived: @escaping ([ArchivedStickerPackItem]?) -> Void, openSuggestOptions: @escaping () -> Void, toggleSuggestAnimatedEmoji: @escaping (Bool) -> Void, togglePackSelected: @escaping (EngineItemCollectionId) -> Void, toggleLargeEmoji: @escaping (Bool) -> Void, toggleDynamicPackOrder: @escaping (Bool) -> Void, addPack: @escaping (StickerPackCollectionInfo) -> Void) {
         self.context = context
         self.openStickerPack = openStickerPack
         self.setPackIdWithRevealedOptions = setPackIdWithRevealedOptions
@@ -84,7 +84,7 @@ public enum InstalledStickerPacksEntryTag: ItemListItemTag {
 
 private enum InstalledStickerPacksEntryId: Hashable {
     case index(Int32)
-    case pack(ItemCollectionId)
+    case pack(EngineItemCollectionId)
 }
 
 private indirect enum InstalledStickerPacksEntry: ItemListNodeEntry {
@@ -457,18 +457,18 @@ private indirect enum InstalledStickerPacksEntry: ItemListNodeEntry {
 
 private struct InstalledStickerPacksControllerState: Equatable {
     let editing: Bool
-    let selectedPackIds: Set<ItemCollectionId>?
-    let packIdWithRevealedOptions: ItemCollectionId?
+    let selectedPackIds: Set<EngineItemCollectionId>?
+    let packIdWithRevealedOptions: EngineItemCollectionId?
     let trendingPacksExpanded: Bool
-    
+
     init() {
         self.editing = false
         self.selectedPackIds = nil
         self.packIdWithRevealedOptions = nil
         self.trendingPacksExpanded = false
     }
-    
-    init(editing: Bool, selectedPackIds: Set<ItemCollectionId>?, packIdWithRevealedOptions: ItemCollectionId?, trendingPacksExpanded: Bool) {
+
+    init(editing: Bool, selectedPackIds: Set<EngineItemCollectionId>?, packIdWithRevealedOptions: EngineItemCollectionId?, trendingPacksExpanded: Bool) {
         self.editing = editing
         self.selectedPackIds = selectedPackIds
         self.packIdWithRevealedOptions = packIdWithRevealedOptions
@@ -495,11 +495,11 @@ private struct InstalledStickerPacksControllerState: Equatable {
         return InstalledStickerPacksControllerState(editing: editing, selectedPackIds: self.selectedPackIds, packIdWithRevealedOptions: self.packIdWithRevealedOptions, trendingPacksExpanded: self.trendingPacksExpanded)
     }
     
-    func withUpdatedSelectedPackIds(_ selectedPackIds: Set<ItemCollectionId>?) -> InstalledStickerPacksControllerState {
+    func withUpdatedSelectedPackIds(_ selectedPackIds: Set<EngineItemCollectionId>?) -> InstalledStickerPacksControllerState {
         return InstalledStickerPacksControllerState(editing: editing, selectedPackIds: selectedPackIds, packIdWithRevealedOptions: self.packIdWithRevealedOptions, trendingPacksExpanded: self.trendingPacksExpanded)
     }
-    
-    func withUpdatedPackIdWithRevealedOptions(_ packIdWithRevealedOptions: ItemCollectionId?) -> InstalledStickerPacksControllerState {
+
+    func withUpdatedPackIdWithRevealedOptions(_ packIdWithRevealedOptions: EngineItemCollectionId?) -> InstalledStickerPacksControllerState {
         return InstalledStickerPacksControllerState(editing: self.editing, selectedPackIds: self.selectedPackIds, packIdWithRevealedOptions: packIdWithRevealedOptions, trendingPacksExpanded: self.trendingPacksExpanded)
     }
     
@@ -508,7 +508,19 @@ private struct InstalledStickerPacksControllerState: Equatable {
     }
 }
 
-private func namespaceForMode(_ mode: InstalledStickerPacksControllerMode) -> ItemCollectionId.Namespace {
+private final class InstalledStickerPacksSuggestOptionsContextReferenceContentSource: ContextReferenceContentSource {
+    private let sourceView: UIView
+
+    init(sourceView: UIView) {
+        self.sourceView = sourceView
+    }
+
+    func transitionInfo() -> ContextControllerReferenceViewInfo? {
+        return ContextControllerReferenceViewInfo(referenceView: self.sourceView, contentAreaInScreenSpace: UIScreen.main.bounds, insets: UIEdgeInsets(top: -4.0, left: 0.0, bottom: -4.0, right: 0.0))
+    }
+}
+
+private func namespaceForMode(_ mode: InstalledStickerPacksControllerMode) -> EngineItemCollectionId.Namespace {
     switch mode {
         case .general, .modal:
             return Namespaces.ItemCollection.CloudStickerPacks
@@ -521,18 +533,16 @@ private func namespaceForMode(_ mode: InstalledStickerPacksControllerMode) -> It
 
 private let maxTrendingPacksDisplayedLimit: Int32 = 3
 
-private func installedStickerPacksControllerEntries(context: AccountContext, presentationData: PresentationData, state: InstalledStickerPacksControllerState, mode: InstalledStickerPacksControllerMode, view: CombinedView, temporaryPackOrder: [ItemCollectionId]?, featured: [FeaturedStickerPackItem], archived: [ArchivedStickerPackItem]?, stickerSettings: StickerSettings, quickReaction: MessageReaction.Reaction?, availableReactions: AvailableReactions?, emojiCount: Int32) -> [InstalledStickerPacksEntry] {
+private func installedStickerPacksControllerEntries(context: AccountContext, presentationData: PresentationData, state: InstalledStickerPacksControllerState, mode: InstalledStickerPacksControllerMode, view: [EngineRawItemCollectionInfoEntry], temporaryPackOrder: [EngineItemCollectionId]?, featured: [FeaturedStickerPackItem], archived: [ArchivedStickerPackItem]?, stickerSettings: StickerSettings, quickReaction: MessageReaction.Reaction?, availableReactions: AvailableReactions?, emojiCount: Int32) -> [InstalledStickerPacksEntry] {
     var entries: [InstalledStickerPacksEntry] = []
-    
-    var installedPacks = Set<ItemCollectionId>()
-    if let stickerPacksView = view.views[.itemCollectionInfos(namespaces: [namespaceForMode(mode)])] as? ItemCollectionInfosView {
-        if let packsEntries = stickerPacksView.entriesByNamespace[namespaceForMode(mode)] {
-            var sortedPacks: [ItemCollectionInfoEntry] = []
-            for entry in packsEntries {
-                if let _ = entry.info as? StickerPackCollectionInfo {
-                    installedPacks.insert(entry.id)
-                    sortedPacks.append(entry)
-                }
+
+    var installedPacks = Set<EngineItemCollectionId>()
+    do {
+        var sortedPacks: [EngineRawItemCollectionInfoEntry] = []
+        for entry in view {
+            if let _ = entry.info as? StickerPackCollectionInfo {
+                installedPacks.insert(entry.id)
+                sortedPacks.append(entry)
             }
         }
     }
@@ -580,45 +590,43 @@ private func installedStickerPacksControllerEntries(context: AccountContext, pre
         entries.append(.suggestAnimatedEmojiInfo(presentationData.theme, presentationData.strings.StickerPacksSettings_SuggestAnimatedEmojiInfo))
     }
     
-    if let stickerPacksView = view.views[.itemCollectionInfos(namespaces: [namespaceForMode(mode)])] as? ItemCollectionInfosView {
-        if let packsEntries = stickerPacksView.entriesByNamespace[namespaceForMode(mode)] {
-            var sortedPacks: [ItemCollectionInfoEntry] = []
-            for entry in packsEntries {
-                if let _ = entry.info as? StickerPackCollectionInfo {
-                    sortedPacks.append(entry)
+    do {
+        var sortedPacks: [EngineRawItemCollectionInfoEntry] = []
+        for entry in view {
+            if let _ = entry.info as? StickerPackCollectionInfo {
+                sortedPacks.append(entry)
+            }
+        }
+        if let temporaryPackOrder = temporaryPackOrder {
+            var packDict: [EngineItemCollectionId: Int] = [:]
+            for i in 0 ..< sortedPacks.count {
+                packDict[sortedPacks[i].id] = i
+            }
+            var tempSortedPacks: [EngineRawItemCollectionInfoEntry] = []
+            var processedPacks = Set<EngineItemCollectionId>()
+            for id in temporaryPackOrder {
+                if let index = packDict[id] {
+                    tempSortedPacks.append(sortedPacks[index])
+                    processedPacks.insert(id)
                 }
             }
-            if let temporaryPackOrder = temporaryPackOrder {
-                var packDict: [ItemCollectionId: Int] = [:]
-                for i in 0 ..< sortedPacks.count {
-                    packDict[sortedPacks[i].id] = i
+            let restPacks = sortedPacks.filter { !processedPacks.contains($0.id) }
+            sortedPacks = restPacks + tempSortedPacks
+        }
+        var index: Int32 = 0
+        for entry in sortedPacks {
+            if let info = entry.info as? StickerPackCollectionInfo {
+                let countTitle: String
+                if info.id.namespace == Namespaces.ItemCollection.CloudEmojiPacks {
+                    countTitle = presentationData.strings.StickerPack_EmojiCount(info.count == 0 ? entry.count : info.count)
+                } else if info.id.namespace == Namespaces.ItemCollection.CloudMaskPacks {
+                    countTitle = presentationData.strings.StickerPack_MaskCount(info.count == 0 ? entry.count : info.count)
+                } else {
+                    countTitle = presentationData.strings.StickerPack_StickerCount(info.count == 0 ? entry.count : info.count)
                 }
-                var tempSortedPacks: [ItemCollectionInfoEntry] = []
-                var processedPacks = Set<ItemCollectionId>()
-                for id in temporaryPackOrder {
-                    if let index = packDict[id] {
-                        tempSortedPacks.append(sortedPacks[index])
-                        processedPacks.insert(id)
-                    }
-                }
-                let restPacks = sortedPacks.filter { !processedPacks.contains($0.id) }
-                sortedPacks = restPacks + tempSortedPacks
-            }
-            var index: Int32 = 0
-            for entry in sortedPacks {
-                if let info = entry.info as? StickerPackCollectionInfo {
-                    let countTitle: String
-                    if info.id.namespace == Namespaces.ItemCollection.CloudEmojiPacks {
-                        countTitle = presentationData.strings.StickerPack_EmojiCount(info.count == 0 ? entry.count : info.count)
-                    } else if info.id.namespace == Namespaces.ItemCollection.CloudMaskPacks {
-                        countTitle = presentationData.strings.StickerPack_MaskCount(info.count == 0 ? entry.count : info.count)
-                    } else {
-                        countTitle = presentationData.strings.StickerPack_StickerCount(info.count == 0 ? entry.count : info.count)
-                    }
-                    
-                    entries.append(.pack(index, presentationData.theme, presentationData.strings, info, entry.firstItem as? StickerPackItem, countTitle, context.sharedContext.energyUsageSettings.loopStickers, true, ItemListStickerPackItemEditing(editable: true, editing: state.editing, revealed: state.packIdWithRevealedOptions == entry.id, reorderable: true, selectable: true), state.selectedPackIds?.contains(info.id)))
-                    index += 1
-                }
+
+                entries.append(.pack(index, presentationData.theme, presentationData.strings, info, entry.firstItem as? StickerPackItem, countTitle, context.sharedContext.energyUsageSettings.loopStickers, true, ItemListStickerPackItemEditing(editable: true, editing: state.editing, revealed: state.packIdWithRevealedOptions == entry.id, reorderable: true, selectable: true), state.selectedPackIds?.contains(info.id)))
+                index += 1
             }
         }
     }
@@ -667,9 +675,12 @@ public func installedStickerPacksController(context: AccountContext, mode: Insta
     }
     
     var presentControllerImpl: ((ViewController, ViewControllerPresentationArguments?) -> Void)?
+    var presentInGlobalOverlayImpl: ((ViewController) -> Void)?
     var pushControllerImpl: ((ViewController) -> Void)?
-    var navigateToChatControllerImpl: ((PeerId) -> Void)?
+    var navigateToChatControllerImpl: ((EnginePeer.Id) -> Void)?
     var dismissImpl: (() -> Void)?
+    var findSuggestOptionsReferenceNode: (() -> ItemListDisclosureItemNode?)?
+    var currentEmojiStickerSuggestionMode = StickerSettings.defaultSettings.emojiStickerSuggestionMode
     
     let actionsDisposable = DisposableSet()
     
@@ -806,30 +817,41 @@ public func installedStickerPacksController(context: AccountContext, mode: Insta
             updatedPacks(packs)
         }))
     }, openSuggestOptions: {
-        let controller = ActionSheetController(presentationData: presentationData)
-        let dismissAction: () -> Void = { [weak controller] in
-            controller?.dismissAnimated()
-        }
         let options: [(EmojiStickerSuggestionMode, String)] = [
             (.all, presentationData.strings.Stickers_SuggestAll),
             (.installed, presentationData.strings.Stickers_SuggestAdded),
             (.none, presentationData.strings.Stickers_SuggestNone)
         ]
-        var items: [ActionSheetItem] = []
-        items.append(ActionSheetTextItem(title: presentationData.strings.Stickers_SuggestStickers))
+        var items: [ContextMenuItem] = []
         for (option, title) in options {
-            items.append(ActionSheetButtonItem(title: title, color: .accent, action: {
-                dismissAction()
+            items.append(.action(ContextMenuActionItem(text: title, icon: { theme in
+                if currentEmojiStickerSuggestionMode == option {
+                    return generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Check"), color: theme.contextMenu.primaryColor)
+                } else {
+                    return UIImage()
+                }
+            }, action: { _, f in
+                f(.default)
                 let _ = updateStickerSettingsInteractively(accountManager: context.sharedContext.accountManager, { current in
                     return current.withUpdatedEmojiStickerSuggestionMode(option)
                 }).start()
-            }))
+            })))
         }
-        controller.setItemGroups([
-            ActionSheetItemGroup(items: items),
-            ActionSheetItemGroup(items: [ActionSheetButtonItem(title: presentationData.strings.Common_Cancel, action: { dismissAction() })])
-        ])
-        presentControllerImpl?(controller, ViewControllerPresentationArguments(presentationAnimation: .modalSheet))
+
+        guard let sourceNode = findSuggestOptionsReferenceNode?() else {
+            return
+        }
+        let contextController = makeContextController(
+            presentationData: presentationData,
+            source: .reference(InstalledStickerPacksSuggestOptionsContextReferenceContentSource(sourceView: sourceNode.labelNode.view)),
+            items: .single(ContextController.Items(content: .list(items))),
+            gesture: nil
+        )
+        sourceNode.updateHasContextMenu(hasContextMenu: true)
+        contextController.dismissed = { [weak sourceNode] in
+            sourceNode?.updateHasContextMenu(hasContextMenu: false)
+        }
+        presentInGlobalOverlayImpl?(contextController)
     }, toggleSuggestAnimatedEmoji: { value in
         let _ = updateStickerSettingsInteractively(accountManager: context.sharedContext.accountManager, { current in
             return current.withUpdatedSuggestAnimatedEmoji(value)
@@ -874,9 +896,9 @@ public func installedStickerPacksController(context: AccountContext, mode: Insta
             return .complete()
         } |> deliverOnMainQueue).start()
     })
-    let stickerPacks = Promise<CombinedView>()
-    stickerPacks.set(context.account.postbox.combinedView(keys: [.itemCollectionInfos(namespaces: [namespaceForMode(mode)])]))
-    let temporaryPackOrder = Promise<[ItemCollectionId]?>(nil)
+    let stickerPacks = Promise<[EngineRawItemCollectionInfoEntry]>()
+    stickerPacks.set(context.engine.data.subscribe(TelegramEngine.EngineData.Item.ItemCollections.InstalledPackInfos(namespace: namespaceForMode(mode))))
+    let temporaryPackOrder = Promise<[EngineItemCollectionId]?>(nil)
     
     let featured = Promise<[FeaturedStickerPackItem]>()
     let quickReaction: Signal<MessageReaction.Reaction?, NoError>
@@ -904,14 +926,11 @@ public func installedStickerPacksController(context: AccountContext, mode: Insta
                 return reactionSettings.effectiveQuickReaction(hasPremium: hasPremium)
             }
             |> distinctUntilChanged
-            emojiCount.set(context.account.postbox.combinedView(keys: [.itemCollectionInfos(namespaces: [Namespaces.ItemCollection.CloudEmojiPacks])])
-            |> map { view in
-                if let info = view.views[.itemCollectionInfos(namespaces: [Namespaces.ItemCollection.CloudEmojiPacks])] as? ItemCollectionInfosView, let entries = info.entriesByNamespace[Namespaces.ItemCollection.CloudEmojiPacks] {
-                    return Int32(entries.count)
-                } else {
-                    return 0
-                }
-            })        
+            emojiCount.set(context.engine.data.subscribe(TelegramEngine.EngineData.Item.ItemCollections.InstalledPackInfos(namespace: Namespaces.ItemCollection.CloudEmojiPacks))
+            |> map { entries in
+                return Int32(entries.count)
+            })
+
         case .masks:
             featured.set(.single([]))
             archivedPromise.set(.single(nil) |> then(context.engine.stickers.archivedStickerPacks(namespace: .masks) |> map(Optional.init)))
@@ -946,12 +965,13 @@ public func installedStickerPacksController(context: AccountContext, mode: Insta
         if let value = sharedData.entries[ApplicationSpecificSharedDataKeys.stickerSettings]?.get(StickerSettings.self) {
            stickerSettings = value
         }
+        currentEmojiStickerSuggestionMode = stickerSettings.emojiStickerSuggestionMode
         
         var packCount: Int? = nil
-        var stickerPacks: [ItemCollectionInfoEntry] = []
-        if let stickerPacksView = view.views[.itemCollectionInfos(namespaces: [namespaceForMode(mode)])] as? ItemCollectionInfosView, let entries = stickerPacksView.entriesByNamespace[namespaceForMode(mode)] {
-            packCount = entries.count
-            stickerPacks = entries
+        var stickerPacks: [EngineRawItemCollectionInfoEntry] = []
+        do {
+            packCount = view.count
+            stickerPacks = view
         }
         
         let leftNavigationButton: ItemListNavigationButton? = nil
@@ -962,7 +982,7 @@ public func installedStickerPacksController(context: AccountContext, mode: Insta
                 if case .modal = mode {
                     rightNavigationButton = nil
                 } else {
-                    rightNavigationButton = ItemListNavigationButton(content: .text(presentationData.strings.Common_Done), style: .bold, enabled: true, action: {
+                    rightNavigationButton = ItemListNavigationButton(content: .icon(.done), style: .bold, enabled: true, action: {
                         updateState {
                             $0.withUpdatedEditing(false).withUpdatedSelectedPackIds(nil)
                         }
@@ -998,7 +1018,7 @@ public func installedStickerPacksController(context: AccountContext, mode: Insta
                             }
                         }
                         
-                        var packIds: [ItemCollectionId] = []
+                        var packIds: [EngineItemCollectionId] = []
                         for entry in stickerPacks {
                             if let selectedPackIds = state.selectedPackIds, selectedPackIds.contains(entry.id) {
                                 packIds.append(entry.id)
@@ -1029,7 +1049,7 @@ public func installedStickerPacksController(context: AccountContext, mode: Insta
                             }
                         }
                         
-                        var packIds: [ItemCollectionId] = []
+                        var packIds: [EngineItemCollectionId] = []
                         for entry in stickerPacks {
                             if let selectedPackIds = state.selectedPackIds, selectedPackIds.contains(entry.id) {
                                 packIds.append(entry.id)
@@ -1112,7 +1132,7 @@ public func installedStickerPacksController(context: AccountContext, mode: Insta
         guard case let .pack(_, _, _, fromPackInfo, _, _, _, _, _, _) = fromEntry else {
             return .single(false)
         }
-        var referenceId: ItemCollectionId?
+        var referenceId: EngineItemCollectionId?
         var beforeAll = false
         var afterAll = false
         if toIndex < entries.count {
@@ -1130,7 +1150,7 @@ public func installedStickerPacksController(context: AccountContext, mode: Insta
             afterAll = true
         }
         
-        var currentIds: [ItemCollectionId] = []
+        var currentIds: [EngineItemCollectionId] = []
         for entry in entries {
             switch entry {
             case let .pack(_, _, _, info, _, _, _, _, _, _):
@@ -1184,7 +1204,7 @@ public func installedStickerPacksController(context: AccountContext, mode: Insta
     })
     
     controller.setReorderCompleted({ (entries: [InstalledStickerPacksEntry]) -> Void in
-        var currentIds: [ItemCollectionId] = []
+        var currentIds: [EngineItemCollectionId] = []
         for entry in entries {
             switch entry {
             case let .pack(_, _, _, info, _, _, _, _, _, _):
@@ -1221,13 +1241,13 @@ public func installedStickerPacksController(context: AccountContext, mode: Insta
             controller.present(c, in: .window(.root), with: p)
         }
     }
+    presentInGlobalOverlayImpl = { [weak controller] c in
+        controller?.presentInGlobalOverlay(c, with: nil)
+    }
     presentStickerPackController = { [weak controller] info in
         let _ = (stickerPacks.get()
         |> take(1)
-        |> deliverOnMainQueue).start(next: { view in
-            guard let stickerPacksView = view.views[.itemCollectionInfos(namespaces: [namespaceForMode(mode)])] as? ItemCollectionInfosView, let entries = stickerPacksView.entriesByNamespace[namespaceForMode(mode)] else {
-                return
-            }
+        |> deliverOnMainQueue).start(next: { entries in
             var mainStickerPack: StickerPackReference?
             var packs: [StickerPackReference] = []
             for entry in entries {
@@ -1308,6 +1328,9 @@ public func installedStickerPacksController(context: AccountContext, mode: Insta
     }
     dismissImpl = { [weak controller] in
         controller?.dismiss()
+    }
+    findSuggestOptionsReferenceNode = { [weak controller] in
+        return controller?.itemNode(forTag: InstalledStickerPacksEntryTag.suggestOptions) as? ItemListDisclosureItemNode
     }
     
     if let focusOnItemTag {

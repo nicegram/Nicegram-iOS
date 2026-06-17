@@ -6,7 +6,6 @@ import ButtonComponent
 import ComponentFlow
 import EdgeEffect
 import SwiftSignalKit
-import Postbox
 import TelegramCore
 import TelegramPresentationData
 import PresentationDataUtils
@@ -132,7 +131,7 @@ private final class StickerSearchPackTopPanelItemComponent: Component {
 
     final class View: UIView {
         private var itemLayer: InlineStickerItemLayer?
-        private var itemFileId: MediaId?
+        private var itemFileId: EngineMedia.Id?
         private var titleView: ComponentView<Empty>?
         private var component: StickerSearchPackTopPanelItemComponent?
 
@@ -317,7 +316,7 @@ final class StickerPaneSearchContentNode: ASDisplayNode, PaneSearchContentNode {
     private var searchIsActive: Bool = false
     private var selectedPack: StickerPaneSearchPack?
     private var isPackPanelExpanded: Bool = true
-    private var installedPackIds = Set<ItemCollectionId>()
+    private var installedPackIds = Set<EngineItemCollectionId>()
     private var stickerSearchContext: StickerSearchContext?
     private var currentSearchStickerCount: Int = 0
     private var currentStickerCount: Int = 0
@@ -428,7 +427,9 @@ final class StickerPaneSearchContentNode: ASDisplayNode, PaneSearchContentNode {
                             return false
                         }
                     },
-                    actionPerformed: nil
+                    actionPerformed: { [weak self] actions in
+                        self?.presentStickerPackActionOverlay(actions)
+                    }
                 )
                 strongSelf.interaction.presentController(controller, nil)
             }
@@ -529,6 +530,73 @@ final class StickerPaneSearchContentNode: ASDisplayNode, PaneSearchContentNode {
         self.installDisposable.dispose()
     }
 
+    private func presentStickerPackActionOverlay(_ actions: [StickerPackScreenActionResult]) {
+        guard let action = actions.first else {
+            return
+        }
+
+        var animateInAsReplacement = false
+        if let navigationController = self.interaction.getNavigationController() {
+            for controller in navigationController.overlayControllers {
+                if let controller = controller as? UndoOverlayController {
+                    controller.dismissWithCommitActionAndReplacementAnimation()
+                    animateInAsReplacement = true
+                }
+            }
+        }
+
+        let presentationData = self.context.sharedContext.currentPresentationData.with { $0 }.withUpdated(theme: self.theme)
+        let controller: UndoOverlayController
+        switch action.action {
+        case .add:
+            self.setPackInstalledState(id: action.info.id, installed: true)
+            controller = UndoOverlayController(
+                presentationData: presentationData,
+                content: .stickersModified(
+                    title: presentationData.strings.StickerPackActionInfo_AddedTitle,
+                    text: presentationData.strings.StickerPackActionInfo_AddedText(action.info.title).string,
+                    undo: false,
+                    info: action.info,
+                    topItem: action.items.first,
+                    context: self.context
+                ),
+                elevatedLayout: false,
+                animateInAsReplacement: animateInAsReplacement,
+                action: { _ in
+                    return true
+                }
+            )
+        case let .remove(positionInList):
+            self.setPackInstalledState(id: action.info.id, installed: false)
+            controller = UndoOverlayController(
+                presentationData: presentationData,
+                content: .stickersModified(
+                    title: presentationData.strings.StickerPackActionInfo_RemovedTitle,
+                    text: presentationData.strings.StickerPackActionInfo_RemovedText(action.info.title).string,
+                    undo: true,
+                    info: action.info,
+                    topItem: action.items.first,
+                    context: self.context
+                ),
+                elevatedLayout: false,
+                animateInAsReplacement: animateInAsReplacement,
+                action: { [weak self] overlayAction in
+                    if case .undo = overlayAction {
+                        let _ = self?.context.engine.stickers.addStickerPackInteractively(info: action.info, items: action.items, positionInList: positionInList).start()
+                        self?.setPackInstalledState(id: action.info.id, installed: true)
+                    }
+                    return true
+                }
+            )
+        }
+
+        if let navigationController = self.interaction.getNavigationController() {
+            navigationController.presentOverlay(controller: controller)
+        } else {
+            self.interaction.presentController(controller, nil)
+        }
+    }
+
     func updateText(_ text: String, languageCode: String?) {
         if self.selectedPack != nil {
             self.clearSelectedPack(applySearchResults: false)
@@ -541,7 +609,7 @@ final class StickerPaneSearchContentNode: ASDisplayNode, PaneSearchContentNode {
 
         let query = text.trimmingCharacters(in: .whitespacesAndNewlines)
         let signal: Signal<(StickerPaneSearchStickerState, FoundStickerSets, Bool, FoundStickerSets?)?, NoError>
-        if query.count >= 2 {
+        if query.isSingleEmoji || query.count >= 2 {
             let context = self.context
             let stickers: Signal<StickerPaneSearchStickerState, NoError>
             if query.isSingleEmoji {
@@ -597,15 +665,11 @@ final class StickerPaneSearchContentNode: ASDisplayNode, PaneSearchContentNode {
                 )
             }
 
-            let installedPackIds = context.account.postbox.combinedView(keys: [.itemCollectionInfos(namespaces: [Namespaces.ItemCollection.CloudStickerPacks])])
-            |> map { view -> Set<ItemCollectionId> in
-                var installedPacks = Set<ItemCollectionId>()
-                if let stickerPacksView = view.views[.itemCollectionInfos(namespaces: [Namespaces.ItemCollection.CloudStickerPacks])] as? ItemCollectionInfosView {
-                    if let packsEntries = stickerPacksView.entriesByNamespace[Namespaces.ItemCollection.CloudStickerPacks] {
-                        for entry in packsEntries {
-                            installedPacks.insert(entry.id)
-                        }
-                    }
+            let installedPackIds = context.engine.data.subscribe(TelegramEngine.EngineData.Item.ItemCollections.InstalledPackInfos(namespace: Namespaces.ItemCollection.CloudStickerPacks))
+            |> map { entries -> Set<EngineItemCollectionId> in
+                var installedPacks = Set<EngineItemCollectionId>()
+                for entry in entries {
+                    installedPacks.insert(entry.id)
                 }
                 return installedPacks
             }
@@ -713,7 +777,7 @@ final class StickerPaneSearchContentNode: ASDisplayNode, PaneSearchContentNode {
     private func entries(stickers: [FoundStickerItem]) -> [StickerSearchEntry] {
         var entries: [StickerSearchEntry] = []
         var index = 0
-        var existingStickerIds = Set<MediaId>()
+        var existingStickerIds = Set<EngineMedia.Id>()
         for sticker in stickers {
             if let id = sticker.file.id, !existingStickerIds.contains(id) {
                 entries.append(.sticker(index: index, code: nil, stickerItem: sticker, theme: self.theme))
@@ -727,7 +791,7 @@ final class StickerPaneSearchContentNode: ASDisplayNode, PaneSearchContentNode {
 
     private func packs(from packs: FoundStickerSets) -> [StickerPaneSearchPack] {
         var result: [StickerPaneSearchPack] = []
-        var existingIds = Set<ItemCollectionId>()
+        var existingIds = Set<EngineItemCollectionId>()
         for (collectionId, info, _, installed) in packs.infos {
             guard !existingIds.contains(collectionId), let info = info as? StickerPackCollectionInfo else {
                 continue
@@ -748,7 +812,7 @@ final class StickerPaneSearchContentNode: ASDisplayNode, PaneSearchContentNode {
 
     private func entries(packItems: [StickerPackItem]) -> [StickerSearchEntry] {
         var entries: [StickerSearchEntry] = []
-        var existingStickerIds = Set<MediaId>()
+        var existingStickerIds = Set<EngineMedia.Id>()
         var index = 0
         for item in packItems {
             let file = item.file._parse()
@@ -786,7 +850,7 @@ final class StickerPaneSearchContentNode: ASDisplayNode, PaneSearchContentNode {
         return !selectedPack.installed && !self.installedPackIds.contains(selectedPack.info.id)
     }
     
-    func setPackInstalledState(id: ItemCollectionId, installed: Bool, transition: ContainedViewLayoutTransition = .animated(duration: 0.2, curve: .easeInOut)) {
+    func setPackInstalledState(id: EngineItemCollectionId, installed: Bool, transition: ContainedViewLayoutTransition = .animated(duration: 0.2, curve: .easeInOut)) {
         if installed {
             self.installedPackIds.insert(id)
         } else {

@@ -1,14 +1,13 @@
 import Foundation
 import TelegramPresentationData
 import AccountContext
-import Postbox
 import TelegramCore
 import SwiftSignalKit
 import PresentationDataUtils
 import Display
 
 extension ChatControllerImpl {    
-    func openMessageReplies(messageId: MessageId, displayProgressInMessage: MessageId?, isChannelPost: Bool, atMessage atMessageId: MessageId?, displayModalProgress: Bool) {
+    func openMessageReplies(messageId: EngineMessage.Id, displayProgressInMessage: EngineMessage.Id?, isChannelPost: Bool, atMessage atMessageId: EngineMessage.Id?, displayModalProgress: Bool) {
         guard let navigationController = self.effectiveNavigationController else {
             return
         }
@@ -58,7 +57,7 @@ extension ChatControllerImpl {
         })
     }
     
-    static func openMessageReplies(context: AccountContext, updatedPresentationData: (initial: PresentationData, signal: Signal<PresentationData, NoError>)? = nil, navigationController: NavigationController, present: @escaping (ViewController, Any?) -> Void, messageId: MessageId, isChannelPost: Bool, atMessage atMessageId: MessageId?, displayModalProgress: Bool) -> Signal<Never, NoError> {
+    static func openMessageReplies(context: AccountContext, updatedPresentationData: (initial: PresentationData, signal: Signal<PresentationData, NoError>)? = nil, navigationController: NavigationController, present: @escaping (ViewController, Any?) -> Void, messageId: EngineMessage.Id, isChannelPost: Bool, atMessage atMessageId: EngineMessage.Id?, displayModalProgress: Bool) -> Signal<Never, NoError> {
         return Signal { subscriber in
             let presentationData = context.sharedContext.currentPresentationData.with { $0 }
             

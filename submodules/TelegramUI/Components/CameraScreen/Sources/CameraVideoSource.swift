@@ -139,6 +139,7 @@ final class LiveStreamMediaSource {
             videoVolume: nil,
             additionalVideoPath: nil,
             additionalVideoIsDual: true,
+            additionalVideoMirroringChanges: [],
             additionalVideoPosition: nil,
             additionalVideoScale: 1.625,
             additionalVideoRotation: 0.0,

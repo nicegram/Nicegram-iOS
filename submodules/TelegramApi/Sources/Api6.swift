@@ -553,7 +553,8 @@ public extension Api {
             public var date: Int32
             public var effect: Int64?
             public var suggestedPost: Api.SuggestedPost?
-            public init(flags: Int32, replyTo: Api.InputReplyTo?, message: String, entities: [Api.MessageEntity]?, media: Api.InputMedia?, date: Int32, effect: Int64?, suggestedPost: Api.SuggestedPost?) {
+            public var richMessage: Api.RichMessage?
+            public init(flags: Int32, replyTo: Api.InputReplyTo?, message: String, entities: [Api.MessageEntity]?, media: Api.InputMedia?, date: Int32, effect: Int64?, suggestedPost: Api.SuggestedPost?, richMessage: Api.RichMessage?) {
                 self.flags = flags
                 self.replyTo = replyTo
                 self.message = message
@@ -562,9 +563,10 @@ public extension Api {
                 self.date = date
                 self.effect = effect
                 self.suggestedPost = suggestedPost
+                self.richMessage = richMessage
             }
             public func descriptionFields() -> (String, [(String, ConstructorParameterDescription)]) {
-                return ("draftMessage", [("flags", ConstructorParameterDescription(self.flags)), ("replyTo", ConstructorParameterDescription(self.replyTo)), ("message", ConstructorParameterDescription(self.message)), ("entities", ConstructorParameterDescription(self.entities)), ("media", ConstructorParameterDescription(self.media)), ("date", ConstructorParameterDescription(self.date)), ("effect", ConstructorParameterDescription(self.effect)), ("suggestedPost", ConstructorParameterDescription(self.suggestedPost))])
+                return ("draftMessage", [("flags", ConstructorParameterDescription(self.flags)), ("replyTo", ConstructorParameterDescription(self.replyTo)), ("message", ConstructorParameterDescription(self.message)), ("entities", ConstructorParameterDescription(self.entities)), ("media", ConstructorParameterDescription(self.media)), ("date", ConstructorParameterDescription(self.date)), ("effect", ConstructorParameterDescription(self.effect)), ("suggestedPost", ConstructorParameterDescription(self.suggestedPost)), ("richMessage", ConstructorParameterDescription(self.richMessage))])
             }
         }
         public class Cons_draftMessageEmpty: TypeConstructorDescription {
@@ -585,7 +587,7 @@ public extension Api {
             switch self {
             case .draftMessage(let _data):
                 if boxed {
-                    buffer.appendInt32(-1763006997)
+                    buffer.appendInt32(1627271828)
                 }
                 serializeInt32(_data.flags, buffer: buffer, boxed: false)
                 if Int(_data.flags) & Int(1 << 4) != 0 {
@@ -609,6 +611,9 @@ public extension Api {
                 if Int(_data.flags) & Int(1 << 8) != 0 {
                     _data.suggestedPost!.serialize(buffer, true)
                 }
+                if Int(_data.flags) & Int(1 << 9) != 0 {
+                    _data.richMessage!.serialize(buffer, true)
+                }
                 break
             case .draftMessageEmpty(let _data):
                 if boxed {
@@ -625,7 +630,7 @@ public extension Api {
         public func descriptionFields() -> (String, [(String, ConstructorParameterDescription)]) {
             switch self {
             case .draftMessage(let _data):
-                return ("draftMessage", [("flags", ConstructorParameterDescription(_data.flags)), ("replyTo", ConstructorParameterDescription(_data.replyTo)), ("message", ConstructorParameterDescription(_data.message)), ("entities", ConstructorParameterDescription(_data.entities)), ("media", ConstructorParameterDescription(_data.media)), ("date", ConstructorParameterDescription(_data.date)), ("effect", ConstructorParameterDescription(_data.effect)), ("suggestedPost", ConstructorParameterDescription(_data.suggestedPost))])
+                return ("draftMessage", [("flags", ConstructorParameterDescription(_data.flags)), ("replyTo", ConstructorParameterDescription(_data.replyTo)), ("message", ConstructorParameterDescription(_data.message)), ("entities", ConstructorParameterDescription(_data.entities)), ("media", ConstructorParameterDescription(_data.media)), ("date", ConstructorParameterDescription(_data.date)), ("effect", ConstructorParameterDescription(_data.effect)), ("suggestedPost", ConstructorParameterDescription(_data.suggestedPost)), ("richMessage", ConstructorParameterDescription(_data.richMessage))])
             case .draftMessageEmpty(let _data):
                 return ("draftMessageEmpty", [("flags", ConstructorParameterDescription(_data.flags)), ("date", ConstructorParameterDescription(_data.date))])
             }
@@ -666,6 +671,12 @@ public extension Api {
                     _8 = Api.parse(reader, signature: signature) as? Api.SuggestedPost
                 }
             }
+            var _9: Api.RichMessage?
+            if Int(_1 ?? 0) & Int(1 << 9) != 0 {
+                if let signature = reader.readInt32() {
+                    _9 = Api.parse(reader, signature: signature) as? Api.RichMessage
+                }
+            }
             let _c1 = _1 != nil
             let _c2 = (Int(_1 ?? 0) & Int(1 << 4) == 0) || _2 != nil
             let _c3 = _3 != nil
@@ -674,8 +685,9 @@ public extension Api {
             let _c6 = _6 != nil
             let _c7 = (Int(_1 ?? 0) & Int(1 << 7) == 0) || _7 != nil
             let _c8 = (Int(_1 ?? 0) & Int(1 << 8) == 0) || _8 != nil
-            if _c1 && _c2 && _c3 && _c4 && _c5 && _c6 && _c7 && _c8 {
-                return Api.DraftMessage.draftMessage(Cons_draftMessage(flags: _1!, replyTo: _2, message: _3!, entities: _4, media: _5, date: _6!, effect: _7, suggestedPost: _8))
+            let _c9 = (Int(_1 ?? 0) & Int(1 << 9) == 0) || _9 != nil
+            if _c1 && _c2 && _c3 && _c4 && _c5 && _c6 && _c7 && _c8 && _c9 {
+                return Api.DraftMessage.draftMessage(Cons_draftMessage(flags: _1!, replyTo: _2, message: _3!, entities: _4, media: _5, date: _6!, effect: _7, suggestedPost: _8, richMessage: _9))
             }
             else {
                 return nil

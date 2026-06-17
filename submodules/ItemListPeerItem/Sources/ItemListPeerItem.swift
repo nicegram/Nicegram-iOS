@@ -4,7 +4,6 @@ import Display
 import AsyncDisplayKit
 import SwiftSignalKit
 import TelegramCore
-import Postbox
 import TelegramPresentationData
 import TelegramUIPreferences
 import ItemListUI
@@ -322,7 +321,7 @@ public struct ItemListPeerItemShimmering {
     }
 }
 
-public final class ItemListPeerItem: ListViewItem, ItemListItem {
+public final class ItemListPeerItem: ListViewItem, ItemListItem, ItemListRevealOptionsStatefulItem {
     public enum Context {
         public final class Custom {
             public let accountPeerId: EnginePeer.Id
@@ -467,8 +466,12 @@ public final class ItemListPeerItem: ListViewItem, ItemListItem {
     let displayDecorations: Bool
     let displayBackground: Bool
     let disableInteractiveTransitionIfNecessary: Bool
-    let storyStats: PeerStoryStats?
+    let storyStats: EnginePeerStoryStats?
     let openStories: ((UIView) -> Void)?
+
+    public var hasActiveRevealOptions: Bool {
+        return self.editing.revealed == true
+    }
     
     public init(
         presentationData: ItemListPresentationData,
@@ -511,7 +514,7 @@ public final class ItemListPeerItem: ListViewItem, ItemListItem {
         displayDecorations: Bool = true,
         displayBackground: Bool = true,
         disableInteractiveTransitionIfNecessary: Bool = false,
-        storyStats: PeerStoryStats? = nil,
+        storyStats: EnginePeerStoryStats? = nil,
         openStories: ((UIView) -> Void)? = nil
     ) {
         self.presentationData = presentationData
@@ -599,7 +602,7 @@ public final class ItemListPeerItem: ListViewItem, ItemListItem {
         displayDecorations: Bool = true,
         displayBackground: Bool = true,
         disableInteractiveTransitionIfNecessary: Bool = false,
-        storyStats: PeerStoryStats? = nil,
+        storyStats: EnginePeerStoryStats? = nil,
         openStories: ((UIView) -> Void)? = nil
     ) {
         self.presentationData = presentationData
@@ -1014,12 +1017,12 @@ public class ItemListPeerItemNode: ItemListRevealOptionsItemNode, ItemListItemNo
                                 color = item.presentationData.theme.list.itemDisclosureActions.accent.fillColor
                                 textColor = item.presentationData.theme.list.itemDisclosureActions.accent.foregroundColor
                         }
-                        mappedOptions.append(ItemListRevealOption(key: index, title: option.title, icon: .none, color: color, textColor: textColor))
+                        mappedOptions.append(ItemListRevealOption(key: index, title: option.title, icon: .none, color: color, iconColor: textColor, textColor: item.presentationData.theme.list.itemSecondaryTextColor))
                         index += 1
                     }
                     peerRevealOptions = mappedOptions
                 } else {
-                    peerRevealOptions = [ItemListRevealOption(key: 0, title: item.presentationData.strings.Common_Delete, icon: .none, color: item.presentationData.theme.list.itemDisclosureActions.destructive.fillColor, textColor: item.presentationData.theme.list.itemDisclosureActions.destructive.foregroundColor)]
+                    peerRevealOptions = [ItemListRevealOption(key: 0, title: item.presentationData.strings.Common_Delete, icon: .none, color: item.presentationData.theme.list.itemDisclosureActions.destructive.fillColor, iconColor: item.presentationData.theme.list.itemDisclosureActions.destructive.foregroundColor, textColor: item.presentationData.theme.list.itemSecondaryTextColor)]
                 }
             } else {
                 peerRevealOptions = []
@@ -1435,26 +1438,29 @@ public class ItemListPeerItemNode: ItemListRevealOptionsItemNode, ItemListItemNo
                     let hasCorners = itemListHasRoundedBlockLayout(params) && !item.noCorners
                     var hasTopCorners = false
                     var hasBottomCorners = false
+                    let topStripeIsHidden: Bool
                     switch neighbors.top {
                     case .sameSection(false):
-                        strongSelf.topStripeNode.isHidden = true
+                        topStripeIsHidden = true
                     default:
                         hasTopCorners = true
-                        strongSelf.topStripeNode.isHidden = !item.displayDecorations || hasCorners || !item.hasTopStripe
+                        topStripeIsHidden = !item.displayDecorations || hasCorners || !item.hasTopStripe
                     }
                     let bottomStripeInset: CGFloat
                     let bottomStripeOffset: CGFloat
+                    let bottomStripeIsHidden: Bool
                     switch neighbors.bottom {
                     case .sameSection(false):
                         bottomStripeInset = leftInset + editingOffset
                         bottomStripeOffset = -separatorHeight
-                        strongSelf.bottomStripeNode.isHidden = !item.displayDecorations
+                        bottomStripeIsHidden = !item.displayDecorations
                     default:
                         bottomStripeInset = 0.0
                         bottomStripeOffset = 0.0
                         hasBottomCorners = true
-                        strongSelf.bottomStripeNode.isHidden = hasCorners || !item.displayDecorations
+                        bottomStripeIsHidden = hasCorners || !item.displayDecorations
                     }
+                    strongSelf.updateRevealOptionsSeparatorNodes(top: strongSelf.topStripeNode, bottom: strongSelf.bottomStripeNode, topIsHidden: topStripeIsHidden, bottomIsHidden: bottomStripeIsHidden, topHiddenByPreviousRevealOptions: neighbors.topHasActiveRevealOptions, bottomHiddenByNextRevealOptions: neighbors.bottomHasActiveRevealOptions)
                     
                     strongSelf.maskNode.image = hasCorners ? PresentationResourcesItemList.cornersImage(item.presentationData.theme, top: hasTopCorners, bottom: hasBottomCorners, glass: item.systemStyle == .glass) : nil
                     
@@ -1779,7 +1785,7 @@ public class ItemListPeerItemNode: ItemListRevealOptionsItemNode, ItemListItemNo
                         }
                     }
                     
-                    strongSelf.highlightedBackgroundNode.frame = CGRect(origin: CGPoint(x: 0.0, y: -UIScreenPixel), size: CGSize(width: params.width, height: layout.contentSize.height + UIScreenPixel + UIScreenPixel))
+                    strongSelf.updateRevealOptionsHighlightedBackgroundFrame(strongSelf.highlightedBackgroundNode, frame: CGRect(origin: CGPoint(x: 0.0, y: -UIScreenPixel), size: CGSize(width: params.width, height: layout.contentSize.height + UIScreenPixel + UIScreenPixel)), transition: transition)
                     
                     if let presence = item.presence {
                         strongSelf.peerPresenceManager?.reset(presence: presence)
@@ -1861,7 +1867,7 @@ public class ItemListPeerItemNode: ItemListRevealOptionsItemNode, ItemListItemNo
     var isHighlighted = false
     
     var reallyHighlighted: Bool {
-        var reallyHighlighted = self.isHighlighted
+        var reallyHighlighted = self.isHighlighted || self.isRevealOptionsActive
         if let (item, _, _, _) = self.layoutParams, item.highlighted {
             reallyHighlighted = true
         }
@@ -1869,39 +1875,7 @@ public class ItemListPeerItemNode: ItemListRevealOptionsItemNode, ItemListItemNo
     }
     
     func updateIsHighlighted(transition: ContainedViewLayoutTransition) {
-        if self.reallyHighlighted {
-            self.highlightedBackgroundNode.alpha = 1.0
-            if self.highlightedBackgroundNode.supernode == nil {
-                var anchorNode: ASDisplayNode?
-                if self.bottomStripeNode.supernode != nil {
-                    anchorNode = self.bottomStripeNode
-                } else if self.topStripeNode.supernode != nil {
-                    anchorNode = self.topStripeNode
-                } else if self.backgroundNode.supernode != nil {
-                    anchorNode = self.backgroundNode
-                }
-                if let anchorNode = anchorNode {
-                    self.insertSubnode(self.highlightedBackgroundNode, aboveSubnode: anchorNode)
-                } else {
-                    self.addSubnode(self.highlightedBackgroundNode)
-                }
-            }
-        } else {
-            if self.highlightedBackgroundNode.supernode != nil {
-                if transition.isAnimated {
-                    self.highlightedBackgroundNode.layer.animateAlpha(from: self.highlightedBackgroundNode.alpha, to: 0.0, duration: 0.4, completion: { [weak self] completed in
-                        if let strongSelf = self {
-                            if completed {
-                                strongSelf.highlightedBackgroundNode.removeFromSupernode()
-                            }
-                        }
-                    })
-                    self.highlightedBackgroundNode.alpha = 0.0
-                } else {
-                    self.highlightedBackgroundNode.removeFromSupernode()
-                }
-            }
-        }
+        self.updateRevealOptionsHighlightedBackgroundNode(self.highlightedBackgroundNode, isHighlighted: self.reallyHighlighted, transition: transition, aboveNodes: [self.bottomStripeNode, self.topStripeNode, self.backgroundNode])
     }
     
     override public func setHighlighted(_ highlighted: Bool, at point: CGPoint, animated: Bool) {
@@ -2002,6 +1976,12 @@ public class ItemListPeerItemNode: ItemListRevealOptionsItemNode, ItemListItemNo
             
             transition.updateFrame(view: avatarIconComponentView, frame: threadIconFrame)
         }
+    }
+
+    override public func revealOptionsActiveStateUpdated(isActive: Bool, transition: ContainedViewLayoutTransition) {
+        super.revealOptionsActiveStateUpdated(isActive: isActive, transition: transition)
+
+        self.updateIsHighlighted(transition: transition)
     }
     
     override public func revealOptionsInteractivelyOpened() {

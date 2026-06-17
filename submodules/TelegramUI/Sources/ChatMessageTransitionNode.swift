@@ -6,7 +6,6 @@ import ContextUI
 import AnimatedStickerNode
 import SwiftSignalKit
 import ContextUI
-import Postbox
 import TelegramCore
 import ReactionSelectionNode
 import ChatControllerInteraction
@@ -1211,15 +1210,15 @@ public final class ChatMessageTransitionNodeImpl: ASDisplayNode, ChatMessageTran
         }
     }
     
-    func addMessageContextController(messageId: MessageId, contextController: ContextController) {
+    func addMessageContextController(messageId: EngineMessage.Id, contextController: ContextController) {
         self.addMessageReactionContextContext(messageId: messageId, contextController: contextController, standaloneReactionAnimation: nil)
     }
     
-    func addMessageStandaloneReactionAnimation(messageId: MessageId, standaloneReactionAnimation: StandaloneReactionAnimation) {
+    func addMessageStandaloneReactionAnimation(messageId: EngineMessage.Id, standaloneReactionAnimation: StandaloneReactionAnimation) {
         self.addMessageReactionContextContext(messageId: messageId, contextController: nil, standaloneReactionAnimation: standaloneReactionAnimation)
     }
     
-    private func addMessageReactionContextContext(messageId: MessageId, contextController: ContextController?, standaloneReactionAnimation: StandaloneReactionAnimation?) {
+    private func addMessageReactionContextContext(messageId: EngineMessage.Id, contextController: ContextController?, standaloneReactionAnimation: StandaloneReactionAnimation?) {
         self.removeEmptyMessageReactionContexts()
         
         var messageItemNode: ListViewItemNode?

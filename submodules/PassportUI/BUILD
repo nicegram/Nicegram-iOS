@@ -24,12 +24,12 @@ swift_library(
         "//submodules/OverlayStatusController:OverlayStatusController",
         "//submodules/LegacyUI:LegacyUI",
         "//submodules/ImageCompression:ImageCompression",
-        "//submodules/DateSelectionUI:DateSelectionUI",
         "//submodules/PasswordSetupUI:PasswordSetupUI",
         "//submodules/AppBundle:AppBundle",
         "//submodules/PresentationDataUtils:PresentationDataUtils",
         "//submodules/Markdown:Markdown",
         "//submodules/PhoneNumberFormat:PhoneNumberFormat",
+        "//submodules/TelegramUI/Components/ChatTimerScreen",
     ],
     visibility = [
         "//visibility:public",

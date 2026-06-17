@@ -38,6 +38,8 @@ genrule(
         BUILD_ARCH="arm64"
     elif [ "$(TARGET_CPU)" == "ios_sim_arm64" ]; then
         BUILD_ARCH="sim_arm64"
+    elif [ "$(TARGET_CPU)" == "darwin_arm64" ]; then
+        BUILD_ARCH="macos_arm64"
     else
         echo "Unsupported architecture $(TARGET_CPU)"
     fi

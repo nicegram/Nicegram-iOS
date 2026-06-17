@@ -4,7 +4,6 @@ import Photos
 import Display
 import AsyncDisplayKit
 import SwiftSignalKit
-import Postbox
 import TelegramCore
 import TelegramPresentationData
 import TelegramUIPreferences
@@ -205,7 +204,7 @@ final class ForumSettingsScreenComponent: Component {
                             return context.engine.peers.setChannelForumMode(id: upgradedPeerId, isForum: true, displayForumAsTabs: mode == .tabs)
                         })
                         |> map(Optional.init)
-                        |> `catch` { [weak self] error -> Signal<PeerId?, NoError> in
+                        |> `catch` { [weak self] error -> Signal<EnginePeer.Id?, NoError> in
                             guard let self, let controller = self.environment?.controller() else {
                                 return .single(nil)
                             }
@@ -221,7 +220,7 @@ final class ForumSettingsScreenComponent: Component {
                             }
                             return .single(nil)
                         }
-                        |> mapToSignal { upgradedPeerId -> Signal<PeerId?, NoError> in
+                        |> mapToSignal { upgradedPeerId -> Signal<EnginePeer.Id?, NoError> in
                             guard let upgradedPeerId = upgradedPeerId else {
                                 return .single(nil)
                             }

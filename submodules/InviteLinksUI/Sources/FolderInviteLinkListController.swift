@@ -711,7 +711,7 @@ public func folderInviteLinkListController(context: AccountContext, updatedPrese
                 saveEnabled = true
             }
             
-            doneButton = ItemListNavigationButton(content: .text(presentationData.strings.Common_Save), style: .bold, enabled: !state.selectedPeerIds.isEmpty && saveEnabled, action: {
+            doneButton = ItemListNavigationButton(content: .icon(.done), style: .bold, enabled: !state.selectedPeerIds.isEmpty && saveEnabled, action: {
                 applyChangesImpl?()
             })
         }

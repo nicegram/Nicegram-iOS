@@ -1,5 +1,4 @@
 import Foundation
-import Postbox
 import TelegramCore
 import SwiftSignalKit
 
@@ -41,7 +40,7 @@ public func updateWebSearchSettingsInteractively(accountManager: AccountManager<
             } else {
                 currentSettings = .defaultSettings
             }
-            return PreferencesEntry(f(currentSettings))
+            return EnginePreferencesEntry(f(currentSettings))
         })
     }
 }

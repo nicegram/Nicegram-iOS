@@ -4,7 +4,6 @@ import Display
 import AsyncDisplayKit
 import ComponentFlow
 import SwiftSignalKit
-import Postbox
 import TelegramCore
 import AccountContext
 import TelegramPresentationData
@@ -124,7 +123,7 @@ final class StatsMessageItemNode: ListViewItemNode, ItemListItemNode {
     private let activateArea: AccessibilityAreaNode
     
     private var item: StatsMessageItem?
-    private var contentImageMedia: Media?
+    private var contentImageMedia: EngineRawMedia?
     
     override public var canBeSelected: Bool {
         return true
@@ -307,7 +306,7 @@ final class StatsMessageItemNode: ListViewItemNode, ItemListItemNode {
             let presentationData = item.context.sharedContext.currentPresentationData.with { $0 }
             
             var text: String
-            var contentImageMedia: Media?
+            var contentImageMedia: EngineRawMedia?
             let timestamp: Int32
             
             switch item.item {

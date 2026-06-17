@@ -5,17 +5,13 @@ import TelegramApi
 import MtProtoKit
 
 
-public enum ChatContextResultMessageDecodingError: Error {
-    case generic
-}
-
 public enum ChatContextResultMessage: PostboxCoding, Equatable, Codable {
     enum CodingKeys: String, CodingKey {
         case data
     }
     
     case auto(caption: String, entities: TextEntitiesMessageAttribute?, replyMarkup: ReplyMarkupMessageAttribute?)
-    case text(text: String, entities: TextEntitiesMessageAttribute?, disableUrlPreview: Bool, previewParameters: WebpagePreviewMessageAttribute?, replyMarkup: ReplyMarkupMessageAttribute?)
+    case text(text: String, entities: TextEntitiesMessageAttribute?, richText: RichTextMessageAttribute?, disableUrlPreview: Bool, previewParameters: WebpagePreviewMessageAttribute?, replyMarkup: ReplyMarkupMessageAttribute?)
     case mapLocation(media: TelegramMediaMap, replyMarkup: ReplyMarkupMessageAttribute?)
     case contact(media: TelegramMediaContact, replyMarkup: ReplyMarkupMessageAttribute?)
     case invoice(media: TelegramMediaInvoice, replyMarkup: ReplyMarkupMessageAttribute?)
@@ -26,7 +22,7 @@ public enum ChatContextResultMessage: PostboxCoding, Equatable, Codable {
         case 0:
             self = .auto(caption: decoder.decodeStringForKey("c", orElse: ""), entities: decoder.decodeObjectForKey("e") as? TextEntitiesMessageAttribute, replyMarkup: decoder.decodeObjectForKey("m") as? ReplyMarkupMessageAttribute)
         case 1:
-            self = .text(text: decoder.decodeStringForKey("t", orElse: ""), entities: decoder.decodeObjectForKey("e") as? TextEntitiesMessageAttribute, disableUrlPreview: decoder.decodeInt32ForKey("du", orElse: 0) != 0, previewParameters: decoder.decodeObjectForKey("prp") as? WebpagePreviewMessageAttribute, replyMarkup: decoder.decodeObjectForKey("m") as? ReplyMarkupMessageAttribute)
+            self = .text(text: decoder.decodeStringForKey("t", orElse: ""), entities: decoder.decodeObjectForKey("e") as? TextEntitiesMessageAttribute, richText: decoder.decodeObjectForKey("rt", decoder: { RichTextMessageAttribute(decoder: $0) }) as? RichTextMessageAttribute, disableUrlPreview: decoder.decodeInt32ForKey("du", orElse: 0) != 0, previewParameters: decoder.decodeObjectForKey("prp") as? WebpagePreviewMessageAttribute, replyMarkup: decoder.decodeObjectForKey("m") as? ReplyMarkupMessageAttribute)
         case 2:
             self = .mapLocation(media: decoder.decodeObjectForKey("l") as! TelegramMediaMap, replyMarkup: decoder.decodeObjectForKey("m") as? ReplyMarkupMessageAttribute)
         case 3:
@@ -55,13 +51,18 @@ public enum ChatContextResultMessage: PostboxCoding, Equatable, Codable {
             } else {
                 encoder.encodeNil(forKey: "m")
             }
-        case let .text(text, entities, disableUrlPreview, previewParameters, replyMarkup):
+        case let .text(text, entities, richText, disableUrlPreview, previewParameters, replyMarkup):
             encoder.encodeInt32(1, forKey: "_v")
             encoder.encodeString(text, forKey: "t")
             if let entities = entities {
                 encoder.encodeObject(entities, forKey: "e")
             } else {
                 encoder.encodeNil(forKey: "e")
+            }
+            if let richText {
+                encoder.encodeObject(richText, forKey: "rt")
+            } else {
+                encoder.encodeNil(forKey: "rt")
             }
             encoder.encodeInt32(disableUrlPreview ? 1 : 0, forKey: "du")
             if let previewParameters = previewParameters {
@@ -152,12 +153,15 @@ public enum ChatContextResultMessage: PostboxCoding, Equatable, Codable {
             } else {
                 return false
             }
-        case let .text(lhsText, lhsEntities, lhsDisableUrlPreview, lhsPreviewParameters, lhsReplyMarkup):
-            if case let .text(rhsText, rhsEntities, rhsDisableUrlPreview, rhsPreviewParameters, rhsReplyMarkup) = rhs {
+        case let .text(lhsText, lhsEntities, lhsRichText, lhsDisableUrlPreview, lhsPreviewParameters, lhsReplyMarkup):
+            if case let .text(rhsText, rhsEntities, rhsRichText, rhsDisableUrlPreview, rhsPreviewParameters, rhsReplyMarkup) = rhs {
                 if lhsText != rhsText {
                     return false
                 }
                 if lhsEntities != rhsEntities {
+                    return false
+                }
+                if lhsRichText != rhsRichText {
                     return false
                 }
                 if lhsDisableUrlPreview != rhsDisableUrlPreview {
@@ -512,12 +516,18 @@ extension ChatContextResultMessage {
                     parsedReplyMarkup = ReplyMarkupMessageAttribute(apiMarkup: replyMarkup)
                 }
                 let leadingPreview = (flags & (1 << 3)) != 0
-                self = .text(text: message, entities: parsedEntities, disableUrlPreview: (flags & (1 << 0)) != 0, previewParameters: WebpagePreviewMessageAttribute(
+                self = .text(text: message, entities: parsedEntities, richText: nil, disableUrlPreview: (flags & (1 << 0)) != 0, previewParameters: WebpagePreviewMessageAttribute(
                     leadingPreview: leadingPreview,
                     forceLargeMedia: nil,
                     isManuallyAdded: false,
                     isSafe: false
                 ), replyMarkup: parsedReplyMarkup)
+            case let .botInlineMessageRichMessage(botInlineMessageRichMessage):
+                var parsedReplyMarkup: ReplyMarkupMessageAttribute?
+                if let replyMarkup = botInlineMessageRichMessage.replyMarkup {
+                    parsedReplyMarkup = ReplyMarkupMessageAttribute(apiMarkup: replyMarkup)
+                }
+                self = .text(text: "", entities: nil, richText: RichTextMessageAttribute(apiRichMessage: botInlineMessageRichMessage.richMessage), disableUrlPreview: false, previewParameters: nil, replyMarkup: parsedReplyMarkup)
             case let .botInlineMessageMediaGeo(botInlineMessageMediaGeoData):
                 let (_, geo, heading, period, proximityNotificationRadius, replyMarkup) = (botInlineMessageMediaGeoData.flags, botInlineMessageMediaGeoData.geo, botInlineMessageMediaGeoData.heading, botInlineMessageMediaGeoData.period, botInlineMessageMediaGeoData.proximityNotificationRadius, botInlineMessageMediaGeoData.replyMarkup)
                 let media = telegramMediaMapFromApiGeoPoint(geo, title: nil, address: nil, provider: nil, venueId: nil, venueType: nil, liveBroadcastingTimeout: period, liveProximityNotificationRadius: proximityNotificationRadius, heading: heading)

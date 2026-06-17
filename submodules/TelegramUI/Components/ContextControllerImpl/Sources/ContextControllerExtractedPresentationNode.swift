@@ -123,6 +123,128 @@ private extension ContextControllerTakeViewInfo.ContainingItem {
     }
 }
 
+private final class PortalTransitionStaging {
+    enum SettleDestination {
+        case offsetContainer(ASDisplayNode)
+        case original
+    }
+
+    weak var surface: UIView?
+    var wrapper: PortalSourceView?
+    var clone: PortalView?
+    var containingItem: ContextControllerTakeViewInfo.ContainingItem?
+
+    /// Reparents the source's contentNode/contentView into a freshly-created
+    /// `PortalSourceView` inside `surface`, attaches a `PortalView(matchPosition: true)`
+    /// clone to `overlayHost`, sizes the wrapper so contentNode appears at
+    /// `targetScreenRect` in window coords, and returns the wrapper's layer.
+    ///
+    /// Returns nil if `PortalView(matchPosition:)` cannot be instantiated. In that
+    /// case staging is left empty and the caller takes the clipping fallback path.
+    func enter(
+        for containingItem: ContextControllerTakeViewInfo.ContainingItem,
+        in surface: UIView,
+        overlayHost: UIView,
+        targetScreenRect: CGRect
+    ) -> CALayer? {
+        guard let clone = PortalView(matchPosition: true) else {
+            return nil
+        }
+
+        let wrapper = PortalSourceView()
+
+        // Place wrapper so that the bubble (= containingItem.contentRect, in
+        // containingItem.view coords) lands at `targetScreenRect` on screen.
+        //
+        // After reparenting contentNode/contentView into wrapper (preserving its
+        // frame value), the bubble's rect in wrapper-local coords numerically
+        // equals containingItem.contentRect (since the bubble was at
+        // contentNode.frame.origin + bubbleOffsetInContentNode == contentRect.origin
+        // in the original parent). So:
+        //     bubble.screen.origin = wrapper.screen.origin + contentRect.origin
+        // and we want bubble.screen.origin == targetScreenRect.origin, hence:
+        //     wrapper.screen.origin = targetScreenRect.origin - contentRect.origin
+        //
+        // Hidden assumption: contentNode.frame.origin == (0, 0) within containingNode.
+        // Holds for every current ContextExtractedContentContainingNode adopter; if a
+        // future adopter offsets contentNode within its containing parent, the bubble
+        // will be mispositioned in the portal target by that delta.
+        let bubbleOffsetInContainer = containingItem.contentRect.origin
+        let wrapperOriginInWindow = CGPoint(
+            x: targetScreenRect.origin.x - bubbleOffsetInContainer.x,
+            y: targetScreenRect.origin.y - bubbleOffsetInContainer.y
+        )
+        let wrapperFrameInWindow = CGRect(origin: wrapperOriginInWindow, size: containingItem.view.bounds.size)
+        wrapper.frame = surface.convert(wrapperFrameInWindow, from: nil)
+        surface.addSubview(wrapper)
+
+        switch containingItem {
+        case let .node(containingNode):
+            wrapper.addSubview(containingNode.contentNode.view)
+        case let .view(containingView):
+            wrapper.addSubview(containingView.contentView)
+        }
+
+        wrapper.addPortal(view: clone)
+        overlayHost.addSubview(clone.view)
+
+        self.surface = surface
+        self.wrapper = wrapper
+        self.clone = clone
+        self.containingItem = containingItem
+
+        return wrapper.layer
+    }
+
+    /// Tears down staging. Reparents contentNode into the requested destination,
+    /// removes clone from its overlay host, removes wrapper from surface.
+    /// All operations are explicit; we rely on Telegram's manual-animation policy
+    /// (no implicit CALayer actions) — no CATransaction wrapping needed.
+    ///
+    /// `presentationScale` re-application is intentionally not handled here: the
+    /// portal path is gated on `contentNode.presentationScale == 1.0` in CCEPN's
+    /// animateIn/animateOut wiring (Tasks 3 and 4), so the scale compensation that
+    /// the design spec described at settle time is always identity in practice.
+    func settle(into destination: SettleDestination) {
+        guard let wrapper = self.wrapper, let containingItem = self.containingItem else {
+            return
+        }
+
+        switch destination {
+        case let .offsetContainer(offsetContainerNode):
+            switch containingItem {
+            case let .node(containingNode):
+                offsetContainerNode.addSubnode(containingNode.contentNode)
+            case let .view(containingView):
+                offsetContainerNode.view.addSubview(containingView.contentView)
+            }
+        case .original:
+            // Reparent to the source's containing node/view (where ContextExtracted-
+            // ContentContainingNode/View added contentNode at init). Capturing
+            // contentNode.supernode at staging-enter time was overengineered: during
+            // animateOut staging that's offsetContainerNode (CCEPN's transient host),
+            // which gets torn down with CCEPN — leaving the bubble parentless.
+            switch containingItem {
+            case let .node(containingNode):
+                containingNode.addSubnode(containingNode.contentNode)
+            case let .view(containingView):
+                containingView.addSubview(containingView.contentView)
+            }
+        }
+
+        if let clone = self.clone {
+            wrapper.removePortal(view: clone)
+            clone.view.removeFromSuperview()
+        }
+        wrapper.removeFromSuperview()
+
+        self.surface = nil
+        self.wrapper = nil
+        self.clone = nil
+        self.containingItem = nil
+    }
+}
+
 final class ContextControllerExtractedPresentationNode: ASDisplayNode, ContextControllerPresentationNode, ASScrollViewDelegate {
     enum ContentSource {
         case location(ContextLocationContentSource)
@@ -139,6 +261,8 @@ final class ContextControllerExtractedPresentationNode: ASDisplayNode, ContextCo
         var storedGlobalFrame: CGRect?
         var storedGlobalBoundsFrame: CGRect?
         var presentationScale: CGFloat = 1.0
+        var portalStaging: PortalTransitionStaging?
+        weak var sourceTransitionSurface: UIView?
 
         init(containingItem: ContextControllerTakeViewInfo.ContainingItem) {
             self.offsetContainerNode = ASDisplayNode()
@@ -634,6 +758,7 @@ final class ContextControllerExtractedPresentationNode: ASDisplayNode, ContextCo
                 }
                 let contentNodeValue = ItemContentNode(containingItem: takeInfo.containingItem)
                 contentNodeValue.animateClippingFromContentAreaInScreenSpace = takeInfo.contentAreaInScreenSpace
+                contentNodeValue.sourceTransitionSurface = takeInfo.sourceTransitionSurface
 
                 // Mirror any ancestor scale on the source (e.g. a sheet's container transform) onto the offset
                 // container so the extracted contents render at the same visual size as in-place — without this
@@ -1204,6 +1329,18 @@ final class ContextControllerExtractedPresentationNode: ASDisplayNode, ContextCo
                     }
                 }
                 contentTransition.updateFrame(node: contentNode, frame: contentFrame, beginWithCurrentState: true)
+
+                // Keep the staging wrapper's frame in sync with ItemContentNode's frame so
+                // chat-side relayouts that fire mid-animation (e.g. via layoutUpdated →
+                // requestUpdate after isExtractedToContextPreview = true) shift the portal
+                // source the same way ItemContentNode shifts. The additive position springs
+                // on wrapper.layer ("position.x" / "position.y") and this layout-pass
+                // "position" animation compose: visual = (interpolated layout) + (additive offset).
+                if let staging = contentNode.portalStaging, let wrapper = staging.wrapper, let surface = staging.surface {
+                    let wrapperFrameInWindow = self.scrollNode.view.convert(contentFrame, to: nil)
+                    let wrapperFrameInSurface = surface.convert(wrapperFrameInWindow, from: nil)
+                    contentTransition.updateFrame(view: wrapper, frame: wrapperFrameInSurface, beginWithCurrentState: true)
+                }
             }
             if let contentNode = controllerContentNode {
                 //TODO:
@@ -1279,9 +1416,13 @@ final class ContextControllerExtractedPresentationNode: ASDisplayNode, ContextCo
             let actionsSize = self.actionsContainerNode.bounds.size
             
             if let contentNode = itemContentNode {
-                contentNode.takeContainingNode()
+                if contentNode.sourceTransitionSurface != nil && contentNode.presentationScale == 1.0 {
+                    // Portal path: defer reparenting to the staging.enter call below.
+                } else {
+                    contentNode.takeContainingNode()
+                }
             }
-            
+
             let duration: Double = 0.42
             let springDamping: CGFloat = 104.0
             
@@ -1290,11 +1431,70 @@ final class ContextControllerExtractedPresentationNode: ASDisplayNode, ContextCo
             var animationInContentYDistance: CGFloat
             let currentContentScreenFrame: CGRect
             if let contentNode = itemContentNode {
-                if let animateClippingFromContentAreaInScreenSpace = contentNode.animateClippingFromContentAreaInScreenSpace {
+                let portalAnimationLayer: CALayer?
+                if let surface = contentNode.sourceTransitionSurface, contentNode.presentationScale == 1.0 {
+                    let staging = PortalTransitionStaging()
+                    // Use ItemContentNode.frame (already includes contentVerticalOffset and
+                    // additionalVisibleOffsetY from the layout pass) plus
+                    // containingItem.contentRect.origin to derive the bubble's actual rest
+                    // window rect. Using bare `contentRect` skips those offsets — when reactions
+                    // are visible (additionalVisibleOffsetY = reactionContextNode.visibleExtensionDistance)
+                    // the wrapper would sit ~10pt above the bubble's true rest, visibly offsetting
+                    // the portal mirror until staging.settle reparents into offsetContainerNode.
+                    // Springs are additive: `from: -distance` at t=0 pulls the wrapper back to
+                    // the chat-side source position; `to: 0` lands at rest.
+                    let bubbleRestRectInScrollNode = CGRect(
+                        x: contentNode.frame.minX + contentNode.containingItem.contentRect.minX,
+                        y: contentNode.frame.minY + contentNode.containingItem.contentRect.minY,
+                        width: contentNode.containingItem.contentRect.width,
+                        height: contentNode.containingItem.contentRect.height
+                    )
+                    let currentContentLocalFrameInWindow = self.scrollNode.view.convert(bubbleRestRectInScrollNode, to: nil)
+                    if let layer = staging.enter(
+                        for: contentNode.containingItem,
+                        in: surface,
+                        overlayHost: contentNode.offsetContainerNode.view,
+                        targetScreenRect: currentContentLocalFrameInWindow
+                    ) {
+                        contentNode.portalStaging = staging
+                        portalAnimationLayer = layer
+
+                        // Mid-animation crossfade: source (chat-tree wrapper, behind chrome)
+                        // is visible at the chat-bubble slot; final (overlay clone, above
+                        // chrome) is visible at the menu position. Final fade-in begins
+                        // `crossfadeOverlap` seconds before source fade-out, so the final
+                        // is already on screen before the source starts dropping out — no
+                        // single-frame seam at the handoff. Each fade runs for a fixed 0.1s.
+                        if let wrapper = staging.wrapper, let clone = staging.clone {
+                            let sourceFadeDelay = 0.12 * duration
+                            let crossfadeOverlap: Double = 0.3
+                            let crossfadeDuration: Double = 0.1
+                            let finalFadeDelay = max(0.0, sourceFadeDelay - crossfadeOverlap)
+
+                            // Final = clone (visible at end), fades in.
+                            clone.view.alpha = 1.0
+                            clone.view.layer.allowsGroupOpacity = true
+                            clone.view.layer.animateAlpha(from: 0.01, to: 1.0, duration: crossfadeDuration, delay: finalFadeDelay)
+
+                            // Source = wrapper (visible at start), fades out.
+                            wrapper.alpha = 0.0
+                            wrapper.layer.allowsGroupOpacity = true
+                            wrapper.layer.animateAlpha(from: 1.0, to: 0.0, duration: crossfadeDuration, delay: sourceFadeDelay)
+                        }
+                    } else {
+                        // Staging refused (PortalView nil); fall back to clipping by reparenting now.
+                        contentNode.takeContainingNode()
+                        portalAnimationLayer = nil
+                    }
+                } else {
+                    portalAnimationLayer = nil
+                }
+
+                if portalAnimationLayer == nil, let animateClippingFromContentAreaInScreenSpace = contentNode.animateClippingFromContentAreaInScreenSpace {
                     self.clippingNode.layer.animateFrame(from: CGRect(origin: CGPoint(x: 0.0, y: animateClippingFromContentAreaInScreenSpace.minY), size: CGSize(width: layout.size.width, height: animateClippingFromContentAreaInScreenSpace.height)), to: CGRect(origin: CGPoint(), size: layout.size), duration: 0.2)
                     self.clippingNode.layer.animateBoundsOriginYAdditive(from: animateClippingFromContentAreaInScreenSpace.minY, to: 0.0, duration: 0.2)
                 }
-                                
+
                 currentContentScreenFrame = convertFrame(contentNode.containingItem.contentRect, from: contentNode.containingItem.view, to: self.view)
                 let currentContentLocalFrame = convertFrame(contentRect, from: self.scrollNode.view, to: self.view)
                 animationInContentYDistance = currentContentLocalFrame.maxY - currentContentScreenFrame.maxY
@@ -1310,7 +1510,7 @@ final class ContextControllerExtractedPresentationNode: ASDisplayNode, ContextCo
                     if actionsSize.height.isZero {
                         var initialContentRect = contentRect
                         initialContentRect.origin.y += extracted.initialAppearanceOffset.y
-                        
+
                         let fixedContentY = floorToScreenPixels((layout.size.height - contentHeight) / 2.0)
                         animationInContentYDistance = fixedContentY - initialContentRect.minY
                     } else if contentX + contentWidth > layout.size.width / 2.0, actionsSize.height > 0.0 {
@@ -1320,9 +1520,11 @@ final class ContextControllerExtractedPresentationNode: ASDisplayNode, ContextCo
                 } else {
                     animationInContentXDistance = contentParentGlobalFrameOffsetX
                 }
-                
+
+                let animateLayer: CALayer = portalAnimationLayer ?? contentNode.layer
+
                 if animationInContentXDistance != 0.0 {
-                    contentNode.layer.animateSpring(
+                    animateLayer.animateSpring(
                         from: -animationInContentXDistance as NSNumber, to: 0.0 as NSNumber,
                         keyPath: "position.x",
                         duration: duration,
@@ -1332,15 +1534,22 @@ final class ContextControllerExtractedPresentationNode: ASDisplayNode, ContextCo
                         additive: true
                     )
                 }
-                
-                contentNode.layer.animateSpring(
+
+                animateLayer.animateSpring(
                     from: -animationInContentYDistance as NSNumber, to: 0.0 as NSNumber,
                     keyPath: "position.y",
                     duration: duration,
                     delay: 0.0,
                     initialVelocity: 0.0,
                     damping: springDamping,
-                    additive: true
+                    additive: true,
+                    completion: { [weak contentNode] _ in
+                        guard let contentNode else { return }
+                        if let staging = contentNode.portalStaging {
+                            staging.settle(into: .offsetContainer(contentNode.offsetContainerNode))
+                            contentNode.portalStaging = nil
+                        }
+                    }
                 )
                 
                 if let reactionPreviewView = self.reactionPreviewView {
@@ -1516,8 +1725,10 @@ final class ContextControllerExtractedPresentationNode: ASDisplayNode, ContextCo
                 }
             }
             
+            var portalAnimationLayer: CALayer? = nil
+
             let currentContentScreenFrame: CGRect
-                        
+
             switch self.source {
             case let .location(location):
                 if let putBackInfo = location.transitionInfo() {
@@ -1539,12 +1750,55 @@ final class ContextControllerExtractedPresentationNode: ASDisplayNode, ContextCo
                 }
             case let .extracted(source):
                 let putBackInfo = source.putBack()
-                
-                if let putBackInfo = putBackInfo {
+
+                if let putBackInfo = putBackInfo,
+                   let surface = putBackInfo.sourceTransitionSurface,
+                   let contentNode = itemContentNode,
+                   contentNode.presentationScale == 1.0
+                {
+                    let preStagingScreenFrame = convertFrame(contentNode.containingItem.contentRect, from: contentNode.containingItem.view, to: self.view)
+                    let preStagingScreenFrameInWindow = self.view.convert(preStagingScreenFrame, to: nil)
+                    let staging = PortalTransitionStaging()
+                    if let layer = staging.enter(
+                        for: contentNode.containingItem,
+                        in: surface,
+                        overlayHost: contentNode.offsetContainerNode.view,
+                        targetScreenRect: preStagingScreenFrameInWindow
+                    ) {
+                        contentNode.portalStaging = staging
+                        portalAnimationLayer = layer
+
+                        // Mid-dismiss crossfade: clone (overlay portal target, above chrome)
+                        // is visible at the menu position; final (chat-tree wrapper, behind
+                        // chrome) is visible once the bubble settles at the chat-bubble
+                        // slot. Late handoff — clone carries the bubble through most of the
+                        // dismiss; final picks up only as the bubble lands. Source fade-out
+                        // is anchored at 80% of the spring duration; final fade-in starts
+                        // `crossfadeOverlap` seconds earlier. Each fade runs for 0.1s.
+                        if let wrapper = staging.wrapper, let clone = staging.clone {
+                            let sourceFadeDelay = 0.5 * duration
+                            let crossfadeOverlap: Double = 0.3
+                            let crossfadeDuration: Double = 0.12
+                            let finalFadeDelay = max(0.0, sourceFadeDelay - crossfadeOverlap)
+
+                            // Final = wrapper (visible at end), fades in.
+                            wrapper.alpha = 1.0
+                            wrapper.layer.allowsGroupOpacity = true
+                            wrapper.layer.animateAlpha(from: 0.01, to: 1.0, duration: crossfadeDuration, delay: finalFadeDelay)
+
+                            // Source = clone (visible at start), fades out.
+                            clone.view.alpha = 0.0
+                            clone.view.layer.allowsGroupOpacity = true
+                            clone.view.layer.animateAlpha(from: 1.0, to: 0.0, duration: crossfadeDuration, delay: sourceFadeDelay)
+                        }
+                    }
+                }
+
+                if portalAnimationLayer == nil, let putBackInfo = putBackInfo {
                     self.clippingNode.layer.animateFrame(from: CGRect(origin: CGPoint(), size: layout.size), to: CGRect(origin: CGPoint(x: 0.0, y: putBackInfo.contentAreaInScreenSpace.minY), size: CGSize(width: layout.size.width, height: putBackInfo.contentAreaInScreenSpace.height)), duration: duration, timingFunction: timingFunction, removeOnCompletion: false)
                     self.clippingNode.layer.animateBoundsOriginYAdditive(from: 0.0, to: putBackInfo.contentAreaInScreenSpace.minY, duration: duration, timingFunction: timingFunction, removeOnCompletion: false)
                 }
-                
+
                 if let contentNode = itemContentNode {
                     currentContentScreenFrame = convertFrame(contentNode.containingItem.contentRect, from: contentNode.containingItem.view, to: self.view)
                     if currentContentScreenFrame.origin.x < 0.0 {
@@ -1652,8 +1906,10 @@ final class ContextControllerExtractedPresentationNode: ASDisplayNode, ContextCo
                     animationInContentXDistance = -contentParentGlobalFrameOffsetX
                 }
                 
+                let animateLayer: CALayer = portalAnimationLayer ?? contentNode.offsetContainerNode.layer
+
                 if animationInContentXDistance != 0.0 {
-                    contentNode.offsetContainerNode.layer.animate(
+                    animateLayer.animate(
                         from: -animationInContentXDistance as NSNumber,
                         to: 0.0 as NSNumber,
                         keyPath: "position.x",
@@ -1663,10 +1919,13 @@ final class ContextControllerExtractedPresentationNode: ASDisplayNode, ContextCo
                         additive: true
                     )
                 }
-                
-                contentNode.offsetContainerNode.position = contentNode.offsetContainerNode.position.offsetBy(dx: animationInContentXDistance, dy: -animationInContentYDistance)
+
+                if portalAnimationLayer == nil {
+                    contentNode.offsetContainerNode.position = contentNode.offsetContainerNode.position.offsetBy(dx: animationInContentXDistance, dy: -animationInContentYDistance)
+                }
+
                 let reactionContextNodeIsAnimatingOut = self.reactionContextNodeIsAnimatingOut
-                contentNode.offsetContainerNode.layer.animate(
+                animateLayer.animate(
                     from: animationInContentYDistance as NSNumber,
                     to: 0.0 as NSNumber,
                     keyPath: "position.y",
@@ -1677,18 +1936,25 @@ final class ContextControllerExtractedPresentationNode: ASDisplayNode, ContextCo
                     completion: { [weak self] _ in
                         Queue.mainQueue().after(reactionContextNodeIsAnimatingOut ? 0.2 * UIView.animationDurationFactor() : 0.0, {
                             if let strongSelf = self, let contentNode = strongSelf.itemContentNode {
-                                switch contentNode.containingItem {
-                                case let .node(containingNode):
-                                    containingNode.addSubnode(containingNode.contentNode)
-                                case let .view(containingView):
-                                    containingView.addSubview(containingView.contentView)
+                                if let staging = contentNode.portalStaging {
+                                    staging.settle(into: .original)
+                                    contentNode.portalStaging = nil
+                                } else {
+                                    switch contentNode.containingItem {
+                                    case let .node(containingNode):
+                                        containingNode.addSubnode(containingNode.contentNode)
+                                    case let .view(containingView):
+                                        containingView.addSubview(containingView.contentView)
+                                    }
                                 }
                             }
-                            
-                            contentNode.containingItem.isExtractedToContextPreview = false
-                            contentNode.containingItem.isExtractedToContextPreviewUpdated?(false)
-                            contentNode.containingItem.onDismiss?()
-                            
+
+                            if let strongSelf = self, let contentNode = strongSelf.itemContentNode {
+                                contentNode.containingItem.isExtractedToContextPreview = false
+                                contentNode.containingItem.isExtractedToContextPreviewUpdated?(false)
+                                contentNode.containingItem.onDismiss?()
+                            }
+
                             restoreOverlayViews.forEach({ $0() })
                             completion()
                         })

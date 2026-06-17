@@ -7,6 +7,11 @@ config_setting(
     },
 )
 
+config_setting(
+    name = "is_macos",
+    constraint_values = ["@platforms//os:macos"],
+)
+
 optimization_flags = select({
     ":debug_build": [
     ],
@@ -107,6 +112,7 @@ sources = glob([
     "tgcalls/tgcalls/group/AudioStreamingPartPersistentDecoder.cpp",
     "tgcalls/tgcalls/group/AVIOContextImpl.cpp",
     "tgcalls/tgcalls/group/GroupInstanceCustomImpl.cpp",
+    "tgcalls/tgcalls/group/GroupInstanceReferenceImpl.cpp",
     "tgcalls/tgcalls/group/GroupJoinPayloadInternal.cpp",
     "tgcalls/tgcalls/group/GroupNetworkManager.cpp",
     "tgcalls/tgcalls/group/StreamingMediaContext.cpp",
@@ -116,6 +122,7 @@ sources = glob([
     "tgcalls/tgcalls/v2/DirectNetworkingImpl.cpp",
     "tgcalls/tgcalls/v2/ExternalSignalingConnection.cpp",
     "tgcalls/tgcalls/v2/InstanceV2Impl.cpp",
+    "tgcalls/tgcalls/v2/InstanceV2CompatImpl.cpp",
     "tgcalls/tgcalls/v2/InstanceV2ReferenceImpl.cpp",
     "tgcalls/tgcalls/v2/NativeNetworkingImpl.cpp",
     "tgcalls/tgcalls/v2/RawTcpSocket.cpp",
@@ -125,6 +132,7 @@ sources = glob([
     "tgcalls/tgcalls/v2/SignalingConnection.cpp",
     "tgcalls/tgcalls/v2/SignalingEncryption.cpp",
     "tgcalls/tgcalls/v2/SignalingSctpConnection.cpp",
+    "tgcalls/tgcalls/v2/CustomDcSctpSocket.cpp",
 ]
 
 objc_library(
@@ -186,6 +194,108 @@ objc_library(
     sdk_dylibs = [
         "libz",
     ],
+    visibility = [
+        "//visibility:public",
+    ],
+)
+
+# Pure C++ core library for non-iOS targets (e.g. CLI tools).
+# Uses FakeInterface instead of darwin platform files.
+cc_library(
+    name = "tgcalls_core",
+    srcs = glob([
+        "tgcalls/tgcalls/**/*.h",
+        "tgcalls/tgcalls/**/*.hpp",
+        "tgcalls/tgcalls/platform/fake/**/*.cpp",
+        "tgcalls/tgcalls/third-party/**/*.cpp",
+        "tgcalls/tgcalls/utils/**/*.cpp",
+    ], allow_empty=True, exclude = [
+        "tgcalls/tgcalls/legacy/**",
+        "tgcalls/tgcalls/platform/tdesktop/**",
+        "tgcalls/tgcalls/platform/android/**",
+        "tgcalls/tgcalls/platform/windows/**",
+        "tgcalls/tgcalls/platform/uwp/**",
+        "tgcalls/tgcalls/platform/darwin/**",
+        "tgcalls/tgcalls/desktop_capturer/**",
+    ]) + [
+        "tgcalls/tgcalls/Manager.cpp",
+        "tgcalls/tgcalls/MediaManager.cpp",
+        "tgcalls/tgcalls/AudioDeviceHelper.cpp",
+        "tgcalls/tgcalls/ChannelManager.cpp",
+        "tgcalls/tgcalls/CodecSelectHelper.cpp",
+        "tgcalls/tgcalls/CryptoHelper.cpp",
+        "tgcalls/tgcalls/EncryptedConnection.cpp",
+        "tgcalls/tgcalls/FakeAudioDeviceModule.cpp",
+        "tgcalls/tgcalls/FakeVideoTrackSource.cpp",
+        "tgcalls/tgcalls/FieldTrialsConfig.cpp",
+        "tgcalls/tgcalls/Instance.cpp",
+        "tgcalls/tgcalls/InstanceImpl.cpp",
+        "tgcalls/tgcalls/LogSinkImpl.cpp",
+        "tgcalls/tgcalls/Message.cpp",
+        "tgcalls/tgcalls/NetworkManager.cpp",
+        "tgcalls/tgcalls/SctpDataChannelProviderInterfaceImpl.cpp",
+        "tgcalls/tgcalls/StaticThreads.cpp",
+        "tgcalls/tgcalls/ThreadLocalObject.cpp",
+        "tgcalls/tgcalls/TurnCustomizerImpl.cpp",
+        "tgcalls/tgcalls/VideoCaptureInterface.cpp",
+        "tgcalls/tgcalls/VideoCaptureInterfaceImpl.cpp",
+
+        "tgcalls/tgcalls/group/AudioStreamingPart.cpp",
+        "tgcalls/tgcalls/group/AudioStreamingPartInternal.cpp",
+        "tgcalls/tgcalls/group/AudioStreamingPartPersistentDecoder.cpp",
+        "tgcalls/tgcalls/group/AVIOContextImpl.cpp",
+        "tgcalls/tgcalls/group/GroupInstanceCustomImpl.cpp",
+        "tgcalls/tgcalls/group/GroupInstanceReferenceImpl.cpp",
+        "tgcalls/tgcalls/group/GroupJoinPayloadInternal.cpp",
+        "tgcalls/tgcalls/group/GroupNetworkManager.cpp",
+        "tgcalls/tgcalls/group/StreamingMediaContext.cpp",
+        "tgcalls/tgcalls/group/VideoStreamingPart.cpp",
+
+        "tgcalls/tgcalls/v2/ContentNegotiation.cpp",
+        "tgcalls/tgcalls/v2/DirectNetworkingImpl.cpp",
+        "tgcalls/tgcalls/v2/ExternalSignalingConnection.cpp",
+        "tgcalls/tgcalls/v2/InstanceV2Impl.cpp",
+        "tgcalls/tgcalls/v2/InstanceV2CompatImpl.cpp",
+        "tgcalls/tgcalls/v2/InstanceV2ReferenceImpl.cpp",
+        "tgcalls/tgcalls/v2/NativeNetworkingImpl.cpp",
+        "tgcalls/tgcalls/v2/RawTcpSocket.cpp",
+        "tgcalls/tgcalls/v2/ReflectorPort.cpp",
+        "tgcalls/tgcalls/v2/ReflectorRelayPortFactory.cpp",
+        "tgcalls/tgcalls/v2/Signaling.cpp",
+        "tgcalls/tgcalls/v2/SignalingConnection.cpp",
+        "tgcalls/tgcalls/v2/SignalingEncryption.cpp",
+        "tgcalls/tgcalls/v2/SignalingSctpConnection.cpp",
+        "tgcalls/tgcalls/v2/SignalingTranslator.cpp",
+    "tgcalls/tgcalls/v2/CustomDcSctpSocket.cpp",
+    ],
+    copts = [
+        "-I{}/tgcalls/tgcalls".format(package_name()),
+        "-Ithird-party/webrtc/webrtc",
+        "-Ithird-party/webrtc/dependencies",
+        "-Ithird-party/webrtc/absl",
+        "-Ithird-party/libyuv",
+        "-DRTC_ENABLE_VP9",
+        "-DTGVOIP_NAMESPACE=tgvoip_webrtc",
+        "-std=c++17",
+        "-w",
+    ] + select({
+        "@platforms//os:linux": ["-DWEBRTC_LINUX", "-DWEBRTC_POSIX"],
+        "//conditions:default": ["-DWEBRTC_MAC", "-DWEBRTC_POSIX"],
+    }) + optimization_flags,
+    deps = [
+        "//third-party/webrtc",
+        "//third-party/boringssl:crypto",
+        "//third-party/boringssl:ssl",
+        "//third-party/ogg:ogg",
+        "//third-party/opusfile:opusfile",
+        "//submodules/ffmpeg:ffmpeg",
+        "//third-party/rnnoise:rnnoise",
+        "//third-party/libyuv",
+    ] + select({
+        ":is_macos": ["//third-party/webrtc:webrtc_platform_helpers"],
+        "//conditions:default": [],
+    }),
+    linkopts = ["-lz"],
     visibility = [
         "//visibility:public",
     ],

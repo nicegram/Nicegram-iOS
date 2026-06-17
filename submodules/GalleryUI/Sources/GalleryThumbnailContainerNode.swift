@@ -83,6 +83,7 @@ public final class GalleryThumbnailContainerNode: ASDisplayNode, ASScrollViewDel
         self.scrollNode.view.addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(self.tapGesture(_:))))
         self.scrollNode.view.showsHorizontalScrollIndicator = false
         self.scrollNode.view.showsVerticalScrollIndicator = false
+        self.scrollNode.view.scrollsToTop = false
         
         self.addSubnode(self.scrollNode)
     }

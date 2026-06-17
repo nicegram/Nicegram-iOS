@@ -1,7 +1,6 @@
 import Foundation
 import SwiftSignalKit
 import TelegramCore
-import Postbox
 import AccountContext
 import BuildConfig
 import TelegramPresentationData
@@ -14,7 +13,7 @@ public func makeTempContext(
     appGroupPath: String,
     accountManager: AccountManager<TelegramAccountManagerTypes>,
     appLockContext: AppLockContext,
-    encryptionParameters: ValueBoxEncryptionParameters,
+    encryptionParameters: EngineValueBoxEncryptionParameters,
     applicationBindings: TelegramApplicationBindings,
     initialPresentationDataAndSettings: InitialPresentationDataAndSettings,
     networkArguments: NetworkInitializationArguments,

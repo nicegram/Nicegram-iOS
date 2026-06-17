@@ -1,12 +1,11 @@
 // Nicegram Deeplink
 import NGCore
 import NicegramWallet
+import SafariServices
 //
 import Foundation
 import Display
-import SafariServices
 import TelegramCore
-import Postbox
 import SwiftSignalKit
 import MtProtoKit
 import TelegramPresentationData
@@ -21,7 +20,7 @@ import OverlayStatusController
 import PresentationDataUtils
 
 public struct ParsedSecureIdUrl {
-    public let peerId: PeerId
+    public let peerId: EnginePeer.Id
     public let scope: String
     public let publicKey: String
     public let callbackUrl: String
@@ -104,7 +103,7 @@ public func parseSecureIdUrl(_ url: URL) -> ParsedSecureIdUrl? {
                 return nil
             }
             
-            return ParsedSecureIdUrl(peerId: PeerId(namespace: Namespaces.Peer.CloudUser, id: PeerId.Id._internalFromInt64Value(botId)), scope: scope, publicKey: publicKey, callbackUrl: callbackUrl, opaquePayload: opaquePayload, opaqueNonce: opaqueNonce)
+            return ParsedSecureIdUrl(peerId: EnginePeer.Id(namespace: Namespaces.Peer.CloudUser, id: EnginePeer.Id.Id._internalFromInt64Value(botId)), scope: scope, publicKey: publicKey, callbackUrl: callbackUrl, opaquePayload: opaquePayload, opaqueNonce: opaqueNonce)
         }
     }
     
@@ -259,27 +258,22 @@ private func handleInternetUrl(
         if let host = parsedUrl.host, telegramMeHosts.contains(host) {
             handleInternalUrl(parsedUrl.absoluteString)
         } else {
-            let settings = combineLatest(context.sharedContext.accountManager.sharedData(keys: [ApplicationSpecificSharedDataKeys.webBrowserSettings, ApplicationSpecificSharedDataKeys.presentationPasscodeSettings]), context.sharedContext.accountManager.accessChallengeData())
+            let settings = combineLatest(
+                context.sharedContext.accountManager.sharedData(keys: [ApplicationSpecificSharedDataKeys.webBrowserSettings]),
+                context.engine.data.subscribe(TelegramEngine.EngineData.Item.Configuration.ApplicationSpecificPreference(key: PreferencesKeys.webBrowserSettings))
+            )
             |> take(1)
-            |> map { sharedData, accessChallengeData -> WebBrowserSettings in
-                let passcodeSettings = sharedData.entries[ApplicationSpecificSharedDataKeys.presentationPasscodeSettings]?.get(PresentationPasscodeSettings.self) ?? PresentationPasscodeSettings.defaultSettings
-                
-                var settings: WebBrowserSettings
-                if let current = sharedData.entries[ApplicationSpecificSharedDataKeys.webBrowserSettings]?.get(WebBrowserSettings.self) {
-                    settings = current
-                } else {
-                    settings = .defaultSettings
-                }
-                if accessChallengeData.data.isLockable {
-                    if passcodeSettings.autolockTimeout != nil && settings.defaultWebBrowser == "inApp" {
-                        settings = WebBrowserSettings(defaultWebBrowser: "safari", exceptions: [])
-                    }
-                }
-                return settings
+            |> map { sharedData, accountSettingsEntry -> (WebBrowserSettings, AccountWebBrowserSettings) in
+                let localSettings = sharedData.entries[ApplicationSpecificSharedDataKeys.webBrowserSettings]?.get(WebBrowserSettings.self) ?? WebBrowserSettings.defaultSettings
+                let accountSettings = accountSettingsEntry?.get(AccountWebBrowserSettings.self) ?? AccountWebBrowserSettings.defaultSettings
+                return (localSettings, accountSettings)
             }
             
             let _ = (settings
             |> deliverOnMainQueue).startStandalone(next: { settings in
+                let localSettings = settings.0
+                let accountSettings = settings.1
+                
                 var isTonSite = false
                 if let host = parsedUrl.host, host.lowercased().hasSuffix(".ton") {
                     isTonSite = true
@@ -287,9 +281,50 @@ private func handleInternetUrl(
                     isTonSite = true
                 }
                 
-                if let defaultWebBrowser = settings.defaultWebBrowser, defaultWebBrowser != "inApp" && !isTonSite {
+                var isExceptedDomain = false
+                let host = ".\((parsedUrl.host ?? "").lowercased())"
+                let exceptions = accountSettings.openExternalBrowser ? accountSettings.inAppExceptions : accountSettings.externalExceptions
+                for exception in exceptions {
+                    if host.hasSuffix(".\(exception.domain.lowercased())") {
+                        isExceptedDomain = true
+                        break
+                    }
+                }
+                
+                let shouldOpenInApp: Bool
+                if isTonSite {
+                    shouldOpenInApp = true
+                } else if accountSettings.openExternalBrowser {
+                    shouldOpenInApp = isExceptedDomain
+                } else {
+                    shouldOpenInApp = !isExceptedDomain
+                }
+                
+                // Nicegram
+                // open links in the SafariViewController instead of the telegram browser if the modal controller is shown
+                let modalOverlayController = UIApplication.findKeyWindow()?.rootViewController?.presentedViewController
+                if let modalOverlayController {
+                    let safariController = SFSafariViewController(url: parsedUrl)
+                    safariController.preferredBarTintColor = presentationData.theme.rootController.navigationBar.opaqueBackgroundColor
+                    safariController.preferredControlTintColor = presentationData.theme.rootController.navigationBar.accentTextColor
+                    
+                    safariController.modalPresentationStyle = .overFullScreen
+                    modalOverlayController.topPresentedViewController.present(safariController, animated: true)
+                    
+                    return
+                }
+                //
+                
+                if shouldOpenInApp {
+                    let controller = BrowserScreen(context: context, subject: .webPage(url: parsedUrl.absoluteString))
+                    navigationController?.pushViewController(controller)
+                } else {
                     let openInOptions = availableOpenInOptions(context: context, item: .url(url: originalUrl))
-                    if let option = openInOptions.first(where: { $0.identifier == settings.defaultWebBrowser }) {
+                    var defaultWebBrowser = localSettings.defaultWebBrowser
+                    if defaultWebBrowser == nil || defaultWebBrowser == "inApp" || defaultWebBrowser == "inAppSafari" {
+                        defaultWebBrowser = "safari"
+                    }
+                    if let option = openInOptions.first(where: { $0.identifier == defaultWebBrowser }) {
                         if case let .openUrl(openInUrl) = option.action() {
                             context.sharedContext.applicationBindings.openUrl(openInUrl)
                         } else {
@@ -297,47 +332,6 @@ private func handleInternetUrl(
                         }
                     } else {
                         context.sharedContext.applicationBindings.openUrl(originalUrl)
-                    }
-                } else {
-                    var isExceptedDomain = false
-                    let host = ".\((parsedUrl.host ?? "").lowercased())"
-                    for exception in settings.exceptions {
-                        if host.hasSuffix(".\(exception.domain)") {
-                            isExceptedDomain = true
-                            break
-                        }
-                    }
-                    
-                    // Nicegram
-                    // open links in the SafariViewController instead of the telegram browser if the modal controller is shown
-                    let makeSafariController: () -> SFSafariViewController = {
-                        let controller = SFSafariViewController(url: parsedUrl)
-                        controller.preferredBarTintColor = presentationData.theme.rootController.navigationBar.opaqueBackgroundColor
-                        controller.preferredControlTintColor = presentationData.theme.rootController.navigationBar.accentTextColor
-                        controller.modalPresentationStyle = .overFullScreen
-                        return controller
-                    }
-                    
-                    let modalOverlayController = UIApplication.findKeyWindow()?.rootViewController?.presentedViewController
-                    if let modalOverlayController {
-                        let safariController = makeSafariController()
-                        modalOverlayController.topPresentedViewController.present(safariController, animated: true)
-                        return
-                    }
-                    //
-                    
-                    if (settings.defaultWebBrowser == nil && !isExceptedDomain) || isTonSite {
-                        let controller = BrowserScreen(context: context, subject: .webPage(url: parsedUrl.absoluteString))
-                        navigationController?.pushViewController(controller)
-                    } else {
-                        if let window = navigationController?.view.window, !isExceptedDomain {
-                            // Nicegram
-                            // SFSafariViewController creation extracted to makeSafariController
-                            let controller = makeSafariController()
-                            window.rootViewController?.present(controller, animated: true)
-                        } else {
-                            context.sharedContext.applicationBindings.openUrl(parsedUrl.absoluteString)
-                        }
                     }
                 }
             })
@@ -512,7 +506,7 @@ func openExternalUrlImpl(context: AccountContext, urlContext: OpenURLContext, ur
                 switch host {
                 case "localpeer":
                     if let peerIdValue = params["id"].flatMap(Int64.init), let accountId = params["accountId"].flatMap(Int64.init) {
-                        let peerId = PeerId(peerIdValue)
+                        let peerId = EnginePeer.Id(peerIdValue)
                         context.sharedContext.applicationBindings.dismissNativeController()
                         context.sharedContext.navigateToChat(accountId: AccountRecordId(rawValue: accountId), peerId: peerId, messageId: nil)
                     }
@@ -603,7 +597,7 @@ func openExternalUrlImpl(context: AccountContext, urlContext: OpenURLContext, ur
                     }
                 case "user":
                     if let idValue = params["id"].flatMap(Int64.init), idValue > 0 {
-                        let _ = (context.engine.data.get(TelegramEngine.EngineData.Item.Peer.Peer(id: PeerId(namespace: Namespaces.Peer.CloudUser, id: PeerId.Id._internalFromInt64Value(idValue))))
+                        let _ = (context.engine.data.get(TelegramEngine.EngineData.Item.Peer.Peer(id: EnginePeer.Id(namespace: Namespaces.Peer.CloudUser, id: EnginePeer.Id.Id._internalFromInt64Value(idValue))))
                         |> deliverOnMainQueue).startStandalone(next: { peer in
                             if let peer = peer, let controller = context.sharedContext.makePeerInfoController(
                                 context: context,
@@ -701,15 +695,6 @@ func openExternalUrlImpl(context: AccountContext, urlContext: OpenURLContext, ur
                     if let parameter = params["slug"] {
                         convertedUrl = makeTelegramUrl("/m/\(parameter)")
                     }
-                case "hostoverride":
-                    if let override = params["host"] {
-                        let _ = updateNetworkSettingsInteractively(postbox: context.account.postbox, network: context.account.network, { settings in
-                            var settings = settings
-                            settings.backupHostOverride = override
-                            return settings
-                        }).startStandalone()
-                        return
-                    }
                 case "premium_offer":
                     let reference = params["ref"]
                     handleResolvedUrl(.premiumOffer(reference: reference))
@@ -746,7 +731,7 @@ func openExternalUrlImpl(context: AccountContext, urlContext: OpenURLContext, ur
                 case "send_gift":
                     if let recipient = params["to"] {
                         if let id = Int64(recipient) {
-                            handleResolvedUrl(.sendGift(peerId: PeerId(namespace: Namespaces.Peer.CloudUser, id: PeerId.Id._internalFromInt64Value(id))))
+                            handleResolvedUrl(.sendGift(peerId: EnginePeer.Id(namespace: Namespaces.Peer.CloudUser, id: EnginePeer.Id.Id._internalFromInt64Value(id))))
                         } else {
                             let _ = (context.engine.peers.resolvePeerByName(name: recipient, referrer: nil)
                             |> deliverOnMainQueue).start(next: { result in
@@ -1097,7 +1082,16 @@ func openExternalUrlImpl(context: AccountContext, urlContext: OpenURLContext, ur
         if let host = parsedUrl.host, telegramMeHosts.contains(host) {
             continueHandling()
         } else {
-            if isTelegraPhLink(parsedUrl.absoluteString) {
+            if isTelegramWebShortLink(parsedUrl.absoluteString) {
+                handleInternetUrl(
+                    parsedUrl: parsedUrl,
+                    originalUrl: url,
+                    context: context,
+                    presentationData: presentationData,
+                    navigationController: navigationController,
+                    handleInternalUrl: handleInternalUrl
+                )
+            } else if isTelegraPhLink(parsedUrl.absoluteString) {
                 continueHandling()
             } else {
                 context.sharedContext.applicationBindings.openUniversalUrl(url, TelegramApplicationOpenUrlCompletion(completion: { success in

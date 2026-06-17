@@ -3,7 +3,6 @@ import UIKit
 import AsyncDisplayKit
 import Display
 import SwiftSignalKit
-import Postbox
 import TelegramCore
 import TelegramPresentationData
 import AccountContext
@@ -83,7 +82,7 @@ public final class DrawingWallpaperRenderer {
 public final class DrawingMessageRenderer {
     final class ContainerNode: ASDisplayNode {
         private let context: AccountContext
-        private let messages: [Message]
+        private let messages: [EngineMessage]
         private let isNight: Bool
         private let isOverlay: Bool
         private let isLink: Bool
@@ -96,7 +95,7 @@ public final class DrawingMessageRenderer {
         
         init(
             context: AccountContext,
-            messages: [Message],
+            messages: [EngineMessage],
             isNight: Bool = false,
             isOverlay: Bool = false,
             isLink: Bool = false,
@@ -223,17 +222,17 @@ public final class DrawingMessageRenderer {
             
             let avatarHeaderItem: ListViewItemHeader?
             if let author = self.messages.first?.author {
-                let avatarPeer: Peer
-                if let peer = self.messages.first!.peers[author.id] {
+                let avatarPeer: EnginePeer
+                if let peer = self.messages.first!.enginePeers[author.id] {
                     avatarPeer = peer
                 } else {
                     avatarPeer = author
                 }
-                avatarHeaderItem = self.context.sharedContext.makeChatMessageAvatarHeaderItem(context: self.context, timestamp: self.messages.first?.timestamp ?? 0, peer: avatarPeer, message: self.messages.first!, theme: theme, strings: presentationData.strings, wallpaper: presentationData.chatWallpaper, fontSize: presentationData.chatFontSize, chatBubbleCorners: chatBubbleCorners, dateTimeFormat: presentationData.dateTimeFormat, nameOrder: presentationData.nameDisplayOrder)
+                avatarHeaderItem = self.context.sharedContext.makeChatMessageAvatarHeaderItem(context: self.context, timestamp: self.messages.first?.timestamp ?? 0, peer: avatarPeer._asPeer(), message: self.messages.first!._asMessage(), theme: theme, strings: presentationData.strings, wallpaper: presentationData.chatWallpaper, fontSize: presentationData.chatFontSize, chatBubbleCorners: chatBubbleCorners, dateTimeFormat: presentationData.dateTimeFormat, nameOrder: presentationData.nameDisplayOrder)
             } else {
                 avatarHeaderItem = nil
             }
-            let items: [ListViewItem] = [self.context.sharedContext.makeChatMessagePreviewItem(context: self.context, messages: self.messages, theme: theme, strings: presentationData.strings, wallpaper: presentationData.theme.chat.defaultWallpaper, fontSize: presentationData.chatFontSize, chatBubbleCorners: chatBubbleCorners, dateTimeFormat: presentationData.dateTimeFormat, nameOrder: presentationData.nameDisplayOrder, forcedResourceStatus: nil, tapMessage: nil, clickThroughMessage: nil, backgroundNode: nil, availableReactions: nil, accountPeer: nil, isCentered: false, isPreview: true, isStandalone: false, rank: nil, rankRole: nil)]
+            let items: [ListViewItem] = [self.context.sharedContext.makeChatMessagePreviewItem(context: self.context, messages: self.messages.map { $0._asMessage() }, theme: theme, strings: presentationData.strings, wallpaper: presentationData.theme.chat.defaultWallpaper, fontSize: presentationData.chatFontSize, chatBubbleCorners: chatBubbleCorners, dateTimeFormat: presentationData.dateTimeFormat, nameOrder: presentationData.nameDisplayOrder, forcedResourceStatus: nil, tapMessage: nil, clickThroughMessage: nil, backgroundNode: nil, availableReactions: nil, accountPeer: nil, isCentered: false, isPreview: true, isStandalone: false, rank: nil, rankRole: nil)]
         
             let inset: CGFloat = 16.0
             var leftInset: CGFloat = 37.0
@@ -356,15 +355,15 @@ public final class DrawingMessageRenderer {
     }
     
     private let context: AccountContext
-    private let messages: [Message]
-    
+    private let messages: [EngineMessage]
+
     private let dayContainerNode: ContainerNode
     private let nightContainerNode: ContainerNode
     private let overlayContainerNode: ContainerNode
-    
+
     public init(
         context: AccountContext,
-        messages: [Message],
+        messages: [EngineMessage],
         parentView: UIView,
         isLink: Bool = false,
         isGift: Bool = false,

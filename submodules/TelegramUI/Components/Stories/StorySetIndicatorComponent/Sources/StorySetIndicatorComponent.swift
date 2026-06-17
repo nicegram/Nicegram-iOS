@@ -203,7 +203,7 @@ public final class StorySetIndicatorComponent: Component {
                 var fetchSignal: Signal<Never, NoError>?
                 
                 if displayAvatars {
-                    imageSignal = peerAvatarCompleteImage(postbox: context.account.postbox, network: context.account.network, peer: item.peer, forceProvidedRepresentation: false, representation: nil, size: CGSize(width: 26.0, height: 26.0), round: true, font: avatarPlaceholderFont(size: 13.0), drawLetters: true, fullSize: false, blurred: false)
+                    imageSignal = peerAvatarCompleteImage(postbox: context.account.postbox, peer: item.peer, forceProvidedRepresentation: false, representation: nil, size: CGSize(width: 26.0, height: 26.0), round: true, font: avatarPlaceholderFont(size: 13.0), drawLetters: true, fullSize: false, blurred: false)
                 } else {
                     switch messageMedia {
                     case let .image(image):

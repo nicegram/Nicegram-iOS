@@ -49,12 +49,16 @@ final class ThemeColorsGridControllerItemNode: GridItemNode {
         self.wallpaperNode = SettingsThemeWallpaperNode(displayLoading: false)
         super.init()
         
+        self.clipsToBounds = true
+
         self.addSubnode(self.wallpaperNode)
     }
     
     override func didLoad() {
         super.didLoad()
         
+        self.view.layer.cornerRadius = 16.0
+
         self.view.isExclusiveTouch = true
         self.view.addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(self.tapGesture(_:))))
     }

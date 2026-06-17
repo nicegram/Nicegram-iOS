@@ -1,8 +1,7 @@
 import Foundation
 import TelegramCore
-import Postbox
 
-public extension Message {
+public extension EngineRawMessage {
     func isRestricted(platform: String, contentSettings: ContentSettings) -> Bool {
         return self.restrictionReason(platform: platform, contentSettings: contentSettings) != nil
     }

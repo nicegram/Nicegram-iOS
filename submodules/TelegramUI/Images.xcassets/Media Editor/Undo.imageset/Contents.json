@@ -1,17 +1,8 @@
 {
   "images" : [
     {
-      "idiom" : "universal",
-      "scale" : "1x"
-    },
-    {
-      "idiom" : "universal",
-      "scale" : "2x"
-    },
-    {
-      "filename" : "undo.png",
-      "idiom" : "universal",
-      "scale" : "3x"
+      "filename" : "undo_30 (4).pdf",
+      "idiom" : "universal"
     }
   ],
   "info" : {

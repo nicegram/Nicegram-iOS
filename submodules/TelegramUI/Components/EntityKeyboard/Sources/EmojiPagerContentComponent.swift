@@ -5,7 +5,6 @@ import ComponentFlow
 import PagerComponent
 import TelegramPresentationData
 import TelegramCore
-import Postbox
 import MultiAnimationRenderer
 import AnimationCache
 import AccountContext
@@ -20,7 +19,8 @@ import StickerResources
 import AppBundle
 import UndoUI
 import AudioToolbox
-import SolidRoundedButtonComponent
+import ButtonComponent
+import LottieComponent
 import EmojiTextAttachmentView
 import EmojiStatusComponent
 import TelegramNotices
@@ -38,8 +38,8 @@ public struct EmojiComponentReactionItem: Equatable {
 
 public final class EntityKeyboardAnimationData: Equatable {
     public enum Id: Hashable {
-        case file(MediaId)
-        case stickerPackThumbnail(ItemCollectionId)
+        case file(EngineMedia.Id)
+        case stickerPackThumbnail(EngineItemCollectionId)
         case gift(String)
     }
     
@@ -267,7 +267,7 @@ public final class EmojiPagerContentComponent: Component {
         public let externalCancel: (() -> Void)?
         public let onScroll: () -> Void
         public let loadMore: (() -> Void)?
-        public let chatPeerId: PeerId?
+        public let chatPeerId: EnginePeer.Id?
         public let peekBehavior: EmojiContentPeekBehavior?
         public let customLayout: CustomLayout?
         public let externalBackground: ExternalBackground?
@@ -298,7 +298,7 @@ public final class EmojiPagerContentComponent: Component {
             externalCancel: (() -> Void)? = nil,
             onScroll: @escaping () -> Void,
             loadMore: (() -> Void)? = nil,
-            chatPeerId: PeerId?,
+            chatPeerId: EnginePeer.Id?,
             peekBehavior: EmojiContentPeekBehavior?,
             customLayout: CustomLayout?,
             externalBackground: ExternalBackground?,
@@ -729,7 +729,7 @@ public final class EmojiPagerContentComponent: Component {
         )
     }
     
-    public func withSelectedItems(_ selectedItems: Set<MediaId>) -> EmojiPagerContentComponent {
+    public func withSelectedItems(_ selectedItems: Set<EngineMedia.Id>) -> EmojiPagerContentComponent {
         return EmojiPagerContentComponent(
             id: self.id,
             context: self.context,
@@ -1746,7 +1746,7 @@ public final class EmojiPagerContentComponent: Component {
             }
         }
         
-        public func animateInReactionSelection(sourceItems: [MediaId: (frame: CGRect, cornerRadius: CGFloat, frameIndex: Int, placeholder: UIImage)]) {
+        public func animateInReactionSelection(sourceItems: [EngineMedia.Id: (frame: CGRect, cornerRadius: CGFloat, frameIndex: Int, placeholder: UIImage)]) {
             guard let component = self.component, let itemLayout = self.itemLayout else {
                 return
             }
@@ -3355,23 +3355,40 @@ public final class EmojiPagerContentComponent: Component {
                             gloss = false
                         }
                         
+                        var groupPremiumButtonItems: [AnyComponentWithIdentity<Empty>] = []
+                        groupPremiumButtonItems.append(AnyComponentWithIdentity(id: "title", component: AnyComponent(ButtonTextContentComponent(
+                            text: title,
+                            badge: 0,
+                            textColor: foregroundColor,
+                            badgeBackground: foregroundColor,
+                            badgeForeground: backgroundColor
+                        ))))
+                        if let animationName {
+                            groupPremiumButtonItems.append(AnyComponentWithIdentity(id: "animation", component: AnyComponent(LottieComponent(
+                                content: LottieComponent.AppBundleContent(name: animationName),
+                                color: foregroundColor,
+                                startingPosition: .begin,
+                                size: CGSize(width: 30.0, height: 30.0),
+                                loop: true
+                            ))))
+                        }
+
                         let groupPremiumButtonSize = groupPremiumButton.update(
                             transition: groupPremiumButtonTransition,
-                            component: AnyComponent(SolidRoundedButtonComponent(
-                                title: title,
-                                theme: SolidRoundedButtonComponent.Theme(
-                                    backgroundColor: backgroundColor,
-                                    backgroundColors: backgroundColors,
-                                    foregroundColor: foregroundColor
+                            component: AnyComponent(ButtonComponent(
+                                background: ButtonComponent.Background(
+                                    style: .glass,
+                                    color: backgroundColor,
+                                    foreground: foregroundColor,
+                                    pressedColor: backgroundColor.withMultipliedAlpha(0.8),
+                                    cornerRadius: groupBorderRadius,
+                                    isShimmering: gloss,
+                                    gradient: backgroundColors.count > 1 ? ButtonComponent.Background.Gradient(colors: backgroundColors) : nil
                                 ),
-                                font: .bold,
-                                fontSize: 17.0,
-                                height: 50.0,
-                                cornerRadius: groupBorderRadius,
-                                gloss: gloss,
-                                animationName: animationName,
-                                iconPosition: .right,
-                                iconSpacing: 4.0,
+                                content: AnyComponentWithIdentity(
+                                    id: AnyHashable("\(title)-\(animationName ?? "")"),
+                                    component: AnyComponent(HStack(groupPremiumButtonItems, spacing: 4.0))
+                                ),
                                 action: { [weak self] in
                                     guard let strongSelf = self, let component = strongSelf.component else {
                                         return
@@ -3858,7 +3875,7 @@ public final class EmojiPagerContentComponent: Component {
             }
             var removedItemSelectionLayerIds: [EmojiKeyboardItemLayer.Key] = []
             for (id, itemSelectionLayer) in self.visibleItemSelectionLayers {
-                var fileId: MediaId?
+                var fileId: EngineMedia.Id?
                 switch id.itemId {
                 case let .animation(id):
                     switch id {

@@ -3,7 +3,6 @@ import UIKit
 import AsyncDisplayKit
 import Display
 import TelegramCore
-import Postbox
 import TelegramPresentationData
 import AppBundle
 import ChatMessageBubbleContentNode
@@ -108,7 +107,7 @@ public class ChatMessageCallBubbleContentNode: ChatMessageBubbleContentNode {
                 let messageTheme = incoming ? item.presentationData.theme.theme.chat.message.incoming : item.presentationData.theme.theme.chat.message.outgoing
 
                 var peopleTextString: String?
-                var peopleAvatars: [Peer] = []
+                var peopleAvatars: [EnginePeer] = []
                 
                 var titleString: String?
                 var callDuration: Int32?
@@ -155,11 +154,11 @@ public class ChatMessageCallBubbleContentNode: ChatMessageBubbleContentNode {
                         if conferenceCall.otherParticipants.count > 0 {
                             peopleTextString = item.presentationData.strings.Chat_CallMessage_GroupCallParticipantCount(Int32(conferenceCall.otherParticipants.count + 1))
                             if let peer = item.message.author {
-                                peopleAvatars.append(peer)
+                                peopleAvatars.append(EnginePeer(peer))
                             }
                             for id in conferenceCall.otherParticipants {
                                 if let peer = item.message.peers[id] {
-                                    peopleAvatars.append(peer)
+                                    peopleAvatars.append(EnginePeer(peer))
                                 }
                             }
                         }
@@ -239,7 +238,7 @@ public class ChatMessageCallBubbleContentNode: ChatMessageBubbleContentNode {
                     }
                 }
                 
-                let dateText = stringForMessageTimestampStatus(accountPeerId: item.context.account.peerId, message: item.message, dateTimeFormat: item.presentationData.dateTimeFormat, nameDisplayOrder: item.presentationData.nameDisplayOrder, strings: item.presentationData.strings, associatedData: item.associatedData)
+                let dateText = stringForMessageTimestampStatus(accountPeerId: item.context.account.peerId, message: EngineMessage(item.message), dateTimeFormat: item.presentationData.dateTimeFormat, nameDisplayOrder: item.presentationData.nameDisplayOrder, strings: item.presentationData.strings, associatedData: item.associatedData)
                 
                 var statusText: String
                 if let callDuration = callDuration, callDuration > 1 {
@@ -319,7 +318,7 @@ public class ChatMessageCallBubbleContentNode: ChatMessageBubbleContentNode {
                                     strongSelf.addSubnode(peopleAvatarsNode)
                                 }
 
-                                let peopleAvatarsContent = peopleAvatarsContext.update(peers: peopleAvatars.prefix(3).map(EnginePeer.init), animated: false)
+                                let peopleAvatarsContent = peopleAvatarsContext.update(peers: Array(peopleAvatars.prefix(3)), animated: false)
                                 let peopleAvatarsSize = peopleAvatarsNode.update(context: item.context, content: peopleAvatarsContent, itemSize: CGSize(width: peopleAvatarSize, height: peopleAvatarSize), customSpacing: peopleAvatarSize - peopleAvatarSpacing, font: avatarFont, animated: false, synchronousLoad: false)
                                 peopleAvatarsNode.frame = CGRect(origin: CGPoint(x: labelFrame.maxX + avatarsLeftInset, y: labelFrame.minY - 1.0), size: peopleAvatarsSize)
                             } else {

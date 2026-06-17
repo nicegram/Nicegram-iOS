@@ -485,7 +485,7 @@ public final class MediaEditorVideoExport {
         } else if let additionalPath = self.configuration.values.additionalVideoPath {
             let asset = AVURLAsset(url: URL(fileURLWithPath: additionalPath))
             additionalAsset = asset
-            signals = [.single(.video(asset: asset, rect: nil, scale: 1.0, offset: .zero, rotation: textureRotatonForAVAsset(asset, mirror: true), duration: asset.duration.seconds, trimRange: nil, trimOffset: nil, volume: nil))]
+            signals = [.single(.video(asset: asset, rect: nil, scale: 1.0, offset: .zero, rotation: textureRotatonForAVAsset(asset, mirror: false), duration: asset.duration.seconds, trimRange: nil, trimOffset: nil, volume: nil))]
         }
 
         var audioAsset: AVAsset?

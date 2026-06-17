@@ -5,7 +5,6 @@ import TelegramPresentationData
 import AccountContext
 import Display
 import RadialStatusNode
-import Postbox
 import TelegramCore
 import PeerInfoAvatarListNode
 import AvatarNode

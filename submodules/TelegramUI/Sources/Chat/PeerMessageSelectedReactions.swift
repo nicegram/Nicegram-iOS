@@ -1,17 +1,16 @@
 import Foundation
 import UIKit
 import SwiftSignalKit
-import Postbox
 import TelegramCore
 import AccountContext
 
-func peerMessageSelectedReactions(context: AccountContext, message: Message) -> Signal<(reactions: Set<MessageReaction.Reaction>, files: Set<MediaId>), NoError> {
+func peerMessageSelectedReactions(context: AccountContext, message: EngineMessage) -> Signal<(reactions: Set<MessageReaction.Reaction>, files: Set<EngineMedia.Id>), NoError> {
     return context.engine.stickers.availableReactions()
     |> take(1)
-    |> map { availableReactions -> (reactions: Set<MessageReaction.Reaction>, files: Set<MediaId>) in
-        var result = Set<MediaId>()
+    |> map { availableReactions -> (reactions: Set<MessageReaction.Reaction>, files: Set<EngineMedia.Id>) in
+        var result = Set<EngineMedia.Id>()
         var reactions = Set<MessageReaction.Reaction>()
-        
+
         if let effectiveReactions = message.effectiveReactions(isTags: message.areReactionsTags(accountPeerId: context.account.peerId)) {
             for reaction in effectiveReactions {
                 if !reaction.isSelected {
@@ -27,11 +26,11 @@ func peerMessageSelectedReactions(context: AccountContext, message: Message) -> 
                         result.insert(availableReaction.selectAnimation.fileId)
                     }
                 case let .custom(fileId):
-                    result.insert(MediaId(namespace: Namespaces.Media.CloudFile, id: fileId))
+                    result.insert(EngineMedia.Id(namespace: Namespaces.Media.CloudFile, id: fileId))
                 }
             }
         }
-        
+
         return (reactions, result)
     }
 }

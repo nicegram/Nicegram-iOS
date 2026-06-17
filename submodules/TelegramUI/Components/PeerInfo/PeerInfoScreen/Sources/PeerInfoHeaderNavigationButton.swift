@@ -13,23 +13,6 @@ private enum MoreIconNodeState: Equatable {
     case moreToSearch(Float)
 }
 
-private let glassBackArrowImage: UIImage? = {
-    let imageSize = CGSize(width: 44.0, height: 44.0)
-    let topRightPoint = CGPoint(x: 24.6, y: 14.0)
-    let centerPoint = CGPoint(x: 17.0, y: imageSize.height * 0.5)
-    return generateImage(imageSize, rotatedContext: { size, context in
-        context.clear(CGRect(origin: CGPoint(), size: size))
-        context.setStrokeColor(UIColor.white.cgColor)
-        context.setLineWidth(2.0)
-        context.setLineCap(.round)
-        context.setLineJoin(.round)
-        context.move(to: topRightPoint)
-        context.addLine(to: centerPoint)
-        context.addLine(to: CGPoint(x: topRightPoint.x, y: size.height - topRightPoint.y))
-        context.strokePath()
-    })?.withRenderingMode(.alwaysTemplate)
-}()
-
 private final class MoreIconNode: ManagedAnimationNode {
     private let duration: Double = 0.21
     private var iconState: MoreIconNodeState = .more
@@ -233,7 +216,7 @@ final class PeerInfoHeaderNavigationButton: HighlightableButtonNode {
             case .back:
                 text = ""
                 accessibilityText = presentationData.strings.Common_Back
-                icon = glassBackArrowImage
+                icon = PresentationResourcesRootController.navigationBackIcon(presentationData.theme)
             case .edit:
                 text = presentationData.strings.Common_Edit
                 accessibilityText = text
@@ -271,7 +254,7 @@ final class PeerInfoHeaderNavigationButton: HighlightableButtonNode {
             case .more:
                 text = ""
                 accessibilityText = presentationData.strings.Common_More
-                icon = nil// PresentationResourcesRootController.navigationMoreCircledIcon(presentationData.theme)
+                icon = nil
                 isGestureEnabled = true
                 isAnimation = true
                 animationState = .more

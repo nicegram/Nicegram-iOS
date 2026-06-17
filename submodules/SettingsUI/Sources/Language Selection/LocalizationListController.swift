@@ -53,7 +53,7 @@ public class LocalizationListController: ViewController {
         
         super.init(navigationBarPresentationData: NavigationBarPresentationData(presentationData: self.presentationData, style: .glass))
         
-        self.editItem = UIBarButtonItem(title: self.presentationData.strings.Common_Done, style: .done, target: self, action: #selector(self.editPressed))
+        self.editItem = UIBarButtonItem(title: "___done", style: .done, target: self, action: #selector(self.editPressed))
         self.doneItem = UIBarButtonItem(title: self.presentationData.strings.Common_Edit, style: .plain, target: self, action: #selector(self.editPressed))
         
         self.statusBar.statusBarStyle = self.presentationData.theme.rootController.statusBarStyle.style

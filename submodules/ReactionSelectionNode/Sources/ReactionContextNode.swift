@@ -533,6 +533,7 @@ public final class ReactionContextNode: ASDisplayNode, ASScrollViewDelegate {
         self.scrollNode.view.scrollsToTop = false
         self.scrollNode.view.delaysContentTouches = false
         self.scrollNode.view.canCancelContentTouches = true
+        self.scrollNode.view.scrollsToTop = false
         self.scrollNode.clipsToBounds = false
         if #available(iOS 11.0, *) {
             self.scrollNode.view.contentInsetAdjustmentBehavior = .never
@@ -643,16 +644,15 @@ public final class ReactionContextNode: ASDisplayNode, ASScrollViewDelegate {
         }
         
         if let getEmojiContent = getEmojiContent, !self.reactionsLocked {
-            let viewKey = PostboxViewKey.orderedItemList(id: Namespaces.OrderedItemList.CloudFeaturedEmojiPacks)
-            self.stableEmptyResultEmojiDisposable.set((self.context.account.postbox.combinedView(keys: [viewKey])
+            self.stableEmptyResultEmojiDisposable.set((self.context.engine.data.subscribe(TelegramEngine.EngineData.Item.OrderedLists.ListItems(collectionId: Namespaces.OrderedItemList.CloudFeaturedEmojiPacks))
             |> take(1)
-            |> deliverOnMainQueue).start(next: { [weak self] views in
-                guard let strongSelf = self, let view = views.views[viewKey] as? OrderedItemListView else {
+            |> deliverOnMainQueue).start(next: { [weak self] items in
+                guard let strongSelf = self else {
                     return
                 }
                 var filteredFiles: [TelegramMediaFile] = []
                 let filterList: [String] = ["😖", "😫", "🫠", "😨", "❓"]
-                for featuredEmojiPack in view.items.lazy.map({ $0.contents.get(FeaturedStickerPackItem.self)! }) {
+                for featuredEmojiPack in items.lazy.map({ $0.contents.get(FeaturedStickerPackItem.self)! }) {
                     for item in featuredEmojiPack.topItems {
                         if let alt = item.file.customEmojiAlt {
                             if filterList.contains(alt) {
@@ -1743,20 +1743,19 @@ public final class ReactionContextNode: ASDisplayNode, ASScrollViewDelegate {
                     return
                 }
                 
-                let viewKey = PostboxViewKey.orderedItemList(id: Namespaces.OrderedItemList.CloudFeaturedEmojiPacks)
-                let _ = (strongSelf.context.account.postbox.combinedView(keys: [viewKey])
+                let _ = (strongSelf.context.engine.data.subscribe(TelegramEngine.EngineData.Item.OrderedLists.ListItems(collectionId: Namespaces.OrderedItemList.CloudFeaturedEmojiPacks))
                 |> take(1)
-                |> deliverOnMainQueue).start(next: { views in
-                    guard let strongSelf = self, let view = views.views[viewKey] as? OrderedItemListView else {
+                |> deliverOnMainQueue).start(next: { items in
+                    guard let strongSelf = self else {
                         return
                     }
-                    for featuredEmojiPack in view.items.lazy.map({ $0.contents.get(FeaturedStickerPackItem.self)! }) {
+                    for featuredEmojiPack in items.lazy.map({ $0.contents.get(FeaturedStickerPackItem.self)! }) {
                         if featuredEmojiPack.info.id == collectionId {
                             if let strongSelf = self {
                                 strongSelf.scheduledEmojiContentAnimationHint = EmojiPagerContentComponent.ContentAnimation(type: .groupInstalled(id: collectionId, scrollToGroup: true))
                             }
                             let _ = strongSelf.context.engine.stickers.addStickerPackInteractively(info: featuredEmojiPack.info._parse(), items: featuredEmojiPack.topItems).start()
-                            
+
                             break
                         }
                     }
@@ -2039,14 +2038,14 @@ public final class ReactionContextNode: ASDisplayNode, ASScrollViewDelegate {
                                     let remoteSignal = emojiSearchContext.state
                                     
                                     return combineLatest(
-                                        context.account.postbox.itemCollectionsView(orderedItemListCollectionIds: [], namespaces: [Namespaces.ItemCollection.CloudEmojiPacks], aroundIndex: nil, count: 10000000) |> take(1),
+                                        context.engine.itemCollections.allItems(namespace: Namespaces.ItemCollection.CloudEmojiPacks) |> take(1),
                                         context.engine.stickers.availableReactions() |> take(1),
                                         hasPremium |> take(1),
                                         remotePacksSignal,
                                         remoteSignal,
                                         localPacksSignal
                                     )
-                                    |> map { view, availableReactions, hasPremium, foundPacks, foundEmoji, foundLocalPacks -> (groups: [EmojiPagerContentComponent.ItemGroup], canLoadMore: Bool, isSearching: Bool, searchContext: EmojiSearchContext?) in
+                                    |> map { rawItems, availableReactions, hasPremium, foundPacks, foundEmoji, foundLocalPacks -> (groups: [EmojiPagerContentComponent.ItemGroup], canLoadMore: Bool, isSearching: Bool, searchContext: EmojiSearchContext?) in
                                         var result: [(String, TelegramMediaFile.Accessor?, String)] = []
                                         
                                         var allEmoticons: [String: String] = [:]
@@ -2071,8 +2070,8 @@ public final class ReactionContextNode: ASDisplayNode, ASScrollViewDelegate {
                                             }
                                         }
                                         
-                                        for entry in view.entries {
-                                            guard let item = entry.item as? StickerPackItem else {
+                                        for rawItem in rawItems {
+                                            guard let item = rawItem as? StickerPackItem else {
                                                 continue
                                             }
                                             if !item.file.isPremiumEmoji {

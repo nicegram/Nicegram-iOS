@@ -377,7 +377,7 @@ public class ItemListInviteLinkItemNode: ListViewItemNode, ItemListItemNode {
             var pricingAttributedText: NSMutableAttributedString?
             var timerValue: TimerNode.Value?
             
-            if let invite = item.invite, case let  .link(_, title, _, _, _, _, date, startDate, expireDate, usageLimit, count, requestedCount, subscriptionPricing) = invite {
+            if let invite = item.invite, case let  .link(_, title, _, requestApproval, _, _, date, startDate, expireDate, usageLimit, count, requestedCount, subscriptionPricing) = invite {
                 if let title = title, !title.isEmpty {
                     titleText = title
                 }
@@ -404,6 +404,12 @@ public class ItemListInviteLinkItemNode: ListViewItemNode, ItemListItemNode {
                         subtitleText += ", "
                     }
                     subtitleText += item.presentationData.strings.MemberRequests_PeopleRequestedShort(requestedCount)
+                }
+                if requestApproval {
+                    if !subtitleText.isEmpty {
+                        subtitleText += " • "
+                    }
+                    subtitleText += item.presentationData.strings.InviteLink_ApprovalRequired
                 }
                 
                 if let subscriptionPricing {

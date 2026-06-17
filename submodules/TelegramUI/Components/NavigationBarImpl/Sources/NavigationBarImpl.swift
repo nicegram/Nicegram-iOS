@@ -12,8 +12,6 @@ public final class NavigationBarImpl: ASDisplayNode, NavigationBar {
         return 38.0
     }
     
-    public static let thinBackArrowImage = generateTintedImage(image: UIImage(bundleImageName: "Navigation/BackArrow"), color: .white)?.withRenderingMode(.alwaysTemplate)
-
     public static let titleFont = Font.with(size: 17.0, design: .regular, weight: .semibold, traits: [.monospacedNumbers])
     
     var presentationData: NavigationBarPresentationData
@@ -634,7 +632,7 @@ public final class NavigationBarImpl: ASDisplayNode, NavigationBar {
         }
         
         self.buttonsContainerNode = SparseNode()
-        self.buttonsContainerNode.clipsToBounds = true
+        //self.buttonsContainerNode.clipsToBounds = true
         
         self.backButtonNodeImpl.color = self.presentationData.theme.buttonColor
         self.backButtonNodeImpl.disabledColor = self.presentationData.theme.disabledButtonColor

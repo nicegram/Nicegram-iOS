@@ -55,14 +55,16 @@ final class BotCheckoutNativeCardEntryController: ViewController {
         
         self.presentationData = context.sharedContext.currentPresentationData.with { $0 }
         
-        super.init(navigationBarPresentationData: NavigationBarPresentationData(presentationData: self.presentationData))
+        super.init(navigationBarPresentationData: NavigationBarPresentationData(presentationData: self.presentationData, style: .glass))
+        
+        self._hasGlassStyle = true
         self.statusBar.statusBarStyle = self.presentationData.theme.rootController.statusBarStyle.style
         
-        self.doneItem = UIBarButtonItem(title: self.presentationData.strings.Common_Done, style: .done, target: self, action: #selector(self.donePressed))
+        self.doneItem = UIBarButtonItem(title: "___done", style: .done, target: self, action: #selector(self.donePressed))
         
         self.title = self.presentationData.strings.Checkout_NewCard_Title
         
-        self.navigationItem.leftBarButtonItem = UIBarButtonItem(title: self.presentationData.strings.Common_Cancel, style: .plain, target: self, action: #selector(self.cancelPressed))
+        self.navigationItem.leftBarButtonItem = UIBarButtonItem(title: "___close", style: .plain, target: self, action: #selector(self.cancelPressed))
         self.navigationItem.rightBarButtonItem = self.doneItem
         self.doneItem?.isEnabled = false
     }
@@ -78,13 +80,13 @@ final class BotCheckoutNativeCardEntryController: ViewController {
             self?.presentingViewController?.dismiss(animated: false, completion: nil)
         }, openCountrySelection: { [weak self] in
             if let strongSelf = self {
-                let controller = AuthorizationSequenceCountrySelectionController(strings: strongSelf.presentationData.strings, theme: strongSelf.presentationData.theme, displayCodes: false)
+                let controller = AuthorizationSequenceCountrySelectionController(strings: strongSelf.presentationData.strings, theme: strongSelf.presentationData.theme, displayCodes: false, glass: true)
                 controller.completeWithCountryCode = { _, id in
                     if let strongSelf = self {
                         strongSelf.controllerNode.updateCountry(id)
                     }
                 }
-                strongSelf.present(controller, in: .window(.root), with: ViewControllerPresentationArguments(presentationAnimation: .modalSheet))
+                strongSelf.push(controller)
             }
         }, updateStatus: { [weak self] status in
             if let strongSelf = self {

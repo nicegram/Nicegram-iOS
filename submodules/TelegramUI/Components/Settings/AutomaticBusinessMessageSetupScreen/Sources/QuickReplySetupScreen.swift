@@ -4,7 +4,6 @@ import Photos
 import Display
 import AsyncDisplayKit
 import SwiftSignalKit
-import Postbox
 import TelegramCore
 import TelegramPresentationData
 import TelegramUIPreferences
@@ -212,6 +211,8 @@ final class QuickReplySetupScreenComponent: Component {
                     },
                     performActiveSessionAction: { _, _ in
                     },
+                    performBotConnectionReviewAction: { _, _ in
+                    },
                     openChatFolderUpdates: {
                     },
                     hideChatFolderUpdates: {
@@ -256,7 +257,7 @@ final class QuickReplySetupScreenComponent: Component {
                     context: listNode.context,
                     chatListLocation: .chatList(groupId: .root),
                     filterData: nil,
-                    index: EngineChatList.Item.Index.chatList(ChatListIndex(pinningIndex: nil, messageIndex: MessageIndex(id: MessageId(peerId: listNode.context.account.peerId, namespace: 0, id: 0), timestamp: 0))),
+                    index: EngineChatList.Item.Index.chatList(EngineChatListIndex(pinningIndex: nil, messageIndex: EngineMessage.Index(id: EngineMessage.Id(peerId: listNode.context.account.peerId, namespace: 0, id: 0), timestamp: 0))),
                     content: .peer(ChatListItemContent.PeerData(
                         messages: [item.topMessage],
                         peer: EngineRenderedPeer(peer: accountPeer),
@@ -768,20 +769,13 @@ final class QuickReplySetupScreenComponent: Component {
                 titleText = strings.QuickReply_Title
             }
             
-            let closeTitle: String
-            switch component.mode {
-            case .manage:
-                closeTitle = strings.Common_Close
-            case .select:
-                closeTitle = strings.Common_Cancel
-            }
             let headerContent: ChatListHeaderComponent.Content? = ChatListHeaderComponent.Content(
                 title: titleText,
                 navigationBackTitle: nil,
                 titleComponent: nil,
                 chatListTitle: nil,
                 leftButton: isModal ? AnyComponentWithIdentity(id: "close", component: AnyComponent(NavigationButtonComponent(
-                    content: .text(title: closeTitle, isBold: false),
+                    content: .icon(imageName: "Navigation/Close"),
                     pressed: { [weak self] _ in
                         guard let self else {
                             return

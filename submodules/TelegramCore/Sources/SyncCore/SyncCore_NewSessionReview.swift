@@ -114,23 +114,6 @@ public func newSessionReviews(postbox: Postbox) -> Signal<[NewSessionReview], No
     }
 }
 
-public func addNewSessionReview(postbox: Postbox, item: NewSessionReview) -> Signal<Never, NoError> {
-    return postbox.transaction { transaction -> Void in
-        guard let entry = CodableEntry(item) else {
-            return
-        }
-        transaction.addOrMoveToFirstPositionOrderedItemListItem(collectionId: Namespaces.OrderedItemList.NewSessionReviews, item: OrderedItemListEntry(id: NewSessionReview.Id(id: item.id).rawValue, contents: entry), removeTailIfCountExceeds: 200)
-    }
-    |> ignoreValues
-}
-
-public func clearNewSessionReviews(postbox: Postbox) -> Signal<Never, NoError> {
-    return postbox.transaction { transaction -> Void in
-        transaction.replaceOrderedItemListItems(collectionId: Namespaces.OrderedItemList.NewSessionReviews, items: [])
-    }
-    |> ignoreValues
-}
-
 public func removeNewSessionReviews(postbox: Postbox, ids: [Int64]) -> Signal<Never, NoError> {
     return postbox.transaction { transaction -> Void in
         for id in ids {

@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 set -x
 
@@ -7,7 +7,7 @@ ARCHS=""
 
 for RAW_ARCH in $RAW_ARCHS; do
 	ARCH_NAME="$RAW_ARCH"
-	if [ "$ARCH_NAME" = "i386" -o "$ARCH_NAME" = "x86_64" -o "$ARCH_NAME" = "arm64" -o "$ARCH_NAME" = "armv7" -o "$ARCH_NAME" = "sim_arm64" ]
+	if [ "$ARCH_NAME" = "i386" -o "$ARCH_NAME" = "x86_64" -o "$ARCH_NAME" = "arm64" -o "$ARCH_NAME" = "armv7" -o "$ARCH_NAME" = "sim_arm64" -o "$ARCH_NAME" = "macos_arm64" -o "$ARCH_NAME" = "linux_arm64" -o "$ARCH_NAME" = "linux_x86_64" ]
 	then
 		ARCHS="$ARCHS $ARCH_NAME"
 	else
@@ -38,24 +38,21 @@ LIB_NAMES="libavcodec libavformat libavutil libswresample"
 set -e
 
 CONFIGURE_FLAGS="--enable-cross-compile --disable-programs \
-				 --disable-armv5te --disable-armv6 --disable-armv6t2 \
+                 --disable-armv5te --disable-armv6 --disable-armv6t2 \
                  --disable-doc --enable-pic --disable-all --disable-everything \
                  --enable-avcodec  \
                  --enable-swresample \
                  --enable-avformat \
                  --disable-xlib \
                  --enable-libopus \
-				 --enable-libvpx \
-				 --enable-libdav1d \
-                 --enable-audiotoolbox \
+                 --enable-libvpx \
+                 --enable-libdav1d \
                  --enable-bsf=aac_adtstoasc,vp9_superframe,h264_mp4toannexb \
-                 --enable-decoder=h264,libvpx_vp9,hevc,libopus,flac,alac_at,pcm_s16le,pcm_s24le,pcm_f32le,gsm_ms_at,libdav1d,av1,mp3,aac_at \
-                 --enable-encoder=libvpx_vp9,aac_at \
+                 --enable-decoder=h264,libvpx_vp9,hevc,libopus,flac,pcm_s16le,pcm_s24le,pcm_f32le,libdav1d,av1,mp3 \
                  --enable-demuxer=aac,mov,m4v,mp3,ogg,libopus,flac,wav,aiff,matroska,mpegts, \
                  --enable-parser=aac,h264,mp3,libopus \
                  --enable-protocol=file \
                  --enable-muxer=mp4,matroska,ogg,mpegts \
-                 --enable-hwaccel=h264_videotoolbox,hevc_videotoolbox,av1_videotoolbox \
                  "
 
 #vorbis
@@ -84,7 +81,7 @@ do
 	do
 		LIB="$THIN/$ARCH/lib/$LIB_NAME.a"
 		if [ -f "$LIB" ]; then
-			LIB_DATE=`crc32 "$LIB"`
+			LIB_DATE=$(crc32 "$LIB" 2>/dev/null || cksum "$LIB" 2>/dev/null | cut -d' ' -f1 || echo "unknown")
 			LIBS_HASH="$LIBS_HASH $ARCH/$LIB:$LIB_DATE"
 		fi
 	done
@@ -99,7 +96,11 @@ then
 		echo "PATH=$PATH"
 		echo "pkg-config=$(which pkg-config)"
 	fi
-	if [ ! `which "$GAS_PREPROCESSOR_PATH"` ]; then
+	IS_LINUX=false
+	for A in $ARCHS; do
+		case "$A" in linux_*) IS_LINUX=true ;; esac
+	done
+	if [ "$IS_LINUX" = "false" ] && [ ! `which "$GAS_PREPROCESSOR_PATH"` ]; then
 		echo '$GAS_PREPROCESSOR_PATH not found.'
 		exit 1
 	fi
@@ -114,6 +115,8 @@ then
 		ARCH="$RAW_ARCH"
 		if [ "$RAW_ARCH" == "sim_arm64" ]; then
 			ARCH="arm64"
+		elif [ "$RAW_ARCH" == "macos_arm64" ]; then
+			ARCH="arm64"
 		fi
 
 		echo "building $RAW_ARCH..."
@@ -124,10 +127,26 @@ then
 		LIBVPX_PATH="$SOURCE_DIR/libvpx"
 		LIBDAV1D_PATH="$SOURCE_DIR/libdav1d"
 
+		if [ "$RAW_ARCH" = "linux_arm64" ]; then
+			ARCH="aarch64"
+			CFLAGS="$EXTRA_CFLAGS -fPIC"
+			CC="gcc"
+			AS="gcc"
+			PLATFORM="linux"
+		elif [ "$RAW_ARCH" = "linux_x86_64" ]; then
+			ARCH="x86_64"
+			CFLAGS="$EXTRA_CFLAGS -fPIC"
+			CC="gcc"
+			AS="nasm"
+			PLATFORM="linux"
+		else
 		CFLAGS="$EXTRA_CFLAGS -arch $ARCH"
 		if [ "$RAW_ARCH" = "sim_arm64" ]; then
 			PLATFORM="iPhoneSimulator"
 		    CFLAGS="$CFLAGS -mios-simulator-version-min=$DEPLOYMENT_TARGET --target=arm64-apple-ios$DEPLOYMENT_TARGET-simulator"
+		elif [ "$RAW_ARCH" = "macos_arm64" ]; then
+			PLATFORM="MacOSX"
+		    CFLAGS="$CFLAGS -mmacosx-version-min=14.0 --target=arm64-apple-macosx14.0"
 		else
 		    PLATFORM="iPhoneOS"
 		    CFLAGS="$CFLAGS -mios-version-min=$DEPLOYMENT_TARGET"
@@ -136,15 +155,18 @@ then
 		        EXPORT="GASPP_FIX_XCODE5=1"
 		    fi
 		fi
+		fi
 
-		XCRUN_SDK=`echo $PLATFORM | tr '[:upper:]' '[:lower:]'`
-		CC="xcrun -sdk $XCRUN_SDK clang"
+		if [ "$PLATFORM" != "linux" ]; then
+			XCRUN_SDK=`echo $PLATFORM | tr '[:upper:]' '[:lower:]'`
+			CC="xcrun -sdk $XCRUN_SDK clang"
 
-		if [ "$RAW_ARCH" = "arm64" ] || [ "$RAW_ARCH" = "sim_arm64" ]
-		then
-		    AS="$GAS_PREPROCESSOR_PATH -arch aarch64 -- $CC"
-		else
-		    AS="$GAS_PREPROCESSOR_PATH -- $CC"
+			if [ "$RAW_ARCH" = "arm64" ] || [ "$RAW_ARCH" = "sim_arm64" ] || [ "$RAW_ARCH" = "macos_arm64" ]
+			then
+			    AS="$GAS_PREPROCESSOR_PATH -arch aarch64 -- $CC"
+			else
+			    AS="$GAS_PREPROCESSOR_PATH -- $CC"
+			fi
 		fi
 
 		CXXFLAGS="$CFLAGS"
@@ -161,22 +183,42 @@ then
 			echo "1" >/dev/null
 		else
 			mkdir -p "$THIN/$RAW_ARCH"
-			TMPDIR=${TMPDIR/%\/} "$SOURCE/configure" \
-			    --target-os=darwin \
-			    --arch=$ARCH \
-			    --cc="$CC" \
-				--as="$AS" \
-			    $CONFIGURE_FLAGS \
-			    --extra-cflags="$CFLAGS" \
-			    --extra-ldflags="$LDFLAGS" \
-			    --prefix="$THIN/$RAW_ARCH" \
-			    --pkg-config="$PKG_CONFIG" \
-			    --pkg-config-flags="--libopus_path $LIBOPUS_PATH --libvpx_path $LIBVPX_PATH --libdav1d_path $LIBDAV1D_PATH" \
-			|| exit 1
+			if [ "$PLATFORM" = "linux" ]; then
+				TMPDIR=${TMPDIR/%\/} "$SOURCE/configure" \
+				    --target-os=linux \
+				    --arch=$ARCH \
+				    --cc="$CC" \
+				    --as="$AS" \
+				    $CONFIGURE_FLAGS \
+				    --enable-encoder=libvpx_vp9 \
+				    --extra-cflags="$CFLAGS" \
+				    --extra-ldflags="$LDFLAGS" \
+				    --prefix="$THIN/$RAW_ARCH" \
+				    --pkg-config="$PKG_CONFIG" \
+				    --pkg-config-flags="--libopus_path $LIBOPUS_PATH --libvpx_path $LIBVPX_PATH --libdav1d_path $LIBDAV1D_PATH" \
+				|| exit 1
+			else
+				TMPDIR=${TMPDIR/%\/} "$SOURCE/configure" \
+				    --target-os=darwin \
+				    --arch=$ARCH \
+				    --cc="$CC" \
+				    --as="$AS" \
+				    $CONFIGURE_FLAGS \
+				    --enable-audiotoolbox \
+				    --enable-decoder=alac_at,gsm_ms_at,aac_at \
+				    --enable-encoder=libvpx_vp9,aac_at \
+				    --enable-hwaccel=h264_videotoolbox,hevc_videotoolbox,av1_videotoolbox \
+				    --extra-cflags="$CFLAGS" \
+				    --extra-ldflags="$LDFLAGS" \
+				    --prefix="$THIN/$RAW_ARCH" \
+				    --pkg-config="$PKG_CONFIG" \
+				    --pkg-config-flags="--libopus_path $LIBOPUS_PATH --libvpx_path $LIBVPX_PATH --libdav1d_path $LIBDAV1D_PATH" \
+				|| exit 1
+			fi
 			echo "$CONFIGURE_FLAGS" > "$CONFIGURED_MARKER"
 		fi
 
-		CORE_COUNT=`PATH="$PATH:/usr/sbin" sysctl -n hw.logicalcpu`
+		CORE_COUNT=$(nproc 2>/dev/null || PATH="$PATH:/usr/sbin" sysctl -n hw.logicalcpu 2>/dev/null || echo 4)
 		make -j$CORE_COUNT install $EXPORT || exit 1
 
 		popd
@@ -190,7 +232,7 @@ do
 	do
 		LIB="$THIN/$ARCH/lib/$LIB_NAME.a"
 		if [ -f "$LIB" ]; then
-			LIB_DATE=`crc32 "$LIB"`
+			LIB_DATE=$(crc32 "$LIB" 2>/dev/null || cksum "$LIB" 2>/dev/null | cut -d' ' -f1 || echo "unknown")
 			UPDATED_LIBS_HASH="$UPDATED_LIBS_HASH $ARCH/$LIB:$LIB_DATE"
 		fi
 	done
@@ -215,7 +257,11 @@ then
 		LIB_NAME="$(basename $LIB)"
 		echo "LIPO_INPUT command find \"$THIN\" -name \"$LIB_NAME\""
 		LIPO_INPUT=`find "$THIN" -name "$LIB_NAME"`
-		lipo -create $LIPO_INPUT -output "$FAT/lib/$LIB_NAME" || exit 1
+		if command -v lipo >/dev/null 2>&1; then
+			lipo -create $LIPO_INPUT -output "$FAT/lib/$LIB_NAME" || exit 1
+		else
+			cp $LIPO_INPUT "$FAT/lib/$LIB_NAME" || exit 1
+		fi
 	done
 
 	cp -rf "$THIN/$1/include" "$FAT"

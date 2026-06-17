@@ -17,7 +17,7 @@ func addMessageMediaResourceIdsToRemove(media: Media, resourceIds: inout [MediaR
 }
 
 func addMessageMediaResourceIdsToRemove(message: Message, resourceIds: inout [MediaResourceId]) {
-    for media in message.media {
+    for media in message.effectiveMedia {
         addMessageMediaResourceIdsToRemove(media: media, resourceIds: &resourceIds)
     }
 }

@@ -1,6 +1,6 @@
 import Foundation
 import UIKit
-import Postbox
+import TelegramCore
 import AsyncDisplayKit
 import Display
 import SwiftSignalKit
@@ -13,14 +13,14 @@ import ChatMessageItemCommon
 private let titleFont = UIFont.systemFont(ofSize: 13.0)
 
 public class ChatReplyCountItem: ListViewItem {
-    public let index: MessageIndex
+    public let index: EngineMessage.Index
     public let isComments: Bool
     public let count: Int
     public let presentationData: ChatPresentationData
     public let header: ChatMessageDateHeader
     public let controllerInteraction: ChatControllerInteraction
     
-    public init(index: MessageIndex, isComments: Bool, count: Int, presentationData: ChatPresentationData, context: AccountContext, controllerInteraction: ChatControllerInteraction) {
+    public init(index: EngineMessage.Index, isComments: Bool, count: Int, presentationData: ChatPresentationData, context: AccountContext, controllerInteraction: ChatControllerInteraction) {
         self.index = index
         self.isComments = isComments
         self.count = count

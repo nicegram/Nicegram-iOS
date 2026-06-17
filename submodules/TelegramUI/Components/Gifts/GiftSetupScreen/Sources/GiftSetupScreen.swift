@@ -3,7 +3,6 @@ import UIKit
 import Display
 import AsyncDisplayKit
 import SwiftSignalKit
-import Postbox
 import TelegramCore
 import TelegramPresentationData
 import TelegramUIPreferences
@@ -377,7 +376,7 @@ private final class GiftSetupScreenComponent: Component {
 
             let (currency, amount) = storeProduct.priceCurrencyAndAmount
                      
-            addAppLogEvent(postbox: component.context.account.postbox, type: "premium_gift.promo_screen_accept")
+            component.context.engine.accountData.addAppLogEvent(type: "premium_gift.promo_screen_accept")
 
             var textInputText = NSAttributedString()
             if let inputPanelView = self.inputPanel.view as? MessageInputPanelComponent.View, case let .text(text) = inputPanelView.getSendMessageInput() {
@@ -451,7 +450,7 @@ private final class GiftSetupScreenComponent: Component {
                         }
                         
                         if let errorText {
-                            addAppLogEvent(postbox: component.context.account.postbox, type: "premium_gift.promo_screen_fail")
+                            component.context.engine.accountData.addAppLogEvent(type: "premium_gift.promo_screen_fail")
                             
                             let alertController = textAlertController(context: component.context, title: nil, text: errorText, actions: [TextAlertAction(type: .defaultAction, title: presentationData.strings.Common_OK, action: {})])
                             controller.present(alertController, in: .window(.root))

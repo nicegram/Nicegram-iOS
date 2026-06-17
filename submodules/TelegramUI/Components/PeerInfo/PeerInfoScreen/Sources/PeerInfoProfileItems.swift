@@ -11,7 +11,6 @@ import Display
 import AccountContext
 import TelegramPresentationData
 import TelegramCore
-import Postbox
 import PeerInfoUI
 import TextFormat
 import PhoneNumberFormat
@@ -54,9 +53,9 @@ func infoItems(
     context: AccountContext,
     presentationData: PresentationData,
     interaction: PeerInfoInteraction,
-    reactionSourceMessageId: MessageId?,
+    reactionSourceMessageId: EngineMessage.Id?,
     canDeleteReaction: Bool,
-    callMessages: [Message],
+    callMessages: [EngineMessage],
     chatLocation: ChatLocation,
     isOpenedFromChat: Bool,
     isMyProfile: Bool
@@ -1086,7 +1085,7 @@ func editingItems(data: PeerInfoScreenData?, boostStatus: ChannelBoostStatus?, s
                     } else {
                         programTitleValue = .text(presentationData.strings.PeerInfo_ItemAffiliateProgram_ValueOff)
                     }
-                    items[.peerDataSettings]!.append(PeerInfoScreenDisclosureItem(id: ItemAffiliateProgram, label: programTitleValue, additionalBadgeLabel: presentationData.strings.Settings_New, text: presentationData.strings.PeerInfo_ItemAffiliateProgram_Title, icon: PresentationResourcesSettings.affiliateProgram, action: {
+                    items[.peerDataSettings]!.append(PeerInfoScreenDisclosureItem(id: ItemAffiliateProgram, label: programTitleValue, text: presentationData.strings.PeerInfo_ItemAffiliateProgram_Title, icon: PresentationResourcesSettings.affiliateProgram, action: {
                         interaction.editingOpenAffiliateProgram()
                     }))
                 }
@@ -1296,24 +1295,6 @@ func editingItems(data: PeerInfoScreenData?, boostStatus: ChannelBoostStatus?, s
                     var boostIcon: UIImage?
                     if let approximateBoostLevel = channel.approximateBoostLevel, approximateBoostLevel < 1 {
                         boostIcon = generateDisclosureActionBoostLevelBadgeImage(text: presentationData.strings.Channel_Info_BoostLevelPlusBadge("1").string)
-                    } else {
-                        /*let labelText = NSAttributedString(string: presentationData.strings.Settings_New, font: Font.medium(11.0), textColor: presentationData.theme.list.itemCheckColors.foregroundColor)
-                        let labelBounds = labelText.boundingRect(with: CGSize(width: 100.0, height: 100.0), options: [.usesLineFragmentOrigin], context: nil)
-                        let labelSize = CGSize(width: ceil(labelBounds.width), height: ceil(labelBounds.height))
-                        let badgeSize = CGSize(width: labelSize.width + 8.0, height: labelSize.height + 2.0 + 1.0)
-                        boostIcon = generateImage(badgeSize, rotatedContext: { size, context in
-                            context.clear(CGRect(origin: CGPoint(), size: size))
-                            
-                            let rect = CGRect(origin: CGPoint(x: 0.0, y: 0.0), size: CGSize(width: size.width, height: size.height - UIScreenPixel * 2.0))
-                            
-                            context.addPath(UIBezierPath(roundedRect: rect, cornerRadius: 5.0).cgPath)
-                            context.setFillColor(presentationData.theme.list.itemCheckColors.fillColor.cgColor)
-                            context.fillPath()
-                            
-                            UIGraphicsPushContext(context)
-                            labelText.draw(at: CGPoint(x: 4.0, y: 1.0 + UIScreenPixel))
-                            UIGraphicsPopContext()
-                        })*/
                     }
                     items[.peerSettings]!.append(PeerInfoScreenDisclosureItem(id: ItemPeerColor, label: .image(colorImage, colorImage.size), additionalBadgeIcon: boostIcon, text: presentationData.strings.Channel_Info_AppearanceItem, icon: PresentationResourcesSettings.chatAppearance, action: {
                         interaction.editingOpenNameColorSetup()
@@ -1369,7 +1350,7 @@ func editingItems(data: PeerInfoScreenData?, boostStatus: ChannelBoostStatus?, s
                         labelString = NSAttributedString(string: presentationData.strings.PeerInfo_AllowChannelMessages_Off, font: labelFont, textColor: labelColor)
                     }
                     
-                    items[.peerSettings]!.append(PeerInfoScreenDisclosureItem(id: ItemPostSuggestionsSettings, label: .attributedText(labelString), additionalBadgeLabel: presentationData.strings.Settings_New, text: presentationData.strings.PeerInfo_AllowChannelMessages, icon: PresentationResourcesSettings.channelMessages, action: {
+                    items[.peerSettings]!.append(PeerInfoScreenDisclosureItem(id: ItemPostSuggestionsSettings, label: .attributedText(labelString), text: presentationData.strings.PeerInfo_AllowChannelMessages, icon: PresentationResourcesSettings.channelMessages, action: {
                         interaction.editingOpenPostSuggestionsSetup()
                     }))
                     
@@ -1475,7 +1456,6 @@ func editingItems(data: PeerInfoScreenData?, boostStatus: ChannelBoostStatus?, s
                 let ItemRecentActions = 111
                 let ItemLocationHeader = 112
                 let ItemLocation = 113
-                let ItemLocationSetup = 114
                 let ItemDeleteGroup = 115
                 let ItemReactions = 116
                 let ItemTopics = 117
@@ -1499,11 +1479,6 @@ func editingItems(data: PeerInfoScreenData?, boostStatus: ChannelBoostStatus?, s
                                 interaction.openLocation()
                             }
                         ))
-                        if cachedData.flags.contains(.canChangePeerGeoLocation) {
-                            items[.groupLocation]!.append(PeerInfoScreenActionItem(id: ItemLocationSetup, text: presentationData.strings.Group_Location_ChangeLocation, action: {
-                                interaction.editingOpenSetupLocation()
-                            }))
-                        }
                     }
                     
                     if isCreator || (channel.adminRights != nil && channel.hasPermission(.pinMessages)) {
@@ -1610,23 +1585,6 @@ func editingItems(data: PeerInfoScreenData?, boostStatus: ChannelBoostStatus?, s
                             boostIcon = generateDisclosureActionBoostLevelBadgeImage(text: presentationData.strings.Channel_Info_BoostLevelPlusBadge("1").string)
                         } else {
                             boostIcon = nil
-                            /*let labelText = NSAttributedString(string: presentationData.strings.Settings_New, font: Font.medium(11.0), textColor: presentationData.theme.list.itemCheckColors.foregroundColor)
-                            let labelBounds = labelText.boundingRect(with: CGSize(width: 100.0, height: 100.0), options: [.usesLineFragmentOrigin], context: nil)
-                            let labelSize = CGSize(width: ceil(labelBounds.width), height: ceil(labelBounds.height))
-                            let badgeSize = CGSize(width: labelSize.width + 8.0, height: labelSize.height + 2.0 + 1.0)
-                            boostIcon = generateImage(badgeSize, rotatedContext: { size, context in
-                                context.clear(CGRect(origin: CGPoint(), size: size))
-                                
-                                let rect = CGRect(origin: CGPoint(x: 0.0, y: 0.0), size: CGSize(width: size.width, height: size.height - UIScreenPixel * 2.0))
-                                
-                                context.addPath(UIBezierPath(roundedRect: rect, cornerRadius: 5.0).cgPath)
-                                context.setFillColor(presentationData.theme.list.itemCheckColors.fillColor.cgColor)
-                                context.fillPath()
-                                
-                                UIGraphicsPushContext(context)
-                                labelText.draw(at: CGPoint(x: 4.0, y: 1.0 + UIScreenPixel))
-                                UIGraphicsPopContext()
-                            })*/
                         }
                         items[.peerDataSettings]!.append(PeerInfoScreenDisclosureItem(id: ItemAppearance, label: .image(colorImage, colorImage.size), additionalBadgeIcon: boostIcon, text: presentationData.strings.Channel_Info_AppearanceItem, icon: PresentationResourcesSettings.chatAppearance, action: {
                             interaction.editingOpenNameColorSetup()

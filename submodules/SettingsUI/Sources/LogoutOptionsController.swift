@@ -306,7 +306,7 @@ public func logoutOptionsController(context: AccountContext, navigationControlle
         navigationController?.pushViewController(value, animated: false)
     }
     presentControllerImpl = { [weak controller] value, arguments in
-        controller?.present(value, in: .window(.root), with: arguments ?? ViewControllerPresentationArguments(presentationAnimation: .modalSheet))
+        controller?.present(value, in: .window(.root), with: arguments)
     }
     replaceTopControllerImpl = { [weak navigationController] c in
         navigationController?.replaceTopController(c, animated: true)

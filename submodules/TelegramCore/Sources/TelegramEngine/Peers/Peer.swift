@@ -118,20 +118,17 @@ public enum EnginePeer: Equatable {
         }
         
         public var flags: Flags
-        public var geoDistance: Int32?
         public var requestChatTitle: String?
         public var requestChatDate: Int32?
         public var requestChatIsChannel: Bool?
         
         public init(
             flags: Flags,
-            geoDistance: Int32?,
             requestChatTitle: String?,
             requestChatDate: Int32?,
             requestChatIsChannel: Bool?
         ) {
             self.flags = flags
-            self.geoDistance = geoDistance
             self.requestChatTitle = requestChatTitle
             self.requestChatDate = requestChatDate
             self.requestChatIsChannel = requestChatIsChannel
@@ -363,7 +360,6 @@ public extension EnginePeer.StatusSettings {
     init(_ statusSettings: PeerStatusSettings) {
         self.init(
             flags: Flags(rawValue: statusSettings.flags.rawValue),
-            geoDistance: statusSettings.geoDistance,
             requestChatTitle: statusSettings.requestChatTitle,
             requestChatDate: statusSettings.requestChatDate,
             requestChatIsChannel: statusSettings.requestChatIsChannel

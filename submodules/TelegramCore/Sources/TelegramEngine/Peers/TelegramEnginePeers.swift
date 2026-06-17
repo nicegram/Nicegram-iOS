@@ -514,8 +514,8 @@ public extension TelegramEngine {
             return _internal_toggleChannelJoinToSend(postbox: self.account.postbox, network: self.account.network, accountStateManager: self.account.stateManager, peerId: peerId, enabled: enabled)
         }
         
-        public func toggleChannelJoinRequest(peerId: PeerId, enabled: Bool) -> Signal<Never, UpdateChannelJoinRequestError> {
-            return _internal_toggleChannelJoinRequest(postbox: self.account.postbox, network: self.account.network, accountStateManager: self.account.stateManager, peerId: peerId, enabled: enabled)
+        public func toggleChannelJoinRequest(peerId: PeerId, enabled: Bool, guardBotId: PeerId? = nil, applyToInvites: Bool = false, clearGuardBot: Bool = false) -> Signal<Never, UpdateChannelJoinRequestError> {
+            return _internal_toggleChannelJoinRequest(postbox: self.account.postbox, network: self.account.network, accountStateManager: self.account.stateManager, peerId: peerId, enabled: enabled, guardBotId: guardBotId, applyToInvites: applyToInvites, clearGuardBot: clearGuardBot)
         }
         
         public func toggleAntiSpamProtection(peerId: PeerId, enabled: Bool) -> Signal<Void, NoError> {
@@ -538,7 +538,7 @@ public extension TelegramEngine {
             return _internal_updateGroupSpecificEmojiset(postbox: self.account.postbox, network: self.account.network, peerId: peerId, info: info)
         }
 
-        public func joinChannel(peerId: PeerId, hash: String?) -> Signal<RenderedChannelParticipant?, JoinChannelError> {
+        public func joinChannel(peerId: PeerId, hash: String?) -> Signal<JoinChannelResult, JoinChannelError> {
             return _internal_joinChannel(account: self.account, peerId: peerId, hash: hash)
         }
 
@@ -843,15 +843,25 @@ public extension TelegramEngine {
             }
         }
 
-        public func joinChatInteractively(with hash: String) -> Signal <EnginePeer?, JoinLinkError> {
+        public func joinChatInteractively(with hash: String) -> Signal<JoinLinkResult, JoinLinkError> {
             let account = self.account
             return _internal_joinChatInteractively(with: hash, account: self.account)
-            |> mapToSignal { id -> Signal <EnginePeer?, JoinLinkError> in
+            |> mapToSignal { result -> Signal<JoinLinkResult, JoinLinkError> in
+                let id: PeerId?
+                switch result {
+                case let .joined(peerId):
+                    id = peerId
+                case let .webView(webView):
+                    return .single(.webView(webView))
+                }
                 guard let id = id else {
-                    return .single(nil)
+                    return .single(.joined(nil))
                 }
                 return account.postbox.transaction { transaction -> EnginePeer? in
                     return transaction.getPeer(id).flatMap(EnginePeer.init)
+                }
+                |> map { peer -> JoinLinkResult in
+                    return .joined(peer)
                 }
                 |> castError(JoinLinkError.self)
             }
@@ -1512,6 +1522,10 @@ public extension TelegramEngine {
         
         public func tokenizeSearchString(string: String, transliteration: EngineStringIndexTokenTransliteration) -> [EngineDataBuffer] {
             return stringIndexTokens(string, transliteration: transliteration)
+        }
+
+        public func matchSearchTokens(_ tokens: [EngineDataBuffer], with other: [EngineDataBuffer]) -> Bool {
+            return matchStringIndexTokens(tokens, with: other)
         }
         
         public func updatePeerStoriesHidden(id: PeerId, isHidden: Bool) {

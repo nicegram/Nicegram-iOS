@@ -8,7 +8,6 @@ import Foundation
 import UIKit
 import Display
 import SwiftSignalKit
-import Postbox
 import TelegramCore
 import MtProtoKit
 import MessageUI
@@ -396,8 +395,8 @@ private enum DebugControllerEntry: ItemListNodeEntry {
                                         }
                                     }
 
-                                    let tempSource = TempBox.shared.tempFile(fileName: "Log.txt")
-                                    let tempZip = TempBox.shared.tempFile(fileName: "destination.zip")
+                                    let tempSource = EngineTempBox.shared.tempFile(fileName: "Log.txt")
+                                    let tempZip = EngineTempBox.shared.tempFile(fileName: "destination.zip")
                                     
                                     let _ = try? rawLogData.write(to: URL(fileURLWithPath: tempSource.path))
                                     
@@ -407,14 +406,14 @@ private enum DebugControllerEntry: ItemListNodeEntry {
                                         return
                                     }
                                     
-                                    TempBox.shared.dispose(tempSource)
-                                    TempBox.shared.dispose(tempZip)
+                                    EngineTempBox.shared.dispose(tempSource)
+                                    EngineTempBox.shared.dispose(tempZip)
 
                                     let id = Int64.random(in: Int64.min ... Int64.max)
                                     let fileResource = LocalFileMediaResource(fileId: id, size: Int64(gzippedData.count), isSecretRelated: false)
                                     context.engine.resources.storeResourceData(id: EngineMediaResource.Id(fileResource.id), data: gzippedData)
 
-                                    let file = TelegramMediaFile(fileId: MediaId(namespace: Namespaces.Media.LocalFile, id: id), partialReference: nil, resource: fileResource, previewRepresentations: [], videoThumbnails: [], immediateThumbnailData: nil, mimeType: "application/text", size: Int64(gzippedData.count), attributes: [.FileName(fileName: "Log-iOS-Full.txt.zip")], alternativeRepresentations: [])
+                                    let file = TelegramMediaFile(fileId: EngineMedia.Id(namespace: Namespaces.Media.LocalFile, id: id), partialReference: nil, resource: fileResource, previewRepresentations: [], videoThumbnails: [], immediateThumbnailData: nil, mimeType: "application/text", size: Int64(gzippedData.count), attributes: [.FileName(fileName: "Log-iOS-Full.txt.zip")], alternativeRepresentations: [])
                                     let message: EnqueueMessage = .message(text: "", attributes: [], inlineStickers: [:], mediaReference: .standalone(media: file), threadId: nil, replyToMessageId: nil, replyToStoryId: nil, localGroupingKey: nil, correlationId: nil, bubbleUpEmojiOrStickersets: [])
 
                                     let _ = enqueueMessages(account: context.account, peerId: peerId, messages: [message]).start()
@@ -494,7 +493,7 @@ private enum DebugControllerEntry: ItemListNodeEntry {
                                         let fileResource = LocalFileMediaResource(fileId: id, size: Int64(logData.count), isSecretRelated: false)
                                         context.engine.resources.storeResourceData(id: EngineMediaResource.Id(fileResource.id), data: logData)
                                         
-                                        let file = TelegramMediaFile(fileId: MediaId(namespace: Namespaces.Media.LocalFile, id: id), partialReference: nil, resource: fileResource, previewRepresentations: [], videoThumbnails: [], immediateThumbnailData: nil, mimeType: "application/text", size: Int64(logData.count), attributes: [.FileName(fileName: "Log-iOS-Short.txt")], alternativeRepresentations: [])
+                                        let file = TelegramMediaFile(fileId: EngineMedia.Id(namespace: Namespaces.Media.LocalFile, id: id), partialReference: nil, resource: fileResource, previewRepresentations: [], videoThumbnails: [], immediateThumbnailData: nil, mimeType: "application/text", size: Int64(logData.count), attributes: [.FileName(fileName: "Log-iOS-Short.txt")], alternativeRepresentations: [])
                                         let message: EnqueueMessage = .message(text: "", attributes: [], inlineStickers: [:], mediaReference: .standalone(media: file), threadId: nil, replyToMessageId: nil, replyToStoryId: nil, localGroupingKey: nil, correlationId: nil, bubbleUpEmojiOrStickersets: [])
                                         
                                         let _ = enqueueMessages(account: context.account, peerId: peerId, messages: [message]).start()
@@ -562,8 +561,8 @@ private enum DebugControllerEntry: ItemListNodeEntry {
                                         }
                                     }
 
-                                    let tempSource = TempBox.shared.tempFile(fileName: "Log.txt")
-                                    let tempZip = TempBox.shared.tempFile(fileName: "destination.zip")
+                                    let tempSource = EngineTempBox.shared.tempFile(fileName: "Log.txt")
+                                    let tempZip = EngineTempBox.shared.tempFile(fileName: "destination.zip")
                                     
                                     let _ = try? rawLogData.write(to: URL(fileURLWithPath: tempSource.path))
                                     
@@ -573,14 +572,14 @@ private enum DebugControllerEntry: ItemListNodeEntry {
                                         return
                                     }
                                     
-                                    TempBox.shared.dispose(tempSource)
-                                    TempBox.shared.dispose(tempZip)
+                                    EngineTempBox.shared.dispose(tempSource)
+                                    EngineTempBox.shared.dispose(tempZip)
 
                                     let id = Int64.random(in: Int64.min ... Int64.max)
                                     let fileResource = LocalFileMediaResource(fileId: id, size: Int64(gzippedData.count), isSecretRelated: false)
                                     context.engine.resources.storeResourceData(id: EngineMediaResource.Id(fileResource.id), data: gzippedData)
 
-                                    let file = TelegramMediaFile(fileId: MediaId(namespace: Namespaces.Media.LocalFile, id: id), partialReference: nil, resource: fileResource, previewRepresentations: [], videoThumbnails: [], immediateThumbnailData: nil, mimeType: "application/text", size: Int64(gzippedData.count), attributes: [.FileName(fileName: "Log-iOS-Full.txt.zip")], alternativeRepresentations: [])
+                                    let file = TelegramMediaFile(fileId: EngineMedia.Id(namespace: Namespaces.Media.LocalFile, id: id), partialReference: nil, resource: fileResource, previewRepresentations: [], videoThumbnails: [], immediateThumbnailData: nil, mimeType: "application/text", size: Int64(gzippedData.count), attributes: [.FileName(fileName: "Log-iOS-Full.txt.zip")], alternativeRepresentations: [])
                                     let message: EnqueueMessage = .message(text: "", attributes: [], inlineStickers: [:], mediaReference: .standalone(media: file), threadId: nil, replyToMessageId: nil, replyToStoryId: nil, localGroupingKey: nil, correlationId: nil, bubbleUpEmojiOrStickersets: [])
 
                                     let _ = enqueueMessages(account: context.account, peerId: peerId, messages: [message]).start()
@@ -646,8 +645,8 @@ private enum DebugControllerEntry: ItemListNodeEntry {
                                         }
                                     }
 
-                                    let tempSource = TempBox.shared.tempFile(fileName: "Log.txt")
-                                    let tempZip = TempBox.shared.tempFile(fileName: "destination.zip")
+                                    let tempSource = EngineTempBox.shared.tempFile(fileName: "Log.txt")
+                                    let tempZip = EngineTempBox.shared.tempFile(fileName: "destination.zip")
                                     
                                     let _ = try? rawLogData.write(to: URL(fileURLWithPath: tempSource.path))
                                     
@@ -657,14 +656,14 @@ private enum DebugControllerEntry: ItemListNodeEntry {
                                         return
                                     }
                                     
-                                    TempBox.shared.dispose(tempSource)
-                                    TempBox.shared.dispose(tempZip)
+                                    EngineTempBox.shared.dispose(tempSource)
+                                    EngineTempBox.shared.dispose(tempZip)
 
                                     let id = Int64.random(in: Int64.min ... Int64.max)
                                     let fileResource = LocalFileMediaResource(fileId: id, size: Int64(gzippedData.count), isSecretRelated: false)
                                     context.engine.resources.storeResourceData(id: EngineMediaResource.Id(fileResource.id), data: gzippedData)
 
-                                    let file = TelegramMediaFile(fileId: MediaId(namespace: Namespaces.Media.LocalFile, id: id), partialReference: nil, resource: fileResource, previewRepresentations: [], videoThumbnails: [], immediateThumbnailData: nil, mimeType: "application/text", size: Int64(gzippedData.count), attributes: [.FileName(fileName: "Log-iOS-Full.txt.zip")], alternativeRepresentations: [])
+                                    let file = TelegramMediaFile(fileId: EngineMedia.Id(namespace: Namespaces.Media.LocalFile, id: id), partialReference: nil, resource: fileResource, previewRepresentations: [], videoThumbnails: [], immediateThumbnailData: nil, mimeType: "application/text", size: Int64(gzippedData.count), attributes: [.FileName(fileName: "Log-iOS-Full.txt.zip")], alternativeRepresentations: [])
                                     let message: EnqueueMessage = .message(text: "", attributes: [], inlineStickers: [:], mediaReference: .standalone(media: file), threadId: nil, replyToMessageId: nil, replyToStoryId: nil, localGroupingKey: nil, correlationId: nil, bubbleUpEmojiOrStickersets: [])
 
                                     let _ = enqueueMessages(account: context.account, peerId: peerId, messages: [message]).start()
@@ -731,8 +730,8 @@ private enum DebugControllerEntry: ItemListNodeEntry {
                                         }
                                     }
 
-                                    let tempSource = TempBox.shared.tempFile(fileName: "Log.txt")
-                                    let tempZip = TempBox.shared.tempFile(fileName: "destination.zip")
+                                    let tempSource = EngineTempBox.shared.tempFile(fileName: "Log.txt")
+                                    let tempZip = EngineTempBox.shared.tempFile(fileName: "destination.zip")
                                     
                                     let _ = try? rawLogData.write(to: URL(fileURLWithPath: tempSource.path))
                                     
@@ -742,14 +741,14 @@ private enum DebugControllerEntry: ItemListNodeEntry {
                                         return
                                     }
                                     
-                                    TempBox.shared.dispose(tempSource)
-                                    TempBox.shared.dispose(tempZip)
+                                    EngineTempBox.shared.dispose(tempSource)
+                                    EngineTempBox.shared.dispose(tempZip)
 
                                     let id = Int64.random(in: Int64.min ... Int64.max)
                                     let fileResource = LocalFileMediaResource(fileId: id, size: Int64(gzippedData.count), isSecretRelated: false)
                                     context.engine.resources.storeResourceData(id: EngineMediaResource.Id(fileResource.id), data: gzippedData)
 
-                                    let file = TelegramMediaFile(fileId: MediaId(namespace: Namespaces.Media.LocalFile, id: id), partialReference: nil, resource: fileResource, previewRepresentations: [], videoThumbnails: [], immediateThumbnailData: nil, mimeType: "application/text", size: Int64(gzippedData.count), attributes: [.FileName(fileName: "Log-iOS-Full.txt.zip")], alternativeRepresentations: [])
+                                    let file = TelegramMediaFile(fileId: EngineMedia.Id(namespace: Namespaces.Media.LocalFile, id: id), partialReference: nil, resource: fileResource, previewRepresentations: [], videoThumbnails: [], immediateThumbnailData: nil, mimeType: "application/text", size: Int64(gzippedData.count), attributes: [.FileName(fileName: "Log-iOS-Full.txt.zip")], alternativeRepresentations: [])
                                     let message: EnqueueMessage = .message(text: "", attributes: [], inlineStickers: [:], mediaReference: .standalone(media: file), threadId: nil, replyToMessageId: nil, replyToStoryId: nil, localGroupingKey: nil, correlationId: nil, bubbleUpEmojiOrStickersets: [])
 
                                     let _ = enqueueMessages(account: context.account, peerId: peerId, messages: [message]).start()
@@ -812,7 +811,7 @@ private enum DebugControllerEntry: ItemListNodeEntry {
 
                                 let messages = logs.map { (name, path) -> EnqueueMessage in
                                     let id = Int64.random(in: Int64.min ... Int64.max)
-                                    let file = TelegramMediaFile(fileId: MediaId(namespace: Namespaces.Media.LocalFile, id: id), partialReference: nil, resource: LocalFileReferenceMediaResource(localFilePath: path, randomId: id), previewRepresentations: [], videoThumbnails: [], immediateThumbnailData: nil, mimeType: "application/text", size: nil, attributes: [.FileName(fileName: name)], alternativeRepresentations: [])
+                                    let file = TelegramMediaFile(fileId: EngineMedia.Id(namespace: Namespaces.Media.LocalFile, id: id), partialReference: nil, resource: LocalFileReferenceMediaResource(localFilePath: path, randomId: id), previewRepresentations: [], videoThumbnails: [], immediateThumbnailData: nil, mimeType: "application/text", size: nil, attributes: [.FileName(fileName: name)], alternativeRepresentations: [])
                                     return .message(text: "", attributes: [], inlineStickers: [:], mediaReference: .standalone(media: file), threadId: nil, replyToMessageId: nil, replyToStoryId: nil, localGroupingKey: nil, correlationId: nil, bubbleUpEmojiOrStickersets: [])
                                 }
                                 let _ = enqueueMessages(account: context.account, peerId: peerId, messages: messages).start()
@@ -843,7 +842,7 @@ private enum DebugControllerEntry: ItemListNodeEntry {
 
                             let messages = logs.map { (name, path) -> EnqueueMessage in
                                 let id = Int64.random(in: Int64.min ... Int64.max)
-                                let file = TelegramMediaFile(fileId: MediaId(namespace: Namespaces.Media.LocalFile, id: id), partialReference: nil, resource: LocalFileReferenceMediaResource(localFilePath: path, randomId: id), previewRepresentations: [], videoThumbnails: [], immediateThumbnailData: nil, mimeType: "application/text", size: nil, attributes: [.FileName(fileName: name)], alternativeRepresentations: [])
+                                let file = TelegramMediaFile(fileId: EngineMedia.Id(namespace: Namespaces.Media.LocalFile, id: id), partialReference: nil, resource: LocalFileReferenceMediaResource(localFilePath: path, randomId: id), previewRepresentations: [], videoThumbnails: [], immediateThumbnailData: nil, mimeType: "application/text", size: nil, attributes: [.FileName(fileName: name)], alternativeRepresentations: [])
                                 return .message(text: "", attributes: [], inlineStickers: [:], mediaReference: .standalone(media: file), threadId: nil, replyToMessageId: nil, replyToStoryId: nil, localGroupingKey: nil, correlationId: nil, bubbleUpEmojiOrStickersets: [])
                             }
                             let _ = enqueueMessages(account: context.account, peerId: peerId, messages: messages).start()
@@ -874,7 +873,7 @@ private enum DebugControllerEntry: ItemListNodeEntry {
                                         
                                         let messages = logs.map { (name, path) -> EnqueueMessage in
                                             let id = Int64.random(in: Int64.min ... Int64.max)
-                                            let file = TelegramMediaFile(fileId: MediaId(namespace: Namespaces.Media.LocalFile, id: id), partialReference: nil, resource: LocalFileReferenceMediaResource(localFilePath: path, randomId: id), previewRepresentations: [], videoThumbnails: [], immediateThumbnailData: nil, mimeType: "application/text", size: nil, attributes: [.FileName(fileName: name)], alternativeRepresentations: [])
+                                            let file = TelegramMediaFile(fileId: EngineMedia.Id(namespace: Namespaces.Media.LocalFile, id: id), partialReference: nil, resource: LocalFileReferenceMediaResource(localFilePath: path, randomId: id), previewRepresentations: [], videoThumbnails: [], immediateThumbnailData: nil, mimeType: "application/text", size: nil, attributes: [.FileName(fileName: name)], alternativeRepresentations: [])
                                             return .message(text: "", attributes: [], inlineStickers: [:], mediaReference: .standalone(media: file), threadId: nil, replyToMessageId: nil, replyToStoryId: nil, localGroupingKey: nil, correlationId: nil, bubbleUpEmojiOrStickersets: [])
                                         }
                                         let _ = enqueueMessages(account: context.account, peerId: peerId, messages: messages).start()
@@ -947,9 +946,9 @@ private enum DebugControllerEntry: ItemListNodeEntry {
 
                                     let lineFeed = "\n".data(using: .utf8)!
                                     
-                                    var tempSources: [TempBoxFile] = []
+                                    var tempSources: [EngineTempBox.File] = []
                                     for (type, logItems) in allLogs {
-                                        let tempSource = TempBox.shared.tempFile(fileName: "Log-\(type).txt")
+                                        let tempSource = EngineTempBox.shared.tempFile(fileName: "Log-\(type).txt")
                                         
                                         var rawLogData: Data = Data()
                                         for (name, path) in logItems {
@@ -969,21 +968,21 @@ private enum DebugControllerEntry: ItemListNodeEntry {
                                         tempSources.append(tempSource)
                                     }
 
-                                    let tempZip = TempBox.shared.tempFile(fileName: "destination.zip")
+                                    let tempZip = EngineTempBox.shared.tempFile(fileName: "destination.zip")
                                     SSZipArchive.createZipFile(atPath: tempZip.path, withFilesAtPaths: tempSources.map(\.path))
 
                                     guard let gzippedData = try? Data(contentsOf: URL(fileURLWithPath: tempZip.path)) else {
                                         return
                                     }
                                     
-                                    tempSources.forEach(TempBox.shared.dispose)
-                                    TempBox.shared.dispose(tempZip)
+                                    tempSources.forEach(EngineTempBox.shared.dispose)
+                                    EngineTempBox.shared.dispose(tempZip)
 
                                     let id = Int64.random(in: Int64.min ... Int64.max)
                                     let fileResource = LocalFileMediaResource(fileId: id, size: Int64(gzippedData.count), isSecretRelated: false)
                                     context.engine.resources.storeResourceData(id: EngineMediaResource.Id(fileResource.id), data: gzippedData)
 
-                                    let file = TelegramMediaFile(fileId: MediaId(namespace: Namespaces.Media.LocalFile, id: id), partialReference: nil, resource: fileResource, previewRepresentations: [], videoThumbnails: [], immediateThumbnailData: nil, mimeType: "application/zip", size: Int64(gzippedData.count), attributes: [.FileName(fileName: "Log-iOS-All.txt.zip")], alternativeRepresentations: [])
+                                    let file = TelegramMediaFile(fileId: EngineMedia.Id(namespace: Namespaces.Media.LocalFile, id: id), partialReference: nil, resource: fileResource, previewRepresentations: [], videoThumbnails: [], immediateThumbnailData: nil, mimeType: "application/zip", size: Int64(gzippedData.count), attributes: [.FileName(fileName: "Log-iOS-All.txt.zip")], alternativeRepresentations: [])
                                     let message: EnqueueMessage = .message(text: "", attributes: [], inlineStickers: [:], mediaReference: .standalone(media: file), threadId: nil, replyToMessageId: nil, replyToStoryId: nil, localGroupingKey: nil, correlationId: nil, bubbleUpEmojiOrStickersets: [])
 
                                     let _ = enqueueMessages(account: context.account, peerId: peerId, messages: [message]).start()
@@ -1038,7 +1037,7 @@ private enum DebugControllerEntry: ItemListNodeEntry {
                                     let fileResource = LocalFileMediaResource(fileId: id, size: Int64(allStatsData.count), isSecretRelated: false)
                                     context.engine.resources.storeResourceData(id: EngineMediaResource.Id(fileResource.id), data: allStatsData)
 
-                                    let file = TelegramMediaFile(fileId: MediaId(namespace: Namespaces.Media.LocalFile, id: id), partialReference: nil, resource: fileResource, previewRepresentations: [], videoThumbnails: [], immediateThumbnailData: nil, mimeType: "application/zip", size: Int64(allStatsData.count), attributes: [.FileName(fileName: "StorageReport.txt")], alternativeRepresentations: [])
+                                    let file = TelegramMediaFile(fileId: EngineMedia.Id(namespace: Namespaces.Media.LocalFile, id: id), partialReference: nil, resource: fileResource, previewRepresentations: [], videoThumbnails: [], immediateThumbnailData: nil, mimeType: "application/zip", size: Int64(allStatsData.count), attributes: [.FileName(fileName: "StorageReport.txt")], alternativeRepresentations: [])
                                     let message: EnqueueMessage = .message(text: "", attributes: [], inlineStickers: [:], mediaReference: .standalone(media: file), threadId: nil, replyToMessageId: nil, replyToStoryId: nil, localGroupingKey: nil, correlationId: nil, bubbleUpEmojiOrStickersets: [])
 
                                     let _ = enqueueMessages(account: context.account, peerId: peerId, messages: [message]).start()
@@ -1367,7 +1366,7 @@ private enum DebugControllerEntry: ItemListNodeEntry {
                     transaction.updateSharedData(ApplicationSpecificSharedDataKeys.experimentalUISettings, { settings in
                         var settings = settings?.get(ExperimentalUISettings.self) ?? ExperimentalUISettings.defaultSettings
                         settings.chatListPhotos = value
-                        return PreferencesEntry(settings)
+                        return EnginePreferencesEntry(settings)
                     })
                 }).start()
             })
@@ -1377,7 +1376,7 @@ private enum DebugControllerEntry: ItemListNodeEntry {
                     transaction.updateSharedData(ApplicationSpecificSharedDataKeys.experimentalUISettings, { settings in
                         var settings = settings?.get(ExperimentalUISettings.self) ?? ExperimentalUISettings.defaultSettings
                         settings.knockoutWallpaper = value
-                        return PreferencesEntry(settings)
+                        return EnginePreferencesEntry(settings)
                     })
                 }).start()
             })
@@ -1387,7 +1386,7 @@ private enum DebugControllerEntry: ItemListNodeEntry {
                     transaction.updateSharedData(ApplicationSpecificSharedDataKeys.experimentalUISettings, { settings in
                         var settings = settings?.get(ExperimentalUISettings.self) ?? ExperimentalUISettings.defaultSettings
                         settings.experimentalCompatibility = value
-                        return PreferencesEntry(settings)
+                        return EnginePreferencesEntry(settings)
                     })
                 }).start()
             })
@@ -1397,7 +1396,7 @@ private enum DebugControllerEntry: ItemListNodeEntry {
                     transaction.updateSharedData(ApplicationSpecificSharedDataKeys.experimentalUISettings, { settings in
                         var settings = settings?.get(ExperimentalUISettings.self) ?? ExperimentalUISettings.defaultSettings
                         settings.enableDebugDataDisplay = value
-                        return PreferencesEntry(settings)
+                        return EnginePreferencesEntry(settings)
                     })
                 }).start()
             })
@@ -1407,7 +1406,7 @@ private enum DebugControllerEntry: ItemListNodeEntry {
                     transaction.updateSharedData(ApplicationSpecificSharedDataKeys.experimentalUISettings, { settings in
                         var settings = settings?.get(ExperimentalUISettings.self) ?? ExperimentalUISettings.defaultSettings
                         settings.fakeGlass = value
-                        return PreferencesEntry(settings)
+                        return EnginePreferencesEntry(settings)
                     })
                 }).start()
             })
@@ -1417,7 +1416,7 @@ private enum DebugControllerEntry: ItemListNodeEntry {
                     transaction.updateSharedData(ApplicationSpecificSharedDataKeys.experimentalUISettings, { settings in
                         var settings = settings?.get(ExperimentalUISettings.self) ?? ExperimentalUISettings.defaultSettings
                         settings.forceClearGlass = value
-                        return PreferencesEntry(settings)
+                        return EnginePreferencesEntry(settings)
                     })
                 }).start()
             })
@@ -1427,7 +1426,7 @@ private enum DebugControllerEntry: ItemListNodeEntry {
                     transaction.updateSharedData(ApplicationSpecificSharedDataKeys.experimentalUISettings, { settings in
                         var settings = settings?.get(ExperimentalUISettings.self) ?? ExperimentalUISettings.defaultSettings
                         settings.debugRipple = value
-                        return PreferencesEntry(settings)
+                        return EnginePreferencesEntry(settings)
                     })
                 }).start()
             })
@@ -1437,7 +1436,7 @@ private enum DebugControllerEntry: ItemListNodeEntry {
                     transaction.updateSharedData(ApplicationSpecificSharedDataKeys.experimentalUISettings, { settings in
                         var settings = settings?.get(ExperimentalUISettings.self) ?? ExperimentalUISettings.defaultSettings
                         settings.debugRichText = value
-                        return PreferencesEntry(settings)
+                        return EnginePreferencesEntry(settings)
                     })
                 }).start()
             })
@@ -1447,7 +1446,7 @@ private enum DebugControllerEntry: ItemListNodeEntry {
                     transaction.updateSharedData(ApplicationSpecificSharedDataKeys.experimentalUISettings, { settings in
                         var settings = settings?.get(ExperimentalUISettings.self) ?? ExperimentalUISettings.defaultSettings
                         settings.browserExperiment = value
-                        return PreferencesEntry(settings)
+                        return EnginePreferencesEntry(settings)
                     })
                 }).start()
             })
@@ -1457,7 +1456,7 @@ private enum DebugControllerEntry: ItemListNodeEntry {
                     transaction.updateSharedData(ApplicationSpecificSharedDataKeys.experimentalUISettings, { settings in
                         var settings = settings?.get(ExperimentalUISettings.self) ?? ExperimentalUISettings.defaultSettings
                         settings.allForumsHaveTabs = value
-                        return PreferencesEntry(settings)
+                        return EnginePreferencesEntry(settings)
                     })
                 }).start()
             })
@@ -1471,7 +1470,7 @@ private enum DebugControllerEntry: ItemListNodeEntry {
                             settings.accountReactionEffectOverrides.removeAll()
                             settings.accountStickerEffectOverrides.removeAll()
                         }
-                        return PreferencesEntry(settings)
+                        return EnginePreferencesEntry(settings)
                     })
                 }).start()
             })
@@ -1481,7 +1480,7 @@ private enum DebugControllerEntry: ItemListNodeEntry {
                     transaction.updateSharedData(ApplicationSpecificSharedDataKeys.experimentalUISettings, { settings in
                         var settings = settings?.get(ExperimentalUISettings.self) ?? ExperimentalUISettings.defaultSettings
                         settings.compressedEmojiCache = value
-                        return PreferencesEntry(settings)
+                        return EnginePreferencesEntry(settings)
                     })
                 }).start()
             })
@@ -1491,7 +1490,7 @@ private enum DebugControllerEntry: ItemListNodeEntry {
                     transaction.updateSharedData(ApplicationSpecificSharedDataKeys.experimentalUISettings, { settings in
                         var settings = settings?.get(ExperimentalUISettings.self) ?? ExperimentalUISettings.defaultSettings
                         settings.storiesJpegExperiment = value
-                        return PreferencesEntry(settings)
+                        return EnginePreferencesEntry(settings)
                     })
                 }).start()
             })
@@ -1501,7 +1500,7 @@ private enum DebugControllerEntry: ItemListNodeEntry {
                     transaction.updateSharedData(ApplicationSpecificSharedDataKeys.experimentalUISettings, { settings in
                         var settings = settings?.get(ExperimentalUISettings.self) ?? ExperimentalUISettings.defaultSettings
                         settings.checkSerializedData = value
-                        return PreferencesEntry(settings)
+                        return EnginePreferencesEntry(settings)
                     })
                 }).start()
             })
@@ -1511,7 +1510,7 @@ private enum DebugControllerEntry: ItemListNodeEntry {
                     transaction.updateSharedData(ApplicationSpecificSharedDataKeys.experimentalUISettings, { settings in
                         var settings = settings?.get(ExperimentalUISettings.self) ?? ExperimentalUISettings.defaultSettings
                         settings.disableQuickReaction = !value
-                        return PreferencesEntry(settings)
+                        return EnginePreferencesEntry(settings)
                     })
                 }).start()
             })
@@ -1521,7 +1520,7 @@ private enum DebugControllerEntry: ItemListNodeEntry {
                     transaction.updateSharedData(ApplicationSpecificSharedDataKeys.experimentalUISettings, { settings in
                         var settings = settings?.get(ExperimentalUISettings.self) ?? ExperimentalUISettings.defaultSettings
                         settings.liveStreamV2 = value
-                        return PreferencesEntry(settings)
+                        return EnginePreferencesEntry(settings)
                     })
                 }).start()
             })
@@ -1531,7 +1530,7 @@ private enum DebugControllerEntry: ItemListNodeEntry {
                     transaction.updateSharedData(ApplicationSpecificSharedDataKeys.experimentalUISettings, { settings in
                         var settings = settings?.get(ExperimentalUISettings.self) ?? ExperimentalUISettings.defaultSettings
                         settings.experimentalCallMute = value
-                        return PreferencesEntry(settings)
+                        return EnginePreferencesEntry(settings)
                     })
                 }).start()
             })
@@ -1541,7 +1540,7 @@ private enum DebugControllerEntry: ItemListNodeEntry {
                     transaction.updateSharedData(ApplicationSpecificSharedDataKeys.experimentalUISettings, { settings in
                         var settings = settings?.get(ExperimentalUISettings.self) ?? ExperimentalUISettings.defaultSettings
                         settings.playerV2 = value
-                        return PreferencesEntry(settings)
+                        return EnginePreferencesEntry(settings)
                     })
                 }).start()
             })
@@ -1551,7 +1550,7 @@ private enum DebugControllerEntry: ItemListNodeEntry {
                     transaction.updateSharedData(ApplicationSpecificSharedDataKeys.experimentalUISettings, { settings in
                         var settings = settings?.get(ExperimentalUISettings.self) ?? ExperimentalUISettings.defaultSettings
                         settings.devRequests = value
-                        return PreferencesEntry(settings)
+                        return EnginePreferencesEntry(settings)
                     })
                 }).start()
             })
@@ -1561,7 +1560,7 @@ private enum DebugControllerEntry: ItemListNodeEntry {
                     transaction.updateSharedData(ApplicationSpecificSharedDataKeys.experimentalUISettings, { settings in
                         var settings = settings?.get(ExperimentalUISettings.self) ?? ExperimentalUISettings.defaultSettings
                         settings.enableUpdates = value
-                        return PreferencesEntry(settings)
+                        return EnginePreferencesEntry(settings)
                     })
                 }).start()
             })
@@ -1571,7 +1570,7 @@ private enum DebugControllerEntry: ItemListNodeEntry {
                     transaction.updateSharedData(ApplicationSpecificSharedDataKeys.experimentalUISettings, { settings in
                         var settings = settings?.get(ExperimentalUISettings.self) ?? ExperimentalUISettings.defaultSettings
                         settings.enablePWA = value
-                        return PreferencesEntry(settings)
+                        return EnginePreferencesEntry(settings)
                     })
                 }).start()
             })
@@ -1581,7 +1580,7 @@ private enum DebugControllerEntry: ItemListNodeEntry {
                     transaction.updateSharedData(ApplicationSpecificSharedDataKeys.experimentalUISettings, { settings in
                         var settings = settings?.get(ExperimentalUISettings.self) ?? ExperimentalUISettings.defaultSettings
                         settings.enableLocalTranslation = value
-                        return PreferencesEntry(settings)
+                        return EnginePreferencesEntry(settings)
                     })
                 }).start()
             })
@@ -1591,7 +1590,7 @@ private enum DebugControllerEntry: ItemListNodeEntry {
                     transaction.updateSharedData(ApplicationSpecificSharedDataKeys.experimentalUISettings, { settings in
                         var settings = settings?.get(ExperimentalUISettings.self) ?? ExperimentalUISettings.defaultSettings
                         settings.preferredVideoCodec = value
-                        return PreferencesEntry(settings)
+                        return EnginePreferencesEntry(settings)
                     })
                 }).start()
             })
@@ -1601,7 +1600,7 @@ private enum DebugControllerEntry: ItemListNodeEntry {
                     transaction.updateSharedData(ApplicationSpecificSharedDataKeys.experimentalUISettings, { settings in
                         var settings = settings?.get(ExperimentalUISettings.self) ?? ExperimentalUISettings.defaultSettings
                         settings.disableVideoAspectScaling = !value
-                        return PreferencesEntry(settings)
+                        return EnginePreferencesEntry(settings)
                     })
                 }).start()
             })
@@ -1832,7 +1831,7 @@ public func debugController(sharedContext: SharedAccountContext, context: Accoun
         hasLegacyAppData = FileManager.default.fileExists(atPath: statusPath)
     }
     
-    let preferencesSignal: Signal<PreferencesEntry?, NoError>
+    let preferencesSignal: Signal<EnginePreferencesEntry?, NoError>
     if let context = context {
         preferencesSignal = context.engine.data.subscribe(TelegramEngine.EngineData.Item.Configuration.ApplicationSpecificPreference(key: PreferencesKeys.networkSettings))
     } else {
@@ -1869,7 +1868,7 @@ public func debugController(sharedContext: SharedAccountContext, context: Accoun
         
         var leftNavigationButton: ItemListNavigationButton?
         if modal {
-            leftNavigationButton = ItemListNavigationButton(content: .text(presentationData.strings.Common_Cancel), style: .regular, enabled: true, action: {
+            leftNavigationButton = ItemListNavigationButton(content: .icon(.close), style: .regular, enabled: true, action: {
                 dismissImpl?()
             })
         }
@@ -1936,8 +1935,8 @@ public func triggerDebugSendLogsUI(context: AccountContext, additionalInfo: Stri
                     rawLogData.append("\(additionalInfo)".data(using: .utf8)!)
                 }
                 
-                let tempSource = TempBox.shared.tempFile(fileName: "Log.txt")
-                let tempZip = TempBox.shared.tempFile(fileName: "destination.zip")
+                let tempSource = EngineTempBox.shared.tempFile(fileName: "Log.txt")
+                let tempZip = EngineTempBox.shared.tempFile(fileName: "destination.zip")
                 
                 let _ = try? rawLogData.write(to: URL(fileURLWithPath: tempSource.path))
                 
@@ -1947,14 +1946,14 @@ public func triggerDebugSendLogsUI(context: AccountContext, additionalInfo: Stri
                     return
                 }
                 
-                TempBox.shared.dispose(tempSource)
-                TempBox.shared.dispose(tempZip)
+                EngineTempBox.shared.dispose(tempSource)
+                EngineTempBox.shared.dispose(tempZip)
 
                 let id = Int64.random(in: Int64.min ... Int64.max)
                 let fileResource = LocalFileMediaResource(fileId: id, size: Int64(gzippedData.count), isSecretRelated: false)
                 context.engine.resources.storeResourceData(id: EngineMediaResource.Id(fileResource.id), data: gzippedData)
 
-                let file = TelegramMediaFile(fileId: MediaId(namespace: Namespaces.Media.LocalFile, id: id), partialReference: nil, resource: fileResource, previewRepresentations: [], videoThumbnails: [], immediateThumbnailData: nil, mimeType: "application/text", size: Int64(gzippedData.count), attributes: [.FileName(fileName: "Log-iOS-Full.txt.zip")], alternativeRepresentations: [])
+                let file = TelegramMediaFile(fileId: EngineMedia.Id(namespace: Namespaces.Media.LocalFile, id: id), partialReference: nil, resource: fileResource, previewRepresentations: [], videoThumbnails: [], immediateThumbnailData: nil, mimeType: "application/text", size: Int64(gzippedData.count), attributes: [.FileName(fileName: "Log-iOS-Full.txt.zip")], alternativeRepresentations: [])
                 let message: EnqueueMessage = .message(text: "", attributes: [], inlineStickers: [:], mediaReference: .standalone(media: file), threadId: nil, replyToMessageId: nil, replyToStoryId: nil, localGroupingKey: nil, correlationId: nil, bubbleUpEmojiOrStickersets: [])
 
                 let _ = enqueueMessages(account: context.account, peerId: peerId, messages: [message]).start()

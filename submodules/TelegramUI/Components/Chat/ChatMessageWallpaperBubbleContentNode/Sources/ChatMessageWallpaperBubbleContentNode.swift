@@ -3,7 +3,6 @@ import UIKit
 import AsyncDisplayKit
 import Display
 import SwiftSignalKit
-import Postbox
 import TelegramCore
 import AccountContext
 import TelegramPresentationData
@@ -135,7 +134,7 @@ public class ChatMessageWallpaperBubbleContentNode: ChatMessageBubbleContentNode
         item.context.account.pendingPeerMediaUploadManager.cancel(peerId: item.message.id.peerId)
     }
     
-    override public func transitionNode(messageId: MessageId, media: Media, adjustRect: Bool) -> (ASDisplayNode, CGRect, () -> (UIView?, UIView?))? {
+    override public func transitionNode(messageId: EngineMessage.Id, media: EngineRawMedia, adjustRect: Bool) -> (ASDisplayNode, CGRect, () -> (UIView?, UIView?))? {
         if self.item?.message.id == messageId {
             return (self.imageNode, self.imageNode.bounds, { [weak self] in
                 guard let strongSelf = self else {
@@ -150,9 +149,9 @@ public class ChatMessageWallpaperBubbleContentNode: ChatMessageBubbleContentNode
         }
     }
     
-    override public func updateHiddenMedia(_ media: [Media]?) -> Bool {
+    override public func updateHiddenMedia(_ media: [EngineRawMedia]?) -> Bool {
         var mediaHidden = false
-        var currentMedia: Media?
+        var currentMedia: EngineRawMedia?
         if let item = item {
             mediaLoop: for media in item.message.media {
                 if let media = media as? TelegramMediaAction {

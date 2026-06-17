@@ -2,7 +2,6 @@ import Foundation
 import UIKit
 import Display
 import TelegramCore
-import Postbox
 import SwiftSignalKit
 import TelegramPresentationData
 import TelegramBaseController
@@ -21,7 +20,7 @@ public final class ChatRecentActionsController: TelegramBaseController {
     
     private let context: AccountContext
     private let peer: EnginePeer
-    private let initialAdminPeerId: PeerId?
+    private let initialAdminPeerId: EnginePeer.Id?
     let starsState: StarsRevenueStats?
     
     private var presentationData: PresentationData
@@ -39,7 +38,7 @@ public final class ChatRecentActionsController: TelegramBaseController {
     
     private var adminsDisposable: Disposable?
     
-    public init(context: AccountContext, peer: EnginePeer, adminPeerId: PeerId?, starsState: StarsRevenueStats?) {
+    public init(context: AccountContext, peer: EnginePeer, adminPeerId: EnginePeer.Id?, starsState: StarsRevenueStats?) {
         self.context = context
         self.peer = peer
         self.initialAdminPeerId = adminPeerId
@@ -59,7 +58,7 @@ public final class ChatRecentActionsController: TelegramBaseController {
         }, setupEditMessage: { _, _ in
         }, beginMessageSelection: { _, _ in
         }, cancelMessageSelection: { _ in
-        }, deleteSelectedMessages: {
+        }, deleteSelectedMessages: { _ in
         }, reportSelectedMessages: {
         }, reportMessages: { _, _ in
         }, blockMessageAuthor: { _, _ in
@@ -140,7 +139,6 @@ public final class ChatRecentActionsController: TelegramBaseController {
         }, displaySlowmodeTooltip: { _, _ in
         }, displaySendMessageOptions: { _, _ in
         }, openScheduledMessages: {
-        }, openPeersNearby: {
         }, displaySearchResultsTooltip: { _, _ in
         }, unarchivePeer: {
         }, scrollToTop: {
@@ -332,7 +330,7 @@ public final class ChatRecentActionsController: TelegramBaseController {
     func openFilterSetup() {
         if self.adminsPromise == nil {
             self.adminsPromise = Promise()
-            let (disposable, _) = self.context.peerChannelMemberCategoriesContextsManager.admins(engine: self.context.engine, postbox: self.context.account.postbox, network: self.context.account.network, accountPeerId: self.context.account.peerId, peerId: self.peer.id) { membersState in
+            let (disposable, _) = self.context.peerChannelMemberCategoriesContextsManager.admins(engine: self.context.engine, accountPeerId: self.context.account.peerId, peerId: self.peer.id) { membersState in
                 if case .loading = membersState.loadingState, membersState.list.isEmpty {
                     self.adminsPromise?.set(.single(nil))
                 } else {

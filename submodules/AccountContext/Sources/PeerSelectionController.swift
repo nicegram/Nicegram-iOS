@@ -2,7 +2,6 @@ import Foundation
 import Display
 import SwiftSignalKit
 import TelegramCore
-import Postbox
 import TelegramPresentationData
 import AnimationCache
 import MultiAnimationRenderer
@@ -123,39 +122,6 @@ public enum AttachmentTextInputPanelSendMode {
     case silent
     case schedule
     case whenOnline
-}
-
-public enum PeerSelectionControllerContext {
-    public final class Custom {
-        public let accountPeerId: EnginePeer.Id
-        public let postbox: Postbox
-        public let network: Network
-        public let animationCache: AnimationCache
-        public let animationRenderer: MultiAnimationRenderer
-        public let presentationData: PresentationData
-        public let updatedPresentationData: Signal<PresentationData, NoError>
-        
-        public init(
-            accountPeerId: EnginePeer.Id,
-            postbox: Postbox,
-            network: Network,
-            animationCache: AnimationCache,
-            animationRenderer: MultiAnimationRenderer,
-            presentationData: PresentationData,
-            updatedPresentationData: Signal<PresentationData, NoError>
-        ) {
-            self.accountPeerId = accountPeerId
-            self.postbox = postbox
-            self.network = network
-            self.animationCache = animationCache
-            self.animationRenderer = animationRenderer
-            self.presentationData = presentationData
-            self.updatedPresentationData = updatedPresentationData
-        }
-    }
-    
-    case account(AccountContext)
-    case custom(Custom)
 }
 
 public protocol PeerSelectionController: ViewController {

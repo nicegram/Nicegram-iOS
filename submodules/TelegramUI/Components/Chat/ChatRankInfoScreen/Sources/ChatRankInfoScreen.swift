@@ -2,7 +2,6 @@ import Foundation
 import UIKit
 import Display
 import AsyncDisplayKit
-import Postbox
 import TelegramCore
 import SwiftSignalKit
 import AccountContext
@@ -233,7 +232,7 @@ private final class ChatRankInfoSheetContent: CombinedComponent {
             
             let listItemParams = ListViewItemLayoutParams(width: previewWidth, leftInset: 0.0, rightInset: 0.0, availableHeight: 10000.0, isStandalone: true)
             
-            let emptyUser = TelegramUser(id: PeerId(namespace: Namespaces.Peer.CloudUser, id: ._internalFromInt64Value(0)), accessHash: nil, firstName: "A", lastName: "", username: "", phone: "", photo: [], botInfo: nil, restrictionInfo: nil, flags: [], emojiStatus: nil, usernames: [], storiesHidden: nil, nameColor: nil, backgroundEmojiId: nil, profileColor: nil, profileBackgroundEmojiId: nil, subscriberCount: nil, verificationIconFileId: nil)
+            let emptyUser = TelegramUser(id: EnginePeer.Id(namespace: Namespaces.Peer.CloudUser, id: ._internalFromInt64Value(0)), accessHash: nil, firstName: "A", lastName: "", username: "", phone: "", photo: [], botInfo: nil, restrictionInfo: nil, flags: [], emojiStatus: nil, usernames: [], storiesHidden: nil, nameColor: nil, backgroundEmojiId: nil, profileColor: nil, profileBackgroundEmojiId: nil, subscriberCount: nil, verificationIconFileId: nil)
             
             let memberMessageItem = RankChatPreviewItem.MessageItem(
                 peer: .user(emptyUser),

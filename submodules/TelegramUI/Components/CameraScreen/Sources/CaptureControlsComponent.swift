@@ -310,7 +310,7 @@ private final class ShutterButtonContentComponent: Component {
                 glassAlpha = 0.0
                 chromeAlpha = 0.65
                 labelAlpha = progress ? 0.0 : 1.0
-                chromeSize = CGSize(width: 326.0, height: 53.0 - UIScreenPixel)
+                chromeSize = CGSize(width: 297.0, height: 53.0 - UIScreenPixel)
                 hasProgress = progress
             }
             
@@ -683,6 +683,7 @@ final class CaptureControlsComponent: Component {
     let hasAppeared: Bool
     let hasAccess: Bool
     let hideControls: Bool
+    let controlsBottomInset: CGFloat
     let collageProgress: Float
     let collageCount: Int?
     let tintColor: UIColor
@@ -712,6 +713,7 @@ final class CaptureControlsComponent: Component {
         hasAppeared: Bool,
         hasAccess: Bool,
         hideControls: Bool,
+        controlsBottomInset: CGFloat,
         collageProgress: Float,
         collageCount: Int?,
         tintColor: UIColor,
@@ -740,6 +742,7 @@ final class CaptureControlsComponent: Component {
         self.hasAppeared = hasAppeared
         self.hasAccess = hasAccess
         self.hideControls = hideControls
+        self.controlsBottomInset = controlsBottomInset
         self.collageProgress = collageProgress
         self.collageCount = collageCount
         self.tintColor = tintColor
@@ -781,6 +784,9 @@ final class CaptureControlsComponent: Component {
             return false
         }
         if lhs.hideControls != rhs.hideControls {
+            return false
+        }
+        if lhs.controlsBottomInset != rhs.controlsBottomInset {
             return false
         }
         if lhs.collageProgress != rhs.collageProgress {
@@ -1223,6 +1229,13 @@ final class CaptureControlsComponent: Component {
                     
             let hideControls = component.hideControls
             
+            var bottomButtonSideInset: CGFloat = 16.0
+            var bottomButtonTopInset: CGFloat = 21.0
+            if component.controlsBottomInset < 0.0 {
+                bottomButtonSideInset = 9.0
+                bottomButtonTopInset = -2.0 - UIScreenPixel
+            }
+            
             let galleryButtonFrame: CGRect
             let lockReferenceFrame: CGRect
             let gallerySize: CGSize
@@ -1268,7 +1281,7 @@ final class CaptureControlsComponent: Component {
                     galleryButtonFrame = CGRect(origin: CGPoint(x: floorToScreenPixels((size.width - galleryButtonSize.width) / 2.0), y: size.height - galleryButtonSize.height - 56.0), size: galleryButtonSize)
                     lockReferenceFrame = .zero
                 } else {
-                    galleryButtonFrame = CGRect(origin: CGPoint(x: 16.0, y: size.height + 21.0), size: galleryButtonSize)
+                    galleryButtonFrame = CGRect(origin: CGPoint(x: bottomButtonSideInset, y: size.height + bottomButtonTopInset), size: galleryButtonSize)
                     lockReferenceFrame = CGRect(origin: CGPoint(x: buttonSideInset, y: floorToScreenPixels((size.height - galleryButtonSize.height) / 2.0)), size: galleryButtonSize)
                 }
                 if let galleryButtonView = self.galleryButtonView.view as? CameraButton.View {
@@ -1360,7 +1373,7 @@ final class CaptureControlsComponent: Component {
                     environment: {},
                     containerSize: availableSize
                 )
-                let bottomFlipButtonFrame = CGRect(origin: CGPoint(x: availableSize.width - bottomFlipButtonSize.width - 16.0, y: 21.0), size: bottomFlipButtonSize)
+                let bottomFlipButtonFrame = CGRect(origin: CGPoint(x: availableSize.width - bottomFlipButtonSize.width - bottomButtonSideInset, y: bottomButtonTopInset), size: bottomFlipButtonSize)
                 if let bottomFlipButtonView = self.bottomFlipButton.view {
                     if bottomFlipButtonView.superview == nil {
                         self.bottomContainerView.contentView.addSubview(bottomFlipButtonView)
@@ -1399,13 +1412,13 @@ final class CaptureControlsComponent: Component {
                 environment: {},
                 containerSize: availableSize
             )
-            let bottomFlipButtonFrame = CGRect(origin: CGPoint(x: 16.0, y: 21.0), size: bottomSettingsButtonSize)
+            let bottomSettingsButtonFrame = CGRect(origin: CGPoint(x: bottomButtonSideInset, y: bottomButtonTopInset), size: bottomSettingsButtonSize)
             if let bottomSettingsButtonView = self.bottomSettingsButton.view {
                 if bottomSettingsButtonView.superview == nil {
                     self.bottomContainerView.contentView.addSubview(bottomSettingsButtonView)
                 }
-                transition.setBounds(view: bottomSettingsButtonView, bounds: CGRect(origin: .zero, size: bottomFlipButtonFrame.size))
-                transition.setPosition(view: bottomSettingsButtonView, position: bottomFlipButtonFrame.center)
+                transition.setBounds(view: bottomSettingsButtonView, bounds: CGRect(origin: .zero, size: bottomSettingsButtonFrame.size))
+                transition.setPosition(view: bottomSettingsButtonView, position: bottomSettingsButtonFrame.center)
                 
                 transition.setScale(view: bottomSettingsButtonView, scale: !isLiveStream || isLiveActive || isRecording || isTransitioning || hideControls ? 0.01 : 1.0)
                 transition.setAlpha(view: bottomSettingsButtonView, alpha: !isLiveStream || isLiveActive || isRecording || isTransitioning || hideControls ? 0.0 : 1.0)
@@ -1461,7 +1474,7 @@ final class CaptureControlsComponent: Component {
             let shutterButtonFrame = CGRect(origin: CGPoint(x: (availableSize.width - shutterButtonSize.width) / 2.0, y: (size.height - shutterButtonSize.height) / 2.0), size: shutterButtonSize)
 
             let guideSpacing: CGFloat = 9.0
-            let guideSize = CGSize(width: isHolding ? component.isTablet ? 84.0 : 60.0 : 0.0, height: 1.0 + UIScreenPixel)
+            let guideSize = CGSize(width: isHolding ? (component.isTablet ? 84.0 : 60.0) : 0.0, height: 1.0 + UIScreenPixel)
             let guideAlpha: CGFloat = isHolding ? 1.0 : 0.0
             
             let leftGuideFrame = CGRect(origin: CGPoint(x: shutterButtonFrame.minX - guideSpacing - guideSize.width, y: floorToScreenPixels((size.height - guideSize.height) / 2.0)), size: guideSize)

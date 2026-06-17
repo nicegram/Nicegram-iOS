@@ -1336,16 +1336,6 @@ public func authorizeWithPasskey(accountManager: AccountManager<TelegramAccountM
     }
 }
 
-public enum PasswordRecoveryRequestError {
-    case limitExceeded
-    case generic
-}
-
-public enum PasswordRecoveryOption {
-    case none
-    case email(pattern: String)
-}
-
 public enum PasswordRecoveryError {
     case invalidCode
     case limitExceeded
@@ -1599,18 +1589,6 @@ public func signUpWithName(accountManager: AccountManager<TelegramAccountManager
     |> mapError { _ -> SignUpError in
     }
     |> switchToLatest
-}
-
-public enum AuthorizationStateReset {
-    case empty
-}
-
-public func resetAuthorizationState(account: UnauthorizedAccount, to value: AuthorizationStateReset) -> Signal<Void, NoError> {
-    return account.postbox.transaction { transaction -> Void in
-        if let state = transaction.getState() as? UnauthorizedAccountState {
-            transaction.setState(UnauthorizedAccountState(isTestingEnvironment: state.isTestingEnvironment, masterDatacenterId: state.masterDatacenterId, contents: .empty))
-        }
-    }
 }
 
 public func togglePreviousCodeEntry(account: UnauthorizedAccount) -> Signal<Never, NoError> {

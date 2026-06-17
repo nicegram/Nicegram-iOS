@@ -2,7 +2,6 @@ import Foundation
 import UIKit
 import Display
 import AsyncDisplayKit
-import Postbox
 import TelegramCore
 import SwiftSignalKit
 import TelegramPresentationData
@@ -570,7 +569,7 @@ final class ChatPinnedMessageTitlePanelNode: ChatTitleAccessoryPanelNode {
         }
     }
     
-    private func enqueueTransition(width: CGFloat, panelHeight: CGFloat, leftInset: CGFloat, rightInset: CGFloat, transition: ContainedViewLayoutTransition, animation: PinnedMessageAnimation?, pinnedMessage: ChatPinnedMessage, theme: PresentationTheme, strings: PresentationStrings, nameDisplayOrder: PresentationPersonNameOrder, dateTimeFormat: PresentationDateTimeFormat, accountPeerId: PeerId, firstTime: Bool, isReplyThread: Bool, translateToLanguage: String?) {
+    private func enqueueTransition(width: CGFloat, panelHeight: CGFloat, leftInset: CGFloat, rightInset: CGFloat, transition: ContainedViewLayoutTransition, animation: PinnedMessageAnimation?, pinnedMessage: ChatPinnedMessage, theme: PresentationTheme, strings: PresentationStrings, nameDisplayOrder: PresentationPersonNameOrder, dateTimeFormat: PresentationDateTimeFormat, accountPeerId: EnginePeer.Id, firstTime: Bool, isReplyThread: Bool, translateToLanguage: String?) {
         let message = pinnedMessage.message
         
         var animationTransition: ContainedViewLayoutTransition = .immediate
@@ -661,7 +660,7 @@ final class ChatPinnedMessageTitlePanelNode: ChatTitleAccessoryPanelNode {
                 } else if let paidContent = media as? TelegramMediaPaidContent, let firstMedia = paidContent.extendedMedia.first {
                     switch firstMedia {
                     case let .preview(dimensions, immediateThumbnailData, _):
-                        let thumbnailMedia = TelegramMediaImage(imageId: MediaId(namespace: 0, id: 0), representations: [], immediateThumbnailData: immediateThumbnailData, reference: nil, partialReference: nil, flags: [])
+                        let thumbnailMedia = TelegramMediaImage(imageId: EngineMedia.Id(namespace: 0, id: 0), representations: [], immediateThumbnailData: immediateThumbnailData, reference: nil, partialReference: nil, flags: [])
                         if let dimensions {
                             imageDimensions = dimensions.cgSize
                         }
@@ -722,7 +721,7 @@ final class ChatPinnedMessageTitlePanelNode: ChatTitleAccessoryPanelNode {
         let hasSpoiler = message.attributes.contains(where: { $0 is MediaSpoilerMessageAttribute })
         
         var updateImageSignal: Signal<(TransformImageArguments) -> DrawingContext?, NoError>?
-        var updatedFetchMediaSignal: Signal<FetchResourceSourceType, FetchResourceError>?
+        var updatedFetchMediaSignal: Signal<EngineFetchResourceSourceType, EngineFetchResourceError>?
         if mediaUpdated {
             if let updatedMediaReference = updatedMediaReference, imageDimensions != nil {
                 if let imageReference = updatedMediaReference.concrete(TelegramMediaImage.self) {
@@ -935,7 +934,7 @@ final class ChatPinnedMessageTitlePanelNode: ChatTitleAccessoryPanelNode {
                     let button = attribute.rows[0].buttons[0]
                     switch button.action {
                     case .text:
-                        controllerInteraction.sendMessage(button.title)
+                        controllerInteraction.sendMessage(button.title, message.id)
                         return
                     case let .url(url):
                         var isConcealed = true
@@ -945,10 +944,10 @@ final class ChatPinnedMessageTitlePanelNode: ChatTitleAccessoryPanelNode {
                         controllerInteraction.openUrl(ChatControllerInteraction.OpenUrl(url: url, concealed: isConcealed, progress: Promise()))
                         return
                     case .requestMap:
-                        controllerInteraction.shareCurrentLocation()
+                        controllerInteraction.shareCurrentLocation(message.id)
                         return
                     case .requestPhone:
-                        controllerInteraction.shareAccountContact()
+                        controllerInteraction.shareAccountContact(message.id)
                         return
                     case .openWebApp:
                         let progressPromise = Promise<Bool>()
@@ -976,22 +975,22 @@ final class ChatPinnedMessageTitlePanelNode: ChatTitleAccessoryPanelNode {
                         })
                         return
                     case let .switchInline(samePeer, query, peerTypes):
-                        var botPeer: Peer?
-                        
+                        var botPeer: EnginePeer?
+
                         var found = false
                         for attribute in message.attributes {
                             if let attribute = attribute as? InlineBotMessageAttribute {
                                 if let peerId = attribute.peerId {
-                                    botPeer = message.peers[peerId]
+                                    botPeer = message.peers[peerId].flatMap(EnginePeer.init)
                                     found = true
                                 }
                             }
                         }
                         if !found {
-                            botPeer = message.author
+                            botPeer = message.author.flatMap(EnginePeer.init)
                         }
-                        
-                        var peerId: PeerId?
+
+                        var peerId: EnginePeer.Id?
                         if samePeer {
                             peerId = message.id.peerId
                         }

@@ -62,7 +62,7 @@ func _internal_clearCloudDraftsInteractively(postbox: Postbox, network: Network,
                                 flags |= (1 << 0)
                                 replyTo = .inputReplyToMonoForum(.init(monoforumPeerId: monoforumPeerId))
                             }
-                            signals.append(network.request(Api.functions.messages.saveDraft(flags: flags, replyTo: replyTo, peer: inputPeer, message: "", entities: nil, media: nil, effect: nil, suggestedPost: nil))
+                            signals.append(network.request(Api.functions.messages.saveDraft(flags: flags, replyTo: replyTo, peer: inputPeer, message: "", entities: nil, media: nil, effect: nil, suggestedPost: nil, richMessage: nil))
                             |> `catch` { _ -> Signal<Api.Bool, NoError> in
                                 return .single(.boolFalse)
                             }

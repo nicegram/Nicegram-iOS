@@ -1,6 +1,5 @@
 import Foundation
 import UIKit
-import Postbox
 import TelegramCore
 import Display
 import libprisma
@@ -127,7 +126,7 @@ private func generateMessageSyntaxHighlight(spec: CachedMessageSyntaxHighlight.S
     return MessageSyntaxHighlight(entities: entities)
 }
 
-public func stringWithAppliedEntities(_ text: String, entities: [MessageTextEntity], strings: PresentationStrings? = nil, dateTimeFormat: PresentationDateTimeFormat? = nil, baseColor: UIColor, linkColor: UIColor, baseQuoteTintColor: UIColor? = nil, baseQuoteSecondaryTintColor: UIColor? = nil, baseQuoteTertiaryTintColor: UIColor? = nil, codeBlockTitleColor: UIColor? = nil, codeBlockAccentColor: UIColor? = nil, codeBlockBackgroundColor: UIColor? = nil, baseFont: UIFont, linkFont: UIFont, boldFont: UIFont, italicFont: UIFont, boldItalicFont: UIFont, fixedFont: UIFont, blockQuoteFont: UIFont, underlineLinks: Bool = true, external: Bool = false, message: Message?, entityFiles: [MediaId: TelegramMediaFile] = [:], adjustQuoteFontSize: Bool = false, cachedMessageSyntaxHighlight: CachedMessageSyntaxHighlight? = nil, paragraphAlignment: NSTextAlignment? = nil) -> NSAttributedString {
+public func stringWithAppliedEntities(_ text: String, entities: [MessageTextEntity], strings: PresentationStrings? = nil, dateTimeFormat: PresentationDateTimeFormat? = nil, baseColor: UIColor, linkColor: UIColor, baseQuoteTintColor: UIColor? = nil, baseQuoteSecondaryTintColor: UIColor? = nil, baseQuoteTertiaryTintColor: UIColor? = nil, codeBlockTitleColor: UIColor? = nil, codeBlockAccentColor: UIColor? = nil, codeBlockBackgroundColor: UIColor? = nil, baseFont: UIFont, linkFont: UIFont, boldFont: UIFont, italicFont: UIFont, boldItalicFont: UIFont, fixedFont: UIFont, blockQuoteFont: UIFont, underlineLinks: Bool = true, external: Bool = false, message: EngineRawMessage?, entityFiles: [EngineMedia.Id: TelegramMediaFile] = [:], adjustQuoteFontSize: Bool = false, cachedMessageSyntaxHighlight: CachedMessageSyntaxHighlight? = nil, paragraphAlignment: NSTextAlignment? = nil) -> NSAttributedString {
     let baseQuoteTintColor = baseQuoteTintColor ?? baseColor
     
     var nsString: NSString?
@@ -380,7 +379,7 @@ public func stringWithAppliedEntities(_ text: String, entities: [MessageTextEnti
                     addFontAttributes(range, .smaller)
                 }
             case let .CustomEmoji(_, fileId):
-                let mediaId = MediaId(namespace: Namespaces.Media.CloudFile, id: fileId)
+                let mediaId = EngineMedia.Id(namespace: Namespaces.Media.CloudFile, id: fileId)
                 var emojiFile: TelegramMediaFile?
                 if let file = message?.associatedMedia[mediaId] as? TelegramMediaFile {
                     emojiFile = file
@@ -662,7 +661,7 @@ public func asyncUpdateMessageSyntaxHighlight(engine: TelegramEngine, messageId:
             }
         }
         
-        if let entry = CodableEntry(CachedMessageSyntaxHighlight(values: updated)) {
+        if let entry = EngineCodableEntry(CachedMessageSyntaxHighlight(values: updated)) {
             return engine.messages.storeLocallyDerivedData(messageId: messageId, data: ["code": entry]).start(completed: {
                 subscriber.putCompletion()
             })

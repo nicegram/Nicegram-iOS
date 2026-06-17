@@ -1,12 +1,11 @@
 import Foundation
 import UIKit
-import Postbox
 import TelegramCore
 import SwiftSignalKit
 import TelegramUIPreferences
 
 private struct SettingsSearchRecentQueryItemId {
-    public let rawValue: MemoryBuffer
+    public let rawValue: EngineMemoryBuffer
     
     var value: Int64 {
         return self.rawValue.makeData().withUnsafeBytes { buffer -> Int64 in
@@ -17,13 +16,13 @@ private struct SettingsSearchRecentQueryItemId {
         }
     }
     
-    init(_ rawValue: MemoryBuffer) {
+    init(_ rawValue: EngineMemoryBuffer) {
         self.rawValue = rawValue
     }
     
     init(_ value: Int64) {
         var value = value
-        self.rawValue = MemoryBuffer(data: Data(bytes: &value, count: MemoryLayout.size(ofValue: value)))
+        self.rawValue = EngineMemoryBuffer(data: Data(bytes: &value, count: MemoryLayout.size(ofValue: value)))
     }
 }
 
@@ -42,7 +41,7 @@ func addRecentSettingsSearchItem(engine: TelegramEngine, item: AnyHashable) {
     guard let id = item.base as? String, let data = id.data(using: .ascii) else {
         return
     }
-    let itemId = MemoryBuffer(data: data)
+    let itemId = EngineMemoryBuffer(data: data)
     let _ = engine.orderedLists.addOrMoveToFirstPosition(collectionId: ApplicationSpecificOrderedItemListCollectionId.settingsSearchRecentItems, id: itemId, item: RecentSettingsSearchQueryItem(), removeTailIfCountExceeds: 100).start()
 }
 
@@ -50,7 +49,7 @@ func removeRecentSettingsSearchItem(engine: TelegramEngine, item: AnyHashable) {
     guard let id = item.base as? String, let data = id.data(using: .ascii) else {
         return
     }
-    let itemId = MemoryBuffer(data: data)
+    let itemId = EngineMemoryBuffer(data: data)
     let _ = engine.orderedLists.removeItem(collectionId: ApplicationSpecificOrderedItemListCollectionId.settingsSearchRecentItems, id: itemId).start()
 }
 

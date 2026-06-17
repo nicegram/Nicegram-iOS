@@ -2,7 +2,6 @@ import Foundation
 import UIKit
 import Display
 import SwiftSignalKit
-import Postbox
 import TelegramCore
 import TelegramPresentationData
 import TelegramUIPreferences
@@ -515,13 +514,9 @@ public func saveIncomingMediaController(context: AccountContext, scope: SaveInco
             controller.peerSelected = { [weak controller] peer, _ in
                 let peerId = peer.id
                 
-                let preferencesKey: PostboxViewKey = .preferences(keys: Set([ApplicationSpecificPreferencesKeys.mediaAutoSaveSettings]))
-                let preferences = context.account.postbox.combinedView(keys: [preferencesKey])
-                |> map { views -> MediaAutoSaveSettings in
-                    guard let view = views.views[preferencesKey] as? PreferencesView else {
-                        return .default
-                    }
-                    return view.values[ApplicationSpecificPreferencesKeys.mediaAutoSaveSettings]?.get(MediaAutoSaveSettings.self) ?? MediaAutoSaveSettings.default
+                let preferences = context.engine.data.subscribe(TelegramEngine.EngineData.Item.Configuration.ApplicationSpecificPreference(key: ApplicationSpecificPreferencesKeys.mediaAutoSaveSettings))
+                |> map { entry -> MediaAutoSaveSettings in
+                    return entry?.get(MediaAutoSaveSettings.self) ?? MediaAutoSaveSettings.default
                 }
                 
                 let _ = (preferences
@@ -622,13 +617,9 @@ public func saveIncomingMediaController(context: AccountContext, scope: SaveInco
         }
     )
     
-    let preferencesKey: PostboxViewKey = .preferences(keys: Set([ApplicationSpecificPreferencesKeys.mediaAutoSaveSettings]))
-    let preferences = context.account.postbox.combinedView(keys: [preferencesKey])
-    |> map { views -> MediaAutoSaveSettings in
-        guard let view = views.views[preferencesKey] as? PreferencesView else {
-            return .default
-        }
-        return view.values[ApplicationSpecificPreferencesKeys.mediaAutoSaveSettings]?.get(MediaAutoSaveSettings.self) ?? MediaAutoSaveSettings.default
+    let preferences = context.engine.data.subscribe(TelegramEngine.EngineData.Item.Configuration.ApplicationSpecificPreference(key: ApplicationSpecificPreferencesKeys.mediaAutoSaveSettings))
+    |> map { entry -> MediaAutoSaveSettings in
+        return entry?.get(MediaAutoSaveSettings.self) ?? MediaAutoSaveSettings.default
     }
     
     let peer: Signal<(EnginePeer?, EnginePeer.Presence?), NoError>
@@ -669,7 +660,7 @@ public func saveIncomingMediaController(context: AccountContext, scope: SaveInco
         
         switch scope {
         case .peer, .addPeer:
-            rightButton = ItemListNavigationButton(content: .text(presentationData.strings.Common_Done), style: .bold, enabled: true, action: {
+            rightButton = ItemListNavigationButton(content: .icon(.done), style: .bold, enabled: true, action: {
                 switch scope {
                 case let .addPeer(_, completion):
                     let configuration = stateValue.with({ $0 }).pendingConfiguration

@@ -2,6 +2,9 @@ import Foundation
 import UIKit
 import AsyncDisplayKit
 import Display
+import AccountContext
+import TelegramCore
+import SwiftSignalKit
 import TelegramPresentationData
 import AppBundle
 import CoreLocation
@@ -10,6 +13,8 @@ import GlassBackgroundComponent
 import PlainButtonComponent
 import BundleIconComponent
 import MultilineTextComponent
+import LottieComponent
+import LottieComponentResourceContent
 
 private let panelInset: CGFloat = 4.0
 private let panelButtonSize = CGSize(width: 46.0, height: 46.0)
@@ -48,6 +53,7 @@ public final class LocationMapHeaderNode: ASDisplayNode {
     private let goToUserLocation: () -> Void
     private let showPlacesInThisArea: () -> Void
     private let setupProximityNotification: (Bool) -> Void
+    private let weatherPressed: () -> Void
     
     private var displayingPlacesButton = false
     private var proximityNotification: Bool?
@@ -67,10 +73,20 @@ public final class LocationMapHeaderNode: ASDisplayNode {
     private let placesBackgroundView: GlassBackgroundView?
     private let placesBackgroundNode: ASImageNode
     private let placesButtonNode: HighlightTrackingButtonNode
-    private let shadowNode: ASImageNode
     
+    private let weatherBackgroundView: GlassBackgroundView?
+    private let weatherIcon = ComponentView<Empty>()
+    private let weatherEmojiLabel = ComponentView<Empty>()
+    private let weatherTemperatureLabel = ComponentView<Empty>()
+    private let weatherButton: HighlightTrackingButton
+    private var weatherEmoji: String?
+    private var weatherTemperature: String?
+    private var weatherEmojiFile: TelegramMediaFile?
+    private weak var weatherContext: AccountContext?
+    private let weatherEmojiLoadDisposable = MetaDisposable()
+
     private var validLayout: (ContainerViewLayout, CGFloat, CGFloat, CGFloat, CGFloat, CGFloat, CGSize)?
-    
+
     public init(
         presentationData: PresentationData,
         glass: Bool,
@@ -79,7 +95,8 @@ public final class LocationMapHeaderNode: ASDisplayNode {
         updateMapMode: @escaping (LocationMapMode) -> Void,
         goToUserLocation: @escaping () -> Void,
         setupProximityNotification: @escaping (Bool) -> Void = { _ in },
-        showPlacesInThisArea: @escaping () -> Void = {}
+        showPlacesInThisArea: @escaping () -> Void = {},
+        weatherPressed: @escaping () -> Void = {}
     ) {
         self.presentationData = presentationData
         self.glass = glass
@@ -88,6 +105,7 @@ public final class LocationMapHeaderNode: ASDisplayNode {
         self.goToUserLocation = goToUserLocation
         self.setupProximityNotification = setupProximityNotification
         self.showPlacesInThisArea = showPlacesInThisArea
+        self.weatherPressed = weatherPressed
         
         self.mapNode = LocationMapNode()
         
@@ -131,29 +149,35 @@ public final class LocationMapHeaderNode: ASDisplayNode {
         self.placesBackgroundNode.displayWithoutProcessing = true
         self.placesBackgroundNode.image = generateBackgroundImage(theme: presentationData.theme)
         self.placesBackgroundNode.isUserInteractionEnabled = true
-        
+
         self.placesButtonNode = HighlightTrackingButtonNode()
         self.placesButtonNode.setTitle(presentationData.strings.Map_PlacesInThisArea, with: Font.medium(17.0), with: self.glass ? presentationData.theme.rootController.navigationBar.primaryTextColor : buttonColor, for: .normal)
-        
-        self.shadowNode = ASImageNode()
-        self.shadowNode.contentMode = .scaleToFill
-        self.shadowNode.displaysAsynchronously = false
-        self.shadowNode.displayWithoutProcessing = true
-        self.shadowNode.image = generateShadowImage(theme: presentationData.theme, highlighted: false)
-        
+
+        self.weatherButton = HighlightTrackingButton()
+
         if glass {
             self.optionsBackgroundView = GlassContextExtractableContainer()
             self.optionsBackgroundNode.image = nil
             
             self.placesBackgroundView = GlassBackgroundView()
             self.placesBackgroundNode.image = nil
+
+            self.weatherBackgroundView = GlassBackgroundView()
         } else {
             self.optionsBackgroundView = nil
             self.placesBackgroundView = nil
+            self.weatherBackgroundView = nil
         }
-                
+
         super.init()
-        
+
+        self.mapNode.visibleRegionDidChange = { [weak self] in
+            guard let self, self.glass, self.mapNode.mapMode == .satellite else {
+                return
+            }
+            self.requestLayout(transition: .immediate)
+        }
+
         self.clipsToBounds = true
         
         self.addSubnode(self.mapNode)
@@ -176,15 +200,28 @@ public final class LocationMapHeaderNode: ASDisplayNode {
                 self.optionsBackgroundView?.contentView.addSubview(self.notificationButtonNode.view)
             }
         }
-            
+
         self.addSubnode(self.placesBackgroundNode)
         self.placesBackgroundView?.contentView.addSubview(self.placesButtonNode.view)
-        //self.addSubnode(self.shadowNode)
-        
+        if let weatherBackgroundView = self.weatherBackgroundView {
+            weatherBackgroundView.isHidden = true
+            self.view.addSubview(weatherBackgroundView)
+        }
+
         self.infoButtonNode.addTarget(self, action: #selector(self.infoPressed), forControlEvents: .touchUpInside)
         self.locationButtonNode.addTarget(self, action: #selector(self.locationPressed), forControlEvents: .touchUpInside)
         self.notificationButtonNode.addTarget(self, action: #selector(self.notificationPressed), forControlEvents: .touchUpInside)
         self.placesButtonNode.addTarget(self, action: #selector(self.placesPressed), forControlEvents: .touchUpInside)
+
+        self.weatherButton.addTarget(self, action: #selector(self.weatherButtonPressed), for: .touchUpInside)
+    }
+
+    deinit {
+        self.weatherEmojiLoadDisposable.dispose()
+    }
+
+    @objc private func weatherButtonPressed() {
+        self.weatherPressed()
     }
     
     public func updateState(mapMode: LocationMapMode, trackingMode: LocationTrackingMode, displayingMapModeOptions: Bool, displayingPlacesButton: Bool, proximityNotification: Bool?, animated: Bool) {
@@ -214,6 +251,7 @@ public final class LocationMapHeaderNode: ASDisplayNode {
         
         let buttonColor = self.glass ? presentationData.theme.rootController.navigationBar.primaryTextColor.withAlphaComponent(0.62) : presentationData.theme.rootController.navigationBar.buttonColor
         
+        self.mapNode.isDark = presentationData.theme.overallDarkAppearance
         self.optionsBackgroundNode.image = generateBackgroundImage(theme: presentationData.theme)
         self.optionsSeparatorNode.backgroundColor = presentationData.theme.rootController.navigationBar.separatorColor
         self.optionsSecondSeparatorNode.backgroundColor = presentationData.theme.rootController.navigationBar.separatorColor
@@ -227,9 +265,45 @@ public final class LocationMapHeaderNode: ASDisplayNode {
         if !self.glass {
             self.placesBackgroundNode.image = generateBackgroundImage(theme: presentationData.theme)
         }
-        self.shadowNode.image = generateShadowImage(theme: presentationData.theme, highlighted: false)
     }
     
+    func updateWeatherData(context: AccountContext, emoji: String, temperature: String, animated: Bool) {
+        let emojiFile = context.animatedEmojiStickersValue[emoji]?.first?.file._parse()
+        if self.weatherEmoji == emoji && self.weatherTemperature == temperature && self.weatherEmojiFile?.fileId == emojiFile?.fileId {
+            return
+        }
+
+        if self.weatherEmojiFile?.fileId != emojiFile?.fileId {
+            if let emojiFile {
+                self.weatherEmojiLoadDisposable.set(context.engine.resources.fetch(reference: .standalone(resource: emojiFile.resource), userLocation: .other, userContentType: .sticker).start())
+            } else {
+                self.weatherEmojiLoadDisposable.set(nil)
+            }
+        }
+
+        self.weatherContext = context
+        self.weatherEmoji = emoji
+        self.weatherTemperature = temperature
+        self.weatherEmojiFile = emojiFile
+        self.requestLayout(transition: animated ? .animated(duration: 0.2, curve: .easeInOut) : .immediate)
+    }
+
+    func clearWeatherData(animated: Bool) {
+        if self.weatherEmoji == nil && self.weatherTemperature == nil {
+            return
+        }
+        self.weatherEmoji = nil
+        self.weatherTemperature = nil
+        self.weatherEmojiFile = nil
+        self.weatherContext = nil
+        self.weatherEmojiLoadDisposable.set(nil)
+        if let weatherIconView = self.weatherIcon.view as? LottieComponent.View {
+            weatherIconView.externalShouldPlay = false
+        }
+        self.weatherIcon.view?.removeFromSuperview()
+        self.requestLayout(transition: animated ? .animated(duration: 0.2, curve: .easeInOut) : .immediate)
+    }
+
     private func iconForTracking() -> UIImage? {
         switch self.trackingMode {
             case .none:
@@ -241,7 +315,23 @@ public final class LocationMapHeaderNode: ASDisplayNode {
         }
     }
     
-    public func updateLayout(layout: ContainerViewLayout, navigationBarHeight: CGFloat, topPadding: CGFloat, controlsTopPadding: CGFloat, controlsBottomPadding: CGFloat, offset: CGFloat, size: CGSize, transition: ContainedViewLayoutTransition) {
+    func requestLayout(transition: ContainedViewLayoutTransition) {
+        guard let (layout, navigationBarHeight, topPadding, controlsTopPadding, controlsBottomPadding, offset, size) = self.validLayout else {
+            return
+        }
+        self.updateLayout(layout: layout, navigationBarHeight: navigationBarHeight, topPadding: topPadding, controlsTopPadding: controlsTopPadding, controlsBottomPadding: controlsBottomPadding, offset: offset, size: size, transition: transition)
+    }
+
+    public func updateLayout(
+        layout: ContainerViewLayout,
+        navigationBarHeight: CGFloat,
+        topPadding: CGFloat,
+        controlsTopPadding: CGFloat,
+        controlsBottomPadding: CGFloat,
+        offset: CGFloat,
+        size: CGSize,
+        transition: ContainedViewLayoutTransition
+    ) {
         self.validLayout = (layout, navigationBarHeight, topPadding, controlsTopPadding, controlsBottomPadding, offset, size)
         
         let mapHeight: CGFloat = floor(layout.size.height * 1.3) + layout.intrinsicInsets.top * 2.0
@@ -265,8 +355,126 @@ public final class LocationMapHeaderNode: ASDisplayNode {
         transition.updateAlpha(node: self.placesBackgroundNode, alpha: self.displayingPlacesButton ? 1.0 : 0.0)
         transition.updateAlpha(node: self.placesButtonNode, alpha: self.displayingPlacesButton ? 1.0 : 0.0)
         
-        transition.updateFrame(node: self.shadowNode, frame: CGRect(x: 0.0, y: size.height - 14.0, width: size.width, height: 14.0))
-        
+        if let weatherBackgroundView = self.weatherBackgroundView {
+            let panelHeight: CGFloat = 36.0
+            let horizontalInset: CGFloat = 10.0
+            let labelSpacing: CGFloat = 5.0
+            let iconSize = CGSize(width: floor(panelHeight * 0.71), height: floor(panelHeight * 0.71))
+            let componentTransition = ComponentTransition(transition)
+            let temperatureSize = self.weatherTemperatureLabel.update(
+                transition: componentTransition,
+                component: AnyComponent(Text(
+                    text: self.weatherTemperature ?? "",
+                    font: Font.semibold(15.0),
+                    color: self.presentationData.theme.rootController.navigationBar.primaryTextColor
+                )),
+                environment: {},
+                containerSize: CGSize(width: 72.0, height: panelHeight)
+            )
+            let emojiSize = self.weatherEmojiLabel.update(
+                transition: componentTransition,
+                component: AnyComponent(Text(
+                    text: self.weatherEmoji ?? "",
+                    font: Font.regular(18.0),
+                    color: self.presentationData.theme.rootController.navigationBar.primaryTextColor
+                )),
+                environment: {},
+                containerSize: iconSize
+            )
+            let panelWidth = max(62.0, ceil(horizontalInset * 2.0 + iconSize.width + labelSpacing + temperatureSize.width))
+            let panelFrame = CGRect(
+                x: layout.safeInsets.left + 16.0,
+                y: navigationBarHeight + topPadding + 14.0,
+                width: panelWidth,
+                height: panelHeight
+            )
+            transition.updateFrame(view: weatherBackgroundView, frame: panelFrame)
+
+            let weatherAlpha: CGFloat = self.weatherEmoji != nil && self.weatherTemperature != nil && size.height > 160.0 + navigationBarHeight && !self.forceIsHidden ? 1.0 : 0.0
+            if weatherBackgroundView.isHidden && weatherAlpha > 0.0 {
+                weatherBackgroundView.isHidden = false
+            }
+            weatherBackgroundView.update(size: panelFrame.size, cornerRadius: panelFrame.height * 0.5, isDark: self.presentationData.theme.overallDarkAppearance, tintColor: .init(kind: .panel), isInteractive: true, isVisible: weatherAlpha > 0.0, transition: ComponentTransition(transition))
+
+            let iconFrame = CGRect(
+                x: horizontalInset,
+                y: floorToScreenPixels((panelHeight - iconSize.height) / 2.0),
+                width: iconSize.width,
+                height: iconSize.height
+            )
+            let temperatureFrame = CGRect(
+                x: iconFrame.maxX + labelSpacing,
+                y: floorToScreenPixels((panelHeight - temperatureSize.height) / 2.0),
+                width: temperatureSize.width,
+                height: temperatureSize.height
+            )
+            let emojiFrame = CGRect(
+                x: iconFrame.minX + floorToScreenPixels((iconFrame.width - emojiSize.width) / 2.0),
+                y: iconFrame.minY + floorToScreenPixels((iconFrame.height - emojiSize.height) / 2.0),
+                width: emojiSize.width,
+                height: emojiSize.height
+            )
+            if let weatherEmojiView = self.weatherEmojiLabel.view {
+                if weatherEmojiView.superview == nil {
+                    weatherBackgroundView.contentView.addSubview(weatherEmojiView)
+                }
+                transition.updateFrame(view: weatherEmojiView, frame: emojiFrame)
+            }
+            if let weatherTemperatureView = self.weatherTemperatureLabel.view {
+                if weatherTemperatureView.superview == nil {
+                    weatherBackgroundView.contentView.addSubview(weatherTemperatureView)
+                }
+                transition.updateFrame(view: weatherTemperatureView, frame: temperatureFrame)
+            }
+
+            if let weatherContext = self.weatherContext, let weatherEmojiFile = self.weatherEmojiFile {
+                var weatherIconTransition = transition
+                let _ = self.weatherIcon.update(
+                    transition: ComponentTransition(transition),
+                    component: AnyComponent(
+                        LottieComponent(
+                            content: LottieComponent.ResourceContent(context: weatherContext, file: weatherEmojiFile, attemptSynchronously: false, providesPlaceholder: true),
+                            placeholderColor: self.presentationData.theme.rootController.navigationBar.primaryTextColor.withAlphaComponent(0.1),
+                            renderingScale: 2.0,
+                            loop: true
+                        )
+                    ),
+                    environment: {},
+                    containerSize: iconSize
+                )
+                if let weatherIconView = self.weatherIcon.view {
+                    if weatherIconView.superview == nil {
+                        weatherIconTransition = .immediate
+                        weatherBackgroundView.contentView.addSubview(weatherIconView)
+                    }
+                    weatherIconTransition.updateFrame(view: weatherIconView, frame: iconFrame)
+                    ComponentTransition(transition).setAlpha(view: weatherIconView, alpha: 1.0)
+                    if let weatherIconView = weatherIconView as? LottieComponent.View {
+                        weatherIconView.externalShouldPlay = weatherAlpha > 0.0
+                    }
+                }
+                if let weatherEmojiView = self.weatherEmojiLabel.view {
+                    componentTransition.setAlpha(view: weatherEmojiView, alpha: 0.0)
+                }
+            } else {
+                if let weatherIconView = self.weatherIcon.view {
+                    componentTransition.setAlpha(view: weatherIconView, alpha: 0.0)
+                    if let weatherIconView = weatherIconView as? LottieComponent.View {
+                        weatherIconView.externalShouldPlay = false
+                    }
+                }
+                if let weatherEmojiView = self.weatherEmojiLabel.view {
+                    componentTransition.setAlpha(view: weatherEmojiView, alpha: 1.0)
+                }
+            }
+            componentTransition.setAlpha(view: weatherBackgroundView, alpha: weatherAlpha)
+
+            if self.weatherButton.superview == nil {
+                weatherBackgroundView.contentView.addSubview(self.weatherButton)
+            }
+            self.weatherButton.frame = CGRect(origin: .zero, size: panelFrame.size)
+        }
+
         if let options = self.options {
             let optionsSize = options.update(
                 transition: ComponentTransition(transition),
@@ -275,24 +483,35 @@ public final class LocationMapHeaderNode: ASDisplayNode {
                         theme: self.presentationData.theme,
                         strings: self.presentationData.strings,
                         mapMode: self.mapNode.mapMode,
+                        currentCoordinate: self.mapNode.mapCenterCoordinate,
+                        trackingMode: self.mapNode.trackingMode,
                         showMapModes: self.infoButtonNode.isSelected,
+                        proximityNotification: self.proximityNotification,
                         updateMapMode: { [weak self] mode in
                             guard let self else {
                                 return
                             }
                             self.updateMapMode(mode)
+                            self.requestLayout(transition: .immediate)
                         },
                         goToUserLocation: { [weak self] in
                             guard let self else {
                                 return
                             }
                             self.goToUserLocation()
+                            self.requestLayout(transition: .immediate)
                         },
                         requestedMapModes: { [weak self] in
                             guard let self else {
                                 return
                             }
                             self.toggleMapModeSelection()
+                        },
+                        setupProximityNotification: { [weak self] reset in
+                            guard let self else {
+                                return
+                            }
+                            self.setupProximityNotification(reset)
                         }
                     )
                 ),
@@ -343,12 +562,17 @@ public final class LocationMapHeaderNode: ASDisplayNode {
             }
         }
     }
-    
-    public func updateHighlight(_ highlighted: Bool) {
-        self.shadowNode.image = generateShadowImage(theme: self.presentationData.theme, highlighted: highlighted)
-    }
-    
+        
     public func proximityButtonFrame() -> CGRect? {
+        if let options = self.options {
+            guard let optionsView = options.view as? LocationOptionsComponent.View else {
+                return nil
+            }
+            return optionsView.proximityButtonFrame().flatMap { frame in
+                return optionsView.convert(frame, to: self.view)
+            }
+        }
+
         if self.notificationButtonNode.alpha > 0.0 {
             return self.optionsBackgroundNode.view.convert(self.notificationButtonNode.frame, to: self.view)
         } else {
@@ -376,34 +600,46 @@ public final class LocationMapHeaderNode: ASDisplayNode {
 }
 
 
-public final class LocationOptionsComponent: Component {
-    public let theme: PresentationTheme
-    public let strings: PresentationStrings
-    public let mapMode: LocationMapMode
-    public let showMapModes: Bool
-    public let updateMapMode: (LocationMapMode) -> Void
-    public let goToUserLocation: () -> Void
-    public let requestedMapModes: () -> Void
+final class LocationOptionsComponent: Component {
+    let theme: PresentationTheme
+    let strings: PresentationStrings
+    let mapMode: LocationMapMode
+    let currentCoordinate: CLLocationCoordinate2D?
+    let trackingMode: LocationTrackingMode
+    let showMapModes: Bool
+    let proximityNotification: Bool?
+    let updateMapMode: (LocationMapMode) -> Void
+    let goToUserLocation: () -> Void
+    let requestedMapModes: () -> Void
+    let setupProximityNotification: (Bool) -> Void
     
-    public init(
+    init(
         theme: PresentationTheme,
         strings: PresentationStrings,
         mapMode: LocationMapMode,
+        currentCoordinate: CLLocationCoordinate2D?,
+        trackingMode: LocationTrackingMode,
         showMapModes: Bool,
+        proximityNotification: Bool?,
         updateMapMode: @escaping (LocationMapMode) -> Void,
         goToUserLocation: @escaping () -> Void,
-        requestedMapModes: @escaping () -> Void
+        requestedMapModes: @escaping () -> Void,
+        setupProximityNotification: @escaping (Bool) -> Void
     ) {
         self.theme = theme
         self.strings = strings
         self.mapMode = mapMode
+        self.currentCoordinate = currentCoordinate
+        self.trackingMode = trackingMode
         self.showMapModes = showMapModes
+        self.proximityNotification = proximityNotification
         self.updateMapMode = updateMapMode
         self.goToUserLocation = goToUserLocation
         self.requestedMapModes = requestedMapModes
+        self.setupProximityNotification = setupProximityNotification
     }
 
-    public static func ==(lhs: LocationOptionsComponent, rhs: LocationOptionsComponent) -> Bool {
+    static func ==(lhs: LocationOptionsComponent, rhs: LocationOptionsComponent) -> Bool {
         if lhs.theme !== rhs.theme {
             return false
         }
@@ -413,13 +649,43 @@ public final class LocationOptionsComponent: Component {
         if lhs.mapMode != rhs.mapMode {
             return false
         }
+        if lhs.mapMode == .satellite && LocationOptionsComponent.satelliteIconName(coordinate: lhs.currentCoordinate) != LocationOptionsComponent.satelliteIconName(coordinate: rhs.currentCoordinate) {
+            return false
+        }
+        if lhs.trackingMode != rhs.trackingMode {
+            return false
+        }
         if lhs.showMapModes != rhs.showMapModes {
+            return false
+        }
+        if lhs.proximityNotification != rhs.proximityNotification {
             return false
         }
         return true
     }
 
-    public final class View: HighlightTrackingButton {
+    private static func satelliteIconName(coordinate: CLLocationCoordinate2D?) -> String {
+        guard let coordinate else {
+            return "Location/OptionGlobeEurope"
+        }
+
+        var longitude = coordinate.longitude.truncatingRemainder(dividingBy: 360.0)
+        if longitude < -180.0 {
+            longitude += 360.0
+        } else if longitude > 180.0 {
+            longitude -= 360.0
+        }
+
+        if longitude >= -170.0 && longitude < -25.0 {
+            return "Location/OptionGlobeAmerica"
+        } else if longitude >= -25.0 && longitude < 60.0 {
+            return "Location/OptionGlobeEurope"
+        } else {
+            return "Location/OptionGlobeAsia"
+        }
+    }
+
+    final class View: HighlightTrackingButton {
         private let containerView: GlassBackgroundContainerView
         private let backgroundView: GlassBackgroundView
         private let clippingView: UIView
@@ -427,6 +693,7 @@ public final class LocationOptionsComponent: Component {
         private let collapsedContainerView = UIView()
         private var mapModeButton = ComponentView<Empty>()
         private var trackingButton = ComponentView<Empty>()
+        private var notificationButton = ComponentView<Empty>()
         
         private let expandedContainerView = UIView()
         private let checkIcon = UIImageView()
@@ -448,7 +715,7 @@ public final class LocationOptionsComponent: Component {
             
             self.addSubview(self.containerView)
             self.containerView.contentView.addSubview(self.backgroundView)
-            self.addSubview(self.clippingView)
+            self.backgroundView.contentView.addSubview(self.clippingView)
             self.clippingView.addSubview(self.collapsedContainerView)
             self.clippingView.addSubview(self.expandedContainerView)
         }
@@ -566,7 +833,7 @@ public final class LocationOptionsComponent: Component {
                 transition.setFrame(view: hybridButtonView, frame: hybridButtonFrame)
             }
             
-            let normalSize = CGSize(width: 40.0, height: 80.0)
+            let normalSize = CGSize(width: 40.0, height: component.proximityNotification != nil ? 120.0 : 80.0)
             
             let expandedFrame = CGRect(origin: .zero, size: expandedSize)
             let collapsedFrame = CGRect(origin: CGPoint(x: expandedSize.width - normalSize.width, y: expandedSize.height - normalSize.height), size: normalSize)
@@ -575,17 +842,26 @@ public final class LocationOptionsComponent: Component {
             self.backgroundView.update(size: effectiveBackgroundFrame.size, cornerRadius: cornerRadius, isDark: component.theme.overallDarkAppearance, tintColor: .init(kind: .panel), isInteractive: true, transition: transition)
             transition.setFrame(view: self.backgroundView, frame: effectiveBackgroundFrame)
             
-            transition.setFrame(view: self.clippingView, frame: effectiveBackgroundFrame)
+            transition.setFrame(view: self.clippingView, frame: CGRect(origin: .zero, size: effectiveBackgroundFrame.size))
             
             transition.setFrame(view: self.expandedContainerView, frame: expandedFrame.offsetBy(dx: effectiveBackgroundFrame.width - expandedFrame.width, dy: effectiveBackgroundFrame.height - expandedFrame.height))
             transition.setFrame(view: self.collapsedContainerView, frame: collapsedFrame.offsetBy(dx: -effectiveBackgroundFrame.minX, dy: -effectiveBackgroundFrame.minY))
             
+            var mapModeIconName: String
+            switch component.mapMode {
+            case .map:
+                mapModeIconName = "Location/OptionMap"
+            case .satellite:
+                mapModeIconName = LocationOptionsComponent.satelliteIconName(coordinate: component.currentCoordinate)
+            case .hybrid:
+                mapModeIconName = "Location/OptionHybrid"
+            }
             let mapModeButtonSize = self.mapModeButton.update(
                 transition: transition,
                 component: AnyComponent(
                     PlainButtonComponent(
                         content: AnyComponent(
-                            BundleIconComponent(name: "Location/OptionMap", tintColor: component.theme.rootController.navigationBar.primaryTextColor.withAlphaComponent(0.62))
+                            BundleIconComponent(name: mapModeIconName, tintColor: component.theme.chat.inputPanel.panelControlColor)
                         ),
                         minSize: CGSize(width: 40.0, height: 40.0),
                         action: { [weak self] in
@@ -608,13 +884,22 @@ public final class LocationOptionsComponent: Component {
                 }
                 transition.setFrame(view: mapModeButtonView, frame: mapModeButtonFrame)
             }
-            
+
+            let trackingModeIconName: String
+            switch component.trackingMode {
+            case .none:
+                trackingModeIconName = "Location/OptionLocate"
+            case .follow:
+                trackingModeIconName = "Location/OptionLocating"
+            case .followWithHeading:
+                trackingModeIconName = "Location/OptionTracking"
+            }
             let trackingButtonSize = self.trackingButton.update(
                 transition: transition,
                 component: AnyComponent(
                     PlainButtonComponent(
                         content: AnyComponent(
-                            BundleIconComponent(name: "Location/OptionLocate", tintColor: component.theme.rootController.navigationBar.primaryTextColor.withAlphaComponent(0.62))
+                            BundleIconComponent(name: trackingModeIconName, tintColor: component.theme.chat.inputPanel.panelControlColor)
                         ),
                         minSize: CGSize(width: 40.0, height: 40.0),
                         action: { [weak self] in
@@ -638,6 +923,41 @@ public final class LocationOptionsComponent: Component {
                 transition.setFrame(view: trackingButtonView, frame: trackingButtonFrame)
             }
             
+            if let proximityNotification = component.proximityNotification {
+                let notificationIconName = proximityNotification ? "Chat/Title Panels/MuteIcon" : "Location/NotificationIcon"
+                let notificationButtonSize = self.notificationButton.update(
+                    transition: transition,
+                    component: AnyComponent(
+                        PlainButtonComponent(
+                            content: AnyComponent(
+                                BundleIconComponent(name: notificationIconName, tintColor: component.theme.chat.inputPanel.panelControlColor)
+                            ),
+                            minSize: CGSize(width: 40.0, height: 40.0),
+                            action: { [weak self] in
+                                guard let self, let component = self.component, let proximityNotification = component.proximityNotification else {
+                                    return
+                                }
+                                component.setupProximityNotification(proximityNotification)
+                            },
+                            animateAlpha: true,
+                            animateScale: false
+                        )
+                    ),
+                    environment: {},
+                    containerSize: CGSize(width: 40.0, height: 40.0)
+                )
+                let notificationButtonFrame = CGRect(origin: CGPoint(x: 0.0, y: 80.0), size: notificationButtonSize)
+                if let notificationButtonView = self.notificationButton.view {
+                    if notificationButtonView.superview == nil {
+                        self.collapsedContainerView.addSubview(notificationButtonView)
+                    }
+                    transition.setFrame(view: notificationButtonView, frame: notificationButtonFrame)
+                    transition.setAlpha(view: notificationButtonView, alpha: 1.0)
+                }
+            } else if let notificationButtonView = self.notificationButton.view {
+                transition.setAlpha(view: notificationButtonView, alpha: 0.0)
+            }
+
             transition.setAlpha(view: self.collapsedContainerView, alpha: component.showMapModes ? 0.0 : 1.0)
             transition.setAlpha(view: self.expandedContainerView, alpha: component.showMapModes ? 1.0 : 0.0)
             
@@ -649,6 +969,16 @@ public final class LocationOptionsComponent: Component {
         
         public override func point(inside point: CGPoint, with event: UIEvent?) -> Bool {
             return self.backgroundView.frame.contains(point)
+        }
+
+        func proximityButtonFrame() -> CGRect? {
+            guard let component = self.component, component.proximityNotification != nil, !component.showMapModes else {
+                return nil
+            }
+            guard let notificationButtonView = self.notificationButton.view, notificationButtonView.superview != nil, notificationButtonView.alpha > 0.0 else {
+                return nil
+            }
+            return notificationButtonView.convert(notificationButtonView.bounds, to: self)
         }
     }
 

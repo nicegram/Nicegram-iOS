@@ -4,6 +4,10 @@ import AsyncDisplayKit
 import Display
 import TelegramPresentationData
 
+private let compactInfinityFont = Font.with(size: 14.0, design: .round, weight: .bold)
+private let compactTextFont = Font.with(size: 12.0, design: .round, weight: .bold)
+private let compactSmallTextFont = Font.with(size: 10.0, design: .round, weight: .bold)
+
 private let infinityFont = Font.with(size: 15.0, design: .round, weight: .bold)
 private let textFont = Font.with(size: 13.0, design: .round, weight: .bold)
 private let smallTextFont = Font.with(size: 11.0, design: .round, weight: .bold)
@@ -134,11 +138,11 @@ public final class ChatMessageLiveLocationTimerNode: ASDisplayNode {
             
             let font: UIFont
             if parameters.string == "∞" {
-                font = infinityFont
+                font = bounds.width < 28.0 ? compactInfinityFont : infinityFont
             } else if parameters.string.count > 2 {
-                font = smallTextFont
+                font = bounds.width < 28.0 ? compactSmallTextFont : smallTextFont
             } else {
-                font = textFont
+                font = bounds.width < 28.0 ? compactTextFont : textFont
             }
             
             let attributes: [NSAttributedString.Key: Any] = [.font: font, .foregroundColor: parameters.foregroundColor]
@@ -147,7 +151,7 @@ public final class ChatMessageLiveLocationTimerNode: ASDisplayNode {
             
             var offset = CGPoint()
             if parameters.string == "∞" {
-                offset = CGPoint(x: 1.0, y: -1.0)
+                offset = bounds.width < 28.0 ? CGPoint(x: 1.0 - UIScreenPixel, y: 0.0) : CGPoint(x: 1.0, y: -1.0)
             } else if parameters.string.count > 2 {
                 offset = CGPoint(x: 0.0, y: UIScreenPixel)
             }

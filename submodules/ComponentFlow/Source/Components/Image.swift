@@ -7,19 +7,22 @@ public final class Image: Component {
     public let size: CGSize?
     public let contentMode: UIImageView.ContentMode
     public let cornerRadius: CGFloat
+    public let flipHorizontally: Bool
 
     public init(
         image: UIImage?,
         tintColor: UIColor? = nil,
         size: CGSize? = nil,
         contentMode: UIImageView.ContentMode = .scaleToFill,
-        cornerRadius: CGFloat = 0.0
+        cornerRadius: CGFloat = 0.0,
+        flipHorizontally: Bool = false
     ) {
         self.image = image
         self.tintColor = tintColor
         self.size = size
         self.contentMode = contentMode
         self.cornerRadius = cornerRadius
+        self.flipHorizontally = flipHorizontally
     }
 
     public static func ==(lhs: Image, rhs: Image) -> Bool {
@@ -38,6 +41,9 @@ public final class Image: Component {
         if lhs.cornerRadius != rhs.cornerRadius {
             return false
         }
+        if lhs.flipHorizontally != rhs.flipHorizontally {
+            return false
+        }
         return true
     }
 
@@ -51,7 +57,11 @@ public final class Image: Component {
         }
 
         func update(component: Image, availableSize: CGSize, environment: Environment<Empty>, transition: ComponentTransition) -> CGSize {
-            self.image = component.image
+            if component.flipHorizontally, let cgImage = component.image?.cgImage {
+                self.image = UIImage(cgImage: cgImage, scale: component.image?.scale ?? 0.0, orientation: .upMirrored)
+            } else {
+                self.image = component.image
+            }
             self.contentMode = component.contentMode
             self.clipsToBounds = component.cornerRadius > 0.0
             

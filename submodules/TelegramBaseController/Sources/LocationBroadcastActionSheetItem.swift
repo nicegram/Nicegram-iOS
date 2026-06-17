@@ -3,7 +3,6 @@ import UIKit
 import AsyncDisplayKit
 import Display
 import TelegramCore
-import Postbox
 import TelegramPresentationData
 import AccountContext
 import LiveLocationTimerNode
@@ -11,14 +10,14 @@ import AvatarNode
 
 public class LocationBroadcastActionSheetItem: ActionSheetItem {
     public let context: AccountContext
-    public let peer: Peer
+    public let peer: EnginePeer
     public let title: String
     public let beginTimestamp: Double
     public let timeout: Double
     public let strings: PresentationStrings
     public let action: () -> Void
     
-    public init(context: AccountContext, peer: Peer, title: String, beginTimestamp: Double, timeout: Double, strings: PresentationStrings, action: @escaping () -> Void) {
+    public init(context: AccountContext, peer: EnginePeer, title: String, beginTimestamp: Double, timeout: Double, strings: PresentationStrings, action: @escaping () -> Void) {
         self.context = context
         self.peer = peer
         self.title = title
@@ -105,7 +104,7 @@ public class LocationBroadcastActionSheetItemNode: ActionSheetItemNode {
         let textColor: UIColor = self.theme.primaryTextColor
         self.label.attributedText = NSAttributedString(string: item.title, font: defaultFont, textColor: textColor)
         
-        self.avatarNode.setPeer(context: item.context, theme: (item.context.sharedContext.currentPresentationData.with { $0 }).theme, peer: EnginePeer(item.peer))
+        self.avatarNode.setPeer(context: item.context, theme: (item.context.sharedContext.currentPresentationData.with { $0 }).theme, peer: item.peer)
         
         self.timerNode.update(backgroundColor: self.theme.controlAccentColor.withAlphaComponent(0.4), foregroundColor: self.theme.controlAccentColor, textColor: self.theme.controlAccentColor, beginTimestamp: item.beginTimestamp, timeout: Int32(item.timeout) == liveLocationIndefinitePeriod ? -1.0 : item.timeout, strings: item.strings)
     }

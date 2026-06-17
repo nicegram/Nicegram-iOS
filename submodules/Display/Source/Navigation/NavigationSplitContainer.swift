@@ -11,8 +11,6 @@ enum NavigationSplitContainerScrollToTop {
 final class NavigationSplitContainer: ASDisplayNode {
     private var theme: NavigationControllerTheme
     
-    private let masterScrollToTopView: ScrollToTopView
-    private let detailScrollToTopView: ScrollToTopView
     private let masterContainer: NavigationContainer
     private let detailContainer: NavigationContainer
     private let separator: ASDisplayNode
@@ -39,17 +37,8 @@ final class NavigationSplitContainer: ASDisplayNode {
         self.detailContainer.isInFocus = isInFocus
     }
     
-    init(theme: NavigationControllerTheme, controllerRemoved: @escaping (ViewController) -> Void, scrollToTop: @escaping (NavigationSplitContainerScrollToTop) -> Void) {
+    init(theme: NavigationControllerTheme, controllerRemoved: @escaping (ViewController) -> Void) {
         self.theme = theme
-        
-        self.masterScrollToTopView = ScrollToTopView(frame: CGRect())
-        self.masterScrollToTopView.action = {
-            scrollToTop(.master)
-        }
-        self.detailScrollToTopView = ScrollToTopView(frame: CGRect())
-        self.detailScrollToTopView.action = {
-            scrollToTop(.detail)
-        }
         
         self.masterContainer = NavigationContainer(isFlat: false, controllerRemoved: controllerRemoved)
         self.masterContainer.clipsToBounds = true
@@ -65,8 +54,6 @@ final class NavigationSplitContainer: ASDisplayNode {
         self.addSubnode(self.masterContainer)
         self.addSubnode(self.detailContainer)
         self.addSubnode(self.separator)
-        self.view.addSubview(self.masterScrollToTopView)
-        self.view.addSubview(self.detailScrollToTopView)
     }
     
     func hasNonReadyControllers() -> Bool {
@@ -83,12 +70,20 @@ final class NavigationSplitContainer: ASDisplayNode {
         self.separator.backgroundColor = theme.navigationBar.separatorColor
     }
     
+    func scrollToTopProxyFrames(layout: ContainerViewLayout) -> (master: CGRect, detail: CGRect) {
+        let masterWidth: CGFloat = min(max(320.0, floor(layout.size.width / 3.0)), floor(layout.size.width / 2.0))
+        let detailWidth = layout.size.width - masterWidth
+        let scrollToTopHeight = max(layout.statusBarHeight ?? layout.safeInsets.top, 1.0)
+        
+        return (
+            master: CGRect(origin: CGPoint(), size: CGSize(width: masterWidth, height: scrollToTopHeight)),
+            detail: CGRect(origin: CGPoint(x: masterWidth, y: 0.0), size: CGSize(width: detailWidth, height: scrollToTopHeight))
+        )
+    }
+
     func update(layout: ContainerViewLayout, masterControllers: [ViewController], detailControllers: [ViewController], detailsPlaceholderNode: NavigationDetailsPlaceholderNode?, transition: ContainedViewLayoutTransition) {
         let masterWidth: CGFloat = min(max(320.0, floor(layout.size.width / 3.0)), floor(layout.size.width / 2.0))
         let detailWidth = layout.size.width - masterWidth
-        
-        self.masterScrollToTopView.frame = CGRect(origin: CGPoint(x: 0.0, y: -1.0), size: CGSize(width: masterWidth, height: 10.0))
-        self.detailScrollToTopView.frame = CGRect(origin: CGPoint(x: masterWidth, y: -1.0), size: CGSize(width: detailWidth, height: 1.0))
         
         transition.updateFrame(node: self.masterContainer, frame: CGRect(origin: CGPoint(), size: CGSize(width: masterWidth, height: layout.size.height)))
         transition.updateFrame(node: self.detailContainer, frame: CGRect(origin: CGPoint(x: masterWidth, y: 0.0), size: CGSize(width: detailWidth, height: layout.size.height)))

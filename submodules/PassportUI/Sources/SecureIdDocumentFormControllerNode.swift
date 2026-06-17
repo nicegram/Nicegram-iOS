@@ -9,8 +9,8 @@ import TelegramStringFormatting
 import AccountContext
 import GalleryUI
 import CountrySelectionUI
-import DateSelectionUI
 import AppBundle
+import ChatTimerScreen
 
 private enum SecureIdDocumentFormTextField {
     case identifier
@@ -2368,49 +2368,76 @@ final class SecureIdDocumentFormControllerNode: FormControllerNode<SecureIdDocum
                             }
                         }
                         
-                        let controller = DateSelectionActionSheetController(context: strongSelf.context, title: title, currentValue: current ?? Int32(Date().timeIntervalSince1970), minimumDate: minimumDate, maximumDate: maximumDate, emptyTitle: emptyTitle, applyValue: { value in
-                            if let strongSelf = self, var innerState = strongSelf.innerState {
-                                innerState.documentState.updateDateField(type: field, value: value.flatMap(SecureIdDate.init))
-                                var valueKey: SecureIdValueKey?
-                                var errorKey: SecureIdValueContentErrorKey?
-                                
-                                switch innerState.documentState {
-                                    case let .identity(identity):
-                                        switch field {
-                                            case .birthdate:
-                                                valueKey = .personalDetails
-                                                errorKey = .field(.personalDetails(.birthdate))
-                                            case .expiry:
-                                                if let document = identity.document {
-                                                    switch document.type {
-                                                        case .passport:
-                                                            valueKey = .passport
-                                                            errorKey = .field(.passport(.expiryDate))
-                                                        case .internalPassport:
-                                                            valueKey = .internalPassport
-                                                            errorKey = .field(.internalPassport(.expiryDate))
-                                                        case .driversLicense:
-                                                            valueKey = .driversLicense
-                                                            errorKey = .field(.driversLicense(.expiryDate))
-                                                        case .idCard:
-                                                            valueKey = .idCard
-                                                            errorKey = .field(.idCard(.expiryDate))
-                                                    }
-                                                }
+                        let controller = ChatTimerScreen(
+                            context: strongSelf.context,
+                            configuration: ChatTimerScreen.Configuration(
+                                style: .default,
+                                title: { _ in
+                                    title
+                                },
+                                picker: .date,
+                                currentValue: current ?? Int32(Date().timeIntervalSince1970),
+                                minimumDate: minimumDate,
+                                maximumDate: maximumDate,
+                                pickerValueMapping: .roundDateToDaysUTC,
+                                primaryActionTitle: { strings, _, _ in
+                                    strings.Wallpaper_Set
+                                },
+                                secondaryAction: emptyTitle.flatMap { emptyTitle in
+                                    ChatTimerScreen.Configuration.SecondaryAction(
+                                        title: { _ in
+                                            emptyTitle
+                                        },
+                                        style: .accent,
+                                        value: {
+                                            nil
                                         }
-                                    case .address:
-                                        break
+                                    )
                                 }
-                                
-                                if let valueKey = valueKey, let errorKey = errorKey {
-                                    let valueErrorKey: SecureIdValueContentErrorKey = .value(valueKey)
-                                    if let previousValue = innerState.previousValues[valueKey] {
-                                        innerState.previousValues[valueKey] = previousValue.withRemovedErrors([errorKey, valueErrorKey])
+                            ),
+                            completion: { value in
+                                if let strongSelf = self, var innerState = strongSelf.innerState {
+                                    innerState.documentState.updateDateField(type: field, value: value.flatMap(SecureIdDate.init))
+                                    var valueKey: SecureIdValueKey?
+                                    var errorKey: SecureIdValueContentErrorKey?
+
+                                    switch innerState.documentState {
+                                        case let .identity(identity):
+                                            switch field {
+                                                case .birthdate:
+                                                    valueKey = .personalDetails
+                                                    errorKey = .field(.personalDetails(.birthdate))
+                                                case .expiry:
+                                                    if let document = identity.document {
+                                                        switch document.type {
+                                                            case .passport:
+                                                                valueKey = .passport
+                                                                errorKey = .field(.passport(.expiryDate))
+                                                            case .internalPassport:
+                                                                valueKey = .internalPassport
+                                                                errorKey = .field(.internalPassport(.expiryDate))
+                                                            case .driversLicense:
+                                                                valueKey = .driversLicense
+                                                                errorKey = .field(.driversLicense(.expiryDate))
+                                                            case .idCard:
+                                                                valueKey = .idCard
+                                                                errorKey = .field(.idCard(.expiryDate))
+                                                        }
+                                                    }
+                                            }
+                                        case .address:
+                                            break
                                     }
+
+                                    if let valueKey = valueKey, let errorKey = errorKey {
+                                        let valueErrorKey: SecureIdValueContentErrorKey = .value(valueKey)
+                                        if let previousValue = innerState.previousValues[valueKey] {
+                                            innerState.previousValues[valueKey] = previousValue.withRemovedErrors([errorKey, valueErrorKey])
+                                        }
+                                    }
+                                    strongSelf.updateInnerState(transition: .immediate, with: innerState)
                                 }
-                                strongSelf.updateInnerState(transition: .immediate, with: innerState)
-                            }
-                        })
+                            })
                         strongSelf.view.endEditing(true)
                         strongSelf.present(controller, nil)
                     case .gender:

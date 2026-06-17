@@ -331,7 +331,7 @@ public final class MediaManagerImpl: NSObject, MediaManager {
         |> distinctUntilChanged(isEqual: { $0?.0 === $1?.0 && $0?.1 == $1?.1 })
         |> mapToSignal { value -> Signal<UIImage?, NoError> in
             if let (account, value) = value {
-                return playerAlbumArt(postbox: account.postbox, engine: TelegramEngine(account: account), fileReference: value.fullSizeResource.file, albumArt: value, thumbnail: false)
+                return playerAlbumArt(engine: TelegramEngine(account: account), fileReference: value.fullSizeResource.file, albumArt: value, thumbnail: false)
                 |> map { generator -> UIImage? in
                     let arguments = TransformImageArguments(corners: ImageCorners(), imageSize: CGSize(width: 640, height: 640), boundingSize: CGSize(width: 640, height: 640), intrinsicInsets: .zero)
                     return generator(arguments)?.generateImage()

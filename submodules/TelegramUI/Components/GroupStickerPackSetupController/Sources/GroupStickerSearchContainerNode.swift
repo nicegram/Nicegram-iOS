@@ -3,7 +3,6 @@ import UIKit
 import AsyncDisplayKit
 import Display
 import SwiftSignalKit
-import Postbox
 import TelegramCore
 import TelegramPresentationData
 import TelegramUIPreferences
@@ -24,15 +23,15 @@ private final class GroupStickerSearchContainerInteraction {
 private final class GroupStickerSearchEntry: Comparable, Identifiable {
     let index: Int
     let pack: StickerPackCollectionInfo
-    let topItem: ItemCollectionItem?
+    let topItem: EngineRawItemCollectionItem?
     
-    init(index: Int, pack: StickerPackCollectionInfo, topItem: ItemCollectionItem?) {
+    init(index: Int, pack: StickerPackCollectionInfo, topItem: EngineRawItemCollectionItem?) {
         self.index = index
         self.pack = pack
         self.topItem = topItem
     }
     
-    var stableId: ItemCollectionId {
+    var stableId: EngineItemCollectionId {
         return self.pack.id
     }
     

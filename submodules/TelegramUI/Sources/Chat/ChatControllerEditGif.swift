@@ -7,6 +7,7 @@ import Display
 import AccountContext
 import ChatControllerInteraction
 import LegacyMediaPickerUI
+import MediaPickerUI
 
 extension ChatControllerImpl {
     func openGifEditing(file: FileMediaReference, addCaption: Bool) {
@@ -17,7 +18,7 @@ extension ChatControllerImpl {
         let hasSchedule = self.presentationInterfaceState.subject != .scheduledMessages && peer.id.namespace != Namespaces.Peer.SecretChat && self.presentationInterfaceState.sendPaidMessageStars == nil
         legacyMediaEditor(
             context: self.context,
-            peer: peer,
+            peer: EnginePeer(peer),
             threadTitle: nil,
             media: file.abstract,
             mode: addCaption ? .caption : .default,
@@ -27,6 +28,9 @@ extension ChatControllerImpl {
             },
             getCaptionPanelView: { [weak self] in
                 return self?.getCaptionPanelView(isFile: false, hasTimer: false)
+            },
+            photoToolbarView: { [context = self.context] backButton, doneButton, solidBackground, hasSendStarsButton in
+                return makeMediaPickerPhotoToolbarView(context: context, backButton: backButton, doneButton: doneButton, solidBackground: solidBackground, hasSendStarsButton: hasSendStarsButton)
             },
             hasSilentPosting: hasSilentPosting,
             hasSchedule: hasSchedule,

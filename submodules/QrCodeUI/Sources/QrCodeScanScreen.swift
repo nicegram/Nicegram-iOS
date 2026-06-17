@@ -3,9 +3,9 @@ import UIKit
 import AccountContext
 import AsyncDisplayKit
 import Display
+import ComponentFlow
 import SwiftSignalKit
 import Camera
-import GlassButtonNode
 import CoreImage
 import AlertUI
 import TelegramPresentationData
@@ -18,6 +18,8 @@ import LegacyComponents
 import LegacyMediaPickerUI
 import ImageContentAnalysis
 import PresentationDataUtils
+import BundleIconComponent
+import GlassBarButtonComponent
 
 private func parseAuthTransferUrl(_ url: URL) -> Data? {
     var tokenString: String?
@@ -77,18 +79,14 @@ public final class QrCodeScanScreen: ViewController {
         
         self.presentationData = context.sharedContext.currentPresentationData.with { $0 }
         
-        let navigationBarTheme = NavigationBarTheme(overallDarkAppearance: self.presentationData.theme.overallDarkAppearance, buttonColor: .white, disabledButtonColor: .white, primaryTextColor: .white, backgroundColor: .clear, enableBackgroundBlur: false, separatorColor: .clear, badgeBackgroundColor: .clear, badgeStrokeColor: .clear, badgeTextColor: .clear, accentButtonColor: .white, accentDisabledButtonColor: .white, accentForegroundColor: .black)
-        
-        super.init(navigationBarPresentationData: NavigationBarPresentationData(theme: navigationBarTheme, strings: NavigationBarStrings(back: self.presentationData.strings.Common_Back, close: self.presentationData.strings.Common_Close)))
+        super.init(navigationBarPresentationData: nil)
         
         self.statusBar.statusBarStyle = .White
         
         self.navigationPresentation = .modalInLargeLayout
         self.supportedOrientations = ViewControllerSupportedOrientations(regularSize: .all, compactSize: .portrait)
         self.navigationBar?.intrinsicCanTransitionInline = false
-        
-        self.navigationItem.backBarButtonItem = UIBarButtonItem(title: self.presentationData.strings.Common_Back, style: .plain, target: nil, action: nil)
-        
+
         self.inForegroundDisposable = (context.sharedContext.applicationBindings.applicationInForeground
         |> deliverOnMainQueue).start(next: { [weak self] inForeground in
             guard let strongSelf = self else {
@@ -96,14 +94,6 @@ public final class QrCodeScanScreen: ViewController {
             }
             (strongSelf.displayNode as! QrCodeScanScreenNode).updateInForeground(inForeground)
         })
-        
-        if case .custom = subject {
-            self.navigationItem.leftBarButtonItem = UIBarButtonItem(title: self.presentationData.strings.Common_Cancel, style: .plain, target: self, action: #selector(self.cancelPressed))
-        } else {
-            #if DEBUG
-            self.navigationItem.rightBarButtonItem = UIBarButtonItem(title: "Test", style: .plain, target: self, action: #selector(self.testPressed))
-            #endif
-        }
     }
     
     required init(coder aDecoder: NSCoder) {
@@ -116,17 +106,9 @@ public final class QrCodeScanScreen: ViewController {
         self.approveDisposable.dispose()
     }
     
-    @objc private func cancelPressed() {
+    @objc fileprivate func cancelPressed() {
         self.completion(nil)
         self.dismissAnimated()
-    }
-    
-    @objc private func myCodePressed() {
-        self.showMyCode()
-    }
-    
-    @objc private func testPressed() {
-        self.dismissWithSession(session: nil)
     }
     
     private var animatedIn = false
@@ -370,6 +352,7 @@ private final class QrCodeScanScreenNode: ViewControllerTracingNode, ASScrollVie
     private let titleNode: ImmediateTextNode
     private let textNode: ImmediateTextNode
     private let errorTextNode: ImmediateTextNode
+    private let topNavigationButton = ComponentView<Empty>()
     
     private let camera: Camera
     private let codeDisposable = MetaDisposable()
@@ -510,10 +493,15 @@ private final class QrCodeScanScreenNode: ViewControllerTracingNode, ASScrollVie
         self.addSubnode(self.titleNode)
         self.addSubnode(self.textNode)
         self.addSubnode(self.errorTextNode)
-      
-        self.galleryButtonNode.addTarget(self, action: #selector(self.galleryPressed), forControlEvents: .touchUpInside)
-        self.torchButtonNode.addTarget(self, action: #selector(self.torchPressed), forControlEvents: .touchUpInside)
-        
+
+        self.galleryButtonNode.pressed = { [weak self] in
+            self?.galleryPressed()
+        }
+
+        self.torchButtonNode.pressed = { [weak self] in
+            self?.torchPressed()
+        }
+
         self.previewView.resetPlaceholder(front: false)
         if #available(iOS 13.0, *) {
             let _ = (self.previewView.isPreviewing
@@ -666,6 +654,56 @@ private final class QrCodeScanScreenNode: ViewControllerTracingNode, ASScrollVie
         transition.updateFrame(view: self.previewView, frame: bounds)
         transition.updateFrame(node: self.fadeNode, frame: bounds)
         
+        let topNavigationIconName: String
+        if case .custom = self.subject {
+            topNavigationIconName = "Navigation/Close"
+        } else {
+            topNavigationIconName = "Navigation/Back"
+        }
+        let topNavigationButtonSide = CGSize(width: 44.0, height: 44.0)
+        let topNavigationButtonSize = self.topNavigationButton.update(
+            transition: ComponentTransition(transition),
+            component: AnyComponent(GlassBarButtonComponent(
+                size: topNavigationButtonSide,
+                backgroundColor: nil,
+                isDark: true,
+                state: .glass,
+                component: AnyComponentWithIdentity(id: topNavigationIconName, component: AnyComponent(
+                    BundleIconComponent(
+                        name: topNavigationIconName,
+                        tintColor: .white
+                    )
+                )),
+                action: { [weak self] _ in
+                    guard let self else {
+                        return
+                    }
+                    if case .custom = self.subject {
+                        self.controller?.cancelPressed()
+                    } else {
+                        self.controller?.dismiss()
+                    }
+                }
+            )),
+            environment: {},
+            containerSize: topNavigationButtonSide
+        )
+        if let topNavigationButtonView = self.topNavigationButton.view {
+            if topNavigationButtonView.superview == nil {
+                self.view.addSubview(topNavigationButtonView)
+            }
+            transition.updateFrame(
+                view: topNavigationButtonView,
+                frame: CGRect(
+                    origin: CGPoint(
+                        x: 16.0 + layout.safeInsets.left,
+                        y: max(layout.statusBarHeight ?? 0.0, layout.safeInsets.top) + 5.0
+                    ),
+                    size: topNavigationButtonSize
+                )
+            )
+        }
+
         let frameSide = max(240.0, layout.size.width - sideInset * 2.0)
         let animateInScale: CGFloat = 0.4
         var effectiveFrameSide = frameSide
@@ -897,4 +935,3 @@ private final class QrCodeScanScreenNode: ViewControllerTracingNode, ASScrollVie
         return true
     }
 }
-

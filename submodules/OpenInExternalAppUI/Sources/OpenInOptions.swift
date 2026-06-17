@@ -90,24 +90,20 @@ private func allOpenInOptions(context: AccountContext, item: OpenInItem) -> [Ope
     var options: [OpenInOption] = []
     switch item {
         case let .url(url):
-            var skipSafari = false
             if url.contains("youtube.com/") || url.contains("youtu.be/") {
                 let updatedUrl = url.replacingOccurrences(of: "https://", with: "youtube://").replacingOccurrences(of: "http://", with: "youtube://")
                 options.append(OpenInOption(identifier: "youtube", application: .other(title: "YouTube", identifier: 544007664, scheme: "youtube", store: nil), action: {
                     return .openUrl(url: updatedUrl)
                 }))
-                skipSafari = true
             }
             
-            if !skipSafari {
-                options.append(OpenInOption(identifier: "safari", application: .safari, action: {
-                    var url = url
-                    if url.hasPrefix("https://") {
-                        url = url.replacingOccurrences(of: "https://", with: "x-safari-https://")
-                    }
-                    return .openUrl(url: url)
-                }))
-            }
+            options.append(OpenInOption(identifier: "safari", application: .safari, action: {
+                var url = url
+                if url.hasPrefix("https://") {
+                    url = url.replacingOccurrences(of: "https://", with: "x-safari-https://")
+                }
+                return .openUrl(url: url)
+            }))
 
             options.append(OpenInOption(identifier: "chrome", application: .other(title: "Chrome", identifier: 535886823, scheme: "googlechrome", store: nil), action: {
                 if let url = URL(string: url), var components = URLComponents(url: url, resolvingAgainstBaseURL: true) {
@@ -201,6 +197,10 @@ private func allOpenInOptions(context: AccountContext, item: OpenInItem) -> [Ope
         
             options.append(OpenInOption(identifier: "alook", application: .other(title: "Alook Browser", identifier: 1261944766, scheme: "alook", store: nil), action: {
                 return .openUrl(url: "alook://\(url)")
+            }))
+
+            options.append(OpenInOption(identifier: "vivaldi", application: .other(title: "Vivaldi", identifier: 1633234600, scheme: "vivaldi", store: "us"), action: {
+                return .openUrl(url: "vivaldi://\(url)")
             }))
         case let .location(location, directions):
             let lat = location.latitude
@@ -333,6 +333,14 @@ private func allOpenInOptions(context: AccountContext, item: OpenInItem) -> [Ope
                 } else {
                     return .openUrl(url: url)
                 }
+            }))
+        
+            options.append(OpenInOption(identifier: "yandexGo", application: .other(title: "Yandex Go", identifier: 472650686, scheme: "yandextaxi", store: nil), action: {
+                return .openUrl(url: "yandextaxi://route?end-lat=\(lat)&end-lon=\(lon)")
+            }))
+            
+            options.append(OpenInOption(identifier: "yango", application: .other(title: "Yango", identifier: 1437157286, scheme: "yangoride", store: nil), action: {
+                return .openUrl(url: "yangoride://route?end-lat=\(lat)&end-lon=\(lon)")
             }))
     }
     return options

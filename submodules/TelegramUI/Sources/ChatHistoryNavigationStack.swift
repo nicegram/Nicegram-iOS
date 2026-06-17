@@ -1,15 +1,15 @@
 import Foundation
 import UIKit
-import Postbox
+import TelegramCore
 
 struct ChatHistoryNavigationStack {
-    private var messageIndices: [MessageIndex] = []
+    private var messageIndices: [EngineMessage.Index] = []
     
-    mutating func add(_ index: MessageIndex) {
+    mutating func add(_ index: EngineMessage.Index) {
         self.messageIndices.append(index)
     }
     
-    mutating func removeLast() -> MessageIndex? {
+    mutating func removeLast() -> EngineMessage.Index? {
         if messageIndices.isEmpty {
             return nil
         }
@@ -20,7 +20,7 @@ struct ChatHistoryNavigationStack {
         return self.messageIndices.isEmpty
     }
     
-    mutating func filterOutIndicesLessThan(_ index: MessageIndex) {
+    mutating func filterOutIndicesLessThan(_ index: EngineMessage.Index) {
         for i in (0 ..< self.messageIndices.count).reversed() {
             if self.messageIndices[i] <= index {
                 self.messageIndices.remove(at: i)

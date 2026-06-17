@@ -15,7 +15,6 @@ import MultilineTextComponent
 import EmojiStatusComponent
 import PremiumUI
 import ProgressNavigationButtonNode
-import Postbox
 import SwitchComponent
 
 private final class TitleFieldComponent: Component {
@@ -898,21 +897,17 @@ private final class ForumCreateTopicScreenComponent: CombinedComponent {
                         openSearch: {
                         },
                         addGroupAction: { groupId, isPremiumLocked, _ in
-                            guard let collectionId = groupId.base as? ItemCollectionId else {
+                            guard let collectionId = groupId.base as? EngineItemCollectionId else {
                                 return
                             }
-                            
-                            let viewKey = PostboxViewKey.orderedItemList(id: Namespaces.OrderedItemList.CloudFeaturedEmojiPacks)
-                            let _ = (accountContext.account.postbox.combinedView(keys: [viewKey])
+
+                            let _ = (accountContext.engine.data.subscribe(TelegramEngine.EngineData.Item.Collections.FeaturedEmojiPacks())
                                      |> take(1)
-                                     |> deliverOnMainQueue).start(next: { views in
-                                guard let view = views.views[viewKey] as? OrderedItemListView else {
-                                    return
-                                }
-                                for featuredEmojiPack in view.items.lazy.map({ $0.contents.get(FeaturedStickerPackItem.self)! }) {
+                                     |> deliverOnMainQueue).start(next: { items in
+                                for featuredEmojiPack in items {
                                     if featuredEmojiPack.info.id == collectionId {
                                         let _ = accountContext.engine.stickers.addStickerPackInteractively(info: featuredEmojiPack.info._parse(), items: featuredEmojiPack.topItems).start()
-                                        
+
                                         break
                                     }
                                 }

@@ -246,7 +246,7 @@ final class PhoneInputItemNode: ListViewItemNode, ItemListItemNode {
         self.phoneInputNode.number = "+\(countryCodeAndId.0)"
     }
     
-    func processNumberChange(_ number: String) -> Bool {
+    func processNumberChange(_ number: String, notifyUpdated: Bool = true) -> Bool {
         guard let item = self.item else {
             return false
         }
@@ -270,7 +270,9 @@ final class PhoneInputItemNode: ListViewItemNode, ItemListItemNode {
                 self.phoneInputNode.mask = nil
                 self.phoneInputNode.numberField.textField.attributedPlaceholder = NSAttributedString(string: item.strings.Login_PhonePlaceholder, font: Font.regular(17.0), textColor: item.theme.list.itemPlaceholderTextColor)
             }
-            item.updated(number, rawMask)
+            if notifyUpdated {
+                item.updated(number, rawMask)
+            }
             
             return true
         } else {
@@ -297,7 +299,10 @@ final class PhoneInputItemNode: ListViewItemNode, ItemListItemNode {
     }
     
     func updateCountryCode(code: Int32, name: String, phoneNumber: String? = nil) {
-        self.phoneInputNode.codeAndNumber = (code, name, phoneNumber ?? self.phoneInputNode.codeAndNumber.2)
+        let targetNumber = phoneNumber ?? self.phoneInputNode.codeAndNumber.2
+        let targetFullNumber = "+\(code)\(targetNumber)"
+        let _ = self.processNumberChange(targetFullNumber, notifyUpdated: false)
+        self.phoneInputNode.codeAndNumber = (code, name, targetNumber)
         let _ = self.processNumberChange(self.phoneInputNode.number)
     }
     

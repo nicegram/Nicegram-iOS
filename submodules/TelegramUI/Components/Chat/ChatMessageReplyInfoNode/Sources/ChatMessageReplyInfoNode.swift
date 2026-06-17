@@ -1,7 +1,6 @@
 import Foundation
 import UIKit
 import AsyncDisplayKit
-import Postbox
 import Display
 import TelegramCore
 import SwiftSignalKit
@@ -80,13 +79,13 @@ public class ChatMessageReplyInfoNode: ASDisplayNode {
         public let strings: PresentationStrings
         public let context: AccountContext
         public let type: ChatMessageReplyInfoType
-        public let message: Message?
+        public let message: EngineRawMessage?
         public let replyForward: QuotedReplyMessageAttribute?
         public let quote: (quote: EngineMessageReplyQuote, isQuote: Bool)?
         public let innerSubject: EngineMessageReplyInnerSubject?
-        public let story: StoryId?
+        public let story: EngineStoryId?
         public let isSummarized: Bool
-        public let parentMessage: Message
+        public let parentMessage: EngineRawMessage
         public let constrainedSize: CGSize
         public let animationCache: AnimationCache?
         public let animationRenderer: MultiAnimationRenderer?
@@ -97,13 +96,13 @@ public class ChatMessageReplyInfoNode: ASDisplayNode {
             strings: PresentationStrings,
             context: AccountContext,
             type: ChatMessageReplyInfoType,
-            message: Message?,
+            message: EngineRawMessage?,
             replyForward: QuotedReplyMessageAttribute?,
             quote: (quote: EngineMessageReplyQuote, isQuote: Bool)?,
             innerSubject: EngineMessageReplyInnerSubject?,
-            story: StoryId?,
+            story: EngineStoryId?,
             isSummarized: Bool,
-            parentMessage: Message,
+            parentMessage: EngineRawMessage,
             constrainedSize: CGSize,
             animationCache: AnimationCache?,
             animationRenderer: MultiAnimationRenderer?,
@@ -222,7 +221,7 @@ public class ChatMessageReplyInfoNode: ASDisplayNode {
                 if let peer = forwardInfo.author {
                     author = peer
                 } else if let authorSignature = forwardInfo.authorSignature {
-                    author = TelegramUser(id: PeerId(namespace: Namespaces.Peer.Empty, id: PeerId.Id._internalFromInt64Value(Int64(authorSignature.persistentHashValue % 32))), accessHash: nil, firstName: authorSignature, lastName: nil, username: nil, phone: nil, photo: [], botInfo: nil, restrictionInfo: nil, flags: [], emojiStatus: nil, usernames: [], storiesHidden: nil, nameColor: nil, backgroundEmojiId: nil, profileColor: nil, profileBackgroundEmojiId: nil, subscriberCount: nil, verificationIconFileId: nil)
+                    author = TelegramUser(id: EnginePeer.Id(namespace: Namespaces.Peer.Empty, id: EnginePeer.Id.Id._internalFromInt64Value(Int64(authorSignature.persistentHashValue % 32))), accessHash: nil, firstName: authorSignature, lastName: nil, username: nil, phone: nil, photo: [], botInfo: nil, restrictionInfo: nil, flags: [], emojiStatus: nil, usernames: [], storiesHidden: nil, nameColor: nil, backgroundEmojiId: nil, profileColor: nil, profileBackgroundEmojiId: nil, subscriberCount: nil, verificationIconFileId: nil)
                 }
             }
             
@@ -903,7 +902,7 @@ public class ChatMessageReplyInfoNode: ASDisplayNode {
                     pattern = MessageInlineBlockBackgroundView.Pattern(
                         context: arguments.context,
                         fileId: backgroundEmojiId,
-                        file: arguments.parentMessage.associatedMedia[MediaId(
+                        file: arguments.parentMessage.associatedMedia[EngineMedia.Id(
                             namespace: Namespaces.Media.CloudFile,
                             id: backgroundEmojiId
                         )] as? TelegramMediaFile,

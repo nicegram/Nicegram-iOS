@@ -11,7 +11,6 @@ import TelegramAnimatedStickerNode
 import AppBundle
 import TelegramUniversalVideoContent
 import TelegramCore
-import Postbox
 import AccountContext
 
 private func fileSize(_ path: String, useTotalFileAllocatedSize: Bool = false) -> Int64? {
@@ -235,7 +234,7 @@ public final class ShareProlongedLoadingContainerNode: ASDisplayNode, ShareConte
         return self.elapsedTime + 3.0 + 0.15
     }
         
-    public init(theme: PresentationTheme, strings: PresentationStrings, forceNativeAppearance: Bool, postbox: Postbox?, environment: ShareControllerEnvironment) {
+    public init(theme: PresentationTheme, strings: PresentationStrings, forceNativeAppearance: Bool, environment: ShareControllerEnvironment) {
         self.theme = theme
         self.strings = strings
         
@@ -276,8 +275,7 @@ public final class ShareProlongedLoadingContainerNode: ASDisplayNode, ShareConte
             }
         }))
         
-        if let postbox, let mediaManager = environment.mediaManager, let path = getAppBundle().path(forResource: "BlankVideo", ofType: "m4v"), let size = fileSize(path) {
-            let _ = postbox
+        if let mediaManager = environment.mediaManager, let path = getAppBundle().path(forResource: "BlankVideo", ofType: "m4v"), let size = fileSize(path) {
             let _ = mediaManager
             
             let decoration = ChatBubbleVideoDecoration(corners: ImageCorners(), nativeSize: CGSize(width: 100.0, height: 100.0), contentMode: .aspectFit, backgroundColor: .black)

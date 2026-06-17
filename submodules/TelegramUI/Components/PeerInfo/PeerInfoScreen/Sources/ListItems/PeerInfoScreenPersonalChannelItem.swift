@@ -9,7 +9,6 @@ import TelegramStringFormatting
 import ContextUI
 import TelegramCore
 import ChatListUI
-import Postbox
 import StoryContainerScreen
 import AvatarNode
 
@@ -182,7 +181,8 @@ public final class LoadingOverlayNode: ASDisplayNode {
             let interaction = ChatListNodeInteraction(context: context, animationCache: context.animationCache, animationRenderer: context.animationRenderer, activateSearch: {}, peerSelected: { _, _, _, _, _ in }, disabledPeerSelected: { _, _, _ in }, togglePeerSelected: { _, _ in }, togglePeersSelection: { _, _ in }, additionalCategorySelected: { _ in
             }, messageSelected: { _, _, _, _ in}, groupSelected: { _ in }, addContact: { _ in }, setPeerIdWithRevealedOptions: { _, _ in }, setItemPinned: { _, _ in }, setPeerMuted: { _, _ in }, setPeerThreadMuted: { _, _, _ in }, deletePeer: { _, _ in }, deletePeerThread: { _, _ in }, setPeerThreadStopped: { _, _, _ in }, setPeerThreadPinned: { _, _, _ in }, setPeerThreadHidden: { _, _, _ in }, updatePeerGrouping: { _, _ in }, togglePeerMarkedUnread: { _, _ in}, toggleArchivedFolderHiddenByDefault: {}, toggleThreadsSelection: { _, _ in }, hidePsa: { _ in }, activateChatPreview: { _, _, _, gesture, _ in
                 gesture?.cancel()
-            }, present: { _ in }, openForumThread: { _, _ in }, openStorageManagement: {}, openPasswordSetup: {}, openPremiumIntro: {}, openPremiumGift: { _, _ in }, openPremiumManagement: {}, openActiveSessions: {}, openBirthdaySetup: {}, performActiveSessionAction: { _, _ in }, openChatFolderUpdates: {}, hideChatFolderUpdates: {}, openStories: { _, _ in }, openStarsTopup: { _ in
+            }, present: { _ in }, openForumThread: { _, _ in }, openStorageManagement: {}, openPasswordSetup: {}, openPremiumIntro: {}, openPremiumGift: { _, _ in }, openPremiumManagement: {}, openActiveSessions: {}, openBirthdaySetup: {}, performActiveSessionAction: { _, _ in }, performBotConnectionReviewAction: { _, _ in
+            }, openChatFolderUpdates: {}, hideChatFolderUpdates: {}, openStories: { _, _ in }, openStarsTopup: { _ in
             }, editPeer: { _ in
             }, openWebApp: { _ in
             }, openPhotoSetup: {
@@ -522,6 +522,8 @@ private final class PeerInfoScreenPersonalChannelItemNode: PeerInfoScreenItemNod
             },
             performActiveSessionAction: { _, _ in
             },
+            performBotConnectionReviewAction: { _, _ in
+            },
             openChatFolderUpdates: {
             },
             hideChatFolderUpdates: {
@@ -560,10 +562,10 @@ private final class PeerInfoScreenPersonalChannelItemNode: PeerInfoScreenItemNod
         let isLoading = item.data.isLoading
         
         if !isLoading, !item.data.topMessages.isEmpty {
-            index = EngineChatList.Item.Index.chatList(ChatListIndex(pinningIndex: nil, messageIndex: item.data.topMessages[0].index))
+            index = EngineChatList.Item.Index.chatList(EngineChatListIndex(pinningIndex: nil, messageIndex: item.data.topMessages[0].index))
             messages = item.data.topMessages
         } else {
-            index = EngineChatList.Item.Index.chatList(ChatListIndex(pinningIndex: nil, messageIndex: MessageIndex(id: MessageId(peerId: item.data.peer.peerId, namespace: Namespaces.Message.Cloud, id: 1), timestamp: 0)))
+            index = EngineChatList.Item.Index.chatList(EngineChatListIndex(pinningIndex: nil, messageIndex: EngineMessage.Index(id: EngineMessage.Id(peerId: item.data.peer.peerId, namespace: Namespaces.Message.Cloud, id: 1), timestamp: 0)))
             messages = []
         }
         

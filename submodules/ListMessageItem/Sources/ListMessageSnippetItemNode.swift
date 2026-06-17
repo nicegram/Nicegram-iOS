@@ -2,7 +2,6 @@ import Foundation
 import UIKit
 import AsyncDisplayKit
 import Display
-import Postbox
 import TelegramCore
 import SwiftSignalKit
 import TelegramPresentationData
@@ -57,7 +56,7 @@ public final class ListMessageSnippetItemNode: ListMessageNode {
     private let iconImageNode: TransformImageNode
     
     private var currentIconImageRepresentation: TelegramMediaImageRepresentation?
-    private var currentMedia: Media?
+    private var currentMedia: EngineRawMedia?
     public var currentPrimaryUrl: String?
     private var currentIsInstantView: Bool?
     
@@ -861,7 +860,7 @@ public final class ListMessageSnippetItemNode: ListMessageNode {
         }
     }
     
-    override public func transitionNode(id: MessageId, media: Media, adjustRect: Bool) -> (ASDisplayNode, CGRect, () -> (UIView?, UIView?))? {
+    override public func transitionNode(id: EngineMessage.Id, media: EngineRawMedia, adjustRect: Bool) -> (ASDisplayNode, CGRect, () -> (UIView?, UIView?))? {
         if let item = self.item, item.message?.id == id, self.iconImageNode.supernode != nil {
             let iconImageNode = self.iconImageNode
             return (self.iconImageNode, self.iconImageNode.bounds, { [weak iconImageNode] in

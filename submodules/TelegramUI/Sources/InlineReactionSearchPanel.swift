@@ -4,7 +4,6 @@ import SwiftSignalKit
 import Display
 import AsyncDisplayKit
 import TelegramCore
-import Postbox
 import TelegramPresentationData
 import TelegramUIPreferences
 import AccountContext
@@ -34,13 +33,13 @@ private final class InlineReactionSearchStickersNode: ASDisplayNode, ASScrollVie
     private let context: AccountContext
     private var theme: PresentationTheme
     private var strings: PresentationStrings
-    private let peerId: PeerId?
+    private let peerId: EnginePeer.Id?
     
     private let scrollNode: ASScrollNode
     private var items: [TelegramMediaFile] = []
     private var displayItems: [DisplayItem] = []
     private var topInset: CGFloat?
-    private var itemNodes: [MediaId: HorizontalStickerGridItemNode] = [:]
+    private var itemNodes: [EngineMedia.Id: HorizontalStickerGridItemNode] = [:]
     
     private var validLayout: (size: CGSize, bottomInset: CGFloat)?
     fileprivate weak var currentInterfaceState: ChatPresentationInterfaceState?
@@ -66,7 +65,7 @@ private final class InlineReactionSearchStickersNode: ASDisplayNode, ASScrollVie
         |> distinctUntilChanged
     }
     
-    init(context: AccountContext, theme: PresentationTheme, strings: PresentationStrings, peerId: PeerId?) {
+    init(context: AccountContext, theme: PresentationTheme, strings: PresentationStrings, peerId: EnginePeer.Id?) {
         self.context = context
         self.theme = theme
         self.strings = strings
@@ -83,6 +82,7 @@ private final class InlineReactionSearchStickersNode: ASDisplayNode, ASScrollVie
         self.scrollNode.view.showsVerticalScrollIndicator = false
         self.scrollNode.view.showsHorizontalScrollIndicator = false
         self.scrollNode.view.delegate = self.wrappedScrollViewDelegate
+        self.scrollNode.view.scrollsToTop = false
         
         self.addSubnode(self.scrollNode)
     }
@@ -425,7 +425,7 @@ private final class InlineReactionSearchStickersNode: ASDisplayNode, ASScrollVie
         minVisibleY -= 200.0
         maxVisibleY += 200.0
         
-        var validIds = Set<MediaId>()
+        var validIds = Set<EngineMedia.Id>()
         for i in 0 ..< self.displayItems.count {
             let item = self.displayItems[i]
             
@@ -469,7 +469,7 @@ private final class InlineReactionSearchStickersNode: ASDisplayNode, ASScrollVie
             }
         }
         
-        var removeIds: [MediaId] = []
+        var removeIds: [EngineMedia.Id] = []
         for (id, itemNode) in self.itemNodes {
             if !validIds.contains(id) {
                 removeIds.append(id)
@@ -495,7 +495,7 @@ final class InlineReactionSearchPanel: ChatInputContextPanelNode {
     
     private var choosingStickerDisposable: Disposable?
     
-    init(context: AccountContext, theme: PresentationTheme, strings: PresentationStrings, fontSize: PresentationFontSize, peerId: PeerId?, chatPresentationContext: ChatPresentationContext) {
+    init(context: AccountContext, theme: PresentationTheme, strings: PresentationStrings, fontSize: PresentationFontSize, peerId: EnginePeer.Id?, chatPresentationContext: ChatPresentationContext) {
         self.containerNode = ASDisplayNode()
         
         self.backgroundView = GlassBackgroundView()

@@ -12,7 +12,6 @@ import AccountContext
 import AttachmentTextInputPanelNode
 import ChatPresentationInterfaceState
 import ChatSendMessageActionUI
-import ChatTextLinkEditUI
 import PhotoResources
 import AnimatedStickerComponent
 import SemanticStatusNode
@@ -244,6 +243,9 @@ private final class AttachButtonComponent: CombinedComponent {
             case .audio:
                 name = strings.Attachment_Audio
                 imageName = "Chat/Attach Menu/Audio"
+            case .link:
+                name = strings.Attachment_Link
+                imageName = "Chat/Attach Menu/Link"
             case let .app(bot):
                 botPeer = bot.peer
                 name = bot.shortName
@@ -1123,7 +1125,7 @@ final class AttachmentPanel: ASDisplayNode, ASScrollViewDelegate, ASGestureRecog
         }, setupEditMessage: { _, _ in
         }, beginMessageSelection: { _, _ in
         }, cancelMessageSelection: { _ in
-        }, deleteSelectedMessages: {
+        }, deleteSelectedMessages: { _ in
         }, reportSelectedMessages: {
         }, reportMessages: { _, _ in
         }, blockMessageAuthor: { _, _ in
@@ -1248,7 +1250,7 @@ final class AttachmentPanel: ASDisplayNode, ASScrollViewDelegate, ASGestureRecog
                 }
 
                 let presentationData = strongSelf.context.sharedContext.currentPresentationData.with { $0 }
-                let controller = chatTextLinkEditController(context: strongSelf.context, updatedPresentationData: (presentationData, .never()), text: text?.string ?? "", link: link, apply: { [weak self] link in
+                let controller = strongSelf.context.sharedContext.makeLinkEditController(context: strongSelf.context, updatedPresentationData: (presentationData, .never()), text: text?.string ?? "", link: link, apply: { [weak self] link, _ in
                     if let strongSelf = self, let inputMode = inputMode, let selectionRange = selectionRange {
                         if let link = link {
                             strongSelf.updateChatPresentationInterfaceState(animated: true, { state in
@@ -1420,7 +1422,6 @@ final class AttachmentPanel: ASDisplayNode, ASScrollViewDelegate, ASGestureRecog
                 })
             })
         }, openScheduledMessages: {
-        }, openPeersNearby: {
         }, displaySearchResultsTooltip: { _, _ in
         }, unarchivePeer: {
         }, scrollToTop: {
@@ -1561,12 +1562,22 @@ final class AttachmentPanel: ASDisplayNode, ASScrollViewDelegate, ASGestureRecog
                 if let data = view.cachedData as? CachedUserData {
                     return data.sendPaidMessageStars
                 } else if let channel = peerViewMainPeer(view) as? TelegramChannel {
-                    if channel.isMonoForum, let linkedMonoforumId = channel.linkedMonoforumId, let mainChannel = view.peers[linkedMonoforumId] as? TelegramChannel, mainChannel.hasPermission(.manageDirect) {
-                        return nil
-                    } else if let cachedData = view.cachedData as? CachedChannelData, let sendPaidMessageStarsValue = cachedData.sendPaidMessageStars, sendPaidMessageStarsValue == .zero {
-                        return nil
+                    if channel.isMonoForum {
+                        if let linkedMonoforumId = channel.linkedMonoforumId, let mainChannel = view.peers[linkedMonoforumId] as? TelegramChannel, mainChannel.hasPermission(.manageDirect) {
+                            return nil
+                        } else if let cachedData = view.cachedData as? CachedChannelData, let value = cachedData.sendPaidMessageStars, value == .zero {
+                            return nil
+                        } else {
+                            return channel.sendPaidMessageStars
+                        }
                     } else {
-                        return channel.sendPaidMessageStars
+                        if channel.flags.contains(.isCreator) || channel.adminRights != nil {
+                            return nil
+                        } else if let cachedData = view.cachedData as? CachedChannelData, let value = cachedData.sendPaidMessageStars {
+                            return value == .zero ? nil : value
+                        } else {
+                            return channel.sendPaidMessageStars
+                        }
                     }
                 } else {
                     return nil
@@ -1598,6 +1609,7 @@ final class AttachmentPanel: ASDisplayNode, ASScrollViewDelegate, ASGestureRecog
             self.containerNode.layer.cornerCurve = .continuous
         }
 
+        self.scrollNode.view.scrollsToTop = false
         self.scrollNode.view.delegate = self.wrappedScrollViewDelegate
         self.scrollNode.view.showsHorizontalScrollIndicator = false
         self.scrollNode.view.showsVerticalScrollIndicator = false
@@ -1990,6 +2002,8 @@ final class AttachmentPanel: ASDisplayNode, ASScrollViewDelegate, ASGestureRecog
         var width = layout.size.width
         if buttons.count == 3 {
             width = smallPanelWidth
+        } else if buttons.count == 4 {
+            width = 300
         }
 
         var panelSideInset: CGFloat
@@ -2001,7 +2015,7 @@ final class AttachmentPanel: ASDisplayNode, ASScrollViewDelegate, ASGestureRecog
         }
 
         var distanceBetweenNodes = floorToScreenPixels((width - panelSideInset * 2.0 - self.buttonSize.width) / CGFloat(max(1, buttons.count - 1)))
-        if buttons.count == 3 {
+        if buttons.count == 3 || buttons.count == 4 {
             distanceBetweenNodes = floorToScreenPixels((width - panelSideInset * 2.0 - 32.0) / CGFloat(max(1, buttons.count - 1)))
         }
         let internalWidth = distanceBetweenNodes * CGFloat(max(0, buttons.count - 1))
@@ -2017,7 +2031,7 @@ final class AttachmentPanel: ASDisplayNode, ASScrollViewDelegate, ASGestureRecog
         case .legacy:
             leftNodeOriginX = (width - internalWidth) / 2.0
         }
-        if buttons.count == 3 {
+        if buttons.count == 3 || buttons.count == 4 {
             leftNodeOriginX = floor((layout.size.width - width) / 2.0) + 16.0
         }
 
@@ -2171,6 +2185,8 @@ final class AttachmentPanel: ASDisplayNode, ASScrollViewDelegate, ASGestureRecog
                 accessibilityTitle = "Emoji"
             case .audio:
                 accessibilityTitle = self.presentationData.strings.Attachment_Audio
+            case .link:
+                accessibilityTitle = self.presentationData.strings.Attachment_Link
             case let .app(bot):
                 accessibilityTitle = bot.shortName
             case .standalone:
@@ -2544,6 +2560,8 @@ final class AttachmentPanel: ASDisplayNode, ASScrollViewDelegate, ASGestureRecog
             let buttonsPanelWidth: CGFloat
             if buttons.count == 3 {
                 buttonsPanelWidth = smallPanelWidth
+            } else if buttons.count == 4 {
+                buttonsPanelWidth = 300
             } else {
                 buttonsPanelWidth = layout.size.width - layout.safeInsets.left - layout.safeInsets.right - panelSideInset * 2.0
             }

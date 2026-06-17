@@ -1,7 +1,6 @@
 import Foundation
 import UIKit
 import Display
-import Postbox
 import SwiftSignalKit
 import AsyncDisplayKit
 import TelegramCore
@@ -60,7 +59,9 @@ public final class ThemePreviewController: ViewController {
         self.presentationData = context.sharedContext.currentPresentationData.with { $0 }
         self.presentationTheme.set(.single(previewTheme))
         
-        super.init(navigationBarPresentationData: NavigationBarPresentationData(presentationTheme: self.previewTheme, presentationStrings: self.presentationData.strings))
+        super.init(navigationBarPresentationData: NavigationBarPresentationData(presentationTheme: self.previewTheme, presentationStrings: self.presentationData.strings, style: .glass))
+        
+        self._hasGlassStyle = true
         
         self.blocksBackgroundWhenInOverlay = true
         self.acceptsFocusWhenInOverlay = true
@@ -141,13 +142,13 @@ public final class ThemePreviewController: ViewController {
         let titleView = CounterControllerTitleView(theme: self.previewTheme)
         titleView.title = CounterControllerTitle(title: themeName, counter: hasInstallsCount ? " " : "")
         self.navigationItem.titleView = titleView
-        self.navigationItem.leftBarButtonItem = UIBarButtonItem(title: self.presentationData.strings.Common_Cancel, style: .plain, target: self, action: #selector(self.cancelPressed))
+        self.navigationItem.leftBarButtonItem = UIBarButtonItem(title: "___close", style: .plain, target: self, action: #selector(self.cancelPressed))
         
         self.statusBar.statusBarStyle = self.previewTheme.rootController.statusBarStyle.style
         self.supportedOrientations = ViewControllerSupportedOrientations(regularSize: .all, compactSize: .portrait)
         
         if !isPreview {
-            self.navigationItem.rightBarButtonItem = UIBarButtonItem(image: generateTintedImage(image: UIImage(bundleImageName: "Chat/Input/Accessory Panels/MessageSelectionForward"), color: self.previewTheme.rootController.navigationBar.accentTextColor), style: .plain, target: self, action: #selector(self.actionPressed))
+            self.navigationItem.rightBarButtonItem = UIBarButtonItem(image: generateTintedImage(image: UIImage(bundleImageName: "Navigation/Share"), color: self.previewTheme.chat.inputPanel.panelControlColor), style: .plain, target: self, action: #selector(self.actionPressed))
         }
         
         self.disposable = (combineLatest(self.theme.get(), self.presentationTheme.get())
@@ -156,7 +157,7 @@ public final class ThemePreviewController: ViewController {
                 let titleView = CounterControllerTitleView(theme: strongSelf.previewTheme)
                 titleView.title = CounterControllerTitle(title: themeName, counter: hasInstallsCount ? strongSelf.presentationData.strings.Theme_UsersCount(max(1, theme.installCount ?? 0)) : "")
                 strongSelf.navigationItem.titleView = titleView
-                strongSelf.navigationBar?.updatePresentationData(NavigationBarPresentationData(presentationTheme: presentationTheme, presentationStrings: strongSelf.presentationData.strings), transition: .immediate)
+                strongSelf.navigationBar?.updatePresentationData(NavigationBarPresentationData(presentationTheme: presentationTheme, presentationStrings: strongSelf.presentationData.strings, style: .glass), transition: .immediate)
             }
         })
         
@@ -222,7 +223,7 @@ public final class ThemePreviewController: ViewController {
         if let initialWallpaper = initialWallpaper {
             self.controllerNode.wallpaperPromise.set(.single(initialWallpaper))
         } else if case let .file(file) = previewTheme.chat.defaultWallpaper, file.id == 0 {
-            self.controllerNode.wallpaperPromise.set(cachedWallpaper(account: self.context.account, slug: file.slug, settings: file.settings)
+            self.controllerNode.wallpaperPromise.set(cachedWallpaper(engine: self.context.engine, network: self.context.account.network, slug: file.slug, settings: file.settings)
             |> mapToSignal { wallpaper in                
                 return .single(wallpaper?.wallpaper ?? .color(previewTheme.chatList.backgroundColor.argb))
             })
@@ -285,7 +286,7 @@ public final class ThemePreviewController: ViewController {
             switch theme {
                 case let .cloud(info):
                     resolvedWallpaper = info.resolvedWallpaper
-                    return telegramThemes(postbox: context.account.postbox, network: context.account.network, accountManager: context.sharedContext.accountManager)
+                    return context.engine.themes.themes(accountManager: context.sharedContext.accountManager)
                     |> take(1)
                     |> map { themes -> Bool in
                         if let _ = themes.first(where: { $0.id == info.theme.id }) {
@@ -318,7 +319,7 @@ public final class ThemePreviewController: ViewController {
                         }, scale: 1.0)
                         let themeThumbnailData = themeThumbnail?.jpegData(compressionQuality: 0.6)
                         
-                        return telegramThemes(postbox: context.account.postbox, network: context.account.network, accountManager: context.sharedContext.accountManager)
+                        return context.engine.themes.themes(accountManager: context.sharedContext.accountManager)
                         |> take(1)
                         |> mapToSignal { themes -> Signal<(PresentationThemeReference, Bool), NoError> in
                             let similarTheme = themes.first(where: { $0.isCreator && $0.title == info.title })
@@ -411,7 +412,7 @@ public final class ThemePreviewController: ViewController {
                     
                     var themeSpecificChatWallpapers = updatedSettings.themeSpecificChatWallpapers
                     themeSpecificChatWallpapers[updatedTheme.index] = nil
-                    return PreferencesEntry(updatedSettings.withUpdatedThemeSpecificChatWallpapers(themeSpecificChatWallpapers).withUpdatedThemeSpecificAccentColors(themeSpecificAccentColors))
+                    return EnginePreferencesEntry(updatedSettings.withUpdatedThemeSpecificChatWallpapers(themeSpecificChatWallpapers).withUpdatedThemeSpecificAccentColors(themeSpecificAccentColors))
                 })
                 return previousDefaultTheme
             }

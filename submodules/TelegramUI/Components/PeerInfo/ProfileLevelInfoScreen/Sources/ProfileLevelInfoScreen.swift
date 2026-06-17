@@ -102,8 +102,7 @@ private final class SheetContent: Component {
             self.environment = environment
                                     
             var contentHeight: CGFloat = 0.0
-                      
-            let titleString: String = environment.strings.ProfileLevelInfo_Title
+
             let descriptionTextString: String
             var secondaryDescriptionTextString: String?
             if component.peer.id == component.context.account.peerId {
@@ -178,7 +177,6 @@ private final class SheetContent: Component {
                 ))
             }
             
-            let _ = titleString
             let titleSize = self.title.update(
                 transition: transition,
                 component: AnyComponent(AnimatedTextComponent(

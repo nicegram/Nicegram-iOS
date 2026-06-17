@@ -38,7 +38,7 @@ func faqSearchableItems(context: AccountContext, resolvedUrl: Signal<ResolvedUrl
                             case let .list(items, false):
                                 if let currentSection = currentSection {
                                     for item in items {
-                                        if case let .text(itemText, _) = item, case let .url(text, url, _) = itemText {
+                                        if case let .text(itemText, _, _) = item, case let .url(text, url, _) = itemText {
                                             let (_, anchor) = extractAnchor(string: url)
                                             guard let anchor else {
                                                 continue

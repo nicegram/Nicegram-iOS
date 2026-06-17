@@ -39,6 +39,7 @@ import MediaPlaybackHeaderPanelComponent
 import LiveLocationHeaderPanelComponent
 import ChatListHeaderNoticeComponent
 import ChatListFilterTabContainerNode
+import GlassControls
 
 public enum ChatListContainerNodeFilter: Equatable {
     case all
@@ -1164,8 +1165,8 @@ final class ChatListControllerNode: ASDisplayNode, ASGestureRecognizerDelegate {
     let navigationBarView = ComponentView<Empty>()
     weak var controller: ChatListControllerImpl?
     
-    var toolbar: Toolbar?
-    private var toolbarNode: ToolbarNode?
+    private var toolbar: ComponentView<Empty>?
+    var toolbarData: Toolbar?
     var toolbarActionSelected: ((ToolbarActionOption) -> Void)?
     
     private var isSearchDisplayControllerActive: ChatListNavigationBar.ActiveSearch?
@@ -1425,10 +1426,6 @@ final class ChatListControllerNode: ASDisplayNode, ASGestureRecognizerDelegate {
         self.mainContainerNode.updatePresentationData(presentationData)
         self.inlineStackContainerNode?.updatePresentationData(presentationData)
         self.searchDisplayController?.updatePresentationData(presentationData)
-        
-        if let toolbarNode = self.toolbarNode {
-            toolbarNode.updateTheme(ToolbarTheme(rootControllerTheme: self.presentationData.theme))
-        }
     }
     
     private func updateNavigationBar(layout: ContainerViewLayout, deferScrollApplication: Bool, transition: ComponentTransition) -> (navigationHeight: CGFloat, storiesInset: CGFloat) {
@@ -1465,6 +1462,8 @@ final class ChatListControllerNode: ASDisplayNode, ASGestureRecognizerDelegate {
                             self.effectiveContainerNode.currentItemNode.interaction?.openPremiumGift(peers, birthdays)
                         case .reviewLogin:
                             break
+                        case .reviewBotConnection:
+                            break
                         case let .starsSubscriptionLowBalance(amount, _):
                             self.effectiveContainerNode.currentItemNode.interaction?.openStarsTopup(amount.value)
                         case .setupPhoto:
@@ -1488,6 +1487,8 @@ final class ChatListControllerNode: ASDisplayNode, ASGestureRecognizerDelegate {
                         switch notice {
                         case let .reviewLogin(newSessionReview, _):
                             self.effectiveContainerNode.currentItemNode.interaction?.performActiveSessionAction(newSessionReview, isPositive)
+                        case let .reviewBotConnection(newBotConnectionReview, _, _):
+                            self.effectiveContainerNode.currentItemNode.interaction?.performBotConnectionReviewAction(newBotConnectionReview, isPositive)
                         default:
                             break
                         }
@@ -1907,53 +1908,101 @@ final class ChatListControllerNode: ASDisplayNode, ASGestureRecognizerDelegate {
         insets.left += layout.safeInsets.left
         insets.right += layout.safeInsets.right
         
-        if let toolbar = self.toolbar {
-            var tabBarHeight: CGFloat
-            var options: ContainerViewLayoutInsetOptions = []
-            if layout.metrics.widthClass == .regular {
-                options.insert(.input)
+        if let toolbarData = self.toolbarData {
+            var panelsBottomInset: CGFloat = layout.insets(options: []).bottom
+            if layout.metrics.widthClass == .regular, let inputHeight = layout.inputHeight, inputHeight != 0.0 {
+                panelsBottomInset = inputHeight + 8.0
             }
-            
-            var heightInset: CGFloat = 0.0
-            if case .forum = self.location {
-                heightInset = 4.0
-            }
-            
-            let bottomInset: CGFloat = layout.insets(options: options).bottom
-            if !layout.safeInsets.left.isZero {
-                tabBarHeight = 34.0 + bottomInset
-                insets.bottom += 34.0
+            if panelsBottomInset == 0.0 {
+                panelsBottomInset = 8.0
             } else {
-                tabBarHeight = 49.0 - heightInset + bottomInset
-                insets.bottom += 49.0 - heightInset
+                panelsBottomInset = max(panelsBottomInset, 8.0)
             }
             
-            let toolbarFrame = CGRect(origin: CGPoint(x: 0.0, y: layout.size.height - tabBarHeight), size: CGSize(width: layout.size.width, height: tabBarHeight))
+            let sideInset: CGFloat = 20.0
+            let toolbarHeight = 44.0
+            let toolbarFrame = CGRect(origin: CGPoint(x: sideInset, y: layout.size.height - panelsBottomInset - toolbarHeight), size: CGSize(width: layout.size.width - sideInset * 2.0, height: toolbarHeight))
             
-            if let toolbarNode = self.toolbarNode {
-                transition.updateFrame(node: toolbarNode, frame: toolbarFrame)
-                toolbarNode.updateLayout(size: toolbarFrame.size, leftInset: layout.safeInsets.left, rightInset: layout.safeInsets.right, additionalSideInsets: layout.additionalInsets, bottomInset: bottomInset, toolbar: toolbar, transition: transition)
+            let toolbar: ComponentView<Empty>
+            var toolbarTransition = ComponentTransition(transition)
+            if let current = self.toolbar {
+                toolbar = current
             } else {
-                let toolbarNode = ToolbarNode(theme: ToolbarTheme(rootControllerTheme: self.presentationData.theme), displaySeparator: true, left: { [weak self] in
-                    self?.toolbarActionSelected?(.left)
-                }, right: { [weak self] in
-                    self?.toolbarActionSelected?(.right)
-                }, middle: { [weak self] in
-                    self?.toolbarActionSelected?(.middle)
-                })
-                toolbarNode.frame = toolbarFrame
-                toolbarNode.updateLayout(size: toolbarFrame.size, leftInset: layout.safeInsets.left, rightInset: layout.safeInsets.right, additionalSideInsets: layout.additionalInsets, bottomInset: bottomInset, toolbar: toolbar, transition: .immediate)
-                self.addSubnode(toolbarNode)
-                self.toolbarNode = toolbarNode
-                if transition.isAnimated {
-                    toolbarNode.layer.animateAlpha(from: 0.0, to: 1.0, duration: 0.2)
+                toolbar = ComponentView()
+                self.toolbar = toolbar
+                toolbarTransition = .immediate
+            }
+            
+            let _ = toolbar.update(
+                transition: toolbarTransition,
+                component: AnyComponent(GlassControlPanelComponent(
+                    theme: self.presentationData.theme,
+                    leftItem: toolbarData.leftAction.flatMap { value in
+                        return GlassControlPanelComponent.Item(
+                            items: [GlassControlGroupComponent.Item(
+                                id: "left_" + value.title,
+                                content: .text(value.title),
+                                action: value.isEnabled ? { [weak self] in
+                                    guard let self else {
+                                        return
+                                    }
+                                    self.toolbarActionSelected?(.left)
+                                } : nil
+                            )],
+                            background: .panel
+                        )
+                    },
+                    centralItem: toolbarData.middleAction.flatMap { value in
+                        return GlassControlPanelComponent.Item(
+                            items: [GlassControlGroupComponent.Item(
+                                id: "right_" + value.title,
+                                content: .text(value.title),
+                                action: value.isEnabled ? { [weak self] in
+                                    guard let self else {
+                                        return
+                                    }
+                                    self.toolbarActionSelected?(.middle)
+                                } : nil
+                            )],
+                            background: .panel
+                        )
+                    },
+                    rightItem: toolbarData.rightAction.flatMap { value in
+                        return GlassControlPanelComponent.Item(
+                            items: [GlassControlGroupComponent.Item(
+                                id: "right_" + value.title,
+                                content: .text(value.title),
+                                action: value.isEnabled ? { [weak self] in
+                                    guard let self else {
+                                        return
+                                    }
+                                    self.toolbarActionSelected?(.right)
+                                } : nil
+                            )],
+                            background: .panel
+                        )
+                    },
+                    centerAlignmentIfPossible: true
+                )),
+                environment: {},
+                containerSize: toolbarFrame.size
+            )
+            
+            if let toolbarView = toolbar.view {
+                if toolbarView.superview == nil {
+                    self.view.addSubview(toolbarView)
+                    toolbarView.alpha = 0.0
                 }
+                toolbarTransition.setFrame(view: toolbarView, frame: toolbarFrame)
+                ComponentTransition(transition).setAlpha(view: toolbarView, alpha: 1.0)
             }
-        } else if let toolbarNode = self.toolbarNode {
-            self.toolbarNode = nil
-            transition.updateAlpha(node: toolbarNode, alpha: 0.0, completion: { [weak toolbarNode] _ in
-                toolbarNode?.removeFromSupernode()
-            })
+        } else if let toolbar = self.toolbar {
+            self.toolbar = nil
+            if let toolbarView = toolbar.view {
+                ComponentTransition(transition).setAlpha(view: toolbarView, alpha: 0.0, completion: { [weak toolbarView] _ in
+                    toolbarView?.removeFromSuperview()
+                })
+            }
         }
         
         var childrenLayout = layout

@@ -2,7 +2,6 @@ import Foundation
 import UIKit
 import Display
 import QuickLook
-import Postbox
 import SwiftSignalKit
 import AsyncDisplayKit
 import TelegramCore
@@ -29,13 +28,13 @@ public struct InstantPageGalleryEntryLocation: Equatable {
 
 public struct InstantPageGalleryEntry: Equatable {
     public let index: Int32
-    public let pageId: MediaId
+    public let pageId: EngineMedia.Id
     public let media: InstantPageMedia
     public let caption: RichText?
     public let credit: RichText?
     public let location: InstantPageGalleryEntryLocation?
     
-    public init(index: Int32, pageId: MediaId, media: InstantPageMedia, caption: RichText?, credit: RichText?, location: InstantPageGalleryEntryLocation?) {
+    public init(index: Int32, pageId: EngineMedia.Id, media: InstantPageMedia, caption: RichText?, credit: RichText?, location: InstantPageGalleryEntryLocation?) {
         self.index = index
         self.pageId = pageId
         self.media = media
@@ -48,7 +47,7 @@ public struct InstantPageGalleryEntry: Equatable {
         return lhs.index == rhs.index && lhs.pageId == rhs.pageId && lhs.media == rhs.media && lhs.caption == rhs.caption && lhs.credit == rhs.credit && lhs.location == rhs.location
     }
     
-    func item(context: AccountContext, userLocation: MediaResourceUserLocation, webPage: TelegramMediaWebpage, message: Message?, presentationData: PresentationData, fromPlayingVideo: Bool, landscape: Bool, openUrl: @escaping (InstantPageUrlItem) -> Void, openUrlOptions: @escaping (InstantPageUrlItem) -> Void, getPreloadedResource: @escaping (String) -> Data?) -> GalleryItem {
+    func item(context: AccountContext, userLocation: MediaResourceUserLocation, webPage: TelegramMediaWebpage, message: EngineMessage?, presentationData: PresentationData, fromPlayingVideo: Bool, landscape: Bool, openUrl: @escaping (InstantPageUrlItem) -> Void, openUrlOptions: @escaping (InstantPageUrlItem) -> Void, getPreloadedResource: @escaping (String) -> Data?) -> GalleryItem {
         let caption: NSAttributedString
         let credit: NSAttributedString
         
@@ -119,7 +118,7 @@ public struct InstantPageGalleryEntry: Equatable {
                 if let dimensions = file.dimensions {
                     representations.append(TelegramMediaImageRepresentation(dimensions: dimensions, resource: file.resource, progressiveSizes: [], immediateThumbnailData: nil, hasVideo: false, isPersonal: false))
                 }
-                let image = TelegramMediaImage(imageId: MediaId(namespace: 0, id: 0), representations: representations, immediateThumbnailData: file.immediateThumbnailData, reference: nil, partialReference: nil, flags: [])
+                let image = TelegramMediaImage(imageId: EngineMedia.Id(namespace: 0, id: 0), representations: representations, immediateThumbnailData: file.immediateThumbnailData, reference: nil, partialReference: nil, flags: [])
                 return InstantImageGalleryItem(context: context, presentationData: presentationData, itemId: self.index, userLocation: userLocation, imageReference: .webPage(webPage: WebpageReference(webPage), media: image), caption: caption, credit: credit, location: self.location, openUrl: openUrl, openUrlOptions: openUrlOptions, getPreloadedResource: getPreloadedResource)
             }
         } else if case let .webpage(embedWebpage) = self.media.media, case let .Loaded(webpageContent) = embedWebpage.content {
@@ -166,7 +165,7 @@ public class InstantPageGalleryController: ViewController, StandalonePresentable
     private let context: AccountContext
     private let userLocation: MediaResourceUserLocation
     private let webPage: TelegramMediaWebpage
-    private let message: Message?
+    private let message: EngineMessage?
     private var presentationData: PresentationData
     
     private let _ready = Promise<Bool>()
@@ -203,7 +202,7 @@ public class InstantPageGalleryController: ViewController, StandalonePresentable
     private var openUrlOptions: (InstantPageUrlItem) -> Void
     private let getPreloadedResource: (String) -> Data?
     
-    public init(context: AccountContext, userLocation: MediaResourceUserLocation, webPage: TelegramMediaWebpage, message: Message? = nil, entries: [InstantPageGalleryEntry], centralIndex: Int, fromPlayingVideo: Bool = false, landscape: Bool = false, timecode: Double? = nil, replaceRootController: @escaping (ViewController, Promise<Bool>?) -> Void, baseNavigationController: NavigationController?, getPreloadedResource: @escaping (String) -> Data? = { _ in return nil }) {
+    public init(context: AccountContext, userLocation: MediaResourceUserLocation, webPage: TelegramMediaWebpage, message: EngineMessage? = nil, entries: [InstantPageGalleryEntry], centralIndex: Int, fromPlayingVideo: Bool = false, landscape: Bool = false, timecode: Double? = nil, replaceRootController: @escaping (ViewController, Promise<Bool>?) -> Void, baseNavigationController: NavigationController?, getPreloadedResource: @escaping (String) -> Data? = { _ in return nil }) {
         self.context = context
         self.userLocation = userLocation
         self.webPage = webPage

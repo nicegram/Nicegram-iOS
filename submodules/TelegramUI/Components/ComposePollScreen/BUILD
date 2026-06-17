@@ -62,6 +62,7 @@ swift_library(
         "//submodules/ICloudResources",
         "//submodules/CountrySelectionUI",
         "//submodules/TelegramUI/Components/ShareWithPeersScreen",
+        "//submodules/ChatTextLinkEditUI",
     ],
     visibility = [
         "//visibility:public",

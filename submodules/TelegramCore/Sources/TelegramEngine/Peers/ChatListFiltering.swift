@@ -4,18 +4,6 @@ import SwiftSignalKit
 import TelegramApi
 
 
-public struct ChatListFilteringConfiguration: Equatable {
-    public let isEnabled: Bool
-    
-    public init(appConfiguration: AppConfiguration) {
-        var isEnabled = false
-        if let data = appConfiguration.data, let value = data["dialog_filters_enabled"] as? Bool, value {
-            isEnabled = true
-        }
-        self.isEnabled = isEnabled
-    }
-}
-
 public struct ChatListFilterPeerCategories: OptionSet, Hashable {
     public var rawValue: Int32
     

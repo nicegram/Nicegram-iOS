@@ -3,7 +3,6 @@ import UIKit
 import Display
 import AsyncDisplayKit
 import SwiftSignalKit
-import Postbox
 import TelegramCore
 import TelegramPresentationData
 import TextFormat
@@ -150,7 +149,7 @@ public final class ChatBotInfoItemNode: ListViewItemNode {
         }
         
         let videoContent = NativeVideoContent(
-            id: .message(0, MediaId(namespace: 0, id: Int64.random(in: 0..<Int64.max))),
+            id: .message(0, EngineMedia.Id(namespace: 0, id: Int64.random(in: 0..<Int64.max))),
             userLocation: .other,
             fileReference: .standalone(media: file),
             streamVideo: .none,
@@ -185,7 +184,7 @@ public final class ChatBotInfoItemNode: ListViewItemNode {
                     break
                 case .ignore:
                     return .fail
-                case .url, .phone, .peerMention, .textMention, .botCommand, .hashtag, .instantPage, .wallpaper, .theme, .call, .conferenceCall, .openMessage, .timecode, .bankCard, .tooltip, .openPollResults, .copy, .largeEmoji, .customEmoji, .date, .custom:
+                case .url, .phone, .peerMention, .textMention, .botCommand, .hashtag, .instantPage, .wallpaper, .theme, .call, .conferenceCall, .openMessage, .timecode, .bankCard, .tooltip, .openPollResults, .copy, .largeEmoji, .customEmoji, .date, .custom, .externalInstantPage:
                     return .waitForSingleTap
                 }
             }

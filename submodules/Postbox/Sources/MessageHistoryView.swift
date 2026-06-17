@@ -1560,13 +1560,15 @@ public final class MessageHistoryView: PostboxView {
         }
         
         if !self.holeLater, let typingDraft = mutableView.typingDraft {
-            entries.append(MessageHistoryEntry(
+            let newEntry = MessageHistoryEntry(
                 message: typingDraft,
                 isRead: false,
                 location: nil,
                 monthLocation: nil,
                 attributes: MutableMessageHistoryEntryAttributes(authorIsContact: false)
-            ))
+            )
+            entries.append(newEntry)
+            entries.sort()
         }
         
         self.entries = entries

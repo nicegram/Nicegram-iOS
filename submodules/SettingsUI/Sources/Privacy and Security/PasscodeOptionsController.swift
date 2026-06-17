@@ -2,7 +2,6 @@ import Foundation
 import UIKit
 import Display
 import SwiftSignalKit
-import Postbox
 import TelegramCore
 import LegacyComponents
 import LocalAuthentication
@@ -15,6 +14,7 @@ import LocalAuth
 import PasscodeUI
 import TelegramStringFormatting
 import TelegramIntents
+import ContextUI
 
 // Nicegram import
 import NGData
@@ -163,6 +163,18 @@ private struct PasscodeOptionsControllerState: Equatable {
     }
 }
 
+private final class PasscodeOptionsContextReferenceContentSource: ContextReferenceContentSource {
+    private let sourceView: UIView
+
+    init(sourceView: UIView) {
+        self.sourceView = sourceView
+    }
+
+    func transitionInfo() -> ContextControllerReferenceViewInfo? {
+        return ContextControllerReferenceViewInfo(referenceView: self.sourceView, contentAreaInScreenSpace: UIScreen.main.bounds, insets: UIEdgeInsets(top: -4.0, left: 0.0, bottom: -4.0, right: 0.0))
+    }
+}
+
 private struct PasscodeOptionsData: Equatable {
     let accessChallenge: PostboxAccessChallengeData
     let presentationSettings: PresentationPasscodeSettings
@@ -241,9 +253,12 @@ func passcodeOptionsController(context: AccountContext, focusOnItemTag: Passcode
     let statePromise = ValuePromise(initialState, ignoreRepeated: true)
     
     var presentControllerImpl: ((ViewController, ViewControllerPresentationArguments) -> Void)?
+    var presentInGlobalOverlayImpl: ((ViewController) -> Void)?
     var pushControllerImpl: ((ViewController) -> Void)?
     var popControllerImpl: (() -> Void)?
     var replaceTopControllerImpl: ((ViewController, Bool) -> Void)?
+    var findAutolockReferenceNode: (() -> ItemListDisclosureItemNode?)?
+    var currentAutolockTimeout: Int32?
     
     let actionsDisposable = DisposableSet()
     
@@ -362,8 +377,6 @@ func passcodeOptionsController(context: AccountContext, focusOnItemTag: Passcode
         })
     }, changePasscodeTimeout: {
         let presentationData = context.sharedContext.currentPresentationData.with { $0 }
-        let actionSheet = ActionSheetController(presentationData: presentationData)
-        var items: [ActionSheetItem] = []
         let setAction: (Int32?) -> Void = { value in
             let _ = (passcodeOptionsDataPromise.get()
             |> take(1)).start(next: { [weak passcodeOptionsDataPromise] data in
@@ -382,24 +395,38 @@ func passcodeOptionsController(context: AccountContext, focusOnItemTag: Passcode
             values.sort()
         #endif
         
+        var items: [ContextMenuItem] = []
         for value in values {
             var t: Int32?
             if value != 0 {
                 t = value
             }
-            items.append(ActionSheetButtonItem(title: autolockStringForTimeout(strings: presentationData.strings, timeout: t), color: .accent, action: { [weak actionSheet] in
-                actionSheet?.dismissAnimated()
-                
+            items.append(.action(ContextMenuActionItem(text: autolockStringForTimeout(strings: presentationData.strings, timeout: t), icon: { theme in
+                if currentAutolockTimeout == t {
+                    return generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Check"), color: theme.contextMenu.primaryColor)
+                } else {
+                    return UIImage()
+                }
+            }, action: { _, f in
+                f(.default)
                 setAction(t)
-            }))
+            })))
         }
         
-        actionSheet.setItemGroups([ActionSheetItemGroup(items: items), ActionSheetItemGroup(items: [
-                ActionSheetButtonItem(title: presentationData.strings.Common_Cancel, color: .accent, font: .bold, action: { [weak actionSheet] in
-                    actionSheet?.dismissAnimated()
-                })
-            ])])
-        presentControllerImpl?(actionSheet, ViewControllerPresentationArguments(presentationAnimation: .modalSheet))
+        guard let sourceNode = findAutolockReferenceNode?() else {
+            return
+        }
+        let contextController = makeContextController(
+            presentationData: presentationData,
+            source: .reference(PasscodeOptionsContextReferenceContentSource(sourceView: sourceNode.labelNode.view)),
+            items: .single(ContextController.Items(content: .list(items))),
+            gesture: nil
+        )
+        sourceNode.updateHasContextMenu(hasContextMenu: true)
+        contextController.dismissed = { [weak sourceNode] in
+            sourceNode?.updateHasContextMenu(hasContextMenu: false)
+        }
+        presentInGlobalOverlayImpl?(contextController)
     }, changeTouchId: { value in
         let _ = (passcodeOptionsDataPromise.get() |> take(1)).start(next: { [weak passcodeOptionsDataPromise] data in
             passcodeOptionsDataPromise?.set(.single(data.withUpdatedPresentationSettings(data.presentationSettings.withUpdatedEnableBiometrics(value))))
@@ -412,7 +439,8 @@ func passcodeOptionsController(context: AccountContext, focusOnItemTag: Passcode
     
     let signal = combineLatest(context.sharedContext.presentationData, statePromise.get(), passcodeOptionsDataPromise.get()) |> deliverOnMainQueue
         |> map { presentationData, state, passcodeOptionsData -> (ItemListControllerState, (ItemListNodeState, Any)) in
-            
+            currentAutolockTimeout = passcodeOptionsData.presentationSettings.autolockTimeout
+
             let controllerState = ItemListControllerState(presentationData: ItemListPresentationData(presentationData), title: .text(presentationData.strings.PasscodeSettings_Title), leftNavigationButton: nil, rightNavigationButton: nil, backNavigationButton: ItemListBackButton(title: presentationData.strings.Common_Back), animateChanges: false)
             let listState = ItemListNodeState(presentationData: ItemListPresentationData(presentationData), entries: passcodeOptionsControllerEntries(presentationData: presentationData, state: state, passcodeOptionsData: passcodeOptionsData), style: .blocks, ensureVisibleItemTag: focusOnItemTag, emptyStateItem: nil, animateChanges: false)
             
@@ -427,6 +455,9 @@ func passcodeOptionsController(context: AccountContext, focusOnItemTag: Passcode
             controller.present(c, in: .window(.root), with: p)
         }
     }
+    presentInGlobalOverlayImpl = { [weak controller] c in
+        controller?.presentInGlobalOverlay(c, with: nil)
+    }
     pushControllerImpl = { [weak controller] c in
         (controller?.navigationController as? NavigationController)?.pushViewController(c)
     }
@@ -435,6 +466,9 @@ func passcodeOptionsController(context: AccountContext, focusOnItemTag: Passcode
     }
     replaceTopControllerImpl = { [weak controller] c, animated in
         (controller?.navigationController as? NavigationController)?.replaceTopController(c, animated: animated)
+    }
+    findAutolockReferenceNode = { [weak controller] in
+        return controller?.itemNode(forTag: PasscodeOptionsEntryTag.autolock) as? ItemListDisclosureItemNode
     }
     
     if let focusOnItemTag {

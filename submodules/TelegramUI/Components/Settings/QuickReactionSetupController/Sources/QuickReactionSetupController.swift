@@ -3,7 +3,6 @@ import UIKit
 import Display
 import AsyncDisplayKit
 import SwiftSignalKit
-import Postbox
 import TelegramCore
 import TelegramPresentationData
 import TelegramUIPreferences
@@ -58,7 +57,7 @@ private enum QuickReactionSetupControllerEntry: ItemListNodeEntry {
     }
     
     case demoHeader(String)
-    case demoMessage(wallpaper: TelegramWallpaper, fontSize: PresentationFontSize, bubbleCorners: PresentationChatBubbleCorners, dateTimeFormat: PresentationDateTimeFormat, nameDisplayOrder: PresentationPersonNameOrder, availableReactions: AvailableReactions?, reaction: MessageReaction.Reaction?, accountPeer: Peer?)
+    case demoMessage(wallpaper: TelegramWallpaper, fontSize: PresentationFontSize, bubbleCorners: PresentationChatBubbleCorners, dateTimeFormat: PresentationDateTimeFormat, nameDisplayOrder: PresentationPersonNameOrder, availableReactions: AvailableReactions?, reaction: MessageReaction.Reaction?, accountPeer: EnginePeer?)
     case demoDescription(String)
     case quickReaction(String, MessageReaction.Reaction, AvailableReactions)
     case quickReactionDescription(String)
@@ -160,7 +159,7 @@ private enum QuickReactionSetupControllerEntry: ItemListNodeEntry {
                 nameDisplayOrder: nameDisplayOrder,
                 availableReactions: availableReactions,
                 reaction: reaction,
-                accountPeer: accountPeer,
+                accountPeer: accountPeer?._asPeer(),
                 toggleReaction: {
                     arguments.toggleReaction()
                 }
@@ -187,7 +186,7 @@ private func quickReactionSetupControllerEntries(
     reactionSettings: ReactionSettings,
     state: QuickReactionSetupControllerState,
     isPremium: Bool,
-    accountPeer: Peer?
+    accountPeer: EnginePeer?
 ) -> [QuickReactionSetupControllerEntry] {
     var entries: [QuickReactionSetupControllerEntry] = []
     
@@ -275,7 +274,7 @@ public func quickReactionSetupController(
             reactionSettings: settings,
             state: state,
             isPremium: isPremium,
-            accountPeer: accountPeer?._asPeer()
+            accountPeer: accountPeer
         )
         
         let controllerState = ItemListControllerState(
@@ -310,7 +309,7 @@ public func quickReactionSetupController(
         )
         |> take(1)
         |> deliverOnMainQueue).start(next: { settings, availableReactions in
-            var currentSelectedFileId: MediaId?
+            var currentSelectedFileId: EngineMedia.Id?
             switch settings.quickReaction {
             case .builtin:
                 if let availableReactions = availableReactions {
@@ -320,7 +319,7 @@ public func quickReactionSetupController(
                     }
                 }
             case let .custom(fileId):
-                currentSelectedFileId = MediaId(namespace: Namespaces.Media.CloudFile, id: fileId)
+                currentSelectedFileId = EngineMedia.Id(namespace: Namespaces.Media.CloudFile, id: fileId)
             case .stars:
                 if let availableReactions = availableReactions {
                     if let reaction = availableReactions.reactions.first(where: { $0.value == settings.quickReaction }) {
@@ -330,7 +329,7 @@ public func quickReactionSetupController(
                 }
             }
             
-            var selectedItems = Set<MediaId>()
+            var selectedItems = Set<EngineMedia.Id>()
             if let currentSelectedFileId = currentSelectedFileId {
                 selectedItems.insert(currentSelectedFileId)
             }

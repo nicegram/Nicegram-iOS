@@ -1,7 +1,6 @@
 import Foundation
 import UIKit
 import TelegramCore
-import Postbox
 import Display
 import SwiftSignalKit
 import TelegramUIPreferences
@@ -15,7 +14,7 @@ final class OverlayAudioPlayerControllerImpl: ViewController, OverlayAudioPlayer
     private let context: AccountContext
     let chatLocation: ChatLocation
     let type: MediaManagerPlayerType
-    let initialMessageId: MessageId
+    let initialMessageId: EngineMessage.Id
     let initialOrder: MusicPlaybackSettingsOrder
     let playlistLocation: SharedMediaPlaylistLocation?
     
@@ -33,7 +32,7 @@ final class OverlayAudioPlayerControllerImpl: ViewController, OverlayAudioPlayer
         context: AccountContext,
         chatLocation: ChatLocation,
         type: MediaManagerPlayerType,
-        initialMessageId: MessageId,
+        initialMessageId: EngineMessage.Id,
         initialOrder: MusicPlaybackSettingsOrder,
         playlistLocation: SharedMediaPlaylistLocation? = nil,
         parentNavigationController: NavigationController?
@@ -189,7 +188,7 @@ final class OverlayAudioPlayerControllerImpl: ViewController, OverlayAudioPlayer
                                     attributes.append(.Audio(isVoice: false, duration: audioMetadata.duration, title: audioMetadata.title, performer: audioMetadata.performer, waveform: nil))
                                 }
                                 
-                                let file = TelegramMediaFile(fileId: MediaId(namespace: Namespaces.Media.LocalFile, id: fileId), partialReference: nil, resource: ICloudFileResource(urlData: item.urlData, thumbnail: false), previewRepresentations: previewRepresentations, videoThumbnails: [], immediateThumbnailData: nil, mimeType: mimeType, size: Int64(item.fileSize), attributes: attributes, alternativeRepresentations: [])
+                                let file = TelegramMediaFile(fileId: EngineMedia.Id(namespace: Namespaces.Media.LocalFile, id: fileId), partialReference: nil, resource: ICloudFileResource(urlData: item.urlData, thumbnail: false), previewRepresentations: previewRepresentations, videoThumbnails: [], immediateThumbnailData: nil, mimeType: mimeType, size: Int64(item.fileSize), attributes: attributes, alternativeRepresentations: [])
                                 
                                 let _ = (standaloneUploadedFile(
                                     postbox: self.context.account.postbox,

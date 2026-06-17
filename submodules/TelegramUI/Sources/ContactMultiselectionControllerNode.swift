@@ -1,7 +1,6 @@
 import Display
 import UIKit
 import AsyncDisplayKit
-import Postbox
 import TelegramCore
 import SwiftSignalKit
 import TelegramPresentationData
@@ -20,16 +19,16 @@ import CheckComponent
 
 private struct SearchResultEntry: Identifiable {
     let index: Int
-    let peer: Peer
-    
+    let peer: EnginePeer
+
     var stableId: Int64 {
         return self.peer.id.toInt64()
     }
-    
+
     static func ==(lhs: SearchResultEntry, rhs: SearchResultEntry) -> Bool {
-        return lhs.index == rhs.index && lhs.peer.isEqual(rhs.peer)
+        return lhs.index == rhs.index && lhs.peer == rhs.peer
     }
-    
+
     static func <(lhs: SearchResultEntry, rhs: SearchResultEntry) -> Bool {
         return lhs.index < rhs.index
     }
@@ -327,7 +326,7 @@ final class ContactMultiselectionControllerNode: ASDisplayNode {
         let searchText = ValuePromise<String>()
         
         self.tokenListNode.deleteToken = { [weak self] id in
-            if let id = id as? PeerId {
+            if let id = id as? EnginePeer.Id {
                 self?.removeSelectedPeer?(ContactListPeerId.peer(id))
             } else if let id = id as? Int {
                 self?.removeSelectedCategory?(id)

@@ -1006,11 +1006,11 @@ public func notificationPeerExceptionController(
     
     let signal = combineLatest(queue: .mainQueue(), (updatedPresentationData?.signal ?? context.sharedContext.presentationData), context.engine.peers.notificationSoundList(), statePromise.get() |> distinctUntilChanged)
     |> map { presentationData, notificationSoundList, state -> (ItemListControllerState, (ItemListNodeState, Any)) in
-        let leftNavigationButton = ItemListNavigationButton(content: .text(presentationData.strings.Common_Cancel), style: .regular, enabled: true, action: {
+        let leftNavigationButton = ItemListNavigationButton(content: .icon(.close), style: .regular, enabled: true, action: {
             arguments.cancel()
         })
         
-        let rightNavigationButton = ItemListNavigationButton(content: .text(state.canRemove || edit ? presentationData.strings.Common_Done : presentationData.strings.Notification_Exceptions_Add), style: .bold, enabled: true, action: {
+        let rightNavigationButton = ItemListNavigationButton(content: state.canRemove || edit ? .icon(.done) : .text(presentationData.strings.Notification_Exceptions_Add), style: .bold, enabled: true, action: {
             arguments.complete()
         })
         

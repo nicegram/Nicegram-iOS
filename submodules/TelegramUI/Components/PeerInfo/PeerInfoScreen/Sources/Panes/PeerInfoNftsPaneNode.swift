@@ -4,6 +4,7 @@ import FeatNftSticker
 import PeerInfoPaneNode
 import Postbox
 import SwiftSignalKit
+import TelegramCore
 import TelegramPresentationData
 import UIKit
 
@@ -37,10 +38,10 @@ final class PeerInfoNftsPaneNode: ASDisplayNode, PeerInfoPaneNode {
     func scrollToTop() -> Bool { false }
     func transferVelocity(_ velocity: CGFloat) {}
     func cancelPreviewGestures() {}
-    func findLoadedMessage(id: MessageId) -> Message? { nil }
-    func transitionNodeForGallery(messageId: MessageId, media: Media) -> (ASDisplayNode, CGRect, () -> (UIView?, UIView?))? { nil }
+    func findLoadedMessage(id: EngineMessage.Id) -> EngineMessage? { nil }
+    func transitionNodeForGallery(messageId: EngineMessage.Id, media: EngineMedia) -> (ASDisplayNode, CGRect, () -> (UIView?, UIView?))? { nil }
     func addToTransitionSurface(view: UIView) {}
     func updateHiddenMedia() {}
     func updateSelectedMessages(animated: Bool) {}
-    func ensureMessageIsVisible(id: MessageId) {}
+    func ensureMessageIsVisible(id: EngineMessage.Id) {}
 }

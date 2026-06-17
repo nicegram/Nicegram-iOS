@@ -4,7 +4,6 @@ import Display
 import ComponentFlow
 import SwiftSignalKit
 import TelegramCore
-import Postbox
 import TelegramPresentationData
 
 public final class StoryContentItem: Equatable {
@@ -30,7 +29,7 @@ public final class StoryContentItem: Equatable {
     }
     
     public final class SharedState {
-        public var replyDrafts: [StoryId: NSAttributedString] = [:]
+        public var replyDrafts: [EngineStoryId: NSAttributedString] = [:]
         public var baseRate: Double = 1.0
         
         public init() {
@@ -71,7 +70,7 @@ public final class StoryContentItem: Equatable {
         public let containerInsets: UIEdgeInsets
         public let presentationProgressUpdated: (Double, Bool, Bool) -> Void
         public let customItemSubtitleUpdated: () -> Void
-        public let markAsSeen: (StoryId) -> Void
+        public let markAsSeen: (EngineStoryId) -> Void
         
         public init(
             externalState: ExternalState,
@@ -80,7 +79,7 @@ public final class StoryContentItem: Equatable {
             containerInsets: UIEdgeInsets,
             presentationProgressUpdated: @escaping (Double, Bool, Bool) -> Void,
             customItemSubtitleUpdated: @escaping () -> Void,
-            markAsSeen: @escaping (StoryId) -> Void
+            markAsSeen: @escaping (EngineStoryId) -> Void
         ) {
             self.externalState = externalState
             self.sharedState = sharedState
@@ -108,7 +107,7 @@ public final class StoryContentItem: Equatable {
         }
     }
     
-    public let id: StoryId
+    public let id: EngineStoryId
     public let position: Int?
     public let dayCounters: DayCounters?
     public let peerId: EnginePeer.Id?
@@ -117,7 +116,7 @@ public final class StoryContentItem: Equatable {
     public let itemPeer: EnginePeer?
 
     public init(
-        id: StoryId,
+        id: EngineStoryId,
         position: Int?,
         dayCounters: DayCounters?,
         peerId: EnginePeer.Id?,
@@ -231,10 +230,10 @@ public final class StoryContentContextState {
         public let additionalPeerData: AdditionalPeerData
         public let item: StoryContentItem
         public let totalCount: Int
-        public let previousItemId: StoryId?
-        public let nextItemId: StoryId?
+        public let previousItemId: EngineStoryId?
+        public let nextItemId: EngineStoryId?
         public let allItems: [StoryContentItem]
-        public let forwardInfoStories: [StoryId: Promise<EngineStoryItem?>]
+        public let forwardInfoStories: [EngineStoryId: Promise<EngineStoryItem?>]
         
         var effectivePeer: EnginePeer {
             return self.item.itemPeer ?? self.peer
@@ -245,10 +244,10 @@ public final class StoryContentContextState {
             additionalPeerData: AdditionalPeerData,
             item: StoryContentItem,
             totalCount: Int,
-            previousItemId: StoryId?,
-            nextItemId: StoryId?,
+            previousItemId: EngineStoryId?,
+            nextItemId: EngineStoryId?,
             allItems: [StoryContentItem],
-            forwardInfoStories: [StoryId: Promise<EngineStoryItem?>]
+            forwardInfoStories: [EngineStoryId: Promise<EngineStoryItem?>]
         ) {
             self.peer = peer
             self.additionalPeerData = additionalPeerData
@@ -305,7 +304,7 @@ public enum StoryContentContextNavigation {
     public enum ItemDirection {
         case previous
         case next
-        case id(StoryId)
+        case id(EngineStoryId)
     }
     
     public enum PeerDirection {
@@ -324,5 +323,5 @@ public protocol StoryContentContext: AnyObject {
     
     func resetSideStates()
     func navigate(navigation: StoryContentContextNavigation)
-    func markAsSeen(id: StoryId)
+    func markAsSeen(id: EngineStoryId)
 }

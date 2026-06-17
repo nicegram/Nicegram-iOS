@@ -72,14 +72,27 @@ public final class EngineMessage: Equatable {
     public var text: String {
         return self.impl.text
     }
+    public var richText: RichTextMessageAttribute? {
+        return self.impl.richText
+    }
     public var attributes: [Attribute] {
         return self.impl.attributes
     }
     public var media: [Media] {
         return self.impl.media
     }
+    public var engineMedia: [EngineMedia] {
+        return self.impl.media.map(EngineMedia.init)
+    }
     public var peers: SimpleDictionary<EnginePeer.Id, Peer> {
         return self.impl.peers
+    }
+    public var enginePeers: [EnginePeer.Id: EnginePeer] {
+        var result: [EnginePeer.Id: EnginePeer] = [:]
+        for (id, peer) in self.impl.peers {
+            result[id] = EnginePeer(peer)
+        }
+        return result
     }
     public var associatedMessages: SimpleDictionary<EngineMessage.Id, Message> {
         return self.impl.associatedMessages
@@ -226,5 +239,47 @@ public final class EngineMessage: Equatable {
             return false
         }
         return true
+    }
+}
+
+public extension EngineMessage {
+    var containsSecretMedia: Bool {
+        return self._asMessage().containsSecretMedia
+    }
+
+    func effectiveReactions(isTags: Bool) -> [MessageReaction]? {
+        return self._asMessage().effectiveReactions(isTags: isTags)
+    }
+
+    func areReactionsTags(accountPeerId: EnginePeer.Id) -> Bool {
+        return self._asMessage().areReactionsTags(accountPeerId: accountPeerId)
+    }
+
+    var textEntitiesAttribute: TextEntitiesMessageAttribute? {
+        return self._asMessage().textEntitiesAttribute
+    }
+
+    var adAttribute: AdMessageAttribute? {
+        return self._asMessage().adAttribute
+    }
+
+    func effectivelyIncoming(_ accountPeerId: EnginePeer.Id) -> Bool {
+        return self._asMessage().effectivelyIncoming(accountPeerId)
+    }
+
+    var pendingProcessingAttribute: PendingProcessingMessageAttribute? {
+        return self._asMessage().pendingProcessingAttribute
+    }
+
+    var scheduleTime: Int32? {
+        return self._asMessage().scheduleTime
+    }
+
+    var scheduleRepeatPeriod: Int32? {
+        return self._asMessage().scheduleRepeatPeriod
+    }
+
+    var sourceAuthorInfo: SourceAuthorInfoMessageAttribute? {
+        return self._asMessage().sourceAuthorInfo
     }
 }

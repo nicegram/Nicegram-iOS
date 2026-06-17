@@ -3,7 +3,6 @@ import UIKit
 import Display
 import AccountContext
 import SwiftSignalKit
-import Postbox
 import TelegramCore
 import ContextUI
 import PeerInfoVisualMediaPaneNode
@@ -281,7 +280,7 @@ extension PeerInfoScreenNode {
                     return
                 }
                 
-                var mediaCount: [MessageTags: Int32] = [:]
+                var mediaCount: [EngineMessage.Tags: Int32] = [:]
                 for (key, count) in messageCounts {
                     mediaCount[key.tag] = count.flatMap(Int32.init) ?? 0
                 }

@@ -1,7 +1,6 @@
 import Foundation
 import UIKit
 import SwiftSignalKit
-import Postbox
 import TelegramCore
 import AsyncDisplayKit
 import Display
@@ -15,25 +14,26 @@ import TelegramStringFormatting
 import TelegramPresentationData
 import StickerPeekUI
 import StickerPackPreviewUI
+import PresentationDataUtils
 
 extension ChatControllerImpl {
-    func openPollMedia(message: Message, subject: ChatControllerInteraction.PollMediaSubject) -> Void {
+    func openPollMedia(message: EngineMessage, subject: ChatControllerInteraction.PollMediaSubject) -> Void {
         let mediaSubject: GalleryMediaSubject
-        var media: Media?
+        let media: EngineMedia?
         switch subject {
         case let .option(option):
-            media = option.media
+            media = option.media.flatMap(EngineMedia.init)
             mediaSubject = .pollOption(option.opaqueIdentifier)
         case let .solution(solution):
-            media = solution.media
+            media = solution.media.flatMap(EngineMedia.init)
             mediaSubject = .pollSolution
         }
-        
+
         guard let media else {
             return
         }
-        
-        if let file = media as? TelegramMediaFile, file.isSticker || file.isCustomEmoji {
+
+        if case let .file(file) = media, file.isSticker || file.isCustomEmoji {
             let _ = (self.context.engine.stickers.isStickerSaved(id: file.fileId)
             |> deliverOnMainQueue).start(next: { [weak self] isStarred in
                 guard let self else {
@@ -105,6 +105,41 @@ extension ChatControllerImpl {
                 self.presentInGlobalOverlay(peekController)
                 
             })
+        } else if case let .webpage(webpage) = media {
+            guard let url = webpage.content.url else {
+                return
+            }
+            let _ = self.context.sharedContext.openUserGeneratedUrl(
+                context: self.context,
+                peerId: nil,
+                url: url,
+                webpage: webpage,
+                concealed: true,
+                forceConcealed: true,
+                skipUrlAuth: true,
+                skipConcealedAlert: false,
+                forceDark: false,
+                present: { [weak self] c in
+                    self?.present(c, in: .window(.root))
+                },
+                openResolved: { [weak self] result in
+                    guard let self, let navigationController = self.effectiveNavigationController else {
+                        return
+                    }
+                    let context = self.context
+                    context.sharedContext.openResolvedUrl(result, context: context, urlContext: .generic, navigationController: navigationController, forceExternal: false, forceUpdate: false, openPeer: { peer, navigation in
+
+                    }, sendFile: nil, sendSticker: nil, sendEmoji: nil, requestMessageActionUrlAuth: nil, joinVoiceChat: { _, _, _ in
+                    }, present: { [weak self] c, a in
+                        self?.present(c, in: .window(.root), with: a)
+                    }, dismissInput: {
+                        context.sharedContext.mainWindow?.viewController?.view.endEditing(false)
+                    }, contentContext: nil, progress: nil, completion: nil)
+                },
+                progress: nil,
+                alertDisplayUpdated: nil,
+                concealedAlertOption: nil
+            )
         } else {
             let _ = self.context.sharedContext.openChatMessage(OpenChatMessageParams(
                 context: self.context,
@@ -112,7 +147,7 @@ extension ChatControllerImpl {
                 chatLocation: self.chatLocation,
                 chatFilterTag: nil,
                 chatLocationContextHolder: nil,
-                message: message,
+                message: message._asMessage(),
                 mediaSubject: mediaSubject,
                 standalone: true,
                 reverseMessageGalleryOrder: false,
@@ -195,7 +230,7 @@ extension ChatControllerImpl {
                 },
                 chatAvatarHiddenMedia: { _, _ in
                 },
-                gallerySource: .standaloneMessage(message, mediaSubject)
+                gallerySource: .standaloneMessage(message._asMessage(), mediaSubject)
             ))
         }
     }

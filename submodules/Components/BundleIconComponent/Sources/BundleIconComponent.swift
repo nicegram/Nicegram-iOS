@@ -11,15 +11,17 @@ public final class BundleIconComponent: Component {
     public let scaleFactor: CGFloat
     public let shadowColor: UIColor?
     public let shadowBlur: CGFloat
+    public let flipHorizontally: Bool
     public let flipVertically: Bool
     
-    public init(name: String, tintColor: UIColor?, maxSize: CGSize? = nil, scaleFactor: CGFloat = 1.0, shadowColor: UIColor? = nil, shadowBlur: CGFloat = 0.0, flipVertically: Bool = false) {
+    public init(name: String, tintColor: UIColor?, maxSize: CGSize? = nil, scaleFactor: CGFloat = 1.0, shadowColor: UIColor? = nil, shadowBlur: CGFloat = 0.0, flipHorizontally: Bool = false, flipVertically: Bool = false) {
         self.name = name
         self.tintColor = tintColor
         self.maxSize = maxSize
         self.scaleFactor = scaleFactor
         self.shadowColor = shadowColor
         self.shadowBlur = shadowBlur
+        self.flipHorizontally = flipHorizontally
         self.flipVertically = flipVertically
     }
     
@@ -40,6 +42,9 @@ public final class BundleIconComponent: Component {
             return false
         }
         if lhs.shadowBlur != rhs.shadowBlur {
+            return false
+        }
+        if lhs.flipHorizontally != rhs.flipHorizontally {
             return false
         }
         if lhs.flipVertically != rhs.flipVertically {
@@ -77,7 +82,9 @@ public final class BundleIconComponent: Component {
                         }
                     })
                 }
-                if component.flipVertically, let cgImage = image?.cgImage {
+                if component.flipHorizontally, let cgImage = image?.cgImage {
+                    self.image = UIImage(cgImage: cgImage, scale: image?.scale ?? 0.0, orientation: .upMirrored)
+                } else if component.flipVertically, let cgImage = image?.cgImage {
                     self.image = UIImage(cgImage: cgImage, scale: image?.scale ?? 0.0, orientation: .down)
                 } else {
                     self.image = image

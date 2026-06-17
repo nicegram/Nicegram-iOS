@@ -67,6 +67,7 @@ public protocol ListView: ASDisplayNode {
         additionalScrollDistance: CGFloat,
         updateSizeAndInsets: ListViewUpdateSizeAndInsets?,
         stationaryItemRange: (Int, Int)?,
+        customAnimationTransition: ControlledTransition?,
         updateOpaqueState: Any?,
         completion: @escaping (ListViewDisplayedItemRange) -> Void
     )
@@ -102,6 +103,7 @@ public extension ListView {
         additionalScrollDistance: CGFloat = 0.0,
         updateSizeAndInsets: ListViewUpdateSizeAndInsets? = nil,
         stationaryItemRange: (Int, Int)? = nil,
+        customAnimationTransition: ControlledTransition? = nil,
         updateOpaqueState: Any?,
         completion: @escaping (ListViewDisplayedItemRange) -> Void = { _ in }
     ) {
@@ -114,6 +116,7 @@ public extension ListView {
             additionalScrollDistance: additionalScrollDistance,
             updateSizeAndInsets: updateSizeAndInsets,
             stationaryItemRange: stationaryItemRange,
+            customAnimationTransition: customAnimationTransition,
             updateOpaqueState: updateOpaqueState,
             completion: completion
         )

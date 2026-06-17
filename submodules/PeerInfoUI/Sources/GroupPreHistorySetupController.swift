@@ -2,7 +2,6 @@ import Foundation
 import UIKit
 import Display
 import SwiftSignalKit
-import Postbox
 import TelegramCore
 import TelegramPresentationData
 import ItemListUI
@@ -117,7 +116,7 @@ private func groupPreHistorySetupEntries(isSupergroup: Bool, presentationData: P
     return entries
 }
 
-public func groupPreHistorySetupController(context: AccountContext, updatedPresentationData: (initial: PresentationData, signal: Signal<PresentationData, NoError>)? = nil, peerId: PeerId, upgradedToSupergroup: @escaping (PeerId, @escaping () -> Void) -> Void) -> ViewController {
+public func groupPreHistorySetupController(context: AccountContext, updatedPresentationData: (initial: PresentationData, signal: Signal<PresentationData, NoError>)? = nil, peerId: EnginePeer.Id, upgradedToSupergroup: @escaping (EnginePeer.Id, @escaping () -> Void) -> Void) -> ViewController {
     let statePromise = ValuePromise(GroupPreHistorySetupState(), ignoreRepeated: true)
     let stateValue = Atomic(value: GroupPreHistorySetupState())
     let updateState: ((GroupPreHistorySetupState) -> GroupPreHistorySetupState) -> Void = { f in
@@ -145,14 +144,14 @@ public func groupPreHistorySetupController(context: AccountContext, updatedPrese
     |> deliverOnMainQueue
     |> map { presentationData, state, view -> (ItemListControllerState, (ItemListNodeState, Any)) in
         let defaultValue: Bool = (view.cachedData as? CachedChannelData)?.flags.contains(.preHistoryEnabled) ?? false
-        let leftNavigationButton = ItemListNavigationButton(content: .text(presentationData.strings.Common_Cancel), style: .regular, enabled: true, action: {
+        let leftNavigationButton = ItemListNavigationButton(content: .icon(.close), style: .regular, enabled: true, action: {
             dismissImpl?()
         })
         var rightNavigationButton: ItemListNavigationButton?
         if state.applyingSetting {
             rightNavigationButton = ItemListNavigationButton(content: .none, style: .activity, enabled: true, action: {})
         } else {
-            rightNavigationButton = ItemListNavigationButton(content: .text(presentationData.strings.Common_Done), style: .bold, enabled: true, action: {
+            rightNavigationButton = ItemListNavigationButton(content: .icon(.done), style: .bold, enabled: true, action: {
                 var value: Bool?
                 updateState { state in
                     var state = state
@@ -163,12 +162,12 @@ public func groupPreHistorySetupController(context: AccountContext, updatedPrese
                 if let value = value, value != defaultValue {
                     if peerId.namespace == Namespaces.Peer.CloudGroup {
                         let signal = context.engine.peers.convertGroupToSupergroup(peerId: peerId)
-                        |> mapToSignal { upgradedPeerId -> Signal<PeerId?, ConvertGroupToSupergroupError> in
+                        |> mapToSignal { upgradedPeerId -> Signal<EnginePeer.Id?,ConvertGroupToSupergroupError> in
                             return context.engine.peers.updateChannelHistoryAvailabilitySettingsInteractively(peerId: upgradedPeerId, historyAvailableForNewMembers: value)
                             |> `catch` { _ -> Signal<Void, NoError> in
                                 return .complete()
                             }
-                            |> mapToSignal { _ -> Signal<PeerId?, NoError> in
+                            |> mapToSignal { _ -> Signal<EnginePeer.Id?,NoError> in
                                 return .complete()
                             }
                             |> then(.single(upgradedPeerId))

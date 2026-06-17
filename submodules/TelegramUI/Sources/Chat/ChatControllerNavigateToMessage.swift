@@ -1,6 +1,5 @@
 import Foundation
 import UIKit
-import Postbox
 import TelegramCore
 import SwiftSignalKit
 import Display
@@ -14,8 +13,8 @@ import UndoUI
 
 extension ChatControllerImpl {
     func navigateToMessage(
-        fromId: MessageId,
-        id: MessageId,
+        fromId: EngineMessage.Id,
+        id: EngineMessage.Id,
         params: NavigateToMessageParams
     ) {
         var id = id
@@ -67,7 +66,7 @@ extension ChatControllerImpl {
     }
     
     func navigateToMessage(
-        from fromId: MessageId?,
+        from fromId: EngineMessage.Id?,
         to messageLocation: NavigateToMessageLocation,
         scrollPosition: ListViewScrollPosition = .center(.bottom),
         rememberInStack: Bool = true,
@@ -84,9 +83,9 @@ extension ChatControllerImpl {
             completion?()
             return
         }
-        var fromIndex: MessageIndex?
+        var fromIndex: EngineMessage.Index?
         
-        var fromMessage: Message?
+        var fromMessage: EngineMessage?
         if let fromId = fromId, let message = self.chatDisplayNode.historyNode.messageInCurrentHistoryView(fromId) {
             fromIndex = message.index
             fromMessage = message
@@ -114,8 +113,8 @@ extension ChatControllerImpl {
         
         if isPinnedMessages || forceNew, let messageId = messageLocation.messageId {
             let peerSignal: Signal<EnginePeer?, NoError>
-            if forceNew, let fromMessage, let peer = fromMessage.peers[fromMessage.id.peerId] {
-                peerSignal = .single(EnginePeer(peer))
+            if forceNew, let fromMessage, let peer = fromMessage.enginePeers[fromMessage.id.peerId] {
+                peerSignal = .single(peer)
             } else {
                 peerSignal = self.context.engine.data.get(TelegramEngine.EngineData.Item.Peer.Peer(id: messageId.peerId))
             }
@@ -125,11 +124,11 @@ extension ChatControllerImpl {
                 |> `catch` { _ in
                     return .single(.result([]))
                 }
-                |> mapToSignal { result -> Signal<[Message], NoError> in
+                |> mapToSignal { result -> Signal<[EngineMessage], NoError> in
                     guard case let .result(result) = result else {
                         return .complete()
                     }
-                    return .single(result)
+                    return .single(result.map(EngineMessage.init))
                 }
             )
             |> deliverOnMainQueue).startStandalone(next: { [weak self] peer, messages in
@@ -143,7 +142,7 @@ extension ChatControllerImpl {
                 self.dismiss()
                 
                 let navigateToLocation: NavigateToChatControllerParams.Location
-                if let message = messages.first, let threadId = message.threadId, let channel = message.peers[message.id.peerId] as? TelegramChannel, channel.isForumOrMonoForum {
+                if let message = messages.first, let threadId = message.threadId, case let .channel(channel) = message.enginePeers[message.id.peerId], channel.isForumOrMonoForum {
                     navigateToLocation = .replyThread(ChatReplyThreadMessage(peerId: peer.id, threadId: threadId, channelMessageId: nil, isChannelPost: false, isForumPost: true, isMonoforumPost: false,maxMessage: nil, maxReadIncomingMessageId: nil, maxReadOutgoingMessageId: nil, unreadCount: 0, initialFilledHoles: IndexSet(), initialAnchor: .automatic, isNotAvailable: false))
                 } else {
                     navigateToLocation = .peer(peer)
@@ -198,7 +197,7 @@ extension ChatControllerImpl {
                 case let .index(index):
                     searchLocation = .index(index)
                 case .upperBound:
-                    searchLocation = .index(MessageIndex.upperBound(peerId: chatLocation.peerId))
+                    searchLocation = .index(EngineMessage.Index.upperBound(peerId: chatLocation.peerId))
                 }
                 var historyView: Signal<ChatHistoryViewUpdate, NoError>
                 
@@ -206,9 +205,9 @@ extension ChatControllerImpl {
                 
                 historyView = preloadedChatHistoryViewForLocation(ChatHistoryLocationInput(content: .InitialSearch(subject: MessageHistoryInitialSearchSubject(location: searchLocation), count: 50, highlight: true, setupReply: false), id: 0), context: self.context, chatLocation: preloadChatLocation, subject: subject, chatLocationContextHolder: Atomic<ChatLocationContextHolder?>(value: nil), fixedCombinedReadStates: nil, tag: nil, additionalData: [])
                 
-                var signal: Signal<(MessageIndex?, Bool), NoError>
+                var signal: Signal<(EngineMessage.Index?, Bool), NoError>
                 signal = historyView
-                |> mapToSignal { historyView -> Signal<(MessageIndex?, Bool), NoError> in
+                |> mapToSignal { historyView -> Signal<(EngineMessage.Index?, Bool), NoError> in
                     switch historyView {
                     case .Loading:
                         return .single((nil, true))
@@ -320,7 +319,7 @@ extension ChatControllerImpl {
                 self.contentData?.historyNavigationStack.add(fromIndex)
             }
             
-            let scrollFromIndex: MessageIndex?
+            let scrollFromIndex: EngineMessage.Index?
             if let fromIndex = fromIndex {
                 scrollFromIndex = fromIndex
             } else if let message = self.chatDisplayNode.historyNode.lastVisbleMesssage() {
@@ -361,7 +360,7 @@ extension ChatControllerImpl {
                     }
                     
                     if case let .id(_, params) = messageLocation, let timecode = params.timestamp {
-                        let _ = self.controllerInteraction?.openMessage(message, OpenMessageParams(mode: .timecode(timecode)))
+                        let _ = self.controllerInteraction?.openMessage(message._asMessage(), OpenMessageParams(mode: .timecode(timecode)))
                     }
                 } else if case let .index(index) = messageLocation, index.id.id == 0, index.timestamp > 0, case .scheduledMessages = self.presentationInterfaceState.subject {
                     self.chatDisplayNode.historyNode.scrollToMessage(from: scrollFromIndex, to: index, animated: animated, scrollPosition: scrollPosition)
@@ -393,7 +392,7 @@ extension ChatControllerImpl {
                         searchLocation = .index(index)
                     case .upperBound:
                         if let peerId = self.chatLocation.peerId {
-                            searchLocation = .index(MessageIndex.upperBound(peerId: peerId))
+                            searchLocation = .index(EngineMessage.Index.upperBound(peerId: peerId))
                         } else {
                             searchLocation = .index(.absoluteUpperBound())
                         }
@@ -401,9 +400,9 @@ extension ChatControllerImpl {
                     var historyView: Signal<ChatHistoryViewUpdate, NoError>
                     historyView = preloadedChatHistoryViewForLocation(ChatHistoryLocationInput(content: .InitialSearch(subject: MessageHistoryInitialSearchSubject(location: searchLocation), count: 50, highlight: true, setupReply: setupReply), id: 0), context: self.context, chatLocation: self.chatLocation, subject: self.subject, chatLocationContextHolder: self.chatLocationContextHolder, fixedCombinedReadStates: nil, tag: nil, additionalData: [])
                     
-                    var signal: Signal<(MessageIndex?, Bool), NoError>
+                    var signal: Signal<(EngineMessage.Index?, Bool), NoError>
                     signal = historyView
-                    |> mapToSignal { historyView -> Signal<(MessageIndex?, Bool), NoError> in
+                    |> mapToSignal { historyView -> Signal<(EngineMessage.Index?, Bool), NoError> in
                         switch historyView {
                             case .Loading:
                                 return .single((nil, true))
@@ -521,9 +520,9 @@ extension ChatControllerImpl {
                 }
                 
                 let historyView = preloadedChatHistoryViewForLocation(ChatHistoryLocationInput(content: .InitialSearch(subject: MessageHistoryInitialSearchSubject(location: searchLocation, quote: quote.flatMap { quote in MessageHistoryInitialSearchSubject.Quote(string: quote.string, offset: quote.offset) }, subject: subject), count: 50, highlight: true, setupReply: setupReply), id: 0), context: self.context, chatLocation: self.chatLocation, subject: self.subject, chatLocationContextHolder: self.chatLocationContextHolder, fixedCombinedReadStates: nil, tag: nil, additionalData: [])
-                var signal: Signal<MessageIndex?, NoError>
+                var signal: Signal<EngineMessage.Index?, NoError>
                 signal = historyView
-                |> mapToSignal { historyView -> Signal<MessageIndex?, NoError> in
+                |> mapToSignal { historyView -> Signal<EngineMessage.Index?, NoError> in
                     switch historyView {
                         case .Loading:
                             return .complete()

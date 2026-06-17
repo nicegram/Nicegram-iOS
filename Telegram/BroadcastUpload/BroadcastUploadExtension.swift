@@ -6,7 +6,7 @@ import SwiftSignalKit
 import BuildConfig
 import BroadcastUploadHelpers
 import AudioToolbox
-import Postbox
+import TelegramCore
 import CoreMedia
 import AVFoundation
 
@@ -163,6 +163,7 @@ private final class EmbeddedBroadcastUploadImpl: BroadcastUploadImpl {
                             enableNoiseSuppression: false,
                             disableAudioInput: true,
                             enableSystemMute: false,
+                            useReferenceImpl: false,
                             prioritizeVP8: false,
                             logPath: "",
                             onMutedSpeechActivityDetected: { _ in },
@@ -331,7 +332,7 @@ private final class EmbeddedBroadcastUploadImpl: BroadcastUploadImpl {
 
         let rootPath = rootPathForBasePath(appGroupUrl.path)
         
-        TempBox.initializeShared(basePath: rootPath, processType: "share", launchSpecificId: Int64.random(in: Int64.min ... Int64.max))
+        EngineTempBox.initializeShared(basePath: rootPath, processType: "share", launchSpecificId: Int64.random(in: Int64.min ... Int64.max))
 
         let logsPath = rootPath + "/logs/broadcast-logs"
         let _ = try? FileManager.default.createDirectory(atPath: logsPath, withIntermediateDirectories: true, attributes: nil)

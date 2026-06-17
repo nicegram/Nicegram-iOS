@@ -2,7 +2,6 @@ import Foundation
 import UIKit
 import Display
 import SwiftSignalKit
-import Postbox
 import TelegramCore
 import TelegramPresentationData
 import TelegramUIPreferences
@@ -24,12 +23,12 @@ private final class ArchivedStickerPacksControllerArguments {
     let context: AccountContext
     
     let openStickerPack: (StickerPackCollectionInfo) -> Void
-    let setPackIdWithRevealedOptions: (ItemCollectionId?, ItemCollectionId?) -> Void
+    let setPackIdWithRevealedOptions: (EngineItemCollectionId?, EngineItemCollectionId?) -> Void
     let addPack: (StickerPackCollectionInfo) -> Void
     let removePack: (StickerPackCollectionInfo) -> Void
-    let togglePackSelected: (ItemCollectionId) -> Void
-    
-    init(context: AccountContext, openStickerPack: @escaping (StickerPackCollectionInfo) -> Void, setPackIdWithRevealedOptions: @escaping (ItemCollectionId?, ItemCollectionId?) -> Void, addPack: @escaping (StickerPackCollectionInfo) -> Void, removePack: @escaping (StickerPackCollectionInfo) -> Void, togglePackSelected: @escaping (ItemCollectionId) -> Void) {
+    let togglePackSelected: (EngineItemCollectionId) -> Void
+
+    init(context: AccountContext, openStickerPack: @escaping (StickerPackCollectionInfo) -> Void, setPackIdWithRevealedOptions: @escaping (EngineItemCollectionId?, EngineItemCollectionId?) -> Void, addPack: @escaping (StickerPackCollectionInfo) -> Void, removePack: @escaping (StickerPackCollectionInfo) -> Void, togglePackSelected: @escaping (EngineItemCollectionId) -> Void) {
         self.context = context
         self.openStickerPack = openStickerPack
         self.setPackIdWithRevealedOptions = setPackIdWithRevealedOptions
@@ -45,7 +44,7 @@ private enum ArchivedStickerPacksSection: Int32 {
 
 private enum ArchivedStickerPacksEntryId: Hashable {
     case index(Int32)
-    case pack(ItemCollectionId)
+    case pack(EngineItemCollectionId)
 }
 
 private enum ArchivedStickerPacksEntry: ItemListNodeEntry {
@@ -157,18 +156,18 @@ private enum ArchivedStickerPacksEntry: ItemListNodeEntry {
 
 private struct ArchivedStickerPacksControllerState: Equatable {
     let editing: Bool
-    let selectedPackIds: Set<ItemCollectionId>?
-    let packIdWithRevealedOptions: ItemCollectionId?
-    let removingPackIds: Set<ItemCollectionId>
-    
+    let selectedPackIds: Set<EngineItemCollectionId>?
+    let packIdWithRevealedOptions: EngineItemCollectionId?
+    let removingPackIds: Set<EngineItemCollectionId>
+
     init() {
         self.editing = false
         self.selectedPackIds = nil
         self.packIdWithRevealedOptions = nil
         self.removingPackIds = Set()
     }
-    
-    init(editing: Bool, selectedPackIds: Set<ItemCollectionId>?, packIdWithRevealedOptions: ItemCollectionId?, removingPackIds: Set<ItemCollectionId>) {
+
+    init(editing: Bool, selectedPackIds: Set<EngineItemCollectionId>?, packIdWithRevealedOptions: EngineItemCollectionId?, removingPackIds: Set<EngineItemCollectionId>) {
         self.editing = editing
         self.selectedPackIds = selectedPackIds
         self.packIdWithRevealedOptions = packIdWithRevealedOptions
@@ -196,22 +195,22 @@ private struct ArchivedStickerPacksControllerState: Equatable {
         return ArchivedStickerPacksControllerState(editing: editing, selectedPackIds: self.selectedPackIds, packIdWithRevealedOptions: self.packIdWithRevealedOptions, removingPackIds: self.removingPackIds)
     }
     
-    func withUpdatedSelectedPackIds(_ selectedPackIds: Set<ItemCollectionId>?) -> ArchivedStickerPacksControllerState {
+    func withUpdatedSelectedPackIds(_ selectedPackIds: Set<EngineItemCollectionId>?) -> ArchivedStickerPacksControllerState {
         return ArchivedStickerPacksControllerState(editing: self.editing, selectedPackIds: selectedPackIds, packIdWithRevealedOptions: self.packIdWithRevealedOptions, removingPackIds: self.removingPackIds)
     }
-    
-    func withUpdatedPackIdWithRevealedOptions(_ packIdWithRevealedOptions: ItemCollectionId?) -> ArchivedStickerPacksControllerState {
+
+    func withUpdatedPackIdWithRevealedOptions(_ packIdWithRevealedOptions: EngineItemCollectionId?) -> ArchivedStickerPacksControllerState {
         return ArchivedStickerPacksControllerState(editing: self.editing, selectedPackIds: self.selectedPackIds, packIdWithRevealedOptions: packIdWithRevealedOptions, removingPackIds: self.removingPackIds)
     }
-    
-    func withUpdatedRemovingPackIds(_ removingPackIds: Set<ItemCollectionId>) -> ArchivedStickerPacksControllerState {
+
+    func withUpdatedRemovingPackIds(_ removingPackIds: Set<EngineItemCollectionId>) -> ArchivedStickerPacksControllerState {
         return ArchivedStickerPacksControllerState(editing: self.editing, selectedPackIds: self.selectedPackIds, packIdWithRevealedOptions: self.packIdWithRevealedOptions, removingPackIds: removingPackIds)
     }
 }
 
-private func archivedStickerPacksControllerEntries(context: AccountContext, mode: ArchivedStickerPacksControllerMode, presentationData: PresentationData, state: ArchivedStickerPacksControllerState, packs: [ArchivedStickerPackItem]?, installedView: CombinedView, stickerSettings: StickerSettings) -> [ArchivedStickerPacksEntry] {
+private func archivedStickerPacksControllerEntries(context: AccountContext, mode: ArchivedStickerPacksControllerMode, presentationData: PresentationData, state: ArchivedStickerPacksControllerState, packs: [ArchivedStickerPackItem]?, installedIds: [EngineItemCollectionId], stickerSettings: StickerSettings) -> [ArchivedStickerPacksEntry] {
     var entries: [ArchivedStickerPacksEntry] = []
-    
+
     if let packs = packs {
         let info: String
         switch mode {
@@ -221,11 +220,8 @@ private func archivedStickerPacksControllerEntries(context: AccountContext, mode
             info = presentationData.strings.StickerPacksSettings_ArchivedPacks_Info
         }
         entries.append(.info(presentationData.theme, info + "\n\n"))
-        
-        var installedIds = Set<ItemCollectionId>()
-        if let view = installedView.views[.itemCollectionIds(namespaces: [Namespaces.ItemCollection.CloudStickerPacks])] as? ItemCollectionIdsView, let ids = view.idsByNamespace[Namespaces.ItemCollection.CloudStickerPacks] {
-            installedIds = ids
-        }
+
+        let installedIds = Set(installedIds)
         
         var index: Int32 = 0
         for item in packs {
@@ -269,7 +265,7 @@ public func archivedStickerPacksController(context: AccountContext, mode: Archiv
     let resolveDisposable = MetaDisposable()
     actionsDisposable.add(resolveDisposable)
     
-    let removePackDisposables = DisposableDict<ItemCollectionId>()
+    let removePackDisposables = DisposableDict<EngineItemCollectionId>()
     actionsDisposable.add(removePackDisposables)
     
     let namespace: ArchivedStickerPacksNamespace
@@ -288,8 +284,8 @@ public func archivedStickerPacksController(context: AccountContext, mode: Archiv
         updatedPacks(packs)
     }))
     
-    let installedStickerPacks = Promise<CombinedView>()
-    installedStickerPacks.set(context.account.postbox.combinedView(keys: [.itemCollectionIds(namespaces: [Namespaces.ItemCollection.CloudStickerPacks])]))
+    let installedStickerPacks = Promise<[EngineItemCollectionId]>()
+    installedStickerPacks.set(context.engine.data.subscribe(TelegramEngine.EngineData.Item.ItemCollections.InstalledPackIds(namespace: Namespaces.ItemCollection.CloudStickerPacks)))
     
     var presentationData = context.sharedContext.currentPresentationData.with { $0 }
     if let forceTheme {
@@ -446,7 +442,7 @@ public func archivedStickerPacksController(context: AccountContext, mode: Archiv
     
     let signal = combineLatest(context.sharedContext.presentationData, statePromise.get() |> deliverOnMainQueue, stickerPacks.get() |> deliverOnMainQueue, installedStickerPacks.get() |> deliverOnMainQueue, context.sharedContext.accountManager.sharedData(keys: [ApplicationSpecificSharedDataKeys.stickerSettings]) |> deliverOnMainQueue)
     |> deliverOnMainQueue
-    |> map { presentationData, state, packs, installedView, sharedData -> (ItemListControllerState, (ItemListNodeState, Any)) in
+    |> map { presentationData, state, packs, installedIds, sharedData -> (ItemListControllerState, (ItemListNodeState, Any)) in
         var presentationData = presentationData
         if let forceTheme {
             presentationData = presentationData.withUpdated(theme: forceTheme)
@@ -461,7 +457,7 @@ public func archivedStickerPacksController(context: AccountContext, mode: Archiv
         var toolbarItem: ItemListToolbarItem?
         if let packs = packs, packs.count != 0 {
             if state.editing {
-                rightNavigationButton = ItemListNavigationButton(content: .text(presentationData.strings.Common_Done), style: .bold, enabled: true, action: {
+                rightNavigationButton = ItemListNavigationButton(content: .icon(.done), style: .bold, enabled: true, action: {
                     updateState {
                         $0.withUpdatedEditing(false)
                     }
@@ -538,7 +534,7 @@ public func archivedStickerPacksController(context: AccountContext, mode: Archiv
                             $0.withUpdatedEditing(false).withUpdatedSelectedPackIds(nil)
                         }
                         
-                        var packIds: [ItemCollectionId] = []
+                        var packIds: [EngineItemCollectionId] = []
                         for entry in packs {
                             if let selectedPackIds = state.selectedPackIds, selectedPackIds.contains(entry.info.id) {
                                 packIds.append(entry.info.id)
@@ -595,7 +591,7 @@ public func archivedStickerPacksController(context: AccountContext, mode: Archiv
         
         let controllerState = ItemListControllerState(presentationData: ItemListPresentationData(presentationData), title: .text(title), leftNavigationButton: nil, rightNavigationButton: rightNavigationButton, backNavigationButton: ItemListBackButton(title: presentationData.strings.Common_Back), animateChanges: true)
         
-        let listState = ItemListNodeState(presentationData: ItemListPresentationData(presentationData), entries: archivedStickerPacksControllerEntries(context: context, mode: mode, presentationData: presentationData, state: state, packs: packs, installedView: installedView, stickerSettings: stickerSettings), style: .blocks, emptyStateItem: emptyStateItem, toolbarItem: toolbarItem, animateChanges: previous != nil && packs != nil && (previous! != 0 && previous! >= packs!.count - 10))
+        let listState = ItemListNodeState(presentationData: ItemListPresentationData(presentationData), entries: archivedStickerPacksControllerEntries(context: context, mode: mode, presentationData: presentationData, state: state, packs: packs, installedIds: installedIds, stickerSettings: stickerSettings), style: .blocks, emptyStateItem: emptyStateItem, toolbarItem: toolbarItem, animateChanges: previous != nil && packs != nil && (previous! != 0 && previous! >= packs!.count - 10))
         return (controllerState, (listState, arguments))
     } |> afterDisposed {
         actionsDisposable.dispose()

@@ -1,6 +1,5 @@
 import Foundation
 import UIKit
-import Postbox
 import Display
 import AsyncDisplayKit
 import SwiftSignalKit
@@ -62,7 +61,7 @@ public final class MessageReactionButtonsNode: ASDisplayNode {
         savedMessageTags: SavedMessageTags?,
         reactions: ReactionsMessageAttribute,
         accountPeer: EnginePeer?,
-        message: Message,
+        message: EngineMessage,
         associatedData: ChatMessageItemAssociatedData,
         alignment: DisplayAlignment,
         constrainedWidth: CGFloat,
@@ -632,7 +631,7 @@ public final class ChatMessageReactionsFooterContentNode: ChatMessageBubbleConte
                     context: item.context,
                     presentationData: item.presentationData,
                     presentationContext: item.controllerInteraction.presentationContext,
-                    availableReactions: item.associatedData.availableReactions, savedMessageTags: item.associatedData.savedMessageTags, reactions: reactionsAttribute, accountPeer: item.associatedData.accountPeer, message: item.message, associatedData: item.associatedData, alignment: .left, constrainedWidth: constrainedSize.width - layoutConstants.text.bubbleInsets.left - layoutConstants.text.bubbleInsets.right, type: item.message.effectivelyIncoming(item.context.account.peerId) ? .incoming : .outgoing)
+                    availableReactions: item.associatedData.availableReactions, savedMessageTags: item.associatedData.savedMessageTags, reactions: reactionsAttribute, accountPeer: item.associatedData.accountPeer, message: EngineMessage(item.message), associatedData: item.associatedData, alignment: .left, constrainedWidth: constrainedSize.width - layoutConstants.text.bubbleInsets.left - layoutConstants.text.bubbleInsets.right, type: item.message.effectivelyIncoming(item.context.account.peerId) ? .incoming : .outgoing)
                      
                 return (layoutConstants.text.bubbleInsets.left + layoutConstants.text.bubbleInsets.right + buttonsUpdate.proposedWidth, { boundingWidth in
                     var boundingSize = CGSize()
@@ -712,13 +711,13 @@ public final class ChatMessageReactionButtonsNode: ASDisplayNode {
         public let availableReactions: AvailableReactions?
         public let savedMessageTags: SavedMessageTags?
         public let reactions: ReactionsMessageAttribute
-        public let message: Message
+        public let message: EngineMessage
         public let associatedData: ChatMessageItemAssociatedData
         public let accountPeer: EnginePeer?
         public let isIncoming: Bool
         public let constrainedWidth: CGFloat
         public let centerAligned: Bool
-        
+
         public init(
             context: AccountContext,
             presentationData: ChatPresentationData,
@@ -726,7 +725,7 @@ public final class ChatMessageReactionButtonsNode: ASDisplayNode {
             availableReactions: AvailableReactions?,
             savedMessageTags: SavedMessageTags?,
             reactions: ReactionsMessageAttribute,
-            message: Message,
+            message: EngineMessage,
             associatedData: ChatMessageItemAssociatedData,
             accountPeer: EnginePeer?,
             isIncoming: Bool,

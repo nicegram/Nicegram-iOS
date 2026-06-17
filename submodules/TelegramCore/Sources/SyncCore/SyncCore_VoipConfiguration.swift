@@ -1,12 +1,6 @@
 import Foundation
 import Postbox
 
-public enum VoiceCallP2PMode: Int32 {
-    case never = 0
-    case contacts = 1
-    case always = 2
-}
-
 public struct VoipConfiguration: Codable, Equatable {
     public var serializedData: String?
     

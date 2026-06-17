@@ -349,25 +349,29 @@ public final class ContextControllerTakeViewInfo {
         case node(ContextExtractedContentContainingNode)
         case view(ContextExtractedContentContainingView)
     }
-    
+
     public let containingItem: ContainingItem
     public let contentAreaInScreenSpace: CGRect
     public let maskView: UIView?
-    
-    public init(containingItem: ContainingItem, contentAreaInScreenSpace: CGRect, maskView: UIView? = nil) {
+    public let sourceTransitionSurface: UIView?
+
+    public init(containingItem: ContainingItem, contentAreaInScreenSpace: CGRect, maskView: UIView? = nil, sourceTransitionSurface: UIView? = nil) {
         self.containingItem = containingItem
         self.contentAreaInScreenSpace = contentAreaInScreenSpace
         self.maskView = maskView
+        self.sourceTransitionSurface = sourceTransitionSurface
     }
 }
 
 public final class ContextControllerPutBackViewInfo {
     public let contentAreaInScreenSpace: CGRect
     public let maskView: UIView?
-    
-    public init(contentAreaInScreenSpace: CGRect, maskView: UIView? = nil) {
+    public let sourceTransitionSurface: UIView?
+
+    public init(contentAreaInScreenSpace: CGRect, maskView: UIView? = nil, sourceTransitionSurface: UIView? = nil) {
         self.contentAreaInScreenSpace = contentAreaInScreenSpace
         self.maskView = maskView
+        self.sourceTransitionSurface = sourceTransitionSurface
     }
 }
 

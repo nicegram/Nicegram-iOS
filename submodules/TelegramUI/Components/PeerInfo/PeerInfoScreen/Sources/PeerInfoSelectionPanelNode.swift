@@ -47,7 +47,7 @@ final class PeerInfoSelectionPanelNode: ASDisplayNode {
         }, setupEditMessage: { _, _ in
         }, beginMessageSelection: { _, _ in
         }, cancelMessageSelection: { _ in
-        }, deleteSelectedMessages: {
+        }, deleteSelectedMessages: { _ in
             deleteMessages()
         }, reportSelectedMessages: {
             reportMessages()
@@ -132,7 +132,6 @@ final class PeerInfoSelectionPanelNode: ASDisplayNode {
         }, displaySlowmodeTooltip: { _, _ in
         }, displaySendMessageOptions: { _, _ in
         }, openScheduledMessages: {
-        }, openPeersNearby: {
         }, displaySearchResultsTooltip: { _, _ in
         }, unarchivePeer: {
         }, scrollToTop: {

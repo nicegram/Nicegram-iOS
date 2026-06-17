@@ -84,7 +84,7 @@ final class InstantPageImageNode: ASDisplayNode, InstantPageNode, InstantPageExt
     private var themeUpdated: Bool = false
     private var externalMediaDimensionsUpdated: Bool = false
     
-    init(context: AccountContext, sourceLocation: InstantPageSourceLocation, theme: InstantPageTheme, webPage: TelegramMediaWebpage, media: InstantPageMedia, attributes: [InstantPageImageAttribute], interactive: Bool, roundCorners: Bool, fit: Bool, openMedia: @escaping (InstantPageMedia) -> Void, longPressMedia: @escaping (InstantPageMedia) -> Void, activatePinchPreview: ((PinchSourceContainerNode) -> Void)?, pinchPreviewFinished: ((InstantPageNode) -> Void)?, getPreloadedResource: @escaping (String) -> Data?) {
+    init(context: AccountContext, sourceLocation: InstantPageSourceLocation, theme: InstantPageTheme, webPage: TelegramMediaWebpage, media: InstantPageMedia, attributes: [InstantPageImageAttribute], interactive: Bool, roundCorners: Bool, fit: Bool, openMedia: @escaping (InstantPageMedia) -> Void, longPressMedia: @escaping (InstantPageMedia) -> Void, activatePinchPreview: ((PinchSourceContainerNode) -> Void)?, pinchPreviewFinished: ((InstantPageNode) -> Void)?, imageReferenceForMedia: ((TelegramMediaImage) -> ImageMediaReference)? = nil, fileReferenceForMedia: ((TelegramMediaFile) -> FileMediaReference)? = nil, getPreloadedResource: @escaping (String) -> Data?) {
         self.context = context
         self.theme = theme
         self.webPage = webPage
@@ -117,7 +117,7 @@ final class InstantPageImageNode: ASDisplayNode, InstantPageNode, InstantPageExt
             if let externalResource = largest.resource as? InstantPageExternalMediaResource {
                 self.loadExternalImage(resourceUrl: externalResource.url)
             } else {
-                let imageReference = ImageMediaReference.webPage(webPage: WebpageReference(webPage), media: image)
+                let imageReference = imageReferenceForMedia?(image) ?? ImageMediaReference.webPage(webPage: WebpageReference(webPage), media: image)
                 self.imageNode.setSignal(chatMessagePhoto(postbox: context.account.postbox, userLocation: sourceLocation.userLocation, photoReference: imageReference))
                 
                 if !interactive || shouldDownloadMediaAutomatically(settings: context.sharedContext.currentAutomaticMediaDownloadSettings, peerType: sourceLocation.peerType, networkType: MediaAutoDownloadNetworkType(context.account.immediateNetworkType), authorPeerId: nil, contactsPeerIds: Set(), media: image) {
@@ -149,7 +149,7 @@ final class InstantPageImageNode: ASDisplayNode, InstantPageNode, InstantPageExt
             if let externalResource = file.resource as? InstantPageExternalMediaResource {
                 self.loadExternalImage(resourceUrl: externalResource.url)
             } else {
-                let fileReference = FileMediaReference.webPage(webPage: WebpageReference(webPage), media: file)
+                let fileReference = fileReferenceForMedia?(file) ?? FileMediaReference.webPage(webPage: WebpageReference(webPage), media: file)
                 if file.mimeType.hasPrefix("image/") {
                     if !interactive || shouldDownloadMediaAutomatically(settings: context.sharedContext.currentAutomaticMediaDownloadSettings, peerType: sourceLocation.peerType, networkType: MediaAutoDownloadNetworkType(context.account.immediateNetworkType), authorPeerId: nil, contactsPeerIds: Set(), media: file) {
                         _ = freeMediaFileInteractiveFetched(account: context.account, userLocation: sourceLocation.userLocation, fileReference: fileReference).start()
@@ -176,7 +176,7 @@ final class InstantPageImageNode: ASDisplayNode, InstantPageNode, InstantPageExt
             let resource = MapSnapshotMediaResource(latitude: map.latitude, longitude: map.longitude, width: Int32(dimensions.width), height: Int32(dimensions.height))
             self.imageNode.setSignal(chatMapSnapshotImage(engine: context.engine, resource: resource))
         } else if case let .webpage(webPage) = media.media, case let .Loaded(content) = webPage.content, let image = content.image {
-            let imageReference = ImageMediaReference.webPage(webPage: WebpageReference(webPage), media: image)
+            let imageReference = imageReferenceForMedia?(image) ?? ImageMediaReference.webPage(webPage: WebpageReference(webPage), media: image)
             self.imageNode.setSignal(chatMessagePhoto(postbox: context.account.postbox, userLocation: sourceLocation.userLocation, photoReference: imageReference))
             self.fetchedDisposable.set(chatMessagePhotoInteractiveFetched(context: context, userLocation: sourceLocation.userLocation, photoReference: imageReference, displayAtSize: nil, storeToDownloadsPeerId: nil).start())
             self.statusNode.transitionToState(.play(.white), animated: false, completion: {})

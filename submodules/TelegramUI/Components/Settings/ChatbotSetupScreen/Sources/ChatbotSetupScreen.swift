@@ -4,7 +4,6 @@ import Photos
 import Display
 import AsyncDisplayKit
 import SwiftSignalKit
-import Postbox
 import TelegramCore
 import TelegramPresentationData
 import TelegramUIPreferences
@@ -826,20 +825,21 @@ final class ChatbotSetupScreenComponent: Component {
                                 self.botResolutionState = botResolutionState
                                 self.botRights = [.reply, .readMessages, .deleteSentMessages, .deleteReceivedMessages]
                                 self.state?.updated(transition: .spring(duration: 0.3))
+                                
+                                controller.present(UndoOverlayController(
+                                    presentationData: presentationData,
+                                    content: .actionSucceeded(title: nil, text: environment.strings.ChatbotSetup_BotInstalled(peer.compactDisplayTitle).string, cancel: nil, destructive: false),
+                                    elevatedLayout: false,
+                                    position: .bottom,
+                                    animateInAsReplacement: false,
+                                    action: { _ in return true }
+                                ), in: .current)
                             } else {
                                 self.environment?.controller()?.present(textAlertController(context: component.context, title: nil, text: presentationData.strings.ChatbotSetup_ErrorBotNotBusinessCapable, actions: [
                                     TextAlertAction(type: .defaultAction, title: presentationData.strings.Common_OK, action: {
                                     })
                                 ]), in: .window(.root))
                             }
-                            controller.present(UndoOverlayController(
-                                presentationData: presentationData,
-                                content: .invitedToVoiceChat(context: component.context, peer: peer, title: nil, text: environment.strings.ChatbotSetup_BotInstalled(peer.compactDisplayTitle).string, action: nil, duration: 2.0),
-                                elevatedLayout: false,
-                                position: .bottom,
-                                animateInAsReplacement: false,
-                                action: { _ in return true }
-                            ), in: .current)
                         }
                     },
                     removeAction: { [weak self] in

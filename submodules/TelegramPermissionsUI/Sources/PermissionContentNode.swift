@@ -6,9 +6,9 @@ import TelegramCore
 import TelegramPresentationData
 import TextFormat
 import TelegramPermissions
-import PeersNearbyIconNode
-import SolidRoundedButtonNode
-import PresentationDataUtils
+import ComponentFlow
+import ButtonComponent
+import ComponentDisplayAdapters
 import Markdown
 import AnimatedStickerNode
 import TelegramAnimatedStickerNode
@@ -38,18 +38,18 @@ public final class PermissionContentNode: ASDisplayNode {
     private let filterHitTest: Bool
 
     private let iconNode: ASImageNode
-    private let nearbyIconNode: PeersNearbyIconNode?
     private let animationNode: AnimatedStickerNode?
     private let titleNode: ImmediateTextNode
     private let subtitleNode: ImmediateTextNode
     private let textNode: ImmediateTextNode
-    private let actionButton: SolidRoundedButtonNode
+    private let actionButton = ComponentView<Empty>()
     private let footerNode: ImmediateTextNode
     private let privacyPolicyButton: HighlightableButtonNode
     
     private let icon: PermissionContentIcon
     private var title: String
     private var text: String
+    private let buttonTitle: String
     
     public var buttonAction: (() -> Void)?
     public var openPrivacyPolicy: (() -> Void)?
@@ -67,6 +67,7 @@ public final class PermissionContentNode: ASDisplayNode {
         self.icon = icon
         self.title = title
         self.text = text
+        self.buttonTitle = buttonTitle
         
         self.iconNode = ASImageNode()
         self.iconNode.isLayerBacked = true
@@ -78,13 +79,7 @@ public final class PermissionContentNode: ASDisplayNode {
             
             self.animationNode?.setup(source: AnimatedStickerNodeLocalFileSource(name: animation), width: 320, height: 320, playbackMode: .once, mode: .direct(cachePathPrefix: nil))
             self.animationNode?.visibility = true
-            
-            self.nearbyIconNode = nil
-        } else if kind == PermissionKind.nearbyLocation.rawValue {
-            self.nearbyIconNode = PeersNearbyIconNode(theme: theme)
-            self.animationNode = nil
         } else {
-            self.nearbyIconNode = nil
             self.animationNode = nil
         }
         
@@ -106,8 +101,7 @@ public final class PermissionContentNode: ASDisplayNode {
         self.textNode.maximumNumberOfLines = 0
         self.textNode.displaysAsynchronously = false
         self.textNode.isAccessibilityElement = true
-        
-        self.actionButton = SolidRoundedButtonNode(theme: SolidRoundedButtonTheme(theme: theme), glass: true, height: 52.0, cornerRadius: 26.0, isShimmering: true)
+        self.textNode.lineSpacing = 0.1
         
         self.footerNode = ImmediateTextNode()
         self.footerNode.textAlignment = .center
@@ -135,7 +129,6 @@ public final class PermissionContentNode: ASDisplayNode {
         let link = MarkdownAttributeSet(font: Font.regular(16.0), textColor: theme.list.itemAccentColor, additionalAttributes: [TelegramTextAttributes.URL: ""])
         self.textNode.attributedText = parseMarkdownIntoAttributedString(text.replacingOccurrences(of: "]", with: "]()"), attributes: MarkdownAttributes(body: body, bold: body, link: link, linkAttribute: { _ in nil }), textAlignment: secondaryText ? .natural : .center)
         
-        self.actionButton.title = buttonTitle
         self.privacyPolicyButton.isHidden = openPrivacyPolicy == nil
         
         if let subtitle = subtitle {
@@ -149,18 +142,12 @@ public final class PermissionContentNode: ASDisplayNode {
         }
         
         self.addSubnode(self.iconNode)
-        self.nearbyIconNode.flatMap { self.addSubnode($0) }
         self.animationNode.flatMap { self.addSubnode($0) }
         self.addSubnode(self.titleNode)
         self.addSubnode(self.subtitleNode)
         self.addSubnode(self.textNode)
-        self.addSubnode(self.actionButton)
         self.addSubnode(self.footerNode)
         self.addSubnode(self.privacyPolicyButton)
-        
-        self.actionButton.pressed = { [weak self] in
-            self?.buttonAction?()
-        }
         
         self.privacyPolicyButton.addTarget(self, action: #selector(self.privacyPolicyPressed), forControlEvents: .touchUpInside)
     }
@@ -234,7 +221,33 @@ public final class PermissionContentNode: ASDisplayNode {
         let textSize = self.textNode.updateLayout(CGSize(width: size.width - sidePadding * 2.0, height: .greatestFiniteMagnitude))
         let buttonInset: CGFloat = 16.0
         let buttonWidth = min(size.width, size.height) - buttonInset * 2.0 - insets.left - insets.right
-        let buttonHeight = self.actionButton.updateLayout(width: buttonWidth, transition: transition)
+        let buttonSize = self.actionButton.update(
+            transition: ComponentTransition(transition),
+            component: AnyComponent(ButtonComponent(
+                background: ButtonComponent.Background(
+                    style: .glass,
+                    color: self.theme.list.itemCheckColors.fillColor,
+                    foreground: self.theme.list.itemCheckColors.foregroundColor,
+                    pressedColor: self.theme.list.itemCheckColors.fillColor.withMultipliedAlpha(0.9),
+                    cornerRadius: 26.0,
+                    isShimmering: true
+                ),
+                content: AnyComponentWithIdentity(
+                    id: AnyHashable(0),
+                    component: AnyComponent(Text(
+                        text: self.buttonTitle,
+                        font: Font.semibold(17.0),
+                        color: self.theme.list.itemCheckColors.foregroundColor
+                    ))
+                ),
+                action: { [weak self] in
+                    self?.buttonAction?()
+                }
+            )),
+            environment: {},
+            containerSize: CGSize(width: buttonWidth, height: 52.0)
+        )
+        let buttonHeight = buttonSize.height
         let footerSize = self.footerNode.updateLayout(CGSize(width: size.width - smallerSidePadding * 2.0, height: .greatestFiniteMagnitude))
         let privacyButtonSize = self.privacyPolicyButton.measure(CGSize(width: size.width - sidePadding * 2.0, height: .greatestFiniteMagnitude))
         
@@ -255,11 +268,6 @@ public final class PermissionContentNode: ASDisplayNode {
             imageSize = icon.size
             contentHeight += imageSize.height + imageSpacing
         }
-        if let _ = self.nearbyIconNode, size.width < size.height {
-            imageSpacing = floor(availableHeight * 0.12)
-            imageSize = CGSize(width: 120.0, height: 120.0)
-            contentHeight += imageSize.height + imageSpacing
-        }
         if let _ = self.animationNode, size.width < size.height {
             imageSpacing = floor(availableHeight * 0.12)
             imageSize = CGSize(width: 240.0, height: 240.0)
@@ -275,7 +283,6 @@ public final class PermissionContentNode: ASDisplayNode {
         
         let contentOrigin = insets.top + floor((size.height - insets.top - insets.bottom - contentHeight) / 2.0) - verticalOffset
         let iconFrame = CGRect(origin: CGPoint(x: floor((size.width - imageSize.width) / 2.0), y: contentOrigin), size: imageSize)
-        let nearbyIconFrame = CGRect(origin: CGPoint(x: floor((size.width - imageSize.width) / 2.0), y: contentOrigin), size: imageSize)
         let animationFrame = CGRect(origin: CGPoint(x: floor((size.width - imageSize.width) / 2.0), y: contentOrigin), size: imageSize)
         let titleFrame = CGRect(origin: CGPoint(x: floor((size.width - titleSize.width) / 2.0), y: iconFrame.maxY + imageSpacing), size: titleSize)
         
@@ -300,9 +307,6 @@ public final class PermissionContentNode: ASDisplayNode {
         }
         
         transition.updateFrame(node: self.iconNode, frame: iconFrame)
-        if let nearbyIconNode = self.nearbyIconNode {
-            transition.updateFrame(node: nearbyIconNode, frame: nearbyIconFrame)
-        }
         if let animationNode = self.animationNode {
             transition.updateFrame(node: animationNode, frame: animationFrame)
             animationNode.updateLayout(size: animationFrame.size)
@@ -310,7 +314,15 @@ public final class PermissionContentNode: ASDisplayNode {
         transition.updateFrame(node: self.titleNode, frame: titleFrame)
         transition.updateFrame(node: self.subtitleNode, frame: subtitleFrame)
         transition.updateFrame(node: self.textNode, frame: textFrame)
-        transition.updateFrame(node: self.actionButton, frame: buttonFrame)
+        if let buttonView = self.actionButton.view {
+            if buttonView.superview == nil {
+                self.view.addSubview(buttonView)
+            }
+            buttonView.isAccessibilityElement = true
+            buttonView.accessibilityLabel = self.buttonTitle
+            buttonView.accessibilityTraits = [.button]
+            transition.updateFrame(view: buttonView, frame: buttonFrame)
+        }
         transition.updateFrame(node: self.footerNode, frame: footerFrame)
         transition.updateFrame(node: self.privacyPolicyButton, frame: privacyButtonFrame)
         

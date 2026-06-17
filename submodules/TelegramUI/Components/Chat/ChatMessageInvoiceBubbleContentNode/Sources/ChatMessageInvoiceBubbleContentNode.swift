@@ -1,6 +1,5 @@
 import Foundation
 import UIKit
-import Postbox
 import Display
 import AsyncDisplayKit
 import SwiftSignalKit
@@ -52,7 +51,7 @@ public final class ChatMessageInvoiceBubbleContentNode: ChatMessageBubbleContent
             var title: String?
             var subtitle: NSAttributedString? = nil
             var text: String?
-            var mediaAndFlags: ([Media], ChatMessageAttachedContentNodeMediaFlags)?
+            var mediaAndFlags: ([EngineRawMedia], ChatMessageAttachedContentNodeMediaFlags)?
             
             var automaticDownloadSettings = item.controllerInteraction.automaticMediaDownloadSettings
             if let invoice = invoice {
@@ -128,11 +127,11 @@ public final class ChatMessageInvoiceBubbleContentNode: ChatMessageBubbleContent
         return ChatMessageBubbleContentTapAction(content: .none)
     }
     
-    override public func updateHiddenMedia(_ media: [Media]?) -> Bool {
+    override public func updateHiddenMedia(_ media: [EngineRawMedia]?) -> Bool {
         return self.contentNode.updateHiddenMedia(media)
     }
     
-    override public func transitionNode(messageId: MessageId, media: Media, adjustRect: Bool) -> (ASDisplayNode, CGRect, () -> (UIView?, UIView?))? {
+    override public func transitionNode(messageId: EngineMessage.Id, media: EngineRawMedia, adjustRect: Bool) -> (ASDisplayNode, CGRect, () -> (UIView?, UIView?))? {
         if self.item?.message.id != messageId {
             return nil
         }

@@ -3,7 +3,6 @@ import UIKit
 import Display
 import TelegramCore
 import TelegramUIPreferences
-import Postbox
 import SwiftSignalKit
 
 public func selectDateFillStaticColor(theme: PresentationTheme, wallpaper: TelegramWallpaper) -> UIColor {
@@ -1270,7 +1269,7 @@ public extension BuiltinWallpaperData {
         fileSize: 122246
     )
 
-    static func generate(account: Account) {
+    static func generate(network: Network) {
         let slugToName: [(String, String)] = [
             ("fqv01SQemVIBAAAApND8LDRUhRU", "`default`"),
             ("Ye7DfT2kCVIKAAAAhzXfrkdOjxs", "legacy"),
@@ -1292,7 +1291,7 @@ public extension BuiltinWallpaperData {
 
         var signals: [Signal<String?, GetWallpaperError>] = []
         for (slug, name) in slugToName {
-            signals.append(getWallpaper(network: account.network, slug: slug)
+            signals.append(getWallpaper(network: network, slug: slug)
             |> map { wallpaper -> String? in
                 switch wallpaper {
                 case let .file(file):
@@ -1346,7 +1345,7 @@ public func defaultBuiltinWallpaper(data: BuiltinWallpaperData, colors: [UInt32]
         isDark: false,
         slug: data.slug,
         file: TelegramMediaFile(
-            fileId: MediaId(namespace: Namespaces.Media.CloudFile, id: data.fileId),
+            fileId: EngineMedia.Id(namespace: Namespaces.Media.CloudFile, id: data.fileId),
             partialReference: nil,
             resource: CloudDocumentMediaResource(
                 datacenterId: data.datacenterId,

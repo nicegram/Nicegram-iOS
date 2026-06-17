@@ -46,7 +46,7 @@ public func makeTelegramAccountAuxiliaryMethods(uploadInBackground: ((Postbox, M
                 return fetchLocalFileVideoMediaResource(postbox: postbox, resource: resource, alwaysUseModernPipeline: useModernPipeline)
             }
         } else if let resource = resource as? LocalFileAudioMediaResource {
-            return fetchLocalFileAudioMediaResource(postbox: postbox, resource: resource)
+            return fetchLocalFileAudioMediaResource(resource: resource)
         } else if let resource = resource as? LocalFileGifMediaResource {
             return fetchLocalFileGifMediaResource(resource: resource)
         } else if let photoLibraryResource = resource as? PhotoLibraryMediaResource {

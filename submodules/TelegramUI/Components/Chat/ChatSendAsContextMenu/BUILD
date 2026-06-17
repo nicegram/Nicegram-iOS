@@ -14,7 +14,6 @@ swift_library(
         "//submodules/AsyncDisplayKit",
         "//submodules/SSignalKit/SwiftSignalKit",
         "//submodules/TelegramPresentationData",
-        "//submodules/Postbox",
         "//submodules/TelegramCore",
         "//submodules/AppBundle",
         "//submodules/ContextUI",

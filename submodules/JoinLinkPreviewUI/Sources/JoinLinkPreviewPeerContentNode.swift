@@ -142,6 +142,7 @@ final class JoinLinkPreviewPeerContentNode: ASDisplayNode, ShareContentContainer
         self.descriptionNode.textAlignment = .center
         self.peersScrollNode = ASScrollNode()
         self.peersScrollNode.view.showsHorizontalScrollIndicator = false
+        self.peersScrollNode.view.scrollsToTop = false
         
         self.actionButtonNode = SolidRoundedButtonNode(theme: SolidRoundedButtonTheme(theme: theme), height: 52.0, cornerRadius: 11.0)
         

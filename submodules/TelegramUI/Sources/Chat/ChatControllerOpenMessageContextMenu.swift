@@ -4,7 +4,6 @@ import NGUtils
 import Foundation
 import UIKit
 import SwiftSignalKit
-import Postbox
 import TelegramCore
 import AsyncDisplayKit
 import Display
@@ -24,7 +23,7 @@ import PresentationDataUtils
 import ChatPresentationInterfaceState
 
 extension ChatControllerImpl {
-    func openMessageContextMenu(message: Message, selectAll: Bool, node: ASDisplayNode, frame: CGRect, anyRecognizer: UIGestureRecognizer?, location: CGPoint?) -> Void {
+    func openMessageContextMenu(message: EngineMessage, selectAll: Bool, node: ASDisplayNode, frame: CGRect, anyRecognizer: UIGestureRecognizer?, location: CGPoint?) -> Void {
         if self.presentationInterfaceState.interfaceState.selectionState != nil {
             return
         }
@@ -56,7 +55,7 @@ extension ChatControllerImpl {
                 self.context.engine.data.get(TelegramEngine.EngineData.Item.Peer.Peer(id: self.context.account.peerId)),
                 contextMenuForChatPresentationInterfaceState(chatPresentationInterfaceState: self.presentationInterfaceState, context: self.context, messages: updatedMessages, controllerInteraction: self.controllerInteraction, selectAll: selectAll, interfaceInteraction: self.interfaceInteraction, messageNode: node as? ChatMessageItemView),
                 peerMessageAllowedReactions(context: self.context, message: topMessage, ignoreDefault: canBypassReactionRestrictions),
-                peerMessageSelectedReactions(context: self.context, message: topMessage),
+                peerMessageSelectedReactions(context: self.context, message: EngineMessage(topMessage)),
                 topMessageReactions(context: self.context, message: topMessage, subPeerId: self.chatLocation.threadId.flatMap(EnginePeer.Id.init), ignoreDefault: canBypassReactionRestrictions),
                 ApplicationSpecificNotice.getChatTextSelectionTips(accountManager: self.context.sharedContext.accountManager)
             ).startStandalone(next: { [weak self] peer, actions, allowedReactionsAndStars, selectedReactions, topReactions, chatTextSelectionTips in
@@ -131,8 +130,8 @@ extension ChatControllerImpl {
                 
                 actions.context = self.context
                 actions.animationCache = self.controllerInteraction?.presentationContext.animationCache
-                                        
-                if canAddMessageReactions(message: topMessage), let allowedReactions = allowedReactions, !topReactions.isEmpty {
+                                                         
+                if canAddMessageReactions(message: EngineMessage(topMessage)), let allowedReactions = allowedReactions, !topReactions.isEmpty {
                     actions.reactionItems = topReactions.map { ReactionContextItem.reaction(item: $0, icon: .none) }
                     actions.selectedReactionItems = selectedReactions.reactions
                     if message.areReactionsTags(accountPeerId: self.context.account.peerId) {
@@ -172,12 +171,8 @@ extension ChatControllerImpl {
                             allReactionsAreAvailable = false
                         }
                         
-                        let premiumConfiguration = PremiumConfiguration.with(appConfiguration: context.currentAppConfiguration.with { $0 })
-                        if premiumConfiguration.isPremiumDisabled {
-                            allReactionsAreAvailable = false
-                        }
-                        
                         if allReactionsAreAvailable {
+                            let premiumConfiguration = PremiumConfiguration.with(appConfiguration: context.currentAppConfiguration.with { $0 })
                             actions.getEmojiContent = { [weak self] animationCache, animationRenderer in
                                 guard let self else {
                                     preconditionFailure()
@@ -192,7 +187,7 @@ extension ChatControllerImpl {
                                     hasTrending: false,
                                     topReactionItems: reactionItems,
                                     areUnicodeEmojiEnabled: false,
-                                    areCustomEmojiEnabled: true,
+                                    areCustomEmojiEnabled: !premiumConfiguration.isPremiumDisabled,
                                     chatPeerId: self.chatLocation.peerId,
                                     selectedItems: selectedReactions.files
                                 )
@@ -393,7 +388,7 @@ extension ChatControllerImpl {
                                     guard let self else {
                                         return
                                     }
-                                    self.openMessageSendStarsScreen(message: message)
+                                    self.openMessageSendStarsScreen(message: EngineMessage(message))
                                 })
                             }
                             return
@@ -705,15 +700,17 @@ final class ChatControllerContextReferenceContentSource: ContextReferenceContent
     let sourceView: UIView
     let insets: UIEdgeInsets
     let contentInsets: UIEdgeInsets
+    let actionsOnTop: Bool
     
-    init(controller: ViewController, sourceView: UIView, insets: UIEdgeInsets, contentInsets: UIEdgeInsets = UIEdgeInsets()) {
+    init(controller: ViewController, sourceView: UIView, insets: UIEdgeInsets, contentInsets: UIEdgeInsets = UIEdgeInsets(), actionsOnTop: Bool = false) {
         self.controller = controller
         self.sourceView = sourceView
         self.insets = insets
         self.contentInsets = contentInsets
+        self.actionsOnTop = actionsOnTop
     }
     
     func transitionInfo() -> ContextControllerReferenceViewInfo? {
-        return ContextControllerReferenceViewInfo(referenceView: self.sourceView, contentAreaInScreenSpace: UIScreen.main.bounds.inset(by: self.insets), insets: self.contentInsets)
+        return ContextControllerReferenceViewInfo(referenceView: self.sourceView, contentAreaInScreenSpace: UIScreen.main.bounds.inset(by: self.insets), insets: self.contentInsets, actionsPosition: self.actionsOnTop ? .top : .bottom)
     }
 }

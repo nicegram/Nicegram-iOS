@@ -1068,21 +1068,7 @@ public final class MetalEngine {
             for id in removeSurfaceIds {
                 self.surfaces.removeValue(forKey: id)
             }
-            
-            #if DEBUG
-            #if targetEnvironment(simulator)
-            if #available(iOS 13.0, *) {
-                if let drawable = self.layer.nextDrawable() {
-                    commandBuffer.present(drawable)
-                }
-            }
-            #else
-            if let drawable = self.layer.nextDrawable() {
-                commandBuffer.present(drawable)
-            }
-            #endif
-            #endif
-            
+
             commandBuffer.commit()
             commandBuffer.waitUntilScheduled()
         }

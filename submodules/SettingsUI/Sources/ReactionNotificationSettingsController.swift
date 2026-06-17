@@ -15,6 +15,7 @@ import PresentationDataUtils
 import TelegramNotices
 import NotificationSoundSelectionUI
 import TelegramStringFormatting
+import ContextUI
 
 private final class ReactionNotificationSettingsControllerArguments {
     let context: AccountContext
@@ -270,12 +271,26 @@ private struct ReactionNotificationSettingsState: Equatable {
     }
 }
 
+private final class ReactionNotificationSettingsContextReferenceContentSource: ContextReferenceContentSource {
+    private let sourceView: UIView
+
+    init(sourceView: UIView) {
+        self.sourceView = sourceView
+    }
+
+    func transitionInfo() -> ContextControllerReferenceViewInfo? {
+        return ContextControllerReferenceViewInfo(referenceView: self.sourceView, contentAreaInScreenSpace: UIScreen.main.bounds, insets: UIEdgeInsets(top: -4.0, left: 0.0, bottom: -4.0, right: 0.0))
+    }
+}
+
 public func reactionNotificationSettingsController(
     context: AccountContext,
     focusOnItemTag: ReactionNotificationSettingsEntryTag? = nil
 ) -> ViewController {
-    var presentControllerImpl: ((ViewController, Any?) -> Void)?
+    var presentInGlobalOverlayImpl: ((ViewController) -> Void)?
     var pushControllerImpl: ((ViewController) -> Void)?
+    var findCategoryReferenceNode: ((ReactionNotificationSettingsEntryTag) -> ItemListSwitchItemNode?)?
+    var currentReactionSettings = PeerReactionNotificationSettings.default
     
     let stateValue = Atomic<ReactionNotificationSettingsState>(value: ReactionNotificationSettingsState())
     let statePromise: ValuePromise<ReactionNotificationSettingsState> = ValuePromise(ignoreRepeated: true)
@@ -290,49 +305,48 @@ public func reactionNotificationSettingsController(
     
     let openCategory: (Bool) -> Void = { isMessages in
         let presentationData = context.sharedContext.currentPresentationData.with { $0 }
-        
-        let text: String
-        if isMessages {
-            text = presentationData.strings.Notifications_Reactions_SheetTitleMessages
-        } else {
-            text = presentationData.strings.Notifications_Reactions_SheetTitleStories
+
+        let currentValue: PeerReactionNotificationSettings.Sources = isMessages ? currentReactionSettings.messages : currentReactionSettings.stories
+        let options: [(PeerReactionNotificationSettings.Sources, String)] = [
+            (.everyone, presentationData.strings.Notifications_Reactions_SheetValueEveryone),
+            (.contacts, presentationData.strings.Notifications_Reactions_SheetValueContacts)
+        ]
+        let items: [ContextMenuItem] = options.map { value, title in
+            return .action(ContextMenuActionItem(text: title, icon: { theme in
+                if currentValue == value {
+                    return generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Check"), color: theme.contextMenu.primaryColor)
+                } else {
+                    return UIImage()
+                }
+            }, action: { _, f in
+                f(.default)
+                let _ = updateGlobalNotificationSettingsInteractively(postbox: context.account.postbox, { settings in
+                    var settings = settings
+                    if isMessages {
+                        settings.reactionSettings.messages = value
+                    } else {
+                        settings.reactionSettings.stories = value
+                    }
+                    return settings
+                }).start()
+            }))
         }
-        
-        let actionSheet = ActionSheetController(presentationData: presentationData)
-        actionSheet.setItemGroups([ActionSheetItemGroup(items: [
-            ActionSheetTextItem(title: text),
-            ActionSheetButtonItem(title: presentationData.strings.Notifications_Reactions_SheetValueEveryone, color: .accent, action: { [weak actionSheet] in
-                actionSheet?.dismissAnimated()
-                
-                let _ = updateGlobalNotificationSettingsInteractively(postbox: context.account.postbox, { settings in
-                    var settings = settings
-                    if isMessages {
-                        settings.reactionSettings.messages = .everyone
-                    } else {
-                        settings.reactionSettings.stories = .everyone
-                    }
-                    return settings
-                }).start()
-            }),
-            ActionSheetButtonItem(title: presentationData.strings.Notifications_Reactions_SheetValueContacts, color: .accent, action: { [weak actionSheet] in
-                actionSheet?.dismissAnimated()
-                
-                let _ = updateGlobalNotificationSettingsInteractively(postbox: context.account.postbox, { settings in
-                    var settings = settings
-                    if isMessages {
-                        settings.reactionSettings.messages = .contacts
-                    } else {
-                        settings.reactionSettings.stories = .contacts
-                    }
-                    return settings
-                }).start()
-            })
-        ]), ActionSheetItemGroup(items: [
-            ActionSheetButtonItem(title: presentationData.strings.Common_Cancel, color: .accent, font: .bold, action: { [weak actionSheet] in
-                actionSheet?.dismissAnimated()
-            })
-        ])])
-        presentControllerImpl?(actionSheet, nil)
+
+        let sourceTag: ReactionNotificationSettingsEntryTag = isMessages ? .messages : .stories
+        guard let sourceNode = findCategoryReferenceNode?(sourceTag) else {
+            return
+        }
+        let contextController = makeContextController(
+            presentationData: presentationData,
+            source: .reference(ReactionNotificationSettingsContextReferenceContentSource(sourceView: sourceNode.contextSourceView)),
+            items: .single(ContextController.Items(content: .list(items))),
+            gesture: nil
+        )
+        sourceNode.updateHasContextMenu(hasContextMenu: true)
+        contextController.dismissed = { [weak sourceNode] in
+            sourceNode?.updateHasContextMenu(hasContextMenu: false)
+        }
+        presentInGlobalOverlayImpl?(contextController)
     }
     
     let arguments = ReactionNotificationSettingsControllerArguments(
@@ -399,6 +413,7 @@ public func reactionNotificationSettingsController(
         } else {
             viewSettings = GlobalNotificationSettingsSet.defaultSettings
         }
+        currentReactionSettings = viewSettings.reactionSettings
         
         let entries = reactionNotificationSettingsEntries(
             globalSettings: viewSettings,
@@ -422,11 +437,14 @@ public func reactionNotificationSettingsController(
     }
     
     let controller = ItemListController(context: context, state: signal)
-    presentControllerImpl = { [weak controller] c, a in
-        controller?.present(c, in: .window(.root), with: a)
+    presentInGlobalOverlayImpl = { [weak controller] c in
+        controller?.presentInGlobalOverlay(c, with: nil)
     }
     pushControllerImpl = { [weak controller] c in
         (controller?.navigationController as? NavigationController)?.pushViewController(c)
+    }
+    findCategoryReferenceNode = { [weak controller] tag in
+        return controller?.itemNode(forTag: tag) as? ItemListSwitchItemNode
     }
     
     if let focusOnItemTag {

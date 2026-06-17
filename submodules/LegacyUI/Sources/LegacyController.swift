@@ -1,5 +1,6 @@
 import Foundation
 import UIKit
+import ContextUI
 import Display
 import SSignalKit
 import SwiftSignalKit
@@ -25,6 +26,18 @@ private func passControllerAppearanceAnimated(in: Bool, presentation: LegacyCont
             }
         default:
             return false
+    }
+}
+
+private final class LegacyActionSheetContextReferenceContentSource: ContextReferenceContentSource {
+    private let sourceView: UIView
+
+    init(sourceView: UIView) {
+        self.sourceView = sourceView
+    }
+
+    func transitionInfo() -> ContextControllerReferenceViewInfo? {
+        return ContextControllerReferenceViewInfo(referenceView: self.sourceView, contentAreaInScreenSpace: UIScreen.main.bounds, actionsPosition: .top)
     }
 }
 
@@ -260,11 +273,80 @@ public final class LegacyControllerContext: NSObject, LegacyComponentsContext {
     }
     
     public func presentActionSheet(_ actions: [LegacyComponentsActionSheetAction]!, view: UIView!, completion: ((LegacyComponentsActionSheetAction?) -> Void)!) {
-        
+        self.presentActionSheet(actions, view: view, sourceRect: nil, completion: completion)
     }
     
     public func presentActionSheet(_ actions: [LegacyComponentsActionSheetAction]!, view: UIView!, sourceRect: (() -> CGRect)!, completion: ((LegacyComponentsActionSheetAction?) -> Void)!) {
+        guard let controller = self.controller, let view = view else {
+            completion?(nil)
+            return
+        }
         
+        let presentationData: PresentationData
+        if let context = legacyContextGet() {
+            presentationData = context.sharedContext.currentPresentationData.with { $0 }.withUpdated(theme: defaultDarkColorPresentationTheme)
+        } else {
+            presentationData = defaultPresentationData().withUpdated(theme: defaultDarkColorPresentationTheme)
+        }
+
+        let anchorView: UIView?
+        let referenceView: UIView
+        if let sourceRect = sourceRect {
+            let anchor = UIView(frame: sourceRect())
+            anchor.isUserInteractionEnabled = false
+            anchor.backgroundColor = .clear
+            view.addSubview(anchor)
+            anchorView = anchor
+            referenceView = anchor
+        } else {
+            anchorView = nil
+            referenceView = view
+        }
+
+        var didSelectAction = false
+        var items: [ContextMenuItem] = []
+        for legacyAction in actions ?? [] {
+            if legacyAction.type == LegacyComponentsActionSheetActionTypeCancel {
+                continue
+            }
+            guard let title = legacyAction.title else {
+                continue
+            }
+            let textColor: ContextMenuActionItemTextColor = legacyAction.type == LegacyComponentsActionSheetActionTypeDestructive ? .destructive : .primary
+            items.append(.action(ContextMenuActionItem(text: title, textColor: textColor, icon: { _ in
+                return nil
+            }, action: { actionContext in
+                didSelectAction = true
+                if let contextController = actionContext.controller {
+                    contextController.dismiss(result: .default, completion: {
+                        completion?(legacyAction)
+                    })
+                } else {
+                    anchorView?.removeFromSuperview()
+                    completion?(legacyAction)
+                }
+            })))
+        }
+
+        if items.isEmpty {
+            anchorView?.removeFromSuperview()
+            completion?(nil)
+            return
+        }
+
+        let contextController = makeContextController(
+            context: legacyContextGet(),
+            presentationData: presentationData,
+            source: .reference(LegacyActionSheetContextReferenceContentSource(sourceView: referenceView)),
+            items: .single(ContextController.Items(content: .list(items)))
+        )
+        contextController.dismissed = { [weak anchorView] in
+            anchorView?.removeFromSuperview()
+            if !didSelectAction {
+                completion?(nil)
+            }
+        }
+        controller.present(contextController, in: .window(.root))
     }
     
     public func presentTooltip(_ text: String!, icon: UIImage!, sourceRect: CGRect) {
@@ -678,5 +760,52 @@ open class LegacyController: ViewController, PresentableController {
         self.controllerNode.animateModalOut { [weak self] in
             self?.presentingViewController?.dismiss(animated: false, completion: nil)
         }
+    }
+}
+
+extension LegacyController: KeyShortcutResponder {
+    public var keyShortcuts: [KeyShortcut] {
+        guard TGKeyCommandController.keyCommandsSupported(), let legacyController = self.legacyController as? TGViewController else {
+            return []
+        }
+
+        var shortcuts: [KeyShortcut] = []
+        var hasExclusiveResponder = false
+
+        legacyController.enumerateChildViewControllersRecursively { viewController in
+            if hasExclusiveResponder {
+                return
+            }
+
+            guard let viewController = viewController, let responder = viewController as? TGKeyCommandResponder else {
+                return
+            }
+
+            if responder.isExclusive?() == true {
+                hasExclusiveResponder = true
+                shortcuts.removeAll()
+            }
+
+            guard let commands = responder.availableKeyCommands() as? [TGKeyCommand] else {
+                return
+            }
+
+            for command in commands {
+                let title = command.title ?? ""
+                let input = command.input ?? ""
+                let modifiers = command.modifierFlags
+                let shortcut = KeyShortcut(title: title, input: input, modifiers: modifiers, action: { [weak viewController] in
+                    guard let responder = viewController as? TGKeyCommandResponder else {
+                        return
+                    }
+                    let keyCommand = UIKeyCommand(input: input, modifierFlags: modifiers, action: #selector(TGKeyCommandResponder.processKeyCommand(_:)))
+                    responder.processKeyCommand(keyCommand)
+                })
+                shortcuts.removeAll(where: { $0 == shortcut })
+                shortcuts.append(shortcut)
+            }
+        }
+
+        return shortcuts
     }
 }

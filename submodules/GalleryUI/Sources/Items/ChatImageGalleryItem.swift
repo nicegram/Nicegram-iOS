@@ -17,6 +17,7 @@ import ImageContentAnalysis
 import TextSelectionNode
 import Speak
 import TranslateUI
+import TextProcessingScreen
 import UndoUI
 import ContextUI
 import SaveToCameraRoll
@@ -408,15 +409,24 @@ final class ChatImageGalleryItemNode: ZoomableContentGalleryItemNode {
                             }
                         case .translate:
                             if let parentController = strongSelf.baseNavigationController()?.topViewController as? ViewController {
-                                let controller = TranslateScreen(context: strongSelf.context, text: string, canCopy: true, fromLanguage: nil)
-                                controller.pushController = { [weak parentController] c in
-                                    (parentController?.navigationController as? NavigationController)?._keepModalDismissProgress = true
-                                    parentController?.push(c)
+                                Task { @MainActor [weak parentController, weak strongSelf] in
+                                    guard let strongSelf else {
+                                        return
+                                    }
+                                    let presentationData = strongSelf.context.sharedContext.currentPresentationData.with({ $0 })
+                                    let controller = await TextProcessingScreen(
+                                        context: strongSelf.context,
+                                        mode: .translate(fromLanguage: nil, applyResult: nil),
+                                        inputText: TextWithEntities(text: string, entities: []),
+                                        copyResult: { [weak parentController] text in
+                                            storeMessageTextInPasteboard(text.text, entities: text.entities)
+                                            let tooltipController = UndoOverlayController(presentationData: presentationData, content: .copy(text: presentationData.strings.Conversation_TextCopied), elevatedLayout: true, animateInAsReplacement: false, action: { _ in return false })
+                                            parentController?.present(tooltipController, in: .window(.root))
+                                        },
+                                        translateChat: nil
+                                    )
+                                    parentController?.present(controller, in: .window(.root))
                                 }
-                                controller.presentController = { [weak parentController] c in
-                                    parentController?.present(c, in: .window(.root))
-                                }
-                                parentController.present(controller, in: .window(.root))
                             }
                         }
                     })

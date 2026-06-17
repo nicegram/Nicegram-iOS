@@ -3,7 +3,7 @@ import UIKit
 import AsyncDisplayKit
 import Display
 import SwiftSignalKit
-import Postbox
+import TelegramCore
 import ComponentFlow
 import ComponentDisplayAdapters
 
@@ -12,11 +12,11 @@ public final class GalleryControllerInteraction {
     public let pushController: (ViewController) -> Void
     public let dismissController: () -> Void
     public let replaceRootController: (ViewController, Promise<Bool>?) -> Void
-    public let editMedia: (MessageId) -> Void
+    public let editMedia: (EngineMessage.Id) -> Void
     public let controller: () -> ViewController?
     public let currentItemNode: () -> GalleryItemNode?
     
-    public init(presentController: @escaping (ViewController, ViewControllerPresentationArguments?) -> Void, pushController: @escaping (ViewController) -> Void, dismissController: @escaping () -> Void, replaceRootController: @escaping (ViewController, Promise<Bool>?) -> Void, editMedia: @escaping (MessageId) -> Void, controller: @escaping () -> ViewController?, currentItemNode: @escaping () -> GalleryItemNode?) {
+    public init(presentController: @escaping (ViewController, ViewControllerPresentationArguments?) -> Void, pushController: @escaping (ViewController) -> Void, dismissController: @escaping () -> Void, replaceRootController: @escaping (ViewController, Promise<Bool>?) -> Void, editMedia: @escaping (EngineMessage.Id) -> Void, controller: @escaping () -> ViewController?, currentItemNode: @escaping () -> GalleryItemNode?) {
         self.presentController = presentController
         self.pushController = pushController
         self.dismissController = dismissController

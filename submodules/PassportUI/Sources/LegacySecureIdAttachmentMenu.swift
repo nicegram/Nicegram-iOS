@@ -76,7 +76,7 @@ func presentLegacySecureIdAttachmentMenu(context: AccountContext, present: @esca
             |> runOn(.mainQueue())
             |> delay(0.1, queue: .mainQueue())).start()
             
-            let _ = (processedLegacySecureIdAttachmentItems(postbox: context.account.postbox, signal: signal)
+            let _ = (processedLegacySecureIdAttachmentItems(signal: signal)
             |> mapToSignal { resources -> Signal<([TelegramMediaResource], SecureIdRecognizedDocumentData?), NoError> in
                 switch type {
                     case .generic, .idCard:
@@ -116,7 +116,7 @@ private enum AttachmentItem {
     case iCloud(URL)
 }
 
-private func processedLegacySecureIdAttachmentItems(postbox: Postbox, signal: SSignal) -> Signal<[TelegramMediaResource], NoError> {
+private func processedLegacySecureIdAttachmentItems(signal: SSignal) -> Signal<[TelegramMediaResource], NoError> {
     let nativeSignal = Signal<AttachmentItem?, NoError> { subscriber in
         let disposable = signal.start(next: { next in
             if let dict = next as? [String: Any], let image = dict["image"] as? UIImage {

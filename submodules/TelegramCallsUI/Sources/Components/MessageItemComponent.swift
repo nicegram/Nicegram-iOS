@@ -3,7 +3,6 @@ import Display
 import UIKit
 import ComponentFlow
 import SwiftSignalKit
-import Postbox
 import TelegramCore
 import AvatarNode
 import GlassBackgroundComponent
@@ -89,7 +88,7 @@ final class MessageItemComponent: Component {
         weak var standaloneReactionAnimation: StandaloneReactionAnimation?
         
         private var cachedEntities: [MessageTextEntity]?
-        private var entityFiles: [MediaId: TelegramMediaFile] = [:]
+        private var entityFiles: [EngineMedia.Id: TelegramMediaFile] = [:]
         
         private var component: MessageItemComponent?
         

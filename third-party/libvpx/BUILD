@@ -49,6 +49,15 @@ genrule(
     elif [ "$(TARGET_CPU)" == "ios_x86_64" ]; then
         BUILD_ARCH="x86_64"
         PLATFORM_HEADER_DIR="x86_64-iphonesimulator-gcc"
+    elif [ "$(TARGET_CPU)" == "darwin_arm64" ]; then
+        BUILD_ARCH="macos_arm64"
+        PLATFORM_HEADER_DIR="arm64-darwin22-gcc"
+    elif [ "$(TARGET_CPU)" == "k8" ] || [ "$(TARGET_CPU)" == "x86_64" ]; then
+        BUILD_ARCH="linux_x86_64"
+        PLATFORM_HEADER_DIR="x86_64-linux-gcc"
+    elif [ "$(TARGET_CPU)" == "aarch64" ] || [ "$(TARGET_CPU)" == "arm64" ]; then
+        BUILD_ARCH="linux_arm64"
+        PLATFORM_HEADER_DIR="arm64-linux-gcc"
     else
         echo "Unsupported architecture $(TARGET_CPU)"
     fi
@@ -76,7 +85,7 @@ genrule(
 
     mkdir -p "$$BUILD_DIR/Public/libvpx"
 
-    PATH="$$PATH:$$ABS_YASM_DIR" sh $$BUILD_DIR/build-libvpx-bazel.sh $$BUILD_ARCH "$$BUILD_DIR/libvpx" "$$BUILD_DIR"
+    PATH="$$PATH:$$ABS_YASM_DIR" bash $$BUILD_DIR/build-libvpx-bazel.sh $$BUILD_ARCH "$$BUILD_DIR/libvpx" "$$BUILD_DIR"
     """ +
     "\n".join([
         "cp -f \"$$BUILD_DIR/VPX.framework/Headers/vpx/{}\" \"$(location Public/vpx/{})\"".format(header, header) for header in headers
@@ -102,10 +111,8 @@ cc_library(
     srcs = [":Public/vpx/lib" + x + ".a" for x in libs],
 )
 
-objc_library(
+cc_library(
     name = "vpx",
-    module_name = "vpx",
-    enable_modules = True,
     hdrs = [":Public/vpx/" + x for x in headers],
     includes = [
         "Public",

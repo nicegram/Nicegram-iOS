@@ -1,330 +1,52 @@
 public extension Api {
-    indirect enum PageCaption: TypeConstructorDescription {
-        public class Cons_pageCaption: TypeConstructorDescription {
-            public var text: Api.RichText
-            public var credit: Api.RichText
-            public init(text: Api.RichText, credit: Api.RichText) {
-                self.text = text
-                self.credit = credit
+    enum NearestDc: TypeConstructorDescription {
+        public class Cons_nearestDc: TypeConstructorDescription {
+            public var country: String
+            public var thisDc: Int32
+            public var nearestDc: Int32
+            public init(country: String, thisDc: Int32, nearestDc: Int32) {
+                self.country = country
+                self.thisDc = thisDc
+                self.nearestDc = nearestDc
             }
             public func descriptionFields() -> (String, [(String, ConstructorParameterDescription)]) {
-                return ("pageCaption", [("text", ConstructorParameterDescription(self.text)), ("credit", ConstructorParameterDescription(self.credit))])
+                return ("nearestDc", [("country", ConstructorParameterDescription(self.country)), ("thisDc", ConstructorParameterDescription(self.thisDc)), ("nearestDc", ConstructorParameterDescription(self.nearestDc))])
             }
         }
-        case pageCaption(Cons_pageCaption)
+        case nearestDc(Cons_nearestDc)
 
         public func serialize(_ buffer: Buffer, _ boxed: Swift.Bool) {
             switch self {
-            case .pageCaption(let _data):
+            case .nearestDc(let _data):
                 if boxed {
-                    buffer.appendInt32(1869903447)
+                    buffer.appendInt32(-1910892683)
                 }
-                _data.text.serialize(buffer, true)
-                _data.credit.serialize(buffer, true)
+                serializeString(_data.country, buffer: buffer, boxed: false)
+                serializeInt32(_data.thisDc, buffer: buffer, boxed: false)
+                serializeInt32(_data.nearestDc, buffer: buffer, boxed: false)
                 break
             }
         }
 
         public func descriptionFields() -> (String, [(String, ConstructorParameterDescription)]) {
             switch self {
-            case .pageCaption(let _data):
-                return ("pageCaption", [("text", ConstructorParameterDescription(_data.text)), ("credit", ConstructorParameterDescription(_data.credit))])
+            case .nearestDc(let _data):
+                return ("nearestDc", [("country", ConstructorParameterDescription(_data.country)), ("thisDc", ConstructorParameterDescription(_data.thisDc)), ("nearestDc", ConstructorParameterDescription(_data.nearestDc))])
             }
         }
 
-        public static func parse_pageCaption(_ reader: BufferReader) -> PageCaption? {
-            var _1: Api.RichText?
-            if let signature = reader.readInt32() {
-                _1 = Api.parse(reader, signature: signature) as? Api.RichText
-            }
-            var _2: Api.RichText?
-            if let signature = reader.readInt32() {
-                _2 = Api.parse(reader, signature: signature) as? Api.RichText
-            }
-            let _c1 = _1 != nil
-            let _c2 = _2 != nil
-            if _c1 && _c2 {
-                return Api.PageCaption.pageCaption(Cons_pageCaption(text: _1!, credit: _2!))
-            }
-            else {
-                return nil
-            }
-        }
-    }
-}
-public extension Api {
-    indirect enum PageListItem: TypeConstructorDescription {
-        public class Cons_pageListItemBlocks: TypeConstructorDescription {
-            public var blocks: [Api.PageBlock]
-            public init(blocks: [Api.PageBlock]) {
-                self.blocks = blocks
-            }
-            public func descriptionFields() -> (String, [(String, ConstructorParameterDescription)]) {
-                return ("pageListItemBlocks", [("blocks", ConstructorParameterDescription(self.blocks))])
-            }
-        }
-        public class Cons_pageListItemText: TypeConstructorDescription {
-            public var text: Api.RichText
-            public init(text: Api.RichText) {
-                self.text = text
-            }
-            public func descriptionFields() -> (String, [(String, ConstructorParameterDescription)]) {
-                return ("pageListItemText", [("text", ConstructorParameterDescription(self.text))])
-            }
-        }
-        case pageListItemBlocks(Cons_pageListItemBlocks)
-        case pageListItemText(Cons_pageListItemText)
-
-        public func serialize(_ buffer: Buffer, _ boxed: Swift.Bool) {
-            switch self {
-            case .pageListItemBlocks(let _data):
-                if boxed {
-                    buffer.appendInt32(635466748)
-                }
-                buffer.appendInt32(481674261)
-                buffer.appendInt32(Int32(_data.blocks.count))
-                for item in _data.blocks {
-                    item.serialize(buffer, true)
-                }
-                break
-            case .pageListItemText(let _data):
-                if boxed {
-                    buffer.appendInt32(-1188055347)
-                }
-                _data.text.serialize(buffer, true)
-                break
-            }
-        }
-
-        public func descriptionFields() -> (String, [(String, ConstructorParameterDescription)]) {
-            switch self {
-            case .pageListItemBlocks(let _data):
-                return ("pageListItemBlocks", [("blocks", ConstructorParameterDescription(_data.blocks))])
-            case .pageListItemText(let _data):
-                return ("pageListItemText", [("text", ConstructorParameterDescription(_data.text))])
-            }
-        }
-
-        public static func parse_pageListItemBlocks(_ reader: BufferReader) -> PageListItem? {
-            var _1: [Api.PageBlock]?
-            if let _ = reader.readInt32() {
-                _1 = Api.parseVector(reader, elementSignature: 0, elementType: Api.PageBlock.self)
-            }
-            let _c1 = _1 != nil
-            if _c1 {
-                return Api.PageListItem.pageListItemBlocks(Cons_pageListItemBlocks(blocks: _1!))
-            }
-            else {
-                return nil
-            }
-        }
-        public static func parse_pageListItemText(_ reader: BufferReader) -> PageListItem? {
-            var _1: Api.RichText?
-            if let signature = reader.readInt32() {
-                _1 = Api.parse(reader, signature: signature) as? Api.RichText
-            }
-            let _c1 = _1 != nil
-            if _c1 {
-                return Api.PageListItem.pageListItemText(Cons_pageListItemText(text: _1!))
-            }
-            else {
-                return nil
-            }
-        }
-    }
-}
-public extension Api {
-    indirect enum PageListOrderedItem: TypeConstructorDescription {
-        public class Cons_pageListOrderedItemBlocks: TypeConstructorDescription {
-            public var num: String
-            public var blocks: [Api.PageBlock]
-            public init(num: String, blocks: [Api.PageBlock]) {
-                self.num = num
-                self.blocks = blocks
-            }
-            public func descriptionFields() -> (String, [(String, ConstructorParameterDescription)]) {
-                return ("pageListOrderedItemBlocks", [("num", ConstructorParameterDescription(self.num)), ("blocks", ConstructorParameterDescription(self.blocks))])
-            }
-        }
-        public class Cons_pageListOrderedItemText: TypeConstructorDescription {
-            public var num: String
-            public var text: Api.RichText
-            public init(num: String, text: Api.RichText) {
-                self.num = num
-                self.text = text
-            }
-            public func descriptionFields() -> (String, [(String, ConstructorParameterDescription)]) {
-                return ("pageListOrderedItemText", [("num", ConstructorParameterDescription(self.num)), ("text", ConstructorParameterDescription(self.text))])
-            }
-        }
-        case pageListOrderedItemBlocks(Cons_pageListOrderedItemBlocks)
-        case pageListOrderedItemText(Cons_pageListOrderedItemText)
-
-        public func serialize(_ buffer: Buffer, _ boxed: Swift.Bool) {
-            switch self {
-            case .pageListOrderedItemBlocks(let _data):
-                if boxed {
-                    buffer.appendInt32(-1730311882)
-                }
-                serializeString(_data.num, buffer: buffer, boxed: false)
-                buffer.appendInt32(481674261)
-                buffer.appendInt32(Int32(_data.blocks.count))
-                for item in _data.blocks {
-                    item.serialize(buffer, true)
-                }
-                break
-            case .pageListOrderedItemText(let _data):
-                if boxed {
-                    buffer.appendInt32(1577484359)
-                }
-                serializeString(_data.num, buffer: buffer, boxed: false)
-                _data.text.serialize(buffer, true)
-                break
-            }
-        }
-
-        public func descriptionFields() -> (String, [(String, ConstructorParameterDescription)]) {
-            switch self {
-            case .pageListOrderedItemBlocks(let _data):
-                return ("pageListOrderedItemBlocks", [("num", ConstructorParameterDescription(_data.num)), ("blocks", ConstructorParameterDescription(_data.blocks))])
-            case .pageListOrderedItemText(let _data):
-                return ("pageListOrderedItemText", [("num", ConstructorParameterDescription(_data.num)), ("text", ConstructorParameterDescription(_data.text))])
-            }
-        }
-
-        public static func parse_pageListOrderedItemBlocks(_ reader: BufferReader) -> PageListOrderedItem? {
+        public static func parse_nearestDc(_ reader: BufferReader) -> NearestDc? {
             var _1: String?
             _1 = parseString(reader)
-            var _2: [Api.PageBlock]?
-            if let _ = reader.readInt32() {
-                _2 = Api.parseVector(reader, elementSignature: 0, elementType: Api.PageBlock.self)
-            }
-            let _c1 = _1 != nil
-            let _c2 = _2 != nil
-            if _c1 && _c2 {
-                return Api.PageListOrderedItem.pageListOrderedItemBlocks(Cons_pageListOrderedItemBlocks(num: _1!, blocks: _2!))
-            }
-            else {
-                return nil
-            }
-        }
-        public static func parse_pageListOrderedItemText(_ reader: BufferReader) -> PageListOrderedItem? {
-            var _1: String?
-            _1 = parseString(reader)
-            var _2: Api.RichText?
-            if let signature = reader.readInt32() {
-                _2 = Api.parse(reader, signature: signature) as? Api.RichText
-            }
-            let _c1 = _1 != nil
-            let _c2 = _2 != nil
-            if _c1 && _c2 {
-                return Api.PageListOrderedItem.pageListOrderedItemText(Cons_pageListOrderedItemText(num: _1!, text: _2!))
-            }
-            else {
-                return nil
-            }
-        }
-    }
-}
-public extension Api {
-    enum PageRelatedArticle: TypeConstructorDescription {
-        public class Cons_pageRelatedArticle: TypeConstructorDescription {
-            public var flags: Int32
-            public var url: String
-            public var webpageId: Int64
-            public var title: String?
-            public var description: String?
-            public var photoId: Int64?
-            public var author: String?
-            public var publishedDate: Int32?
-            public init(flags: Int32, url: String, webpageId: Int64, title: String?, description: String?, photoId: Int64?, author: String?, publishedDate: Int32?) {
-                self.flags = flags
-                self.url = url
-                self.webpageId = webpageId
-                self.title = title
-                self.description = description
-                self.photoId = photoId
-                self.author = author
-                self.publishedDate = publishedDate
-            }
-            public func descriptionFields() -> (String, [(String, ConstructorParameterDescription)]) {
-                return ("pageRelatedArticle", [("flags", ConstructorParameterDescription(self.flags)), ("url", ConstructorParameterDescription(self.url)), ("webpageId", ConstructorParameterDescription(self.webpageId)), ("title", ConstructorParameterDescription(self.title)), ("description", ConstructorParameterDescription(self.description)), ("photoId", ConstructorParameterDescription(self.photoId)), ("author", ConstructorParameterDescription(self.author)), ("publishedDate", ConstructorParameterDescription(self.publishedDate))])
-            }
-        }
-        case pageRelatedArticle(Cons_pageRelatedArticle)
-
-        public func serialize(_ buffer: Buffer, _ boxed: Swift.Bool) {
-            switch self {
-            case .pageRelatedArticle(let _data):
-                if boxed {
-                    buffer.appendInt32(-1282352120)
-                }
-                serializeInt32(_data.flags, buffer: buffer, boxed: false)
-                serializeString(_data.url, buffer: buffer, boxed: false)
-                serializeInt64(_data.webpageId, buffer: buffer, boxed: false)
-                if Int(_data.flags) & Int(1 << 0) != 0 {
-                    serializeString(_data.title!, buffer: buffer, boxed: false)
-                }
-                if Int(_data.flags) & Int(1 << 1) != 0 {
-                    serializeString(_data.description!, buffer: buffer, boxed: false)
-                }
-                if Int(_data.flags) & Int(1 << 2) != 0 {
-                    serializeInt64(_data.photoId!, buffer: buffer, boxed: false)
-                }
-                if Int(_data.flags) & Int(1 << 3) != 0 {
-                    serializeString(_data.author!, buffer: buffer, boxed: false)
-                }
-                if Int(_data.flags) & Int(1 << 4) != 0 {
-                    serializeInt32(_data.publishedDate!, buffer: buffer, boxed: false)
-                }
-                break
-            }
-        }
-
-        public func descriptionFields() -> (String, [(String, ConstructorParameterDescription)]) {
-            switch self {
-            case .pageRelatedArticle(let _data):
-                return ("pageRelatedArticle", [("flags", ConstructorParameterDescription(_data.flags)), ("url", ConstructorParameterDescription(_data.url)), ("webpageId", ConstructorParameterDescription(_data.webpageId)), ("title", ConstructorParameterDescription(_data.title)), ("description", ConstructorParameterDescription(_data.description)), ("photoId", ConstructorParameterDescription(_data.photoId)), ("author", ConstructorParameterDescription(_data.author)), ("publishedDate", ConstructorParameterDescription(_data.publishedDate))])
-            }
-        }
-
-        public static func parse_pageRelatedArticle(_ reader: BufferReader) -> PageRelatedArticle? {
-            var _1: Int32?
-            _1 = reader.readInt32()
-            var _2: String?
-            _2 = parseString(reader)
-            var _3: Int64?
-            _3 = reader.readInt64()
-            var _4: String?
-            if Int(_1 ?? 0) & Int(1 << 0) != 0 {
-                _4 = parseString(reader)
-            }
-            var _5: String?
-            if Int(_1 ?? 0) & Int(1 << 1) != 0 {
-                _5 = parseString(reader)
-            }
-            var _6: Int64?
-            if Int(_1 ?? 0) & Int(1 << 2) != 0 {
-                _6 = reader.readInt64()
-            }
-            var _7: String?
-            if Int(_1 ?? 0) & Int(1 << 3) != 0 {
-                _7 = parseString(reader)
-            }
-            var _8: Int32?
-            if Int(_1 ?? 0) & Int(1 << 4) != 0 {
-                _8 = reader.readInt32()
-            }
+            var _2: Int32?
+            _2 = reader.readInt32()
+            var _3: Int32?
+            _3 = reader.readInt32()
             let _c1 = _1 != nil
             let _c2 = _2 != nil
             let _c3 = _3 != nil
-            let _c4 = (Int(_1 ?? 0) & Int(1 << 0) == 0) || _4 != nil
-            let _c5 = (Int(_1 ?? 0) & Int(1 << 1) == 0) || _5 != nil
-            let _c6 = (Int(_1 ?? 0) & Int(1 << 2) == 0) || _6 != nil
-            let _c7 = (Int(_1 ?? 0) & Int(1 << 3) == 0) || _7 != nil
-            let _c8 = (Int(_1 ?? 0) & Int(1 << 4) == 0) || _8 != nil
-            if _c1 && _c2 && _c3 && _c4 && _c5 && _c6 && _c7 && _c8 {
-                return Api.PageRelatedArticle.pageRelatedArticle(Cons_pageRelatedArticle(flags: _1!, url: _2!, webpageId: _3!, title: _4, description: _5, photoId: _6, author: _7, publishedDate: _8))
+            if _c1 && _c2 && _c3 {
+                return Api.NearestDc.nearestDc(Cons_nearestDc(country: _1!, thisDc: _2!, nearestDc: _3!))
             }
             else {
                 return nil
@@ -333,124 +55,99 @@ public extension Api {
     }
 }
 public extension Api {
-    indirect enum PageTableCell: TypeConstructorDescription {
-        public class Cons_pageTableCell: TypeConstructorDescription {
-            public var flags: Int32
-            public var text: Api.RichText?
-            public var colspan: Int32?
-            public var rowspan: Int32?
-            public init(flags: Int32, text: Api.RichText?, colspan: Int32?, rowspan: Int32?) {
-                self.flags = flags
-                self.text = text
-                self.colspan = colspan
-                self.rowspan = rowspan
+    enum NotificationSound: TypeConstructorDescription {
+        public class Cons_notificationSoundLocal: TypeConstructorDescription {
+            public var title: String
+            public var data: String
+            public init(title: String, data: String) {
+                self.title = title
+                self.data = data
             }
             public func descriptionFields() -> (String, [(String, ConstructorParameterDescription)]) {
-                return ("pageTableCell", [("flags", ConstructorParameterDescription(self.flags)), ("text", ConstructorParameterDescription(self.text)), ("colspan", ConstructorParameterDescription(self.colspan)), ("rowspan", ConstructorParameterDescription(self.rowspan))])
+                return ("notificationSoundLocal", [("title", ConstructorParameterDescription(self.title)), ("data", ConstructorParameterDescription(self.data))])
             }
         }
-        case pageTableCell(Cons_pageTableCell)
+        public class Cons_notificationSoundRingtone: TypeConstructorDescription {
+            public var id: Int64
+            public init(id: Int64) {
+                self.id = id
+            }
+            public func descriptionFields() -> (String, [(String, ConstructorParameterDescription)]) {
+                return ("notificationSoundRingtone", [("id", ConstructorParameterDescription(self.id))])
+            }
+        }
+        case notificationSoundDefault
+        case notificationSoundLocal(Cons_notificationSoundLocal)
+        case notificationSoundNone
+        case notificationSoundRingtone(Cons_notificationSoundRingtone)
 
         public func serialize(_ buffer: Buffer, _ boxed: Swift.Bool) {
             switch self {
-            case .pageTableCell(let _data):
+            case .notificationSoundDefault:
                 if boxed {
-                    buffer.appendInt32(878078826)
+                    buffer.appendInt32(-1746354498)
                 }
-                serializeInt32(_data.flags, buffer: buffer, boxed: false)
-                if Int(_data.flags) & Int(1 << 7) != 0 {
-                    _data.text!.serialize(buffer, true)
+                break
+            case .notificationSoundLocal(let _data):
+                if boxed {
+                    buffer.appendInt32(-2096391452)
                 }
-                if Int(_data.flags) & Int(1 << 1) != 0 {
-                    serializeInt32(_data.colspan!, buffer: buffer, boxed: false)
+                serializeString(_data.title, buffer: buffer, boxed: false)
+                serializeString(_data.data, buffer: buffer, boxed: false)
+                break
+            case .notificationSoundNone:
+                if boxed {
+                    buffer.appendInt32(1863070943)
                 }
-                if Int(_data.flags) & Int(1 << 2) != 0 {
-                    serializeInt32(_data.rowspan!, buffer: buffer, boxed: false)
+                break
+            case .notificationSoundRingtone(let _data):
+                if boxed {
+                    buffer.appendInt32(-9666487)
                 }
+                serializeInt64(_data.id, buffer: buffer, boxed: false)
                 break
             }
         }
 
         public func descriptionFields() -> (String, [(String, ConstructorParameterDescription)]) {
             switch self {
-            case .pageTableCell(let _data):
-                return ("pageTableCell", [("flags", ConstructorParameterDescription(_data.flags)), ("text", ConstructorParameterDescription(_data.text)), ("colspan", ConstructorParameterDescription(_data.colspan)), ("rowspan", ConstructorParameterDescription(_data.rowspan))])
+            case .notificationSoundDefault:
+                return ("notificationSoundDefault", [])
+            case .notificationSoundLocal(let _data):
+                return ("notificationSoundLocal", [("title", ConstructorParameterDescription(_data.title)), ("data", ConstructorParameterDescription(_data.data))])
+            case .notificationSoundNone:
+                return ("notificationSoundNone", [])
+            case .notificationSoundRingtone(let _data):
+                return ("notificationSoundRingtone", [("id", ConstructorParameterDescription(_data.id))])
             }
         }
 
-        public static func parse_pageTableCell(_ reader: BufferReader) -> PageTableCell? {
-            var _1: Int32?
-            _1 = reader.readInt32()
-            var _2: Api.RichText?
-            if Int(_1 ?? 0) & Int(1 << 7) != 0 {
-                if let signature = reader.readInt32() {
-                    _2 = Api.parse(reader, signature: signature) as? Api.RichText
-                }
-            }
-            var _3: Int32?
-            if Int(_1 ?? 0) & Int(1 << 1) != 0 {
-                _3 = reader.readInt32()
-            }
-            var _4: Int32?
-            if Int(_1 ?? 0) & Int(1 << 2) != 0 {
-                _4 = reader.readInt32()
-            }
+        public static func parse_notificationSoundDefault(_ reader: BufferReader) -> NotificationSound? {
+            return Api.NotificationSound.notificationSoundDefault
+        }
+        public static func parse_notificationSoundLocal(_ reader: BufferReader) -> NotificationSound? {
+            var _1: String?
+            _1 = parseString(reader)
+            var _2: String?
+            _2 = parseString(reader)
             let _c1 = _1 != nil
-            let _c2 = (Int(_1 ?? 0) & Int(1 << 7) == 0) || _2 != nil
-            let _c3 = (Int(_1 ?? 0) & Int(1 << 1) == 0) || _3 != nil
-            let _c4 = (Int(_1 ?? 0) & Int(1 << 2) == 0) || _4 != nil
-            if _c1 && _c2 && _c3 && _c4 {
-                return Api.PageTableCell.pageTableCell(Cons_pageTableCell(flags: _1!, text: _2, colspan: _3, rowspan: _4))
+            let _c2 = _2 != nil
+            if _c1 && _c2 {
+                return Api.NotificationSound.notificationSoundLocal(Cons_notificationSoundLocal(title: _1!, data: _2!))
             }
             else {
                 return nil
             }
         }
-    }
-}
-public extension Api {
-    enum PageTableRow: TypeConstructorDescription {
-        public class Cons_pageTableRow: TypeConstructorDescription {
-            public var cells: [Api.PageTableCell]
-            public init(cells: [Api.PageTableCell]) {
-                self.cells = cells
-            }
-            public func descriptionFields() -> (String, [(String, ConstructorParameterDescription)]) {
-                return ("pageTableRow", [("cells", ConstructorParameterDescription(self.cells))])
-            }
+        public static func parse_notificationSoundNone(_ reader: BufferReader) -> NotificationSound? {
+            return Api.NotificationSound.notificationSoundNone
         }
-        case pageTableRow(Cons_pageTableRow)
-
-        public func serialize(_ buffer: Buffer, _ boxed: Swift.Bool) {
-            switch self {
-            case .pageTableRow(let _data):
-                if boxed {
-                    buffer.appendInt32(-524237339)
-                }
-                buffer.appendInt32(481674261)
-                buffer.appendInt32(Int32(_data.cells.count))
-                for item in _data.cells {
-                    item.serialize(buffer, true)
-                }
-                break
-            }
-        }
-
-        public func descriptionFields() -> (String, [(String, ConstructorParameterDescription)]) {
-            switch self {
-            case .pageTableRow(let _data):
-                return ("pageTableRow", [("cells", ConstructorParameterDescription(_data.cells))])
-            }
-        }
-
-        public static func parse_pageTableRow(_ reader: BufferReader) -> PageTableRow? {
-            var _1: [Api.PageTableCell]?
-            if let _ = reader.readInt32() {
-                _1 = Api.parseVector(reader, elementSignature: 0, elementType: Api.PageTableCell.self)
-            }
+        public static func parse_notificationSoundRingtone(_ reader: BufferReader) -> NotificationSound? {
+            var _1: Int64?
+            _1 = reader.readInt64()
             let _c1 = _1 != nil
             if _c1 {
-                return Api.PageTableRow.pageTableRow(Cons_pageTableRow(cells: _1!))
+                return Api.NotificationSound.notificationSoundRingtone(Cons_notificationSoundRingtone(id: _1!))
             }
             else {
                 return nil
@@ -459,66 +156,158 @@ public extension Api {
     }
 }
 public extension Api {
-    indirect enum PaidReactionPrivacy: TypeConstructorDescription {
-        public class Cons_paidReactionPrivacyPeer: TypeConstructorDescription {
-            public var peer: Api.InputPeer
-            public init(peer: Api.InputPeer) {
+    enum NotifyPeer: TypeConstructorDescription {
+        public class Cons_notifyForumTopic: TypeConstructorDescription {
+            public var peer: Api.Peer
+            public var topMsgId: Int32
+            public init(peer: Api.Peer, topMsgId: Int32) {
+                self.peer = peer
+                self.topMsgId = topMsgId
+            }
+            public func descriptionFields() -> (String, [(String, ConstructorParameterDescription)]) {
+                return ("notifyForumTopic", [("peer", ConstructorParameterDescription(self.peer)), ("topMsgId", ConstructorParameterDescription(self.topMsgId))])
+            }
+        }
+        public class Cons_notifyPeer: TypeConstructorDescription {
+            public var peer: Api.Peer
+            public init(peer: Api.Peer) {
                 self.peer = peer
             }
             public func descriptionFields() -> (String, [(String, ConstructorParameterDescription)]) {
-                return ("paidReactionPrivacyPeer", [("peer", ConstructorParameterDescription(self.peer))])
+                return ("notifyPeer", [("peer", ConstructorParameterDescription(self.peer))])
             }
         }
-        case paidReactionPrivacyAnonymous
-        case paidReactionPrivacyDefault
-        case paidReactionPrivacyPeer(Cons_paidReactionPrivacyPeer)
+        case notifyBroadcasts
+        case notifyChats
+        case notifyForumTopic(Cons_notifyForumTopic)
+        case notifyPeer(Cons_notifyPeer)
+        case notifyUsers
 
         public func serialize(_ buffer: Buffer, _ boxed: Swift.Bool) {
             switch self {
-            case .paidReactionPrivacyAnonymous:
+            case .notifyBroadcasts:
                 if boxed {
-                    buffer.appendInt32(520887001)
+                    buffer.appendInt32(-703403793)
                 }
                 break
-            case .paidReactionPrivacyDefault:
+            case .notifyChats:
                 if boxed {
-                    buffer.appendInt32(543872158)
+                    buffer.appendInt32(-1073230141)
                 }
                 break
-            case .paidReactionPrivacyPeer(let _data):
+            case .notifyForumTopic(let _data):
                 if boxed {
-                    buffer.appendInt32(-596837136)
+                    buffer.appendInt32(577659656)
                 }
                 _data.peer.serialize(buffer, true)
+                serializeInt32(_data.topMsgId, buffer: buffer, boxed: false)
+                break
+            case .notifyPeer(let _data):
+                if boxed {
+                    buffer.appendInt32(-1613493288)
+                }
+                _data.peer.serialize(buffer, true)
+                break
+            case .notifyUsers:
+                if boxed {
+                    buffer.appendInt32(-1261946036)
+                }
                 break
             }
         }
 
         public func descriptionFields() -> (String, [(String, ConstructorParameterDescription)]) {
             switch self {
-            case .paidReactionPrivacyAnonymous:
-                return ("paidReactionPrivacyAnonymous", [])
-            case .paidReactionPrivacyDefault:
-                return ("paidReactionPrivacyDefault", [])
-            case .paidReactionPrivacyPeer(let _data):
-                return ("paidReactionPrivacyPeer", [("peer", ConstructorParameterDescription(_data.peer))])
+            case .notifyBroadcasts:
+                return ("notifyBroadcasts", [])
+            case .notifyChats:
+                return ("notifyChats", [])
+            case .notifyForumTopic(let _data):
+                return ("notifyForumTopic", [("peer", ConstructorParameterDescription(_data.peer)), ("topMsgId", ConstructorParameterDescription(_data.topMsgId))])
+            case .notifyPeer(let _data):
+                return ("notifyPeer", [("peer", ConstructorParameterDescription(_data.peer))])
+            case .notifyUsers:
+                return ("notifyUsers", [])
             }
         }
 
-        public static func parse_paidReactionPrivacyAnonymous(_ reader: BufferReader) -> PaidReactionPrivacy? {
-            return Api.PaidReactionPrivacy.paidReactionPrivacyAnonymous
+        public static func parse_notifyBroadcasts(_ reader: BufferReader) -> NotifyPeer? {
+            return Api.NotifyPeer.notifyBroadcasts
         }
-        public static func parse_paidReactionPrivacyDefault(_ reader: BufferReader) -> PaidReactionPrivacy? {
-            return Api.PaidReactionPrivacy.paidReactionPrivacyDefault
+        public static func parse_notifyChats(_ reader: BufferReader) -> NotifyPeer? {
+            return Api.NotifyPeer.notifyChats
         }
-        public static func parse_paidReactionPrivacyPeer(_ reader: BufferReader) -> PaidReactionPrivacy? {
-            var _1: Api.InputPeer?
+        public static func parse_notifyForumTopic(_ reader: BufferReader) -> NotifyPeer? {
+            var _1: Api.Peer?
             if let signature = reader.readInt32() {
-                _1 = Api.parse(reader, signature: signature) as? Api.InputPeer
+                _1 = Api.parse(reader, signature: signature) as? Api.Peer
+            }
+            var _2: Int32?
+            _2 = reader.readInt32()
+            let _c1 = _1 != nil
+            let _c2 = _2 != nil
+            if _c1 && _c2 {
+                return Api.NotifyPeer.notifyForumTopic(Cons_notifyForumTopic(peer: _1!, topMsgId: _2!))
+            }
+            else {
+                return nil
+            }
+        }
+        public static func parse_notifyPeer(_ reader: BufferReader) -> NotifyPeer? {
+            var _1: Api.Peer?
+            if let signature = reader.readInt32() {
+                _1 = Api.parse(reader, signature: signature) as? Api.Peer
             }
             let _c1 = _1 != nil
             if _c1 {
-                return Api.PaidReactionPrivacy.paidReactionPrivacyPeer(Cons_paidReactionPrivacyPeer(peer: _1!))
+                return Api.NotifyPeer.notifyPeer(Cons_notifyPeer(peer: _1!))
+            }
+            else {
+                return nil
+            }
+        }
+        public static func parse_notifyUsers(_ reader: BufferReader) -> NotifyPeer? {
+            return Api.NotifyPeer.notifyUsers
+        }
+    }
+}
+public extension Api {
+    enum OutboxReadDate: TypeConstructorDescription {
+        public class Cons_outboxReadDate: TypeConstructorDescription {
+            public var date: Int32
+            public init(date: Int32) {
+                self.date = date
+            }
+            public func descriptionFields() -> (String, [(String, ConstructorParameterDescription)]) {
+                return ("outboxReadDate", [("date", ConstructorParameterDescription(self.date))])
+            }
+        }
+        case outboxReadDate(Cons_outboxReadDate)
+
+        public func serialize(_ buffer: Buffer, _ boxed: Swift.Bool) {
+            switch self {
+            case .outboxReadDate(let _data):
+                if boxed {
+                    buffer.appendInt32(1001931436)
+                }
+                serializeInt32(_data.date, buffer: buffer, boxed: false)
+                break
+            }
+        }
+
+        public func descriptionFields() -> (String, [(String, ConstructorParameterDescription)]) {
+            switch self {
+            case .outboxReadDate(let _data):
+                return ("outboxReadDate", [("date", ConstructorParameterDescription(_data.date))])
+            }
+        }
+
+        public static func parse_outboxReadDate(_ reader: BufferReader) -> OutboxReadDate? {
+            var _1: Int32?
+            _1 = reader.readInt32()
+            let _c1 = _1 != nil
+            if _c1 {
+                return Api.OutboxReadDate.outboxReadDate(Cons_outboxReadDate(date: _1!))
             }
             else {
                 return nil
@@ -527,43 +316,53 @@ public extension Api {
     }
 }
 public extension Api {
-    enum Passkey: TypeConstructorDescription {
-        public class Cons_passkey: TypeConstructorDescription {
+    enum Page: TypeConstructorDescription {
+        public class Cons_page: TypeConstructorDescription {
             public var flags: Int32
-            public var id: String
-            public var name: String
-            public var date: Int32
-            public var softwareEmojiId: Int64?
-            public var lastUsageDate: Int32?
-            public init(flags: Int32, id: String, name: String, date: Int32, softwareEmojiId: Int64?, lastUsageDate: Int32?) {
+            public var url: String
+            public var blocks: [Api.PageBlock]
+            public var photos: [Api.Photo]
+            public var documents: [Api.Document]
+            public var views: Int32?
+            public init(flags: Int32, url: String, blocks: [Api.PageBlock], photos: [Api.Photo], documents: [Api.Document], views: Int32?) {
                 self.flags = flags
-                self.id = id
-                self.name = name
-                self.date = date
-                self.softwareEmojiId = softwareEmojiId
-                self.lastUsageDate = lastUsageDate
+                self.url = url
+                self.blocks = blocks
+                self.photos = photos
+                self.documents = documents
+                self.views = views
             }
             public func descriptionFields() -> (String, [(String, ConstructorParameterDescription)]) {
-                return ("passkey", [("flags", ConstructorParameterDescription(self.flags)), ("id", ConstructorParameterDescription(self.id)), ("name", ConstructorParameterDescription(self.name)), ("date", ConstructorParameterDescription(self.date)), ("softwareEmojiId", ConstructorParameterDescription(self.softwareEmojiId)), ("lastUsageDate", ConstructorParameterDescription(self.lastUsageDate))])
+                return ("page", [("flags", ConstructorParameterDescription(self.flags)), ("url", ConstructorParameterDescription(self.url)), ("blocks", ConstructorParameterDescription(self.blocks)), ("photos", ConstructorParameterDescription(self.photos)), ("documents", ConstructorParameterDescription(self.documents)), ("views", ConstructorParameterDescription(self.views))])
             }
         }
-        case passkey(Cons_passkey)
+        case page(Cons_page)
 
         public func serialize(_ buffer: Buffer, _ boxed: Swift.Bool) {
             switch self {
-            case .passkey(let _data):
+            case .page(let _data):
                 if boxed {
-                    buffer.appendInt32(-1738457409)
+                    buffer.appendInt32(-1738178803)
                 }
                 serializeInt32(_data.flags, buffer: buffer, boxed: false)
-                serializeString(_data.id, buffer: buffer, boxed: false)
-                serializeString(_data.name, buffer: buffer, boxed: false)
-                serializeInt32(_data.date, buffer: buffer, boxed: false)
-                if Int(_data.flags) & Int(1 << 0) != 0 {
-                    serializeInt64(_data.softwareEmojiId!, buffer: buffer, boxed: false)
+                serializeString(_data.url, buffer: buffer, boxed: false)
+                buffer.appendInt32(481674261)
+                buffer.appendInt32(Int32(_data.blocks.count))
+                for item in _data.blocks {
+                    item.serialize(buffer, true)
                 }
-                if Int(_data.flags) & Int(1 << 1) != 0 {
-                    serializeInt32(_data.lastUsageDate!, buffer: buffer, boxed: false)
+                buffer.appendInt32(481674261)
+                buffer.appendInt32(Int32(_data.photos.count))
+                for item in _data.photos {
+                    item.serialize(buffer, true)
+                }
+                buffer.appendInt32(481674261)
+                buffer.appendInt32(Int32(_data.documents.count))
+                for item in _data.documents {
+                    item.serialize(buffer, true)
+                }
+                if Int(_data.flags) & Int(1 << 3) != 0 {
+                    serializeInt32(_data.views!, buffer: buffer, boxed: false)
                 }
                 break
             }
@@ -571,36 +370,40 @@ public extension Api {
 
         public func descriptionFields() -> (String, [(String, ConstructorParameterDescription)]) {
             switch self {
-            case .passkey(let _data):
-                return ("passkey", [("flags", ConstructorParameterDescription(_data.flags)), ("id", ConstructorParameterDescription(_data.id)), ("name", ConstructorParameterDescription(_data.name)), ("date", ConstructorParameterDescription(_data.date)), ("softwareEmojiId", ConstructorParameterDescription(_data.softwareEmojiId)), ("lastUsageDate", ConstructorParameterDescription(_data.lastUsageDate))])
+            case .page(let _data):
+                return ("page", [("flags", ConstructorParameterDescription(_data.flags)), ("url", ConstructorParameterDescription(_data.url)), ("blocks", ConstructorParameterDescription(_data.blocks)), ("photos", ConstructorParameterDescription(_data.photos)), ("documents", ConstructorParameterDescription(_data.documents)), ("views", ConstructorParameterDescription(_data.views))])
             }
         }
 
-        public static func parse_passkey(_ reader: BufferReader) -> Passkey? {
+        public static func parse_page(_ reader: BufferReader) -> Page? {
             var _1: Int32?
             _1 = reader.readInt32()
             var _2: String?
             _2 = parseString(reader)
-            var _3: String?
-            _3 = parseString(reader)
-            var _4: Int32?
-            _4 = reader.readInt32()
-            var _5: Int64?
-            if Int(_1 ?? 0) & Int(1 << 0) != 0 {
-                _5 = reader.readInt64()
+            var _3: [Api.PageBlock]?
+            if let _ = reader.readInt32() {
+                _3 = Api.parseVector(reader, elementSignature: 0, elementType: Api.PageBlock.self)
+            }
+            var _4: [Api.Photo]?
+            if let _ = reader.readInt32() {
+                _4 = Api.parseVector(reader, elementSignature: 0, elementType: Api.Photo.self)
+            }
+            var _5: [Api.Document]?
+            if let _ = reader.readInt32() {
+                _5 = Api.parseVector(reader, elementSignature: 0, elementType: Api.Document.self)
             }
             var _6: Int32?
-            if Int(_1 ?? 0) & Int(1 << 1) != 0 {
+            if Int(_1 ?? 0) & Int(1 << 3) != 0 {
                 _6 = reader.readInt32()
             }
             let _c1 = _1 != nil
             let _c2 = _2 != nil
             let _c3 = _3 != nil
             let _c4 = _4 != nil
-            let _c5 = (Int(_1 ?? 0) & Int(1 << 0) == 0) || _5 != nil
-            let _c6 = (Int(_1 ?? 0) & Int(1 << 1) == 0) || _6 != nil
+            let _c5 = _5 != nil
+            let _c6 = (Int(_1 ?? 0) & Int(1 << 3) == 0) || _6 != nil
             if _c1 && _c2 && _c3 && _c4 && _c5 && _c6 {
-                return Api.Passkey.passkey(Cons_passkey(flags: _1!, id: _2!, name: _3!, date: _4!, softwareEmojiId: _5, lastUsageDate: _6))
+                return Api.Page.page(Cons_page(flags: _1!, url: _2!, blocks: _3!, photos: _4!, documents: _5!, views: _6))
             }
             else {
                 return nil
@@ -609,634 +412,1113 @@ public extension Api {
     }
 }
 public extension Api {
-    enum PasswordKdfAlgo: TypeConstructorDescription {
-        public class Cons_passwordKdfAlgoSHA256SHA256PBKDF2HMACSHA512iter100000SHA256ModPow: TypeConstructorDescription {
-            public var salt1: Buffer
-            public var salt2: Buffer
-            public var g: Int32
-            public var p: Buffer
-            public init(salt1: Buffer, salt2: Buffer, g: Int32, p: Buffer) {
-                self.salt1 = salt1
-                self.salt2 = salt2
-                self.g = g
-                self.p = p
+    indirect enum PageBlock: TypeConstructorDescription {
+        public class Cons_inputPageBlockMap: TypeConstructorDescription {
+            public var geo: Api.InputGeoPoint
+            public var zoom: Int32
+            public var w: Int32
+            public var h: Int32
+            public var caption: Api.PageCaption
+            public init(geo: Api.InputGeoPoint, zoom: Int32, w: Int32, h: Int32, caption: Api.PageCaption) {
+                self.geo = geo
+                self.zoom = zoom
+                self.w = w
+                self.h = h
+                self.caption = caption
             }
             public func descriptionFields() -> (String, [(String, ConstructorParameterDescription)]) {
-                return ("passwordKdfAlgoSHA256SHA256PBKDF2HMACSHA512iter100000SHA256ModPow", [("salt1", ConstructorParameterDescription(self.salt1)), ("salt2", ConstructorParameterDescription(self.salt2)), ("g", ConstructorParameterDescription(self.g)), ("p", ConstructorParameterDescription(self.p))])
+                return ("inputPageBlockMap", [("geo", ConstructorParameterDescription(self.geo)), ("zoom", ConstructorParameterDescription(self.zoom)), ("w", ConstructorParameterDescription(self.w)), ("h", ConstructorParameterDescription(self.h)), ("caption", ConstructorParameterDescription(self.caption))])
             }
         }
-        case passwordKdfAlgoSHA256SHA256PBKDF2HMACSHA512iter100000SHA256ModPow(Cons_passwordKdfAlgoSHA256SHA256PBKDF2HMACSHA512iter100000SHA256ModPow)
-        case passwordKdfAlgoUnknown
+        public class Cons_pageBlockAnchor: TypeConstructorDescription {
+            public var name: String
+            public init(name: String) {
+                self.name = name
+            }
+            public func descriptionFields() -> (String, [(String, ConstructorParameterDescription)]) {
+                return ("pageBlockAnchor", [("name", ConstructorParameterDescription(self.name))])
+            }
+        }
+        public class Cons_pageBlockAudio: TypeConstructorDescription {
+            public var audioId: Int64
+            public var caption: Api.PageCaption
+            public init(audioId: Int64, caption: Api.PageCaption) {
+                self.audioId = audioId
+                self.caption = caption
+            }
+            public func descriptionFields() -> (String, [(String, ConstructorParameterDescription)]) {
+                return ("pageBlockAudio", [("audioId", ConstructorParameterDescription(self.audioId)), ("caption", ConstructorParameterDescription(self.caption))])
+            }
+        }
+        public class Cons_pageBlockAuthorDate: TypeConstructorDescription {
+            public var author: Api.RichText
+            public var publishedDate: Int32
+            public init(author: Api.RichText, publishedDate: Int32) {
+                self.author = author
+                self.publishedDate = publishedDate
+            }
+            public func descriptionFields() -> (String, [(String, ConstructorParameterDescription)]) {
+                return ("pageBlockAuthorDate", [("author", ConstructorParameterDescription(self.author)), ("publishedDate", ConstructorParameterDescription(self.publishedDate))])
+            }
+        }
+        public class Cons_pageBlockBlockquote: TypeConstructorDescription {
+            public var text: Api.RichText
+            public var caption: Api.RichText
+            public init(text: Api.RichText, caption: Api.RichText) {
+                self.text = text
+                self.caption = caption
+            }
+            public func descriptionFields() -> (String, [(String, ConstructorParameterDescription)]) {
+                return ("pageBlockBlockquote", [("text", ConstructorParameterDescription(self.text)), ("caption", ConstructorParameterDescription(self.caption))])
+            }
+        }
+        public class Cons_pageBlockBlockquoteBlocks: TypeConstructorDescription {
+            public var blocks: [Api.PageBlock]
+            public var caption: Api.RichText
+            public init(blocks: [Api.PageBlock], caption: Api.RichText) {
+                self.blocks = blocks
+                self.caption = caption
+            }
+            public func descriptionFields() -> (String, [(String, ConstructorParameterDescription)]) {
+                return ("pageBlockBlockquoteBlocks", [("blocks", ConstructorParameterDescription(self.blocks)), ("caption", ConstructorParameterDescription(self.caption))])
+            }
+        }
+        public class Cons_pageBlockChannel: TypeConstructorDescription {
+            public var channel: Api.Chat
+            public init(channel: Api.Chat) {
+                self.channel = channel
+            }
+            public func descriptionFields() -> (String, [(String, ConstructorParameterDescription)]) {
+                return ("pageBlockChannel", [("channel", ConstructorParameterDescription(self.channel))])
+            }
+        }
+        public class Cons_pageBlockCollage: TypeConstructorDescription {
+            public var items: [Api.PageBlock]
+            public var caption: Api.PageCaption
+            public init(items: [Api.PageBlock], caption: Api.PageCaption) {
+                self.items = items
+                self.caption = caption
+            }
+            public func descriptionFields() -> (String, [(String, ConstructorParameterDescription)]) {
+                return ("pageBlockCollage", [("items", ConstructorParameterDescription(self.items)), ("caption", ConstructorParameterDescription(self.caption))])
+            }
+        }
+        public class Cons_pageBlockCover: TypeConstructorDescription {
+            public var cover: Api.PageBlock
+            public init(cover: Api.PageBlock) {
+                self.cover = cover
+            }
+            public func descriptionFields() -> (String, [(String, ConstructorParameterDescription)]) {
+                return ("pageBlockCover", [("cover", ConstructorParameterDescription(self.cover))])
+            }
+        }
+        public class Cons_pageBlockDetails: TypeConstructorDescription {
+            public var flags: Int32
+            public var blocks: [Api.PageBlock]
+            public var title: Api.RichText
+            public init(flags: Int32, blocks: [Api.PageBlock], title: Api.RichText) {
+                self.flags = flags
+                self.blocks = blocks
+                self.title = title
+            }
+            public func descriptionFields() -> (String, [(String, ConstructorParameterDescription)]) {
+                return ("pageBlockDetails", [("flags", ConstructorParameterDescription(self.flags)), ("blocks", ConstructorParameterDescription(self.blocks)), ("title", ConstructorParameterDescription(self.title))])
+            }
+        }
+        public class Cons_pageBlockEmbed: TypeConstructorDescription {
+            public var flags: Int32
+            public var url: String?
+            public var html: String?
+            public var posterPhotoId: Int64?
+            public var w: Int32?
+            public var h: Int32?
+            public var caption: Api.PageCaption
+            public init(flags: Int32, url: String?, html: String?, posterPhotoId: Int64?, w: Int32?, h: Int32?, caption: Api.PageCaption) {
+                self.flags = flags
+                self.url = url
+                self.html = html
+                self.posterPhotoId = posterPhotoId
+                self.w = w
+                self.h = h
+                self.caption = caption
+            }
+            public func descriptionFields() -> (String, [(String, ConstructorParameterDescription)]) {
+                return ("pageBlockEmbed", [("flags", ConstructorParameterDescription(self.flags)), ("url", ConstructorParameterDescription(self.url)), ("html", ConstructorParameterDescription(self.html)), ("posterPhotoId", ConstructorParameterDescription(self.posterPhotoId)), ("w", ConstructorParameterDescription(self.w)), ("h", ConstructorParameterDescription(self.h)), ("caption", ConstructorParameterDescription(self.caption))])
+            }
+        }
+        public class Cons_pageBlockEmbedPost: TypeConstructorDescription {
+            public var url: String
+            public var webpageId: Int64
+            public var authorPhotoId: Int64
+            public var author: String
+            public var date: Int32
+            public var blocks: [Api.PageBlock]
+            public var caption: Api.PageCaption
+            public init(url: String, webpageId: Int64, authorPhotoId: Int64, author: String, date: Int32, blocks: [Api.PageBlock], caption: Api.PageCaption) {
+                self.url = url
+                self.webpageId = webpageId
+                self.authorPhotoId = authorPhotoId
+                self.author = author
+                self.date = date
+                self.blocks = blocks
+                self.caption = caption
+            }
+            public func descriptionFields() -> (String, [(String, ConstructorParameterDescription)]) {
+                return ("pageBlockEmbedPost", [("url", ConstructorParameterDescription(self.url)), ("webpageId", ConstructorParameterDescription(self.webpageId)), ("authorPhotoId", ConstructorParameterDescription(self.authorPhotoId)), ("author", ConstructorParameterDescription(self.author)), ("date", ConstructorParameterDescription(self.date)), ("blocks", ConstructorParameterDescription(self.blocks)), ("caption", ConstructorParameterDescription(self.caption))])
+            }
+        }
+        public class Cons_pageBlockFooter: TypeConstructorDescription {
+            public var text: Api.RichText
+            public init(text: Api.RichText) {
+                self.text = text
+            }
+            public func descriptionFields() -> (String, [(String, ConstructorParameterDescription)]) {
+                return ("pageBlockFooter", [("text", ConstructorParameterDescription(self.text))])
+            }
+        }
+        public class Cons_pageBlockHeader: TypeConstructorDescription {
+            public var text: Api.RichText
+            public init(text: Api.RichText) {
+                self.text = text
+            }
+            public func descriptionFields() -> (String, [(String, ConstructorParameterDescription)]) {
+                return ("pageBlockHeader", [("text", ConstructorParameterDescription(self.text))])
+            }
+        }
+        public class Cons_pageBlockHeading1: TypeConstructorDescription {
+            public var text: Api.RichText
+            public init(text: Api.RichText) {
+                self.text = text
+            }
+            public func descriptionFields() -> (String, [(String, ConstructorParameterDescription)]) {
+                return ("pageBlockHeading1", [("text", ConstructorParameterDescription(self.text))])
+            }
+        }
+        public class Cons_pageBlockHeading2: TypeConstructorDescription {
+            public var text: Api.RichText
+            public init(text: Api.RichText) {
+                self.text = text
+            }
+            public func descriptionFields() -> (String, [(String, ConstructorParameterDescription)]) {
+                return ("pageBlockHeading2", [("text", ConstructorParameterDescription(self.text))])
+            }
+        }
+        public class Cons_pageBlockHeading3: TypeConstructorDescription {
+            public var text: Api.RichText
+            public init(text: Api.RichText) {
+                self.text = text
+            }
+            public func descriptionFields() -> (String, [(String, ConstructorParameterDescription)]) {
+                return ("pageBlockHeading3", [("text", ConstructorParameterDescription(self.text))])
+            }
+        }
+        public class Cons_pageBlockHeading4: TypeConstructorDescription {
+            public var text: Api.RichText
+            public init(text: Api.RichText) {
+                self.text = text
+            }
+            public func descriptionFields() -> (String, [(String, ConstructorParameterDescription)]) {
+                return ("pageBlockHeading4", [("text", ConstructorParameterDescription(self.text))])
+            }
+        }
+        public class Cons_pageBlockHeading5: TypeConstructorDescription {
+            public var text: Api.RichText
+            public init(text: Api.RichText) {
+                self.text = text
+            }
+            public func descriptionFields() -> (String, [(String, ConstructorParameterDescription)]) {
+                return ("pageBlockHeading5", [("text", ConstructorParameterDescription(self.text))])
+            }
+        }
+        public class Cons_pageBlockHeading6: TypeConstructorDescription {
+            public var text: Api.RichText
+            public init(text: Api.RichText) {
+                self.text = text
+            }
+            public func descriptionFields() -> (String, [(String, ConstructorParameterDescription)]) {
+                return ("pageBlockHeading6", [("text", ConstructorParameterDescription(self.text))])
+            }
+        }
+        public class Cons_pageBlockKicker: TypeConstructorDescription {
+            public var text: Api.RichText
+            public init(text: Api.RichText) {
+                self.text = text
+            }
+            public func descriptionFields() -> (String, [(String, ConstructorParameterDescription)]) {
+                return ("pageBlockKicker", [("text", ConstructorParameterDescription(self.text))])
+            }
+        }
+        public class Cons_pageBlockList: TypeConstructorDescription {
+            public var items: [Api.PageListItem]
+            public init(items: [Api.PageListItem]) {
+                self.items = items
+            }
+            public func descriptionFields() -> (String, [(String, ConstructorParameterDescription)]) {
+                return ("pageBlockList", [("items", ConstructorParameterDescription(self.items))])
+            }
+        }
+        public class Cons_pageBlockMap: TypeConstructorDescription {
+            public var geo: Api.GeoPoint
+            public var zoom: Int32
+            public var w: Int32
+            public var h: Int32
+            public var caption: Api.PageCaption
+            public init(geo: Api.GeoPoint, zoom: Int32, w: Int32, h: Int32, caption: Api.PageCaption) {
+                self.geo = geo
+                self.zoom = zoom
+                self.w = w
+                self.h = h
+                self.caption = caption
+            }
+            public func descriptionFields() -> (String, [(String, ConstructorParameterDescription)]) {
+                return ("pageBlockMap", [("geo", ConstructorParameterDescription(self.geo)), ("zoom", ConstructorParameterDescription(self.zoom)), ("w", ConstructorParameterDescription(self.w)), ("h", ConstructorParameterDescription(self.h)), ("caption", ConstructorParameterDescription(self.caption))])
+            }
+        }
+        public class Cons_pageBlockMath: TypeConstructorDescription {
+            public var source: String
+            public init(source: String) {
+                self.source = source
+            }
+            public func descriptionFields() -> (String, [(String, ConstructorParameterDescription)]) {
+                return ("pageBlockMath", [("source", ConstructorParameterDescription(self.source))])
+            }
+        }
+        public class Cons_pageBlockOrderedList: TypeConstructorDescription {
+            public var flags: Int32
+            public var items: [Api.PageListOrderedItem]
+            public var start: Int32?
+            public var type: String?
+            public init(flags: Int32, items: [Api.PageListOrderedItem], start: Int32?, type: String?) {
+                self.flags = flags
+                self.items = items
+                self.start = start
+                self.type = type
+            }
+            public func descriptionFields() -> (String, [(String, ConstructorParameterDescription)]) {
+                return ("pageBlockOrderedList", [("flags", ConstructorParameterDescription(self.flags)), ("items", ConstructorParameterDescription(self.items)), ("start", ConstructorParameterDescription(self.start)), ("type", ConstructorParameterDescription(self.type))])
+            }
+        }
+        public class Cons_pageBlockParagraph: TypeConstructorDescription {
+            public var text: Api.RichText
+            public init(text: Api.RichText) {
+                self.text = text
+            }
+            public func descriptionFields() -> (String, [(String, ConstructorParameterDescription)]) {
+                return ("pageBlockParagraph", [("text", ConstructorParameterDescription(self.text))])
+            }
+        }
+        public class Cons_pageBlockPhoto: TypeConstructorDescription {
+            public var flags: Int32
+            public var photoId: Int64
+            public var caption: Api.PageCaption
+            public var url: String?
+            public var webpageId: Int64?
+            public init(flags: Int32, photoId: Int64, caption: Api.PageCaption, url: String?, webpageId: Int64?) {
+                self.flags = flags
+                self.photoId = photoId
+                self.caption = caption
+                self.url = url
+                self.webpageId = webpageId
+            }
+            public func descriptionFields() -> (String, [(String, ConstructorParameterDescription)]) {
+                return ("pageBlockPhoto", [("flags", ConstructorParameterDescription(self.flags)), ("photoId", ConstructorParameterDescription(self.photoId)), ("caption", ConstructorParameterDescription(self.caption)), ("url", ConstructorParameterDescription(self.url)), ("webpageId", ConstructorParameterDescription(self.webpageId))])
+            }
+        }
+        public class Cons_pageBlockPreformatted: TypeConstructorDescription {
+            public var text: Api.RichText
+            public var language: String
+            public init(text: Api.RichText, language: String) {
+                self.text = text
+                self.language = language
+            }
+            public func descriptionFields() -> (String, [(String, ConstructorParameterDescription)]) {
+                return ("pageBlockPreformatted", [("text", ConstructorParameterDescription(self.text)), ("language", ConstructorParameterDescription(self.language))])
+            }
+        }
+        public class Cons_pageBlockPullquote: TypeConstructorDescription {
+            public var text: Api.RichText
+            public var caption: Api.RichText
+            public init(text: Api.RichText, caption: Api.RichText) {
+                self.text = text
+                self.caption = caption
+            }
+            public func descriptionFields() -> (String, [(String, ConstructorParameterDescription)]) {
+                return ("pageBlockPullquote", [("text", ConstructorParameterDescription(self.text)), ("caption", ConstructorParameterDescription(self.caption))])
+            }
+        }
+        public class Cons_pageBlockRelatedArticles: TypeConstructorDescription {
+            public var title: Api.RichText
+            public var articles: [Api.PageRelatedArticle]
+            public init(title: Api.RichText, articles: [Api.PageRelatedArticle]) {
+                self.title = title
+                self.articles = articles
+            }
+            public func descriptionFields() -> (String, [(String, ConstructorParameterDescription)]) {
+                return ("pageBlockRelatedArticles", [("title", ConstructorParameterDescription(self.title)), ("articles", ConstructorParameterDescription(self.articles))])
+            }
+        }
+        public class Cons_pageBlockSlideshow: TypeConstructorDescription {
+            public var items: [Api.PageBlock]
+            public var caption: Api.PageCaption
+            public init(items: [Api.PageBlock], caption: Api.PageCaption) {
+                self.items = items
+                self.caption = caption
+            }
+            public func descriptionFields() -> (String, [(String, ConstructorParameterDescription)]) {
+                return ("pageBlockSlideshow", [("items", ConstructorParameterDescription(self.items)), ("caption", ConstructorParameterDescription(self.caption))])
+            }
+        }
+        public class Cons_pageBlockSubheader: TypeConstructorDescription {
+            public var text: Api.RichText
+            public init(text: Api.RichText) {
+                self.text = text
+            }
+            public func descriptionFields() -> (String, [(String, ConstructorParameterDescription)]) {
+                return ("pageBlockSubheader", [("text", ConstructorParameterDescription(self.text))])
+            }
+        }
+        public class Cons_pageBlockSubtitle: TypeConstructorDescription {
+            public var text: Api.RichText
+            public init(text: Api.RichText) {
+                self.text = text
+            }
+            public func descriptionFields() -> (String, [(String, ConstructorParameterDescription)]) {
+                return ("pageBlockSubtitle", [("text", ConstructorParameterDescription(self.text))])
+            }
+        }
+        public class Cons_pageBlockTable: TypeConstructorDescription {
+            public var flags: Int32
+            public var title: Api.RichText
+            public var rows: [Api.PageTableRow]
+            public init(flags: Int32, title: Api.RichText, rows: [Api.PageTableRow]) {
+                self.flags = flags
+                self.title = title
+                self.rows = rows
+            }
+            public func descriptionFields() -> (String, [(String, ConstructorParameterDescription)]) {
+                return ("pageBlockTable", [("flags", ConstructorParameterDescription(self.flags)), ("title", ConstructorParameterDescription(self.title)), ("rows", ConstructorParameterDescription(self.rows))])
+            }
+        }
+        public class Cons_pageBlockThinking: TypeConstructorDescription {
+            public var text: Api.RichText
+            public init(text: Api.RichText) {
+                self.text = text
+            }
+            public func descriptionFields() -> (String, [(String, ConstructorParameterDescription)]) {
+                return ("pageBlockThinking", [("text", ConstructorParameterDescription(self.text))])
+            }
+        }
+        public class Cons_pageBlockTitle: TypeConstructorDescription {
+            public var text: Api.RichText
+            public init(text: Api.RichText) {
+                self.text = text
+            }
+            public func descriptionFields() -> (String, [(String, ConstructorParameterDescription)]) {
+                return ("pageBlockTitle", [("text", ConstructorParameterDescription(self.text))])
+            }
+        }
+        public class Cons_pageBlockVideo: TypeConstructorDescription {
+            public var flags: Int32
+            public var videoId: Int64
+            public var caption: Api.PageCaption
+            public init(flags: Int32, videoId: Int64, caption: Api.PageCaption) {
+                self.flags = flags
+                self.videoId = videoId
+                self.caption = caption
+            }
+            public func descriptionFields() -> (String, [(String, ConstructorParameterDescription)]) {
+                return ("pageBlockVideo", [("flags", ConstructorParameterDescription(self.flags)), ("videoId", ConstructorParameterDescription(self.videoId)), ("caption", ConstructorParameterDescription(self.caption))])
+            }
+        }
+        case inputPageBlockMap(Cons_inputPageBlockMap)
+        case pageBlockAnchor(Cons_pageBlockAnchor)
+        case pageBlockAudio(Cons_pageBlockAudio)
+        case pageBlockAuthorDate(Cons_pageBlockAuthorDate)
+        case pageBlockBlockquote(Cons_pageBlockBlockquote)
+        case pageBlockBlockquoteBlocks(Cons_pageBlockBlockquoteBlocks)
+        case pageBlockChannel(Cons_pageBlockChannel)
+        case pageBlockCollage(Cons_pageBlockCollage)
+        case pageBlockCover(Cons_pageBlockCover)
+        case pageBlockDetails(Cons_pageBlockDetails)
+        case pageBlockDivider
+        case pageBlockEmbed(Cons_pageBlockEmbed)
+        case pageBlockEmbedPost(Cons_pageBlockEmbedPost)
+        case pageBlockFooter(Cons_pageBlockFooter)
+        case pageBlockHeader(Cons_pageBlockHeader)
+        case pageBlockHeading1(Cons_pageBlockHeading1)
+        case pageBlockHeading2(Cons_pageBlockHeading2)
+        case pageBlockHeading3(Cons_pageBlockHeading3)
+        case pageBlockHeading4(Cons_pageBlockHeading4)
+        case pageBlockHeading5(Cons_pageBlockHeading5)
+        case pageBlockHeading6(Cons_pageBlockHeading6)
+        case pageBlockKicker(Cons_pageBlockKicker)
+        case pageBlockList(Cons_pageBlockList)
+        case pageBlockMap(Cons_pageBlockMap)
+        case pageBlockMath(Cons_pageBlockMath)
+        case pageBlockOrderedList(Cons_pageBlockOrderedList)
+        case pageBlockParagraph(Cons_pageBlockParagraph)
+        case pageBlockPhoto(Cons_pageBlockPhoto)
+        case pageBlockPreformatted(Cons_pageBlockPreformatted)
+        case pageBlockPullquote(Cons_pageBlockPullquote)
+        case pageBlockRelatedArticles(Cons_pageBlockRelatedArticles)
+        case pageBlockSlideshow(Cons_pageBlockSlideshow)
+        case pageBlockSubheader(Cons_pageBlockSubheader)
+        case pageBlockSubtitle(Cons_pageBlockSubtitle)
+        case pageBlockTable(Cons_pageBlockTable)
+        case pageBlockThinking(Cons_pageBlockThinking)
+        case pageBlockTitle(Cons_pageBlockTitle)
+        case pageBlockUnsupported
+        case pageBlockVideo(Cons_pageBlockVideo)
 
         public func serialize(_ buffer: Buffer, _ boxed: Swift.Bool) {
             switch self {
-            case .passwordKdfAlgoSHA256SHA256PBKDF2HMACSHA512iter100000SHA256ModPow(let _data):
+            case .inputPageBlockMap(let _data):
                 if boxed {
-                    buffer.appendInt32(982592842)
+                    buffer.appendInt32(1464557951)
                 }
-                serializeBytes(_data.salt1, buffer: buffer, boxed: false)
-                serializeBytes(_data.salt2, buffer: buffer, boxed: false)
-                serializeInt32(_data.g, buffer: buffer, boxed: false)
-                serializeBytes(_data.p, buffer: buffer, boxed: false)
+                _data.geo.serialize(buffer, true)
+                serializeInt32(_data.zoom, buffer: buffer, boxed: false)
+                serializeInt32(_data.w, buffer: buffer, boxed: false)
+                serializeInt32(_data.h, buffer: buffer, boxed: false)
+                _data.caption.serialize(buffer, true)
                 break
-            case .passwordKdfAlgoUnknown:
+            case .pageBlockAnchor(let _data):
                 if boxed {
-                    buffer.appendInt32(-732254058)
+                    buffer.appendInt32(-837994576)
                 }
+                serializeString(_data.name, buffer: buffer, boxed: false)
+                break
+            case .pageBlockAudio(let _data):
+                if boxed {
+                    buffer.appendInt32(-2143067670)
+                }
+                serializeInt64(_data.audioId, buffer: buffer, boxed: false)
+                _data.caption.serialize(buffer, true)
+                break
+            case .pageBlockAuthorDate(let _data):
+                if boxed {
+                    buffer.appendInt32(-1162877472)
+                }
+                _data.author.serialize(buffer, true)
+                serializeInt32(_data.publishedDate, buffer: buffer, boxed: false)
+                break
+            case .pageBlockBlockquote(let _data):
+                if boxed {
+                    buffer.appendInt32(641563686)
+                }
+                _data.text.serialize(buffer, true)
+                _data.caption.serialize(buffer, true)
+                break
+            case .pageBlockBlockquoteBlocks(let _data):
+                if boxed {
+                    buffer.appendInt32(242108356)
+                }
+                buffer.appendInt32(481674261)
+                buffer.appendInt32(Int32(_data.blocks.count))
+                for item in _data.blocks {
+                    item.serialize(buffer, true)
+                }
+                _data.caption.serialize(buffer, true)
+                break
+            case .pageBlockChannel(let _data):
+                if boxed {
+                    buffer.appendInt32(-283684427)
+                }
+                _data.channel.serialize(buffer, true)
+                break
+            case .pageBlockCollage(let _data):
+                if boxed {
+                    buffer.appendInt32(1705048653)
+                }
+                buffer.appendInt32(481674261)
+                buffer.appendInt32(Int32(_data.items.count))
+                for item in _data.items {
+                    item.serialize(buffer, true)
+                }
+                _data.caption.serialize(buffer, true)
+                break
+            case .pageBlockCover(let _data):
+                if boxed {
+                    buffer.appendInt32(972174080)
+                }
+                _data.cover.serialize(buffer, true)
+                break
+            case .pageBlockDetails(let _data):
+                if boxed {
+                    buffer.appendInt32(1987480557)
+                }
+                serializeInt32(_data.flags, buffer: buffer, boxed: false)
+                buffer.appendInt32(481674261)
+                buffer.appendInt32(Int32(_data.blocks.count))
+                for item in _data.blocks {
+                    item.serialize(buffer, true)
+                }
+                _data.title.serialize(buffer, true)
+                break
+            case .pageBlockDivider:
+                if boxed {
+                    buffer.appendInt32(-618614392)
+                }
+                break
+            case .pageBlockEmbed(let _data):
+                if boxed {
+                    buffer.appendInt32(-1468953147)
+                }
+                serializeInt32(_data.flags, buffer: buffer, boxed: false)
+                if Int(_data.flags) & Int(1 << 1) != 0 {
+                    serializeString(_data.url!, buffer: buffer, boxed: false)
+                }
+                if Int(_data.flags) & Int(1 << 2) != 0 {
+                    serializeString(_data.html!, buffer: buffer, boxed: false)
+                }
+                if Int(_data.flags) & Int(1 << 4) != 0 {
+                    serializeInt64(_data.posterPhotoId!, buffer: buffer, boxed: false)
+                }
+                if Int(_data.flags) & Int(1 << 5) != 0 {
+                    serializeInt32(_data.w!, buffer: buffer, boxed: false)
+                }
+                if Int(_data.flags) & Int(1 << 5) != 0 {
+                    serializeInt32(_data.h!, buffer: buffer, boxed: false)
+                }
+                _data.caption.serialize(buffer, true)
+                break
+            case .pageBlockEmbedPost(let _data):
+                if boxed {
+                    buffer.appendInt32(-229005301)
+                }
+                serializeString(_data.url, buffer: buffer, boxed: false)
+                serializeInt64(_data.webpageId, buffer: buffer, boxed: false)
+                serializeInt64(_data.authorPhotoId, buffer: buffer, boxed: false)
+                serializeString(_data.author, buffer: buffer, boxed: false)
+                serializeInt32(_data.date, buffer: buffer, boxed: false)
+                buffer.appendInt32(481674261)
+                buffer.appendInt32(Int32(_data.blocks.count))
+                for item in _data.blocks {
+                    item.serialize(buffer, true)
+                }
+                _data.caption.serialize(buffer, true)
+                break
+            case .pageBlockFooter(let _data):
+                if boxed {
+                    buffer.appendInt32(1216809369)
+                }
+                _data.text.serialize(buffer, true)
+                break
+            case .pageBlockHeader(let _data):
+                if boxed {
+                    buffer.appendInt32(-1076861716)
+                }
+                _data.text.serialize(buffer, true)
+                break
+            case .pageBlockHeading1(let _data):
+                if boxed {
+                    buffer.appendInt32(-1157691601)
+                }
+                _data.text.serialize(buffer, true)
+                break
+            case .pageBlockHeading2(let _data):
+                if boxed {
+                    buffer.appendInt32(158018284)
+                }
+                _data.text.serialize(buffer, true)
+                break
+            case .pageBlockHeading3(let _data):
+                if boxed {
+                    buffer.appendInt32(1743204781)
+                }
+                _data.text.serialize(buffer, true)
+                break
+            case .pageBlockHeading4(let _data):
+                if boxed {
+                    buffer.appendInt32(-1254983893)
+                }
+                _data.text.serialize(buffer, true)
+                break
+            case .pageBlockHeading5(let _data):
+                if boxed {
+                    buffer.appendInt32(-608277398)
+                }
+                _data.text.serialize(buffer, true)
+                break
+            case .pageBlockHeading6(let _data):
+                if boxed {
+                    buffer.appendInt32(1747599785)
+                }
+                _data.text.serialize(buffer, true)
+                break
+            case .pageBlockKicker(let _data):
+                if boxed {
+                    buffer.appendInt32(504660880)
+                }
+                _data.text.serialize(buffer, true)
+                break
+            case .pageBlockList(let _data):
+                if boxed {
+                    buffer.appendInt32(-454524911)
+                }
+                buffer.appendInt32(481674261)
+                buffer.appendInt32(Int32(_data.items.count))
+                for item in _data.items {
+                    item.serialize(buffer, true)
+                }
+                break
+            case .pageBlockMap(let _data):
+                if boxed {
+                    buffer.appendInt32(-1538310410)
+                }
+                _data.geo.serialize(buffer, true)
+                serializeInt32(_data.zoom, buffer: buffer, boxed: false)
+                serializeInt32(_data.w, buffer: buffer, boxed: false)
+                serializeInt32(_data.h, buffer: buffer, boxed: false)
+                _data.caption.serialize(buffer, true)
+                break
+            case .pageBlockMath(let _data):
+                if boxed {
+                    buffer.appendInt32(1493699616)
+                }
+                serializeString(_data.source, buffer: buffer, boxed: false)
+                break
+            case .pageBlockOrderedList(let _data):
+                if boxed {
+                    buffer.appendInt32(534181569)
+                }
+                serializeInt32(_data.flags, buffer: buffer, boxed: false)
+                buffer.appendInt32(481674261)
+                buffer.appendInt32(Int32(_data.items.count))
+                for item in _data.items {
+                    item.serialize(buffer, true)
+                }
+                if Int(_data.flags) & Int(1 << 0) != 0 {
+                    serializeInt32(_data.start!, buffer: buffer, boxed: false)
+                }
+                if Int(_data.flags) & Int(1 << 1) != 0 {
+                    serializeString(_data.type!, buffer: buffer, boxed: false)
+                }
+                break
+            case .pageBlockParagraph(let _data):
+                if boxed {
+                    buffer.appendInt32(1182402406)
+                }
+                _data.text.serialize(buffer, true)
+                break
+            case .pageBlockPhoto(let _data):
+                if boxed {
+                    buffer.appendInt32(391759200)
+                }
+                serializeInt32(_data.flags, buffer: buffer, boxed: false)
+                serializeInt64(_data.photoId, buffer: buffer, boxed: false)
+                _data.caption.serialize(buffer, true)
+                if Int(_data.flags) & Int(1 << 0) != 0 {
+                    serializeString(_data.url!, buffer: buffer, boxed: false)
+                }
+                if Int(_data.flags) & Int(1 << 0) != 0 {
+                    serializeInt64(_data.webpageId!, buffer: buffer, boxed: false)
+                }
+                break
+            case .pageBlockPreformatted(let _data):
+                if boxed {
+                    buffer.appendInt32(-1066346178)
+                }
+                _data.text.serialize(buffer, true)
+                serializeString(_data.language, buffer: buffer, boxed: false)
+                break
+            case .pageBlockPullquote(let _data):
+                if boxed {
+                    buffer.appendInt32(1329878739)
+                }
+                _data.text.serialize(buffer, true)
+                _data.caption.serialize(buffer, true)
+                break
+            case .pageBlockRelatedArticles(let _data):
+                if boxed {
+                    buffer.appendInt32(370236054)
+                }
+                _data.title.serialize(buffer, true)
+                buffer.appendInt32(481674261)
+                buffer.appendInt32(Int32(_data.articles.count))
+                for item in _data.articles {
+                    item.serialize(buffer, true)
+                }
+                break
+            case .pageBlockSlideshow(let _data):
+                if boxed {
+                    buffer.appendInt32(52401552)
+                }
+                buffer.appendInt32(481674261)
+                buffer.appendInt32(Int32(_data.items.count))
+                for item in _data.items {
+                    item.serialize(buffer, true)
+                }
+                _data.caption.serialize(buffer, true)
+                break
+            case .pageBlockSubheader(let _data):
+                if boxed {
+                    buffer.appendInt32(-248793375)
+                }
+                _data.text.serialize(buffer, true)
+                break
+            case .pageBlockSubtitle(let _data):
+                if boxed {
+                    buffer.appendInt32(-1879401953)
+                }
+                _data.text.serialize(buffer, true)
+                break
+            case .pageBlockTable(let _data):
+                if boxed {
+                    buffer.appendInt32(-1085412734)
+                }
+                serializeInt32(_data.flags, buffer: buffer, boxed: false)
+                _data.title.serialize(buffer, true)
+                buffer.appendInt32(481674261)
+                buffer.appendInt32(Int32(_data.rows.count))
+                for item in _data.rows {
+                    item.serialize(buffer, true)
+                }
+                break
+            case .pageBlockThinking(let _data):
+                if boxed {
+                    buffer.appendInt32(1009361890)
+                }
+                _data.text.serialize(buffer, true)
+                break
+            case .pageBlockTitle(let _data):
+                if boxed {
+                    buffer.appendInt32(1890305021)
+                }
+                _data.text.serialize(buffer, true)
+                break
+            case .pageBlockUnsupported:
+                if boxed {
+                    buffer.appendInt32(324435594)
+                }
+                break
+            case .pageBlockVideo(let _data):
+                if boxed {
+                    buffer.appendInt32(2089805750)
+                }
+                serializeInt32(_data.flags, buffer: buffer, boxed: false)
+                serializeInt64(_data.videoId, buffer: buffer, boxed: false)
+                _data.caption.serialize(buffer, true)
                 break
             }
         }
 
         public func descriptionFields() -> (String, [(String, ConstructorParameterDescription)]) {
             switch self {
-            case .passwordKdfAlgoSHA256SHA256PBKDF2HMACSHA512iter100000SHA256ModPow(let _data):
-                return ("passwordKdfAlgoSHA256SHA256PBKDF2HMACSHA512iter100000SHA256ModPow", [("salt1", ConstructorParameterDescription(_data.salt1)), ("salt2", ConstructorParameterDescription(_data.salt2)), ("g", ConstructorParameterDescription(_data.g)), ("p", ConstructorParameterDescription(_data.p))])
-            case .passwordKdfAlgoUnknown:
-                return ("passwordKdfAlgoUnknown", [])
+            case .inputPageBlockMap(let _data):
+                return ("inputPageBlockMap", [("geo", ConstructorParameterDescription(_data.geo)), ("zoom", ConstructorParameterDescription(_data.zoom)), ("w", ConstructorParameterDescription(_data.w)), ("h", ConstructorParameterDescription(_data.h)), ("caption", ConstructorParameterDescription(_data.caption))])
+            case .pageBlockAnchor(let _data):
+                return ("pageBlockAnchor", [("name", ConstructorParameterDescription(_data.name))])
+            case .pageBlockAudio(let _data):
+                return ("pageBlockAudio", [("audioId", ConstructorParameterDescription(_data.audioId)), ("caption", ConstructorParameterDescription(_data.caption))])
+            case .pageBlockAuthorDate(let _data):
+                return ("pageBlockAuthorDate", [("author", ConstructorParameterDescription(_data.author)), ("publishedDate", ConstructorParameterDescription(_data.publishedDate))])
+            case .pageBlockBlockquote(let _data):
+                return ("pageBlockBlockquote", [("text", ConstructorParameterDescription(_data.text)), ("caption", ConstructorParameterDescription(_data.caption))])
+            case .pageBlockBlockquoteBlocks(let _data):
+                return ("pageBlockBlockquoteBlocks", [("blocks", ConstructorParameterDescription(_data.blocks)), ("caption", ConstructorParameterDescription(_data.caption))])
+            case .pageBlockChannel(let _data):
+                return ("pageBlockChannel", [("channel", ConstructorParameterDescription(_data.channel))])
+            case .pageBlockCollage(let _data):
+                return ("pageBlockCollage", [("items", ConstructorParameterDescription(_data.items)), ("caption", ConstructorParameterDescription(_data.caption))])
+            case .pageBlockCover(let _data):
+                return ("pageBlockCover", [("cover", ConstructorParameterDescription(_data.cover))])
+            case .pageBlockDetails(let _data):
+                return ("pageBlockDetails", [("flags", ConstructorParameterDescription(_data.flags)), ("blocks", ConstructorParameterDescription(_data.blocks)), ("title", ConstructorParameterDescription(_data.title))])
+            case .pageBlockDivider:
+                return ("pageBlockDivider", [])
+            case .pageBlockEmbed(let _data):
+                return ("pageBlockEmbed", [("flags", ConstructorParameterDescription(_data.flags)), ("url", ConstructorParameterDescription(_data.url)), ("html", ConstructorParameterDescription(_data.html)), ("posterPhotoId", ConstructorParameterDescription(_data.posterPhotoId)), ("w", ConstructorParameterDescription(_data.w)), ("h", ConstructorParameterDescription(_data.h)), ("caption", ConstructorParameterDescription(_data.caption))])
+            case .pageBlockEmbedPost(let _data):
+                return ("pageBlockEmbedPost", [("url", ConstructorParameterDescription(_data.url)), ("webpageId", ConstructorParameterDescription(_data.webpageId)), ("authorPhotoId", ConstructorParameterDescription(_data.authorPhotoId)), ("author", ConstructorParameterDescription(_data.author)), ("date", ConstructorParameterDescription(_data.date)), ("blocks", ConstructorParameterDescription(_data.blocks)), ("caption", ConstructorParameterDescription(_data.caption))])
+            case .pageBlockFooter(let _data):
+                return ("pageBlockFooter", [("text", ConstructorParameterDescription(_data.text))])
+            case .pageBlockHeader(let _data):
+                return ("pageBlockHeader", [("text", ConstructorParameterDescription(_data.text))])
+            case .pageBlockHeading1(let _data):
+                return ("pageBlockHeading1", [("text", ConstructorParameterDescription(_data.text))])
+            case .pageBlockHeading2(let _data):
+                return ("pageBlockHeading2", [("text", ConstructorParameterDescription(_data.text))])
+            case .pageBlockHeading3(let _data):
+                return ("pageBlockHeading3", [("text", ConstructorParameterDescription(_data.text))])
+            case .pageBlockHeading4(let _data):
+                return ("pageBlockHeading4", [("text", ConstructorParameterDescription(_data.text))])
+            case .pageBlockHeading5(let _data):
+                return ("pageBlockHeading5", [("text", ConstructorParameterDescription(_data.text))])
+            case .pageBlockHeading6(let _data):
+                return ("pageBlockHeading6", [("text", ConstructorParameterDescription(_data.text))])
+            case .pageBlockKicker(let _data):
+                return ("pageBlockKicker", [("text", ConstructorParameterDescription(_data.text))])
+            case .pageBlockList(let _data):
+                return ("pageBlockList", [("items", ConstructorParameterDescription(_data.items))])
+            case .pageBlockMap(let _data):
+                return ("pageBlockMap", [("geo", ConstructorParameterDescription(_data.geo)), ("zoom", ConstructorParameterDescription(_data.zoom)), ("w", ConstructorParameterDescription(_data.w)), ("h", ConstructorParameterDescription(_data.h)), ("caption", ConstructorParameterDescription(_data.caption))])
+            case .pageBlockMath(let _data):
+                return ("pageBlockMath", [("source", ConstructorParameterDescription(_data.source))])
+            case .pageBlockOrderedList(let _data):
+                return ("pageBlockOrderedList", [("flags", ConstructorParameterDescription(_data.flags)), ("items", ConstructorParameterDescription(_data.items)), ("start", ConstructorParameterDescription(_data.start)), ("type", ConstructorParameterDescription(_data.type))])
+            case .pageBlockParagraph(let _data):
+                return ("pageBlockParagraph", [("text", ConstructorParameterDescription(_data.text))])
+            case .pageBlockPhoto(let _data):
+                return ("pageBlockPhoto", [("flags", ConstructorParameterDescription(_data.flags)), ("photoId", ConstructorParameterDescription(_data.photoId)), ("caption", ConstructorParameterDescription(_data.caption)), ("url", ConstructorParameterDescription(_data.url)), ("webpageId", ConstructorParameterDescription(_data.webpageId))])
+            case .pageBlockPreformatted(let _data):
+                return ("pageBlockPreformatted", [("text", ConstructorParameterDescription(_data.text)), ("language", ConstructorParameterDescription(_data.language))])
+            case .pageBlockPullquote(let _data):
+                return ("pageBlockPullquote", [("text", ConstructorParameterDescription(_data.text)), ("caption", ConstructorParameterDescription(_data.caption))])
+            case .pageBlockRelatedArticles(let _data):
+                return ("pageBlockRelatedArticles", [("title", ConstructorParameterDescription(_data.title)), ("articles", ConstructorParameterDescription(_data.articles))])
+            case .pageBlockSlideshow(let _data):
+                return ("pageBlockSlideshow", [("items", ConstructorParameterDescription(_data.items)), ("caption", ConstructorParameterDescription(_data.caption))])
+            case .pageBlockSubheader(let _data):
+                return ("pageBlockSubheader", [("text", ConstructorParameterDescription(_data.text))])
+            case .pageBlockSubtitle(let _data):
+                return ("pageBlockSubtitle", [("text", ConstructorParameterDescription(_data.text))])
+            case .pageBlockTable(let _data):
+                return ("pageBlockTable", [("flags", ConstructorParameterDescription(_data.flags)), ("title", ConstructorParameterDescription(_data.title)), ("rows", ConstructorParameterDescription(_data.rows))])
+            case .pageBlockThinking(let _data):
+                return ("pageBlockThinking", [("text", ConstructorParameterDescription(_data.text))])
+            case .pageBlockTitle(let _data):
+                return ("pageBlockTitle", [("text", ConstructorParameterDescription(_data.text))])
+            case .pageBlockUnsupported:
+                return ("pageBlockUnsupported", [])
+            case .pageBlockVideo(let _data):
+                return ("pageBlockVideo", [("flags", ConstructorParameterDescription(_data.flags)), ("videoId", ConstructorParameterDescription(_data.videoId)), ("caption", ConstructorParameterDescription(_data.caption))])
             }
         }
 
-        public static func parse_passwordKdfAlgoSHA256SHA256PBKDF2HMACSHA512iter100000SHA256ModPow(_ reader: BufferReader) -> PasswordKdfAlgo? {
-            var _1: Buffer?
-            _1 = parseBytes(reader)
-            var _2: Buffer?
-            _2 = parseBytes(reader)
+        public static func parse_inputPageBlockMap(_ reader: BufferReader) -> PageBlock? {
+            var _1: Api.InputGeoPoint?
+            if let signature = reader.readInt32() {
+                _1 = Api.parse(reader, signature: signature) as? Api.InputGeoPoint
+            }
+            var _2: Int32?
+            _2 = reader.readInt32()
             var _3: Int32?
             _3 = reader.readInt32()
-            var _4: Buffer?
-            _4 = parseBytes(reader)
+            var _4: Int32?
+            _4 = reader.readInt32()
+            var _5: Api.PageCaption?
+            if let signature = reader.readInt32() {
+                _5 = Api.parse(reader, signature: signature) as? Api.PageCaption
+            }
             let _c1 = _1 != nil
             let _c2 = _2 != nil
             let _c3 = _3 != nil
             let _c4 = _4 != nil
-            if _c1 && _c2 && _c3 && _c4 {
-                return Api.PasswordKdfAlgo.passwordKdfAlgoSHA256SHA256PBKDF2HMACSHA512iter100000SHA256ModPow(Cons_passwordKdfAlgoSHA256SHA256PBKDF2HMACSHA512iter100000SHA256ModPow(salt1: _1!, salt2: _2!, g: _3!, p: _4!))
-            }
-            else {
-                return nil
-            }
-        }
-        public static func parse_passwordKdfAlgoUnknown(_ reader: BufferReader) -> PasswordKdfAlgo? {
-            return Api.PasswordKdfAlgo.passwordKdfAlgoUnknown
-        }
-    }
-}
-public extension Api {
-    enum PaymentCharge: TypeConstructorDescription {
-        public class Cons_paymentCharge: TypeConstructorDescription {
-            public var id: String
-            public var providerChargeId: String
-            public init(id: String, providerChargeId: String) {
-                self.id = id
-                self.providerChargeId = providerChargeId
-            }
-            public func descriptionFields() -> (String, [(String, ConstructorParameterDescription)]) {
-                return ("paymentCharge", [("id", ConstructorParameterDescription(self.id)), ("providerChargeId", ConstructorParameterDescription(self.providerChargeId))])
-            }
-        }
-        case paymentCharge(Cons_paymentCharge)
-
-        public func serialize(_ buffer: Buffer, _ boxed: Swift.Bool) {
-            switch self {
-            case .paymentCharge(let _data):
-                if boxed {
-                    buffer.appendInt32(-368917890)
-                }
-                serializeString(_data.id, buffer: buffer, boxed: false)
-                serializeString(_data.providerChargeId, buffer: buffer, boxed: false)
-                break
-            }
-        }
-
-        public func descriptionFields() -> (String, [(String, ConstructorParameterDescription)]) {
-            switch self {
-            case .paymentCharge(let _data):
-                return ("paymentCharge", [("id", ConstructorParameterDescription(_data.id)), ("providerChargeId", ConstructorParameterDescription(_data.providerChargeId))])
-            }
-        }
-
-        public static func parse_paymentCharge(_ reader: BufferReader) -> PaymentCharge? {
-            var _1: String?
-            _1 = parseString(reader)
-            var _2: String?
-            _2 = parseString(reader)
-            let _c1 = _1 != nil
-            let _c2 = _2 != nil
-            if _c1 && _c2 {
-                return Api.PaymentCharge.paymentCharge(Cons_paymentCharge(id: _1!, providerChargeId: _2!))
-            }
-            else {
-                return nil
-            }
-        }
-    }
-}
-public extension Api {
-    enum PaymentFormMethod: TypeConstructorDescription {
-        public class Cons_paymentFormMethod: TypeConstructorDescription {
-            public var url: String
-            public var title: String
-            public init(url: String, title: String) {
-                self.url = url
-                self.title = title
-            }
-            public func descriptionFields() -> (String, [(String, ConstructorParameterDescription)]) {
-                return ("paymentFormMethod", [("url", ConstructorParameterDescription(self.url)), ("title", ConstructorParameterDescription(self.title))])
-            }
-        }
-        case paymentFormMethod(Cons_paymentFormMethod)
-
-        public func serialize(_ buffer: Buffer, _ boxed: Swift.Bool) {
-            switch self {
-            case .paymentFormMethod(let _data):
-                if boxed {
-                    buffer.appendInt32(-1996951013)
-                }
-                serializeString(_data.url, buffer: buffer, boxed: false)
-                serializeString(_data.title, buffer: buffer, boxed: false)
-                break
-            }
-        }
-
-        public func descriptionFields() -> (String, [(String, ConstructorParameterDescription)]) {
-            switch self {
-            case .paymentFormMethod(let _data):
-                return ("paymentFormMethod", [("url", ConstructorParameterDescription(_data.url)), ("title", ConstructorParameterDescription(_data.title))])
-            }
-        }
-
-        public static func parse_paymentFormMethod(_ reader: BufferReader) -> PaymentFormMethod? {
-            var _1: String?
-            _1 = parseString(reader)
-            var _2: String?
-            _2 = parseString(reader)
-            let _c1 = _1 != nil
-            let _c2 = _2 != nil
-            if _c1 && _c2 {
-                return Api.PaymentFormMethod.paymentFormMethod(Cons_paymentFormMethod(url: _1!, title: _2!))
-            }
-            else {
-                return nil
-            }
-        }
-    }
-}
-public extension Api {
-    enum PaymentRequestedInfo: TypeConstructorDescription {
-        public class Cons_paymentRequestedInfo: TypeConstructorDescription {
-            public var flags: Int32
-            public var name: String?
-            public var phone: String?
-            public var email: String?
-            public var shippingAddress: Api.PostAddress?
-            public init(flags: Int32, name: String?, phone: String?, email: String?, shippingAddress: Api.PostAddress?) {
-                self.flags = flags
-                self.name = name
-                self.phone = phone
-                self.email = email
-                self.shippingAddress = shippingAddress
-            }
-            public func descriptionFields() -> (String, [(String, ConstructorParameterDescription)]) {
-                return ("paymentRequestedInfo", [("flags", ConstructorParameterDescription(self.flags)), ("name", ConstructorParameterDescription(self.name)), ("phone", ConstructorParameterDescription(self.phone)), ("email", ConstructorParameterDescription(self.email)), ("shippingAddress", ConstructorParameterDescription(self.shippingAddress))])
-            }
-        }
-        case paymentRequestedInfo(Cons_paymentRequestedInfo)
-
-        public func serialize(_ buffer: Buffer, _ boxed: Swift.Bool) {
-            switch self {
-            case .paymentRequestedInfo(let _data):
-                if boxed {
-                    buffer.appendInt32(-1868808300)
-                }
-                serializeInt32(_data.flags, buffer: buffer, boxed: false)
-                if Int(_data.flags) & Int(1 << 0) != 0 {
-                    serializeString(_data.name!, buffer: buffer, boxed: false)
-                }
-                if Int(_data.flags) & Int(1 << 1) != 0 {
-                    serializeString(_data.phone!, buffer: buffer, boxed: false)
-                }
-                if Int(_data.flags) & Int(1 << 2) != 0 {
-                    serializeString(_data.email!, buffer: buffer, boxed: false)
-                }
-                if Int(_data.flags) & Int(1 << 3) != 0 {
-                    _data.shippingAddress!.serialize(buffer, true)
-                }
-                break
-            }
-        }
-
-        public func descriptionFields() -> (String, [(String, ConstructorParameterDescription)]) {
-            switch self {
-            case .paymentRequestedInfo(let _data):
-                return ("paymentRequestedInfo", [("flags", ConstructorParameterDescription(_data.flags)), ("name", ConstructorParameterDescription(_data.name)), ("phone", ConstructorParameterDescription(_data.phone)), ("email", ConstructorParameterDescription(_data.email)), ("shippingAddress", ConstructorParameterDescription(_data.shippingAddress))])
-            }
-        }
-
-        public static func parse_paymentRequestedInfo(_ reader: BufferReader) -> PaymentRequestedInfo? {
-            var _1: Int32?
-            _1 = reader.readInt32()
-            var _2: String?
-            if Int(_1 ?? 0) & Int(1 << 0) != 0 {
-                _2 = parseString(reader)
-            }
-            var _3: String?
-            if Int(_1 ?? 0) & Int(1 << 1) != 0 {
-                _3 = parseString(reader)
-            }
-            var _4: String?
-            if Int(_1 ?? 0) & Int(1 << 2) != 0 {
-                _4 = parseString(reader)
-            }
-            var _5: Api.PostAddress?
-            if Int(_1 ?? 0) & Int(1 << 3) != 0 {
-                if let signature = reader.readInt32() {
-                    _5 = Api.parse(reader, signature: signature) as? Api.PostAddress
-                }
-            }
-            let _c1 = _1 != nil
-            let _c2 = (Int(_1 ?? 0) & Int(1 << 0) == 0) || _2 != nil
-            let _c3 = (Int(_1 ?? 0) & Int(1 << 1) == 0) || _3 != nil
-            let _c4 = (Int(_1 ?? 0) & Int(1 << 2) == 0) || _4 != nil
-            let _c5 = (Int(_1 ?? 0) & Int(1 << 3) == 0) || _5 != nil
+            let _c5 = _5 != nil
             if _c1 && _c2 && _c3 && _c4 && _c5 {
-                return Api.PaymentRequestedInfo.paymentRequestedInfo(Cons_paymentRequestedInfo(flags: _1!, name: _2, phone: _3, email: _4, shippingAddress: _5))
+                return Api.PageBlock.inputPageBlockMap(Cons_inputPageBlockMap(geo: _1!, zoom: _2!, w: _3!, h: _4!, caption: _5!))
             }
             else {
                 return nil
             }
         }
-    }
-}
-public extension Api {
-    enum PaymentSavedCredentials: TypeConstructorDescription {
-        public class Cons_paymentSavedCredentialsCard: TypeConstructorDescription {
-            public var id: String
-            public var title: String
-            public init(id: String, title: String) {
-                self.id = id
-                self.title = title
-            }
-            public func descriptionFields() -> (String, [(String, ConstructorParameterDescription)]) {
-                return ("paymentSavedCredentialsCard", [("id", ConstructorParameterDescription(self.id)), ("title", ConstructorParameterDescription(self.title))])
-            }
-        }
-        case paymentSavedCredentialsCard(Cons_paymentSavedCredentialsCard)
-
-        public func serialize(_ buffer: Buffer, _ boxed: Swift.Bool) {
-            switch self {
-            case .paymentSavedCredentialsCard(let _data):
-                if boxed {
-                    buffer.appendInt32(-842892769)
-                }
-                serializeString(_data.id, buffer: buffer, boxed: false)
-                serializeString(_data.title, buffer: buffer, boxed: false)
-                break
-            }
-        }
-
-        public func descriptionFields() -> (String, [(String, ConstructorParameterDescription)]) {
-            switch self {
-            case .paymentSavedCredentialsCard(let _data):
-                return ("paymentSavedCredentialsCard", [("id", ConstructorParameterDescription(_data.id)), ("title", ConstructorParameterDescription(_data.title))])
-            }
-        }
-
-        public static func parse_paymentSavedCredentialsCard(_ reader: BufferReader) -> PaymentSavedCredentials? {
+        public static func parse_pageBlockAnchor(_ reader: BufferReader) -> PageBlock? {
             var _1: String?
             _1 = parseString(reader)
-            var _2: String?
-            _2 = parseString(reader)
+            let _c1 = _1 != nil
+            if _c1 {
+                return Api.PageBlock.pageBlockAnchor(Cons_pageBlockAnchor(name: _1!))
+            }
+            else {
+                return nil
+            }
+        }
+        public static func parse_pageBlockAudio(_ reader: BufferReader) -> PageBlock? {
+            var _1: Int64?
+            _1 = reader.readInt64()
+            var _2: Api.PageCaption?
+            if let signature = reader.readInt32() {
+                _2 = Api.parse(reader, signature: signature) as? Api.PageCaption
+            }
             let _c1 = _1 != nil
             let _c2 = _2 != nil
             if _c1 && _c2 {
-                return Api.PaymentSavedCredentials.paymentSavedCredentialsCard(Cons_paymentSavedCredentialsCard(id: _1!, title: _2!))
+                return Api.PageBlock.pageBlockAudio(Cons_pageBlockAudio(audioId: _1!, caption: _2!))
             }
             else {
                 return nil
             }
         }
-    }
-}
-public extension Api {
-    enum Peer: TypeConstructorDescription {
-        public class Cons_peerChannel: TypeConstructorDescription {
-            public var channelId: Int64
-            public init(channelId: Int64) {
-                self.channelId = channelId
-            }
-            public func descriptionFields() -> (String, [(String, ConstructorParameterDescription)]) {
-                return ("peerChannel", [("channelId", ConstructorParameterDescription(self.channelId))])
-            }
-        }
-        public class Cons_peerChat: TypeConstructorDescription {
-            public var chatId: Int64
-            public init(chatId: Int64) {
-                self.chatId = chatId
-            }
-            public func descriptionFields() -> (String, [(String, ConstructorParameterDescription)]) {
-                return ("peerChat", [("chatId", ConstructorParameterDescription(self.chatId))])
-            }
-        }
-        public class Cons_peerUser: TypeConstructorDescription {
-            public var userId: Int64
-            public init(userId: Int64) {
-                self.userId = userId
-            }
-            public func descriptionFields() -> (String, [(String, ConstructorParameterDescription)]) {
-                return ("peerUser", [("userId", ConstructorParameterDescription(self.userId))])
-            }
-        }
-        case peerChannel(Cons_peerChannel)
-        case peerChat(Cons_peerChat)
-        case peerUser(Cons_peerUser)
-
-        public func serialize(_ buffer: Buffer, _ boxed: Swift.Bool) {
-            switch self {
-            case .peerChannel(let _data):
-                if boxed {
-                    buffer.appendInt32(-1566230754)
-                }
-                serializeInt64(_data.channelId, buffer: buffer, boxed: false)
-                break
-            case .peerChat(let _data):
-                if boxed {
-                    buffer.appendInt32(918946202)
-                }
-                serializeInt64(_data.chatId, buffer: buffer, boxed: false)
-                break
-            case .peerUser(let _data):
-                if boxed {
-                    buffer.appendInt32(1498486562)
-                }
-                serializeInt64(_data.userId, buffer: buffer, boxed: false)
-                break
-            }
-        }
-
-        public func descriptionFields() -> (String, [(String, ConstructorParameterDescription)]) {
-            switch self {
-            case .peerChannel(let _data):
-                return ("peerChannel", [("channelId", ConstructorParameterDescription(_data.channelId))])
-            case .peerChat(let _data):
-                return ("peerChat", [("chatId", ConstructorParameterDescription(_data.chatId))])
-            case .peerUser(let _data):
-                return ("peerUser", [("userId", ConstructorParameterDescription(_data.userId))])
-            }
-        }
-
-        public static func parse_peerChannel(_ reader: BufferReader) -> Peer? {
-            var _1: Int64?
-            _1 = reader.readInt64()
-            let _c1 = _1 != nil
-            if _c1 {
-                return Api.Peer.peerChannel(Cons_peerChannel(channelId: _1!))
-            }
-            else {
-                return nil
-            }
-        }
-        public static func parse_peerChat(_ reader: BufferReader) -> Peer? {
-            var _1: Int64?
-            _1 = reader.readInt64()
-            let _c1 = _1 != nil
-            if _c1 {
-                return Api.Peer.peerChat(Cons_peerChat(chatId: _1!))
-            }
-            else {
-                return nil
-            }
-        }
-        public static func parse_peerUser(_ reader: BufferReader) -> Peer? {
-            var _1: Int64?
-            _1 = reader.readInt64()
-            let _c1 = _1 != nil
-            if _c1 {
-                return Api.Peer.peerUser(Cons_peerUser(userId: _1!))
-            }
-            else {
-                return nil
-            }
-        }
-    }
-}
-public extension Api {
-    enum PeerBlocked: TypeConstructorDescription {
-        public class Cons_peerBlocked: TypeConstructorDescription {
-            public var peerId: Api.Peer
-            public var date: Int32
-            public init(peerId: Api.Peer, date: Int32) {
-                self.peerId = peerId
-                self.date = date
-            }
-            public func descriptionFields() -> (String, [(String, ConstructorParameterDescription)]) {
-                return ("peerBlocked", [("peerId", ConstructorParameterDescription(self.peerId)), ("date", ConstructorParameterDescription(self.date))])
-            }
-        }
-        case peerBlocked(Cons_peerBlocked)
-
-        public func serialize(_ buffer: Buffer, _ boxed: Swift.Bool) {
-            switch self {
-            case .peerBlocked(let _data):
-                if boxed {
-                    buffer.appendInt32(-386039788)
-                }
-                _data.peerId.serialize(buffer, true)
-                serializeInt32(_data.date, buffer: buffer, boxed: false)
-                break
-            }
-        }
-
-        public func descriptionFields() -> (String, [(String, ConstructorParameterDescription)]) {
-            switch self {
-            case .peerBlocked(let _data):
-                return ("peerBlocked", [("peerId", ConstructorParameterDescription(_data.peerId)), ("date", ConstructorParameterDescription(_data.date))])
-            }
-        }
-
-        public static func parse_peerBlocked(_ reader: BufferReader) -> PeerBlocked? {
-            var _1: Api.Peer?
+        public static func parse_pageBlockAuthorDate(_ reader: BufferReader) -> PageBlock? {
+            var _1: Api.RichText?
             if let signature = reader.readInt32() {
-                _1 = Api.parse(reader, signature: signature) as? Api.Peer
+                _1 = Api.parse(reader, signature: signature) as? Api.RichText
             }
             var _2: Int32?
             _2 = reader.readInt32()
             let _c1 = _1 != nil
             let _c2 = _2 != nil
             if _c1 && _c2 {
-                return Api.PeerBlocked.peerBlocked(Cons_peerBlocked(peerId: _1!, date: _2!))
+                return Api.PageBlock.pageBlockAuthorDate(Cons_pageBlockAuthorDate(author: _1!, publishedDate: _2!))
             }
             else {
                 return nil
             }
         }
-    }
-}
-public extension Api {
-    enum PeerColor: TypeConstructorDescription {
-        public class Cons_inputPeerColorCollectible: TypeConstructorDescription {
-            public var collectibleId: Int64
-            public init(collectibleId: Int64) {
-                self.collectibleId = collectibleId
+        public static func parse_pageBlockBlockquote(_ reader: BufferReader) -> PageBlock? {
+            var _1: Api.RichText?
+            if let signature = reader.readInt32() {
+                _1 = Api.parse(reader, signature: signature) as? Api.RichText
             }
-            public func descriptionFields() -> (String, [(String, ConstructorParameterDescription)]) {
-                return ("inputPeerColorCollectible", [("collectibleId", ConstructorParameterDescription(self.collectibleId))])
+            var _2: Api.RichText?
+            if let signature = reader.readInt32() {
+                _2 = Api.parse(reader, signature: signature) as? Api.RichText
             }
-        }
-        public class Cons_peerColor: TypeConstructorDescription {
-            public var flags: Int32
-            public var color: Int32?
-            public var backgroundEmojiId: Int64?
-            public init(flags: Int32, color: Int32?, backgroundEmojiId: Int64?) {
-                self.flags = flags
-                self.color = color
-                self.backgroundEmojiId = backgroundEmojiId
+            let _c1 = _1 != nil
+            let _c2 = _2 != nil
+            if _c1 && _c2 {
+                return Api.PageBlock.pageBlockBlockquote(Cons_pageBlockBlockquote(text: _1!, caption: _2!))
             }
-            public func descriptionFields() -> (String, [(String, ConstructorParameterDescription)]) {
-                return ("peerColor", [("flags", ConstructorParameterDescription(self.flags)), ("color", ConstructorParameterDescription(self.color)), ("backgroundEmojiId", ConstructorParameterDescription(self.backgroundEmojiId))])
+            else {
+                return nil
             }
         }
-        public class Cons_peerColorCollectible: TypeConstructorDescription {
-            public var flags: Int32
-            public var collectibleId: Int64
-            public var giftEmojiId: Int64
-            public var backgroundEmojiId: Int64
-            public var accentColor: Int32
-            public var colors: [Int32]
-            public var darkAccentColor: Int32?
-            public var darkColors: [Int32]?
-            public init(flags: Int32, collectibleId: Int64, giftEmojiId: Int64, backgroundEmojiId: Int64, accentColor: Int32, colors: [Int32], darkAccentColor: Int32?, darkColors: [Int32]?) {
-                self.flags = flags
-                self.collectibleId = collectibleId
-                self.giftEmojiId = giftEmojiId
-                self.backgroundEmojiId = backgroundEmojiId
-                self.accentColor = accentColor
-                self.colors = colors
-                self.darkAccentColor = darkAccentColor
-                self.darkColors = darkColors
+        public static func parse_pageBlockBlockquoteBlocks(_ reader: BufferReader) -> PageBlock? {
+            var _1: [Api.PageBlock]?
+            if let _ = reader.readInt32() {
+                _1 = Api.parseVector(reader, elementSignature: 0, elementType: Api.PageBlock.self)
             }
-            public func descriptionFields() -> (String, [(String, ConstructorParameterDescription)]) {
-                return ("peerColorCollectible", [("flags", ConstructorParameterDescription(self.flags)), ("collectibleId", ConstructorParameterDescription(self.collectibleId)), ("giftEmojiId", ConstructorParameterDescription(self.giftEmojiId)), ("backgroundEmojiId", ConstructorParameterDescription(self.backgroundEmojiId)), ("accentColor", ConstructorParameterDescription(self.accentColor)), ("colors", ConstructorParameterDescription(self.colors)), ("darkAccentColor", ConstructorParameterDescription(self.darkAccentColor)), ("darkColors", ConstructorParameterDescription(self.darkColors))])
+            var _2: Api.RichText?
+            if let signature = reader.readInt32() {
+                _2 = Api.parse(reader, signature: signature) as? Api.RichText
+            }
+            let _c1 = _1 != nil
+            let _c2 = _2 != nil
+            if _c1 && _c2 {
+                return Api.PageBlock.pageBlockBlockquoteBlocks(Cons_pageBlockBlockquoteBlocks(blocks: _1!, caption: _2!))
+            }
+            else {
+                return nil
             }
         }
-        case inputPeerColorCollectible(Cons_inputPeerColorCollectible)
-        case peerColor(Cons_peerColor)
-        case peerColorCollectible(Cons_peerColorCollectible)
-
-        public func serialize(_ buffer: Buffer, _ boxed: Swift.Bool) {
-            switch self {
-            case .inputPeerColorCollectible(let _data):
-                if boxed {
-                    buffer.appendInt32(-1192589655)
-                }
-                serializeInt64(_data.collectibleId, buffer: buffer, boxed: false)
-                break
-            case .peerColor(let _data):
-                if boxed {
-                    buffer.appendInt32(-1253352753)
-                }
-                serializeInt32(_data.flags, buffer: buffer, boxed: false)
-                if Int(_data.flags) & Int(1 << 0) != 0 {
-                    serializeInt32(_data.color!, buffer: buffer, boxed: false)
-                }
-                if Int(_data.flags) & Int(1 << 1) != 0 {
-                    serializeInt64(_data.backgroundEmojiId!, buffer: buffer, boxed: false)
-                }
-                break
-            case .peerColorCollectible(let _data):
-                if boxed {
-                    buffer.appendInt32(-1178573926)
-                }
-                serializeInt32(_data.flags, buffer: buffer, boxed: false)
-                serializeInt64(_data.collectibleId, buffer: buffer, boxed: false)
-                serializeInt64(_data.giftEmojiId, buffer: buffer, boxed: false)
-                serializeInt64(_data.backgroundEmojiId, buffer: buffer, boxed: false)
-                serializeInt32(_data.accentColor, buffer: buffer, boxed: false)
-                buffer.appendInt32(481674261)
-                buffer.appendInt32(Int32(_data.colors.count))
-                for item in _data.colors {
-                    serializeInt32(item, buffer: buffer, boxed: false)
-                }
-                if Int(_data.flags) & Int(1 << 0) != 0 {
-                    serializeInt32(_data.darkAccentColor!, buffer: buffer, boxed: false)
-                }
-                if Int(_data.flags) & Int(1 << 1) != 0 {
-                    buffer.appendInt32(481674261)
-                    buffer.appendInt32(Int32(_data.darkColors!.count))
-                    for item in _data.darkColors! {
-                        serializeInt32(item, buffer: buffer, boxed: false)
-                    }
-                }
-                break
+        public static func parse_pageBlockChannel(_ reader: BufferReader) -> PageBlock? {
+            var _1: Api.Chat?
+            if let signature = reader.readInt32() {
+                _1 = Api.parse(reader, signature: signature) as? Api.Chat
             }
-        }
-
-        public func descriptionFields() -> (String, [(String, ConstructorParameterDescription)]) {
-            switch self {
-            case .inputPeerColorCollectible(let _data):
-                return ("inputPeerColorCollectible", [("collectibleId", ConstructorParameterDescription(_data.collectibleId))])
-            case .peerColor(let _data):
-                return ("peerColor", [("flags", ConstructorParameterDescription(_data.flags)), ("color", ConstructorParameterDescription(_data.color)), ("backgroundEmojiId", ConstructorParameterDescription(_data.backgroundEmojiId))])
-            case .peerColorCollectible(let _data):
-                return ("peerColorCollectible", [("flags", ConstructorParameterDescription(_data.flags)), ("collectibleId", ConstructorParameterDescription(_data.collectibleId)), ("giftEmojiId", ConstructorParameterDescription(_data.giftEmojiId)), ("backgroundEmojiId", ConstructorParameterDescription(_data.backgroundEmojiId)), ("accentColor", ConstructorParameterDescription(_data.accentColor)), ("colors", ConstructorParameterDescription(_data.colors)), ("darkAccentColor", ConstructorParameterDescription(_data.darkAccentColor)), ("darkColors", ConstructorParameterDescription(_data.darkColors))])
-            }
-        }
-
-        public static func parse_inputPeerColorCollectible(_ reader: BufferReader) -> PeerColor? {
-            var _1: Int64?
-            _1 = reader.readInt64()
             let _c1 = _1 != nil
             if _c1 {
-                return Api.PeerColor.inputPeerColorCollectible(Cons_inputPeerColorCollectible(collectibleId: _1!))
+                return Api.PageBlock.pageBlockChannel(Cons_pageBlockChannel(channel: _1!))
             }
             else {
                 return nil
             }
         }
-        public static func parse_peerColor(_ reader: BufferReader) -> PeerColor? {
-            var _1: Int32?
-            _1 = reader.readInt32()
-            var _2: Int32?
-            if Int(_1 ?? 0) & Int(1 << 0) != 0 {
-                _2 = reader.readInt32()
+        public static func parse_pageBlockCollage(_ reader: BufferReader) -> PageBlock? {
+            var _1: [Api.PageBlock]?
+            if let _ = reader.readInt32() {
+                _1 = Api.parseVector(reader, elementSignature: 0, elementType: Api.PageBlock.self)
             }
-            var _3: Int64?
-            if Int(_1 ?? 0) & Int(1 << 1) != 0 {
-                _3 = reader.readInt64()
+            var _2: Api.PageCaption?
+            if let signature = reader.readInt32() {
+                _2 = Api.parse(reader, signature: signature) as? Api.PageCaption
             }
             let _c1 = _1 != nil
-            let _c2 = (Int(_1 ?? 0) & Int(1 << 0) == 0) || _2 != nil
-            let _c3 = (Int(_1 ?? 0) & Int(1 << 1) == 0) || _3 != nil
-            if _c1 && _c2 && _c3 {
-                return Api.PeerColor.peerColor(Cons_peerColor(flags: _1!, color: _2, backgroundEmojiId: _3))
+            let _c2 = _2 != nil
+            if _c1 && _c2 {
+                return Api.PageBlock.pageBlockCollage(Cons_pageBlockCollage(items: _1!, caption: _2!))
             }
             else {
                 return nil
             }
         }
-        public static func parse_peerColorCollectible(_ reader: BufferReader) -> PeerColor? {
+        public static func parse_pageBlockCover(_ reader: BufferReader) -> PageBlock? {
+            var _1: Api.PageBlock?
+            if let signature = reader.readInt32() {
+                _1 = Api.parse(reader, signature: signature) as? Api.PageBlock
+            }
+            let _c1 = _1 != nil
+            if _c1 {
+                return Api.PageBlock.pageBlockCover(Cons_pageBlockCover(cover: _1!))
+            }
+            else {
+                return nil
+            }
+        }
+        public static func parse_pageBlockDetails(_ reader: BufferReader) -> PageBlock? {
             var _1: Int32?
             _1 = reader.readInt32()
+            var _2: [Api.PageBlock]?
+            if let _ = reader.readInt32() {
+                _2 = Api.parseVector(reader, elementSignature: 0, elementType: Api.PageBlock.self)
+            }
+            var _3: Api.RichText?
+            if let signature = reader.readInt32() {
+                _3 = Api.parse(reader, signature: signature) as? Api.RichText
+            }
+            let _c1 = _1 != nil
+            let _c2 = _2 != nil
+            let _c3 = _3 != nil
+            if _c1 && _c2 && _c3 {
+                return Api.PageBlock.pageBlockDetails(Cons_pageBlockDetails(flags: _1!, blocks: _2!, title: _3!))
+            }
+            else {
+                return nil
+            }
+        }
+        public static func parse_pageBlockDivider(_ reader: BufferReader) -> PageBlock? {
+            return Api.PageBlock.pageBlockDivider
+        }
+        public static func parse_pageBlockEmbed(_ reader: BufferReader) -> PageBlock? {
+            var _1: Int32?
+            _1 = reader.readInt32()
+            var _2: String?
+            if Int(_1 ?? 0) & Int(1 << 1) != 0 {
+                _2 = parseString(reader)
+            }
+            var _3: String?
+            if Int(_1 ?? 0) & Int(1 << 2) != 0 {
+                _3 = parseString(reader)
+            }
+            var _4: Int64?
+            if Int(_1 ?? 0) & Int(1 << 4) != 0 {
+                _4 = reader.readInt64()
+            }
+            var _5: Int32?
+            if Int(_1 ?? 0) & Int(1 << 5) != 0 {
+                _5 = reader.readInt32()
+            }
+            var _6: Int32?
+            if Int(_1 ?? 0) & Int(1 << 5) != 0 {
+                _6 = reader.readInt32()
+            }
+            var _7: Api.PageCaption?
+            if let signature = reader.readInt32() {
+                _7 = Api.parse(reader, signature: signature) as? Api.PageCaption
+            }
+            let _c1 = _1 != nil
+            let _c2 = (Int(_1 ?? 0) & Int(1 << 1) == 0) || _2 != nil
+            let _c3 = (Int(_1 ?? 0) & Int(1 << 2) == 0) || _3 != nil
+            let _c4 = (Int(_1 ?? 0) & Int(1 << 4) == 0) || _4 != nil
+            let _c5 = (Int(_1 ?? 0) & Int(1 << 5) == 0) || _5 != nil
+            let _c6 = (Int(_1 ?? 0) & Int(1 << 5) == 0) || _6 != nil
+            let _c7 = _7 != nil
+            if _c1 && _c2 && _c3 && _c4 && _c5 && _c6 && _c7 {
+                return Api.PageBlock.pageBlockEmbed(Cons_pageBlockEmbed(flags: _1!, url: _2, html: _3, posterPhotoId: _4, w: _5, h: _6, caption: _7!))
+            }
+            else {
+                return nil
+            }
+        }
+        public static func parse_pageBlockEmbedPost(_ reader: BufferReader) -> PageBlock? {
+            var _1: String?
+            _1 = parseString(reader)
             var _2: Int64?
             _2 = reader.readInt64()
             var _3: Int64?
             _3 = reader.readInt64()
-            var _4: Int64?
-            _4 = reader.readInt64()
+            var _4: String?
+            _4 = parseString(reader)
             var _5: Int32?
             _5 = reader.readInt32()
-            var _6: [Int32]?
+            var _6: [Api.PageBlock]?
             if let _ = reader.readInt32() {
-                _6 = Api.parseVector(reader, elementSignature: -1471112230, elementType: Int32.self)
+                _6 = Api.parseVector(reader, elementSignature: 0, elementType: Api.PageBlock.self)
             }
-            var _7: Int32?
-            if Int(_1 ?? 0) & Int(1 << 0) != 0 {
-                _7 = reader.readInt32()
-            }
-            var _8: [Int32]?
-            if Int(_1 ?? 0) & Int(1 << 1) != 0 {
-                if let _ = reader.readInt32() {
-                    _8 = Api.parseVector(reader, elementSignature: -1471112230, elementType: Int32.self)
-                }
+            var _7: Api.PageCaption?
+            if let signature = reader.readInt32() {
+                _7 = Api.parse(reader, signature: signature) as? Api.PageCaption
             }
             let _c1 = _1 != nil
             let _c2 = _2 != nil
@@ -1244,988 +1526,410 @@ public extension Api {
             let _c4 = _4 != nil
             let _c5 = _5 != nil
             let _c6 = _6 != nil
-            let _c7 = (Int(_1 ?? 0) & Int(1 << 0) == 0) || _7 != nil
-            let _c8 = (Int(_1 ?? 0) & Int(1 << 1) == 0) || _8 != nil
-            if _c1 && _c2 && _c3 && _c4 && _c5 && _c6 && _c7 && _c8 {
-                return Api.PeerColor.peerColorCollectible(Cons_peerColorCollectible(flags: _1!, collectibleId: _2!, giftEmojiId: _3!, backgroundEmojiId: _4!, accentColor: _5!, colors: _6!, darkAccentColor: _7, darkColors: _8))
+            let _c7 = _7 != nil
+            if _c1 && _c2 && _c3 && _c4 && _c5 && _c6 && _c7 {
+                return Api.PageBlock.pageBlockEmbedPost(Cons_pageBlockEmbedPost(url: _1!, webpageId: _2!, authorPhotoId: _3!, author: _4!, date: _5!, blocks: _6!, caption: _7!))
             }
             else {
                 return nil
             }
         }
-    }
-}
-public extension Api {
-    enum PeerLocated: TypeConstructorDescription {
-        public class Cons_peerLocated: TypeConstructorDescription {
-            public var peer: Api.Peer
-            public var expires: Int32
-            public var distance: Int32
-            public init(peer: Api.Peer, expires: Int32, distance: Int32) {
-                self.peer = peer
-                self.expires = expires
-                self.distance = distance
-            }
-            public func descriptionFields() -> (String, [(String, ConstructorParameterDescription)]) {
-                return ("peerLocated", [("peer", ConstructorParameterDescription(self.peer)), ("expires", ConstructorParameterDescription(self.expires)), ("distance", ConstructorParameterDescription(self.distance))])
-            }
-        }
-        public class Cons_peerSelfLocated: TypeConstructorDescription {
-            public var expires: Int32
-            public init(expires: Int32) {
-                self.expires = expires
-            }
-            public func descriptionFields() -> (String, [(String, ConstructorParameterDescription)]) {
-                return ("peerSelfLocated", [("expires", ConstructorParameterDescription(self.expires))])
-            }
-        }
-        case peerLocated(Cons_peerLocated)
-        case peerSelfLocated(Cons_peerSelfLocated)
-
-        public func serialize(_ buffer: Buffer, _ boxed: Swift.Bool) {
-            switch self {
-            case .peerLocated(let _data):
-                if boxed {
-                    buffer.appendInt32(-901375139)
-                }
-                _data.peer.serialize(buffer, true)
-                serializeInt32(_data.expires, buffer: buffer, boxed: false)
-                serializeInt32(_data.distance, buffer: buffer, boxed: false)
-                break
-            case .peerSelfLocated(let _data):
-                if boxed {
-                    buffer.appendInt32(-118740917)
-                }
-                serializeInt32(_data.expires, buffer: buffer, boxed: false)
-                break
-            }
-        }
-
-        public func descriptionFields() -> (String, [(String, ConstructorParameterDescription)]) {
-            switch self {
-            case .peerLocated(let _data):
-                return ("peerLocated", [("peer", ConstructorParameterDescription(_data.peer)), ("expires", ConstructorParameterDescription(_data.expires)), ("distance", ConstructorParameterDescription(_data.distance))])
-            case .peerSelfLocated(let _data):
-                return ("peerSelfLocated", [("expires", ConstructorParameterDescription(_data.expires))])
-            }
-        }
-
-        public static func parse_peerLocated(_ reader: BufferReader) -> PeerLocated? {
-            var _1: Api.Peer?
+        public static func parse_pageBlockFooter(_ reader: BufferReader) -> PageBlock? {
+            var _1: Api.RichText?
             if let signature = reader.readInt32() {
-                _1 = Api.parse(reader, signature: signature) as? Api.Peer
+                _1 = Api.parse(reader, signature: signature) as? Api.RichText
+            }
+            let _c1 = _1 != nil
+            if _c1 {
+                return Api.PageBlock.pageBlockFooter(Cons_pageBlockFooter(text: _1!))
+            }
+            else {
+                return nil
+            }
+        }
+        public static func parse_pageBlockHeader(_ reader: BufferReader) -> PageBlock? {
+            var _1: Api.RichText?
+            if let signature = reader.readInt32() {
+                _1 = Api.parse(reader, signature: signature) as? Api.RichText
+            }
+            let _c1 = _1 != nil
+            if _c1 {
+                return Api.PageBlock.pageBlockHeader(Cons_pageBlockHeader(text: _1!))
+            }
+            else {
+                return nil
+            }
+        }
+        public static func parse_pageBlockHeading1(_ reader: BufferReader) -> PageBlock? {
+            var _1: Api.RichText?
+            if let signature = reader.readInt32() {
+                _1 = Api.parse(reader, signature: signature) as? Api.RichText
+            }
+            let _c1 = _1 != nil
+            if _c1 {
+                return Api.PageBlock.pageBlockHeading1(Cons_pageBlockHeading1(text: _1!))
+            }
+            else {
+                return nil
+            }
+        }
+        public static func parse_pageBlockHeading2(_ reader: BufferReader) -> PageBlock? {
+            var _1: Api.RichText?
+            if let signature = reader.readInt32() {
+                _1 = Api.parse(reader, signature: signature) as? Api.RichText
+            }
+            let _c1 = _1 != nil
+            if _c1 {
+                return Api.PageBlock.pageBlockHeading2(Cons_pageBlockHeading2(text: _1!))
+            }
+            else {
+                return nil
+            }
+        }
+        public static func parse_pageBlockHeading3(_ reader: BufferReader) -> PageBlock? {
+            var _1: Api.RichText?
+            if let signature = reader.readInt32() {
+                _1 = Api.parse(reader, signature: signature) as? Api.RichText
+            }
+            let _c1 = _1 != nil
+            if _c1 {
+                return Api.PageBlock.pageBlockHeading3(Cons_pageBlockHeading3(text: _1!))
+            }
+            else {
+                return nil
+            }
+        }
+        public static func parse_pageBlockHeading4(_ reader: BufferReader) -> PageBlock? {
+            var _1: Api.RichText?
+            if let signature = reader.readInt32() {
+                _1 = Api.parse(reader, signature: signature) as? Api.RichText
+            }
+            let _c1 = _1 != nil
+            if _c1 {
+                return Api.PageBlock.pageBlockHeading4(Cons_pageBlockHeading4(text: _1!))
+            }
+            else {
+                return nil
+            }
+        }
+        public static func parse_pageBlockHeading5(_ reader: BufferReader) -> PageBlock? {
+            var _1: Api.RichText?
+            if let signature = reader.readInt32() {
+                _1 = Api.parse(reader, signature: signature) as? Api.RichText
+            }
+            let _c1 = _1 != nil
+            if _c1 {
+                return Api.PageBlock.pageBlockHeading5(Cons_pageBlockHeading5(text: _1!))
+            }
+            else {
+                return nil
+            }
+        }
+        public static func parse_pageBlockHeading6(_ reader: BufferReader) -> PageBlock? {
+            var _1: Api.RichText?
+            if let signature = reader.readInt32() {
+                _1 = Api.parse(reader, signature: signature) as? Api.RichText
+            }
+            let _c1 = _1 != nil
+            if _c1 {
+                return Api.PageBlock.pageBlockHeading6(Cons_pageBlockHeading6(text: _1!))
+            }
+            else {
+                return nil
+            }
+        }
+        public static func parse_pageBlockKicker(_ reader: BufferReader) -> PageBlock? {
+            var _1: Api.RichText?
+            if let signature = reader.readInt32() {
+                _1 = Api.parse(reader, signature: signature) as? Api.RichText
+            }
+            let _c1 = _1 != nil
+            if _c1 {
+                return Api.PageBlock.pageBlockKicker(Cons_pageBlockKicker(text: _1!))
+            }
+            else {
+                return nil
+            }
+        }
+        public static func parse_pageBlockList(_ reader: BufferReader) -> PageBlock? {
+            var _1: [Api.PageListItem]?
+            if let _ = reader.readInt32() {
+                _1 = Api.parseVector(reader, elementSignature: 0, elementType: Api.PageListItem.self)
+            }
+            let _c1 = _1 != nil
+            if _c1 {
+                return Api.PageBlock.pageBlockList(Cons_pageBlockList(items: _1!))
+            }
+            else {
+                return nil
+            }
+        }
+        public static func parse_pageBlockMap(_ reader: BufferReader) -> PageBlock? {
+            var _1: Api.GeoPoint?
+            if let signature = reader.readInt32() {
+                _1 = Api.parse(reader, signature: signature) as? Api.GeoPoint
             }
             var _2: Int32?
             _2 = reader.readInt32()
             var _3: Int32?
             _3 = reader.readInt32()
+            var _4: Int32?
+            _4 = reader.readInt32()
+            var _5: Api.PageCaption?
+            if let signature = reader.readInt32() {
+                _5 = Api.parse(reader, signature: signature) as? Api.PageCaption
+            }
             let _c1 = _1 != nil
             let _c2 = _2 != nil
             let _c3 = _3 != nil
-            if _c1 && _c2 && _c3 {
-                return Api.PeerLocated.peerLocated(Cons_peerLocated(peer: _1!, expires: _2!, distance: _3!))
+            let _c4 = _4 != nil
+            let _c5 = _5 != nil
+            if _c1 && _c2 && _c3 && _c4 && _c5 {
+                return Api.PageBlock.pageBlockMap(Cons_pageBlockMap(geo: _1!, zoom: _2!, w: _3!, h: _4!, caption: _5!))
             }
             else {
                 return nil
             }
         }
-        public static func parse_peerSelfLocated(_ reader: BufferReader) -> PeerLocated? {
-            var _1: Int32?
-            _1 = reader.readInt32()
+        public static func parse_pageBlockMath(_ reader: BufferReader) -> PageBlock? {
+            var _1: String?
+            _1 = parseString(reader)
             let _c1 = _1 != nil
             if _c1 {
-                return Api.PeerLocated.peerSelfLocated(Cons_peerSelfLocated(expires: _1!))
+                return Api.PageBlock.pageBlockMath(Cons_pageBlockMath(source: _1!))
             }
             else {
                 return nil
             }
         }
-    }
-}
-public extension Api {
-    enum PeerNotifySettings: TypeConstructorDescription {
-        public class Cons_peerNotifySettings: TypeConstructorDescription {
-            public var flags: Int32
-            public var showPreviews: Api.Bool?
-            public var silent: Api.Bool?
-            public var muteUntil: Int32?
-            public var iosSound: Api.NotificationSound?
-            public var androidSound: Api.NotificationSound?
-            public var otherSound: Api.NotificationSound?
-            public var storiesMuted: Api.Bool?
-            public var storiesHideSender: Api.Bool?
-            public var storiesIosSound: Api.NotificationSound?
-            public var storiesAndroidSound: Api.NotificationSound?
-            public var storiesOtherSound: Api.NotificationSound?
-            public init(flags: Int32, showPreviews: Api.Bool?, silent: Api.Bool?, muteUntil: Int32?, iosSound: Api.NotificationSound?, androidSound: Api.NotificationSound?, otherSound: Api.NotificationSound?, storiesMuted: Api.Bool?, storiesHideSender: Api.Bool?, storiesIosSound: Api.NotificationSound?, storiesAndroidSound: Api.NotificationSound?, storiesOtherSound: Api.NotificationSound?) {
-                self.flags = flags
-                self.showPreviews = showPreviews
-                self.silent = silent
-                self.muteUntil = muteUntil
-                self.iosSound = iosSound
-                self.androidSound = androidSound
-                self.otherSound = otherSound
-                self.storiesMuted = storiesMuted
-                self.storiesHideSender = storiesHideSender
-                self.storiesIosSound = storiesIosSound
-                self.storiesAndroidSound = storiesAndroidSound
-                self.storiesOtherSound = storiesOtherSound
-            }
-            public func descriptionFields() -> (String, [(String, ConstructorParameterDescription)]) {
-                return ("peerNotifySettings", [("flags", ConstructorParameterDescription(self.flags)), ("showPreviews", ConstructorParameterDescription(self.showPreviews)), ("silent", ConstructorParameterDescription(self.silent)), ("muteUntil", ConstructorParameterDescription(self.muteUntil)), ("iosSound", ConstructorParameterDescription(self.iosSound)), ("androidSound", ConstructorParameterDescription(self.androidSound)), ("otherSound", ConstructorParameterDescription(self.otherSound)), ("storiesMuted", ConstructorParameterDescription(self.storiesMuted)), ("storiesHideSender", ConstructorParameterDescription(self.storiesHideSender)), ("storiesIosSound", ConstructorParameterDescription(self.storiesIosSound)), ("storiesAndroidSound", ConstructorParameterDescription(self.storiesAndroidSound)), ("storiesOtherSound", ConstructorParameterDescription(self.storiesOtherSound))])
-            }
-        }
-        case peerNotifySettings(Cons_peerNotifySettings)
-
-        public func serialize(_ buffer: Buffer, _ boxed: Swift.Bool) {
-            switch self {
-            case .peerNotifySettings(let _data):
-                if boxed {
-                    buffer.appendInt32(-1721619444)
-                }
-                serializeInt32(_data.flags, buffer: buffer, boxed: false)
-                if Int(_data.flags) & Int(1 << 0) != 0 {
-                    _data.showPreviews!.serialize(buffer, true)
-                }
-                if Int(_data.flags) & Int(1 << 1) != 0 {
-                    _data.silent!.serialize(buffer, true)
-                }
-                if Int(_data.flags) & Int(1 << 2) != 0 {
-                    serializeInt32(_data.muteUntil!, buffer: buffer, boxed: false)
-                }
-                if Int(_data.flags) & Int(1 << 3) != 0 {
-                    _data.iosSound!.serialize(buffer, true)
-                }
-                if Int(_data.flags) & Int(1 << 4) != 0 {
-                    _data.androidSound!.serialize(buffer, true)
-                }
-                if Int(_data.flags) & Int(1 << 5) != 0 {
-                    _data.otherSound!.serialize(buffer, true)
-                }
-                if Int(_data.flags) & Int(1 << 6) != 0 {
-                    _data.storiesMuted!.serialize(buffer, true)
-                }
-                if Int(_data.flags) & Int(1 << 7) != 0 {
-                    _data.storiesHideSender!.serialize(buffer, true)
-                }
-                if Int(_data.flags) & Int(1 << 8) != 0 {
-                    _data.storiesIosSound!.serialize(buffer, true)
-                }
-                if Int(_data.flags) & Int(1 << 9) != 0 {
-                    _data.storiesAndroidSound!.serialize(buffer, true)
-                }
-                if Int(_data.flags) & Int(1 << 10) != 0 {
-                    _data.storiesOtherSound!.serialize(buffer, true)
-                }
-                break
-            }
-        }
-
-        public func descriptionFields() -> (String, [(String, ConstructorParameterDescription)]) {
-            switch self {
-            case .peerNotifySettings(let _data):
-                return ("peerNotifySettings", [("flags", ConstructorParameterDescription(_data.flags)), ("showPreviews", ConstructorParameterDescription(_data.showPreviews)), ("silent", ConstructorParameterDescription(_data.silent)), ("muteUntil", ConstructorParameterDescription(_data.muteUntil)), ("iosSound", ConstructorParameterDescription(_data.iosSound)), ("androidSound", ConstructorParameterDescription(_data.androidSound)), ("otherSound", ConstructorParameterDescription(_data.otherSound)), ("storiesMuted", ConstructorParameterDescription(_data.storiesMuted)), ("storiesHideSender", ConstructorParameterDescription(_data.storiesHideSender)), ("storiesIosSound", ConstructorParameterDescription(_data.storiesIosSound)), ("storiesAndroidSound", ConstructorParameterDescription(_data.storiesAndroidSound)), ("storiesOtherSound", ConstructorParameterDescription(_data.storiesOtherSound))])
-            }
-        }
-
-        public static func parse_peerNotifySettings(_ reader: BufferReader) -> PeerNotifySettings? {
+        public static func parse_pageBlockOrderedList(_ reader: BufferReader) -> PageBlock? {
             var _1: Int32?
             _1 = reader.readInt32()
-            var _2: Api.Bool?
-            if Int(_1 ?? 0) & Int(1 << 0) != 0 {
-                if let signature = reader.readInt32() {
-                    _2 = Api.parse(reader, signature: signature) as? Api.Bool
-                }
-            }
-            var _3: Api.Bool?
-            if Int(_1 ?? 0) & Int(1 << 1) != 0 {
-                if let signature = reader.readInt32() {
-                    _3 = Api.parse(reader, signature: signature) as? Api.Bool
-                }
-            }
-            var _4: Int32?
-            if Int(_1 ?? 0) & Int(1 << 2) != 0 {
-                _4 = reader.readInt32()
-            }
-            var _5: Api.NotificationSound?
-            if Int(_1 ?? 0) & Int(1 << 3) != 0 {
-                if let signature = reader.readInt32() {
-                    _5 = Api.parse(reader, signature: signature) as? Api.NotificationSound
-                }
-            }
-            var _6: Api.NotificationSound?
-            if Int(_1 ?? 0) & Int(1 << 4) != 0 {
-                if let signature = reader.readInt32() {
-                    _6 = Api.parse(reader, signature: signature) as? Api.NotificationSound
-                }
-            }
-            var _7: Api.NotificationSound?
-            if Int(_1 ?? 0) & Int(1 << 5) != 0 {
-                if let signature = reader.readInt32() {
-                    _7 = Api.parse(reader, signature: signature) as? Api.NotificationSound
-                }
-            }
-            var _8: Api.Bool?
-            if Int(_1 ?? 0) & Int(1 << 6) != 0 {
-                if let signature = reader.readInt32() {
-                    _8 = Api.parse(reader, signature: signature) as? Api.Bool
-                }
-            }
-            var _9: Api.Bool?
-            if Int(_1 ?? 0) & Int(1 << 7) != 0 {
-                if let signature = reader.readInt32() {
-                    _9 = Api.parse(reader, signature: signature) as? Api.Bool
-                }
-            }
-            var _10: Api.NotificationSound?
-            if Int(_1 ?? 0) & Int(1 << 8) != 0 {
-                if let signature = reader.readInt32() {
-                    _10 = Api.parse(reader, signature: signature) as? Api.NotificationSound
-                }
-            }
-            var _11: Api.NotificationSound?
-            if Int(_1 ?? 0) & Int(1 << 9) != 0 {
-                if let signature = reader.readInt32() {
-                    _11 = Api.parse(reader, signature: signature) as? Api.NotificationSound
-                }
-            }
-            var _12: Api.NotificationSound?
-            if Int(_1 ?? 0) & Int(1 << 10) != 0 {
-                if let signature = reader.readInt32() {
-                    _12 = Api.parse(reader, signature: signature) as? Api.NotificationSound
-                }
-            }
-            let _c1 = _1 != nil
-            let _c2 = (Int(_1 ?? 0) & Int(1 << 0) == 0) || _2 != nil
-            let _c3 = (Int(_1 ?? 0) & Int(1 << 1) == 0) || _3 != nil
-            let _c4 = (Int(_1 ?? 0) & Int(1 << 2) == 0) || _4 != nil
-            let _c5 = (Int(_1 ?? 0) & Int(1 << 3) == 0) || _5 != nil
-            let _c6 = (Int(_1 ?? 0) & Int(1 << 4) == 0) || _6 != nil
-            let _c7 = (Int(_1 ?? 0) & Int(1 << 5) == 0) || _7 != nil
-            let _c8 = (Int(_1 ?? 0) & Int(1 << 6) == 0) || _8 != nil
-            let _c9 = (Int(_1 ?? 0) & Int(1 << 7) == 0) || _9 != nil
-            let _c10 = (Int(_1 ?? 0) & Int(1 << 8) == 0) || _10 != nil
-            let _c11 = (Int(_1 ?? 0) & Int(1 << 9) == 0) || _11 != nil
-            let _c12 = (Int(_1 ?? 0) & Int(1 << 10) == 0) || _12 != nil
-            if _c1 && _c2 && _c3 && _c4 && _c5 && _c6 && _c7 && _c8 && _c9 && _c10 && _c11 && _c12 {
-                return Api.PeerNotifySettings.peerNotifySettings(Cons_peerNotifySettings(flags: _1!, showPreviews: _2, silent: _3, muteUntil: _4, iosSound: _5, androidSound: _6, otherSound: _7, storiesMuted: _8, storiesHideSender: _9, storiesIosSound: _10, storiesAndroidSound: _11, storiesOtherSound: _12))
-            }
-            else {
-                return nil
-            }
-        }
-    }
-}
-public extension Api {
-    enum PeerSettings: TypeConstructorDescription {
-        public class Cons_peerSettings: TypeConstructorDescription {
-            public var flags: Int32
-            public var geoDistance: Int32?
-            public var requestChatTitle: String?
-            public var requestChatDate: Int32?
-            public var businessBotId: Int64?
-            public var businessBotManageUrl: String?
-            public var chargePaidMessageStars: Int64?
-            public var registrationMonth: String?
-            public var phoneCountry: String?
-            public var nameChangeDate: Int32?
-            public var photoChangeDate: Int32?
-            public init(flags: Int32, geoDistance: Int32?, requestChatTitle: String?, requestChatDate: Int32?, businessBotId: Int64?, businessBotManageUrl: String?, chargePaidMessageStars: Int64?, registrationMonth: String?, phoneCountry: String?, nameChangeDate: Int32?, photoChangeDate: Int32?) {
-                self.flags = flags
-                self.geoDistance = geoDistance
-                self.requestChatTitle = requestChatTitle
-                self.requestChatDate = requestChatDate
-                self.businessBotId = businessBotId
-                self.businessBotManageUrl = businessBotManageUrl
-                self.chargePaidMessageStars = chargePaidMessageStars
-                self.registrationMonth = registrationMonth
-                self.phoneCountry = phoneCountry
-                self.nameChangeDate = nameChangeDate
-                self.photoChangeDate = photoChangeDate
-            }
-            public func descriptionFields() -> (String, [(String, ConstructorParameterDescription)]) {
-                return ("peerSettings", [("flags", ConstructorParameterDescription(self.flags)), ("geoDistance", ConstructorParameterDescription(self.geoDistance)), ("requestChatTitle", ConstructorParameterDescription(self.requestChatTitle)), ("requestChatDate", ConstructorParameterDescription(self.requestChatDate)), ("businessBotId", ConstructorParameterDescription(self.businessBotId)), ("businessBotManageUrl", ConstructorParameterDescription(self.businessBotManageUrl)), ("chargePaidMessageStars", ConstructorParameterDescription(self.chargePaidMessageStars)), ("registrationMonth", ConstructorParameterDescription(self.registrationMonth)), ("phoneCountry", ConstructorParameterDescription(self.phoneCountry)), ("nameChangeDate", ConstructorParameterDescription(self.nameChangeDate)), ("photoChangeDate", ConstructorParameterDescription(self.photoChangeDate))])
-            }
-        }
-        case peerSettings(Cons_peerSettings)
-
-        public func serialize(_ buffer: Buffer, _ boxed: Swift.Bool) {
-            switch self {
-            case .peerSettings(let _data):
-                if boxed {
-                    buffer.appendInt32(-193510921)
-                }
-                serializeInt32(_data.flags, buffer: buffer, boxed: false)
-                if Int(_data.flags) & Int(1 << 6) != 0 {
-                    serializeInt32(_data.geoDistance!, buffer: buffer, boxed: false)
-                }
-                if Int(_data.flags) & Int(1 << 9) != 0 {
-                    serializeString(_data.requestChatTitle!, buffer: buffer, boxed: false)
-                }
-                if Int(_data.flags) & Int(1 << 9) != 0 {
-                    serializeInt32(_data.requestChatDate!, buffer: buffer, boxed: false)
-                }
-                if Int(_data.flags) & Int(1 << 13) != 0 {
-                    serializeInt64(_data.businessBotId!, buffer: buffer, boxed: false)
-                }
-                if Int(_data.flags) & Int(1 << 13) != 0 {
-                    serializeString(_data.businessBotManageUrl!, buffer: buffer, boxed: false)
-                }
-                if Int(_data.flags) & Int(1 << 14) != 0 {
-                    serializeInt64(_data.chargePaidMessageStars!, buffer: buffer, boxed: false)
-                }
-                if Int(_data.flags) & Int(1 << 15) != 0 {
-                    serializeString(_data.registrationMonth!, buffer: buffer, boxed: false)
-                }
-                if Int(_data.flags) & Int(1 << 16) != 0 {
-                    serializeString(_data.phoneCountry!, buffer: buffer, boxed: false)
-                }
-                if Int(_data.flags) & Int(1 << 17) != 0 {
-                    serializeInt32(_data.nameChangeDate!, buffer: buffer, boxed: false)
-                }
-                if Int(_data.flags) & Int(1 << 18) != 0 {
-                    serializeInt32(_data.photoChangeDate!, buffer: buffer, boxed: false)
-                }
-                break
-            }
-        }
-
-        public func descriptionFields() -> (String, [(String, ConstructorParameterDescription)]) {
-            switch self {
-            case .peerSettings(let _data):
-                return ("peerSettings", [("flags", ConstructorParameterDescription(_data.flags)), ("geoDistance", ConstructorParameterDescription(_data.geoDistance)), ("requestChatTitle", ConstructorParameterDescription(_data.requestChatTitle)), ("requestChatDate", ConstructorParameterDescription(_data.requestChatDate)), ("businessBotId", ConstructorParameterDescription(_data.businessBotId)), ("businessBotManageUrl", ConstructorParameterDescription(_data.businessBotManageUrl)), ("chargePaidMessageStars", ConstructorParameterDescription(_data.chargePaidMessageStars)), ("registrationMonth", ConstructorParameterDescription(_data.registrationMonth)), ("phoneCountry", ConstructorParameterDescription(_data.phoneCountry)), ("nameChangeDate", ConstructorParameterDescription(_data.nameChangeDate)), ("photoChangeDate", ConstructorParameterDescription(_data.photoChangeDate))])
-            }
-        }
-
-        public static func parse_peerSettings(_ reader: BufferReader) -> PeerSettings? {
-            var _1: Int32?
-            _1 = reader.readInt32()
-            var _2: Int32?
-            if Int(_1 ?? 0) & Int(1 << 6) != 0 {
-                _2 = reader.readInt32()
-            }
-            var _3: String?
-            if Int(_1 ?? 0) & Int(1 << 9) != 0 {
-                _3 = parseString(reader)
-            }
-            var _4: Int32?
-            if Int(_1 ?? 0) & Int(1 << 9) != 0 {
-                _4 = reader.readInt32()
-            }
-            var _5: Int64?
-            if Int(_1 ?? 0) & Int(1 << 13) != 0 {
-                _5 = reader.readInt64()
-            }
-            var _6: String?
-            if Int(_1 ?? 0) & Int(1 << 13) != 0 {
-                _6 = parseString(reader)
-            }
-            var _7: Int64?
-            if Int(_1 ?? 0) & Int(1 << 14) != 0 {
-                _7 = reader.readInt64()
-            }
-            var _8: String?
-            if Int(_1 ?? 0) & Int(1 << 15) != 0 {
-                _8 = parseString(reader)
-            }
-            var _9: String?
-            if Int(_1 ?? 0) & Int(1 << 16) != 0 {
-                _9 = parseString(reader)
-            }
-            var _10: Int32?
-            if Int(_1 ?? 0) & Int(1 << 17) != 0 {
-                _10 = reader.readInt32()
-            }
-            var _11: Int32?
-            if Int(_1 ?? 0) & Int(1 << 18) != 0 {
-                _11 = reader.readInt32()
-            }
-            let _c1 = _1 != nil
-            let _c2 = (Int(_1 ?? 0) & Int(1 << 6) == 0) || _2 != nil
-            let _c3 = (Int(_1 ?? 0) & Int(1 << 9) == 0) || _3 != nil
-            let _c4 = (Int(_1 ?? 0) & Int(1 << 9) == 0) || _4 != nil
-            let _c5 = (Int(_1 ?? 0) & Int(1 << 13) == 0) || _5 != nil
-            let _c6 = (Int(_1 ?? 0) & Int(1 << 13) == 0) || _6 != nil
-            let _c7 = (Int(_1 ?? 0) & Int(1 << 14) == 0) || _7 != nil
-            let _c8 = (Int(_1 ?? 0) & Int(1 << 15) == 0) || _8 != nil
-            let _c9 = (Int(_1 ?? 0) & Int(1 << 16) == 0) || _9 != nil
-            let _c10 = (Int(_1 ?? 0) & Int(1 << 17) == 0) || _10 != nil
-            let _c11 = (Int(_1 ?? 0) & Int(1 << 18) == 0) || _11 != nil
-            if _c1 && _c2 && _c3 && _c4 && _c5 && _c6 && _c7 && _c8 && _c9 && _c10 && _c11 {
-                return Api.PeerSettings.peerSettings(Cons_peerSettings(flags: _1!, geoDistance: _2, requestChatTitle: _3, requestChatDate: _4, businessBotId: _5, businessBotManageUrl: _6, chargePaidMessageStars: _7, registrationMonth: _8, phoneCountry: _9, nameChangeDate: _10, photoChangeDate: _11))
-            }
-            else {
-                return nil
-            }
-        }
-    }
-}
-public extension Api {
-    enum PeerStories: TypeConstructorDescription {
-        public class Cons_peerStories: TypeConstructorDescription {
-            public var flags: Int32
-            public var peer: Api.Peer
-            public var maxReadId: Int32?
-            public var stories: [Api.StoryItem]
-            public init(flags: Int32, peer: Api.Peer, maxReadId: Int32?, stories: [Api.StoryItem]) {
-                self.flags = flags
-                self.peer = peer
-                self.maxReadId = maxReadId
-                self.stories = stories
-            }
-            public func descriptionFields() -> (String, [(String, ConstructorParameterDescription)]) {
-                return ("peerStories", [("flags", ConstructorParameterDescription(self.flags)), ("peer", ConstructorParameterDescription(self.peer)), ("maxReadId", ConstructorParameterDescription(self.maxReadId)), ("stories", ConstructorParameterDescription(self.stories))])
-            }
-        }
-        case peerStories(Cons_peerStories)
-
-        public func serialize(_ buffer: Buffer, _ boxed: Swift.Bool) {
-            switch self {
-            case .peerStories(let _data):
-                if boxed {
-                    buffer.appendInt32(-1707742823)
-                }
-                serializeInt32(_data.flags, buffer: buffer, boxed: false)
-                _data.peer.serialize(buffer, true)
-                if Int(_data.flags) & Int(1 << 0) != 0 {
-                    serializeInt32(_data.maxReadId!, buffer: buffer, boxed: false)
-                }
-                buffer.appendInt32(481674261)
-                buffer.appendInt32(Int32(_data.stories.count))
-                for item in _data.stories {
-                    item.serialize(buffer, true)
-                }
-                break
-            }
-        }
-
-        public func descriptionFields() -> (String, [(String, ConstructorParameterDescription)]) {
-            switch self {
-            case .peerStories(let _data):
-                return ("peerStories", [("flags", ConstructorParameterDescription(_data.flags)), ("peer", ConstructorParameterDescription(_data.peer)), ("maxReadId", ConstructorParameterDescription(_data.maxReadId)), ("stories", ConstructorParameterDescription(_data.stories))])
-            }
-        }
-
-        public static func parse_peerStories(_ reader: BufferReader) -> PeerStories? {
-            var _1: Int32?
-            _1 = reader.readInt32()
-            var _2: Api.Peer?
-            if let signature = reader.readInt32() {
-                _2 = Api.parse(reader, signature: signature) as? Api.Peer
+            var _2: [Api.PageListOrderedItem]?
+            if let _ = reader.readInt32() {
+                _2 = Api.parseVector(reader, elementSignature: 0, elementType: Api.PageListOrderedItem.self)
             }
             var _3: Int32?
             if Int(_1 ?? 0) & Int(1 << 0) != 0 {
                 _3 = reader.readInt32()
             }
-            var _4: [Api.StoryItem]?
-            if let _ = reader.readInt32() {
-                _4 = Api.parseVector(reader, elementSignature: 0, elementType: Api.StoryItem.self)
-            }
-            let _c1 = _1 != nil
-            let _c2 = _2 != nil
-            let _c3 = (Int(_1 ?? 0) & Int(1 << 0) == 0) || _3 != nil
-            let _c4 = _4 != nil
-            if _c1 && _c2 && _c3 && _c4 {
-                return Api.PeerStories.peerStories(Cons_peerStories(flags: _1!, peer: _2!, maxReadId: _3, stories: _4!))
-            }
-            else {
-                return nil
-            }
-        }
-    }
-}
-public extension Api {
-    enum PendingSuggestion: TypeConstructorDescription {
-        public class Cons_pendingSuggestion: TypeConstructorDescription {
-            public var suggestion: String
-            public var title: Api.TextWithEntities
-            public var description: Api.TextWithEntities
-            public var url: String
-            public init(suggestion: String, title: Api.TextWithEntities, description: Api.TextWithEntities, url: String) {
-                self.suggestion = suggestion
-                self.title = title
-                self.description = description
-                self.url = url
-            }
-            public func descriptionFields() -> (String, [(String, ConstructorParameterDescription)]) {
-                return ("pendingSuggestion", [("suggestion", ConstructorParameterDescription(self.suggestion)), ("title", ConstructorParameterDescription(self.title)), ("description", ConstructorParameterDescription(self.description)), ("url", ConstructorParameterDescription(self.url))])
-            }
-        }
-        case pendingSuggestion(Cons_pendingSuggestion)
-
-        public func serialize(_ buffer: Buffer, _ boxed: Swift.Bool) {
-            switch self {
-            case .pendingSuggestion(let _data):
-                if boxed {
-                    buffer.appendInt32(-404214254)
-                }
-                serializeString(_data.suggestion, buffer: buffer, boxed: false)
-                _data.title.serialize(buffer, true)
-                _data.description.serialize(buffer, true)
-                serializeString(_data.url, buffer: buffer, boxed: false)
-                break
-            }
-        }
-
-        public func descriptionFields() -> (String, [(String, ConstructorParameterDescription)]) {
-            switch self {
-            case .pendingSuggestion(let _data):
-                return ("pendingSuggestion", [("suggestion", ConstructorParameterDescription(_data.suggestion)), ("title", ConstructorParameterDescription(_data.title)), ("description", ConstructorParameterDescription(_data.description)), ("url", ConstructorParameterDescription(_data.url))])
-            }
-        }
-
-        public static func parse_pendingSuggestion(_ reader: BufferReader) -> PendingSuggestion? {
-            var _1: String?
-            _1 = parseString(reader)
-            var _2: Api.TextWithEntities?
-            if let signature = reader.readInt32() {
-                _2 = Api.parse(reader, signature: signature) as? Api.TextWithEntities
-            }
-            var _3: Api.TextWithEntities?
-            if let signature = reader.readInt32() {
-                _3 = Api.parse(reader, signature: signature) as? Api.TextWithEntities
-            }
             var _4: String?
-            _4 = parseString(reader)
-            let _c1 = _1 != nil
-            let _c2 = _2 != nil
-            let _c3 = _3 != nil
-            let _c4 = _4 != nil
-            if _c1 && _c2 && _c3 && _c4 {
-                return Api.PendingSuggestion.pendingSuggestion(Cons_pendingSuggestion(suggestion: _1!, title: _2!, description: _3!, url: _4!))
-            }
-            else {
-                return nil
-            }
-        }
-    }
-}
-public extension Api {
-    enum PhoneCall: TypeConstructorDescription {
-        public class Cons_phoneCall: TypeConstructorDescription {
-            public var flags: Int32
-            public var id: Int64
-            public var accessHash: Int64
-            public var date: Int32
-            public var adminId: Int64
-            public var participantId: Int64
-            public var gAOrB: Buffer
-            public var keyFingerprint: Int64
-            public var `protocol`: Api.PhoneCallProtocol
-            public var connections: [Api.PhoneConnection]
-            public var startDate: Int32
-            public var customParameters: Api.DataJSON?
-            public init(flags: Int32, id: Int64, accessHash: Int64, date: Int32, adminId: Int64, participantId: Int64, gAOrB: Buffer, keyFingerprint: Int64, `protocol`: Api.PhoneCallProtocol, connections: [Api.PhoneConnection], startDate: Int32, customParameters: Api.DataJSON?) {
-                self.flags = flags
-                self.id = id
-                self.accessHash = accessHash
-                self.date = date
-                self.adminId = adminId
-                self.participantId = participantId
-                self.gAOrB = gAOrB
-                self.keyFingerprint = keyFingerprint
-                self.`protocol` = `protocol`
-                self.connections = connections
-                self.startDate = startDate
-                self.customParameters = customParameters
-            }
-            public func descriptionFields() -> (String, [(String, ConstructorParameterDescription)]) {
-                return ("phoneCall", [("flags", ConstructorParameterDescription(self.flags)), ("id", ConstructorParameterDescription(self.id)), ("accessHash", ConstructorParameterDescription(self.accessHash)), ("date", ConstructorParameterDescription(self.date)), ("adminId", ConstructorParameterDescription(self.adminId)), ("participantId", ConstructorParameterDescription(self.participantId)), ("gAOrB", ConstructorParameterDescription(self.gAOrB)), ("keyFingerprint", ConstructorParameterDescription(self.keyFingerprint)), ("`protocol`", ConstructorParameterDescription(self.`protocol`)), ("connections", ConstructorParameterDescription(self.connections)), ("startDate", ConstructorParameterDescription(self.startDate)), ("customParameters", ConstructorParameterDescription(self.customParameters))])
-            }
-        }
-        public class Cons_phoneCallAccepted: TypeConstructorDescription {
-            public var flags: Int32
-            public var id: Int64
-            public var accessHash: Int64
-            public var date: Int32
-            public var adminId: Int64
-            public var participantId: Int64
-            public var gB: Buffer
-            public var `protocol`: Api.PhoneCallProtocol
-            public init(flags: Int32, id: Int64, accessHash: Int64, date: Int32, adminId: Int64, participantId: Int64, gB: Buffer, `protocol`: Api.PhoneCallProtocol) {
-                self.flags = flags
-                self.id = id
-                self.accessHash = accessHash
-                self.date = date
-                self.adminId = adminId
-                self.participantId = participantId
-                self.gB = gB
-                self.`protocol` = `protocol`
-            }
-            public func descriptionFields() -> (String, [(String, ConstructorParameterDescription)]) {
-                return ("phoneCallAccepted", [("flags", ConstructorParameterDescription(self.flags)), ("id", ConstructorParameterDescription(self.id)), ("accessHash", ConstructorParameterDescription(self.accessHash)), ("date", ConstructorParameterDescription(self.date)), ("adminId", ConstructorParameterDescription(self.adminId)), ("participantId", ConstructorParameterDescription(self.participantId)), ("gB", ConstructorParameterDescription(self.gB)), ("`protocol`", ConstructorParameterDescription(self.`protocol`))])
-            }
-        }
-        public class Cons_phoneCallDiscarded: TypeConstructorDescription {
-            public var flags: Int32
-            public var id: Int64
-            public var reason: Api.PhoneCallDiscardReason?
-            public var duration: Int32?
-            public init(flags: Int32, id: Int64, reason: Api.PhoneCallDiscardReason?, duration: Int32?) {
-                self.flags = flags
-                self.id = id
-                self.reason = reason
-                self.duration = duration
-            }
-            public func descriptionFields() -> (String, [(String, ConstructorParameterDescription)]) {
-                return ("phoneCallDiscarded", [("flags", ConstructorParameterDescription(self.flags)), ("id", ConstructorParameterDescription(self.id)), ("reason", ConstructorParameterDescription(self.reason)), ("duration", ConstructorParameterDescription(self.duration))])
-            }
-        }
-        public class Cons_phoneCallEmpty: TypeConstructorDescription {
-            public var id: Int64
-            public init(id: Int64) {
-                self.id = id
-            }
-            public func descriptionFields() -> (String, [(String, ConstructorParameterDescription)]) {
-                return ("phoneCallEmpty", [("id", ConstructorParameterDescription(self.id))])
-            }
-        }
-        public class Cons_phoneCallRequested: TypeConstructorDescription {
-            public var flags: Int32
-            public var id: Int64
-            public var accessHash: Int64
-            public var date: Int32
-            public var adminId: Int64
-            public var participantId: Int64
-            public var gAHash: Buffer
-            public var `protocol`: Api.PhoneCallProtocol
-            public init(flags: Int32, id: Int64, accessHash: Int64, date: Int32, adminId: Int64, participantId: Int64, gAHash: Buffer, `protocol`: Api.PhoneCallProtocol) {
-                self.flags = flags
-                self.id = id
-                self.accessHash = accessHash
-                self.date = date
-                self.adminId = adminId
-                self.participantId = participantId
-                self.gAHash = gAHash
-                self.`protocol` = `protocol`
-            }
-            public func descriptionFields() -> (String, [(String, ConstructorParameterDescription)]) {
-                return ("phoneCallRequested", [("flags", ConstructorParameterDescription(self.flags)), ("id", ConstructorParameterDescription(self.id)), ("accessHash", ConstructorParameterDescription(self.accessHash)), ("date", ConstructorParameterDescription(self.date)), ("adminId", ConstructorParameterDescription(self.adminId)), ("participantId", ConstructorParameterDescription(self.participantId)), ("gAHash", ConstructorParameterDescription(self.gAHash)), ("`protocol`", ConstructorParameterDescription(self.`protocol`))])
-            }
-        }
-        public class Cons_phoneCallWaiting: TypeConstructorDescription {
-            public var flags: Int32
-            public var id: Int64
-            public var accessHash: Int64
-            public var date: Int32
-            public var adminId: Int64
-            public var participantId: Int64
-            public var `protocol`: Api.PhoneCallProtocol
-            public var receiveDate: Int32?
-            public init(flags: Int32, id: Int64, accessHash: Int64, date: Int32, adminId: Int64, participantId: Int64, `protocol`: Api.PhoneCallProtocol, receiveDate: Int32?) {
-                self.flags = flags
-                self.id = id
-                self.accessHash = accessHash
-                self.date = date
-                self.adminId = adminId
-                self.participantId = participantId
-                self.`protocol` = `protocol`
-                self.receiveDate = receiveDate
-            }
-            public func descriptionFields() -> (String, [(String, ConstructorParameterDescription)]) {
-                return ("phoneCallWaiting", [("flags", ConstructorParameterDescription(self.flags)), ("id", ConstructorParameterDescription(self.id)), ("accessHash", ConstructorParameterDescription(self.accessHash)), ("date", ConstructorParameterDescription(self.date)), ("adminId", ConstructorParameterDescription(self.adminId)), ("participantId", ConstructorParameterDescription(self.participantId)), ("`protocol`", ConstructorParameterDescription(self.`protocol`)), ("receiveDate", ConstructorParameterDescription(self.receiveDate))])
-            }
-        }
-        case phoneCall(Cons_phoneCall)
-        case phoneCallAccepted(Cons_phoneCallAccepted)
-        case phoneCallDiscarded(Cons_phoneCallDiscarded)
-        case phoneCallEmpty(Cons_phoneCallEmpty)
-        case phoneCallRequested(Cons_phoneCallRequested)
-        case phoneCallWaiting(Cons_phoneCallWaiting)
-
-        public func serialize(_ buffer: Buffer, _ boxed: Swift.Bool) {
-            switch self {
-            case .phoneCall(let _data):
-                if boxed {
-                    buffer.appendInt32(810769141)
-                }
-                serializeInt32(_data.flags, buffer: buffer, boxed: false)
-                serializeInt64(_data.id, buffer: buffer, boxed: false)
-                serializeInt64(_data.accessHash, buffer: buffer, boxed: false)
-                serializeInt32(_data.date, buffer: buffer, boxed: false)
-                serializeInt64(_data.adminId, buffer: buffer, boxed: false)
-                serializeInt64(_data.participantId, buffer: buffer, boxed: false)
-                serializeBytes(_data.gAOrB, buffer: buffer, boxed: false)
-                serializeInt64(_data.keyFingerprint, buffer: buffer, boxed: false)
-                _data.`protocol`.serialize(buffer, true)
-                buffer.appendInt32(481674261)
-                buffer.appendInt32(Int32(_data.connections.count))
-                for item in _data.connections {
-                    item.serialize(buffer, true)
-                }
-                serializeInt32(_data.startDate, buffer: buffer, boxed: false)
-                if Int(_data.flags) & Int(1 << 7) != 0 {
-                    _data.customParameters!.serialize(buffer, true)
-                }
-                break
-            case .phoneCallAccepted(let _data):
-                if boxed {
-                    buffer.appendInt32(912311057)
-                }
-                serializeInt32(_data.flags, buffer: buffer, boxed: false)
-                serializeInt64(_data.id, buffer: buffer, boxed: false)
-                serializeInt64(_data.accessHash, buffer: buffer, boxed: false)
-                serializeInt32(_data.date, buffer: buffer, boxed: false)
-                serializeInt64(_data.adminId, buffer: buffer, boxed: false)
-                serializeInt64(_data.participantId, buffer: buffer, boxed: false)
-                serializeBytes(_data.gB, buffer: buffer, boxed: false)
-                _data.`protocol`.serialize(buffer, true)
-                break
-            case .phoneCallDiscarded(let _data):
-                if boxed {
-                    buffer.appendInt32(1355435489)
-                }
-                serializeInt32(_data.flags, buffer: buffer, boxed: false)
-                serializeInt64(_data.id, buffer: buffer, boxed: false)
-                if Int(_data.flags) & Int(1 << 0) != 0 {
-                    _data.reason!.serialize(buffer, true)
-                }
-                if Int(_data.flags) & Int(1 << 1) != 0 {
-                    serializeInt32(_data.duration!, buffer: buffer, boxed: false)
-                }
-                break
-            case .phoneCallEmpty(let _data):
-                if boxed {
-                    buffer.appendInt32(1399245077)
-                }
-                serializeInt64(_data.id, buffer: buffer, boxed: false)
-                break
-            case .phoneCallRequested(let _data):
-                if boxed {
-                    buffer.appendInt32(347139340)
-                }
-                serializeInt32(_data.flags, buffer: buffer, boxed: false)
-                serializeInt64(_data.id, buffer: buffer, boxed: false)
-                serializeInt64(_data.accessHash, buffer: buffer, boxed: false)
-                serializeInt32(_data.date, buffer: buffer, boxed: false)
-                serializeInt64(_data.adminId, buffer: buffer, boxed: false)
-                serializeInt64(_data.participantId, buffer: buffer, boxed: false)
-                serializeBytes(_data.gAHash, buffer: buffer, boxed: false)
-                _data.`protocol`.serialize(buffer, true)
-                break
-            case .phoneCallWaiting(let _data):
-                if boxed {
-                    buffer.appendInt32(-987599081)
-                }
-                serializeInt32(_data.flags, buffer: buffer, boxed: false)
-                serializeInt64(_data.id, buffer: buffer, boxed: false)
-                serializeInt64(_data.accessHash, buffer: buffer, boxed: false)
-                serializeInt32(_data.date, buffer: buffer, boxed: false)
-                serializeInt64(_data.adminId, buffer: buffer, boxed: false)
-                serializeInt64(_data.participantId, buffer: buffer, boxed: false)
-                _data.`protocol`.serialize(buffer, true)
-                if Int(_data.flags) & Int(1 << 0) != 0 {
-                    serializeInt32(_data.receiveDate!, buffer: buffer, boxed: false)
-                }
-                break
-            }
-        }
-
-        public func descriptionFields() -> (String, [(String, ConstructorParameterDescription)]) {
-            switch self {
-            case .phoneCall(let _data):
-                return ("phoneCall", [("flags", ConstructorParameterDescription(_data.flags)), ("id", ConstructorParameterDescription(_data.id)), ("accessHash", ConstructorParameterDescription(_data.accessHash)), ("date", ConstructorParameterDescription(_data.date)), ("adminId", ConstructorParameterDescription(_data.adminId)), ("participantId", ConstructorParameterDescription(_data.participantId)), ("gAOrB", ConstructorParameterDescription(_data.gAOrB)), ("keyFingerprint", ConstructorParameterDescription(_data.keyFingerprint)), ("`protocol`", ConstructorParameterDescription(_data.`protocol`)), ("connections", ConstructorParameterDescription(_data.connections)), ("startDate", ConstructorParameterDescription(_data.startDate)), ("customParameters", ConstructorParameterDescription(_data.customParameters))])
-            case .phoneCallAccepted(let _data):
-                return ("phoneCallAccepted", [("flags", ConstructorParameterDescription(_data.flags)), ("id", ConstructorParameterDescription(_data.id)), ("accessHash", ConstructorParameterDescription(_data.accessHash)), ("date", ConstructorParameterDescription(_data.date)), ("adminId", ConstructorParameterDescription(_data.adminId)), ("participantId", ConstructorParameterDescription(_data.participantId)), ("gB", ConstructorParameterDescription(_data.gB)), ("`protocol`", ConstructorParameterDescription(_data.`protocol`))])
-            case .phoneCallDiscarded(let _data):
-                return ("phoneCallDiscarded", [("flags", ConstructorParameterDescription(_data.flags)), ("id", ConstructorParameterDescription(_data.id)), ("reason", ConstructorParameterDescription(_data.reason)), ("duration", ConstructorParameterDescription(_data.duration))])
-            case .phoneCallEmpty(let _data):
-                return ("phoneCallEmpty", [("id", ConstructorParameterDescription(_data.id))])
-            case .phoneCallRequested(let _data):
-                return ("phoneCallRequested", [("flags", ConstructorParameterDescription(_data.flags)), ("id", ConstructorParameterDescription(_data.id)), ("accessHash", ConstructorParameterDescription(_data.accessHash)), ("date", ConstructorParameterDescription(_data.date)), ("adminId", ConstructorParameterDescription(_data.adminId)), ("participantId", ConstructorParameterDescription(_data.participantId)), ("gAHash", ConstructorParameterDescription(_data.gAHash)), ("`protocol`", ConstructorParameterDescription(_data.`protocol`))])
-            case .phoneCallWaiting(let _data):
-                return ("phoneCallWaiting", [("flags", ConstructorParameterDescription(_data.flags)), ("id", ConstructorParameterDescription(_data.id)), ("accessHash", ConstructorParameterDescription(_data.accessHash)), ("date", ConstructorParameterDescription(_data.date)), ("adminId", ConstructorParameterDescription(_data.adminId)), ("participantId", ConstructorParameterDescription(_data.participantId)), ("`protocol`", ConstructorParameterDescription(_data.`protocol`)), ("receiveDate", ConstructorParameterDescription(_data.receiveDate))])
-            }
-        }
-
-        public static func parse_phoneCall(_ reader: BufferReader) -> PhoneCall? {
-            var _1: Int32?
-            _1 = reader.readInt32()
-            var _2: Int64?
-            _2 = reader.readInt64()
-            var _3: Int64?
-            _3 = reader.readInt64()
-            var _4: Int32?
-            _4 = reader.readInt32()
-            var _5: Int64?
-            _5 = reader.readInt64()
-            var _6: Int64?
-            _6 = reader.readInt64()
-            var _7: Buffer?
-            _7 = parseBytes(reader)
-            var _8: Int64?
-            _8 = reader.readInt64()
-            var _9: Api.PhoneCallProtocol?
-            if let signature = reader.readInt32() {
-                _9 = Api.parse(reader, signature: signature) as? Api.PhoneCallProtocol
-            }
-            var _10: [Api.PhoneConnection]?
-            if let _ = reader.readInt32() {
-                _10 = Api.parseVector(reader, elementSignature: 0, elementType: Api.PhoneConnection.self)
-            }
-            var _11: Int32?
-            _11 = reader.readInt32()
-            var _12: Api.DataJSON?
-            if Int(_1 ?? 0) & Int(1 << 7) != 0 {
-                if let signature = reader.readInt32() {
-                    _12 = Api.parse(reader, signature: signature) as? Api.DataJSON
-                }
-            }
-            let _c1 = _1 != nil
-            let _c2 = _2 != nil
-            let _c3 = _3 != nil
-            let _c4 = _4 != nil
-            let _c5 = _5 != nil
-            let _c6 = _6 != nil
-            let _c7 = _7 != nil
-            let _c8 = _8 != nil
-            let _c9 = _9 != nil
-            let _c10 = _10 != nil
-            let _c11 = _11 != nil
-            let _c12 = (Int(_1 ?? 0) & Int(1 << 7) == 0) || _12 != nil
-            if _c1 && _c2 && _c3 && _c4 && _c5 && _c6 && _c7 && _c8 && _c9 && _c10 && _c11 && _c12 {
-                return Api.PhoneCall.phoneCall(Cons_phoneCall(flags: _1!, id: _2!, accessHash: _3!, date: _4!, adminId: _5!, participantId: _6!, gAOrB: _7!, keyFingerprint: _8!, protocol: _9!, connections: _10!, startDate: _11!, customParameters: _12))
-            }
-            else {
-                return nil
-            }
-        }
-        public static func parse_phoneCallAccepted(_ reader: BufferReader) -> PhoneCall? {
-            var _1: Int32?
-            _1 = reader.readInt32()
-            var _2: Int64?
-            _2 = reader.readInt64()
-            var _3: Int64?
-            _3 = reader.readInt64()
-            var _4: Int32?
-            _4 = reader.readInt32()
-            var _5: Int64?
-            _5 = reader.readInt64()
-            var _6: Int64?
-            _6 = reader.readInt64()
-            var _7: Buffer?
-            _7 = parseBytes(reader)
-            var _8: Api.PhoneCallProtocol?
-            if let signature = reader.readInt32() {
-                _8 = Api.parse(reader, signature: signature) as? Api.PhoneCallProtocol
-            }
-            let _c1 = _1 != nil
-            let _c2 = _2 != nil
-            let _c3 = _3 != nil
-            let _c4 = _4 != nil
-            let _c5 = _5 != nil
-            let _c6 = _6 != nil
-            let _c7 = _7 != nil
-            let _c8 = _8 != nil
-            if _c1 && _c2 && _c3 && _c4 && _c5 && _c6 && _c7 && _c8 {
-                return Api.PhoneCall.phoneCallAccepted(Cons_phoneCallAccepted(flags: _1!, id: _2!, accessHash: _3!, date: _4!, adminId: _5!, participantId: _6!, gB: _7!, protocol: _8!))
-            }
-            else {
-                return nil
-            }
-        }
-        public static func parse_phoneCallDiscarded(_ reader: BufferReader) -> PhoneCall? {
-            var _1: Int32?
-            _1 = reader.readInt32()
-            var _2: Int64?
-            _2 = reader.readInt64()
-            var _3: Api.PhoneCallDiscardReason?
-            if Int(_1 ?? 0) & Int(1 << 0) != 0 {
-                if let signature = reader.readInt32() {
-                    _3 = Api.parse(reader, signature: signature) as? Api.PhoneCallDiscardReason
-                }
-            }
-            var _4: Int32?
             if Int(_1 ?? 0) & Int(1 << 1) != 0 {
-                _4 = reader.readInt32()
+                _4 = parseString(reader)
             }
             let _c1 = _1 != nil
             let _c2 = _2 != nil
             let _c3 = (Int(_1 ?? 0) & Int(1 << 0) == 0) || _3 != nil
             let _c4 = (Int(_1 ?? 0) & Int(1 << 1) == 0) || _4 != nil
             if _c1 && _c2 && _c3 && _c4 {
-                return Api.PhoneCall.phoneCallDiscarded(Cons_phoneCallDiscarded(flags: _1!, id: _2!, reason: _3, duration: _4))
+                return Api.PageBlock.pageBlockOrderedList(Cons_pageBlockOrderedList(flags: _1!, items: _2!, start: _3, type: _4))
             }
             else {
                 return nil
             }
         }
-        public static func parse_phoneCallEmpty(_ reader: BufferReader) -> PhoneCall? {
-            var _1: Int64?
-            _1 = reader.readInt64()
+        public static func parse_pageBlockParagraph(_ reader: BufferReader) -> PageBlock? {
+            var _1: Api.RichText?
+            if let signature = reader.readInt32() {
+                _1 = Api.parse(reader, signature: signature) as? Api.RichText
+            }
             let _c1 = _1 != nil
             if _c1 {
-                return Api.PhoneCall.phoneCallEmpty(Cons_phoneCallEmpty(id: _1!))
+                return Api.PageBlock.pageBlockParagraph(Cons_pageBlockParagraph(text: _1!))
             }
             else {
                 return nil
             }
         }
-        public static func parse_phoneCallRequested(_ reader: BufferReader) -> PhoneCall? {
+        public static func parse_pageBlockPhoto(_ reader: BufferReader) -> PageBlock? {
             var _1: Int32?
             _1 = reader.readInt32()
             var _2: Int64?
             _2 = reader.readInt64()
-            var _3: Int64?
-            _3 = reader.readInt64()
-            var _4: Int32?
-            _4 = reader.readInt32()
-            var _5: Int64?
-            _5 = reader.readInt64()
-            var _6: Int64?
-            _6 = reader.readInt64()
-            var _7: Buffer?
-            _7 = parseBytes(reader)
-            var _8: Api.PhoneCallProtocol?
+            var _3: Api.PageCaption?
             if let signature = reader.readInt32() {
-                _8 = Api.parse(reader, signature: signature) as? Api.PhoneCallProtocol
+                _3 = Api.parse(reader, signature: signature) as? Api.PageCaption
             }
-            let _c1 = _1 != nil
-            let _c2 = _2 != nil
-            let _c3 = _3 != nil
-            let _c4 = _4 != nil
-            let _c5 = _5 != nil
-            let _c6 = _6 != nil
-            let _c7 = _7 != nil
-            let _c8 = _8 != nil
-            if _c1 && _c2 && _c3 && _c4 && _c5 && _c6 && _c7 && _c8 {
-                return Api.PhoneCall.phoneCallRequested(Cons_phoneCallRequested(flags: _1!, id: _2!, accessHash: _3!, date: _4!, adminId: _5!, participantId: _6!, gAHash: _7!, protocol: _8!))
-            }
-            else {
-                return nil
-            }
-        }
-        public static func parse_phoneCallWaiting(_ reader: BufferReader) -> PhoneCall? {
-            var _1: Int32?
-            _1 = reader.readInt32()
-            var _2: Int64?
-            _2 = reader.readInt64()
-            var _3: Int64?
-            _3 = reader.readInt64()
-            var _4: Int32?
-            _4 = reader.readInt32()
-            var _5: Int64?
-            _5 = reader.readInt64()
-            var _6: Int64?
-            _6 = reader.readInt64()
-            var _7: Api.PhoneCallProtocol?
-            if let signature = reader.readInt32() {
-                _7 = Api.parse(reader, signature: signature) as? Api.PhoneCallProtocol
-            }
-            var _8: Int32?
+            var _4: String?
             if Int(_1 ?? 0) & Int(1 << 0) != 0 {
-                _8 = reader.readInt32()
+                _4 = parseString(reader)
+            }
+            var _5: Int64?
+            if Int(_1 ?? 0) & Int(1 << 0) != 0 {
+                _5 = reader.readInt64()
             }
             let _c1 = _1 != nil
             let _c2 = _2 != nil
             let _c3 = _3 != nil
-            let _c4 = _4 != nil
-            let _c5 = _5 != nil
-            let _c6 = _6 != nil
-            let _c7 = _7 != nil
-            let _c8 = (Int(_1 ?? 0) & Int(1 << 0) == 0) || _8 != nil
-            if _c1 && _c2 && _c3 && _c4 && _c5 && _c6 && _c7 && _c8 {
-                return Api.PhoneCall.phoneCallWaiting(Cons_phoneCallWaiting(flags: _1!, id: _2!, accessHash: _3!, date: _4!, adminId: _5!, participantId: _6!, protocol: _7!, receiveDate: _8))
+            let _c4 = (Int(_1 ?? 0) & Int(1 << 0) == 0) || _4 != nil
+            let _c5 = (Int(_1 ?? 0) & Int(1 << 0) == 0) || _5 != nil
+            if _c1 && _c2 && _c3 && _c4 && _c5 {
+                return Api.PageBlock.pageBlockPhoto(Cons_pageBlockPhoto(flags: _1!, photoId: _2!, caption: _3!, url: _4, webpageId: _5))
+            }
+            else {
+                return nil
+            }
+        }
+        public static func parse_pageBlockPreformatted(_ reader: BufferReader) -> PageBlock? {
+            var _1: Api.RichText?
+            if let signature = reader.readInt32() {
+                _1 = Api.parse(reader, signature: signature) as? Api.RichText
+            }
+            var _2: String?
+            _2 = parseString(reader)
+            let _c1 = _1 != nil
+            let _c2 = _2 != nil
+            if _c1 && _c2 {
+                return Api.PageBlock.pageBlockPreformatted(Cons_pageBlockPreformatted(text: _1!, language: _2!))
+            }
+            else {
+                return nil
+            }
+        }
+        public static func parse_pageBlockPullquote(_ reader: BufferReader) -> PageBlock? {
+            var _1: Api.RichText?
+            if let signature = reader.readInt32() {
+                _1 = Api.parse(reader, signature: signature) as? Api.RichText
+            }
+            var _2: Api.RichText?
+            if let signature = reader.readInt32() {
+                _2 = Api.parse(reader, signature: signature) as? Api.RichText
+            }
+            let _c1 = _1 != nil
+            let _c2 = _2 != nil
+            if _c1 && _c2 {
+                return Api.PageBlock.pageBlockPullquote(Cons_pageBlockPullquote(text: _1!, caption: _2!))
+            }
+            else {
+                return nil
+            }
+        }
+        public static func parse_pageBlockRelatedArticles(_ reader: BufferReader) -> PageBlock? {
+            var _1: Api.RichText?
+            if let signature = reader.readInt32() {
+                _1 = Api.parse(reader, signature: signature) as? Api.RichText
+            }
+            var _2: [Api.PageRelatedArticle]?
+            if let _ = reader.readInt32() {
+                _2 = Api.parseVector(reader, elementSignature: 0, elementType: Api.PageRelatedArticle.self)
+            }
+            let _c1 = _1 != nil
+            let _c2 = _2 != nil
+            if _c1 && _c2 {
+                return Api.PageBlock.pageBlockRelatedArticles(Cons_pageBlockRelatedArticles(title: _1!, articles: _2!))
+            }
+            else {
+                return nil
+            }
+        }
+        public static func parse_pageBlockSlideshow(_ reader: BufferReader) -> PageBlock? {
+            var _1: [Api.PageBlock]?
+            if let _ = reader.readInt32() {
+                _1 = Api.parseVector(reader, elementSignature: 0, elementType: Api.PageBlock.self)
+            }
+            var _2: Api.PageCaption?
+            if let signature = reader.readInt32() {
+                _2 = Api.parse(reader, signature: signature) as? Api.PageCaption
+            }
+            let _c1 = _1 != nil
+            let _c2 = _2 != nil
+            if _c1 && _c2 {
+                return Api.PageBlock.pageBlockSlideshow(Cons_pageBlockSlideshow(items: _1!, caption: _2!))
+            }
+            else {
+                return nil
+            }
+        }
+        public static func parse_pageBlockSubheader(_ reader: BufferReader) -> PageBlock? {
+            var _1: Api.RichText?
+            if let signature = reader.readInt32() {
+                _1 = Api.parse(reader, signature: signature) as? Api.RichText
+            }
+            let _c1 = _1 != nil
+            if _c1 {
+                return Api.PageBlock.pageBlockSubheader(Cons_pageBlockSubheader(text: _1!))
+            }
+            else {
+                return nil
+            }
+        }
+        public static func parse_pageBlockSubtitle(_ reader: BufferReader) -> PageBlock? {
+            var _1: Api.RichText?
+            if let signature = reader.readInt32() {
+                _1 = Api.parse(reader, signature: signature) as? Api.RichText
+            }
+            let _c1 = _1 != nil
+            if _c1 {
+                return Api.PageBlock.pageBlockSubtitle(Cons_pageBlockSubtitle(text: _1!))
+            }
+            else {
+                return nil
+            }
+        }
+        public static func parse_pageBlockTable(_ reader: BufferReader) -> PageBlock? {
+            var _1: Int32?
+            _1 = reader.readInt32()
+            var _2: Api.RichText?
+            if let signature = reader.readInt32() {
+                _2 = Api.parse(reader, signature: signature) as? Api.RichText
+            }
+            var _3: [Api.PageTableRow]?
+            if let _ = reader.readInt32() {
+                _3 = Api.parseVector(reader, elementSignature: 0, elementType: Api.PageTableRow.self)
+            }
+            let _c1 = _1 != nil
+            let _c2 = _2 != nil
+            let _c3 = _3 != nil
+            if _c1 && _c2 && _c3 {
+                return Api.PageBlock.pageBlockTable(Cons_pageBlockTable(flags: _1!, title: _2!, rows: _3!))
+            }
+            else {
+                return nil
+            }
+        }
+        public static func parse_pageBlockThinking(_ reader: BufferReader) -> PageBlock? {
+            var _1: Api.RichText?
+            if let signature = reader.readInt32() {
+                _1 = Api.parse(reader, signature: signature) as? Api.RichText
+            }
+            let _c1 = _1 != nil
+            if _c1 {
+                return Api.PageBlock.pageBlockThinking(Cons_pageBlockThinking(text: _1!))
+            }
+            else {
+                return nil
+            }
+        }
+        public static func parse_pageBlockTitle(_ reader: BufferReader) -> PageBlock? {
+            var _1: Api.RichText?
+            if let signature = reader.readInt32() {
+                _1 = Api.parse(reader, signature: signature) as? Api.RichText
+            }
+            let _c1 = _1 != nil
+            if _c1 {
+                return Api.PageBlock.pageBlockTitle(Cons_pageBlockTitle(text: _1!))
+            }
+            else {
+                return nil
+            }
+        }
+        public static func parse_pageBlockUnsupported(_ reader: BufferReader) -> PageBlock? {
+            return Api.PageBlock.pageBlockUnsupported
+        }
+        public static func parse_pageBlockVideo(_ reader: BufferReader) -> PageBlock? {
+            var _1: Int32?
+            _1 = reader.readInt32()
+            var _2: Int64?
+            _2 = reader.readInt64()
+            var _3: Api.PageCaption?
+            if let signature = reader.readInt32() {
+                _3 = Api.parse(reader, signature: signature) as? Api.PageCaption
+            }
+            let _c1 = _1 != nil
+            let _c2 = _2 != nil
+            let _c3 = _3 != nil
+            if _c1 && _c2 && _c3 {
+                return Api.PageBlock.pageBlockVideo(Cons_pageBlockVideo(flags: _1!, videoId: _2!, caption: _3!))
             }
             else {
                 return nil

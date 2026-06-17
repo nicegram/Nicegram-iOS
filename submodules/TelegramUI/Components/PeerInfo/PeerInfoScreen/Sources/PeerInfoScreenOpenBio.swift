@@ -8,6 +8,8 @@ import AsyncDisplayKit
 import TelegramUIPreferences
 import ContextUI
 import TranslateUI
+import TextProcessingScreen
+import Pasteboard
 import UndoUI
 
 extension PeerInfoScreenNode {
@@ -105,16 +107,24 @@ extension PeerInfoScreenNode {
                         guard let self else {
                             return
                         }
-                        
-                        let controller = TranslateScreen(context: self.context, text: bioText, canCopy: true, fromLanguage: language, ignoredLanguages: translationSettings.ignoredLanguages)
-                        controller.pushController = { [weak self] c in
-                            (self?.controller?.navigationController as? NavigationController)?._keepModalDismissProgress = true
-                            self?.controller?.push(c)
+
+                        Task { @MainActor [weak self] in
+                            guard let self, let parentController = self.controller else {
+                                return
+                            }
+                            let presentationData = self.presentationData
+                            let controller = await TextProcessingScreen(
+                                context: self.context,
+                                mode: .translate(fromLanguage: language, applyResult: nil),
+                                inputText: TextWithEntities(text: bioText, entities: []),
+                                copyResult: { [weak parentController] text in
+                                    storeMessageTextInPasteboard(text.text, entities: text.entities)
+                                    parentController?.present(UndoOverlayController(presentationData: presentationData, content: .copy(text: presentationData.strings.Conversation_TextCopied), elevatedLayout: true, animateInAsReplacement: false, action: { _ in return false }), in: .window(.root))
+                                },
+                                translateChat: nil
+                            )
+                            parentController.present(controller, in: .window(.root))
                         }
-                        controller.presentController = { [weak self] c in
-                            self?.controller?.present(c, in: .window(.root))
-                        }
-                        self.controller?.present(controller, in: .window(.root))
                     }
                 })))
             }

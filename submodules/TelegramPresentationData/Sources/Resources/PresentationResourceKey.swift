@@ -64,8 +64,6 @@ public enum PresentationResourceKey: Int32 {
     case itemListCloudFetchIcon
     case itemListCloseIconImage
     case itemListRemoveIconImage
-    case itemListMakeVisibleIcon
-    case itemListMakeInvisibleIcon
     case itemListEditThemeIcon
     case itemListCornersTop
     case itemListCornersBottom
@@ -347,6 +345,8 @@ public enum PresentationResourceKey: Int32 {
     case storyViewListLikeIcon
     case navigationPostStoryIcon
     case navigationSortIcon
+    case navigationBackIcon
+    case navigationCloseIcon
     
     case chatReplyBackgroundTemplateIncomingImage
     case chatReplyBackgroundTemplateOutgoingDashedImage

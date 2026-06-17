@@ -60,6 +60,7 @@ swift_library(
         "//submodules/PromptUI",
         "//submodules/TelegramUI/Components/ItemListDatePickerItem:ItemListDatePickerItem",
         "//submodules/TelegramUI/Components/TextNodeWithEntities",
+        "//submodules/TelegramUI/Components/ButtonComponent",
         "//submodules/ComponentFlow",
         "//submodules/Components/MultilineTextComponent",
     ],

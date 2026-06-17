@@ -7,6 +7,7 @@ import TelegramCore
 import TelegramPresentationData
 import TelegramUIPreferences
 import AccountContext
+import ItemListUI
 import PresentationDataUtils
 import MediaResources
 import WallpaperGalleryScreen
@@ -57,7 +58,7 @@ public final class ThemeAccentColorController: ViewController {
         return self._ready
     }
 
-    private let segmentedTitleView: ThemeColorSegmentedTitleView
+    private let segmentedTitleView: ItemListControllerSegmentedTitleView
     
     private var applyDisposable = MetaDisposable()
     
@@ -72,7 +73,11 @@ public final class ThemeAccentColorController: ViewController {
         let section: ThemeColorSection = .background
         self.section = section
         
-        self.segmentedTitleView = ThemeColorSegmentedTitleView(theme: self.presentationData.theme, strings: self.presentationData.strings, selectedSection: section)
+        self.segmentedTitleView = ItemListControllerSegmentedTitleView(theme: self.presentationData.theme, segments: [
+            self.presentationData.strings.Theme_Colors_Background,
+            self.presentationData.strings.Theme_Colors_Accent,
+            self.presentationData.strings.Theme_Colors_Messages
+        ], selectedIndex: section.rawValue)
         
         if case .background = mode {
             self.initialBackgroundColor = randomBackgroundColors.randomElement().flatMap { UIColor(rgb: UInt32(bitPattern: $0)) }
@@ -80,38 +85,43 @@ public final class ThemeAccentColorController: ViewController {
             self.initialBackgroundColor = nil
         }
         
-        super.init(navigationBarPresentationData: NavigationBarPresentationData(presentationTheme: self.presentationData.theme, presentationStrings: self.presentationData.strings))
+        super.init(navigationBarPresentationData: nil) //NavigationBarPresentationData(presentationData: self.presentationData, style: .glass))
         
         self.navigationPresentation = .modal
+        self._hasGlassStyle = true
                 
         self.statusBar.statusBarStyle = self.presentationData.theme.rootController.statusBarStyle.style
         self.supportedOrientations = ViewControllerSupportedOrientations(regularSize: .all, compactSize: .portrait)
         
-        self.segmentedTitleView.sectionUpdated = { [weak self] section in
-            if let strongSelf = self {
-                strongSelf.controllerNode.updateSection(section)
-            }
-        }
-        
-        self.segmentedTitleView.shouldUpdateSection = { [weak self] section, f in
-            guard let strongSelf = self else {
-                f(false)
+        self.segmentedTitleView.indexUpdated = { [weak self] index in
+            guard let strongSelf = self, let section = ThemeColorSection(rawValue: index) else {
                 return
             }
+            if strongSelf.segmentedTitleView.index == index {
+                return
+            }
+
+            let updateSection: () -> Void = { [weak self] in
+                guard let strongSelf = self else {
+                    return
+                }
+                strongSelf.segmentedTitleView.index = index
+                strongSelf.controllerNode.updateSection(section)
+            }
+
             guard section == .background else {
-                f(true)
+                updateSection()
                 return
             }
                         
             if strongSelf.controllerNode.requiresWallpaperChange {
                 let controller = textAlertController(context: strongSelf.context, title: nil, text: strongSelf.presentationData.strings.Theme_Colors_ColorWallpaperWarning, actions: [TextAlertAction(type: .genericAction, title: strongSelf.presentationData.strings.Common_Cancel, action: {
-                    f(false)
                 }), TextAlertAction(type: .defaultAction, title: strongSelf.presentationData.strings.Theme_Colors_ColorWallpaperWarningProceed, action: {
-                    f(true)
+                    updateSection()
                 })])
                 strongSelf.present(controller, in: .window(.root))
             } else {
-                f(true)
+                updateSection()
             }
         }
         
@@ -119,8 +129,7 @@ public final class ThemeAccentColorController: ViewController {
             self.title = self.presentationData.strings.Wallpaper_Title
             self.navigationItem.leftBarButtonItem = UIBarButtonItem(title: self.presentationData.strings.Common_Cancel, style: .plain, target: self, action: #selector(self.cancelPressed))
         } else {
-            self.navigationItem.titleView = self.segmentedTitleView
-            self.navigationItem.leftBarButtonItem = UIBarButtonItem(customView: UIView())
+            //self.navigationItem.leftBarButtonItem = UIBarButtonItem(customView: UIView())
         }
     }
     
@@ -373,19 +382,18 @@ public final class ThemeAccentColorController: ViewController {
         }, ready: self._ready)
         self.controllerNode.themeUpdated = { [weak self] theme in
             if let strongSelf = self {
-                strongSelf.navigationBar?.updatePresentationData(NavigationBarPresentationData(presentationTheme: theme, presentationStrings: strongSelf.presentationData.strings), transition: .immediate)
                 strongSelf.segmentedTitleView.theme = theme
             }
         }
         self.controllerNode.requestSectionUpdate = { [weak self] section in
             if let strongSelf = self {
-                strongSelf.segmentedTitleView.setIndex(section.rawValue, animated: true)
+                strongSelf.segmentedTitleView.index = section.rawValue
             }
         }
         
         let _ = (combineLatest(
             self.context.sharedContext.accountManager.sharedData(keys: [ApplicationSpecificSharedDataKeys.presentationThemeSettings]) |> take(1),
-            telegramWallpapers(postbox: context.account.postbox, network: context.account.network) |> take(1)
+            context.engine.themes.wallpapers() |> take(1)
         )
         |> deliverOnMainQueue).start(next: { [weak self] sharedData, wallpapers in
             guard let strongSelf = self else {
@@ -634,6 +642,25 @@ public final class ThemeAccentColorController: ViewController {
     public override func containerLayoutUpdated(_ layout: ContainerViewLayout, transition: ContainedViewLayoutTransition) {
         super.containerLayoutUpdated(layout, transition: transition)
         
-        self.controllerNode.containerLayoutUpdated(layout, navigationBarHeight: self.navigationLayout(layout: layout).navigationFrame.maxY, transition: transition)
+        let navigationLayout = self.navigationLayout(layout: layout)
+        self.controllerNode.containerLayoutUpdated(layout, navigationBarHeight: navigationLayout.navigationFrame.maxY, transition: transition)
+
+        if case .background = self.mode {
+            if self.segmentedTitleView.superview != nil {
+                self.segmentedTitleView.removeFromSuperview()
+            }
+        } else {
+            if self.segmentedTitleView.superview == nil {
+                self.view.addSubview(self.segmentedTitleView)
+            }
+
+            let segmentedTitleFrame = CGRect(
+                x: layout.safeInsets.left,
+                y: navigationLayout.navigationFrame.maxY - navigationLayout.defaultContentHeight,
+                width: layout.size.width - layout.safeInsets.left - layout.safeInsets.right,
+                height: navigationLayout.defaultContentHeight
+            )
+            transition.updateFrame(view: self.segmentedTitleView, frame: segmentedTitleFrame)
+        }
     }
 }

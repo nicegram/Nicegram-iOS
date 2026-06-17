@@ -4,7 +4,6 @@ import Display
 import TelegramCore
 import SwiftSignalKit
 import AsyncDisplayKit
-import Postbox
 import StickerResources
 import AccountContext
 import AnimatedStickerNode
@@ -81,7 +80,7 @@ final class HorizontalStickerGridItemNode: GridItemNode {
     
     var stickerItem: StickerPackItem? {
         if let (_, item, _) = self.currentState {
-            return StickerPackItem(index: ItemCollectionItemIndex(index: 0, id: 0), file: item.file, indexKeys: [])
+            return StickerPackItem(index: EngineItemCollectionItemIndex(index: 0, id: 0), file: item.file, indexKeys: [])
         } else {
             return nil
         }

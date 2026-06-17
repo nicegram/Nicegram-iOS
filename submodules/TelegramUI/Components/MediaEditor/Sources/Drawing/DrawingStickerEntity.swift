@@ -2,7 +2,6 @@ import Foundation
 import UIKit
 import Display
 import AccountContext
-import Postbox
 import TelegramCore
 
 func entitiesPath() -> String {
@@ -38,7 +37,7 @@ public final class DrawingStickerEntity: DrawingEntity, Codable {
         case animatedImage(Data, UIImage)
         case video(TelegramMediaFile)
         case dualVideoReference(Bool)
-        case message([MessageId], CGSize, TelegramMediaFile?, CGRect?, CGFloat?)
+        case message([EngineMessage.Id], CGSize, TelegramMediaFile?, CGRect?, CGFloat?)
         case gift(StarGift.UniqueGift, CGSize)
         
         public static func == (lhs: Content, rhs: Content) -> Bool {
@@ -249,7 +248,7 @@ public final class DrawingStickerEntity: DrawingEntity, Codable {
         if let gift = try container.decodeIfPresent(StarGift.UniqueGift.self, forKey: .gift) {
             let size = try container.decodeIfPresent(CGSize.self, forKey: .messageSize) ?? .zero
             self.content = .gift(gift, size)
-        } else if let messageIds = try container.decodeIfPresent([MessageId].self, forKey: .messageIds) {
+        } else if let messageIds = try container.decodeIfPresent([EngineMessage.Id].self, forKey: .messageIds) {
             let size = try container.decodeIfPresent(CGSize.self, forKey: .messageSize) ?? .zero
             let file = try container.decodeIfPresent(TelegramMediaFile.self, forKey: .messageFile)
             let mediaRect = try container.decodeIfPresent(CGRect.self, forKey: .messageMediaRect)

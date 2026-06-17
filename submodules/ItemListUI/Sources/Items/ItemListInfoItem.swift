@@ -174,12 +174,15 @@ public class InfoItemNode: ListViewItemNode {
         
         self.labelNode = TextNode()
         self.labelNode.isUserInteractionEnabled = false
+        self.labelNode.displaysAsynchronously = false
         
         self.titleNode = TextNode()
         self.titleNode.isUserInteractionEnabled = false
+        self.titleNode.displaysAsynchronously = false
         
         self.textNode = TextNode()
         self.textNode.isUserInteractionEnabled = false
+        self.textNode.displaysAsynchronously = false
         
         self.activateArea = AccessibilityAreaNode()
         self.activateArea.accessibilityTraits = .staticText

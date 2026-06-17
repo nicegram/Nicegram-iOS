@@ -17,6 +17,8 @@ import NavigationStackComponent
 import ItemListUI
 import UndoUI
 import AccountContext
+import BundleIconComponent
+import GlassBarButtonComponent
 
 private enum ReportResult {
     case reported
@@ -37,22 +39,19 @@ private final class SheetPageContent: CombinedComponent {
     let subtitle: String
     let items: [Item]
     let action: (Item) -> Void
-    let pop: () -> Void
     
     init(
         context: AccountContext,
         title: String?,
         subtitle: String,
         items: [Item],
-        action: @escaping (Item) -> Void,
-        pop: @escaping () -> Void
+        action: @escaping (Item) -> Void
     ) {
         self.context = context
         self.title = title
         self.subtitle = subtitle
         self.items = items
         self.action = action
-        self.pop = pop
     }
     
     static func ==(lhs: SheetPageContent, rhs: SheetPageContent) -> Bool {
@@ -72,7 +71,6 @@ private final class SheetPageContent: CombinedComponent {
     }
     
     final class State: ComponentState {
-        var backArrowImage: (UIImage, PresentationTheme)?
     }
     
     func makeState() -> State {
@@ -80,8 +78,7 @@ private final class SheetPageContent: CombinedComponent {
     }
         
     static var body: Body {
-        let background = Child(RoundedRectangle.self)
-        let back = Child(Button.self)
+        let background = Child(Rectangle.self)
         let title = Child(Text.self)
         let subtitle = Child(MultilineTextComponent.self)
         let section = Child(ListSectionComponent.self)
@@ -89,7 +86,6 @@ private final class SheetPageContent: CombinedComponent {
         return { context in
             let environment = context.environment[EnvironmentType.self]
             let component = context.component
-            let state = context.state
             
             let presentationData = component.context.sharedContext.currentPresentationData.with { $0 }
             let theme = environment.theme
@@ -97,10 +93,10 @@ private final class SheetPageContent: CombinedComponent {
             
             let sideInset: CGFloat = 16.0 + environment.safeInsets.left
             
-            var contentSize = CGSize(width: context.availableSize.width, height: 18.0)
+            var contentSize = CGSize(width: context.availableSize.width, height: 26.0)
                         
             let background = background.update(
-                component: RoundedRectangle(color: theme.list.modalBlocksBackgroundColor, cornerRadius: 8.0),
+                component: Rectangle(color: theme.list.modalBlocksBackgroundColor),
                 availableSize: CGSize(width: context.availableSize.width, height: 1000.0),
                 transition: .immediate
             )
@@ -108,73 +104,38 @@ private final class SheetPageContent: CombinedComponent {
                 .position(CGPoint(x: context.availableSize.width / 2.0, y: background.size.height / 2.0))
             )
             
-            let backArrowImage: UIImage
-            if let (cached, cachedTheme) = state.backArrowImage, cachedTheme === theme {
-                backArrowImage = cached
-            } else {
-                backArrowImage = NavigationBarTheme.generateBackArrowImage(color: theme.list.itemAccentColor)!
-                state.backArrowImage = (backArrowImage, theme)
-            }
-            
-            let backContents: AnyComponent<Empty>
-            if component.title == nil {
-                backContents = AnyComponent(Text(text: strings.Common_Cancel, font: Font.regular(17.0), color: theme.list.itemAccentColor))
-            } else {
-                backContents = AnyComponent(
-                    HStack([
-                        AnyComponentWithIdentity(id: "arrow", component: AnyComponent(Image(image: backArrowImage, contentMode: .center))),
-                        AnyComponentWithIdentity(id: "label", component: AnyComponent(Text(text: strings.Common_Back, font: Font.regular(17.0), color: theme.list.itemAccentColor)))
-                    ], spacing: 6.0)
-                )
-            }
-            let back = back.update(
-                component: Button(
-                    content: backContents,
-                    action: {
-                        component.pop()
-                    }
-                ),
-                availableSize: CGSize(width: context.availableSize.width, height: context.availableSize.height),
-                transition: .immediate
-            )
-            context.add(back
-                .position(CGPoint(x: sideInset + back.size.width / 2.0 - (component.title != nil ? 8.0 : 0.0), y: contentSize.height + back.size.height / 2.0))
-            )
-            
-            let constrainedTitleWidth = context.availableSize.width - (back.size.width + 16.0) * 2.0
+            let constrainedTitleWidth = context.availableSize.width - 60.0 * 2.0
             
             let title = title.update(
                 component: Text(text: strings.ReportAd_Title, font: Font.semibold(17.0), color: theme.list.itemPrimaryTextColor),
                 availableSize: CGSize(width: constrainedTitleWidth, height: context.availableSize.height),
                 transition: .immediate
             )
+            context.add(title
+                .position(CGPoint(x: context.availableSize.width / 2.0, y: contentSize.height + title.size.height / 2.0))
+            )
+            contentSize.height += title.size.height
+            
             if let subtitleText = component.title {
                 let subtitle = subtitle.update(
                     component: MultilineTextComponent(text: .plain(NSAttributedString(string: subtitleText, font: Font.regular(13.0), textColor: theme.list.itemSecondaryTextColor)), truncationType: .end, maximumNumberOfLines: 1),
                     availableSize: CGSize(width: constrainedTitleWidth, height: context.availableSize.height),
                     transition: .immediate
                 )
-                context.add(title
-                    .position(CGPoint(x: context.availableSize.width / 2.0, y: contentSize.height + title.size.height / 2.0 - 8.0))
-                )
-                contentSize.height += title.size.height
                 context.add(subtitle
-                    .position(CGPoint(x: context.availableSize.width / 2.0, y: contentSize.height + subtitle.size.height / 2.0 - 9.0))
+                    .position(CGPoint(x: context.availableSize.width / 2.0, y: contentSize.height + 4.0 + subtitle.size.height / 2.0))
                 )
-                contentSize.height += subtitle.size.height
-                contentSize.height += 8.0
-            } else {
-                context.add(title
-                    .position(CGPoint(x: context.availableSize.width / 2.0, y: contentSize.height + title.size.height / 2.0))
-                )
-                contentSize.height += title.size.height
+                contentSize.height += 4.0 + subtitle.size.height
                 contentSize.height += 24.0
+            } else {
+                contentSize.height += 40.0
             }
             
             var items: [AnyComponentWithIdentity<Empty>] = []
             for item in component.items  {
                 items.append(AnyComponentWithIdentity(id: item.title, component: AnyComponent(ListActionItemComponent(
                     theme: theme,
+                    style: .glass,
                     title: AnyComponent(VStack([
                         AnyComponentWithIdentity(id: AnyHashable(0), component: AnyComponent(MultilineTextComponent(
                             text: .plain(NSAttributedString(
@@ -195,6 +156,7 @@ private final class SheetPageContent: CombinedComponent {
             let section = section.update(
                 component: ListSectionComponent(
                     theme: theme,
+                    style: .glass,
                     header: AnyComponent(MultilineTextComponent(
                         text: .plain(NSAttributedString(
                             string: component.subtitle.uppercased(),
@@ -315,6 +277,7 @@ private final class SheetContent: CombinedComponent {
         
     static var body: Body {
         let navigation = Child(NavigationStackComponent<EnvironmentType>.self)
+        let backButton = Child(GlassBarButtonComponent.self)
         
         return { context in
             let environment = context.environment[EnvironmentType.self]
@@ -360,9 +323,6 @@ private final class SheetContent: CombinedComponent {
                     },
                     action: { item in
                         action(item)
-                    },
-                    pop: {
-                        component.dismiss()
                     }
                 )
             )))
@@ -377,10 +337,6 @@ private final class SheetContent: CombinedComponent {
                         },
                         action: { item in
                             action(item)
-                        },
-                        pop: { [weak state] in
-                            state?.pushedOptions.removeLast()
-                            update(.spring(duration: 0.45))
                         }
                     )
                 )))
@@ -402,10 +358,39 @@ private final class SheetContent: CombinedComponent {
             )
             context.add(navigation
                 .position(CGPoint(x: context.availableSize.width / 2.0, y: navigation.size.height / 2.0))
-                .clipsToBounds(true)
-                .cornerRadius(8.0)
             )
             contentSize.height += navigation.size.height
+            
+            let isBack = items.count > 1
+            let barButtonSize = CGSize(width: 44.0, height: 44.0)
+            let backButton = backButton.update(
+                component: GlassBarButtonComponent(
+                    size: barButtonSize,
+                    backgroundColor: nil,
+                    isDark: environment.theme.overallDarkAppearance,
+                    state: .glass,
+                    component: AnyComponentWithIdentity(id: isBack ? "back" : "close", component: AnyComponent(
+                        BundleIconComponent(
+                            name: isBack ? "Navigation/Back" : "Navigation/Close",
+                            tintColor: environment.theme.chat.inputPanel.panelControlColor
+                        )
+                    )),
+                    action: { [weak state] _ in
+                        if isBack {
+                            state?.pushedOptions.removeLast()
+                            update(.spring(duration: 0.45))
+                        } else {
+                            component.dismiss()
+                        }
+                    }
+                ),
+                environment: {},
+                availableSize: barButtonSize,
+                transition: context.transition
+            )
+            context.add(backButton
+                .position(CGPoint(x: 16.0 + backButton.size.width / 2.0, y: 16.0 + backButton.size.height / 2.0))
+            )
                         
             return contentSize
         }
@@ -495,8 +480,10 @@ private final class SheetContainerComponent: CombinedComponent {
                             state?.updated(transition: transition)
                         }
                     )),
+                    style: .glass,
                     backgroundColor: .color(environment.theme.list.modalBlocksBackgroundColor),
                     followContentSizeChanges: true,
+                    clipsContent: true,
                     externalState: sheetExternalState,
                     animateOut: animateOut
                 ),

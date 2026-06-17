@@ -4,7 +4,6 @@ import Display
 import AsyncDisplayKit
 import SwiftSignalKit
 import TelegramCore
-import Postbox
 import TelegramPresentationData
 import TelegramUIPreferences
 import ItemListUI
@@ -20,8 +19,13 @@ public final class RankChatPreviewItem: ListViewItem, ItemListItem, ListItemComp
             if lhs.text != rhs.text {
                 return false
             }
-            if areMediaArraysEqual(lhs.media, rhs.media) {
+            if lhs.media.count != rhs.media.count {
                 return false
+            }
+            for i in 0 ..< lhs.media.count {
+                if !lhs.media[i].isEqual(to: rhs.media[i]) {
+                    return false
+                }
             }
             if lhs.rank != rhs.rank {
                 return false
@@ -32,11 +36,11 @@ public final class RankChatPreviewItem: ListViewItem, ItemListItem, ListItemComp
         let peer: EnginePeer
         let text: String
         let entities: TextEntitiesMessageAttribute?
-        let media: [Media]
+        let media: [EngineRawMedia]
         let rank: String
         let rankRole: ChatRankInfoScreenRole
         
-        public init(peer: EnginePeer, text: String, entities: TextEntitiesMessageAttribute?, media: [Media], rank: String, rankRole: ChatRankInfoScreenRole) {
+        public init(peer: EnginePeer, text: String, entities: TextEntitiesMessageAttribute?, media: [EngineRawMedia], rank: String, rankRole: ChatRankInfoScreenRole) {
             self.peer = peer
             self.text = text
             self.entities = entities
@@ -234,29 +238,29 @@ final class RankChatPreviewItemNode: ListViewItemNode {
             for messageItem in item.messageItems.reversed() {
                 var userPeer = messageItem.peer._asPeer()
                 
-                let updatedId = PeerId.Id._internalFromInt64Value(userPeer.id.id._internalGetInt64Value() - 7)
-                let authorPeerId = PeerId(namespace: Namespaces.Peer.CloudUser, id: updatedId)
-                let groupPeerId = PeerId(namespace: Namespaces.Peer.CloudChannel, id: PeerId.Id._internalFromInt64Value(0))
-                let groupPeer = TelegramChannel(id: PeerId(namespace: Namespaces.Peer.CloudChannel, id: PeerId.Id._internalFromInt64Value(0)), accessHash: nil, title: "", username: nil, photo: [], creationDate: 0, version: 0, participationStatus: .member, info: .group(.init(flags: [])), flags: [], restrictionInfo: nil, adminRights: nil, bannedRights: nil, defaultBannedRights: nil, usernames: [], storiesHidden: nil, nameColor: nil, backgroundEmojiId: nil, profileColor: nil, profileBackgroundEmojiId: nil, emojiStatus: nil, approximateBoostLevel: nil, subscriptionUntilDate: nil, verificationIconFileId: nil, sendPaidMessageStars: nil, linkedMonoforumId: nil)
+                let updatedId = EnginePeer.Id.Id._internalFromInt64Value(userPeer.id.id._internalGetInt64Value() - 7)
+                let authorPeerId = EnginePeer.Id(namespace: Namespaces.Peer.CloudUser, id: updatedId)
+                let groupPeerId = EnginePeer.Id(namespace: Namespaces.Peer.CloudChannel, id: EnginePeer.Id.Id._internalFromInt64Value(0))
+                let groupPeer = TelegramChannel(id: EnginePeer.Id(namespace: Namespaces.Peer.CloudChannel, id: EnginePeer.Id.Id._internalFromInt64Value(0)), accessHash: nil, title: "", username: nil, photo: [], creationDate: 0, version: 0, participationStatus: .member, info: .group(.init(flags: [])), flags: [], restrictionInfo: nil, adminRights: nil, bannedRights: nil, defaultBannedRights: nil, usernames: [], storiesHidden: nil, nameColor: nil, backgroundEmojiId: nil, profileColor: nil, profileBackgroundEmojiId: nil, emojiStatus: nil, approximateBoostLevel: nil, subscriptionUntilDate: nil, verificationIconFileId: nil, sendPaidMessageStars: nil, linkedMonoforumId: nil)
                 
                 
                 if let user = userPeer as? TelegramUser {
                     userPeer = TelegramUser(id: authorPeerId, accessHash: user.accessHash, firstName: user.firstName, lastName: user.lastName, username: "", phone: user.phone, photo: user.photo, botInfo: user.botInfo, restrictionInfo: user.restrictionInfo, flags: user.flags, emojiStatus: user.emojiStatus, usernames: user.usernames, storiesHidden: user.storiesHidden, nameColor: user.nameColor, backgroundEmojiId: user.backgroundEmojiId, profileColor: user.profileColor, profileBackgroundEmojiId: user.profileBackgroundEmojiId, subscriberCount: user.subscriberCount, verificationIconFileId: user.verificationIconFileId)
                 }
                                 
-                var peers = SimpleDictionary<PeerId, Peer>()
-                let messages = SimpleDictionary<MessageId, Message>()
+                var peers = EngineSimpleDictionary<EnginePeer.Id, EngineRawPeer>()
+                let messages = EngineSimpleDictionary<EngineMessage.Id, EngineRawMessage>()
                 
                 peers[authorPeerId] = userPeer
                 peers[groupPeerId] = groupPeer
                 
                 let media = messageItem.media
-                var attributes: [MessageAttribute] = []
+                var attributes: [EngineMessage.Attribute] = []
                 if let entities = messageItem.entities {
                     attributes.append(entities)
                 }
                 
-                let message = Message(stableId: 1, stableVersion: 0, id: MessageId(peerId: groupPeerId, namespace: Namespaces.Message.Local, id: 1), globallyUniqueId: nil, groupingKey: nil, groupInfo: nil, threadId: nil, timestamp: 20460, flags: [.Incoming], tags: [], globalTags: [], localTags: [], customTags: [], forwardInfo: nil, author: peers[authorPeerId], text: messageItem.text, attributes: attributes, media: media, peers: peers, associatedMessages: messages, associatedMessageIds: [], associatedMedia: [:], associatedThreadInfo: nil, associatedStories: [:])
+                let message = EngineRawMessage(stableId: 1, stableVersion: 0, id: EngineMessage.Id(peerId: groupPeerId, namespace: Namespaces.Message.Local, id: 1), globallyUniqueId: nil, groupingKey: nil, groupInfo: nil, threadId: nil, timestamp: 20460, flags: [.Incoming], tags: [], globalTags: [], localTags: [], customTags: [], forwardInfo: nil, author: peers[authorPeerId], text: messageItem.text, attributes: attributes, media: media, peers: peers, associatedMessages: messages, associatedMessageIds: [], associatedMedia: [:], associatedThreadInfo: nil, associatedStories: [:])
                 items.append(item.context.sharedContext.makeChatMessagePreviewItem(context: item.context, messages: [message], theme: item.componentTheme, strings: item.strings, wallpaper: item.wallpaper, fontSize: item.fontSize, chatBubbleCorners: item.chatBubbleCorners, dateTimeFormat: item.dateTimeFormat, nameOrder: item.nameDisplayOrder, forcedResourceStatus: nil, tapMessage: nil, clickThroughMessage: nil, backgroundNode: currentBackgroundNode, availableReactions: nil, accountPeer: nil, isCentered: item.containerWidth != nil, isPreview: true, isStandalone: false, rank: messageItem.rank, rankRole: messageItem.rankRole))
             }
             

@@ -2,7 +2,6 @@ import Foundation
 import UIKit
 import Display
 import SwiftSignalKit
-import Postbox
 import TelegramCore
 import TelegramPresentationData
 import TelegramUIPreferences
@@ -845,7 +844,7 @@ public func channelAdminsController(context: AccountContext, updatedPresentation
     |> deliverOnMainQueue).start(next: { peerId in
         if peerId.namespace == Namespaces.Peer.CloudChannel {
             var didReportLoadCompleted = false
-            let membersAndLoadMoreControl: (Disposable, PeerChannelMemberCategoryControl?) = context.peerChannelMemberCategoriesContextsManager.admins(engine: context.engine, postbox: context.account.postbox, network: context.account.network, accountPeerId: context.account.peerId, peerId: peerId) { membersState in
+            let membersAndLoadMoreControl: (Disposable, PeerChannelMemberCategoryControl?) = context.peerChannelMemberCategoriesContextsManager.admins(engine: context.engine, accountPeerId: context.account.peerId, peerId: peerId) { membersState in
                 if case .loading = membersState.loadingState, membersState.list.isEmpty {
                     adminsPromise.set(.single(nil))
                 } else {
@@ -912,7 +911,7 @@ public func channelAdminsController(context: AccountContext, updatedPresentation
                     }
                     for (participant, peer, presence) in participants {
                         if let peer {
-                            var presences: [PeerId: PeerPresence] = [:]
+                            var presences: [EnginePeer.Id: EngineRawPeerPresence] = [:]
                             if let presence {
                                 presences[peer.id] = presence._asPresence()
                             }
@@ -974,7 +973,7 @@ public func channelAdminsController(context: AccountContext, updatedPresentation
         var secondaryRightNavigationButton: ItemListNavigationButton?
         if let admins = admins, admins.count > 1 {
             if state.editing {
-                rightNavigationButton = ItemListNavigationButton(content: .text(presentationData.strings.Common_Done), style: .bold, enabled: true, action: {
+                rightNavigationButton = ItemListNavigationButton(content: .icon(.done), style: .bold, enabled: true, action: {
                     updateState { state in
                         return state.withUpdatedEditing(false)
                     }

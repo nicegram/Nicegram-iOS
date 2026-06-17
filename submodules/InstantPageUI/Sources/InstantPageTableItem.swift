@@ -144,54 +144,66 @@ public final class InstantPageTableItem: InstantPageScrollableItem {
     }
     
     public func drawInTile(context: CGContext) {
+        let hasBorder = self.borderWidth > 0.0
+
+        if hasBorder {
+            context.setStrokeColor(self.theme.tableBorderColor.cgColor)
+            context.setLineWidth(self.borderWidth)
+        }
+        context.setFillColor(self.theme.tableHeaderColor.cgColor)
+
+        let borderPath = CGMutablePath()
+
         for cell in self.cells {
-            if cell.cell.text == nil {
-                continue
-            }
             context.saveGState()
             context.translateBy(x: cell.frame.minX, y: cell.frame.minY)
-            
-            let hasBorder = self.borderWidth > 0.0
+
             let bounds = CGRect(origin: CGPoint(), size: cell.frame.size)
             var path: UIBezierPath?
             if !cell.adjacentSides.isEmpty {
                 path = UIBezierPath(roundedRect: bounds, byRoundingCorners: cell.adjacentSides.uiRectCorner, cornerRadii: CGSize(width: tableCornerRadius, height: tableCornerRadius))
             }
-            if cell.filled {
-                context.setFillColor(self.theme.tableHeaderColor.cgColor)
-            }
-            if self.borderWidth > 0.0 {
-                context.setStrokeColor(self.theme.tableBorderColor.cgColor)
-                context.setLineWidth(borderWidth)
-            }
-            if let path = path {
-                context.addPath(path.cgPath)
-                var drawMode: CGPathDrawingMode?
-                switch (cell.filled, hasBorder) {
-                    case (true, false):
-                        drawMode = .fill
-                    case (true, true):
-                        drawMode = .fillStroke
-                    case (false, true):
-                        drawMode = .stroke
-                    default:
-                        break
-                }
-                if let drawMode = drawMode {
-                    context.drawPath(using: drawMode)
-                }
-            } else {
-                if cell.filled {
+
+            if cell.filled && cell.cell.text != nil {
+                if let path = path {
+                    context.addPath(path.cgPath)
+                    context.fillPath()
+                } else {
                     context.fill(bounds)
                 }
-                if hasBorder {
-                    context.stroke(bounds)
-                }
             }
+
             if let textItem = cell.textItem {
                 textItem.drawInTile(context: context)
             }
+
             context.restoreGState()
+
+            if hasBorder {
+                if !cell.adjacentSides.contains(.top) {
+                    borderPath.move(to: CGPoint(x: cell.frame.minX, y: cell.frame.minY))
+                    borderPath.addLine(to: CGPoint(x: cell.frame.maxX, y: cell.frame.minY))
+                }
+                if !cell.adjacentSides.contains(.left) {
+                    borderPath.move(to: CGPoint(x: cell.frame.minX, y: cell.frame.minY))
+                    borderPath.addLine(to: CGPoint(x: cell.frame.minX, y: cell.frame.maxY))
+                }
+            }
+        }
+
+        if hasBorder && self.totalWidth > 0.0 {
+            let outerRect = CGRect(
+                x: self.borderWidth / 2.0,
+                y: self.borderWidth / 2.0,
+                width: self.totalWidth - self.borderWidth,
+                height: self.frame.height - self.borderWidth
+            )
+            borderPath.addPath(UIBezierPath(roundedRect: outerRect, cornerRadius: tableCornerRadius).cgPath)
+        }
+
+        if hasBorder {
+            context.addPath(borderPath)
+            context.strokePath()
         }
     }
     

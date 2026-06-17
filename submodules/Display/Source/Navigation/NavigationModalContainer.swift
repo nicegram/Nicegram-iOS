@@ -91,6 +91,7 @@ final class NavigationModalContainer: ASDisplayNode, ASScrollViewDelegate, ASGes
         self.scrollNode.view.clipsToBounds = false
         self.scrollNode.view.delegate = self.wrappedScrollViewDelegate
         self.scrollNode.view.tag = 0x5C4011
+        self.scrollNode.view.scrollsToTop = false
         
         let panRecognizer = InteractiveTransitionGestureRecognizer(target: self, action: #selector(self.panGesture(_:)), allowedDirections: { [weak self] _ in
             guard let strongSelf = self, !strongSelf.isDismissed else {

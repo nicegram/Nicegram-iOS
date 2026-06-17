@@ -1,11 +1,10 @@
 import Foundation
-import Postbox
 import Display
 import TelegramCore
 
 public enum ChatHistoryInitialSearchLocation: Equatable {
-    case index(MessageIndex)
-    case id(MessageId)
+    case index(EngineMessage.Index)
+    case id(EngineMessage.Id)
 }
 
 public struct MessageHistoryScrollToSubject: Equatable {
@@ -19,12 +18,12 @@ public struct MessageHistoryScrollToSubject: Equatable {
         }
     }
     
-    public var index: MessageHistoryAnchorIndex
+    public var index: EngineMessageHistoryAnchorIndex
     public var quote: Quote?
     public var subject: EngineMessageReplyInnerSubject?
     public var setupReply: Bool
     
-    public init(index: MessageHistoryAnchorIndex, quote: Quote? = nil, subject: EngineMessageReplyInnerSubject? = nil, setupReply: Bool = false) {
+    public init(index: EngineMessageHistoryAnchorIndex, quote: Quote? = nil, subject: EngineMessageReplyInnerSubject? = nil, setupReply: Bool = false) {
         self.index = index
         self.quote = quote
         self.subject = subject
@@ -57,8 +56,8 @@ public struct MessageHistoryInitialSearchSubject: Equatable {
 public enum ChatHistoryLocation: Equatable {
     case Initial(count: Int)
     case InitialSearch(subject: MessageHistoryInitialSearchSubject, count: Int, highlight: Bool, setupReply: Bool)
-    case Navigation(index: MessageHistoryAnchorIndex, anchorIndex: MessageHistoryAnchorIndex, count: Int, highlight: Bool)
-    case Scroll(subject: MessageHistoryScrollToSubject, anchorIndex: MessageHistoryAnchorIndex, sourceIndex: MessageHistoryAnchorIndex, scrollPosition: ListViewScrollPosition, animated: Bool, highlight: Bool, setupReply: Bool)
+    case Navigation(index: EngineMessageHistoryAnchorIndex, anchorIndex: EngineMessageHistoryAnchorIndex, count: Int, highlight: Bool)
+    case Scroll(subject: MessageHistoryScrollToSubject, anchorIndex: EngineMessageHistoryAnchorIndex, sourceIndex: EngineMessageHistoryAnchorIndex, scrollPosition: ListViewScrollPosition, animated: Bool, highlight: Bool, setupReply: Bool)
 }
 
 public struct ChatHistoryLocationInput: Equatable {

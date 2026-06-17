@@ -5,7 +5,6 @@ import ComponentFlow
 import PagerComponent
 import TelegramPresentationData
 import TelegramCore
-import Postbox
 import MultiAnimationRenderer
 import AnimationCache
 import AccountContext
@@ -248,7 +247,7 @@ public final class GifPagerContentComponent: Component {
         }
         
         fileprivate enum ItemKey: Hashable {
-            case media(MediaId)
+            case media(EngineMedia.Id)
             case placeholder(Int)
         }
         

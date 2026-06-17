@@ -44,6 +44,20 @@ static void adjustFrameRate(CAAnimation *animation) {
     }
 }
 
+static bool TGModernGalleryViewHasFirstResponder(UIView *view) {
+    if (view.isFirstResponder) {
+        return true;
+    }
+
+    for (UIView *subview in view.subviews) {
+        if (TGModernGalleryViewHasFirstResponder(subview)) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
 @interface TGModernGalleryController () <UIScrollViewDelegate, TGModernGalleryScrollViewDelegate, TGModernGalleryItemViewDelegate, TGKeyCommandResponder>
 {
     NSMutableDictionary *_reusableItemViewsByIdentifier;
@@ -1759,6 +1773,28 @@ static CGFloat transformRotation(CGAffineTransform transform)
     }
 }
 
+- (bool)_canBeginEditingCaptionFromKeyCommand
+{
+    UIView<TGModernGalleryInterfaceView> *interfaceView = _view.interfaceView;
+    if (interfaceView == nil) {
+        return false;
+    }
+
+    if (![interfaceView respondsToSelector:@selector(beginEditingCaption)]) {
+        return false;
+    }
+
+    if ([interfaceView respondsToSelector:@selector(canBeginEditingCaption)] && ![interfaceView canBeginEditingCaption]) {
+        return false;
+    }
+
+    if (TGModernGalleryViewHasFirstResponder(_view)) {
+        return false;
+    }
+
+    return true;
+}
+
 - (void)processKeyCommand:(UIKeyCommand *)keyCommand
 {
     if ([keyCommand.input isEqualToString:UIKeyInputLeftArrow])
@@ -1777,17 +1813,27 @@ static CGFloat transformRotation(CGAffineTransform transform)
     {
         _view.transitionOut(0.0f);
     }
+    else if ([keyCommand.input isEqualToString:@"\r"])
+    {
+        if ([self _canBeginEditingCaptionFromKeyCommand])
+            [_view.interfaceView beginEditingCaption];
+    }
 }
 
 - (NSArray *)availableKeyCommands
 {
-    return @
+    NSMutableArray *commands = [[NSMutableArray alloc] initWithArray:@
     [
         [TGKeyCommand keyCommandWithTitle:nil input:UIKeyInputLeftArrow modifierFlags:0],
         [TGKeyCommand keyCommandWithTitle:nil input:UIKeyInputRightArrow modifierFlags:0],
         [TGKeyCommand keyCommandWithTitle:nil input:UIKeyInputEscape modifierFlags:0],
         [TGKeyCommand keyCommandWithTitle:nil input:@"\t" modifierFlags:0]
-    ];
+    ]];
+
+    if ([self _canBeginEditingCaptionFromKeyCommand])
+        [commands addObject:[TGKeyCommand keyCommandWithTitle:nil input:@"\r" modifierFlags:0]];
+
+    return commands;
 }
 
 - (bool)isExclusive

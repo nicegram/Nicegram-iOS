@@ -52,6 +52,7 @@ final class ActionSheetItemGroupNode: ASDisplayNode, ASScrollViewDelegate {
         self.scrollNode.view.canCancelContentTouches = true
         self.scrollNode.view.showsVerticalScrollIndicator = false
         self.scrollNode.view.showsHorizontalScrollIndicator = false
+        self.scrollNode.view.scrollsToTop = false
         
         super.init()
         

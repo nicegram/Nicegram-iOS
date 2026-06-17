@@ -296,15 +296,15 @@ func deleteAccountDataController(context: AccountContext, mode: DeleteAccountDat
         
         switch mode {
             case .peers:
-                addAppLogEvent(postbox: context.account.postbox, type: "deactivate.step_cloud_cancel")
+                context.engine.accountData.addAppLogEvent(type: "deactivate.step_cloud_cancel")
             case .groups:
-                addAppLogEvent(postbox: context.account.postbox, type: "deactivate.step_groups_cancel")
+                context.engine.accountData.addAppLogEvent(type: "deactivate.step_groups_cancel")
             case .messages:
-                addAppLogEvent(postbox: context.account.postbox, type: "deactivate.step_messages_cancel")
+                context.engine.accountData.addAppLogEvent(type: "deactivate.step_messages_cancel")
             case .phone:
-                addAppLogEvent(postbox: context.account.postbox, type: "deactivate.step_phone_cancel")
+                context.engine.accountData.addAppLogEvent(type: "deactivate.step_phone_cancel")
             case .password:
-                addAppLogEvent(postbox: context.account.postbox, type: "deactivate.step_2fa_cancel")
+                context.engine.accountData.addAppLogEvent(type: "deactivate.step_2fa_cancel")
         }
     }
     
@@ -315,7 +315,7 @@ func deleteAccountDataController(context: AccountContext, mode: DeleteAccountDat
         statePromise.get()
     )
     |> map { presentationData, peers, state -> (ItemListControllerState, (ItemListNodeState, Any)) in
-        let leftNavigationButton = ItemListNavigationButton(content: .text(presentationData.strings.Common_Cancel), style: .regular, enabled: true, action: {
+        let leftNavigationButton = ItemListNavigationButton(content: .icon(.close), style: .regular, enabled: true, action: {
             cancelImpl()
         })
 
@@ -437,10 +437,10 @@ func deleteAccountDataController(context: AccountContext, mode: DeleteAccountDat
                 let controller = deleteAccountDataController(context: context, mode: nextMode, twoStepAuthData: twoStepAuthData)
                 replaceTopControllerImpl?(controller)
             } else {
-                addAppLogEvent(postbox: context.account.postbox, type: "deactivate.step_confirmation_show")
+                context.engine.accountData.addAppLogEvent(type: "deactivate.step_confirmation_show")
                 
                 presentControllerImpl?(textAlertController(context: context, title: presentationData.strings.DeleteAccount_ConfirmationAlertTitle, text: presentationData.strings.DeleteAccount_ConfirmationAlertText, actions: [TextAlertAction(type: .destructiveAction, title: presentationData.strings.DeleteAccount_ConfirmationAlertDelete, action: {
-                    addAppLogEvent(postbox: context.account.postbox, type: "deactivate.final")
+                    context.engine.accountData.addAppLogEvent(type: "deactivate.final")
                     
                     invokeAppLogEventsSynchronization(postbox: context.account.postbox)
                     
@@ -473,7 +473,7 @@ func deleteAccountDataController(context: AccountContext, mode: DeleteAccountDat
                         })
                     })
                 }), TextAlertAction(type: .defaultAction, title: presentationData.strings.Common_Cancel, action: {
-                    addAppLogEvent(postbox: context.account.postbox, type: "deactivate.step_confirmation_cancel")
+                    context.engine.accountData.addAppLogEvent(type: "deactivate.step_confirmation_cancel")
                     
                     dismissImpl?()
                 })], actionLayout: .vertical))
@@ -581,15 +581,15 @@ func deleteAccountDataController(context: AccountContext, mode: DeleteAccountDat
     
     switch mode {
         case .peers:
-            addAppLogEvent(postbox: context.account.postbox, type: "deactivate.step_cloud_show")
+            context.engine.accountData.addAppLogEvent(type: "deactivate.step_cloud_show")
         case .groups:
-            addAppLogEvent(postbox: context.account.postbox, type: "deactivate.step_groups_show")
+            context.engine.accountData.addAppLogEvent(type: "deactivate.step_groups_show")
         case .messages:
-            addAppLogEvent(postbox: context.account.postbox, type: "deactivate.step_messages_show")
+            context.engine.accountData.addAppLogEvent(type: "deactivate.step_messages_show")
         case .phone:
-            addAppLogEvent(postbox: context.account.postbox, type: "deactivate.step_phone_show")
+            context.engine.accountData.addAppLogEvent(type: "deactivate.step_phone_show")
         case .password:
-            addAppLogEvent(postbox: context.account.postbox, type: "deactivate.step_2fa_show")
+            context.engine.accountData.addAppLogEvent(type: "deactivate.step_2fa_show")
     }
     
     return controller

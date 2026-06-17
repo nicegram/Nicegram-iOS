@@ -377,7 +377,7 @@ func createPasswordController(context: AccountContext, createPasswordContext: Cr
     let signal = combineLatest(context.sharedContext.presentationData, statePromise.get())
     |> deliverOnMainQueue
     |> map { presentationData, state -> (ItemListControllerState, (ItemListNodeState, Any)) in
-        let leftNavigationButton = ItemListNavigationButton(content: .text(presentationData.strings.Common_Cancel), style: .regular, enabled: true, action: {
+        let leftNavigationButton = ItemListNavigationButton(content: .icon(.close), style: .regular, enabled: true, action: {
             dismissImpl?()
         })
         var rightNavigationButton: ItemListNavigationButton?
@@ -386,7 +386,7 @@ func createPasswordController(context: AccountContext, createPasswordContext: Cr
         } else {
             switch state.state {
                 case .setup:
-                    rightNavigationButton = ItemListNavigationButton(content: .text(presentationData.strings.Common_Done), style: .bold, enabled: !state.passwordText.isEmpty, action: {
+                    rightNavigationButton = ItemListNavigationButton(content: .icon(.done), style: .bold, enabled: !state.passwordText.isEmpty, action: {
                         saveImpl()
                     })
                 case .pendingVerification:

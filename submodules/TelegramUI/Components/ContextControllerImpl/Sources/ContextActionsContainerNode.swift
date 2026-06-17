@@ -738,6 +738,7 @@ final class ContextActionsContainerNode: ASDisplayNode {
         if #available(iOS 11.0, *) {
             self.scrollNode.view.contentInsetAdjustmentBehavior = .never
         }
+        self.scrollNode.view.scrollsToTop = false
         
         super.init()
         

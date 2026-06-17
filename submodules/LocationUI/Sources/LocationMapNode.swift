@@ -15,9 +15,9 @@ public enum LocationMapMode {
     var mapType: MKMapType {
         switch self {
             case .satellite:
-                return .satellite
+                return .satelliteFlyover
             case .hybrid:
-                return .hybrid
+                return .hybridFlyover
             default:
                 return .standard
         }
@@ -135,6 +135,7 @@ private func generateProximityDim(size: CGSize) -> UIImage {
 }
 
 protocol MKMapViewDelegateTarget: AnyObject {
+    func mapViewDidChangeVisibleRegion(_ mapView: MKMapView)
     func mapView(_ mapView: MKMapView, regionWillChangeAnimated animated: Bool)
     func mapView(_ mapView: MKMapView, regionDidChangeAnimated animated: Bool)
     func mapView(_ mapView: MKMapView, didUpdate userLocation: MKUserLocation)
@@ -155,6 +156,10 @@ private final class MKMapViewDelegateImpl: NSObject, MKMapViewDelegate {
         super.init()
     }
     
+    func mapViewDidChangeVisibleRegion(_ mapView: MKMapView) {
+        self.target?.mapViewDidChangeVisibleRegion(mapView)
+    }
+
     func mapView(_ mapView: MKMapView, regionWillChangeAnimated animated: Bool) {
         self.target?.mapView(mapView, regionWillChangeAnimated: animated)
     }
@@ -237,12 +242,41 @@ public final class LocationMapNode: ASDisplayNode, MKMapViewDelegateTarget {
         return self.view as? LocationMapView
     }
     
+    private func updateUserHeadingTransform(mapHeading: CGFloat) {
+        if let heading = self.userHeading {
+            self.headingArrowView?.isHidden = false
+            self.headingArrowView?.transform = CGAffineTransform(rotationAngle: (heading - mapHeading) / 180.0 * CGFloat.pi)
+        } else {
+            self.headingArrowView?.isHidden = true
+            self.headingArrowView?.transform = CGAffineTransform.identity
+        }
+    }
+
+    private func updateHeadingTransforms(mapHeading: CGFloat? = nil) {
+        guard let mapView = self.mapView else {
+            return
+        }
+
+        let mapHeading = mapHeading ?? CGFloat(mapView.camera.heading)
+        self.updateUserHeadingTransform(mapHeading: mapHeading)
+
+        for annotation in mapView.annotations {
+            if let annotationView = mapView.view(for: annotation) as? LocationPinAnnotationView {
+                annotationView.updateMapHeading(mapHeading)
+            }
+        }
+
+        self.pickerAnnotationView?.updateMapHeading(mapHeading)
+        self.customUserLocationAnnotationView?.updateMapHeading(mapHeading)
+    }
+
     var returnedToUserLocation = true
     var ignoreRegionChanges = false
     var isDragging = false
     var onTouch: (() -> Void)?
     var beganInteractiveDragging: (() -> Void)?
     var endedInteractiveDragging: ((CLLocationCoordinate2D) -> Void)?
+    var visibleRegionDidChange: (() -> Void)?
     var disableHorizontalTransitionGesture = false
     
     var annotationSelected: ((LocationPinAnnotation?) -> Void)?
@@ -369,6 +403,7 @@ public final class LocationMapNode: ASDisplayNode, MKMapViewDelegateTarget {
             self.onTouch?()
         }
         self.view.addSubview(self.pickerAnnotationContainerView)
+        self.updateHeadingTransforms()
     }
     
     var isRotateEnabled: Bool = true {
@@ -383,6 +418,12 @@ public final class LocationMapNode: ASDisplayNode, MKMapViewDelegateTarget {
         }
     }
     
+    var isDark: Bool = false {
+        didSet {
+            self.mapView?.overrideUserInterfaceStyle = self.isDark ? .dark : .light
+        }
+    }
+    
     public var trackingMode: LocationTrackingMode = .none {
         didSet {
             self.mapView?.userTrackingMode = self.trackingMode.userTrackingMode
@@ -391,6 +432,7 @@ public final class LocationMapNode: ASDisplayNode, MKMapViewDelegateTarget {
             } else if self.trackingMode != .followWithHeading && self.headingArrowView?.image == nil {
                 self.headingArrowView?.image = generateHeadingArrowImage()
             }
+            self.updateHeadingTransforms()
         }
     }
     
@@ -460,6 +502,10 @@ public final class LocationMapNode: ASDisplayNode, MKMapViewDelegateTarget {
         }
     }
     
+    public func mapViewDidChangeVisibleRegion(_ mapView: MKMapView) {
+        self.updateHeadingTransforms(mapHeading: CGFloat(mapView.camera.heading))
+    }
+
     public func mapView(_ mapView: MKMapView, regionWillChangeAnimated animated: Bool) {
         guard !self.ignoreRegionChanges, let scrollView = mapView.subviews.first, let gestureRecognizers = scrollView.gestureRecognizers else {
             return
@@ -478,6 +524,9 @@ public final class LocationMapNode: ASDisplayNode, MKMapViewDelegateTarget {
     }
     
     public func mapView(_ mapView: MKMapView, regionDidChangeAnimated animated: Bool) {
+        self.updateHeadingTransforms(mapHeading: CGFloat(mapView.camera.heading))
+        self.visibleRegionDidChange?()
+
         let wasDragging = self.isDragging
         if self.isDragging {
             self.isDragging = false
@@ -543,6 +592,7 @@ public final class LocationMapNode: ASDisplayNode, MKMapViewDelegateTarget {
                 container.insertSubview(self.proximityDimView, at: 0)
             }
         }
+        self.updateHeadingTransforms(mapHeading: CGFloat(mapView.camera.heading))
     }
     
     public func mapView(_ mapView: MKMapView, didSelect view: MKAnnotationView) {
@@ -658,6 +708,7 @@ public final class LocationMapNode: ASDisplayNode, MKMapViewDelegateTarget {
                 pickerAnnotationView.center = CGPoint(x: self.pickerAnnotationContainerView.frame.width / 2.0, y: self.pickerAnnotationContainerView.frame.height / 2.0 + 16.0)
                 self.pickerAnnotationContainerView.addSubview(pickerAnnotationView)
                 self.pickerAnnotationView = pickerAnnotationView
+                self.updateHeadingTransforms()
             } else {
                 self.pickerAnnotationView?.removeFromSuperview()
                 self.pickerAnnotationView = nil
@@ -696,6 +747,7 @@ public final class LocationMapNode: ASDisplayNode, MKMapViewDelegateTarget {
                 self.customUserLocationAnnotationView = annotationView
                 
                 self.pickerAnnotationView?.annotation = annotation
+                self.updateHeadingTransforms()
             } else {
                 self.customUserLocationAnnotationView?.removeFromSuperview()
                 self.customUserLocationAnnotationView = nil
@@ -705,13 +757,7 @@ public final class LocationMapNode: ASDisplayNode, MKMapViewDelegateTarget {
     
     public var userHeading: CGFloat? = nil {
         didSet {
-            if let heading = self.userHeading {
-                self.headingArrowView?.isHidden = false
-                self.headingArrowView?.transform = CGAffineTransform(rotationAngle: CGFloat(heading / 180.0 * CGFloat.pi))
-            } else {
-                self.headingArrowView?.isHidden = true
-                self.headingArrowView?.transform = CGAffineTransform.identity
-            }
+            self.updateHeadingTransforms()
         }
     }
     
@@ -869,7 +915,7 @@ public final class LocationMapNode: ASDisplayNode, MKMapViewDelegateTarget {
         }
         
         if let compassView = self.compassView {
-            transition.updateFrame(view: compassView, frame:  CGRect(origin: CGPoint(x: size.width - compassView.frame.width - 11.0, y: inset + 110.0 + topPadding), size: compassView.frame.size))
+            transition.updateFrame(view: compassView, frame:  CGRect(origin: CGPoint(x: size.width - compassView.frame.width - 16.0, y: inset + 14.0 + topPadding), size: compassView.frame.size))
         }
         
         self.applyPendingSetMapCenter()

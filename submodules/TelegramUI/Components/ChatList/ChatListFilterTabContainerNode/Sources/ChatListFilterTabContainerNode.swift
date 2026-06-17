@@ -559,6 +559,7 @@ public final class ChatListFilterTabContainerNode: ASDisplayNode {
         if #available(iOS 11.0, *) {
             self.scrollNode.view.contentInsetAdjustmentBehavior = .never
         }
+        self.scrollNode.view.scrollsToTop = false
         
         self.backgroundView.contentView.addSubview(self.scrollNode.view)
         self.scrollNode.addSubnode(self.selectedBackgroundNode)

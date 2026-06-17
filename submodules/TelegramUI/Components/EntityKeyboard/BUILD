@@ -40,7 +40,7 @@ swift_library(
         "//submodules/AppBundle:AppBundle",
         "//submodules/UndoUI:UndoUI",
         "//submodules/Components/MultilineTextComponent:MultilineTextComponent",
-        "//submodules/Components/SolidRoundedButtonComponent:SolidRoundedButtonComponent",
+        "//submodules/TelegramUI/Components/ButtonComponent",
         "//submodules/Components/LottieAnimationComponent:LottieAnimationComponent",
         "//submodules/LocalizedPeerData:LocalizedPeerData",
         "//submodules/TelegramNotices:TelegramNotices",

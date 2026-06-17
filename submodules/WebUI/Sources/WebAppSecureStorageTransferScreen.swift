@@ -17,6 +17,7 @@ import ListSectionComponent
 import ListActionItemComponent
 import AccountContext
 import AvatarNode
+import GlassBarButtonComponent
 
 private final class SheetContent: CombinedComponent {
     typealias EnvironmentType = ViewControllerComponentContainer.Environment
@@ -63,8 +64,7 @@ private final class SheetContent: CombinedComponent {
     }
     
     static var body: Body {
-        let closeButton = Child(Button.self)
-        
+        let closeButton = Child(GlassBarButtonComponent.self)
         let title = Child(MultilineTextComponent.self)
         let avatar = Child(AvatarComponent.self)
         let text = Child(MultilineTextComponent.self)
@@ -87,22 +87,31 @@ private final class SheetContent: CombinedComponent {
             let boldTextFont = Font.semibold(13.0)
             let textColor = theme.actionSheet.primaryTextColor
         
-            var contentSize = CGSize(width: context.availableSize.width, height: 18.0)
+            var contentSize = CGSize(width: context.availableSize.width, height: 38.0)
         
             let closeButton = closeButton.update(
-                component: Button(
-                    content: AnyComponent(Text(text: strings.Common_Cancel, font: Font.regular(17.0), color: theme.actionSheet.controlAccentColor)),
-                    action: { [weak component] in
-                        component?.dismiss()
+                component: GlassBarButtonComponent(
+                    size: CGSize(width: 44.0, height: 44.0),
+                    backgroundColor: nil,
+                    isDark: theme.overallDarkAppearance,
+                    state: .glass,
+                    component: AnyComponentWithIdentity(id: "close", component: AnyComponent(
+                        BundleIconComponent(
+                            name: "Navigation/Close",
+                            tintColor: theme.chat.inputPanel.panelControlColor
+                        )
+                    )),
+                    action: { _ in
+                        component.dismiss()
                     }
                 ),
-                availableSize: CGSize(width: 100.0, height: 30.0),
+                availableSize: CGSize(width: 44.0, height: 44.0),
                 transition: .immediate
             )
             context.add(closeButton
-                .position(CGPoint(x: environment.safeInsets.left + 16.0 + closeButton.size.width / 2.0, y: 28.0))
+                .position(CGPoint(x: 16.0 + closeButton.size.width / 2.0, y: 16.0 + closeButton.size.height / 2.0))
             )
-            
+                        
             let title = title.update(
                 component: MultilineTextComponent(
                     text: .plain(NSAttributedString(string: strings.WebApp_ImportData_Title, font: titleFont, textColor: textColor)),
@@ -114,10 +123,10 @@ private final class SheetContent: CombinedComponent {
                 transition: .immediate
             )
             context.add(title
-                .position(CGPoint(x: context.availableSize.width / 2.0, y: contentSize.height + title.size.height / 2.0))
+                .position(CGPoint(x: context.availableSize.width / 2.0, y: contentSize.height))
             )
             contentSize.height += title.size.height
-            contentSize.height += 24.0
+            contentSize.height += 16.0
             
             let avatar = avatar.update(
                 component: AvatarComponent(
@@ -185,6 +194,7 @@ private final class SheetContent: CombinedComponent {
                 )
                 items.append(AnyComponentWithIdentity(id: key.uuid, component: AnyComponent(ListActionItemComponent(
                     theme: theme,
+                    style: .glass,
                     title: AnyComponent(VStack(titleComponents, alignment: .left, spacing: 3.0)),
                     contentInsets: UIEdgeInsets(top: 10.0, left: 0.0, bottom: 10.0, right: 0.0),
                     leftIcon: .check(ListActionItemComponent.LeftIcon.Check(isSelected: key.uuid == state.selectedUuid, isEnabled: true, toggle: nil)),
@@ -201,6 +211,7 @@ private final class SheetContent: CombinedComponent {
             let keys = keys.update(
                 component: ListSectionComponent(
                     theme: environment.theme,
+                    style: .glass,
                     header: AnyComponent(MultilineTextComponent(
                         text: .plain(NSAttributedString(
                             string: strings.WebApp_ImportData_AccountHeader.uppercased(),
@@ -221,9 +232,11 @@ private final class SheetContent: CombinedComponent {
             contentSize.height += keys.size.height
             contentSize.height += 24.0
             
+            let buttonInsets = ContainerViewLayout.concentricInsets(bottomInset: environment.safeInsets.bottom, innerDiameter: 52.0, sideInset: 30.0)
             let button = button.update(
                 component: ButtonComponent(
                     background: ButtonComponent.Background(
+                        style: .glass,
                         color: theme.list.itemCheckColors.fillColor,
                         foreground: theme.list.itemCheckColors.foregroundColor,
                         pressedColor: theme.list.itemCheckColors.fillColor.withMultipliedAlpha(0.9)
@@ -247,7 +260,7 @@ private final class SheetContent: CombinedComponent {
                         }
                     }
                 ),
-                availableSize: CGSize(width: context.availableSize.width - sideInset * 2.0, height: 50.0),
+                availableSize: CGSize(width: context.availableSize.width - buttonInsets.left - buttonInsets.right, height: 52.0),
                 transition: context.transition
             )
             context.add(button
@@ -255,11 +268,8 @@ private final class SheetContent: CombinedComponent {
                 .cornerRadius(10.0)
             )
             contentSize.height += button.size.height
-            contentSize.height += 7.0
-                                      
-            let effectiveBottomInset: CGFloat = environment.metrics.isTablet ? 0.0 : environment.safeInsets.bottom
-            contentSize.height += 5.0 + effectiveBottomInset
-                                    
+            contentSize.height += buttonInsets.bottom
+                                                                          
             return contentSize
         }
     }
@@ -325,6 +335,7 @@ private final class SheetContainerComponent: CombinedComponent {
                             })
                         }
                     )),
+                    style: .glass,
                     backgroundColor: .color(theme.list.blocksBackgroundColor),
                     followContentSizeChanges: true,
                     externalState: sheetExternalState,

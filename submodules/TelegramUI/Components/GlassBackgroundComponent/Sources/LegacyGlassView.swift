@@ -88,17 +88,18 @@ final class LegacyGlassView: UIView {
     
     private struct Params: Equatable {
         let size: CGSize
-        let cornerRadius: CGFloat
+        let shape: GlassBackgroundView.Shape
         let style: Style
         
-        init(size: CGSize, cornerRadius: CGFloat, style: Style) {
+        init(size: CGSize, shape: GlassBackgroundView.Shape, style: Style) {
             self.size = size
-            self.cornerRadius = cornerRadius
+            self.shape = shape
             self.style = style
         }
     }
     
     private var params: Params?
+    private var maskLayer: CAShapeLayer?
     
     private let backdropLayer: CALayer?
     private let backdropLayerDelegate: BackdropLayerDelegate
@@ -126,7 +127,11 @@ final class LegacyGlassView: UIView {
     }
     
     func update(size: CGSize, cornerRadius: CGFloat, style: Style, transition: ComponentTransition) {
-        let params = Params(size: size, cornerRadius: cornerRadius, style: style)
+        self.update(size: size, shape: .roundedRect(cornerRadius: cornerRadius), style: style, transition: transition)
+    }
+
+    func update(size: CGSize, shape: GlassBackgroundView.Shape, style: Style, transition: ComponentTransition) {
+        let params = Params(size: size, shape: shape, style: style)
         let previousParams = self.params
         if self.params == params {
             return
@@ -168,12 +173,31 @@ final class LegacyGlassView: UIView {
             }
         }
         
-        transition.setCornerRadius(layer: self.layer, cornerRadius: cornerRadius)
+        switch shape {
+        case let .roundedRect(cornerRadius):
+            self.maskLayer = nil
+            self.layer.mask = nil
+            transition.setCornerRadius(layer: self.layer, cornerRadius: cornerRadius)
+        case let .customRoundedRect(cornerRadii):
+            transition.setCornerRadius(layer: self.layer, cornerRadius: 0.0)
+
+            let maskLayer: CAShapeLayer
+            if let current = self.maskLayer {
+                maskLayer = current
+            } else {
+                maskLayer = CAShapeLayer()
+                maskLayer.fillColor = UIColor.black.cgColor
+                self.maskLayer = maskLayer
+                self.layer.mask = maskLayer
+            }
+            transition.setFrame(layer: maskLayer, frame: CGRect(origin: CGPoint(), size: size))
+            transition.setShapeLayerPath(layer: maskLayer, path: GlassBackgroundView.generateRoundedRectPath(size: size, cornerRadii: cornerRadii))
+        }
         transition.setFrame(layer: backdropLayer, frame: CGRect(origin: CGPoint(), size: size))
         
         if #available(iOS 17.0, *), DeviceMetrics.performance.isGraphicallyCapable {
             let size = CGSize(width: max(1.0, size.width), height: max(1.0, size.height))
-            let cornerRadius = min(min(size.width, size.height) * 0.5, cornerRadius)
+            let cornerRadius = min(min(size.width, size.height) * 0.5, shape.maximumCornerRadius(for: size))
             let displacementMagnitudePoints: CGFloat = 20.0
             let displacementMagnitudeU = displacementMagnitudePoints / size.width
             let displacementMagnitudeV = displacementMagnitudePoints / size.height

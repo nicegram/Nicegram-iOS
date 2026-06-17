@@ -2,7 +2,6 @@ import Foundation
 import UIKit
 import Display
 import SwiftSignalKit
-import Postbox
 import TelegramCore
 import TelegramUIPreferences
 import TelegramCallsUI
@@ -1542,10 +1541,10 @@ private func notificationSearchableItems(context: AccountContext, settings: Glob
         
     let defaultStorySettings = PeerStoryNotificationSettings.default
     let exceptions = { () -> (NotificationExceptionMode, NotificationExceptionMode, NotificationExceptionMode, NotificationExceptionMode) in
-        var users:[PeerId : NotificationExceptionWrapper] = [:]
-        var groups: [PeerId : NotificationExceptionWrapper] = [:]
-        var channels: [PeerId : NotificationExceptionWrapper] = [:]
-        var stories: [PeerId : NotificationExceptionWrapper] = [:]
+        var users:[EnginePeer.Id: NotificationExceptionWrapper] = [:]
+        var groups: [EnginePeer.Id: NotificationExceptionWrapper] = [:]
+        var channels: [EnginePeer.Id: NotificationExceptionWrapper] = [:]
+        var stories: [EnginePeer.Id: NotificationExceptionWrapper] = [:]
         
         if let list = exceptionsList {
             for (key, value) in list.settings {
@@ -3136,6 +3135,18 @@ private func privacySearchableItems(context: AccountContext, privacySettings: Ac
     )
     items.append(
         SettingsSearchableItem(
+            id: "privacy/open-links",
+            title: strings.ChatSettings_OpenLinksIn,
+            alternate: synonyms(strings.SettingsSearch_Synonyms_ChatSettings_OpenLinksIn),
+            icon: icon,
+            breadcrumbs: [strings.Settings_PrivacySettings],
+            present: { context, _, present in
+                present(.push, webBrowserSettingsController(context: context))
+            }
+        )
+    )
+    items.append(
+        SettingsSearchableItem(
             id: "privacy/data-settings/delete-synced",
             title: strings.Privacy_ContactsReset,
             alternate: synonyms(strings.SettingsSearch_Synonyms_Privacy_Data_ContactsReset),
@@ -3669,16 +3680,6 @@ private func dataSearchableItems(context: AccountContext) -> [SettingsSearchable
             isVisible: false,
             present: { context, _, present in
                 presentDataSettings(context, present, .sensitiveContent)
-            }
-        ),
-        SettingsSearchableItem(
-            id: "data/open-links",
-            title: strings.ChatSettings_OpenLinksIn,
-            alternate: synonyms(strings.SettingsSearch_Synonyms_ChatSettings_OpenLinksIn),
-            icon: icon,
-            breadcrumbs: [strings.Settings_ChatSettings],
-            present: { context, _, present in
-                present(.push, webBrowserSettingsController(context: context))
             }
         ),
         SettingsSearchableItem(
@@ -4515,20 +4516,20 @@ func settingsSearchableItems(
     }
 }
 
-private func stringTokens(_ string: String) -> [ValueBoxKey] {
+private func stringTokens(_ string: String) -> [EngineDataBuffer] {
     let nsString = string.folding(options: .diacriticInsensitive, locale: .current).lowercased() as NSString
     
     let flag = UInt(kCFStringTokenizerUnitWord)
     let tokenizer = CFStringTokenizerCreate(kCFAllocatorDefault, nsString, CFRangeMake(0, nsString.length), flag, CFLocaleCopyCurrent())
     var tokenType = CFStringTokenizerAdvanceToNextToken(tokenizer)
-    var tokens: [ValueBoxKey] = []
+    var tokens: [EngineDataBuffer] = []
     
-    var addedTokens = Set<ValueBoxKey>()
+    var addedTokens = Set<EngineDataBuffer>()
     while tokenType != [] {
         let currentTokenRange = CFStringTokenizerGetCurrentTokenRange(tokenizer)
         
         if currentTokenRange.location >= 0 && currentTokenRange.length != 0 {
-            let token = ValueBoxKey(length: currentTokenRange.length * 2)
+            let token = EngineDataBuffer(length: currentTokenRange.length * 2)
             nsString.getCharacters(token.memory.assumingMemoryBound(to: unichar.self), range: NSMakeRange(currentTokenRange.location, currentTokenRange.length))
             if !addedTokens.contains(token) {
                 tokens.append(token)
@@ -4541,7 +4542,7 @@ private func stringTokens(_ string: String) -> [ValueBoxKey] {
     return tokens
 }
 
-private func matchStringTokens(_ tokens: [ValueBoxKey], with other: [ValueBoxKey]) -> Bool {
+private func matchStringTokens(_ tokens: [EngineDataBuffer], with other: [EngineDataBuffer]) -> Bool {
     if other.isEmpty {
         return false
     } else if other.count == 1 {

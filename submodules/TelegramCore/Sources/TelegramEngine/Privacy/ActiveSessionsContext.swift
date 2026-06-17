@@ -287,8 +287,8 @@ public final class ActiveSessionsContext {
 public struct WebSessionsContextState: Equatable {
     public var isLoadingMore: Bool
     public var sessions: [WebAuthorization]
-    public var peers: [PeerId: Peer]
-    
+    public var peers: [EnginePeer.Id: EnginePeer]
+
     public static func ==(lhs: WebSessionsContextState, rhs: WebSessionsContextState) -> Bool {
         if lhs.isLoadingMore != rhs.isLoadingMore {
             return false
@@ -296,7 +296,7 @@ public struct WebSessionsContextState: Equatable {
         if lhs.sessions != rhs.sessions {
             return false
         }
-        if !arePeerDictionariesEqual(lhs.peers, rhs.peers) {
+        if lhs.peers != rhs.peers {
             return false
         }
         return true
@@ -342,14 +342,14 @@ public final class WebSessionsContext {
         }
         self._state = WebSessionsContextState(isLoadingMore: true, sessions: self._state.sessions, peers: self._state.peers)
         self.disposable.set((webSessions(network: account.network)
-            |> map { result -> (sessions: [WebAuthorization], peers: [PeerId: Peer], canLoadMore: Bool) in
-                return (result.0, result.1, false)
+            |> map { result -> (sessions: [WebAuthorization], peers: [EnginePeer.Id: EnginePeer], canLoadMore: Bool) in
+                return (result.0, result.1.mapValues(EnginePeer.init), false)
         }
         |> deliverOnMainQueue).start(next: { [weak self] (sessions, peers, canLoadMore) in
             guard let strongSelf = self else {
                 return
             }
-        
+
             strongSelf._state = WebSessionsContextState(isLoadingMore: false, sessions: sessions, peers: peers)
         }))
     }

@@ -924,6 +924,11 @@ private func finalStateWithUpdatesAndServerTime(accountPeerId: PeerId, postbox: 
     
     var missingUpdatesFromChannels = Set<PeerId>()
     
+    enum TypingDraftText {
+        case plain(Api.TextWithEntities)
+        case rich(Api.RichMessage)
+    }
+    
     for update in sortedUpdates(updates) {
         switch update {
             case let .updateChannelTooLong(updateChannelTooLongData):
@@ -1516,12 +1521,22 @@ private func finalStateWithUpdatesAndServerTime(accountPeerId: PeerId, postbox: 
                 let threadId = topMsgId.flatMap { Int64($0) }
             
                 if let date = updatesDate, date + 60 > serverTime {
+                    var typingDraftData: (randomId: Int64, text: TypingDraftText)?
+                    
                     if case let .sendMessageTextDraftAction(sendMessageTextDraftActionData) = type {
-                        let (randomId, text) = (sendMessageTextDraftActionData.randomId, sendMessageTextDraftActionData.text)
-                        switch text {
-                        case let .textWithEntities(textWithEntitiesData):
-                            let (text, entities) = (textWithEntitiesData.text, textWithEntitiesData.entities)
-                            updatedState.addPeerLiveTypingDraftUpdate(peerAndThreadId: PeerAndThreadId(peerId: PeerId(namespace: Namespaces.Peer.CloudUser, id: PeerId.Id._internalFromInt64Value(userId)), threadId: threadId), id: randomId, timestamp: date, peerId: PeerId(namespace: Namespaces.Peer.CloudUser, id: PeerId.Id._internalFromInt64Value(userId)), text: text, entities: messageTextEntitiesFromApiEntities(entities))
+                        typingDraftData = (sendMessageTextDraftActionData.randomId, .plain(sendMessageTextDraftActionData.text))
+                    } else if case let .sendMessageRichMessageDraftAction(sendMessageRichMessageDraftActionData) = type {
+                        typingDraftData = (sendMessageRichMessageDraftActionData.randomId, .rich(sendMessageRichMessageDraftActionData.richMessage))
+                    }
+                    if let typingDraftData {
+                        switch typingDraftData.text {
+                        case let .plain(plain):
+                            if case let .textWithEntities(textWithEntitiesData) = plain {
+                                updatedState.addPeerLiveTypingDraftUpdate(peerAndThreadId: PeerAndThreadId(peerId: PeerId(namespace: Namespaces.Peer.CloudUser, id: PeerId.Id._internalFromInt64Value(userId)), threadId: threadId), id: typingDraftData.randomId, timestamp: date, peerId: PeerId(namespace: Namespaces.Peer.CloudUser, id: PeerId.Id._internalFromInt64Value(userId)), content: .plain(text: textWithEntitiesData.text, entities: messageTextEntitiesFromApiEntities(textWithEntitiesData.entities)))
+                            }
+                        case let .rich(richMessage):
+                            let parsedRichMessage = RichTextMessageAttribute(apiRichMessage: richMessage)
+                            updatedState.addPeerLiveTypingDraftUpdate(peerAndThreadId: PeerAndThreadId(peerId: PeerId(namespace: Namespaces.Peer.CloudUser, id: PeerId.Id._internalFromInt64Value(userId)), threadId: threadId), id: typingDraftData.randomId, timestamp: date, peerId: PeerId(namespace: Namespaces.Peer.CloudUser, id: PeerId.Id._internalFromInt64Value(userId)), content: .rich(parsedRichMessage))
                         }
                     } else {
                         let activity = PeerInputActivity(apiType: type, peerId: PeerId(namespace: Namespaces.Peer.CloudUser, id: PeerId.Id._internalFromInt64Value(userId)), timestamp: date)
@@ -1555,8 +1570,11 @@ private func finalStateWithUpdatesAndServerTime(accountPeerId: PeerId, postbox: 
                         switch text {
                         case let .textWithEntities(textWithEntitiesData):
                             let (text, entities) = (textWithEntitiesData.text, textWithEntitiesData.entities)
-                            updatedState.addPeerLiveTypingDraftUpdate(peerAndThreadId: PeerAndThreadId(peerId: channelPeerId, threadId: threadId), id: randomId, timestamp: date, peerId: userId.peerId, text: text, entities: messageTextEntitiesFromApiEntities(entities))
+                            updatedState.addPeerLiveTypingDraftUpdate(peerAndThreadId: PeerAndThreadId(peerId: channelPeerId, threadId: threadId), id: randomId, timestamp: date, peerId: userId.peerId, content: .plain(text: text, entities: messageTextEntitiesFromApiEntities(entities)))
                         }
+                    } else if case let .sendMessageRichMessageDraftAction(sendMessageRichMessageDraftActionData) = type {
+                        let parsedRichMessage = RichTextMessageAttribute(apiRichMessage: sendMessageRichMessageDraftActionData.richMessage)
+                        updatedState.addPeerLiveTypingDraftUpdate(peerAndThreadId: PeerAndThreadId(peerId: channelPeerId, threadId: threadId), id: sendMessageRichMessageDraftActionData.randomId, timestamp: date, peerId: userId.peerId, content: .rich(parsedRichMessage))
                     } else {
                         let activity = PeerInputActivity(apiType: type, peerId: nil, timestamp: date)
                         var category: PeerActivitySpace.Category = .global
@@ -1819,19 +1837,6 @@ private func finalStateWithUpdatesAndServerTime(accountPeerId: PeerId, postbox: 
                             updatedState.updatePeerChatInclusion(peerId: peer.peerId, groupId: PeerGroupId(rawValue: folderId), changedGroup: true)
                     }
                 }
-            case let .updatePeerLocated(updatePeerLocatedData):
-                var peersNearby: [PeerNearby] = []
-                for peer in updatePeerLocatedData.peers {
-                    switch peer {
-                        case let .peerLocated(peerLocatedData):
-                            let (peer, expires, distance) = (peerLocatedData.peer, peerLocatedData.expires, peerLocatedData.distance)
-                            peersNearby.append(.peer(id: peer.peerId, expires: expires, distance: distance))
-                        case let .peerSelfLocated(peerSelfLocatedData):
-                            let expires = peerSelfLocatedData.expires
-                            peersNearby.append(.selfPeer(expires: expires))
-                    }
-                }
-                updatedState.updatePeersNearby(peersNearby)
             case let .updateNewScheduledMessage(updateNewScheduledMessageData):
                 var peerIsForum = false
                 if let peerId = updateNewScheduledMessageData.message.peerId {
@@ -1961,6 +1966,8 @@ private func finalStateWithUpdatesAndServerTime(accountPeerId: PeerId, postbox: 
                 updatedState.addUpdateAttachMenuBots()
             case let .updateWebViewResultSent(updateWebViewResultSentData):
                 updatedState.addDismissWebView(updateWebViewResultSentData.queryId)
+            case let .updateJoinChatWebViewDecision(updateJoinChatWebViewDecisionData):
+                updatedState.addJoinChatWebViewDecision(JoinChatWebViewDecision(peerId: updateJoinChatWebViewDecisionData.peer.peerId, queryId: updateJoinChatWebViewDecisionData.queryId, result: JoinChatWebViewResult(apiResult: updateJoinChatWebViewDecisionData.result)))
             case .updateConfig:
                 updatedState.reloadConfig()
             case let .updateMessageExtendedMedia(updateMessageExtendedMediaData):
@@ -1978,6 +1985,34 @@ private func finalStateWithUpdatesAndServerTime(accountPeerId: PeerId, postbox: 
                 let (flags, hash, date, device, location) = (updateNewAuthorizationData.flags, updateNewAuthorizationData.hash, updateNewAuthorizationData.date, updateNewAuthorizationData.device, updateNewAuthorizationData.location)
                 let isUnconfirmed = (flags & (1 << 0)) != 0
                 updatedState.updateNewAuthorization(isUnconfirmed: isUnconfirmed, hash: hash, date: date ?? 0, device: device ?? "", location: location ?? "")
+            case let .updateNewBotConnection(updateNewBotConnectionData):
+                let (flags, botId, date, device, location) = (updateNewBotConnectionData.flags, updateNewBotConnectionData.botId, updateNewBotConnectionData.date, updateNewBotConnectionData.device, updateNewBotConnectionData.location)
+                updatedState.updateNewBotConnection(
+                    confirmed: (flags & (1 << 0)) != 0,
+                    botId: PeerId(namespace: Namespaces.Peer.CloudUser, id: PeerId.Id._internalFromInt64Value(botId)),
+                    date: date,
+                    device: device,
+                    location: location
+                )
+            case let .updateWebBrowserSettings(updateWebBrowserSettingsData):
+                updatedState.updateWebBrowserSettings(openExternalBrowser: (updateWebBrowserSettingsData.flags & (1 << 0)) != 0)
+            case let .updateWebBrowserException(updateWebBrowserExceptionData):
+                let openExternalBrowser: Bool?
+                if let value = updateWebBrowserExceptionData.openExternalBrowser {
+                    switch value {
+                    case .boolFalse:
+                        openExternalBrowser = false
+                    case .boolTrue:
+                        openExternalBrowser = true
+                    }
+                } else {
+                    openExternalBrowser = nil
+                }
+                updatedState.updateWebBrowserException(
+                    openExternalBrowser: openExternalBrowser,
+                    delete: (updateWebBrowserExceptionData.flags & (1 << 1)) != 0,
+                    exception: AccountWebBrowserException(apiWebDomainException: updateWebBrowserExceptionData.exception)
+                )
             case let .updatePeerWallpaper(updatePeerWallpaperData):
                 updatedState.updateWallpaper(peerId: updatePeerWallpaperData.peer.peerId, wallpaper: updatePeerWallpaperData.wallpaper.flatMap { TelegramWallpaper(apiWallpaper: $0) })
             case let .updateStarsBalance(updateStarsBalanceData):
@@ -3808,7 +3843,7 @@ private func optimizedOperations(_ operations: [AccountStateMutationOperation]) 
     var currentAddQuickReplyMessages: OptimizeAddMessagesState?
     for operation in operations {
         switch operation {
-        case .DeleteMessages, .DeleteMessagesWithGlobalIds, .EditMessage, .UpdateMessagePoll, .UpdateMessageReactions, .UpdateMedia, .MergeApiChats, .MergeApiUsers, .MergePeerPresences, .UpdatePeer, .ReadInbox, .ReadOutbox, .ReadGroupFeedInbox, .ResetReadState, .ResetIncomingReadState, .UpdatePeerChatUnreadMark, .ResetMessageTagSummary, .UpdateNotificationSettings, .UpdateGlobalNotificationSettings, .UpdateSecretChat, .AddSecretMessages, .ReadSecretOutbox, .AddPeerInputActivity, .AddPeerLiveTypingDraftUpdate, .UpdateCachedPeerData, .UpdatePinnedItemIds, .UpdatePinnedSavedItemIds, .UpdatePinnedTopic, .UpdatePinnedTopicOrder, .ReadMessageContents, .UpdateMessageImpressionCount, .UpdateMessageForwardsCount, .UpdateInstalledStickerPacks, .UpdateRecentGifs, .UpdateChatInputState, .UpdateCall, .AddCallSignalingData, .UpdateLangPack, .UpdateMinAvailableMessage, .UpdateIsContact, .UpdatePeerChatInclusion, .UpdatePeersNearby, .UpdateTheme, .SyncChatListFilters, .UpdateChatListFilter, .UpdateChatListFilterOrder, .UpdateReadThread, .UpdateMessagesPinned, .UpdateGroupCallParticipants, .UpdateGroupCall, .UpdateGroupCallChainBlocks, .UpdateGroupCallMessage, .UpdateGroupCallOpaqueMessage, .UpdateAutoremoveTimeout, .UpdateAttachMenuBots, .UpdateAudioTranscription, .UpdateConfig, .UpdateExtendedMedia, .ResetForumTopic, .UpdateStory, .UpdateReadStories, .UpdateStoryStealthMode, .UpdateStorySentReaction, .UpdateNewAuthorization, .UpdateWallpaper, .UpdateStarsBalance, .UpdateStarsRevenueStatus, .UpdateStarsReactionsDefaultPrivacy, .ReportMessageDelivery, .UpdateMonoForumNoPaidException, .UpdateStarGiftAuctionState, .UpdateStarGiftAuctionMyState, .UpdateEmojiGameInfo:
+        case .DeleteMessages, .DeleteMessagesWithGlobalIds, .EditMessage, .UpdateMessagePoll, .UpdateMessageReactions, .UpdateMedia, .MergeApiChats, .MergeApiUsers, .MergePeerPresences, .UpdatePeer, .ReadInbox, .ReadOutbox, .ReadGroupFeedInbox, .ResetReadState, .ResetIncomingReadState, .UpdatePeerChatUnreadMark, .ResetMessageTagSummary, .UpdateNotificationSettings, .UpdateGlobalNotificationSettings, .UpdateSecretChat, .AddSecretMessages, .ReadSecretOutbox, .AddPeerInputActivity, .AddPeerLiveTypingDraftUpdate, .UpdateCachedPeerData, .UpdatePinnedItemIds, .UpdatePinnedSavedItemIds, .UpdatePinnedTopic, .UpdatePinnedTopicOrder, .ReadMessageContents, .UpdateMessageImpressionCount, .UpdateMessageForwardsCount, .UpdateInstalledStickerPacks, .UpdateRecentGifs, .UpdateChatInputState, .UpdateCall, .AddCallSignalingData, .UpdateLangPack, .UpdateMinAvailableMessage, .UpdateIsContact, .UpdatePeerChatInclusion, .UpdateTheme, .SyncChatListFilters, .UpdateChatListFilter, .UpdateChatListFilterOrder, .UpdateReadThread, .UpdateMessagesPinned, .UpdateGroupCallParticipants, .UpdateGroupCall, .UpdateGroupCallChainBlocks, .UpdateGroupCallMessage, .UpdateGroupCallOpaqueMessage, .UpdateAutoremoveTimeout, .UpdateAttachMenuBots, .UpdateAudioTranscription, .UpdateConfig, .UpdateExtendedMedia, .ResetForumTopic, .UpdateStory, .UpdateReadStories, .UpdateStoryStealthMode, .UpdateStorySentReaction, .UpdateNewAuthorization, .UpdateNewBotConnection, .UpdateWebBrowserSettings, .UpdateWebBrowserException, .UpdateWallpaper, .UpdateStarsBalance, .UpdateStarsRevenueStatus, .UpdateStarsReactionsDefaultPrivacy, .ReportMessageDelivery, .UpdateMonoForumNoPaidException, .UpdateStarGiftAuctionState, .UpdateStarGiftAuctionMyState, .UpdateEmojiGameInfo:
                 if let currentAddMessages = currentAddMessages, !currentAddMessages.messages.isEmpty {
                     result.append(.AddMessages(currentAddMessages.messages, currentAddMessages.location))
                 }
@@ -3927,7 +3962,6 @@ func replayFinalState(
     var updatedGroupCallParticipants: [(Int64, GroupCallParticipantsContext.Update)] = []
     var groupCallMessageUpdates: [GroupCallMessageUpdate] = []
     var storyUpdates: [InternalStoryUpdate] = []
-    var updatedPeersNearby: [PeerNearby]?
     var isContactUpdates: [(PeerId, Bool)] = []
     var stickerPackOperations: [AccountStateUpdateStickerPacksOperation] = []
     var recentlyUsedStickers: [MediaId: (MessageIndex, TelegramMediaFile)] = [:]
@@ -3953,6 +3987,7 @@ func replayFinalState(
     var updatedStarGiftAuctionMyState: [Int64: GiftAuctionContext.State.MyState] = [:]
     var updatedEmojiGameInfo: EmojiGameInfo?
     var recentlyUsedGuestChatBots = Set<PeerId>()
+    var webBrowserSettingsUpdates: [(AccountWebBrowserSettings) -> AccountWebBrowserSettings] = []
     
     var holesFromPreviousStateMessageIds: [MessageId] = []
     var clearHolesFromPreviousStateForChannelMessagesWithPts: [PeerIdAndMessageNamespace: Int32] = [:]
@@ -4004,21 +4039,19 @@ func replayFinalState(
             var threadId: Int64?
             var authorId: PeerId
             var timestamp: Int32
-            var text: String
-            var entities: [MessageTextEntity]
+            var content: PeerLiveTypingDraftUpdateContent
             
-            init(id: Int64, threadId: Int64?, authorId: PeerId, timestamp: Int32, text: String, entities: [MessageTextEntity]) {
+            init(id: Int64, threadId: Int64?, authorId: PeerId, timestamp: Int32, content: PeerLiveTypingDraftUpdateContent) {
                 self.id = id
                 self.threadId = threadId
                 self.authorId = authorId
                 self.timestamp = timestamp
-                self.text = text
-                self.entities = entities
+                self.content = content
             }
         }
         
         case update(Update)
-        case cancel
+        case cancel(updatedTimestamp: Int32)
     }
     
     var liveTypingDraftUpdates: [PeerAndThreadId: [LiveTypingDraftUpdate]] = [:]
@@ -4236,11 +4269,11 @@ func replayFinalState(
                         let allKey = PeerAndThreadId(peerId: chatPeerId, threadId: nil)
                         
                         if liveTypingDraftUpdates[key] != nil {
-                            liveTypingDraftUpdates[key] = [.cancel]
-                            liveTypingDraftUpdates[allKey] = [.cancel]
+                            liveTypingDraftUpdates[key] = [.cancel(updatedTimestamp: message.timestamp)]
+                            liveTypingDraftUpdates[allKey] = [.cancel(updatedTimestamp: message.timestamp)]
                         } else if let currentDraft = transaction.getCurrentTypingDraft(location: key) {
-                            liveTypingDraftUpdates[key] = [.cancel]
-                            liveTypingDraftUpdates[allKey] = [.cancel]
+                            liveTypingDraftUpdates[key] = [.cancel(updatedTimestamp: message.timestamp)]
+                            liveTypingDraftUpdates[allKey] = [.cancel(updatedTimestamp: message.timestamp)]
                             messages[i] = messages[i].withUpdatedCustomStableId(currentDraft.stableId)
                         }
                     }
@@ -4907,26 +4940,24 @@ func replayFinalState(
                     })
                 }
             case let .MergePeerPresences(statuses, explicit):
-                var presences: [PeerId: PeerPresence] = [:]
+                var presences: [PeerId: UpdatedApiPresence] = [:]
                 for (peerId, status) in statuses {
                     if peerId == accountPeerId {
                         if explicit {
-                            switch status {
-                                case let .userStatusOnline(userStatusOnlineData):
-                                    let timestamp = userStatusOnlineData.expires
-                                    delayNotificatonsUntil = timestamp + 30
-                                case let .userStatusOffline(userStatusOfflineData):
-                                    let timestamp = userStatusOfflineData.wasOnline
-                                    delayNotificatonsUntil = timestamp
-                                default:
-                                    break
+                            switch status.status {
+                            case let .userStatusOnline(userStatusOnlineData):
+                                let timestamp = userStatusOnlineData.expires
+                                delayNotificatonsUntil = timestamp + 30
+                            case let .userStatusOffline(userStatusOfflineData):
+                                let timestamp = userStatusOfflineData.wasOnline
+                                delayNotificatonsUntil = timestamp
+                            default:
+                                break
                             }
                         }
                     } else {
-                        let presence = TelegramUserPresence(apiStatus: status)
-                        presences[peerId] = presence
+                        presences[peerId] = status
                     }
-                    
                 }
                 updatePeerPresencesClean(transaction: transaction, accountPeerId: accountPeerId, peerPresences: presences)
             case let .UpdateSecretChat(chat, _):
@@ -4949,7 +4980,7 @@ func replayFinalState(
                 } else if chatPeerId.peerId.namespace == Namespaces.Peer.SecretChat {
                     updatedSecretChatTypingActivities.insert(chatPeerId.peerId)
                 }
-            case let .AddPeerLiveTypingDraftUpdate(peerAndThreadId, id, timestamp, authorId, text, entities):
+            case let .AddPeerLiveTypingDraftUpdate(peerAndThreadId, id, timestamp, authorId, content):
                 if liveTypingDraftUpdates[peerAndThreadId] == nil {
                     liveTypingDraftUpdates[peerAndThreadId] = []
                 }
@@ -4958,8 +4989,7 @@ func replayFinalState(
                     threadId: peerAndThreadId.threadId,
                     authorId: authorId,
                     timestamp: timestamp,
-                    text: text,
-                    entities: entities
+                    content: content
                 )))
                 if peerAndThreadId.threadId != nil {
                     let allKey = PeerAndThreadId(peerId: peerAndThreadId.peerId, threadId: nil)
@@ -4971,8 +5001,7 @@ func replayFinalState(
                         threadId: peerAndThreadId.threadId,
                         authorId: authorId,
                         timestamp: timestamp,
-                        text: text,
-                        entities: entities
+                        content: content
                     )))
                 }
             case let .UpdatePinnedItemIds(groupId, pinnedOperation):
@@ -5220,8 +5249,6 @@ func replayFinalState(
                 }
             case let .UpdateIsContact(peerId, value):
                 isContactUpdates.append((peerId, value))
-            case let .UpdatePeersNearby(peersNearby):
-                updatedPeersNearby = peersNearby
             case let .UpdateTheme(theme):
                 updatedThemes[theme.id] = theme
             case let .UpdateWallpaper(peerId, wallpaper):
@@ -5542,6 +5569,26 @@ func replayFinalState(
                     }
                 } else {
                     transaction.removeOrderedItemListItem(collectionId: Namespaces.OrderedItemList.NewSessionReviews, itemId: id.rawValue)
+                }
+            case let .UpdateNewBotConnection(confirmed, botId, date, device, location):
+                let id = NewBotConnectionReview.Id(botId: botId)
+                if confirmed {
+                    transaction.removeOrderedItemListItem(collectionId: Namespaces.OrderedItemList.NewBotConnectionReviews, itemId: id.rawValue)
+                } else if let entry = CodableEntry(NewBotConnectionReview(
+                    botId: botId,
+                    device: device,
+                    location: location,
+                    timestamp: date
+                )) {
+                    transaction.addOrMoveToFirstPositionOrderedItemListItem(collectionId: Namespaces.OrderedItemList.NewBotConnectionReviews, item: OrderedItemListEntry(id: id.rawValue, contents: entry), removeTailIfCountExceeds: 200)
+                }
+            case let .UpdateWebBrowserSettings(openExternalBrowser):
+                webBrowserSettingsUpdates.append { settings in
+                    settings.withUpdatedOpenExternalBrowser(openExternalBrowser)
+                }
+            case let .UpdateWebBrowserException(openExternalBrowser, delete, exception):
+                webBrowserSettingsUpdates.append { settings in
+                    settings.withAppliedExceptionUpdate(openExternalBrowser: openExternalBrowser, delete: delete, exception: exception)
                 }
             case let .UpdateStarsBalance(peerId, currency, balance):
                 switch currency {
@@ -6021,6 +6068,16 @@ func replayFinalState(
             })
         }.start()
     }
+
+    if !webBrowserSettingsUpdates.isEmpty {
+        transaction.updatePreferencesEntry(key: PreferencesKeys.webBrowserSettings, { current in
+            var settings = current?.get(AccountWebBrowserSettings.self) ?? AccountWebBrowserSettings.defaultSettings
+            for update in webBrowserSettingsUpdates {
+                settings = update(settings)
+            }
+            return PreferencesEntry(settings)
+        })
+    }
     
     if !updatedWallpapers.isEmpty {
         for (peerId, wallpaper) in updatedWallpapers {
@@ -6080,6 +6137,23 @@ func replayFinalState(
     }
     
     if !liveTypingDraftUpdates.isEmpty {
+        for (key, updates) in liveTypingDraftUpdates {
+            if key.threadId == nil {
+                var maxCancelledTimestamp: Int32?
+                for update in updates {
+                    if case let .cancel(updatedTimestamp) = update {
+                        if let current = maxCancelledTimestamp {
+                            maxCancelledTimestamp = max(current, updatedTimestamp)
+                        } else {
+                            maxCancelledTimestamp = updatedTimestamp
+                        }
+                    }
+                }
+                if let maxCancelledTimestamp {
+                    transaction.offsetPendingMessagesTimestamps(lowerBound: MessageId(peerId: key.peerId, namespace: Namespaces.Message.Local, id: 1), excludeIds: Set(), timestamp: maxCancelledTimestamp)
+                }
+            }
+        }
         transaction.combineTypingDrafts(locations: Set(liveTypingDraftUpdates.keys), update: { key, current in
             guard let update = liveTypingDraftUpdates[key]?.max(by: { lhs, rhs in
                 switch lhs {
@@ -6105,17 +6179,37 @@ func replayFinalState(
                 if let current, current.id == update.id {
                     timestamp = current.timestamp
                 }
+                if current == nil {
+                    if let index = transaction.getTopPeerMessageIndex(peerId: key.peerId) {
+                        timestamp = max(timestamp, index.timestamp)
+                    }
+                }
+                
+                let draftText: String
+                let draftAttributes: [MessageAttribute]
+                switch update.content {
+                case let .plain(text, entities):
+                    draftText = text
+                    draftAttributes = [
+                        TypingDraftMessageAttribute(),
+                        TextEntitiesMessageAttribute(entities: entities)
+                    ]
+                case let .rich(richData):
+                    draftText = ""
+                    draftAttributes = [
+                        TypingDraftMessageAttribute(),
+                        richData
+                    ]
+                }
+                
                 return (
                     update.id,
                     Namespaces.Message.Cloud,
                     update.threadId,
                     update.authorId,
                     timestamp,
-                    update.text,
-                    [
-                        TypingDraftMessageAttribute(),
-                        TextEntitiesMessageAttribute(entities: update.entities)
-                    ]
+                    draftText,
+                    draftAttributes
                 )
             case .cancel:
                 return nil
@@ -6137,7 +6231,6 @@ func replayFinalState(
         updatedGroupCallParticipants: updatedGroupCallParticipants,
         groupCallMessageUpdates: groupCallMessageUpdates,
         storyUpdates: storyUpdates,
-        updatedPeersNearby: updatedPeersNearby,
         isContactUpdates: isContactUpdates,
         delayNotificatonsUntil: delayNotificatonsUntil,
         updatedIncomingThreadReadStates: updatedIncomingThreadReadStates,

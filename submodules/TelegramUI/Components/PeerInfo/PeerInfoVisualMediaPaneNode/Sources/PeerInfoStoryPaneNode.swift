@@ -4,7 +4,6 @@ import UIKit
 import Display
 import TelegramCore
 import SwiftSignalKit
-import Postbox
 import TelegramPresentationData
 import PresentationDataUtils
 import AccountContext
@@ -56,7 +55,7 @@ private final class VisualMediaItemInteraction {
     let openItemContextActions: (EngineStoryItem, ASDisplayNode, CGRect, ContextGesture?) -> Void
     let toggleSelection: (Int32, Bool) -> Void
     
-    var hiddenStories = Set<StoryId>()
+    var hiddenStories = Set<EngineStoryId>()
     var selectedIds: Set<Int32>?
     
     init(
@@ -71,7 +70,7 @@ private final class VisualMediaItemInteraction {
 }
 
 private final class VisualMediaHoleAnchor: SparseItemGrid.HoleAnchor {
-    let storyId: StoryId
+    let storyId: EngineStoryId
     override var id: AnyHashable {
         return AnyHashable(self.storyId)
     }
@@ -86,7 +85,7 @@ private final class VisualMediaHoleAnchor: SparseItemGrid.HoleAnchor {
         return self.localMonthTimestamp
     }
 
-    init(index: Int, storyId: StoryId, localMonthTimestamp: Int32) {
+    init(index: Int, storyId: EngineStoryId, localMonthTimestamp: Int32) {
         self.indexValue = index
         self.storyId = storyId
         self.localMonthTimestamp = localMonthTimestamp
@@ -103,7 +102,7 @@ private final class VisualMediaItem: SparseItemGrid.Item {
     }
     let localMonthTimestamp: Int32
     let peer: PeerReference
-    let storyId: StoryId
+    let storyId: EngineStoryId
     let story: EngineStoryItem
     let authorPeer: EnginePeer?
     let isPinned: Bool
@@ -122,7 +121,7 @@ private final class VisualMediaItem: SparseItemGrid.Item {
         return VisualMediaHoleAnchor(index: self.index, storyId: self.storyId, localMonthTimestamp: self.localMonthTimestamp)
     }
     
-    init(index: Int, peer: PeerReference, storyId: StoryId, story: EngineStoryItem, authorPeer: EnginePeer?, isPinned: Bool, localMonthTimestamp: Int32, isReorderable: Bool, isEnabled: Bool) {
+    init(index: Int, peer: PeerReference, storyId: EngineStoryId, story: EngineStoryItem, authorPeer: EnginePeer?, isPinned: Bool, localMonthTimestamp: Int32, isReorderable: Bool, isEnabled: Bool) {
         self.indexValue = index
         self.peer = peer
         self.storyId = storyId
@@ -855,7 +854,7 @@ private final class ItemLayer: CALayer, SparseItemGridLayer {
                 binding.bindLayers(items: [item], layers: [displayItem], size: size, insets: insets, synchronous: .none)
             } else {
                 if let layer = displayItem.layer as? ItemLayer {
-                    var selectedMedia: Media?
+                    var selectedMedia: EngineRawMedia?
                     if let image = item.story.media._asMedia() as? TelegramMediaImage {
                         selectedMedia = image
                     } else if let file = item.story.media._asMedia() as? TelegramMediaFile {
@@ -1124,7 +1123,7 @@ private final class SparseItemGridBindingImpl: SparseItemGridBinding {
     var updateShimmerLayersImpl: ((SparseItemGridDisplayItem) -> Void)?
     var reorderIfPossibleImpl: ((SparseItemGrid.Item, Int) -> Void)?
     
-    var revealedSpoilerMessageIds = Set<MessageId>()
+    var revealedSpoilerMessageIds = Set<EngineMessage.Id>()
 
     private var shimmerImages: [CGFloat: UIImage] = [:]
 
@@ -1211,7 +1210,7 @@ private final class SparseItemGridBindingImpl: SparseItemGridBinding {
             let hasSpoiler = false
             layer.updateHasSpoiler(hasSpoiler: hasSpoiler)
             
-            var selectedMedia: Media?
+            var selectedMedia: EngineRawMedia?
             if let image = story.media._asMedia() as? TelegramMediaImage {
                 selectedMedia = image
             } else if let file = story.media._asMedia() as? TelegramMediaFile {
@@ -1322,7 +1321,7 @@ private final class SparseItemGridBindingImpl: SparseItemGridBinding {
         }
     }
     
-    func updateLayerData(story: EngineStoryItem, item: VisualMediaItem, selectedMedia: Media, layer: ItemLayer, synchronous: SparseItemGrid.Synchronous) {
+    func updateLayerData(story: EngineStoryItem, item: VisualMediaItem, selectedMedia: EngineRawMedia, layer: ItemLayer, synchronous: SparseItemGrid.Synchronous) {
         var viewCount: Int32?
         if let value = story.views?.seenCount {
             viewCount = Int32(value)
@@ -1527,7 +1526,6 @@ public final class PeerInfoStoryPaneNode: ASDisplayNode, PeerInfoPaneNode, ASScr
         var address: String?
         var distance: Double?
         var drivingTime: ExpectedTravelTime
-        var transitTime: ExpectedTravelTime
         var walkingTime: ExpectedTravelTime
         var hasEta: Bool
         
@@ -1536,7 +1534,6 @@ public final class PeerInfoStoryPaneNode: ASDisplayNode, PeerInfoPaneNode, ASScr
             address: String?,
             distance: Double?,
             drivingTime: ExpectedTravelTime,
-            transitTime: ExpectedTravelTime,
             walkingTime: ExpectedTravelTime,
             hasEta: Bool
         ) {
@@ -1544,7 +1541,6 @@ public final class PeerInfoStoryPaneNode: ASDisplayNode, PeerInfoPaneNode, ASScr
             self.address = address
             self.distance = distance
             self.drivingTime = drivingTime
-            self.transitTime = transitTime
             self.walkingTime = walkingTime
             self.hasEta = hasEta
         }
@@ -1562,7 +1558,6 @@ public final class PeerInfoStoryPaneNode: ASDisplayNode, PeerInfoPaneNode, ASScr
 
     private let contextGestureContainerNode: ContextControllerSourceNode
     
-    private var mapOptionsNode: LocationOptionsNode?
     private var mapNode: LocationMapHeaderNode?
     private var mapDisposable: Disposable?
     
@@ -1587,7 +1582,7 @@ public final class PeerInfoStoryPaneNode: ASDisplayNode, PeerInfoPaneNode, ASScr
     private let directMediaImageCache: DirectMediaImageCache
     private var items: SparseItemGrid.Items?
     private var pinnedIds: Set<Int32> = Set()
-    private var reorderedIds: [StoryId]?
+    private var reorderedIds: [EngineStoryId]?
     private var itemCount: Int?
     private var didUpdateItemsOnce: Bool = false
     private var itemTabId: AnyHashable?
@@ -2192,7 +2187,7 @@ public final class PeerInfoStoryPaneNode: ASDisplayNode, PeerInfoPaneNode, ASScr
         if case .location = scope {
             let mapNode = LocationMapHeaderNode(
                 presentationData: self.presentationData,
-                glass: false,
+                glass: true,
                 toggleMapModeSelection: { [weak self] in
                     guard let self else {
                         return
@@ -2202,7 +2197,15 @@ public final class PeerInfoStoryPaneNode: ASDisplayNode, PeerInfoPaneNode, ASScr
                     state.displayingMapModeOptions = !state.displayingMapModeOptions
                     self.locationViewState = state
                 },
-                updateMapMode: { _ in
+                updateMapMode: { [weak self] mode in
+                    guard let self else {
+                        return
+                    }
+                    
+                    var state = self.locationViewState
+                    state.mapMode = mode
+                    state.displayingMapModeOptions = false
+                    self.locationViewState = state
                 },
                 goToUserLocation: { [weak self] in
                     guard let self else {
@@ -2334,7 +2337,6 @@ public final class PeerInfoStoryPaneNode: ASDisplayNode, PeerInfoPaneNode, ASScr
             
             strongSelf.itemGridBinding.updatePresentationData(presentationData: presentationData)
             strongSelf.itemGrid.updatePresentationData(theme: presentationData.theme)
-            strongSelf.mapOptionsNode?.updatePresentationData(presentationData)
         })
         
         self.requestHistoryAroundVisiblePosition(synchronous: false, reloadAtTop: false)
@@ -2355,24 +2357,21 @@ public final class PeerInfoStoryPaneNode: ASDisplayNode, PeerInfoPaneNode, ASScr
                 throttledUserLocation(mapNode.mapNode.userLocation)
             )
             
-            var eta: Signal<(ExpectedTravelTime, ExpectedTravelTime, ExpectedTravelTime), NoError> = .single((.calculating, .calculating, .calculating))
+            var eta: Signal<(ExpectedTravelTime, ExpectedTravelTime), NoError> = .single((.calculating, .calculating))
             var address: Signal<String?, NoError> = .single(nil)
             
             let locale = localeWithStrings(self.presentationData.strings)
-            eta = .single((.calculating, .calculating, .calculating))
-            |> then(combineLatest(queue: Queue.mainQueue(), getExpectedTravelTime(coordinate: locationCoordinate, transportType: .automobile), getExpectedTravelTime(coordinate: locationCoordinate, transportType: .transit), getExpectedTravelTime(coordinate: locationCoordinate, transportType: .walking))
-                    |> mapToSignal { drivingTime, transitTime, walkingTime -> Signal<(ExpectedTravelTime, ExpectedTravelTime, ExpectedTravelTime), NoError> in
+            eta = .single((.calculating, .calculating))
+            |> then(combineLatest(queue: Queue.mainQueue(), getExpectedTravelTime(coordinate: locationCoordinate, transportType: .automobile),  getExpectedTravelTime(coordinate: locationCoordinate, transportType: .walking))
+                    |> mapToSignal { drivingTime, walkingTime -> Signal<(ExpectedTravelTime, ExpectedTravelTime), NoError> in
                 if case .calculating = drivingTime {
-                    return .complete()
-                }
-                if case .calculating = transitTime {
                     return .complete()
                 }
                 if case .calculating = walkingTime {
                     return .complete()
                 }
                 
-                return .single((drivingTime, transitTime, walkingTime))
+                return .single((drivingTime, walkingTime))
             })
             
             /*if let venue = location.venue, let venueAddress = venue.address, !venueAddress.isEmpty {
@@ -2417,8 +2416,7 @@ public final class PeerInfoStoryPaneNode: ASDisplayNode, PeerInfoPaneNode, ASScr
                     address: address,
                     distance: distance,
                     drivingTime: eta.0,
-                    transitTime: eta.1,
-                    walkingTime: eta.2,
+                    walkingTime: eta.1,
                     hasEta: false
                 )
                 
@@ -2556,7 +2554,7 @@ public final class PeerInfoStoryPaneNode: ASDisplayNode, PeerInfoPaneNode, ASScr
                             if let story = folderPreview.item {
                                 var imageSignal: Signal<UIImage?, NoError>?
                                 
-                                var selectedMedia: Media?
+                                var selectedMedia: EngineRawMedia?
                                 if let image = story.media._asMedia() as? TelegramMediaImage {
                                     selectedMedia = image
                                 } else if let file = story.media._asMedia() as? TelegramMediaFile {
@@ -2771,7 +2769,7 @@ public final class PeerInfoStoryPaneNode: ASDisplayNode, PeerInfoPaneNode, ASScr
                         }
                         
                         let shareController = self.context.sharedContext.makeShareController(context: self.context, params: ShareControllerParams(
-                            subject: .media(.story(peer: peerReference, id: item.id, media: TelegramMediaStory(storyId: StoryId(peerId: peer.id, id: item.id), isMention: false)), nil),
+                            subject: .media(.story(peer: peerReference, id: item.id, media: TelegramMediaStory(storyId: EngineStoryId(peerId: peer.id, id: item.id), isMention: false)), nil),
                             externalShare: false
                         ))
                         self.parentController?.present(shareController, in: .window(.root))
@@ -2881,7 +2879,7 @@ public final class PeerInfoStoryPaneNode: ASDisplayNode, PeerInfoPaneNode, ASScr
         }
     }
     
-    public func ensureMessageIsVisible(id: MessageId) {
+    public func ensureMessageIsVisible(id: EngineMessage.Id) {
     }
     
     private func requestHistoryAroundVisiblePosition(synchronous: Bool, reloadAtTop: Bool, animated: Bool = true) {
@@ -3038,7 +3036,7 @@ public final class PeerInfoStoryPaneNode: ASDisplayNode, PeerInfoPaneNode, ASScr
         if let reorderedIds = self.reorderedIds {
             var fixedStateItems: [StoryListContext.State.Item] = []
             
-            var seenIds = Set<StoryId>()
+            var seenIds = Set<EngineStoryId>()
             for id in reorderedIds {
                 if let index = stateItems.firstIndex(where: { $0.id == id }) {
                     seenIds.insert(id)
@@ -3100,7 +3098,7 @@ public final class PeerInfoStoryPaneNode: ASDisplayNode, PeerInfoPaneNode, ASScr
             ))
         }
         if mappedItems.count < state.totalCount, let lastItem = state.items.last, let _ = state.loadMoreToken {
-            mappedHoles.append(VisualMediaHoleAnchor(index: mappedItems.count, storyId: StoryId(peerId: context.account.peerId, id: Int32.max), localMonthTimestamp: Month(localTimestamp: lastItem.storyItem.timestamp + timezoneOffset).packedValue))
+            mappedHoles.append(VisualMediaHoleAnchor(index: mappedItems.count, storyId: EngineStoryId(peerId: context.account.peerId, id: Int32.max), localMonthTimestamp: Month(localTimestamp: lastItem.storyItem.timestamp + timezoneOffset).packedValue))
         }
         totalCount = state.totalCount
         totalCount = max(mappedItems.count, totalCount)
@@ -3262,7 +3260,7 @@ public final class PeerInfoStoryPaneNode: ASDisplayNode, PeerInfoPaneNode, ASScr
                 return
             }
             
-            var ids = items.items.compactMap { item -> StoryId? in
+            var ids = items.items.compactMap { item -> EngineStoryId? in
                 return (item as? VisualMediaItem)?.storyId
             }
             
@@ -3299,7 +3297,7 @@ public final class PeerInfoStoryPaneNode: ASDisplayNode, PeerInfoPaneNode, ASScr
         self.itemGrid.brieflyDisableTouchActions()
     }
     
-    public func findLoadedMessage(id: MessageId) -> Message? {
+    public func findLoadedMessage(id: EngineMessage.Id) -> EngineMessage? {
         return nil
     }
     
@@ -3313,7 +3311,7 @@ public final class PeerInfoStoryPaneNode: ASDisplayNode, PeerInfoPaneNode, ASScr
     public func cancelPreviewGestures() {
     }
     
-    public func transitionNodeForGallery(messageId: MessageId, media: Media) -> (ASDisplayNode, CGRect, () -> (UIView?, UIView?))? {
+    public func transitionNodeForGallery(messageId: EngineMessage.Id, media: EngineMedia) -> (ASDisplayNode, CGRect, () -> (UIView?, UIView?))? {
         return nil
     }
     
@@ -3605,9 +3603,9 @@ public final class PeerInfoStoryPaneNode: ASDisplayNode, PeerInfoPaneNode, ASScr
                 controller?.dismissAnimated()
             }
             
-            var mappedMedia: [Media] = []
+            var mappedMedia: [EngineRawMedia] = []
             if let items = self.items {
-                mappedMedia = items.items.compactMap { item -> Media? in
+                mappedMedia = items.items.compactMap { item -> EngineRawMedia? in
                     guard let item = item as? VisualMediaItem else {
                         return nil
                     }
@@ -3756,12 +3754,10 @@ public final class PeerInfoStoryPaneNode: ASDisplayNode, PeerInfoPaneNode, ASScr
                 address: addressString,
                 distance: distanceString,
                 drivingTime: mapInfoData.drivingTime,
-                transitTime: mapInfoData.transitTime,
                 walkingTime: mapInfoData.walkingTime,
                 hasEta: mapInfoData.hasEta,
                 action: {},
                 drivingAction: {},
-                transitAction: {},
                 walkingAction: {}
             )
             let (mapInfoLayout, mapInfoReadyAndApply) = mapInfoNode.asyncLayout()(
@@ -4201,30 +4197,6 @@ public final class PeerInfoStoryPaneNode: ASDisplayNode, PeerInfoPaneNode, ASScr
         if self.mapNode != nil {
             self.updateMapLayout(size: size, topInset: topInset, bottomInset: bottomInset, deviceMetrics: deviceMetrics, transition: transition)
             gridTopInset += self.effectiveMapHeight
-            
-            let mapOptionsNode: LocationOptionsNode
-            if let current = self.mapOptionsNode {
-                mapOptionsNode = current
-            } else {
-                mapOptionsNode = LocationOptionsNode(presentationData: self.presentationData, hasBackground: false, updateMapMode: { [weak self] mode in
-                    guard let self else {
-                        return
-                    }
-                    
-                    var state = self.locationViewState
-                    state.mapMode = mode
-                    state.displayingMapModeOptions = false
-                    self.locationViewState = state
-                })
-                mapOptionsNode.clipsToBounds = true
-                self.mapOptionsNode = mapOptionsNode
-                self.parentController?.navigationBar?.additionalContentNode.addSubnode(mapOptionsNode)
-            }
-            
-            let mapOptionsFrame = CGRect(origin: CGPoint(x: 0.0, y: topInset - self.additionalNavigationHeight), size: CGSize(width: size.width, height: self.additionalNavigationHeight))
-            transition.updatePosition(node: mapOptionsNode, position: mapOptionsFrame.center)
-            transition.updateBounds(node: mapOptionsNode, bounds: CGRect(origin: CGPoint(x: 0.0, y: 38.0 - self.additionalNavigationHeight), size: mapOptionsFrame.size))
-            mapOptionsNode.updateLayout(size: mapOptionsFrame.size, leftInset: sideInset, rightInset: sideInset, transition: transition)
         }
         
         var hasBarBackground = false
@@ -5223,9 +5195,9 @@ public final class PeerInfoStoryPaneNode: ASDisplayNode, PeerInfoPaneNode, ASScr
             return
         }
         
-        var mappedMedia: [Media] = []
+        var mappedMedia: [EngineRawMedia] = []
         if let items = self.items {
-            mappedMedia = items.items.compactMap { item -> Media? in
+            mappedMedia = items.items.compactMap { item -> EngineRawMedia? in
                 guard let item = item as? VisualMediaItem else {
                     return nil
                 }
@@ -5321,7 +5293,7 @@ public final class PeerInfoStoryPaneNode: ASDisplayNode, PeerInfoPaneNode, ASScr
                 self.reorderedIds = nil
                 if case .botPreview = self.scope, let listSource = self.listSource as? BotPreviewStoryListContext {
                     if let items = self.items {
-                        var reorderedMedia: [Media] = []
+                        var reorderedMedia: [EngineRawMedia] = []
                         
                         for id in reorderedIds {
                             if let item = items.items.first(where: { ($0 as? VisualMediaItem)?.storyId == id }) as? VisualMediaItem {

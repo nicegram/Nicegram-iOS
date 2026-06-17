@@ -141,16 +141,18 @@ final class LocationActionListItem: ListViewItem {
     let title: String
     let subtitle: String
     let icon: LocationActionListItemIcon
+    let isOpaque: Bool
     let beginTimeAndTimeout: (Double, Double)?
     let action: () -> Void
     let highlighted: (Bool) -> Void
     
-    public init(presentationData: ItemListPresentationData, engine: TelegramEngine, title: String, subtitle: String, icon: LocationActionListItemIcon, beginTimeAndTimeout: (Double, Double)?, action: @escaping () -> Void, highlighted: @escaping (Bool) -> Void = { _ in }) {
+    public init(presentationData: ItemListPresentationData, engine: TelegramEngine, title: String, subtitle: String, icon: LocationActionListItemIcon, isOpaque: Bool = true, beginTimeAndTimeout: (Double, Double)?, action: @escaping () -> Void, highlighted: @escaping (Bool) -> Void = { _ in }) {
         self.presentationData = presentationData
         self.engine = engine
         self.title = title
         self.subtitle = subtitle
         self.icon = icon
+        self.isOpaque = isOpaque
         self.beginTimeAndTimeout = beginTimeAndTimeout
         self.action = action
         self.highlighted = highlighted
@@ -216,6 +218,7 @@ final class LocationActionListItemNode: ListViewItemNode {
         self.separatorNode.isLayerBacked = true
         
         self.highlightedBackgroundNode = ASDisplayNode()
+        self.highlightedBackgroundNode.clipsToBounds = true
         self.highlightedBackgroundNode.isLayerBacked = true
         
         self.iconNode = ASImageNode()
@@ -230,6 +233,21 @@ final class LocationActionListItemNode: ListViewItemNode {
         self.addSubnode(self.separatorNode)
         self.addSubnode(self.iconNode)
         self.addSubnode(self.venueIconNode)
+    }
+    
+    func liveLocationContextSourceView(extend: Bool) -> UIView? {
+        guard let icon = self.item?.icon else {
+            return nil
+        }
+        
+        switch icon {
+        case .liveLocation:
+            return extend ? nil : self.view
+        case .extendLiveLocation:
+            return extend ? self.view : nil
+        default:
+            return nil
+        }
     }
     
     override func layoutForParams(_ params: ListViewItemLayoutParams, item: ListViewItem, previousItem: ListViewItem?, nextItem: ListViewItem?) {
@@ -278,7 +296,7 @@ final class LocationActionListItemNode: ListViewItemNode {
         let iconLayout = self.venueIconNode.asyncLayout()
         
         return { [weak self] item, params, hasSeparator in
-            let leftInset: CGFloat = 65.0 + params.leftInset
+            let leftInset: CGFloat = (item.isOpaque ? 65.0 : 72.0 ) + params.leftInset
             let rightInset: CGFloat = params.rightInset
             let verticalInset: CGFloat = 8.0
             let iconSize: CGFloat = 40.0
@@ -292,13 +310,15 @@ final class LocationActionListItemNode: ListViewItemNode {
             let subtitleAttributedString = NSAttributedString(string: item.subtitle, font: subtitleFont, textColor: item.presentationData.theme.list.itemSecondaryTextColor)
             let (subtitleLayout, subtitleApply) = makeSubtitleLayout(TextNodeLayoutArguments(attributedString: subtitleAttributedString, backgroundColor: nil, maximumNumberOfLines: 1, truncationType: .end, constrainedSize: CGSize(width: params.width - leftInset - rightInset - 15.0, height: CGFloat.greatestFiniteMagnitude), alignment: .natural, cutout: nil, insets: UIEdgeInsets()))
             
-            let titleSpacing: CGFloat = 1.0
+            let titleSpacing: CGFloat = 0.0
             let bottomInset: CGFloat = hasSeparator ? 0.0 : 4.0
             var contentSize = CGSize(width: params.width, height: verticalInset * 2.0 + titleLayout.size.height + titleSpacing + subtitleLayout.size.height + bottomInset)
             if hasSeparator {
                 contentSize.height = max(52.0, contentSize.height)
             }
             let nodeLayout = ListViewItemNodeLayout(contentSize: contentSize, insets: UIEdgeInsets())
+            
+            var hasSeparator = hasSeparator
             
             return (nodeLayout, { [weak self] in
                 var updatedTheme: PresentationTheme?
@@ -315,11 +335,15 @@ final class LocationActionListItemNode: ListViewItemNode {
                     if let strongSelf = self {
                         strongSelf.item = item
                         strongSelf.layoutParams = params
-                        
+                                                
                         if let _ = updatedTheme {
                             strongSelf.separatorNode.backgroundColor = item.presentationData.theme.list.itemPlainSeparatorColor
                             strongSelf.backgroundNode.backgroundColor = item.presentationData.theme.list.plainBackgroundColor
-                            strongSelf.highlightedBackgroundNode.backgroundColor = item.presentationData.theme.list.itemHighlightedBackgroundColor
+                            if item.isOpaque {
+                                strongSelf.highlightedBackgroundNode.backgroundColor = item.presentationData.theme.list.itemHighlightedBackgroundColor
+                            } else {
+                                strongSelf.highlightedBackgroundNode.backgroundColor = item.presentationData.theme.contextMenu.itemHighlightedBackgroundColor
+                            }
                         }
                         
                         var arguments: TransformImageCustomArguments?
@@ -394,15 +418,34 @@ final class LocationActionListItemNode: ListViewItemNode {
                         let topHighlightInset: CGFloat = separatorHeight
                         let separatorRightInset: CGFloat = 16.0
                         
-                        let iconNodeFrame = CGRect(origin: CGPoint(x: params.leftInset + 15.0, y: floorToScreenPixels((contentSize.height - bottomInset - iconSize) / 2.0)), size: CGSize(width: iconSize, height: iconSize))
+                        let contentLeftInset: CGFloat = item.isOpaque ? 0.0 : 7.0
+                        
+                        let iconNodeFrame = CGRect(origin: CGPoint(x: params.leftInset + 15.0 + contentLeftInset, y: floorToScreenPixels((contentSize.height - bottomInset - iconSize) / 2.0)), size: CGSize(width: iconSize, height: iconSize))
                         strongSelf.iconNode.frame = iconNodeFrame
                         strongSelf.venueIconNode.frame = iconNodeFrame
                         
-                        strongSelf.wavesNode?.frame = CGRect(origin: CGPoint(x: params.leftInset + 11.0, y: floorToScreenPixels((contentSize.height - bottomInset - iconSize) / 2.0) - 4.0), size: CGSize(width: 48.0, height: 48.0))
+                        strongSelf.wavesNode?.frame = CGRect(origin: CGPoint(x: params.leftInset + 11.0 + contentLeftInset, y: floorToScreenPixels((contentSize.height - bottomInset - iconSize) / 2.0) - 4.0), size: CGSize(width: 48.0, height: 48.0))
                         
                         strongSelf.backgroundNode.frame = CGRect(origin: CGPoint(x: 0.0, y: 0.0), size: CGSize(width: contentSize.width, height: contentSize.height))
-                        strongSelf.highlightedBackgroundNode.frame = CGRect(origin: CGPoint(x: 0.0, y: -nodeLayout.insets.top - topHighlightInset), size: CGSize(width: contentSize.width, height: contentSize.height + topHighlightInset))
+                        
+                        let highlightFrame: CGRect
+                        let highlightCornerRadius: CGFloat
+                        if item.isOpaque {
+                            highlightFrame = CGRect(origin: CGPoint(x: 0.0, y: -nodeLayout.insets.top - topHighlightInset), size: CGSize(width: contentSize.width, height: contentSize.height + topHighlightInset))
+                            highlightCornerRadius = 0.0
+                        } else {
+                            highlightFrame = CGRect(origin: CGPoint(x: 14.0, y: 2.0), size: CGSize(width: contentSize.width - 14.0 * 2.0, height: 52.0))
+                            highlightCornerRadius = highlightFrame.height * 0.5
+                        }
+                        
+                        strongSelf.highlightedBackgroundNode.frame = highlightFrame
+                        strongSelf.highlightedBackgroundNode.cornerRadius = highlightCornerRadius
                         strongSelf.separatorNode.frame = CGRect(origin: CGPoint(x: leftInset, y: nodeLayout.contentSize.height - separatorHeight), size: CGSize(width: nodeLayout.size.width - leftInset - params.rightInset - separatorRightInset, height: separatorHeight))
+                        
+                        if !item.isOpaque {
+                            hasSeparator = false
+                        }
+                        strongSelf.backgroundNode.isHidden = !item.isOpaque
                         strongSelf.separatorNode.isHidden = !hasSeparator
                         
                         if let (beginTimestamp, timeout) = item.beginTimeAndTimeout {
@@ -414,9 +457,9 @@ final class LocationActionListItemNode: ListViewItemNode {
                                 strongSelf.addSubnode(timerNode)
                                 strongSelf.timerNode = timerNode
                             }
-                            let timerSize = CGSize(width: 28.0, height: 28.0)
+                            let timerSize = CGSize(width: 24.0, height: 24.0)
                             timerNode.update(backgroundColor: item.presentationData.theme.list.itemAccentColor.withAlphaComponent(0.4), foregroundColor: item.presentationData.theme.list.itemAccentColor, textColor: item.presentationData.theme.list.itemAccentColor, beginTimestamp: beginTimestamp, timeout: Int32(timeout) == liveLocationIndefinitePeriod ? -1.0 : timeout, strings: item.presentationData.strings)
-                            timerNode.frame = CGRect(origin: CGPoint(x: contentSize.width - 16.0 - timerSize.width, y: floorToScreenPixels((contentSize.height - timerSize.height) / 2.0) - 2.0), size: timerSize)
+                            timerNode.frame = CGRect(origin: CGPoint(x: contentSize.width - 15.0 - contentLeftInset - timerSize.width, y: floorToScreenPixels((contentSize.height - timerSize.height) / 2.0) - 2.0), size: timerSize)
                         } else if let timerNode = strongSelf.timerNode {
                             strongSelf.timerNode = nil
                             timerNode.removeFromSupernode()

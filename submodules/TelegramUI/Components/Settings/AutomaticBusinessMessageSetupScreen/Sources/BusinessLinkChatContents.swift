@@ -1,7 +1,6 @@
 import Foundation
 import UIKit
 import SwiftSignalKit
-import Postbox
 import TelegramCore
 import AccountContext
 
@@ -30,8 +29,8 @@ final class BusinessLinkChatContents: ChatCustomContentsProtocol {
     
     var kind: ChatCustomContentsKind
 
-    var historyView: Signal<(MessageHistoryView, ViewUpdateType), NoError> {
-        let view = MessageHistoryView(tag: nil, namespaces: .just(Namespaces.Message.allQuickReply), entries: [], holeEarlier: false, holeLater: false, isLoading: false)
+    var historyView: Signal<(EngineRawMessageHistoryView, EngineViewUpdateType), NoError> {
+        let view = EngineRawMessageHistoryView(tag: nil, namespaces: .just(Namespaces.Message.allQuickReply), entries: [], holeEarlier: false, holeLater: false, isLoading: false)
 
         return .single((view, .Initial))
     }

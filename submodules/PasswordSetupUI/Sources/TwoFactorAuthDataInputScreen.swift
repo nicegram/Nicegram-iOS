@@ -1819,6 +1819,7 @@ private final class TwoFactorDataInputScreenNode: ViewControllerTracingNode, ASS
             self.scrollNode.view.contentInsetAdjustmentBehavior = .never
         }
         self.scrollNode.view.delegate = self.wrappedScrollViewDelegate
+        self.scrollNode.view.scrollsToTop = false
     }
     
     func scrollViewDidScroll(_ scrollView: UIScrollView) {

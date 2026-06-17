@@ -4,7 +4,6 @@ import Display
 import ComponentFlow
 import TelegramPresentationData
 import TelegramCore
-import Postbox
 import AnimationCache
 import MultiAnimationRenderer
 import AccountContext
@@ -42,7 +41,7 @@ public final class EmojiSearchContent: ASDisplayNode, EntitySearchContainerNode 
     
     private let context: AccountContext
     private let forceTheme: PresentationTheme?
-    private var initialFocusId: ItemCollectionId?
+    private var initialFocusId: EngineItemCollectionId?
     private let hasPremiumForUse: Bool
     private let hasPremiumForInstallation: Bool
     private let parentInputInteraction: EmojiPagerContentComponent.InputInteraction
@@ -73,7 +72,7 @@ public final class EmojiSearchContent: ASDisplayNode, EntitySearchContainerNode 
         context: AccountContext,
         forceTheme: PresentationTheme?,
         items: [FeaturedStickerPackItem],
-        initialFocusId: ItemCollectionId?,
+        initialFocusId: EngineItemCollectionId?,
         hasPremiumForUse: Bool,
         hasPremiumForInstallation: Bool,
         parentInputInteraction: EmojiPagerContentComponent.InputInteraction
@@ -263,7 +262,7 @@ public final class EmojiSearchContent: ASDisplayNode, EntitySearchContainerNode 
                                 
                                 var items: [EmojiPagerContentComponent.Item] = []
                                 
-                                var existingIds = Set<MediaId>()
+                                var existingIds = Set<EngineMedia.Id>()
                                 for item in result {
                                     if let itemFile = item.1 {
                                         if existingIds.contains(itemFile.fileId) {
@@ -321,7 +320,7 @@ public final class EmojiSearchContent: ASDisplayNode, EntitySearchContainerNode 
                     |> mapToSignal { files, isFinalResult -> Signal<(items: [EmojiPagerContentComponent.ItemGroup], isFinalResult: Bool), NoError> in
                         var items: [EmojiPagerContentComponent.Item] = []
                         
-                        var existingIds = Set<MediaId>()
+                        var existingIds = Set<EngineMedia.Id>()
                         for itemFile in files {
                             if existingIds.contains(itemFile.fileId) {
                                 continue

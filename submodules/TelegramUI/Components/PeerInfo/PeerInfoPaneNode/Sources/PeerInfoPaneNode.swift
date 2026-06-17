@@ -1,5 +1,4 @@
 import SwiftSignalKit
-import Postbox
 import TelegramCore
 import AsyncDisplayKit
 import UIKit
@@ -117,12 +116,12 @@ public protocol PeerInfoPaneNode: ASDisplayNode {
     func scrollToTop() -> Bool
     func transferVelocity(_ velocity: CGFloat)
     func cancelPreviewGestures()
-    func findLoadedMessage(id: MessageId) -> Message?
-    func transitionNodeForGallery(messageId: MessageId, media: Media) -> (ASDisplayNode, CGRect, () -> (UIView?, UIView?))?
+    func findLoadedMessage(id: EngineMessage.Id) -> EngineMessage?
+    func transitionNodeForGallery(messageId: EngineMessage.Id, media: EngineMedia) -> (ASDisplayNode, CGRect, () -> (UIView?, UIView?))?
     func addToTransitionSurface(view: UIView)
     func updateHiddenMedia()
     func updateSelectedMessages(animated: Bool)
-    func ensureMessageIsVisible(id: MessageId)
+    func ensureMessageIsVisible(id: EngineMessage.Id)
 }
 
 public extension PeerInfoPaneNode {

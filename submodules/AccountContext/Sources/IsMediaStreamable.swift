@@ -1,10 +1,9 @@
 import Foundation
-import Postbox
 import TelegramCore
 
 private let minimalStreamableSize: Int = 384 * 1024
 
-public func isMediaStreamable(message: Message, media: TelegramMediaFile) -> Bool {
+public func isMediaStreamable(message: EngineMessage, media: TelegramMediaFile) -> Bool {
     if message.containsSecretMedia {
         return false
     }
@@ -51,7 +50,7 @@ public func isMediaStreamable(media: TelegramMediaFile) -> Bool {
     return false
 }
 
-public func isMediaStreamable(resource: MediaResource) -> Bool {
+public func isMediaStreamable(resource: TelegramMediaResource) -> Bool {
     if let size = resource.size, size >= minimalStreamableSize  {
         return true
     } else {

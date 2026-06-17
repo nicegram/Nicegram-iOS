@@ -2005,7 +2005,7 @@ func peerInfoScreenData(
                                 return (nil, value)
                             }
                         } else {
-                            return context.peerChannelMemberCategoriesContextsManager.recentOnlineSmall(engine: context.engine, postbox: context.account.postbox, network: context.account.network, accountPeerId: context.account.peerId, peerId: peerId)
+                            return context.peerChannelMemberCategoriesContextsManager.recentOnlineSmall(engine: context.engine, accountPeerId: context.account.peerId, peerId: peerId)
                             |> map { value -> (total: Int32?, recent: Int32?) in
                                 return (value.total, value.recent)
                             }
@@ -2106,14 +2106,7 @@ func peerInfoScreenData(
             let threadData: Signal<MessageHistoryThreadData?, NoError>
             if case let .replyThread(message) = chatLocation {
                 let threadId = message.threadId
-                let viewKey: PostboxViewKey = .messageHistoryThreadInfo(peerId: peerId, threadId: threadId)
-                threadData = context.account.postbox.combinedView(keys: [viewKey])
-                |> map { views -> MessageHistoryThreadData? in
-                    guard let view = views.views[viewKey] as? MessageHistoryThreadInfoView else {
-                        return nil
-                    }
-                    return view.info?.data.get(MessageHistoryThreadData.self)
-                }
+                threadData = context.engine.data.subscribe(TelegramEngine.EngineData.Item.Messages.ThreadInfo(peerId: peerId, threadId: threadId))
             } else {
                 threadData = .single(nil)
             }

@@ -1423,10 +1423,6 @@ private final class CallSessionManagerContext {
     }
 }
 
-public enum CallRequestError {
-    case generic
-}
-
 public final class CallSessionManager {
     public static func getStableIncomingUUID(stableId: Int64) -> UUID {
         return StableIncomingUUIDs.shared.with { impl in

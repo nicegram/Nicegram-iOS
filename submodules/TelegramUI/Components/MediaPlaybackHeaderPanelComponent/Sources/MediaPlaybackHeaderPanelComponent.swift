@@ -12,7 +12,6 @@ import UniversalMediaPlayer
 import UndoUI
 import OverlayStatusController
 import TelegramUIPreferences
-import Postbox
 import PresentationDataUtils
 
 public final class MediaPlaybackHeaderPanelComponent: Component {
@@ -162,7 +161,7 @@ public final class MediaPlaybackHeaderPanelComponent: Component {
                         let settings = transaction.getSharedData(ApplicationSpecificSharedDataKeys.musicPlaybackSettings)?.get(MusicPlaybackSettings.self) ?? MusicPlaybackSettings.defaultSettings
                         
                         transaction.updateSharedData(ApplicationSpecificSharedDataKeys.musicPlaybackSettings, { _ in
-                            return PreferencesEntry(settings.withUpdatedVoicePlaybackRate(rate))
+                            return EnginePreferencesEntry(settings.withUpdatedVoicePlaybackRate(rate))
                         })
                         return rate
                     }
@@ -278,7 +277,7 @@ public final class MediaPlaybackHeaderPanelComponent: Component {
                                     playerController.navigationPresentation = .flatModal
                                     controller.push(playerController)
                                 case let .messages(chatLocation, _, _):
-                                    let signal = component.context.sharedContext.messageFromPreloadedChatHistoryViewForLocation(id: id.messageId, location: ChatHistoryLocationInput(content: .InitialSearch(subject: MessageHistoryInitialSearchSubject(location: .id(id.messageId)), count: 60, highlight: true, setupReply: false), id: 0), context: component.context, chatLocation: chatLocation, subject: nil, chatLocationContextHolder: Atomic<ChatLocationContextHolder?>(value: nil), tag: .tag(MessageTags.music))
+                                    let signal = component.context.sharedContext.messageFromPreloadedChatHistoryViewForLocation(id: id.messageId, location: ChatHistoryLocationInput(content: .InitialSearch(subject: MessageHistoryInitialSearchSubject(location: .id(id.messageId)), count: 60, highlight: true, setupReply: false), id: 0), context: component.context, chatLocation: chatLocation, subject: nil, chatLocationContextHolder: Atomic<ChatLocationContextHolder?>(value: nil), tag: .tag(EngineMessage.Tags.music))
 
                                     var cancelImpl: (() -> Void)?
                                     let presentationData = component.context.sharedContext.currentPresentationData.with { $0 }

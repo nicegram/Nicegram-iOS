@@ -4,7 +4,6 @@ import Display
 import TelegramCore
 import SwiftSignalKit
 import AsyncDisplayKit
-import Postbox
 import StickerResources
 import AccountContext
 import AnimatedStickerNode
@@ -16,16 +15,16 @@ import TextFormat
 
 final class StickerPackPreviewInteraction {
     var previewedItem: StickerPreviewPeekItem?
-    var reorderingFileId: MediaId?
+    var reorderingFileId: EngineMedia.Id?
     var playAnimatedStickers: Bool
     
     let addStickerPack: (StickerPackCollectionInfo, [StickerPackItem]) -> Void
     let removeStickerPack: (StickerPackCollectionInfo) -> Void
     let emojiSelected: (String, ChatTextInputTextCustomEmojiAttribute) -> Void
     let emojiLongPressed: (String, ChatTextInputTextCustomEmojiAttribute, ASDisplayNode, CGRect) -> Void
-    let addPressed: () -> Void
+    let addPressed: (UIView) -> Void
     
-    init(playAnimatedStickers: Bool, addStickerPack: @escaping (StickerPackCollectionInfo, [StickerPackItem]) -> Void, removeStickerPack: @escaping (StickerPackCollectionInfo) -> Void, emojiSelected: @escaping (String, ChatTextInputTextCustomEmojiAttribute) -> Void, emojiLongPressed: @escaping (String, ChatTextInputTextCustomEmojiAttribute, ASDisplayNode, CGRect) -> Void, addPressed: @escaping () -> Void) {
+    init(playAnimatedStickers: Bool, addStickerPack: @escaping (StickerPackCollectionInfo, [StickerPackItem]) -> Void, removeStickerPack: @escaping (StickerPackCollectionInfo) -> Void, emojiSelected: @escaping (String, ChatTextInputTextCustomEmojiAttribute) -> Void, emojiLongPressed: @escaping (String, ChatTextInputTextCustomEmojiAttribute, ASDisplayNode, CGRect) -> Void, addPressed: @escaping (UIView) -> Void) {
         self.playAnimatedStickers = playAnimatedStickers
         self.addStickerPack = addStickerPack
         self.removeStickerPack = removeStickerPack
@@ -129,7 +128,6 @@ final class StickerPackPreviewGridItemNode: GridItemNode {
         self.containerNode = ASDisplayNode()
         
         self.imageNode = TransformImageNode()
-        self.imageNode.isLayerBacked = !smartInvertColorsEnabled()
         self.placeholderNode = StickerShimmerEffectNode()
         self.placeholderNode.isUserInteractionEnabled = false
         
@@ -195,7 +193,7 @@ final class StickerPackPreviewGridItemNode: GridItemNode {
     }
     
     @objc private func handleAddTap() {
-        self.interaction?.addPressed()
+        self.interaction?.addPressed(self.imageNode.view)
     }
     
     private var setupTimestamp: Double?

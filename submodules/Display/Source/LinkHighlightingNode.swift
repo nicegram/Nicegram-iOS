@@ -60,6 +60,17 @@ private func drawRectsImageContent(size: CGSize, context: CGContext, color: UICo
                 }
                 currentRects.removeAll()
             } else {
+                // The path-stitching loop below assumes consecutive rects in a group
+                // are adjacent (overlapping or sharing an edge). When they're disjoint
+                // — vertical gap, vertical inversion, or horizontal gap on the same
+                // line — it bridges them with a polygon perimeter that renders as a
+                // diagonal bridge across empty space. Split groups whenever the next
+                // rect doesn't intersect the last one (1pt slop in both axes matches
+                // the snap loop's adjacency test).
+                if let last = currentRects.last, !last.insetBy(dx: -1.0, dy: -1.0).intersects(rect) {
+                    combinedRects.append(currentRects)
+                    currentRects.removeAll()
+                }
                 currentRects.append(rect)
             }
         }
@@ -82,7 +93,7 @@ private func drawRectsImageContent(size: CGSize, context: CGContext, color: UICo
                         rects[i + 1].size.height = rects[i + 1].maxY - midY
                         hadChanges = true
                     }
-                    if rects[i].maxY >= rects[i + 1].minY && rects[i].insetBy(dx: 0.0, dy: 1.0).intersects(rects[i + 1]) {
+                    if rects[i].maxY >= rects[i + 1].minY && rects[i].insetBy(dx: 0.0, dy: -1.0).intersects(rects[i + 1]) {
                         if abs(rects[i].minX - rects[i + 1].minX) < minRadius {
                             let commonMinX = min(rects[i].origin.x, rects[i + 1].origin.x)
                             if rects[i].origin.x != commonMinX {
@@ -124,7 +135,7 @@ private func drawRectsImageContent(size: CGSize, context: CGContext, color: UICo
                 if rect.maxX == next.maxX {
                     context.addLine(to: CGPoint(x: next.maxX, y: next.midY))
                 } else {
-                    let nextRadius = min(outerRadius, floor(abs(rect.maxX - next.maxX) * 0.5))
+                    let nextRadius = min(outerRadius, ceil(abs(rect.maxX - next.maxX) * 0.5))
                     context.addLine(to: CGPoint(x: rect.maxX, y: rect.maxY - nextRadius))
                     if next.maxX > rect.maxX {
                         context.addArc(tangent1End: CGPoint(x: rect.maxX, y: rect.maxY), tangent2End: CGPoint(x: rect.maxX + nextRadius, y: rect.maxY), radius: nextRadius)
@@ -151,7 +162,7 @@ private func drawRectsImageContent(size: CGSize, context: CGContext, color: UICo
                 if rect.minX == prev.minX {
                     context.addLine(to: CGPoint(x: prev.minX, y: prev.midY))
                 } else {
-                    let prevRadius = min(outerRadius, floor(abs(rect.minX - prev.minX) * 0.5))
+                    let prevRadius = min(outerRadius, ceil(abs(rect.minX - prev.minX) * 0.5))
                     context.addLine(to: CGPoint(x: rect.minX, y: rect.minY + prevRadius))
                     if rect.minX < prev.minX {
                         context.addArc(tangent1End: CGPoint(x: rect.minX, y: rect.minY), tangent2End: CGPoint(x: rect.minX + prevRadius, y: rect.minY), radius: prevRadius)

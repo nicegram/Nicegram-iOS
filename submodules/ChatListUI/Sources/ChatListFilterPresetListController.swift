@@ -461,13 +461,13 @@ public func chatListFilterPresetListController(context: AccountContext, mode: Ch
         let _ = (context.engine.peers.currentChatListFilters()
         |> take(1)
         |> deliverOnMainQueue).start(next: { filters in
-            guard let filter = filters.first(where: { $0.id == id }) else {
+            guard let filter = filters.first(where: { $0.id == id }), case let .filter(_, title, _, data) = filter else {
                 return
             }
             
             let presentationData = context.sharedContext.currentPresentationData.with { $0 }
             
-            if case let .filter(_, title, _, data) = filter, data.isShared {
+            if data.isShared {
                 let _ = (combineLatest(
                     context.engine.data.get(
                         EngineDataList(data.includePeers.peers.map(TelegramEngine.EngineData.Item.Peer.Peer.init(id:))),
@@ -539,31 +539,21 @@ public func chatListFilterPresetListController(context: AccountContext, mode: Ch
                     }
                 })
             } else {
-                let actionSheet = ActionSheetController(presentationData: presentationData)
-                
-                actionSheet.setItemGroups([
-                    ActionSheetItemGroup(items: [
-                        ActionSheetTextItem(title: presentationData.strings.ChatList_RemoveFolderConfirmation),
-                        ActionSheetButtonItem(title: presentationData.strings.ChatList_RemoveFolderAction, color: .destructive, action: { [weak actionSheet] in
-                            actionSheet?.dismissAnimated()
-                            
-                            let _ = (context.engine.peers.updateChatListFiltersInteractively { filters in
-                                var filters = filters
-                                if let index = filters.firstIndex(where: { $0.id == id }) {
-                                    filters.remove(at: index)
-                                }
-                                return filters
+                let alertController = textAlertController(context: context, title: presentationData.strings.ChatList_RemoveFolderConfirmationTitle(title.text).string, text: presentationData.strings.ChatList_RemoveFolderConfirmation, actions: [
+                    TextAlertAction(type: .genericAction, title: presentationData.strings.Common_Cancel, action: {
+                    }),
+                    TextAlertAction(type: .destructiveAction, title: presentationData.strings.ChatList_RemoveFolderAction, action: {
+                        let _ = (context.engine.peers.updateChatListFiltersInteractively { filters in
+                            var filters = filters
+                            if let index = filters.firstIndex(where: { $0.id == id }) {
+                                filters.remove(at: index)
                             }
-                            |> deliverOnMainQueue).startStandalone()
-                        })
-                    ]),
-                    ActionSheetItemGroup(items: [
-                        ActionSheetButtonItem(title: presentationData.strings.Common_Cancel, color: .accent, font: .bold, action: { [weak actionSheet] in
-                            actionSheet?.dismissAnimated()
-                        })
-                    ])
+                            return filters
+                        }
+                        |> deliverOnMainQueue).startStandalone()
+                    })
                 ])
-                presentControllerImpl?(actionSheet)
+                presentControllerImpl?(alertController)
             }
         })
     }, updateDisplayTags: { value in
@@ -613,6 +603,11 @@ public func chatListFilterPresetListController(context: AccountContext, mode: Ch
         )
     )
     |> map { presentationData, state, filtersWithCountsValue, preferences, updatedFilterOrderValue, suggestedFilters, peer, allLimits, displayTags -> (ItemListControllerState, (ItemListNodeState, Any)) in
+        var presentationData = presentationData
+
+        let updatedTheme = presentationData.theme.withModalBlocksBackground()
+        presentationData = presentationData.withUpdated(theme: updatedTheme)
+        
         let isPremium = peer?.isPremium ?? false
         let limits = allLimits.0
         let premiumLimits = allLimits.1
@@ -622,13 +617,13 @@ public func chatListFilterPresetListController(context: AccountContext, mode: Ch
         case .default:
             leftNavigationButton = nil
         case .modal:
-            leftNavigationButton = ItemListNavigationButton(content: .text("___close"), style: .regular, enabled: true, action: {
+            leftNavigationButton = ItemListNavigationButton(content: .icon(.close), style: .regular, enabled: true, action: {
                 dismissImpl?()
             })
         }
         let rightNavigationButton: ItemListNavigationButton?
         if state.isEditing {
-            rightNavigationButton = ItemListNavigationButton(content: .text(presentationData.strings.Common_Done), style: .bold, enabled: true, action: {
+            rightNavigationButton = ItemListNavigationButton(content: .icon(.done), style: .bold, enabled: true, action: {
                 let _ = (updatedFilterOrder.get()
                 |> take(1)
                 |> deliverOnMainQueue).startStandalone(next: { [weak updatedFilterOrder] updatedFilterOrderValue in

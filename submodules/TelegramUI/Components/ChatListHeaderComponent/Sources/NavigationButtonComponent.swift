@@ -116,7 +116,11 @@ public final class NavigationButtonComponent: Component {
             
             switch component.content {
             case let .text(title, isBold):
-                textString = NSAttributedString(string: title, font: isBold ? Font.bold(17.0) : Font.medium(17.0), textColor: theme.chat.inputPanel.panelControlColor)
+                if title == "___done" {
+                    imageName = "Navigation/Done"
+                } else {
+                    textString = NSAttributedString(string: title, font: isBold ? Font.bold(17.0) : Font.medium(17.0), textColor: theme.chat.inputPanel.panelControlColor)
+                }
             case .more:
                 isMore = true
             case let .icon(imageNameValue):

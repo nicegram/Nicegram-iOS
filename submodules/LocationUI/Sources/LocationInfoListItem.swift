@@ -7,9 +7,10 @@ import TelegramCore
 import TelegramPresentationData
 import ItemListUI
 import LocationResources
-import AppBundle
-import SolidRoundedButtonNode
 import ShimmerEffect
+import ComponentFlow
+import ButtonComponent
+import BundleIconComponent
 
 public final class LocationInfoListItem: ListViewItem {
     let presentationData: ItemListPresentationData
@@ -18,27 +19,35 @@ public final class LocationInfoListItem: ListViewItem {
     let address: String?
     let distance: String?
     let drivingTime: ExpectedTravelTime
-    let transitTime: ExpectedTravelTime
     let walkingTime: ExpectedTravelTime
     let hasEta: Bool
     let action: () -> Void
     let drivingAction: () -> Void
-    let transitAction: () -> Void
     let walkingAction: () -> Void
     
-    public init(presentationData: ItemListPresentationData, engine: TelegramEngine, location: TelegramMediaMap, address: String?, distance: String?, drivingTime: ExpectedTravelTime, transitTime: ExpectedTravelTime, walkingTime: ExpectedTravelTime, hasEta: Bool, action: @escaping () -> Void, drivingAction: @escaping () -> Void, transitAction: @escaping () -> Void, walkingAction: @escaping () -> Void) {
+    public init(
+        presentationData: ItemListPresentationData,
+        engine: TelegramEngine,
+        location: TelegramMediaMap,
+        address: String?,
+        distance: String?,
+        drivingTime: ExpectedTravelTime,
+        walkingTime: ExpectedTravelTime,
+        hasEta: Bool,
+        action: @escaping () -> Void,
+        drivingAction: @escaping () -> Void,
+        walkingAction: @escaping () -> Void
+    ) {
         self.presentationData = presentationData
         self.engine = engine
         self.location = location
         self.address = address
         self.distance = distance
         self.drivingTime = drivingTime
-        self.transitTime = transitTime
         self.walkingTime = walkingTime
         self.hasEta = hasEta
         self.action = action
         self.drivingAction = drivingAction
-        self.transitAction = transitAction
         self.walkingAction = walkingAction
     }
     
@@ -76,31 +85,26 @@ public final class LocationInfoListItem: ListViewItem {
 }
 
 public final class LocationInfoListItemNode: ListViewItemNode {
-    private let backgroundNode: ASDisplayNode
     private var titleNode: TextNode?
     private var subtitleNode: TextNode?
     private let venueIconNode: TransformImageNode
     private let buttonNode: HighlightableButtonNode
     
     private var placeholderNode: ShimmerEffectNode?
-    private var drivingButtonNode: SolidRoundedButtonNode?
-    private var transitButtonNode: SolidRoundedButtonNode?
-    private var walkingButtonNode: SolidRoundedButtonNode?
+    private let drivingButton = ComponentView<Empty>()
+    private let walkingButton = ComponentView<Empty>()
     
     private var item: LocationInfoListItem?
     private var layoutParams: ListViewItemLayoutParams?
     private var absoluteLocation: (CGRect, CGSize)?
     
     required public init() {
-        self.backgroundNode = ASDisplayNode()
-        self.backgroundNode.isLayerBacked = true
         self.buttonNode = HighlightableButtonNode()
         self.venueIconNode = TransformImageNode()
         self.venueIconNode.isUserInteractionEnabled = false
         
         super.init(layerBacked: false, rotated: false, seeThrough: false)
         
-        //self.addSubnode(self.backgroundNode)
         self.addSubnode(self.buttonNode)
         self.addSubnode(self.venueIconNode)
         
@@ -145,14 +149,15 @@ public final class LocationInfoListItemNode: ListViewItemNode {
         let iconLayout = self.venueIconNode.asyncLayout()
         
         return { [weak self] item, params in
-            let leftInset: CGFloat = 75.0 + params.leftInset
+            let leftInset: CGFloat = 78.0 + params.leftInset
             let rightInset: CGFloat = params.rightInset
             let verticalInset: CGFloat = 14.0
-            let iconSize: CGFloat = 48.0
-            let inset: CGFloat = 15.0
+            let iconSize: CGFloat = 40.0
+            let directionsButtonHeight: CGFloat = 52.0
+            let directionsTopInset: CGFloat = 18.0
             
-            let titleFont = Font.medium(item.presentationData.fontSize.itemListBaseFontSize)
-            let subtitleFont = Font.regular(floor(item.presentationData.fontSize.itemListBaseFontSize * 14.0 / 17.0))
+            let titleFont = Font.semibold(item.presentationData.fontSize.itemListBaseFontSize)
+            let subtitleFont = Font.regular(floor(item.presentationData.fontSize.itemListBaseFontSize * 15.0 / 17.0))
             
             let title: String
             let subtitle: String
@@ -179,10 +184,11 @@ public final class LocationInfoListItemNode: ListViewItemNode {
             let subtitleAttributedString = NSAttributedString(string: subtitle, font: subtitleFont, textColor: item.presentationData.theme.list.itemSecondaryTextColor)
             let (subtitleLayout, subtitleApply) = makeSubtitleLayout(TextNodeLayoutArguments(attributedString: subtitleAttributedString, backgroundColor: nil, maximumNumberOfLines: 1, truncationType: .end, constrainedSize: CGSize(width: params.width - leftInset - rightInset - 15.0, height: CGFloat.greatestFiniteMagnitude), alignment: .natural, cutout: nil, insets: UIEdgeInsets()))
             
-            let titleSpacing: CGFloat = 1.0
-            let bottomInset: CGFloat = 4.0
+            let titleSpacing: CGFloat = 0.0
+            let bottomInset: CGFloat = 16.0
             let textContentSize = verticalInset * 2.0 + titleLayout.size.height + titleSpacing + subtitleLayout.size.height + bottomInset
-            let contentSize = CGSize(width: params.width, height: item.hasEta ? max(100.0, textContentSize) : textContentSize)
+            let etaContentSize = verticalInset + titleLayout.size.height + titleSpacing + subtitleLayout.size.height + directionsTopInset + directionsButtonHeight + bottomInset
+            let contentSize = CGSize(width: params.width, height: item.hasEta ? max(etaContentSize, textContentSize) : textContentSize)
             let nodeLayout = ListViewItemNodeLayout(contentSize: contentSize, insets: UIEdgeInsets())
             
             return (nodeLayout, { [weak self] in
@@ -200,13 +206,7 @@ public final class LocationInfoListItemNode: ListViewItemNode {
                     if let strongSelf = self {
                         strongSelf.item = item
                         strongSelf.layoutParams = params
-                        
-                        if let _ = updatedTheme {
-                            strongSelf.backgroundNode.backgroundColor = item.presentationData.theme.list.plainBackgroundColor
-                        }
-                        
-                        strongSelf.backgroundNode.isHidden = params.isStandalone
-                        
+                                                                        
                         let arguments = VenueIconArguments(defaultBackgroundColor: item.presentationData.theme.chat.inputPanel.actionControlFillColor, defaultForegroundColor: item.presentationData.theme.chat.inputPanel.actionControlForegroundColor)
                         if let updatedLocation = updatedLocation {
                             strongSelf.venueIconNode.setSignal(venueIcon(engine: item.engine, type: updatedLocation.venue?.type ?? "", background: true))
@@ -229,107 +229,126 @@ public final class LocationInfoListItemNode: ListViewItemNode {
                             strongSelf.addSubnode(subtitleNode)
                         }
                         
-                        let buttonTheme = SolidRoundedButtonTheme(theme: item.presentationData.theme)
-                        if strongSelf.drivingButtonNode == nil {
-                            strongSelf.drivingButtonNode = SolidRoundedButtonNode(icon: generateTintedImage(image: UIImage(bundleImageName: "Location/DirectionsDriving"), color: item.presentationData.theme.list.itemCheckColors.foregroundColor), theme: buttonTheme, fontSize: 15.0, height: 32.0, cornerRadius: 16.0)
-                            strongSelf.drivingButtonNode?.iconSpacing = 5.0
-                            strongSelf.drivingButtonNode?.alpha = 0.0
-                            strongSelf.drivingButtonNode?.allowsGroupOpacity = true
-                            strongSelf.drivingButtonNode?.pressed = { [weak self] in
-                                if let item = self?.item {
-                                    item.drivingAction()
-                                }
-                            }
-                            strongSelf.drivingButtonNode.flatMap { strongSelf.addSubnode($0) }
-                            
-                            strongSelf.transitButtonNode = SolidRoundedButtonNode(icon: generateTintedImage(image: UIImage(bundleImageName: "Location/DirectionsTransit"), color: item.presentationData.theme.list.itemCheckColors.foregroundColor), theme: buttonTheme, fontSize: 15.0, height: 32.0, cornerRadius: 16.0)
-                            strongSelf.transitButtonNode?.iconSpacing = 2.0
-                            strongSelf.transitButtonNode?.alpha = 0.0
-                            strongSelf.transitButtonNode?.allowsGroupOpacity = true
-                            strongSelf.transitButtonNode?.pressed = { [weak self] in
-                                if let item = self?.item {
-                                    item.transitAction()
-                                }
-                            }
-                            strongSelf.transitButtonNode.flatMap { strongSelf.addSubnode($0) }
-                            
-                            strongSelf.walkingButtonNode = SolidRoundedButtonNode(icon: generateTintedImage(image: UIImage(bundleImageName: "Location/DirectionsWalking"), color: item.presentationData.theme.list.itemCheckColors.foregroundColor), theme: buttonTheme, fontSize: 15.0, height: 32.0, cornerRadius: 16.0)
-                            strongSelf.walkingButtonNode?.iconSpacing = 2.0
-                            strongSelf.walkingButtonNode?.alpha = 0.0
-                            strongSelf.walkingButtonNode?.allowsGroupOpacity = true
-                            strongSelf.walkingButtonNode?.pressed = { [weak self] in
-                                if let item = self?.item {
-                                    item.walkingAction()
-                                }
-                            }
-                            strongSelf.walkingButtonNode.flatMap { strongSelf.addSubnode($0) }
-                        } else if let _ = updatedTheme {
-                            strongSelf.drivingButtonNode?.updateTheme(buttonTheme)
-                            strongSelf.drivingButtonNode?.icon = generateTintedImage(image: UIImage(bundleImageName: "Location/DirectionsDriving"), color: item.presentationData.theme.list.itemCheckColors.foregroundColor)
-                            
-                            strongSelf.transitButtonNode?.updateTheme(buttonTheme)
-                            strongSelf.transitButtonNode?.icon = generateTintedImage(image: UIImage(bundleImageName: "Location/DirectionsTransit"), color: item.presentationData.theme.list.itemCheckColors.foregroundColor)
-                            
-                            strongSelf.walkingButtonNode?.updateTheme(buttonTheme)
-                            strongSelf.walkingButtonNode?.icon = generateTintedImage(image: UIImage(bundleImageName: "Location/DirectionsWalking"), color: item.presentationData.theme.list.itemCheckColors.foregroundColor)
-                        }
-                        
                         let titleFrame = CGRect(origin: CGPoint(x: leftInset, y: verticalInset), size: titleLayout.size)
                         titleNode.frame = titleFrame
                         
                         let subtitleFrame = CGRect(origin: CGPoint(x: leftInset, y: verticalInset + titleLayout.size.height + titleSpacing), size: subtitleLayout.size)
                         subtitleNode.frame = subtitleFrame
                         
-                        let iconNodeFrame = CGRect(origin: CGPoint(x: params.leftInset + inset, y: 10.0), size: CGSize(width: iconSize, height: iconSize))
+                        let iconNodeFrame = CGRect(origin: CGPoint(x: params.leftInset + 26.0, y: 14.0), size: CGSize(width: iconSize, height: iconSize))
                         strongSelf.venueIconNode.frame = iconNodeFrame
                         
-                        var directionsWidth: CGFloat = 93.0
+                        let glassInset: CGFloat = 6.0
+                        let buttonSideInset: CGFloat = 30.0
+                        let buttonSpacing: CGFloat = 10.0
+                        var directionsWidth: CGFloat = floorToScreenPixels((params.width - glassInset * 2.0 - buttonSideInset * 2.0 - buttonSpacing) / 2.0)
                         
                         if item.hasEta {
-                            if item.drivingTime == .unknown && item.transitTime == .unknown && item.walkingTime == .unknown {
-                                strongSelf.drivingButtonNode?.icon = nil
-                                strongSelf.drivingButtonNode?.title = item.presentationData.strings.Map_GetDirections
-                                if let drivingButtonNode = strongSelf.drivingButtonNode {
-                                    let buttonSize = drivingButtonNode.sizeThatFits(contentSize)
-                                    directionsWidth = buttonSize.width
-                                }
+                            let buttonBackground = ButtonComponent.Background(
+                                style: .glass,
+                                color: item.presentationData.theme.list.itemCheckColors.fillColor,
+                                foreground: item.presentationData.theme.list.itemCheckColors.foregroundColor,
+                                pressedColor: item.presentationData.theme.list.itemCheckColors.fillColor.withMultipliedAlpha(0.9)
+                            )
+                            let foregroundColor = item.presentationData.theme.list.itemCheckColors.foregroundColor
+                            
+                            var drivingButtonTitle = ""
+                            var walkingButtonTitle = ""
+                            var drivingButtonHasIcon = true
+                            var drivingButtonVisible = false
+                            var walkingButtonVisible = false
+                            
+                            if item.drivingTime == .unknown && item.walkingTime == .unknown {
+                                drivingButtonHasIcon = false
+                                drivingButtonTitle = item.presentationData.strings.Map_GetDirections
+                                drivingButtonVisible = true
                                 
                                 if let previousDrivingTime = currentItem?.drivingTime, case .calculating = previousDrivingTime {
-                                    strongSelf.drivingButtonNode?.alpha = 1.0
-                                    strongSelf.drivingButtonNode?.layer.animateAlpha(from: 0.0, to: 1.0, duration: 0.2)
+                                    strongSelf.drivingButton.view?.alpha = 1.0
+                                    strongSelf.drivingButton.view?.layer.animateAlpha(from: 0.0, to: 1.0, duration: 0.2)
                                 }
                             } else {
                                 if case let .ready(drivingTime) = item.drivingTime {
-                                    strongSelf.drivingButtonNode?.title = stringForEstimatedDuration(strings: item.presentationData.strings, time: drivingTime, format: { $0 })
+                                    drivingButtonTitle = stringForEstimatedDuration(strings: item.presentationData.strings, time: drivingTime, format: { $0 }) ?? ""
+                                    drivingButtonVisible = true
                                     
                                     if let previousDrivingTime = currentItem?.drivingTime, case .calculating = previousDrivingTime {
-                                        strongSelf.drivingButtonNode?.alpha = 1.0
-                                        strongSelf.drivingButtonNode?.layer.animateAlpha(from: 0.0, to: 1.0, duration: 0.2)
-                                    }
-                                }
-                                
-                                if case let .ready(transitTime) = item.transitTime {
-                                    strongSelf.transitButtonNode?.title = stringForEstimatedDuration(strings: item.presentationData.strings, time: transitTime, format: { $0 })
-                                    
-                                    if let previousTransitTime = currentItem?.transitTime, case .calculating = previousTransitTime {
-                                        strongSelf.transitButtonNode?.alpha = 1.0
-                                        strongSelf.transitButtonNode?.layer.animateAlpha(from: 0.0, to: 1.0, duration: 0.2)
+                                        strongSelf.drivingButton.view?.alpha = 1.0
+                                        strongSelf.drivingButton.view?.layer.animateAlpha(from: 0.0, to: 1.0, duration: 0.2)
                                     }
                                 }
                                 
                                 if case let .ready(walkingTime) = item.walkingTime {
-                                    strongSelf.walkingButtonNode?.title = stringForEstimatedDuration(strings: item.presentationData.strings, time: walkingTime, format: { $0 })
+                                    walkingButtonTitle = stringForEstimatedDuration(strings: item.presentationData.strings, time: walkingTime, format: { $0 }) ?? ""
+                                    walkingButtonVisible = true
                                     
                                     if let previousWalkingTime = currentItem?.walkingTime, case .calculating = previousWalkingTime {
-                                        strongSelf.walkingButtonNode?.alpha = 1.0
-                                        strongSelf.walkingButtonNode?.layer.animateAlpha(from: 0.0, to: 1.0, duration: 0.2)
+                                        strongSelf.walkingButton.view?.alpha = 1.0
+                                        strongSelf.walkingButton.view?.layer.animateAlpha(from: 0.0, to: 1.0, duration: 0.2)
                                     }
                                 }
                             }
+                                                        
+                            let drivingButtonContent: AnyComponent<Empty>
+                            if drivingButtonHasIcon {
+                                drivingButtonContent = AnyComponent(
+                                    HStack([
+                                        AnyComponentWithIdentity(id: "icon", component: AnyComponent(BundleIconComponent(name: "Location/DirectionsDriving", tintColor: foregroundColor))),
+                                        AnyComponentWithIdentity(id: "title", component: AnyComponent(Text(text: drivingButtonTitle, font: Font.semibold(17.0), color: foregroundColor)))
+                                    ], spacing: 5.0)
+                                )
+                            } else {
+                                drivingButtonContent = AnyComponent(Text(text: drivingButtonTitle, font: Font.semibold(17.0), color: foregroundColor))
+                            }
                             
-                            let directionsSpacing: CGFloat = 8.0
+                            let drivingButtonSize = strongSelf.drivingButton.update(
+                                transition: .immediate,
+                                component: AnyComponent(ButtonComponent(
+                                    background: buttonBackground,
+                                    content: AnyComponentWithIdentity(
+                                        id: AnyHashable("driving-\(drivingButtonHasIcon)-\(drivingButtonTitle)"),
+                                        component: drivingButtonContent
+                                    ),
+                                    action: { [weak self] in
+                                        if let item = self?.item {
+                                            item.drivingAction()
+                                        }
+                                    }
+                                )),
+                                environment: {},
+                                containerSize: CGSize(width: drivingButtonHasIcon ? directionsWidth : contentSize.width - glassInset * 2.0 - buttonSideInset * 2.0, height: directionsButtonHeight)
+                            )
+                            if !drivingButtonHasIcon {
+                                directionsWidth = drivingButtonSize.width
+                            }
                             
-                            if case .calculating = item.drivingTime, case .calculating = item.transitTime, case .calculating = item.walkingTime {
+                            let walkingButtonSize = strongSelf.walkingButton.update(
+                                transition: .immediate,
+                                component: AnyComponent(ButtonComponent(
+                                    background: buttonBackground,
+                                    content: AnyComponentWithIdentity(
+                                        id: AnyHashable("walking-\(walkingButtonTitle)"),
+                                        component: AnyComponent(
+                                            HStack([
+                                                AnyComponentWithIdentity(id: "icon", component: AnyComponent(BundleIconComponent(name: "Location/DirectionsWalking", tintColor: foregroundColor))),
+                                                AnyComponentWithIdentity(id: "title", component: AnyComponent(Text(text: walkingButtonTitle, font: Font.semibold(17.0), color: foregroundColor)))
+                                            ], spacing: 2.0)
+                                        )
+                                    ),
+                                    contentInsets: UIEdgeInsets(),
+                                    action: { [weak self] in
+                                        if let item = self?.item {
+                                            item.walkingAction()
+                                        }
+                                    }
+                                )),
+                                environment: {},
+                                containerSize: CGSize(width: directionsWidth, height: directionsButtonHeight)
+                            )
+                            
+                            var buttonOrigin = glassInset + buttonSideInset
+                            
+                            if case .calculating = item.drivingTime, case .calculating = item.walkingTime {
                                 let shimmerNode: ShimmerEffectNode
                                 if let current = strongSelf.placeholderNode {
                                     shimmerNode = current
@@ -338,17 +357,17 @@ public final class LocationInfoListItemNode: ListViewItemNode {
                                     strongSelf.placeholderNode = shimmerNode
                                     strongSelf.addSubnode(shimmerNode)
                                 }
-                                shimmerNode.frame = CGRect(origin: CGPoint(x: leftInset, y: subtitleFrame.maxY + 12.0), size: CGSize(width: contentSize.width - leftInset, height: 32.0))
+                                shimmerNode.frame = CGRect(origin: CGPoint(x: buttonOrigin, y: subtitleFrame.maxY + directionsTopInset), size: CGSize(width: contentSize.width - buttonOrigin * 2.0, height: directionsButtonHeight))
                                 if let (rect, size) = strongSelf.absoluteLocation {
                                     shimmerNode.updateAbsoluteRect(rect, within: size)
                                 }
                                 
                                 var shapes: [ShimmerEffectNode.Shape] = []
-                                shapes.append(.roundedRectLine(startPoint: CGPoint(x: 0.0, y: 0.0), width: directionsWidth, diameter: 32.0))
-                                shapes.append(.roundedRectLine(startPoint: CGPoint(x: directionsWidth + directionsSpacing, y: 0.0), width: directionsWidth, diameter: 32.0))
-                                shapes.append(.roundedRectLine(startPoint: CGPoint(x: directionsWidth + directionsSpacing + directionsWidth + directionsSpacing, y: 0.0), width: directionsWidth, diameter: 32.0))
+                                shapes.append(.roundedRectLine(startPoint: CGPoint(x: 0.0, y: 0.0), width: directionsWidth, diameter: directionsButtonHeight))
+                                shapes.append(.roundedRectLine(startPoint: CGPoint(x: directionsWidth + buttonSpacing, y: 0.0), width: directionsWidth, diameter: directionsButtonHeight))
+                                shapes.append(.roundedRectLine(startPoint: CGPoint(x: directionsWidth + buttonSpacing + directionsWidth + buttonSpacing, y: 0.0), width: directionsWidth, diameter: directionsButtonHeight))
                                 
-                                shimmerNode.update(backgroundColor: item.presentationData.theme.list.plainBackgroundColor, foregroundColor: item.presentationData.theme.list.mediaPlaceholderColor, shimmeringColor: item.presentationData.theme.list.itemBlocksBackgroundColor.withAlphaComponent(0.4), shapes: shapes, size: shimmerNode.frame.size)
+                                shimmerNode.update(backgroundColor: .clear, foregroundColor: item.presentationData.theme.list.mediaPlaceholderColor, shimmeringColor: item.presentationData.theme.list.itemBlocksBackgroundColor.withAlphaComponent(0.4), shapes: shapes, size: shimmerNode.frame.size, mask: true)
                             } else if let shimmerNode = strongSelf.placeholderNode {
                                 strongSelf.placeholderNode = nil
                                 shimmerNode.layer.animateAlpha(from: 1.0, to: 0.0, duration: 0.2, removeOnCompletion: false, completion: { [weak shimmerNode] _ in
@@ -356,30 +375,42 @@ public final class LocationInfoListItemNode: ListViewItemNode {
                                 })
                             }
                             
-                            let drivingHeight = strongSelf.drivingButtonNode?.updateLayout(width: directionsWidth, transition: .immediate) ?? 0.0
-                            let transitHeight = strongSelf.transitButtonNode?.updateLayout(width: directionsWidth, transition: .immediate) ?? 0.0
-                            let walkingHeight = strongSelf.walkingButtonNode?.updateLayout(width: directionsWidth, transition: .immediate) ?? 0.0
                             
-                            var buttonOrigin = leftInset
-                            strongSelf.drivingButtonNode?.frame = CGRect(origin: CGPoint(x: buttonOrigin, y: subtitleFrame.maxY + 12.0), size: CGSize(width: directionsWidth, height: drivingHeight))
+                            let drivingButtonFrame = CGRect(origin: CGPoint(x: buttonOrigin, y: subtitleFrame.maxY + directionsTopInset), size: CGSize(width: directionsWidth, height: drivingButtonSize.height))
+                            if let drivingButtonView = strongSelf.drivingButton.view {
+                                if drivingButtonView.superview == nil {
+                                    strongSelf.view.addSubview(drivingButtonView)
+                                }
+                                drivingButtonView.frame = drivingButtonFrame
+                                if drivingButtonView.layer.animation(forKey: "opacity") == nil {
+                                    drivingButtonView.alpha = drivingButtonVisible ? 1.0 : 0.0
+                                }
+                            }
                             
                             if case .ready = item.drivingTime {
-                                buttonOrigin += directionsWidth + directionsSpacing
+                                buttonOrigin += directionsWidth + buttonSpacing
                             }
                             
-                            strongSelf.transitButtonNode?.frame = CGRect(origin: CGPoint(x: buttonOrigin, y: subtitleFrame.maxY + 12.0), size: CGSize(width: directionsWidth, height: transitHeight))
-                            
-                            if case .ready = item.transitTime {
-                                buttonOrigin += directionsWidth + directionsSpacing
+                            let walkingButtonFrame = CGRect(origin: CGPoint(x: buttonOrigin, y: subtitleFrame.maxY + directionsTopInset), size: CGSize(width: directionsWidth, height: walkingButtonSize.height))
+                            if let walkingButtonView = strongSelf.walkingButton.view {
+                                if walkingButtonView.superview == nil {
+                                    strongSelf.view.addSubview(walkingButtonView)
+                                }
+                                walkingButtonView.frame = walkingButtonFrame
+                                if walkingButtonView.layer.animation(forKey: "opacity") == nil {
+                                    walkingButtonView.alpha = walkingButtonVisible ? 1.0 : 0.0
+                                }
                             }
-                            
-                            strongSelf.walkingButtonNode?.frame = CGRect(origin: CGPoint(x: buttonOrigin, y: subtitleFrame.maxY + 12.0), size: CGSize(width: directionsWidth, height: walkingHeight))
                         } else {
-                            
+                            strongSelf.drivingButton.view?.alpha = 0.0
+                            strongSelf.walkingButton.view?.alpha = 0.0
+                            if let shimmerNode = strongSelf.placeholderNode {
+                                strongSelf.placeholderNode = nil
+                                shimmerNode.removeFromSupernode()
+                            }
                         }
                         
                         strongSelf.buttonNode.frame = CGRect(x: 0.0, y: 0.0, width: contentSize.width, height: 72.0)
-                        strongSelf.backgroundNode.frame = CGRect(origin: CGPoint(x: 0.0, y: 0.0), size: CGSize(width: contentSize.width, height: contentSize.height))
                     }
                 })
             })

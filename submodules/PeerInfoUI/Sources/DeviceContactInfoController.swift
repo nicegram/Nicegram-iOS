@@ -24,7 +24,6 @@ import PhoneNumberFormat
 import UndoUI
 import GalleryUI
 import PeerAvatarGalleryUI
-import Postbox
 import ContextUI
 
 private enum DeviceContactInfoAction {
@@ -1090,7 +1089,7 @@ public func deviceContactInfoController(context: ShareControllerAccountContext, 
             case .vcard:
                 break
             case .filter, .create:
-                leftNavigationButton = ItemListNavigationButton(content: .text(presentationData.strings.Common_Cancel), style: .regular, enabled: true, action: {
+                leftNavigationButton = ItemListNavigationButton(content: .icon(.close), style: .regular, enabled: true, action: {
                     dismissImpl?(true)
                     cancelled?()
                 })
@@ -1132,7 +1131,7 @@ public func deviceContactInfoController(context: ShareControllerAccountContext, 
                 composedContactData = DeviceContactExtendedData(basicData: DeviceContactBasicData(firstName: firstName, lastName: lastName, phoneNumbers: filteredPhoneNumbers), middleName: filteredData.middleName, prefix: filteredData.prefix, suffix: filteredData.suffix, organization: filteredData.organization, jobTitle: filteredData.jobTitle, department: filteredData.department, emailAddresses: filteredData.emailAddresses, urls: urls, addresses: filteredData.addresses, birthdayDate: filteredData.birthdayDate, socialProfiles: filteredData.socialProfiles, instantMessagingProfiles: filteredData.instantMessagingProfiles, note: filteredData.note)
             }
             
-            rightNavigationButton = ItemListNavigationButton(content: .text(isShare ? presentationData.strings.Common_Done : presentationData.strings.Compose_Create), style: .bold, enabled: (isShare || !filteredPhoneNumbers.isEmpty) && composedContactData != nil, action: {
+            rightNavigationButton = ItemListNavigationButton(content: isShare ? .icon(.done) : .text(presentationData.strings.Compose_Create), style: .bold, enabled: (isShare || !filteredPhoneNumbers.isEmpty) && composedContactData != nil, action: {
                 if let composedContactData = composedContactData {
                     guard let context = (context as? ShareControllerAppAccountContext)?.context else {
                         return

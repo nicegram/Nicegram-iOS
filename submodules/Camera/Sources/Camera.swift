@@ -1150,7 +1150,7 @@ public final class Camera {
     
     public static func isDualCameraSupported(forRoundVideo: Bool = false) -> Bool {
         if #available(iOS 13.0, *), AVCaptureMultiCamSession.isMultiCamSupported && !DeviceModel.current.isIpad {
-            if forRoundVideo && DeviceModel.current == .iPhoneXR {
+            if forRoundVideo && (ProcessInfo.processInfo.isLowPowerModeEnabled || DeviceModel.current == .iPhoneXR) {
                 return false
             }
             return true

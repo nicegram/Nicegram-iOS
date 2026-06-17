@@ -1,7 +1,6 @@
 import Foundation
 import UIKit
 import AsyncDisplayKit
-import Postbox
 import Display
 import TelegramCore
 import SwiftSignalKit
@@ -187,7 +186,7 @@ public class ChatMessageThreadInfoNode: ASDisplayNode {
         public let type: ChatMessageThreadInfoType
         public let peer: EnginePeer?
         public let threadId: Int64?
-        public let parentMessage: Message
+        public let parentMessage: EngineMessage
         public let constrainedSize: CGSize
         public let animationCache: AnimationCache?
         public let animationRenderer: MultiAnimationRenderer?
@@ -200,7 +199,7 @@ public class ChatMessageThreadInfoNode: ASDisplayNode {
             type: ChatMessageThreadInfoType,
             peer: EnginePeer?,
             threadId: Int64?,
-            parentMessage: Message,
+            parentMessage: EngineMessage,
             constrainedSize: CGSize,
             animationCache: AnimationCache?,
             animationRenderer: MultiAnimationRenderer?

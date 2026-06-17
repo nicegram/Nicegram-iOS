@@ -21,6 +21,7 @@
 - (void)rotate;
 - (void)mirror;
 - (void)aspectRatioButtonPressed;
+- (void)aspectRatioButtonPressedWithSourceView:(UIView *)sourceView;
 
 - (void)setImage:(UIImage *)image;
 - (void)setSnapshotImage:(UIImage *)snapshotImage;

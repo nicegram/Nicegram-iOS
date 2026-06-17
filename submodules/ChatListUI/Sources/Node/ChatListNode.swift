@@ -28,7 +28,6 @@ import ChatListSearchItemHeader
 import PremiumUI
 import AnimationCache
 import MultiAnimationRenderer
-import Postbox
 import ChatFolderLinkPreviewScreen
 import StoryContainerScreen
 import ChatListHeaderComponent
@@ -125,6 +124,7 @@ public final class ChatListNodeInteraction {
     let openActiveSessions: () -> Void
     let openBirthdaySetup: () -> Void
     let performActiveSessionAction: (NewSessionReview, Bool) -> Void
+    let performBotConnectionReviewAction: (NewBotConnectionReview, Bool) -> Void
     let openChatFolderUpdates: () -> Void
     let hideChatFolderUpdates: () -> Void
     let openStories: (ChatListNode.OpenStoriesSubject, ASDisplayNode?) -> Void
@@ -190,6 +190,7 @@ public final class ChatListNodeInteraction {
         openActiveSessions: @escaping () -> Void,
         openBirthdaySetup: @escaping () -> Void,
         performActiveSessionAction: @escaping (NewSessionReview, Bool) -> Void,
+        performBotConnectionReviewAction: @escaping (NewBotConnectionReview, Bool) -> Void,
         openChatFolderUpdates: @escaping () -> Void,
         hideChatFolderUpdates: @escaping () -> Void,
         openStories: @escaping (ChatListNode.OpenStoriesSubject, ASDisplayNode?) -> Void,
@@ -242,6 +243,7 @@ public final class ChatListNodeInteraction {
         self.openActiveSessions = openActiveSessions
         self.openBirthdaySetup = openBirthdaySetup
         self.performActiveSessionAction = performActiveSessionAction
+        self.performBotConnectionReviewAction = performBotConnectionReviewAction
         self.openChatFolderUpdates = openChatFolderUpdates
         self.hideChatFolderUpdates = hideChatFolderUpdates
         self.openStories = openStories
@@ -1306,7 +1308,7 @@ public final class ChatListNode: ListViewImpl {
                 case .Header, .Hole:
                     return nil
                 case let .PeerId(value):
-                    return PeerId(value)
+                    return EnginePeer.Id(value)
                 case .ThreadId, .GroupId, .ContactId, .ArchiveIntro, .EmptyIntro, .SectionHeader, .Notice, .additionalCategory, .TopPeer:
                     return nil
                 }
@@ -1888,6 +1890,17 @@ public final class ChatListNode: ListViewImpl {
                 #else
                 let _ = self.context.engine.privacy.terminateAnotherSession(id: newSessionReview.id).startStandalone()
                 #endif
+            }
+        }, performBotConnectionReviewAction: { [weak self] newBotConnectionReview, isPositive in
+            guard let self else {
+                return
+            }
+            
+            if isPositive {
+                let _ = self.context.engine.accountData.confirmBotConnectionReview(botId: newBotConnectionReview.botId).startStandalone()
+            } else {
+                let _ = removeNewBotConnectionReviews(postbox: self.context.account.postbox, botIds: [newBotConnectionReview.botId]).startStandalone()
+                let _ = self.context.engine.accountData.setAccountConnectedBot(bot: nil).startStandalone()
             }
         }, openChatFolderUpdates: { [weak self] in
             guard let self else {
@@ -2746,7 +2759,7 @@ public final class ChatListNode: ListViewImpl {
             }
             let presentationData = state.presentationData
             
-            return preparedChatListNodeViewTransition(from: previousView, to: processedView, reason: reason, previewing: previewing, disableAnimations: disableAnimations, account: context.account, scrollPosition: updatedScrollPosition, searchMode: searchMode, forceAllUpdated: forceAllUpdated)
+            return preparedChatListNodeViewTransition(from: previousView, to: processedView, reason: reason, previewing: previewing, disableAnimations: disableAnimations, scrollPosition: updatedScrollPosition, searchMode: searchMode, forceAllUpdated: forceAllUpdated)
             |> map({ mappedChatListNodeViewListTransition(context: context, nodeInteraction: nodeInteraction, location: location, isPremium: accountIsPremium, filterData: filterData, chatListFilters: chatListFilters, mode: mode, isPeerEnabled: isPeerEnabled, presentationData: presentationData, transition: $0) })
             |> runOn(prepareOnMainQueue ? Queue.mainQueue() : viewProcessingQueue)
         }
@@ -2776,7 +2789,7 @@ public final class ChatListNode: ListViewImpl {
                     strongSelf.enqueueHistoryPreloadUpdate()
                 }
                 
-                var refreshStoryPeerIds: [PeerId] = []
+                var refreshStoryPeerIds: [EnginePeer.Id] = []
                 var isHiddenItemVisible = false
                 if let range = range.visibleRange {
                     let entryCount = chatListView.filteredEntries.count

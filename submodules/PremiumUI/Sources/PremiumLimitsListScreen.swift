@@ -3,7 +3,6 @@ import UIKit
 import Display
 import AsyncDisplayKit
 import TelegramCore
-import Postbox
 import SwiftSignalKit
 import AccountContext
 import TelegramPresentationData
@@ -103,20 +102,9 @@ public class PremiumLimitsListScreen: ViewController {
             
             self.appIcons = controller.context.sharedContext.applicationBindings.getAvailableAlternateIcons()
             
-            let stickersKey: PostboxViewKey = .orderedItemList(id: Namespaces.OrderedItemList.CloudPremiumStickers)
             self.disposable = (combineLatest(
                 queue: Queue.mainQueue(),
-                context.account.postbox.combinedView(keys: [stickersKey])
-                |> map { views -> [OrderedItemListEntry]? in
-                    if let view = views.views[stickersKey] as? OrderedItemListView {
-                        return view.items
-                    } else {
-                        return nil
-                    }
-                }
-                |> filter { items in
-                    return items != nil
-                }
+                context.engine.data.subscribe(TelegramEngine.EngineData.Item.OrderedLists.ListItems(collectionId: Namespaces.OrderedItemList.CloudPremiumStickers))
                 |> take(1),
                 context.engine.data.get(
                     TelegramEngine.EngineData.Item.Peer.Peer(id: context.account.peerId),
@@ -137,11 +125,9 @@ public class PremiumLimitsListScreen: ViewController {
                 }
                 
                 var result: [TelegramMediaFile.Accessor] = []
-                if let items = items {
-                    for item in items {
-                        if let mediaItem = item.contents.get(RecentMediaItem.self) {
-                            result.append(mediaItem.media)
-                        }
+                for item in items {
+                    if let mediaItem = item.contents.get(RecentMediaItem.self) {
+                        result.append(mediaItem.media)
                     }
                 }
                 return (result.map { file -> TelegramMediaFile in

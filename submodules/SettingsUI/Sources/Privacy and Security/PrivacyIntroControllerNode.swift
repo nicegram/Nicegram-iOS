@@ -166,7 +166,7 @@ final class PrivacyIntroControllerNode: ViewControllerTracingNode {
         let noticeSize = self.noticeNode.measure(CGSize(width: layout.size.width - inset * 2.0, height: CGFloat.greatestFiniteMagnitude))
         
         let buttonInset: CGFloat
-        if layout.size.width >= 375.0 {
+        if layout.size.width >= 320.0 {
             buttonInset = max(16.0, floor((layout.size.width - 674.0) / 2.0))
         } else {
             buttonInset = 0.0

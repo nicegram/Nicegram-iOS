@@ -6,7 +6,6 @@ import UIKit
 import AsyncDisplayKit
 import Display
 import TelegramCore
-import Postbox
 import SwiftSignalKit
 import TelegramPresentationData
 import MediaResources
@@ -136,7 +135,7 @@ public func legacyInputMicPalette(from theme: PresentationTheme) -> TGModernConv
     return TGModernConversationInputMicPallete(dark: theme.overallDarkAppearance, buttonColor: inputPanelTheme.actionControlFillColor, iconColor: inputPanelTheme.actionControlForegroundColor, backgroundColor: theme.rootController.navigationBar.opaqueBackgroundColor, borderColor: inputPanelTheme.panelSeparatorColor, lock: inputPanelTheme.panelControlAccentColor, textColor: inputPanelTheme.primaryTextColor, secondaryTextColor: inputPanelTheme.secondaryTextColor, recording: inputPanelTheme.mediaRecordingDotColor)
 }
 
-public func legacyInstantVideoController(theme: PresentationTheme, forStory: Bool, panelFrame: CGRect, context: AccountContext, peerId: PeerId, slowmodeState: ChatSlowmodeState?, hasSchedule: Bool, send: @escaping (InstantVideoController, EnqueueMessage?) -> Void, displaySlowmodeTooltip: @escaping (UIView, CGRect) -> Void, presentSchedulePicker: @escaping (@escaping (Int32, Bool) -> Void) -> Void) -> InstantVideoController {
+public func legacyInstantVideoController(theme: PresentationTheme, forStory: Bool, panelFrame: CGRect, context: AccountContext, peerId: EnginePeer.Id, slowmodeState: ChatSlowmodeState?, hasSchedule: Bool, send: @escaping (InstantVideoController, EnqueueMessage?) -> Void, displaySlowmodeTooltip: @escaping (UIView, CGRect) -> Void, presentSchedulePicker: @escaping (@escaping (Int32, Bool) -> Void) -> Void) -> InstantVideoController {
     let isSecretChat = peerId.namespace == Namespaces.Peer.SecretChat
     
     let legacyController = InstantVideoController(presentation: .custom, theme: theme)
@@ -207,8 +206,8 @@ public func legacyInstantVideoController(theme: PresentationTheme, forStory: Boo
                     }
                     
                     if let dict = adjustments.dictionary(), let data = try? NSKeyedArchiver.archivedData(withRootObject: dict, requiringSecureCoding: false) {
-                        let adjustmentsData = MemoryBuffer(data: data)
-                        let digest = MemoryBuffer(data: adjustmentsData.md5Digest())
+                        let adjustmentsData = EngineMemoryBuffer(data: data)
+                        let digest = EngineMemoryBuffer(data: adjustmentsData.md5Digest())
                         resourceAdjustments = VideoMediaResourceAdjustments(data: adjustmentsData, digest: digest, isStory: false)
                     }
                 }
@@ -226,16 +225,16 @@ public func legacyInstantVideoController(theme: PresentationTheme, forStory: Boo
                 }
                 
                 if let previewImage = previewImage {
-                    let tempFile = TempBox.shared.tempFile(fileName: "file")
+                    let tempFile = EngineTempBox.shared.tempFile(fileName: "file")
                     defer {
-                        TempBox.shared.dispose(tempFile)
+                        EngineTempBox.shared.dispose(tempFile)
                     }
                     if let data = compressImageToJPEG(previewImage, quality: 0.7, tempFilePath: tempFile.path) {
                     context.account.postbox.mediaBox.storeCachedResourceRepresentation(resource, representation: CachedVideoFirstFrameRepresentation(), data: data)
                     }
                 }
                 
-                let media = TelegramMediaFile(fileId: MediaId(namespace: Namespaces.Media.LocalFile, id: Int64.random(in: Int64.min ... Int64.max)), partialReference: nil, resource: resource, previewRepresentations: previewRepresentations, videoThumbnails: [], immediateThumbnailData: nil, mimeType: "video/mp4", size: nil, attributes: [.FileName(fileName: "video.mp4"), .Video(duration: finalDuration, size: PixelDimensions(finalDimensions), flags: [.instantRoundVideo], preloadSize: nil, coverTime: nil, videoCodec: nil)], alternativeRepresentations: [])
+                let media = TelegramMediaFile(fileId: EngineMedia.Id(namespace: Namespaces.Media.LocalFile, id: Int64.random(in: Int64.min ... Int64.max)), partialReference: nil, resource: resource, previewRepresentations: previewRepresentations, videoThumbnails: [], immediateThumbnailData: nil, mimeType: "video/mp4", size: nil, attributes: [.FileName(fileName: "video.mp4"), .Video(duration: finalDuration, size: PixelDimensions(finalDimensions), flags: [.instantRoundVideo], preloadSize: nil, coverTime: nil, videoCodec: nil)], alternativeRepresentations: [])
                 var message: EnqueueMessage = .message(text: "", attributes: [], inlineStickers: [:], mediaReference: .standalone(media: media), threadId: nil, replyToMessageId: nil, replyToStoryId: nil, localGroupingKey: nil, correlationId: nil, bubbleUpEmojiOrStickersets: [])
                 
                 let scheduleTime: Int32? = scheduleTimestamp > 0 ? scheduleTimestamp : nil

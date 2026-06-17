@@ -2,7 +2,6 @@ import Foundation
 import UIKit
 import SwiftSignalKit
 import Display
-import Postbox
 import TelegramCore
 import TelegramPresentationData
 import ComponentFlow
@@ -1229,7 +1228,7 @@ public class BrowserScreen: ViewController, MinimizableController {
                 )
                 
                 var defaultWebBrowser: String? = settings.defaultWebBrowser
-                if defaultWebBrowser == nil || defaultWebBrowser == "inAppSafari" {
+                if defaultWebBrowser == nil || defaultWebBrowser == "inApp" || defaultWebBrowser == "inAppSafari" {
                     defaultWebBrowser = "safari"
                 }
                 
@@ -1266,6 +1265,7 @@ public class BrowserScreen: ViewController, MinimizableController {
                     
                 } else {
                     items.append(.custom(fontItem, false))
+                    items.append(.separator)
 
                     if case .webPage = contentState.contentType {
                         let isAvailable = contentState.hasInstantView
@@ -1281,6 +1281,17 @@ public class BrowserScreen: ViewController, MinimizableController {
                     }
                 }
                 
+                if toolbarMode != .markdown && [.webPage, .instantPage].contains(contentState.contentType) {
+                    if !layout.metrics.isTablet && canOpenIn {
+                        items.append(.action(ContextMenuActionItem(text: self.presentationData.strings.InstantPage_OpenInBrowser(openInTitle).string, icon: { theme in return generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Browser"), color: theme.contextMenu.primaryColor) }, action: { [weak self] (controller, action) in
+                            if let self {
+                                self.context.sharedContext.applicationBindings.openUrl(openInUrl)
+                            }
+                            action(.default)
+                        })))
+                    }
+                }
+                
                 if !items.isEmpty {
                     items.append(.separator)
                 }
@@ -1288,12 +1299,6 @@ public class BrowserScreen: ViewController, MinimizableController {
                 if case .webPage = contentState.contentType {
                     items.append(.action(ContextMenuActionItem(text: self.presentationData.strings.WebBrowser_Reload, icon: { theme in return generateTintedImage(image: UIImage(bundleImageName: "Instant View/Settings/Reload"), color: theme.contextMenu.primaryColor) }, action: { (controller, action) in
                         performAction.invoke(.reload)
-                        action(.default)
-                    })))
-                }
-                if [.webPage, .document].contains(contentState.contentType) {
-                    items.append(.action(ContextMenuActionItem(text: self.presentationData.strings.InstantPage_Search, icon: { theme in return generateTintedImage(image: UIImage(bundleImageName: "Instant View/Settings/Search"), color: theme.contextMenu.primaryColor) }, action: { (controller, action) in
-                        performAction.invoke(.updateSearchActive(true))
                         action(.default)
                     })))
                 }
@@ -1305,7 +1310,16 @@ public class BrowserScreen: ViewController, MinimizableController {
                     })))
                 }
                 
+                if [.webPage, .document].contains(contentState.contentType) {
+                    items.append(.action(ContextMenuActionItem(text: self.presentationData.strings.InstantPage_Search, icon: { theme in return generateTintedImage(image: UIImage(bundleImageName: "Instant View/Settings/Search"), color: theme.contextMenu.primaryColor) }, action: { (controller, action) in
+                        performAction.invoke(.updateSearchActive(true))
+                        action(.default)
+                    })))
+                }
+                
                 if toolbarMode != .markdown && [.webPage, .instantPage].contains(contentState.contentType) {
+                    items.append(.separator)
+                    
                     items.append(.action(ContextMenuActionItem(text: self.presentationData.strings.WebBrowser_AddBookmark, icon: { theme in return generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Fave"), color: theme.contextMenu.primaryColor) }, action: { (controller, action) in
                         performAction.invoke(.addBookmark)
                         action(.default)
@@ -1314,15 +1328,6 @@ public class BrowserScreen: ViewController, MinimizableController {
                     if contentState.contentType == .webPage {
                         items.append(.action(ContextMenuActionItem(text: self.presentationData.strings.Conversation_SaveToFiles, icon: { theme in return generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Save"), color: theme.contextMenu.primaryColor) }, action: { (controller, action) in
                             performAction.invoke(.saveToFiles)
-                            action(.default)
-                        })))
-                    }
-                    
-                    if !layout.metrics.isTablet && canOpenIn {
-                        items.append(.action(ContextMenuActionItem(text: self.presentationData.strings.InstantPage_OpenInBrowser(openInTitle).string, icon: { theme in return generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Browser"), color: theme.contextMenu.primaryColor) }, action: { [weak self] (controller, action) in
-                            if let self {
-                                self.context.sharedContext.applicationBindings.openUrl(openInUrl)
-                            }
                             action(.default)
                         })))
                     }
@@ -1583,7 +1588,7 @@ public class BrowserScreen: ViewController, MinimizableController {
         case pdfDocument(file: FileMediaReference, canShare: Bool)
         case markdownDocument(file: FileMediaReference, canShare: Bool)
         
-        public var fileId: MediaId? {
+        public var fileId: EngineMedia.Id? {
             switch self {
             case let .document(file, _), let .pdfDocument(file, _), let .markdownDocument(file, _):
                 return file.media.fileId

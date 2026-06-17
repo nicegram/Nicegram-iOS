@@ -87,7 +87,7 @@ final class NetworkStatsContext {
             for (targetKey, averageStats) in self.averageTargetStats {
                 if averageStats.count >= 1000 || averageStats.size >= 4 * 1024 * 1024 {
                     if let postbox = self.postbox {
-                        addAppLogEvent(postbox: postbox, type: "download", data: .dictionary([
+                        _internal_addAppLogEvent(postbox: postbox, type: "download", data: .dictionary([
                             "n": .number(Double(targetKey.networkType.rawValue)),
                             "d": .number(Double(targetKey.datacenterId)),
                             "b": .number(averageStats.networkBps / Double(averageStats.count)),

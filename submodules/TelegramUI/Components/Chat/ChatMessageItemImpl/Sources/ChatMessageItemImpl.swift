@@ -1,6 +1,5 @@
 import Foundation
 import UIKit
-import Postbox
 import AsyncDisplayKit
 import Display
 import SwiftSignalKit
@@ -18,7 +17,7 @@ import ChatMessageStickerItemNode
 import ChatMessageAnimatedStickerItemNode
 import ChatMessageBubbleItemNode
 
-private func mediaMergeableStyle(_ media: Media) -> ChatMessageMerge {
+private func mediaMergeableStyle(_ media: EngineRawMedia) -> ChatMessageMerge {
     if let story = media as? TelegramMediaStory, story.isMention {
         return .none
     }
@@ -47,9 +46,22 @@ private func mediaMergeableStyle(_ media: Media) -> ChatMessageMerge {
     return .fullyMerged
 }
 
-private func messagesShouldBeMerged(accountPeerId: PeerId, _ lhs: Message, _ rhs: Message) -> ChatMessageMerge {
-    var lhsEffectiveAuthor: Peer? = lhs.author
-    var rhsEffectiveAuthor: Peer? = rhs.author
+private func anonymousGroupAdminSignature(message: EngineRawMessage, effectiveAuthor: EngineRawPeer?) -> String? {
+    guard let channel = message.peers[message.id.peerId] as? TelegramChannel, case .group = channel.info else {
+        return nil
+    }
+    guard effectiveAuthor?.id == channel.id else {
+        return nil
+    }
+    guard let signature = message.authorSignatureAttribute?.signature, !signature.isEmpty else {
+        return nil
+    }
+    return signature
+}
+
+private func messagesShouldBeMerged(accountPeerId: EnginePeer.Id, _ lhs: EngineRawMessage, _ rhs: EngineRawMessage) -> ChatMessageMerge {
+    var lhsEffectiveAuthor: EngineRawPeer? = lhs.author
+    var rhsEffectiveAuthor: EngineRawPeer? = rhs.author
     for attribute in lhs.attributes {
         if let attribute = attribute as? SourceReferenceMessageAttribute {
             lhsEffectiveAuthor = lhs.peers[attribute.messageId.peerId]
@@ -112,6 +124,14 @@ private func messagesShouldBeMerged(accountPeerId: PeerId, _ lhs: Message, _ rhs
         sameAuthor = false
     }
     
+    if sameAuthor {
+        let lhsAnonymousAdminSignature = anonymousGroupAdminSignature(message: lhs, effectiveAuthor: lhsEffectiveAuthor)
+        let rhsAnonymousAdminSignature = anonymousGroupAdminSignature(message: rhs, effectiveAuthor: rhsEffectiveAuthor)
+        if lhsAnonymousAdminSignature != rhsAnonymousAdminSignature && (lhsAnonymousAdminSignature != nil || rhsAnonymousAdminSignature != nil) {
+            sameAuthor = false
+        }
+    }
+
     var lhsEffectiveTimestamp = lhs.timestamp
     var rhsEffectiveTimestamp = rhs.timestamp
     
@@ -223,7 +243,7 @@ public final class ChatMessageItemImpl: ChatMessageItem, CustomStringConvertible
     public let controllerInteraction: ChatControllerInteraction
     public let content: ChatMessageItemContent
     public let disableDate: Bool
-    public let effectiveAuthorId: PeerId?
+    public let effectiveAuthorId: EnginePeer.Id?
     public let additionalContent: ChatMessageItemAdditionalContent?
     
     // Nicegram
@@ -235,7 +255,7 @@ public final class ChatMessageItemImpl: ChatMessageItem, CustomStringConvertible
 
     public let headers: [ListViewItemHeader]
     
-    public var message: Message {
+    public var message: EngineRawMessage {
         switch self.content {
             case let .message(message, _, _, _, _):
                 return message
@@ -306,10 +326,10 @@ public final class ChatMessageItemImpl: ChatMessageItem, CustomStringConvertible
         var avatarHeader: ChatMessageAvatarHeader?
         let incoming = content.effectivelyIncoming(self.context.account.peerId)
         
-        var effectiveAuthor: Peer?
+        var effectiveAuthor: EngineRawPeer?
         var displayAuthorInfo: Bool
         
-        let messagePeerId: PeerId = chatLocation.peerId ?? content.firstMessage.id.peerId
+        let messagePeerId: EnginePeer.Id = chatLocation.peerId ?? content.firstMessage.id.peerId
         var headerSeparableThreadId: Int64?
         var headerDisplayPeer: ChatMessageDateHeader.HeaderData?
         
@@ -319,14 +339,14 @@ public final class ChatMessageItemImpl: ChatMessageItem, CustomStringConvertible
                 if let forwardInfo = content.firstMessage.forwardInfo {
                     effectiveAuthor = forwardInfo.author
                     if effectiveAuthor == nil, let authorSignature = forwardInfo.authorSignature  {
-                        effectiveAuthor = TelegramUser(id: PeerId(namespace: Namespaces.Peer.Empty, id: PeerId.Id._internalFromInt64Value(Int64(authorSignature.persistentHashValue % 32))), accessHash: nil, firstName: authorSignature, lastName: nil, username: nil, phone: nil, photo: [], botInfo: nil, restrictionInfo: nil, flags: [], emojiStatus: nil, usernames: [], storiesHidden: nil, nameColor: nil, backgroundEmojiId: nil, profileColor: nil, profileBackgroundEmojiId: nil, subscriberCount: nil, verificationIconFileId: nil)
+                        effectiveAuthor = TelegramUser(id: EnginePeer.Id(namespace: Namespaces.Peer.Empty, id: EnginePeer.Id.Id._internalFromInt64Value(Int64(authorSignature.persistentHashValue % 32))), accessHash: nil, firstName: authorSignature, lastName: nil, username: nil, phone: nil, photo: [], botInfo: nil, restrictionInfo: nil, flags: [], emojiStatus: nil, usernames: [], storiesHidden: nil, nameColor: nil, backgroundEmojiId: nil, profileColor: nil, profileBackgroundEmojiId: nil, subscriberCount: nil, verificationIconFileId: nil)
                     }
                 }
                 if let sourceAuthorInfo = content.firstMessage.sourceAuthorInfo {
                     if let originalAuthor = sourceAuthorInfo.originalAuthor, let peer = content.firstMessage.peers[originalAuthor] {
                         effectiveAuthor = peer
                     } else if let authorSignature = sourceAuthorInfo.originalAuthorName {
-                        effectiveAuthor = TelegramUser(id: PeerId(namespace: Namespaces.Peer.Empty, id: PeerId.Id._internalFromInt64Value(Int64(authorSignature.persistentHashValue % 32))), accessHash: nil, firstName: authorSignature, lastName: nil, username: nil, phone: nil, photo: [], botInfo: nil, restrictionInfo: nil, flags: [], emojiStatus: nil, usernames: [], storiesHidden: nil, nameColor: nil, backgroundEmojiId: nil, profileColor: nil, profileBackgroundEmojiId: nil, subscriberCount: nil, verificationIconFileId: nil)
+                        effectiveAuthor = TelegramUser(id: EnginePeer.Id(namespace: Namespaces.Peer.Empty, id: EnginePeer.Id.Id._internalFromInt64Value(Int64(authorSignature.persistentHashValue % 32))), accessHash: nil, firstName: authorSignature, lastName: nil, username: nil, phone: nil, photo: [], botInfo: nil, restrictionInfo: nil, flags: [], emojiStatus: nil, usernames: [], storiesHidden: nil, nameColor: nil, backgroundEmojiId: nil, profileColor: nil, profileBackgroundEmojiId: nil, subscriberCount: nil, verificationIconFileId: nil)
                     }
                 }
                 if peerId.isVerificationCodes && effectiveAuthor == nil {
@@ -367,7 +387,7 @@ public final class ChatMessageItemImpl: ChatMessageItem, CustomStringConvertible
                                 headerDisplayPeer = ChatMessageDateHeader.HeaderData(contents: .thread(id: threadId, info: threadInfo))
                             } else if content.firstMessage.threadId == EngineMessage.newTopicThreadId {
                                 headerSeparableThreadId = content.firstMessage.threadId
-                                headerDisplayPeer = ChatMessageDateHeader.HeaderData(contents: .thread(id: threadId, info: Message.AssociatedThreadInfo(
+                                headerDisplayPeer = ChatMessageDateHeader.HeaderData(contents: .thread(id: threadId, info: EngineRawMessage.AssociatedThreadInfo(
                                     title: presentationData.strings.Chat_MessageHeaderBotNewThread,
                                     icon: nil,
                                     iconColor: 0,
@@ -441,7 +461,7 @@ public final class ChatMessageItemImpl: ChatMessageItem, CustomStringConvertible
             
             if hasAvatar {
                 if let effectiveAuthor = effectiveAuthor {
-                    var storyStats: PeerStoryStats?
+                    var storyStats: EnginePeerStoryStats?
                     if case .peer(id: context.account.peerId) = chatLocation {
                     } else {
                         switch content {

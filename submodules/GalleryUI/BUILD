@@ -44,6 +44,7 @@ swift_library(
         "//submodules/UndoUI:UndoUI",
         "//submodules/InvisibleInkDustNode:InvisibleInkDustNode",
         "//submodules/TranslateUI:TranslateUI",
+        "//submodules/TelegramUI/Components/TextProcessingScreen",
         "//submodules/ShimmerEffect:ShimmerEffect",
         "//submodules/Utils/RangeSet:RangeSet",
         "//submodules/TelegramUI/Components/TextNodeWithEntities:TextNodeWithEntities",

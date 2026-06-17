@@ -6,7 +6,6 @@ import AccountContext
 import SwiftSignalKit
 import AVKit
 import TelegramCore
-import Postbox
 
 import UndoUI
 import TelegramPresentationData
@@ -66,7 +65,7 @@ public final class MediaStreamComponent: CombinedComponent {
         private(set) var recordingStartTimestamp: Int32?
         
         private(set) var peerTitle: String = ""
-        private(set) var chatPeer: Peer?
+        private(set) var chatPeer: EnginePeer?
         
         private(set) var isVisibleInHierarchy: Bool = false
         private var isVisibleInHierarchyDisposable: Disposable?
@@ -152,7 +151,7 @@ public final class MediaStreamComponent: CombinedComponent {
                     strongSelf.peerTitle = callPeer.debugDisplayTitle
                     updated = true
                 }
-                strongSelf.chatPeer = callPeer._asPeer()
+                strongSelf.chatPeer = callPeer
                 
                 if strongSelf.callTitle != state.title {
                     strongSelf.callTitle = state.title
@@ -508,7 +507,7 @@ public final class MediaStreamComponent: CombinedComponent {
                             let title: String = presentationData.strings.LiveStream_EditTitle
                             let text: String = presentationData.strings.LiveStream_EditTitleText
                             
-                            let editController = voiceChatTitleEditController(context: call.accountContext, forceTheme: defaultDarkPresentationTheme, title: title, text: text, placeholder: EnginePeer(chatPeer).displayTitle(strings: presentationData.strings, displayOrder: presentationData.nameDisplayOrder), value: initialTitle, maxLength: 40, apply: { [weak call] title in
+                            let editController = voiceChatTitleEditController(context: call.accountContext, forceTheme: defaultDarkPresentationTheme, title: title, text: text, placeholder: chatPeer.displayTitle(strings: presentationData.strings, displayOrder: presentationData.nameDisplayOrder), value: initialTitle, maxLength: 40, apply: { [weak call] title in
                                 guard let call = call else {
                                     return
                                 }

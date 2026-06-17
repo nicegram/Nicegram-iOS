@@ -308,7 +308,7 @@ public class ChatMessageGiftBubbleContentNode: ChatMessageBubbleContentNode {
         guard let item = self.item else{
             return
         }
-        let _ = item.controllerInteraction.requestMessageUpdate(item.message.id, false)
+        let _ = item.controllerInteraction.requestMessageUpdate(item.message.id, false, nil)
     }
     
     private func makeProgress() -> Promise<Bool> {

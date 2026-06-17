@@ -8,7 +8,7 @@ import AVFoundation
 public final class EntityVideoRecorder {
     private weak var mediaEditor: MediaEditor?
     private weak var entitiesView: DrawingEntitiesView?
-    
+
     private let maxDuration: Double
     
     private let camera: Camera
@@ -21,6 +21,9 @@ public final class EntityVideoRecorder {
     private let micLevelPromise = Promise<Float>()
     
     private var changingPositionDisposable: Disposable?
+    private var positionDisposable: Disposable?
+    private var currentCameraPosition: Camera.Position = .front
+    private var recordingInitialPosition: Camera.Position = .front
     
     public var duration: Signal<Double, NoError> {
         return self.durationPromise.get()
@@ -35,7 +38,7 @@ public final class EntityVideoRecorder {
     public init(mediaEditor: MediaEditor, entitiesView: DrawingEntitiesView) {
         self.mediaEditor = mediaEditor
         self.entitiesView = entitiesView
-        
+
         self.maxDuration = min(60.0, mediaEditor.duration ?? 60.0)
         self.previewView = CameraSimplePreviewView(frame: .zero, main: true)
         
@@ -86,6 +89,10 @@ public final class EntityVideoRecorder {
         }
         
         self.micLevelPromise.set(camera.audioLevel)
+        self.positionDisposable = (camera.position
+        |> deliverOnMainQueue).start(next: { [weak self] position in
+            self?.currentCameraPosition = position
+        })
         
         let start = mediaEditor.values.videoTrimRange?.lowerBound ?? 0.0
         mediaEditor.stop()
@@ -107,6 +114,7 @@ public final class EntityVideoRecorder {
     deinit {
         self.recordingDisposable.dispose()
         self.changingPositionDisposable?.dispose()
+        self.positionDisposable?.dispose()
     }
     
     public func setup(
@@ -145,6 +153,7 @@ public final class EntityVideoRecorder {
         mediaEditor.maybeMuteVideo()
         mediaEditor.play()
         
+        self.recordingInitialPosition = self.currentCameraPosition
         self.start = CACurrentMediaTime()
         self.recordingDisposable.set((self.camera.startRecording()
         |> deliverOnMainQueue).startStrict(next: { [weak self] recordingData in
@@ -169,16 +178,20 @@ public final class EntityVideoRecorder {
         }
         self.recordingDisposable.set((self.camera.stopRecording()
         |> deliverOnMainQueue).startStrict(next: { [weak self] result in
-            guard let self, let mediaEditor = self.mediaEditor, let entitiesView = self.entitiesView, case let .finished(mainResult, _, _, _, _) = result else {
+            guard let self, let mediaEditor = self.mediaEditor, let entitiesView = self.entitiesView, case let .finished(mainResult, _, _, positionChangeTimestamps, _) = result else {
                 return
             }
             if save {
                 let duration = AVURLAsset(url: URL(fileURLWithPath: mainResult.path)).duration
+                let mirroringChanges = self.additionalVideoMirroringChanges(
+                    initialPosition: self.recordingInitialPosition,
+                    positionChangeTimestamps: positionChangeTimestamps
+                )
                 
                 let start = mediaEditor.values.videoTrimRange?.lowerBound ?? 0.0
                 mediaEditor.setAdditionalVideoOffset(-start, apply: false)
                 mediaEditor.setAdditionalVideoTrimRange(0 ..< duration.seconds, apply: true)
-                mediaEditor.setAdditionalVideo(mainResult.path, positionChanges: [])
+                mediaEditor.setAdditionalVideo(mainResult.path, mirroringChanges: mirroringChanges, positionChanges: [])
                 
                 mediaEditor.stop()
                 Queue.mainQueue().justDispatch {
@@ -217,7 +230,7 @@ public final class EntityVideoRecorder {
             self.mediaEditor?.maybeUnmuteVideo()
             
             self.entitiesView?.remove(uuid: self.entity.uuid, animated: true)
-            self.mediaEditor?.setAdditionalVideo(nil, positionChanges: [])
+            self.mediaEditor?.setAdditionalVideo(nil, mirroringChanges: [], positionChanges: [])
             
             completion()
         }
@@ -225,5 +238,23 @@ public final class EntityVideoRecorder {
     
     public func togglePosition() {
         self.camera.togglePosition()
+    }
+
+    private func additionalVideoMirroringChanges(initialPosition: Camera.Position, positionChangeTimestamps: [(Bool, Double)]) -> [VideoMirroringChange] {
+        var result: [VideoMirroringChange] = [
+            VideoMirroringChange(isMirrored: initialPosition == .front, timestamp: 0.0)
+        ]
+        for (isMirrored, timestamp) in positionChangeTimestamps.sorted(by: { $0.1 < $1.1 }) {
+            result.append(VideoMirroringChange(isMirrored: isMirrored, timestamp: timestamp))
+        }
+
+        var deduplicated: [VideoMirroringChange] = []
+        for change in result {
+            if deduplicated.last?.isMirrored == change.isMirrored {
+                continue
+            }
+            deduplicated.append(change)
+        }
+        return deduplicated
     }
 }

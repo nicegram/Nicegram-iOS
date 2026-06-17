@@ -3,7 +3,6 @@ import UIKit
 import AVFoundation
 import SwiftSignalKit
 import UniversalMediaPlayer
-import Postbox
 import TelegramCore
 import AccountContext
 import TelegramAudio
@@ -19,7 +18,7 @@ final class LivestreamVideoViewV1: UIView {
         let part: DirectMediaStreamingContext.Playlist.Part
         let disposable = MetaDisposable()
         var resolvedTimeOffset: Double?
-        var data: TempBoxFile?
+        var data: EngineTempBoxFile?
         var info: FFMpegMediaInfo?
         
         init(part: DirectMediaStreamingContext.Playlist.Part) {
@@ -164,11 +163,11 @@ final class LivestreamVideoViewV1: UIView {
                 if let streamingContext = self.streamingContext {
                     partContext.disposable.set((streamingContext.partData(index: part.index)
                     |> deliverOn(Queue.concurrentDefaultQueue())
-                    |> map { data -> (file: TempBoxFile, info: FFMpegMediaInfo)? in
+                    |> map { data -> (file: EngineTempBoxFile, info: FFMpegMediaInfo)? in
                         guard let data else {
                             return nil
                         }
-                        let tempFile = TempBox.shared.tempFile(fileName: "part.mp4")
+                        let tempFile = EngineTempBox.shared.tempFile(fileName: "part.mp4")
                         if let _ = try? data.write(to: URL(fileURLWithPath: tempFile.path), options: .atomic) {
                             if let info = extractFFMpegMediaInfo(path: tempFile.path) {
                                 return (tempFile, info)
@@ -176,7 +175,7 @@ final class LivestreamVideoViewV1: UIView {
                                 return nil
                             }
                         } else {
-                            TempBox.shared.dispose(tempFile)
+                            EngineTempBox.shared.dispose(tempFile)
                             return nil
                         }
                     }

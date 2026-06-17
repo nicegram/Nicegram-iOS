@@ -86,6 +86,7 @@ public var supportedTranslationLanguages = [
     "fa",
     "pl",
     "pt",
+    "pt-BR",
     "pa",
     "ro",
     "ru",
@@ -132,7 +133,7 @@ public var popularTranslationLanguages = [
     "it",
     "ja",
     "ko",
-    "pt",
+    "pt-BR",
     "ru",
     "es",
     "uk"

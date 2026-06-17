@@ -4,7 +4,6 @@ import AsyncDisplayKit
 import SwiftSignalKit
 import Display
 import TelegramCore
-import Postbox
 import TelegramPresentationData
 import UniversalMediaPlayer
 import TelegramUIPreferences
@@ -40,14 +39,14 @@ final class OverlayInstantVideoNode: OverlayMediaItemNode {
     
     var playbackEnded: (() -> Void)?
     
-    init(context: AccountContext, postbox: Postbox, audioSession: ManagedAudioSession, manager: UniversalVideoManager, content: UniversalVideoContent, close: @escaping () -> Void) {
+    init(context: AccountContext, audioSession: ManagedAudioSession, manager: UniversalVideoManager, content: UniversalVideoContent, close: @escaping () -> Void) {
         self.close = close
         self.content = content
         var togglePlayPauseImpl: (() -> Void)?
         let decoration = OverlayInstantVideoDecoration(tapped: {
             togglePlayPauseImpl?()
         })
-        self.videoNode = UniversalVideoNode(context: context, postbox: postbox, audioSession: audioSession, manager: manager, decoration: decoration, content: content, priority: .secondaryOverlay, snapshotContentWhenGone: true)
+        self.videoNode = UniversalVideoNode(context: context, postbox: context.account.postbox, audioSession: audioSession, manager: manager, decoration: decoration, content: content, priority: .secondaryOverlay, snapshotContentWhenGone: true)
         self.decoration = decoration
         
         super.init()

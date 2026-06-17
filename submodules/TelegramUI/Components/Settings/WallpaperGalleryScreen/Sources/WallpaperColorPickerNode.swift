@@ -21,7 +21,7 @@ private let knobBackgroundImage: UIImage? = {
 }()
 
 private let pointerImage: UIImage? = {
-    return generateImage(CGSize(width: 12.0, height: 55.0), opaque: false, scale: nil, rotatedContext: { size, context in
+    return generateImage(CGSize(width: 12.0, height: 60.0), opaque: false, scale: nil, rotatedContext: { size, context in
         context.setBlendMode(.clear)
         context.setFillColor(UIColor.clear.cgColor)
         context.fill(CGRect(origin: CGPoint(), size: size))
@@ -47,19 +47,6 @@ private let pointerImage: UIImage? = {
         context.closePath()
         context.drawPath(using: .fillStroke)
     })
-}()
-
-private let brightnessMaskImage: UIImage? = {
-    return generateImage(CGSize(width: 36.0, height: 36.0), opaque: false, scale: nil, rotatedContext: { size, context in
-        let bounds = CGRect(origin: CGPoint(), size: size)
-        
-        context.setFillColor(UIColor.white.cgColor)
-        context.fill(bounds)
-        
-        context.setBlendMode(.clear)
-        context.setFillColor(UIColor.clear.cgColor)
-        context.fillEllipse(in: bounds)
-    })?.stretchableImage(withLeftCapWidth: 18, topCapHeight: 18)
 }()
 
 private let brightnessGradientImage: UIImage? = {
@@ -227,7 +214,6 @@ private final class WallpaperColorHueSaturationNode: ASDisplayNode {
 
 private final class WallpaperColorBrightnessNode: ASDisplayNode {
     private let gradientNode: ASImageNode
-    private let maskNode: ASImageNode
     
     var hsb: (CGFloat, CGFloat, CGFloat) = (0.0, 1.0, 1.0) {
         didSet {
@@ -244,25 +230,17 @@ private final class WallpaperColorBrightnessNode: ASDisplayNode {
         self.gradientNode.displayWithoutProcessing = true
         self.gradientNode.image = brightnessGradientImage
         self.gradientNode.contentMode = .scaleToFill
-        
-        self.maskNode = ASImageNode()
-        self.maskNode.displaysAsynchronously = false
-        self.maskNode.displayWithoutProcessing = true
-        self.maskNode.image = brightnessMaskImage
-        self.maskNode.contentMode = .scaleToFill
-        
+                
         super.init()
         
         self.isOpaque = true
         self.addSubnode(self.gradientNode)
-        self.addSubnode(self.maskNode)
     }
     
     override func layout() {
         super.layout()
         
         self.gradientNode.frame = self.bounds
-        self.maskNode.frame = self.bounds
     }
 }
 
@@ -335,21 +313,23 @@ final class WallpaperColorPickerNode: ASDisplayNode {
     
     init(strings: PresentationStrings) {
         self.brightnessNode = WallpaperColorBrightnessNode()
+        self.brightnessNode.clipsToBounds = true
         self.brightnessNode.hitTestSlop = UIEdgeInsets(top: -16.0, left: -16.0, bottom: -16.0, right: -16.0)
         self.brightnessKnobNode = ASImageNode()
         self.brightnessKnobNode.image = pointerImage
         self.brightnessKnobNode.isUserInteractionEnabled = false
         self.colorNode = WallpaperColorHueSaturationNode()
         self.colorNode.hitTestSlop = UIEdgeInsets(top: -16.0, left: -16.0, bottom: -16.0, right: -16.0)
+        self.colorNode.clipsToBounds = true
         self.colorKnobNode = WallpaperColorKnobNode()
         
         super.init()
         
-        self.backgroundColor = .white
+        self.backgroundColor = .clear
         
+        self.addSubnode(self.colorNode)
         self.addSubnode(self.brightnessNode)
         self.addSubnode(self.brightnessKnobNode)
-        self.addSubnode(self.colorNode)
         self.addSubnode(self.colorKnobNode)
         
         self.update()
@@ -432,7 +412,7 @@ final class WallpaperColorPickerNode: ASDisplayNode {
     }
     
     private func update() {
-        self.backgroundColor = .white
+        self.backgroundColor = .clear
         self.colorNode.value = self.color.brightness
         self.brightnessNode.hsb = self.color.values
         self.colorKnobNode.color = self.color
@@ -452,20 +432,29 @@ final class WallpaperColorPickerNode: ASDisplayNode {
         colorKnobFrame.origin = origin
         transition.updateFrame(node: self.colorKnobNode, frame: colorKnobFrame)
         
-        let inset: CGFloat = 15.0
-        let brightnessKnobSize = CGSize(width: 12.0, height: 55.0)
+        let inset: CGFloat = 16.0
+        let brightnessKnobSize = CGSize(width: 12.0, height: 60.0)
         let brightnessKnobFrame = CGRect(x: inset - brightnessKnobSize.width / 2.0 + (size.width - inset * 2.0) * (1.0 - self.color.brightness), y: size.height - 65.0, width: brightnessKnobSize.width, height: brightnessKnobSize.height)
         transition.updateFrame(node: self.brightnessKnobNode, frame: brightnessKnobFrame)
     }
     
-    func updateLayout(size: CGSize, transition: ContainedViewLayoutTransition) {
+    func updateLayout(size: CGSize, bottomInset: CGFloat = 0.0, transition: ContainedViewLayoutTransition) {
         self.validLayout = size
         
         let colorHeight = size.height - 66.0
-        transition.updateFrame(node: self.colorNode, frame: CGRect(x: 0.0, y: 0.0, width: size.width, height: colorHeight))
+        let colorVisualHeight = colorHeight + bottomInset
+        transition.updateFrame(node: self.colorNode, frame: CGRect(x: 0.0, y: 0.0, width: size.width, height: colorVisualHeight))
+        self.colorNode.cornerRadius = min(32.0, colorVisualHeight * 0.5)
+        if #available(iOS 11.0, *) {
+            self.colorNode.layer.maskedCorners = [.layerMinXMinYCorner, .layerMaxXMinYCorner]
+        }
+        if #available(iOS 13.0, *) {
+            self.colorNode.layer.cornerCurve = .continuous
+        }
         
-        let inset: CGFloat = 15.0
-        transition.updateFrame(node: self.brightnessNode, frame: CGRect(x: inset, y: size.height - 55.0, width: size.width - inset * 2.0, height: 35.0))
+        let inset: CGFloat = 16.0
+        transition.updateFrame(node: self.brightnessNode, frame: CGRect(x: inset, y: size.height - 55.0, width: size.width - inset * 2.0, height: 40.0))
+        self.brightnessNode.cornerRadius = 20.0
         
         self.updateKnobLayout(size: size, panningColor: false, transition: .immediate)
     }

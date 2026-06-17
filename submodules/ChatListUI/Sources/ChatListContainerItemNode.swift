@@ -9,7 +9,6 @@ import SwiftSignalKit
 import AnimationCache
 import MultiAnimationRenderer
 import TelegramCore
-import Postbox
 import ChatListHeaderComponent
 import ActionPanelComponent
 import ChatFolderLinkPreviewScreen

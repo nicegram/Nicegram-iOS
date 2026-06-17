@@ -3,7 +3,6 @@ import TelegramPresentationData
 import AccountContext
 import ChatPresentationInterfaceState
 import SwiftSignalKit
-import Postbox
 import TelegramCore
 
 extension ChatControllerImpl {    
@@ -106,7 +105,7 @@ extension ChatControllerImpl {
                                 return
                             }
                             strongSelf.searchResultsCount.set(results.totalCount)
-                            var navigateIndex: MessageIndex?
+                            var navigateIndex: EngineMessage.Index?
                             strongSelf.updateChatPresentationInterfaceState(animated: true, interactive: true, { current in
                                 if let data = current.search {
                                     let messageIndices = results.messages.map({ $0.index }).sorted()

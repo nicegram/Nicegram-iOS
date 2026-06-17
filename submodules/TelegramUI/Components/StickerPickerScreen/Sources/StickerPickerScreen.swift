@@ -944,14 +944,9 @@ public class StickerPickerScreen: ViewController {
                         return
                     }
                     let context = controller.context
-                    let viewKey = PostboxViewKey.orderedItemList(id: Namespaces.OrderedItemList.CloudFeaturedEmojiPacks)
-                    let _ = (context.account.postbox.combinedView(keys: [viewKey])
-                    |> take(1)
-                    |> deliverOnMainQueue).start(next: { views in
-                        guard let view = views.views[viewKey] as? OrderedItemListView else {
-                            return
-                        }
-                        for featuredStickerPack in view.items.lazy.map({ $0.contents.get(FeaturedStickerPackItem.self)! }) {
+                    let _ = (context.engine.data.get(TelegramEngine.EngineData.Item.Collections.FeaturedEmojiPacks())
+                    |> deliverOnMainQueue).start(next: { featuredEmojiPacks in
+                        for featuredStickerPack in featuredEmojiPacks {
                             if featuredStickerPack.info.id == collectionId {
                                 let _ = (context.engine.stickers.loadedStickerPack(reference: .id(id: featuredStickerPack.info.id.id, accessHash: featuredStickerPack.info.accessHash), forceActualized: false)
                                 |> mapToSignal { result -> Signal<Void, NoError> in
@@ -1310,14 +1305,12 @@ public class StickerPickerScreen: ViewController {
                     }
                     let presentationData = controller.context.sharedContext.currentPresentationData.with { $0 }
                     if groupId == AnyHashable("featuredTop") {
-                        let viewKey = PostboxViewKey.orderedItemList(id: Namespaces.OrderedItemList.CloudFeaturedStickerPacks)
-                        let _ = (controller.context.account.postbox.combinedView(keys: [viewKey])
-                        |> take(1)
-                        |> deliverOnMainQueue).start(next: { [weak self] views in
-                            guard let self, let controller = self.controller, let view = views.views[viewKey] as? OrderedItemListView else {
+                        let _ = (controller.context.engine.data.get(TelegramEngine.EngineData.Item.Collections.FeaturedStickerPacks())
+                        |> deliverOnMainQueue).start(next: { [weak self] featuredStickerPacks in
+                            guard let self, let controller = self.controller else {
                                 return
                             }
-                            for featuredStickerPack in view.items.lazy.map({ $0.contents.get(FeaturedStickerPackItem.self)! }) {
+                            for featuredStickerPack in featuredStickerPacks {
                                 if featuredStickerPack.topItems.contains(where: { $0.file.fileId == file.fileId }) {
                                     controller.pushController(FeaturedStickersScreen(
                                         context: controller.context,
@@ -1368,14 +1361,9 @@ public class StickerPickerScreen: ViewController {
                         return
                     }
                     let context = controller.context
-                    let viewKey = PostboxViewKey.orderedItemList(id: Namespaces.OrderedItemList.CloudFeaturedStickerPacks)
-                    let _ = (context.account.postbox.combinedView(keys: [viewKey])
-                    |> take(1)
-                    |> deliverOnMainQueue).start(next: { views in
-                        guard let view = views.views[viewKey] as? OrderedItemListView else {
-                            return
-                        }
-                        for featuredStickerPack in view.items.lazy.map({ $0.contents.get(FeaturedStickerPackItem.self)! }) {
+                    let _ = (context.engine.data.get(TelegramEngine.EngineData.Item.Collections.FeaturedStickerPacks())
+                    |> deliverOnMainQueue).start(next: { featuredStickerPacks in
+                        for featuredStickerPack in featuredStickerPacks {
                             if featuredStickerPack.info.id == collectionId {
                                 let _ = (context.engine.stickers.loadedStickerPack(reference: .id(id: featuredStickerPack.info.id.id, accessHash: featuredStickerPack.info.accessHash), forceActualized: false)
                                 |> mapToSignal { result -> Signal<Void, NoError> in
@@ -1424,15 +1412,10 @@ public class StickerPickerScreen: ViewController {
                         ])])
                         context.sharedContext.mainWindow?.presentInGlobalOverlay(actionSheet)
                     } else if groupId == AnyHashable("featuredTop") {
-                        let viewKey = PostboxViewKey.orderedItemList(id: Namespaces.OrderedItemList.CloudFeaturedStickerPacks)
-                        let _ = (context.account.postbox.combinedView(keys: [viewKey])
-                        |> take(1)
-                        |> deliverOnMainQueue).start(next: { views in
-                            guard let view = views.views[viewKey] as? OrderedItemListView else {
-                                return
-                            }
+                        let _ = (context.engine.data.get(TelegramEngine.EngineData.Item.Collections.FeaturedStickerPacks())
+                        |> deliverOnMainQueue).start(next: { featuredStickerPacks in
                             var stickerPackIds: [Int64] = []
-                            for featuredStickerPack in view.items.lazy.map({ $0.contents.get(FeaturedStickerPackItem.self)! }) {
+                            for featuredStickerPack in featuredStickerPacks {
                                 stickerPackIds.append(featuredStickerPack.info.id.id)
                             }
                             let _ = ApplicationSpecificNotice.setDismissedTrendingStickerPacks(accountManager: context.sharedContext.accountManager, values: stickerPackIds).start()

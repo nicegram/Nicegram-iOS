@@ -3,7 +3,6 @@ import SwiftSignalKit
 import TgVoipWebrtc
 import TelegramCore
 import Network
-import Postbox
 import FFMpegBinding
 import ManagedFile
 
@@ -275,7 +274,7 @@ public final class ExternalMediaStreamingContext: SharedHLSServerSource {
             }
         }
         
-        func fileData(id: Int64, range: Range<Int>) -> Signal<(TempBoxFile, Range<Int>, Int)?, NoError> {
+        func fileData(id: Int64, range: Range<Int>) -> Signal<(EngineTempBoxFile, Range<Int>, Int)?, NoError> {
             return .never()
         }
     }
@@ -331,7 +330,7 @@ public final class ExternalMediaStreamingContext: SharedHLSServerSource {
         }
     }
     
-    public func fileData(id: Int64, range: Range<Int>) -> Signal<(TempBoxFile, Range<Int>, Int)?, NoError> {
+    public func fileData(id: Int64, range: Range<Int>) -> Signal<(EngineTempBoxFile, Range<Int>, Int)?, NoError> {
         return self.impl.signalWith { impl, subscriber in
             impl.fileData(id: id, range: range).start(next: subscriber.putNext)
         }
@@ -519,7 +518,7 @@ public protocol SharedHLSServerSource: AnyObject {
     func masterPlaylistData() -> Signal<String, NoError>
     func playlistData(quality: Int) -> Signal<String, NoError>
     func partData(index: Int, quality: Int) -> Signal<Data?, NoError>
-    func fileData(id: Int64, range: Range<Int>) -> Signal<(TempBoxFile, Range<Int>, Int)?, NoError>
+    func fileData(id: Int64, range: Range<Int>) -> Signal<(EngineTempBoxFile, Range<Int>, Int)?, NoError>
     func arbitraryFileData(path: String) -> Signal<(data: Data, contentType: String)?, NoError>
 }
 
@@ -778,11 +777,11 @@ public final class SharedHLSServer {
                     }
                     
                     if let result {
-                        let sourceTempFile = TempBox.shared.tempFile(fileName: "part.mp4")
-                        let tempFile = TempBox.shared.tempFile(fileName: "part.ts")
+                        let sourceTempFile = EngineTempBox.shared.tempFile(fileName: "part.mp4")
+                        let tempFile = EngineTempBox.shared.tempFile(fileName: "part.ts")
                         defer {
-                            TempBox.shared.dispose(sourceTempFile)
-                            TempBox.shared.dispose(tempFile)
+                            EngineTempBox.shared.dispose(sourceTempFile)
+                            EngineTempBox.shared.dispose(tempFile)
                         }
                         
                         guard let _ = try? result.write(to: URL(fileURLWithPath: sourceTempFile.path)) else {
@@ -875,7 +874,7 @@ public final class SharedHLSServer {
             })
         }
         
-        private static func sendRemainingFileRange(queue: Queue, connection: NWConnection, tempFile: TempBoxFile, managedFile: ManagedFile, remainingRange: Range<Int>, fileSize: Int) -> Void {
+        private static func sendRemainingFileRange(queue: Queue, connection: NWConnection, tempFile: EngineTempBoxFile, managedFile: ManagedFile, remainingRange: Range<Int>, fileSize: Int) -> Void {
             let blockSize = 256 * 1024
             
             let clippedLowerBound = min(remainingRange.lowerBound, fileSize)
@@ -883,7 +882,7 @@ public final class SharedHLSServer {
             clippedUpperBound = min(clippedUpperBound, clippedLowerBound + blockSize)
             
             if clippedUpperBound == clippedLowerBound {
-                TempBox.shared.dispose(tempFile)
+                EngineTempBox.shared.dispose(tempFile)
                 connection.cancel()
             } else {
                 let _ = managedFile.seek(position: Int64(clippedLowerBound))
@@ -895,7 +894,7 @@ public final class SharedHLSServer {
                         if let error {
                             Logger.shared.log("SharedHLSServer", "Failed to send response: \(error)")
                             connection.cancel()
-                            TempBox.shared.dispose(tempFile)
+                            EngineTempBox.shared.dispose(tempFile)
                         } else {
                             sendRemainingFileRange(queue: queue, connection: connection, tempFile: tempFile, managedFile: managedFile, remainingRange: nextRange, fileSize: fileSize)
                         }
@@ -904,12 +903,12 @@ public final class SharedHLSServer {
             }
         }
         
-        private func sendResponseFileAndClose(connection: NWConnection, file: TempBoxFile, fileRange: Range<Int>, range: Range<Int>, totalSize: Int) {
+        private func sendResponseFileAndClose(connection: NWConnection, file: EngineTempBoxFile, fileRange: Range<Int>, range: Range<Int>, totalSize: Int) {
             let queue = self.queue
             
             guard let managedFile = ManagedFile(queue: nil, path: file.path, mode: .read), let fileSize = managedFile.getSize() else {
                 self.sendErrorAndClose(connection: connection, error: .internalServerError)
-                TempBox.shared.dispose(file)
+                EngineTempBox.shared.dispose(file)
                 return
             }
             

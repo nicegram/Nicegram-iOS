@@ -1,4 +1,5 @@
 import AccountContext
+import NGCore
 import Postbox
 import TelegramCore
 
@@ -51,11 +52,15 @@ private extension AutoJoinHandler {
     func join(
         inviteLink: String
     ) async throws -> Peer {
-        try await context.engine.peers
+        let result = try await context.engine.peers
             .joinChatInteractively(with: inviteLink)
             .awaitForFirstValue()
-            .unwrap()
-            ._asPeer()
+        switch result {
+        case let .joined(peer):
+            return try peer.unwrap()._asPeer()
+        case .webView:
+            throw UnexpectedError()
+        }
     }
 
     func join(

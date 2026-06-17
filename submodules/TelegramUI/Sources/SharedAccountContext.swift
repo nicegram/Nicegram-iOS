@@ -13,7 +13,6 @@ import DeviceLocationManager
 import ItemListUI
 import LegacyUI
 import ChatListUI
-import PeersNearbyUI
 import PeerInfoUI
 import SettingsUI
 import UrlHandling
@@ -22,6 +21,7 @@ import LocalMediaResources
 import OverlayStatusController
 import AlertUI
 import PresentationDataUtils
+import OpenUserGeneratedUrl
 import LocationUI
 import NGData
 import AppLock
@@ -2375,15 +2375,15 @@ public final class SharedAccountContextImpl: SharedAccountContext {
     public func openResolvedUrl(_ resolvedUrl: ResolvedUrl, context: AccountContext, urlContext: OpenURLContext, navigationController: NavigationController?, forceExternal: Bool, forceUpdate: Bool, openPeer: @escaping (EnginePeer, ChatControllerInteractionNavigateToPeer) -> Void, sendFile: ((FileMediaReference) -> Void)?, sendSticker: ((FileMediaReference, UIView?, CGRect?) -> Bool)?, sendEmoji: ((String, ChatTextInputTextCustomEmojiAttribute) -> Void)?, requestMessageActionUrlAuth: ((MessageActionUrlSubject) -> Void)?, joinVoiceChat: ((PeerId, String?, CachedChannelData.ActiveCall) -> Void)?, present: @escaping (ViewController, Any?) -> Void, dismissInput: @escaping () -> Void, contentContext: Any?, progress: Promise<Bool>?, completion: (() -> Void)?) {
         openResolvedUrlImpl(resolvedUrl, context: context, urlContext: urlContext, navigationController: navigationController, forceExternal: forceExternal, forceUpdate: forceUpdate, openPeer: openPeer, sendFile: sendFile, sendSticker: sendSticker, sendEmoji: sendEmoji, requestMessageActionUrlAuth: requestMessageActionUrlAuth, joinVoiceChat: joinVoiceChat, present: present, dismissInput: dismissInput, contentContext: contentContext, progress: progress, completion: completion)
     }
-    
+
+    public func openUserGeneratedUrl(context: AccountContext, peerId: PeerId?, url: String, webpage: TelegramMediaWebpage?, concealed: Bool, forceConcealed: Bool, skipUrlAuth: Bool, skipConcealedAlert: Bool, forceDark: Bool, present: @escaping (ViewController) -> Void, openResolved: @escaping (ResolvedUrl) -> Void, progress: Promise<Bool>?, alertDisplayUpdated: ((ViewController?) -> Void)?, concealedAlertOption: OpenUserGeneratedUrlConcealedAlertOption?) -> Disposable {
+        return OpenUserGeneratedUrl.openUserGeneratedUrl(context: context, peerId: peerId, url: url, webpage: webpage, concealed: concealed, forceConcealed: forceConcealed, skipUrlAuth: skipUrlAuth, skipConcealedAlert: skipConcealedAlert, forceDark: forceDark, present: present, openResolved: openResolved, progress: progress, alertDisplayUpdated: alertDisplayUpdated, concealedAlertOption: concealedAlertOption)
+    }
+
     public func makeDeviceContactInfoController(context: ShareControllerAccountContext, environment: ShareControllerEnvironment, subject: DeviceContactInfoSubject, completed: (() -> Void)?, cancelled: (() -> Void)?) -> ViewController {
         return deviceContactInfoController(context: context, environment: environment, subject: subject, completed: completed, cancelled: cancelled)
     }
-    
-    public func makePeersNearbyController(context: AccountContext) -> ViewController {
-        return peersNearbyController(context: context)
-    }
-    
+
     public func makeChatController(context: AccountContext, chatLocation: ChatLocation, subject: ChatControllerSubject?, botStart: ChatControllerInitialBotStart?, mode: ChatControllerPresentationMode, params: ChatControllerParams?) -> ChatController {
         return ChatControllerImpl(context: context, chatLocation: chatLocation, subject: subject, botStart: botStart, mode: mode, params: params)
     }
@@ -2510,7 +2510,7 @@ public final class SharedAccountContextImpl: SharedAccountContext {
             },
             toggleMessagesSelection: { _, _ in },
             sendCurrentMessage: { _, _ in },
-            sendMessage: { _ in },
+            sendMessage: { _, _ in },
             sendSticker: { _, _, _, _, _, _, _, _, _ in return false },
             sendEmoji: { _, _, _ in },
             sendGif: { _, _, _, _, _ in return false },
@@ -2523,8 +2523,10 @@ public final class SharedAccountContextImpl: SharedAccountContext {
             requestMessageActionUrlAuth: { _, _ in },
             activateSwitchInline: { _, _, _ in },
             openUrl: { _ in },
-            shareCurrentLocation: {},
-            shareAccountContact: {},
+            openExternalInstantPage: { _ in
+            },
+            shareCurrentLocation: { _ in },
+            shareAccountContact: { _ in },
             sendBotCommand: { _, _ in },
             openInstantPage: { _, _ in  },
             openWallpaper: { _ in  },
@@ -2603,7 +2605,7 @@ public final class SharedAccountContextImpl: SharedAccountContext {
             },
             openMessagePollResults: { _, _ in
             },
-            openPollCreation: { _ in
+            openPollCreation: { _, _ in
             },
             openPollMedia: { _, _ in
             },
@@ -2685,13 +2687,15 @@ public final class SharedAccountContextImpl: SharedAccountContext {
             },
             openMessageFeeException: {
             },
-            requestMessageUpdate: { _, _ in
+            requestMessageUpdate: { _, _, _ in
             },
             cancelInteractiveKeyboardGestures: {
             },
             dismissTextInput: {
             },
-            scrollToMessageId: { _ in
+            scrollToMessageId: { _, _ in
+            },
+            scrollToMessageIdWithAnchor: { _, _ in
             },
             navigateToStory: { _, _ in
             },
@@ -3846,16 +3850,21 @@ public final class SharedAccountContextImpl: SharedAccountContext {
         return controller
     }
     
-    public func makeStickerPackScreen(context: AccountContext, updatedPresentationData: (initial: PresentationData, signal: Signal<PresentationData, NoError>)?, mainStickerPack: StickerPackReference, stickerPacks: [StickerPackReference], loadedStickerPacks: [LoadedStickerPack], actionTitle: String?, isEditing: Bool, expandIfNeeded: Bool, parentNavigationController: NavigationController?, sendSticker: ((FileMediaReference, UIView?, CGRect?) -> Bool)?, actionPerformed: ((Bool) -> Void)?) -> ViewController {
+    public func makeStickerPackScreen(context: AccountContext, updatedPresentationData: (initial: PresentationData, signal: Signal<PresentationData, NoError>)?, mainStickerPack: StickerPackReference, stickerPacks: [StickerPackReference], loadedStickerPacks: [LoadedStickerPack], actionTitle: String?, isEditing: Bool, expandIfNeeded: Bool, parentNavigationController: NavigationController?, sendSticker: ((FileMediaReference, UIView?, CGRect?) -> Bool)?, actionPerformed: (([StickerPackScreenActionResult]) -> Void)?) -> ViewController {
         return StickerPackScreen(context: context, updatedPresentationData: updatedPresentationData, mainStickerPack: mainStickerPack, stickerPacks: stickerPacks, loadedStickerPacks: loadedStickerPacks, actionTitle: actionTitle, isEditing: isEditing, expandIfNeeded: expandIfNeeded, parentNavigationController: parentNavigationController, sendSticker: sendSticker, actionPerformed: { actions in
-            if let (_, _, action) = actions.first {
+            guard let actionPerformed = actionPerformed else {
+                return
+            }
+            actionPerformed(actions.map { info, items, action in
+                let mappedAction: StickerPackScreenActionKind
                 switch action {
                 case .add:
-                    actionPerformed?(true)
-                case .remove:
-                    actionPerformed?(false)
+                    mappedAction = .add
+                case let .remove(positionInList):
+                    mappedAction = .remove(positionInList: positionInList)
                 }
-            }
+                return StickerPackScreenActionResult(info: info, items: items, action: mappedAction)
+            })
         })
     }
     
@@ -4089,8 +4098,8 @@ public final class SharedAccountContextImpl: SharedAccountContext {
         return stickerMediaPickerController(context: context, getSourceRect: getSourceRect, completion: completion, dismissed: dismissed)
     }
     
-    public func makeAvatarMediaPickerScreen(context: AccountContext, getSourceRect: @escaping () -> CGRect?, canDelete: Bool, performDelete: @escaping () -> Void, completion: @escaping (Any?, UIView?, CGRect, UIImage?, Bool, @escaping (Bool?) -> (UIView, CGRect)?, @escaping () -> Void) -> Void, dismissed: @escaping () -> Void) -> (ViewController?, Any?) {
-        return avatarMediaPickerController(context: context, getSourceRect: getSourceRect, canDelete: canDelete, performDelete: performDelete, completion: completion, dismissed: dismissed)
+    public func makeAvatarMediaPickerScreen(context: AccountContext, peerType: PeerType, getSourceRect: @escaping () -> CGRect?, canDelete: Bool, performDelete: @escaping () -> Void, completion: @escaping (Any?, UIView?, CGRect, UIImage?, Bool, @escaping (Bool?) -> (UIView, CGRect)?, @escaping () -> Void) -> Void, dismissed: @escaping () -> Void) -> (ViewController?, Any?) {
+        return avatarMediaPickerController(context: context, peerType: peerType, getSourceRect: getSourceRect, canDelete: canDelete, performDelete: performDelete, completion: completion, dismissed: dismissed)
     }
 
     public func makeStickerPickerScreen(context: AccountContext, inputData: Promise<StickerPickerInput>, completion: @escaping (FileMediaReference) -> Void) -> ViewController {
@@ -4105,7 +4114,7 @@ public final class SharedAccountContextImpl: SharedAccountContext {
     }
         
     public func makeProxySettingsController(sharedContext: SharedAccountContext, account: UnauthorizedAccount) -> ViewController {
-        return proxySettingsController(accountManager: sharedContext.accountManager, sharedContext: sharedContext, postbox: account.postbox, network: account.network, mode: .modal, presentationData: sharedContext.currentPresentationData.with { $0 }, updatedPresentationData: sharedContext.presentationData)
+        return proxySettingsController(accountManager: sharedContext.accountManager, sharedContext: sharedContext, network: account.network, mode: .modal, presentationData: sharedContext.currentPresentationData.with { $0 }, updatedPresentationData: sharedContext.presentationData)
     }
     
     public func makeDataAndStorageController(context: AccountContext, sensitiveContent: Bool) -> ViewController {
@@ -4392,6 +4401,10 @@ public final class SharedAccountContextImpl: SharedAccountContext {
         openWebAppImpl(context: context, parentController: parentController, updatedPresentationData: updatedPresentationData, botPeer: botPeer, chatPeer: chatPeer, threadId: threadId, buttonText: buttonText, url: url, simple: simple, source: source, skipTermsOfService: skipTermsOfService, payload: payload, verifyAgeCompletion: verifyAgeCompletion)
     }
     
+    public func openJoinChatWebView(context: AccountContext, parentController: ViewController, updatedPresentationData: (initial: PresentationData, signal: Signal<PresentationData, NoError>)?, webView: JoinChatWebView) {
+        openJoinChatWebViewImpl(context: context, parentController: parentController, updatedPresentationData: updatedPresentationData, webView: webView)
+    }
+
     public func makeAffiliateProgramSetupScreenInitialData(context: AccountContext, peerId: EnginePeer.Id, mode: AffiliateProgramSetupScreenMode) -> Signal<AffiliateProgramSetupScreenInitialData, NoError> {
         return AffiliateProgramSetupScreen.content(context: context, peerId: peerId, mode: mode)
     }
@@ -4433,8 +4446,9 @@ public final class SharedAccountContextImpl: SharedAccountContext {
         return CocoonInfoScreen(context: context)
     }
     
-    public func makeLinkEditController(context: AccountContext, updatedPresentationData: (initial: PresentationData, signal: Signal<PresentationData, NoError>)?, text: String, link: String?, apply: @escaping (String?) -> Void) -> ViewController {
-        return chatTextLinkEditController(context: context, updatedPresentationData: updatedPresentationData, text: text, link: link, apply: apply)
+    public func makeLinkEditController(context: AccountContext, updatedPresentationData: (initial: PresentationData, signal: Signal<PresentationData, NoError>)?, text: String, link: String?, apply: @escaping (String?, TelegramMediaWebpage?) -> Void) -> ViewController {
+        let presentationData = context.sharedContext.currentPresentationData.with { $0 }
+        return chatTextLinkEditController(context: context, updatedPresentationData: updatedPresentationData, text: presentationData.strings.TextFormat_AddLinkText(text).string, link: link, apply: apply)
     }
     
     @available(iOS 13.0, *)
@@ -4612,7 +4626,7 @@ private func peerInfoControllerImpl(context: AccountContext, updatedPresentation
     } else if case .user = peer {
         var reactionSourceMessageId: MessageId?
         var sourceMessageId: MessageId?
-        var callMessages: [Message] = []
+        var callMessages: [EngineMessage] = []
         var hintGroupInCommon: PeerId?
         var forumTopicThread: ChatReplyThreadMessage?
         var sharedMediaFromForumTopic: (EnginePeer.Id, Int64)?

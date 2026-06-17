@@ -4,7 +4,6 @@ import Display
 import AsyncDisplayKit
 import ComponentFlow
 import SwiftSignalKit
-import Postbox
 import TelegramCore
 import PhotoResources
 import AvatarStoryIndicatorComponent
@@ -15,7 +14,7 @@ final class StoryIconNode: ASDisplayNode {
     private let imageNode = TransformImageNode()
     private let storyIndicator = ComponentView<Empty>()
     
-    init(context: AccountContext, theme: PresentationTheme, peer: Peer, storyItem: EngineStoryItem) {
+    init(context: AccountContext, theme: PresentationTheme, peer: EngineRawPeer, storyItem: EngineStoryItem) {
         self.imageNode.displaysAsynchronously = false
         
         super.init()
@@ -29,7 +28,7 @@ final class StoryIconNode: ASDisplayNode {
         self.imageNode.frame = bounds.insetBy(dx: 3.0, dy: 3.0)
         self.frame = bounds
         
-        let media: Media?
+        let media: EngineRawMedia?
         switch storyItem.media {
         case let .image(image):
             media = image

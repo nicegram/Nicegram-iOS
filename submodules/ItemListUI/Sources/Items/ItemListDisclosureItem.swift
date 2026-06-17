@@ -74,7 +74,33 @@ public class ItemListDisclosureItem: ListViewItem, ItemListItem, ListItemCompone
     public let tag: ItemListItemTag?
     public let shimmeringIndex: Int?
     
-    public init(presentationData: ItemListPresentationData, systemStyle: ItemListSystemStyle = .legacy, icon: UIImage? = nil, context: AccountContext? = nil, iconPeer: EnginePeer? = nil, title: String, attributedTitle: NSAttributedString? = nil, enabled: Bool = true, titleColor: ItemListDisclosureItemTitleColor = .primary, titleFont: ItemListDisclosureItemTitleFont = .regular, titleIcon: UIImage? = nil, titleBadge: String? = nil, label: String, attributedLabel: NSAttributedString? = nil, labelStyle: ItemListDisclosureLabelStyle = .text, additionalDetailLabel: String? = nil, additionalDetailLabelColor: ItemListDisclosureItemDetailLabelColor = .generic, sectionId: ItemListSectionId, style: ItemListStyle, disclosureStyle: ItemListDisclosureStyle = .arrow, noInsets: Bool = false, action: (() -> Void)?, clearHighlightAutomatically: Bool = true, tag: ItemListItemTag? = nil, shimmeringIndex: Int? = nil) {
+    public init(
+        presentationData: ItemListPresentationData,
+        systemStyle: ItemListSystemStyle = .legacy,
+        icon: UIImage? = nil,
+        context: AccountContext? = nil,
+        iconPeer: EnginePeer? = nil,
+        title: String,
+        attributedTitle: NSAttributedString? = nil,
+        enabled: Bool = true,
+        titleColor: ItemListDisclosureItemTitleColor = .primary,
+        titleFont: ItemListDisclosureItemTitleFont = .regular,
+        titleIcon: UIImage? = nil,
+        titleBadge: String? = nil,
+        label: String,
+        attributedLabel: NSAttributedString? = nil,
+        labelStyle: ItemListDisclosureLabelStyle = .text,
+        additionalDetailLabel: String? = nil,
+        additionalDetailLabelColor: ItemListDisclosureItemDetailLabelColor = .generic,
+        sectionId: ItemListSectionId,
+        style: ItemListStyle,
+        disclosureStyle: ItemListDisclosureStyle = .arrow,
+        noInsets: Bool = false,
+        action: (() -> Void)?,
+        clearHighlightAutomatically: Bool = true,
+        tag: ItemListItemTag? = nil,
+        shimmeringIndex: Int? = nil
+    ) {
         self.presentationData = presentationData
         self.systemStyle = systemStyle
         self.icon = icon
@@ -709,7 +735,7 @@ public class ItemListDisclosureItemNode: ListViewItemNode, ItemListItemNode {
                         centralContentHeight += additionalDetailLabelInfo.0.size.height
                     }
                     
-                    let titleFrame = CGRect(origin: CGPoint(x: leftInset, y: floor((height - centralContentHeight) / 2.0)), size: titleLayout.size)
+                    let titleFrame = CGRect(origin: CGPoint(x: leftInset, y: floorToScreenPixels((height - centralContentHeight) / 2.0) + 1.0), size: titleLayout.size)
                     strongSelf.titleNode.textNode.frame = titleFrame
                     
                     if let updateBadgeImage = updatedLabelBadgeImage {
@@ -739,7 +765,7 @@ public class ItemListDisclosureItemNode: ListViewItemNode, ItemListItemNode {
                     case .detailText, .multilineDetailText:
                         labelFrame = CGRect(origin: CGPoint(x: leftInset, y: titleFrame.maxY + titleSpacing), size: labelLayout.size)
                     default:
-                        labelFrame = CGRect(origin: CGPoint(x: params.width - rightInset - labelLayout.size.width, y: floor((height - labelLayout.size.height) / 2.0)), size: labelLayout.size)
+                        labelFrame = CGRect(origin: CGPoint(x: params.width - rightInset - labelLayout.size.width, y: floorToScreenPixels((height - labelLayout.size.height) / 2.0) + 1.0), size: labelLayout.size)
                     }
                     strongSelf.labelNode.frame = labelFrame
                     

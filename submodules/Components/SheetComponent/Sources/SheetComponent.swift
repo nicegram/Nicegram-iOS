@@ -184,7 +184,7 @@ public final class SheetComponent<ChildEnvironmentType: Sendable & Equatable>: C
         private let dimView: UIView
         private let scrollView: ScrollView
         private let backgroundView: SheetBackgroundView
-        private var effectView: UIVisualEffectView?
+        private var effectView: SheetBackgroundBlurView?
         private let clipView: SheetBackgroundView
         private let contentView: ComponentView<ChildEnvironmentType>
         private var headerView: ComponentView<Empty>?
@@ -411,13 +411,13 @@ public final class SheetComponent<ChildEnvironmentType: Sendable & Equatable>: C
             }
             
             var backgroundColor: UIColor = .clear
+            var blurEffectStyle: UIBlurEffect.Style?
             switch component.backgroundColor {
             case let .blur(style):
+                blurEffectStyle = style == .dark ? .dark : .light
                 self.backgroundView.isHidden = true
                 if self.effectView == nil {
-                    let effectView = UIVisualEffectView(effect: UIBlurEffect(style: style == .dark ? .dark : .light))
-                    effectView.layer.cornerRadius = self.backgroundView.layer.cornerRadius
-                    effectView.layer.masksToBounds = true
+                    let effectView = SheetBackgroundBlurView()
                     self.backgroundView.superview?.insertSubview(effectView, aboveSubview: self.backgroundView)
                     self.effectView = effectView
                 }
@@ -471,8 +471,9 @@ public final class SheetComponent<ChildEnvironmentType: Sendable & Equatable>: C
                     transition.setFrame(view: self.clipView, frame: clipFrame, completion: nil)
                     transition.setFrame(view: contentView, frame: CGRect(origin: .zero, size: clipFrame.size), completion: nil)
                     transition.setFrame(view: self.backgroundView, frame: CGRect(origin: CGPoint(x: floorToScreenPixels((availableSize.width - contentSize.width) / 2.0), y: -y), size: contentSize), completion: nil)
-                    if let effectView = self.effectView {
+                    if let effectView = self.effectView, let blurEffectStyle = blurEffectStyle {
                         transition.setFrame(view: effectView, frame: CGRect(origin: CGPoint(x: floorToScreenPixels((availableSize.width - contentSize.width) / 2.0), y: -y), size: contentSize), completion: nil)
+                        effectView.update(style: blurEffectStyle, size: contentSize, topCornerRadius: topCornerRadius, bottomCornerRadius: topCornerRadius, transition: transition)
                     }
                     self.backgroundView.update(size: contentSize, color: backgroundColor, topCornerRadius: topCornerRadius, bottomCornerRadius: topCornerRadius, transition: transition)
                 } else {
@@ -483,14 +484,19 @@ public final class SheetComponent<ChildEnvironmentType: Sendable & Equatable>: C
                         transition.setFrame(view: self.clipView, frame: clipFrame)
                         transition.setFrame(view: contentView, frame: CGRect(origin: .zero, size: CGSize(width: contentSize.width, height: contentSize.height)), completion: nil)
                         transition.setFrame(view: self.backgroundView, frame: CGRect(origin: CGPoint(x: glassInset, y: -glassInset), size: CGSize(width: contentSize.width, height: contentSize.height)), completion: nil)
+                        if let effectView = self.effectView, let blurEffectStyle = blurEffectStyle {
+                            transition.setFrame(view: effectView, frame: CGRect(origin: CGPoint(x: glassInset, y: -glassInset), size: CGSize(width: contentSize.width, height: contentSize.height)), completion: nil)
+                            effectView.update(style: blurEffectStyle, size: contentSize, topCornerRadius: topCornerRadius + 1.5, bottomCornerRadius: bottomCornerRadius, transition: transition)
+                        }
                     case .legacy:
                         let clipFrame = CGRect(origin: .zero, size: CGSize(width: contentSize.width, height: contentSize.height + 100.0))
                         self.clipView.update(size: clipFrame.size, color: .clear, topCornerRadius: topCornerRadius, bottomCornerRadius: bottomCornerRadius, transition: transition)
                         transition.setFrame(view: self.clipView, frame: clipFrame)
                         transition.setFrame(view: contentView, frame: CGRect(origin: .zero, size: clipFrame.size), completion: nil)
                         transition.setFrame(view: self.backgroundView, frame: CGRect(origin: .zero, size: CGSize(width: contentSize.width, height: contentSize.height + 1000.0)), completion: nil)
-                        if let effectView = self.effectView {
+                        if let effectView = self.effectView, let blurEffectStyle = blurEffectStyle {
                             transition.setFrame(view: effectView, frame: CGRect(origin: .zero, size: CGSize(width: contentSize.width, height: contentSize.height + 1000.0)), completion: nil)
+                            effectView.update(style: blurEffectStyle, size: CGSize(width: contentSize.width, height: contentSize.height + 1000.0), topCornerRadius: topCornerRadius + 1.5, bottomCornerRadius: bottomCornerRadius, transition: transition)
                         }
                     }
                     self.backgroundView.update(size: contentSize, color: backgroundColor, topCornerRadius: topCornerRadius + 1.5, bottomCornerRadius: bottomCornerRadius, transition: transition)
@@ -612,5 +618,33 @@ public final class SheetBackgroundView: UIView {
         transition.setFrame(view: self.bottomCornersView, frame: CGRect(origin: .zero, size: size))
         
         transition.setBackgroundColor(view: self.bottomCornersView, color: color)
+    }
+}
+
+private final class SheetBackgroundBlurView: UIView {
+    private let clipView = SheetBackgroundView()
+    private let effectView = UIVisualEffectView()
+    private var currentStyle: UIBlurEffect.Style?
+    
+    override init(frame: CGRect) {
+        super.init(frame: frame)
+        
+        self.addSubview(self.clipView)
+        self.clipView.bottomCornersView.addSubview(self.effectView)
+    }
+    
+    required init?(coder: NSCoder) {
+        preconditionFailure()
+    }
+    
+    func update(style: UIBlurEffect.Style, size: CGSize, topCornerRadius: CGFloat, bottomCornerRadius: CGFloat, transition: ComponentTransition) {
+        if self.currentStyle != style {
+            self.currentStyle = style
+            self.effectView.effect = UIBlurEffect(style: style)
+        }
+        
+        self.clipView.update(size: size, color: .clear, topCornerRadius: topCornerRadius, bottomCornerRadius: bottomCornerRadius, transition: transition)
+        transition.setFrame(view: self.clipView, frame: CGRect(origin: .zero, size: size))
+        transition.setFrame(view: self.effectView, frame: CGRect(origin: .zero, size: size))
     }
 }

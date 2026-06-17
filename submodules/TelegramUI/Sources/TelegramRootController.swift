@@ -18,7 +18,6 @@ import Foundation
 import UIKit
 import Display
 import AsyncDisplayKit
-import Postbox
 import TelegramCore
 import SwiftSignalKit
 import TelegramPresentationData
@@ -972,9 +971,9 @@ public final class TelegramRootController: NavigationController, TelegramRootCon
                 if let mediaResult = result.media {
                     switch mediaResult {
                     case let .image(image, dimensions):
-                        let tempFile = TempBox.shared.tempFile(fileName: "file")
+                        let tempFile = EngineTempBox.shared.tempFile(fileName: "file")
                         defer {
-                            TempBox.shared.dispose(tempFile)
+                            EngineTempBox.shared.dispose(tempFile)
                         }
                         if let imageData = compressImageToJPEG(image, quality: 0.7, tempFilePath: tempFile.path) {
                             media = .image(dimensions: dimensions, data: imageData, stickers: result.stickers)
@@ -982,8 +981,8 @@ public final class TelegramRootController: NavigationController, TelegramRootCon
                     case let .video(content, firstFrameImage, values, duration, dimensions):
                         let adjustments: VideoMediaResourceAdjustments
                         if let valuesData = try? JSONEncoder().encode(values) {
-                            let data = MemoryBuffer(data: valuesData)
-                            let digest = MemoryBuffer(data: data.md5Digest())
+                            let data = EngineMemoryBuffer(data: valuesData)
+                            let digest = EngineMemoryBuffer(data: data.md5Digest())
                             adjustments = VideoMediaResourceAdjustments(data: data, digest: digest, isStory: true)
                             
                             let resource: TelegramMediaResource
@@ -995,13 +994,13 @@ public final class TelegramRootController: NavigationController, TelegramRootCon
                             case let .asset(localIdentifier):
                                 resource = VideoLibraryMediaResource(localIdentifier: localIdentifier, conversion: .compress(adjustments))
                             }
-                            let tempFile = TempBox.shared.tempFile(fileName: "file")
+                            let tempFile = EngineTempBox.shared.tempFile(fileName: "file")
                             defer {
-                                TempBox.shared.dispose(tempFile)
+                                EngineTempBox.shared.dispose(tempFile)
                             }
                             let imageData = firstFrameImage.flatMap { compressImageToJPEG($0, quality: 0.6, tempFilePath: tempFile.path) }
-                            let firstFrameFile = imageData.flatMap { data -> TempBoxFile? in
-                                let file = TempBox.shared.tempFile(fileName: "image.jpg")
+                            let firstFrameFile = imageData.flatMap { data -> EngineTempBoxFile? in
+                                let file = EngineTempBox.shared.tempFile(fileName: "image.jpg")
                                 if let _ = try? data.write(to: URL(fileURLWithPath: file.path)) {
                                     return file
                                 } else {

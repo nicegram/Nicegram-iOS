@@ -2,7 +2,6 @@ import Foundation
 import UIKit
 import Display
 import SwiftSignalKit
-import Postbox
 import TelegramCore
 import TelegramPresentationData
 import TelegramUIPreferences
@@ -30,7 +29,7 @@ private enum FeaturedStickerPacksSection: Int32 {
 }
 
 private enum FeaturedStickerPacksEntryId: Hashable {
-    case pack(ItemCollectionId)
+    case pack(EngineItemCollectionId)
 }
 
 private enum FeaturedStickerPacksEntry: ItemListNodeEntry {
@@ -123,37 +122,35 @@ private struct FeaturedStickerPacksControllerState: Equatable {
     }
 }
 
-private func featuredStickerPacksControllerEntries(context: AccountContext, presentationData: PresentationData, state: FeaturedStickerPacksControllerState, view: CombinedView, featured: [FeaturedStickerPackItem], unreadPacks: [ItemCollectionId: Bool], stickerSettings: StickerSettings)  -> [FeaturedStickerPacksEntry] {
+private func featuredStickerPacksControllerEntries(context: AccountContext, presentationData: PresentationData, state: FeaturedStickerPacksControllerState, view: [EngineRawItemCollectionInfoEntry], featured: [FeaturedStickerPackItem], unreadPacks: [EngineItemCollectionId: Bool], stickerSettings: StickerSettings)  -> [FeaturedStickerPacksEntry] {
     var entries: [FeaturedStickerPacksEntry] = []
-    
-    if let stickerPacksView = view.views[.itemCollectionInfos(namespaces: [Namespaces.ItemCollection.CloudStickerPacks])] as? ItemCollectionInfosView, !featured.isEmpty {
-        if let packsEntries = stickerPacksView.entriesByNamespace[Namespaces.ItemCollection.CloudStickerPacks] {
-            var installedPacks = Set<ItemCollectionId>()
-            for entry in packsEntries {
-                installedPacks.insert(entry.id)
+
+    if !featured.isEmpty {
+        var installedPacks = Set<EngineItemCollectionId>()
+        for entry in view {
+            installedPacks.insert(entry.id)
+        }
+        var index: Int32 = 0
+        for item in featured {
+            var unread = false
+            if let value = unreadPacks[item.info.id] {
+                unread = value
             }
-            var index: Int32 = 0
-            for item in featured {
-                var unread = false
-                if let value = unreadPacks[item.info.id] {
-                    unread = value
-                }
-                
-                let countTitle: String
-                if item.info.id.namespace == Namespaces.ItemCollection.CloudEmojiPacks {
-                    countTitle = presentationData.strings.StickerPack_EmojiCount(item.info.count)
-                } else if item.info.id.namespace == Namespaces.ItemCollection.CloudMaskPacks {
-                    countTitle = presentationData.strings.StickerPack_MaskCount(item.info.count)
-                } else {
-                    countTitle = presentationData.strings.StickerPack_StickerCount(item.info.count)
-                }
-                
-                entries.append(.pack(index, presentationData.theme, presentationData.strings, item.info, unread, item.topItems.first, countTitle, context.sharedContext.energyUsageSettings.loopStickers, installedPacks.contains(item.info.id)))
-                index += 1
+
+            let countTitle: String
+            if item.info.id.namespace == Namespaces.ItemCollection.CloudEmojiPacks {
+                countTitle = presentationData.strings.StickerPack_EmojiCount(item.info.count)
+            } else if item.info.id.namespace == Namespaces.ItemCollection.CloudMaskPacks {
+                countTitle = presentationData.strings.StickerPack_MaskCount(item.info.count)
+            } else {
+                countTitle = presentationData.strings.StickerPack_StickerCount(item.info.count)
             }
+
+            entries.append(.pack(index, presentationData.theme, presentationData.strings, item.info, unread, item.topItems.first, countTitle, context.sharedContext.energyUsageSettings.loopStickers, installedPacks.contains(item.info.id)))
+            index += 1
         }
     }
-    
+
     return entries
 }
 
@@ -198,13 +195,13 @@ public func featuredStickerPacksController(context: AccountContext) -> ViewContr
         presentControllerImpl?(textAlertController(context: context, updatedPresentationData: nil, title: nil, text: presentationData.strings.ArchivedPacksAlert_Title, actions: [TextAlertAction(type: .defaultAction, title: presentationData.strings.Common_OK, action: {})]), nil)
     }))
     
-    let stickerPacks = Promise<CombinedView>()
-    stickerPacks.set(context.account.postbox.combinedView(keys: [.itemCollectionInfos(namespaces: [Namespaces.ItemCollection.CloudStickerPacks])]))
+    let stickerPacks = Promise<[EngineRawItemCollectionInfoEntry]>()
+    stickerPacks.set(context.engine.data.subscribe(TelegramEngine.EngineData.Item.ItemCollections.InstalledPackInfos(namespace: Namespaces.ItemCollection.CloudStickerPacks)))
     
     let featured = Promise<[FeaturedStickerPackItem]>()
     featured.set(context.account.viewTracker.featuredStickerPacks())
 
-    var initialUnreadPacks: [ItemCollectionId: Bool] = [:]
+    var initialUnreadPacks: [EngineItemCollectionId: Bool] = [:]
     
     let signal = combineLatest(context.sharedContext.presentationData, statePromise.get() |> deliverOnMainQueue, stickerPacks.get() |> deliverOnMainQueue, featured.get() |> deliverOnMainQueue, context.sharedContext.accountManager.sharedData(keys: [ApplicationSpecificSharedDataKeys.stickerSettings]) |> deliverOnMainQueue)
         |> deliverOnMainQueue
@@ -232,10 +229,10 @@ public func featuredStickerPacksController(context: AccountContext) -> ViewContr
     
     let controller = ItemListController(context: context, state: signal)
     
-    var alreadyReadIds = Set<ItemCollectionId>()
+    var alreadyReadIds = Set<EngineItemCollectionId>()
     
     controller.visibleEntriesUpdated = { entries in
-        var unreadIds: [ItemCollectionId] = []
+        var unreadIds: [EngineItemCollectionId] = []
         for entry in entries {
             if let entry = entry as? FeaturedStickerPacksEntry {
                 switch entry {

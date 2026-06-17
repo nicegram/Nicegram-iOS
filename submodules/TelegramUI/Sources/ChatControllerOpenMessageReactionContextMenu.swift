@@ -1,7 +1,6 @@
 import Foundation
 import TelegramPresentationData
 import AccountContext
-import Postbox
 import TelegramCore
 import SwiftSignalKit
 import ContextUI
@@ -36,7 +35,7 @@ extension ChatControllerImpl {
         self.push(controller)
     }
     
-    func openMessageReactionContextMenu(message: Message, sourceView: ContextExtractedContentContainingView, gesture: ContextGesture?, value: MessageReaction.Reaction) {
+    func openMessageReactionContextMenu(message: EngineMessage, sourceView: ContextExtractedContentContainingView, gesture: ContextGesture?, value: MessageReaction.Reaction) {
         if message.areReactionsTags(accountPeerId: self.context.account.peerId) {
             if !self.presentationInterfaceState.isPremium {
                 self.presentTagPremiumPaywall()
@@ -146,7 +145,7 @@ extension ChatControllerImpl {
                     guard let self else {
                         return
                     }
-                    self.controllerInteraction?.updateMessageReaction(message, .reaction(value), true, nil)
+                    self.controllerInteraction?.updateMessageReaction(message._asMessage(), .reaction(value), true, nil)
                 })))
                 
                 self.canReadHistory.set(false)
@@ -189,7 +188,7 @@ extension ChatControllerImpl {
                 
                 var dismissController: ((@escaping () -> Void) -> Void)?
                 let canDeleteReactions: Bool
-                if let channel = message.peers[message.id.peerId] as? TelegramChannel {
+                if case let .channel(channel) = message.enginePeers[message.id.peerId] {
                     canDeleteReactions = channel.hasPermission(.deleteAllMessages)
                 } else {
                     canDeleteReactions = false
@@ -202,7 +201,7 @@ extension ChatControllerImpl {
                             guard let self else {
                                 return
                             }
-                            self.presentReactionDeletionOptions(author: peer._asPeer(), messageId: message.id)
+                            self.presentReactionDeletionOptions(author: peer, messageId: message.id)
                         })
                     }
                 } else {
@@ -217,7 +216,7 @@ extension ChatControllerImpl {
                         availableReactions: availableReactions,
                         animationCache: self.controllerInteraction!.presentationContext.animationCache,
                         animationRenderer: self.controllerInteraction!.presentationContext.animationRenderer,
-                        message: EngineMessage(message),
+                        message: message,
                         reaction: value,
                         readStats: nil,
                         back: nil,
@@ -227,7 +226,7 @@ extension ChatControllerImpl {
                                     return
                                 }
                                 
-                                self.openPeer(peer: peer, navigation: .default, fromMessage: MessageReference(message), fromReactionMessageId: hasReaction ? message.id : nil)
+                                self.openPeer(peer: peer, navigation: .default, fromMessage: MessageReference(message._asMessage()), fromReactionMessageId: hasReaction ? message.id : nil)
                             })
                         },
                         deleteReaction: deleteReaction
@@ -393,7 +392,7 @@ extension ChatControllerImpl {
         }
     }
     
-    func openMessageSendStarsScreen(message: Message) {
+    func openMessageSendStarsScreen(message: EngineMessage) {
         guard canSendReactionsToChat(self.presentationInterfaceState) else {
             return
         }

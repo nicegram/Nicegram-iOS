@@ -5,7 +5,6 @@ import SwiftSignalKit
 import AsyncDisplayKit
 import TelegramPresentationData
 import AccountContext
-import Postbox
 import TelegramUIPreferences
 import TelegramCore
 
@@ -13,10 +12,10 @@ public func chatListFilterItems(context: AccountContext) -> Signal<(Int, [(ChatL
     return context.engine.peers.updatedChatListFilters()
     |> distinctUntilChanged
     |> mapToSignal { filters -> Signal<(Int, [(ChatListFilter, Int, Bool)]), NoError> in
-        var unreadCountItems: [UnreadMessageCountsItem] = []
+        var unreadCountItems: [EngineRawUnreadMessageCountsItem] = []
         unreadCountItems.append(.totalInGroup(.root))
-        var additionalPeerIds = Set<PeerId>()
-        var additionalGroupIds = Set<PeerGroupId>()
+        var additionalPeerIds = Set<EnginePeer.Id>()
+        var additionalGroupIds = Set<EnginePeerGroupId>()
         for case let .filter(_, _, _, data) in filters {
             additionalPeerIds.formUnion(data.includePeers.peers)
             additionalPeerIds.formUnion(data.excludePeers)
@@ -33,9 +32,9 @@ public func chatListFilterItems(context: AccountContext) -> Signal<(Int, [(ChatL
             unreadCountItems.append(.totalInGroup(groupId))
         }
         
-        let globalNotificationsKey: PostboxViewKey = .preferences(keys: Set([PreferencesKeys.globalNotifications]))
-        let unreadKey: PostboxViewKey = .unreadCounts(items: unreadCountItems)
-        var keys: [PostboxViewKey] = []
+        let globalNotificationsKey: EngineRawPostboxViewKey = .preferences(keys: Set([PreferencesKeys.globalNotifications]))
+        let unreadKey: EngineRawPostboxViewKey = .unreadCounts(items: unreadCountItems)
+        var keys: [EngineRawPostboxViewKey] = []
         keys.append(globalNotificationsKey)
         keys.append(unreadKey)
         for peerId in additionalPeerIds {
@@ -44,12 +43,12 @@ public func chatListFilterItems(context: AccountContext) -> Signal<(Int, [(ChatL
         
         return context.account.postbox.combinedView(keys: keys)
         |> map { view -> (Int, [(ChatListFilter, Int, Bool)]) in
-            guard let unreadCounts = view.views[unreadKey] as? UnreadMessageCountsView else {
+            guard let unreadCounts = view.views[unreadKey] as? EngineRawUnreadMessageCountsView else {
                 return (0, [])
             }
             
             var globalNotificationSettings: GlobalNotificationSettingsSet
-            if let settingsView = view.views[globalNotificationsKey] as? PreferencesView, let settings = settingsView.values[PreferencesKeys.globalNotifications]?.get(GlobalNotificationSettings.self) {
+            if let settingsView = view.views[globalNotificationsKey] as? EngineRawPreferencesView, let settings = settingsView.values[PreferencesKeys.globalNotifications]?.get(GlobalNotificationSettings.self) {
                 globalNotificationSettings = settings.effective
             } else {
                 globalNotificationSettings = GlobalNotificationSettings.defaultSettings.effective
@@ -57,9 +56,9 @@ public func chatListFilterItems(context: AccountContext) -> Signal<(Int, [(ChatL
             
             var result: [(ChatListFilter, Int, Bool)] = []
             
-            var peerTagAndCount: [PeerId: (PeerSummaryCounterTags, Int, Bool, PeerGroupId?, Bool)] = [:]
+            var peerTagAndCount: [EnginePeer.Id: (EnginePeerSummaryCounterTags, Int, Bool, EnginePeerGroupId?, Bool)] = [:]
             
-            var totalStates: [PeerGroupId: ChatListTotalUnreadState] = [:]
+            var totalStates: [EnginePeerGroupId: EngineChatListTotalUnreadState] = [:]
             for entry in unreadCounts.entries {
                 switch entry {
                 case let .total(_, state):
@@ -68,7 +67,7 @@ public func chatListFilterItems(context: AccountContext) -> Signal<(Int, [(ChatL
                     totalStates[groupId] = state
                 case let .peer(peerId, state):
                     if let state = state, state.isUnread {
-                        if let peerView = view.views[.basicPeer(peerId)] as? BasicPeerView, let peer = peerView.peer {
+                        if let peerView = view.views[.basicPeer(peerId)] as? EngineRawBasicPeerView, let peer = peerView.peer {
                             let tag = context.account.postbox.seedConfiguration.peerSummaryCounterTags(peer, peerView.isContact)
                             
                             var peerCount = Int(state.count)
@@ -113,7 +112,7 @@ public func chatListFilterItems(context: AccountContext) -> Signal<(Int, [(ChatL
                 var count = 0
                 var unmutedUnreadCount = 0
                 if case let .filter(_, _, _, data) = filter {
-                    var tags: [PeerSummaryCounterTags] = []
+                    var tags: [EnginePeerSummaryCounterTags] = []
                     if data.categories.contains(.contacts) {
                         tags.append(.contact)
                     }

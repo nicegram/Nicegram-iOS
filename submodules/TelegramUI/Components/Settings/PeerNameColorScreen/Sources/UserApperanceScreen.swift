@@ -4,7 +4,6 @@ import Photos
 import Display
 import AsyncDisplayKit
 import SwiftSignalKit
-import Postbox
 import TelegramCore
 import TelegramPresentationData
 import TelegramUIPreferences
@@ -31,7 +30,6 @@ import BundleIconComponent
 import Markdown
 import PeerNameColorItem
 import EmojiActionIconComponent
-import TabSelectorComponent
 import WallpaperResources
 import EdgeEffect
 import TextFormat
@@ -66,14 +64,11 @@ final class UserAppearanceScreenComponent: Component {
     }
     
     let context: AccountContext
-    let overNavigationContainer: UIView
 
     init(
-        context: AccountContext,
-        overNavigationContainer: UIView
+        context: AccountContext
     ) {
         self.context = context
-        self.overNavigationContainer = overNavigationContainer
     }
 
     static func ==(lhs: UserAppearanceScreenComponent, rhs: UserAppearanceScreenComponent) -> Bool {
@@ -176,15 +171,27 @@ final class UserAppearanceScreenComponent: Component {
         private let scrollView: ScrollView
         private let actionButton = ComponentView<Empty>()
         private let edgeEffectView: EdgeEffectView
-        
-        private let tabSelector = ComponentView<Empty>()
+
         enum Section: Int32 {
             case profile
             case name
+
+            init(segmentIndex: Int) {
+                self = segmentIndex == 1 ? .name : .profile
+            }
+
+            var segmentIndex: Int {
+                switch self {
+                case .profile:
+                    return 0
+                case .name:
+                    return 1
+                }
+            }
         }
         private var currentSection: Section = .profile
                 
-        private let previewShadowView = UIImageView(image: generatePreviewShadowImage())
+        private let previewEdgeEffectView = EdgeEffectView()
         
         private let profilePreview = ComponentView<Empty>()
         private let profileColorSection = ComponentView<Empty>()
@@ -259,6 +266,7 @@ final class UserAppearanceScreenComponent: Component {
             
             self.edgeEffectView = EdgeEffectView()
             self.edgeEffectView.isUserInteractionEnabled = false
+            self.previewEdgeEffectView.isUserInteractionEnabled = false
             
             super.init(frame: frame)
             
@@ -269,7 +277,7 @@ final class UserAppearanceScreenComponent: Component {
             
             self.scrollView.layer.addSublayer(self.topOverscrollLayer)
             
-            self.containerView.addSubview(self.previewShadowView)
+            self.containerView.addSubview(self.previewEdgeEffectView)
             
             self.addSubview(self.edgeEffectView)
         }
@@ -329,6 +337,31 @@ final class UserAppearanceScreenComponent: Component {
             return true
         }
         
+        private func prepareForSectionSwitch(to updatedSection: Section) {
+            if (updatedSection == .name && self.selectedProfileGift != nil) || (updatedSection == .profile && self.selectedNameGift != nil) {
+                switch updatedSection {
+                case .profile:
+                    self.selectedNameGift = nil
+                    self.updatedPeerNameColor = nil
+                    self.updatedPeerNameEmoji = nil
+                case .name:
+                    self.selectedProfileGift = nil
+                    self.updatedPeerProfileColor = nil
+                    self.updatedPeerProfileEmoji = nil
+                    self.updatedPeerStatus = nil
+                }
+            }
+        }
+
+        func switchToSection(_ updatedSection: Section, transition: ComponentTransition = .easeInOut(duration: 0.3)) {
+            if self.currentSection == updatedSection {
+                return
+            }
+            self.prepareForSectionSwitch(to: updatedSection)
+            self.currentSection = updatedSection
+            self.state?.updated(transition: transition.withUserData(TransitionHint(animateTabChange: true)))
+        }
+
         func scrollViewDidScroll(_ scrollView: UIScrollView) {
             self.updateScrolling(transition: .immediate)
         }
@@ -860,9 +893,9 @@ final class UserAppearanceScreenComponent: Component {
             self.previousEmojiSetupTimestamp = currentTimestamp
             
             self.emojiStatusSelectionController?.dismiss()
-            var selectedItems = Set<MediaId>()
+            var selectedItems = Set<EngineMedia.Id>()
             if let currentFileId {
-                selectedItems.insert(MediaId(namespace: Namespaces.Media.CloudFile, id: currentFileId))
+                selectedItems.insert(EngineMedia.Id(namespace: Namespaces.Media.CloudFile, id: currentFileId))
             }
             
             let mappedSubject: EmojiPagerContentComponent.Subject
@@ -1008,26 +1041,18 @@ final class UserAppearanceScreenComponent: Component {
             self.environment = environment
                        
             if self.component == nil {
-                if let controller = environment.controller() as? UserAppearanceScreen, let focusOnItemTag = controller.focusOnItemTag {
-                    switch focusOnItemTag {
-                    case .profile:
-                        self.currentSection = .profile
-                    case .profileAddIcons:
-                        self.currentSection = .profile
-                        Queue.mainQueue().after(0.1) {
-                            self.openEmojiSetup()
+                if let controller = environment.controller() as? UserAppearanceScreen {
+                    self.currentSection = controller.selectedSection
+
+                    if let focusOnItemTag = controller.focusOnItemTag {
+                        switch focusOnItemTag {
+                        case .profileAddIcons, .nameAddIcons:
+                            Queue.mainQueue().after(0.1) {
+                                self.openEmojiSetup()
+                            }
+                        default:
+                            break
                         }
-                    case .profileUseGift:
-                        self.currentSection = .profile
-                    case .name:
-                        self.currentSection = .name
-                    case .nameAddIcons:
-                        self.currentSection = .name
-                        Queue.mainQueue().after(0.1) {
-                            self.openEmojiSetup()
-                        }
-                    case .nameUseGift:
-                        self.currentSection = .name
                     }
                 }
             }
@@ -1035,7 +1060,9 @@ final class UserAppearanceScreenComponent: Component {
             self.component = component
             self.state = state
             
-            transition.setFrame(view: component.overNavigationContainer, frame: CGRect(origin: CGPoint(), size: CGSize(width: availableSize.width, height: environment.navigationHeight)))
+            if let controller = environment.controller() as? UserAppearanceScreen {
+                controller.updateSegmentedTitleView(theme: environment.theme, strings: environment.strings)
+            }
             
             let theme = environment.theme
             
@@ -1113,7 +1140,7 @@ final class UserAppearanceScreenComponent: Component {
                 if let presentationTheme {
                     let resolvedWallpaper: Signal<TelegramWallpaper?, NoError>
                     if case let .file(file) = presentationTheme.chat.defaultWallpaper, file.id == 0 {
-                        resolvedWallpaper = cachedWallpaper(account: component.context.account, slug: file.slug, settings: file.settings)
+                        resolvedWallpaper = cachedWallpaper(engine: component.context.engine, network: component.context.account.network, slug: file.slug, settings: file.settings)
                         |> map { wallpaper -> TelegramWallpaper? in
                             return wallpaper?.wallpaper
                         }
@@ -1165,61 +1192,6 @@ final class UserAppearanceScreenComponent: Component {
                 previewTransition = .immediate
             }
             
-            let tabSelectorSize = self.tabSelector.update(
-                transition: transition,
-                component: AnyComponent(
-                    TabSelectorComponent(
-                        colors: TabSelectorComponent.Colors(
-                            foreground: environment.theme.list.itemAccentColor,
-                            selection: environment.theme.list.itemAccentColor.withMultipliedAlpha(0.1),
-                            normal: environment.theme.list.itemPrimaryTextColor.withMultipliedAlpha(0.78),
-                            simple: true
-                        ),
-                        theme: environment.theme,
-                        customLayout: TabSelectorComponent.CustomLayout(font: Font.semibold(16.0)),
-                        items: [
-                            TabSelectorComponent.Item(id: Section.profile.rawValue, title: environment.strings.ProfileColorSetup_TitleProfile),
-                            TabSelectorComponent.Item(id: Section.name.rawValue, title: environment.strings.ProfileColorSetup_TitleName)
-                        ],
-                        selectedId: self.currentSection.rawValue,
-                        setSelectedId: { [weak self] value in
-                            guard let self else {
-                                return
-                            }
-                            if let intValue = value.base as? Int32 {
-                                let updatedSection = Section(rawValue: intValue) ?? .profile
-                                if self.currentSection != updatedSection {
-                                    if (updatedSection == .name && self.selectedProfileGift != nil) || (updatedSection == .profile && self.selectedNameGift != nil) {
-                                        switch updatedSection {
-                                        case .profile:
-                                            self.selectedNameGift = nil
-                                            self.updatedPeerNameColor = nil
-                                            self.updatedPeerNameEmoji = nil
-                                        case .name:
-                                            self.selectedProfileGift = nil
-                                            self.updatedPeerProfileColor = nil
-                                            self.updatedPeerProfileEmoji = nil
-                                            self.updatedPeerStatus = nil
-                                        }
-                                    }
-                                    self.currentSection = updatedSection
-                                    self.state?.updated(transition: .easeInOut(duration: 0.3).withUserData(TransitionHint(animateTabChange: true)))
-                                }
-                            }
-                        }
-                    )
-                ),
-                environment: {},
-                containerSize: CGSize(width: availableSize.width, height: 44.0)
-            )
-            let tabSelectorFrame = CGRect(origin: CGPoint(x: floorToScreenPixels((availableSize.width - tabSelectorSize.width) / 2.0), y: environment.statusBarHeight + 2.0 + floorToScreenPixels((environment.navigationHeight - environment.statusBarHeight - tabSelectorSize.height) / 2.0)), size: tabSelectorSize)
-            if let tabSelectorView = self.tabSelector.view {
-                if tabSelectorView.superview == nil {
-                    component.overNavigationContainer.addSubview(tabSelectorView)
-                }
-                transition.setFrame(view: tabSelectorView, frame: tabSelectorFrame)
-            }
-                        
             let bottomContentInset: CGFloat = 24.0
             let bottomInset: CGFloat = 8.0
             let sideInset: CGFloat = 16.0 + environment.safeInsets.left
@@ -1230,8 +1202,7 @@ final class UserAppearanceScreenComponent: Component {
             var contentHeight: CGFloat = 0.0
                          
             let itemCornerRadius: CGFloat = 26.0
-            
-            transition.setTintColor(view: self.previewShadowView, color: environment.theme.list.itemBlocksBackgroundColor)
+            let previewEdgeEffectHeight: CGFloat = 72.0
             
             switch self.currentSection {
             case .profile:
@@ -1282,8 +1253,10 @@ final class UserAppearanceScreenComponent: Component {
                 }
                 contentHeight += profilePreviewSize.height - 38.0
                 
-                transition.setFrame(view: self.previewShadowView, frame: profilePreviewFrame.insetBy(dx: -45.0, dy: -45.0))
-                previewTransition.setAlpha(view: self.previewShadowView, alpha: !self.scrolledUp ? 1.0 : 0.0)
+                let previewEdgeEffectFrame = CGRect(origin: CGPoint(x: profilePreviewFrame.minX, y: profilePreviewFrame.maxY - 35.0), size: CGSize(width: profilePreviewFrame.width, height: previewEdgeEffectHeight))
+                previewTransition.setFrame(view: self.previewEdgeEffectView, frame: previewEdgeEffectFrame)
+                self.previewEdgeEffectView.update(content: environment.theme.list.blocksBackgroundColor, blur: true, alpha: 1.0, rect: previewEdgeEffectFrame, edge: .top, edgeSize: previewEdgeEffectFrame.height, transition: previewTransition)
+                previewTransition.setAlpha(view: self.previewEdgeEffectView, alpha: !self.scrolledUp ? 1.0 : 0.0)
                 
                 var profileLogoContents: [AnyComponentWithIdentity<Empty>] = []
                 profileLogoContents.append(AnyComponentWithIdentity(id: 0, component: AnyComponent(MultilineTextComponent(
@@ -1303,7 +1276,8 @@ final class UserAppearanceScreenComponent: Component {
                         return (TelegramTextAttributes.URL, contents)
                     }
                 )
-                let previewFooterText = NSMutableAttributedString(attributedString: parseMarkdownIntoAttributedString(environment.strings.ProfileColorSetup_ProfileColorPreviewInfo, attributes: footerAttributes))
+                let previewFooterRawText = environment.strings.ProfileColorSetup_ProfileColorPreviewInfo.replacingOccurrences(of: " >]", with: "\u{00A0}>]")
+                let previewFooterText = NSMutableAttributedString(attributedString: parseMarkdownIntoAttributedString(previewFooterRawText, attributes: footerAttributes))
                 if let range = previewFooterText.string.range(of: ">"), let chevronImage = self.cachedChevronImage?.0 {
                     previewFooterText.addAttribute(.attachment, value: chevronImage, range: NSRange(range, in: previewFooterText.string))
                 }
@@ -1336,8 +1310,11 @@ final class UserAppearanceScreenComponent: Component {
                                     self.updatedPeerProfileEmoji = nil
                                     self.updatedPeerStatus = nil
                                 }
-                                self.currentSection = .name
-                                self.state?.updated(transition: .easeInOut(duration: 0.3).withUserData(TransitionHint(animateTabChange: true)))
+                                if let controller = self.environment?.controller() as? UserAppearanceScreen {
+                                    controller.switchToSection(.name)
+                                } else {
+                                    self.switchToSection(.name)
+                                }
                             }
                         )),
                         items: [
@@ -1596,7 +1573,7 @@ final class UserAppearanceScreenComponent: Component {
                 
                 let messageItem = PeerNameColorChatPreviewItem.MessageItem(
                     outgoing: false,
-                    peerId: EnginePeer.Id(namespace: peer.id.namespace, id: PeerId.Id._internalFromInt64Value(0)),
+                    peerId: EnginePeer.Id(namespace: peer.id.namespace, id: EnginePeer.Id.Id._internalFromInt64Value(0)),
                     author: peer.compactDisplayTitle,
                     photo: peer.profileImageRepresentations,
                     nameColor: resolvedState.nameColor,
@@ -1656,8 +1633,10 @@ final class UserAppearanceScreenComponent: Component {
                 }
                 contentHeight += namePreviewSize.height - 38.0
                 
-                transition.setFrame(view: self.previewShadowView, frame: namePreviewFrame.insetBy(dx: -45.0, dy: -45.0))
-                previewTransition.setAlpha(view: self.previewShadowView, alpha: !self.scrolledUp ? 1.0 : 0.0)
+                let previewEdgeEffectFrame = CGRect(origin: CGPoint(x: namePreviewFrame.minX, y: namePreviewFrame.maxY - UIScreenPixel), size: CGSize(width: namePreviewFrame.width, height: previewEdgeEffectHeight))
+                previewTransition.setFrame(view: self.previewEdgeEffectView, frame: previewEdgeEffectFrame)
+                self.previewEdgeEffectView.update(content: environment.theme.list.itemBlocksBackgroundColor, alpha: 1.0, rect: previewEdgeEffectFrame, edge: .top, edgeSize: previewEdgeEffectFrame.height, transition: previewTransition)
+                previewTransition.setAlpha(view: self.previewEdgeEffectView, alpha: !self.scrolledUp ? 1.0 : 0.0)
                 
                 let nameColorSectionSize = self.nameColorSection.update(
                     transition: transition,
@@ -1998,11 +1977,20 @@ final class UserAppearanceScreenComponent: Component {
 public class UserAppearanceScreen: ViewControllerComponentContainer {
     private let context: AccountContext
     fileprivate let focusOnItemTag: UserAppearanceEntryTag?
-    
-    private let overNavigationContainer: UIView
+    fileprivate var selectedSection: UserAppearanceScreenComponent.View.Section
+    private let segmentedTitleView: ItemListControllerSegmentedTitleView
     
     private var didSetReady: Bool = false
     
+    private static func initialSection(for focusOnItemTag: UserAppearanceEntryTag?) -> UserAppearanceScreenComponent.View.Section {
+        switch focusOnItemTag {
+        case .name, .nameAddIcons, .nameUseGift:
+            return .name
+        case .profile, .profileAddIcons, .profileUseGift, nil:
+            return .profile
+        }
+    }
+
     public init(
         context: AccountContext,
         updatedPresentationData: (initial: PresentationData, signal: Signal<PresentationData, NoError>)? = nil,
@@ -2010,21 +1998,34 @@ public class UserAppearanceScreen: ViewControllerComponentContainer {
     ) {
         self.context = context
         self.focusOnItemTag = focusOnItemTag
-        
-        self.overNavigationContainer = SparseContainerView()
-        
+
+        let presentationData = updatedPresentationData?.initial ?? context.sharedContext.currentPresentationData.with { $0 }
+        let initialSection = UserAppearanceScreen.initialSection(for: focusOnItemTag)
+        self.selectedSection = initialSection
+        self.segmentedTitleView = ItemListControllerSegmentedTitleView(
+            theme: presentationData.theme,
+            segments: [
+                presentationData.strings.ProfileColorSetup_TitleProfile,
+                presentationData.strings.ProfileColorSetup_TitleName
+            ],
+            selectedIndex: initialSection.segmentIndex
+        )
+
         super.init(context: context, component: UserAppearanceScreenComponent(
-            context: context,
-            overNavigationContainer: self.overNavigationContainer
+            context: context
         ), navigationBarAppearance: .default, theme: .default, updatedPresentationData: updatedPresentationData)
-        
+
         self.automaticallyControlPresentationContextLayout = false
-        
+
         self.supportedOrientations = ViewControllerSupportedOrientations(regularSize: .all, compactSize: .portrait)
-        
-        let presentationData = context.sharedContext.currentPresentationData.with { $0 }
+
         self.title = ""
         self.navigationItem.backBarButtonItem = UIBarButtonItem(title: presentationData.strings.Common_Back, style: .plain, target: nil, action: nil)
+        self.navigationItem.titleView = self.segmentedTitleView
+
+        self.segmentedTitleView.indexUpdated = { [weak self] index in
+            self?.switchToSection(UserAppearanceScreenComponent.View.Section(segmentIndex: index))
+        }
         
         self.ready.set(.never())
         
@@ -2042,9 +2043,25 @@ public class UserAppearanceScreen: ViewControllerComponentContainer {
             
             return componentView.attemptNavigation(complete: complete)
         }
+    }
+
+    fileprivate func updateSegmentedTitleView(theme: PresentationTheme, strings: PresentationStrings) {
+        self.segmentedTitleView.theme = theme
+        self.segmentedTitleView.segments = [
+            strings.ProfileColorSetup_TitleProfile,
+            strings.ProfileColorSetup_TitleName
+        ]
+        self.segmentedTitleView.index = self.selectedSection.segmentIndex
+    }
+
+    fileprivate func switchToSection(_ section: UserAppearanceScreenComponent.View.Section) {
+        self.selectedSection = section
+        self.segmentedTitleView.index = section.segmentIndex
         
-        if let navigationBar = self.navigationBar {
-            navigationBar.customOverBackgroundContentView.insertSubview(self.overNavigationContainer, at: 0)
+        if let componentView = self.node.hostView.componentView as? UserAppearanceScreenComponent.View {
+            componentView.switchToSection(section)
+        } else {
+            self.requestLayout(forceUpdate: true, transition: .easeInOut(duration: 0.3))
         }
     }
     
@@ -2160,33 +2177,4 @@ final class TopBottomCornersComponent: Component {
     public func update(view: View, availableSize: CGSize, state: EmptyComponentState, environment: Environment<EnvironmentType>, transition: ComponentTransition) -> CGSize {
         return view.update(component: self, availableSize: availableSize, state: state, environment: environment, transition: transition)
     }
-}
-
-private func generatePreviewShadowImage() -> UIImage {
-    let cornerRadius: CGFloat = 26.0
-    let shadowInset: CGFloat = 45.0
-    
-    let side = (cornerRadius + 5.0) * 2.0
-    let fullSide = shadowInset * 2.0 + side
-    
-    return generateImage(CGSize(width: fullSide, height: fullSide), rotatedContext: { size, context in
-        context.clear(CGRect(origin: CGPoint(), size: size))
-        
-        let edgeHeight = shadowInset + cornerRadius + 11.0
-        context.clip(to: CGRect(x: shadowInset, y: size.height - edgeHeight, width: side, height: edgeHeight))
-        
-        let rect = CGRect(origin: .zero, size: CGSize(width: fullSide, height: fullSide)).insetBy(dx: shadowInset + 1.0, dy: shadowInset + 2.0)
-        let path = CGPath(roundedRect: rect, cornerWidth: cornerRadius, cornerHeight: cornerRadius, transform: nil)
-        
-        let drawShadow = {
-            context.addPath(path)
-            context.setShadow(offset: CGSize(), blur: 80.0, color: UIColor.black.cgColor)
-            context.setFillColor(UIColor.black.cgColor)
-            context.fillPath()
-        }
-        
-        drawShadow()
-        drawShadow()
-        drawShadow()
-    })!.stretchableImage(withLeftCapWidth: Int(shadowInset + cornerRadius + 5), topCapHeight: Int(shadowInset + cornerRadius + 5)).withRenderingMode(.alwaysTemplate)
 }

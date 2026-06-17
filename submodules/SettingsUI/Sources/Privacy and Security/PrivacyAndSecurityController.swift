@@ -13,6 +13,7 @@ import AccountContext
 import TelegramNotices
 import LocalAuth
 import AppBundle
+import OpenInExternalAppUI
 import PasswordSetupUI
 import UndoUI
 import PremiumUI
@@ -20,6 +21,7 @@ import AuthorizationUI
 import AuthenticationServices
 import ChatTimerScreen
 import PasskeysScreen
+import ContextUI
 
 private final class PrivacyAndSecurityControllerArguments {
     let account: Account
@@ -42,11 +44,12 @@ private final class PrivacyAndSecurityControllerArguments {
     let setupAccountAutoremove: () -> Void
     let setupMessageAutoremove: () -> Void
     let openDataSettings: () -> Void
+    let openBrowserSelection: () -> Void
     let openEmailSettings: (String?) -> Void
     let openMessagePrivacy: () -> Void
     let openGiftsPrivacy: () -> Void
     
-    init(account: Account, openBlockedUsers: @escaping () -> Void, openLastSeenPrivacy: @escaping () -> Void, openGroupsPrivacy: @escaping () -> Void, openVoiceCallPrivacy: @escaping () -> Void, openProfilePhotoPrivacy: @escaping () -> Void, openForwardPrivacy: @escaping () -> Void, openPhoneNumberPrivacy: @escaping () -> Void, openVoiceMessagePrivacy: @escaping () -> Void, openBioPrivacy: @escaping () -> Void, openBirthdayPrivacy: @escaping () -> Void, openSavedMusicPrivacy: @escaping () -> Void, openPasscode: @escaping () -> Void, openTwoStepVerification: @escaping (TwoStepVerificationAccessConfiguration?) -> Void, openPasskeys: @escaping () -> Void, openActiveSessions: @escaping () -> Void, toggleArchiveAndMuteNonContacts: @escaping (Bool) -> Void, setupAccountAutoremove: @escaping () -> Void, setupMessageAutoremove: @escaping () -> Void, openDataSettings: @escaping () -> Void, openEmailSettings: @escaping (String?) -> Void, openMessagePrivacy: @escaping () -> Void, openGiftsPrivacy: @escaping () -> Void) {
+    init(account: Account, openBlockedUsers: @escaping () -> Void, openLastSeenPrivacy: @escaping () -> Void, openGroupsPrivacy: @escaping () -> Void, openVoiceCallPrivacy: @escaping () -> Void, openProfilePhotoPrivacy: @escaping () -> Void, openForwardPrivacy: @escaping () -> Void, openPhoneNumberPrivacy: @escaping () -> Void, openVoiceMessagePrivacy: @escaping () -> Void, openBioPrivacy: @escaping () -> Void, openBirthdayPrivacy: @escaping () -> Void, openSavedMusicPrivacy: @escaping () -> Void, openPasscode: @escaping () -> Void, openTwoStepVerification: @escaping (TwoStepVerificationAccessConfiguration?) -> Void, openPasskeys: @escaping () -> Void, openActiveSessions: @escaping () -> Void, toggleArchiveAndMuteNonContacts: @escaping (Bool) -> Void, setupAccountAutoremove: @escaping () -> Void, setupMessageAutoremove: @escaping () -> Void, openDataSettings: @escaping () -> Void, openBrowserSelection: @escaping () -> Void, openEmailSettings: @escaping (String?) -> Void, openMessagePrivacy: @escaping () -> Void, openGiftsPrivacy: @escaping () -> Void) {
         self.account = account
         self.openBlockedUsers = openBlockedUsers
         self.openLastSeenPrivacy = openLastSeenPrivacy
@@ -67,6 +70,7 @@ private final class PrivacyAndSecurityControllerArguments {
         self.setupAccountAutoremove = setupAccountAutoremove
         self.setupMessageAutoremove = setupMessageAutoremove
         self.openDataSettings = openDataSettings
+        self.openBrowserSelection = openBrowserSelection
         self.openEmailSettings = openEmailSettings
         self.openMessagePrivacy = openMessagePrivacy
         self.openGiftsPrivacy = openGiftsPrivacy
@@ -81,6 +85,7 @@ private enum PrivacyAndSecuritySection: Int32 {
     case messageAutoremove
     case dataSettings
     case loginEmail
+    case linkHandling
 }
 
 public enum PrivacyAndSecurityEntryTag: ItemListItemTag {
@@ -130,6 +135,7 @@ private enum PrivacyAndSecurityEntry: ItemListNodeEntry {
     case messageAutoremoveInfo(PresentationTheme, String)
     case dataSettings(PresentationTheme, String)
     case dataSettingsInfo(PresentationTheme, String)
+    case openLinksIn(PresentationTheme, String, String)
     
     var section: ItemListSectionId {
         switch self {
@@ -145,6 +151,8 @@ private enum PrivacyAndSecurityEntry: ItemListNodeEntry {
             return PrivacyAndSecuritySection.account.rawValue
         case .dataSettings, .dataSettingsInfo:
             return PrivacyAndSecuritySection.dataSettings.rawValue
+        case .openLinksIn:
+            return PrivacyAndSecuritySection.linkHandling.rawValue
         }
     }
     
@@ -214,6 +222,8 @@ private enum PrivacyAndSecurityEntry: ItemListNodeEntry {
                 return 31
             case .dataSettingsInfo:
                 return 32
+            case .openLinksIn:
+                return 33
         }
     }
     
@@ -411,6 +421,12 @@ private enum PrivacyAndSecurityEntry: ItemListNodeEntry {
                 } else {
                     return false
                 }
+            case let .openLinksIn(lhsTheme, lhsText, lhsValue):
+                if case let .openLinksIn(rhsTheme, rhsText, rhsValue) = rhs, lhsTheme === rhsTheme, lhsText == rhsText, lhsValue == rhsValue {
+                    return true
+                } else {
+                    return false
+                }
         }
     }
     
@@ -530,6 +546,10 @@ private enum PrivacyAndSecurityEntry: ItemListNodeEntry {
                 })
             case let .dataSettingsInfo(_, text):
                 return ItemListTextItem(presentationData: presentationData, text: .plain(text), sectionId: self.section)
+            case let .openLinksIn(_, text, value):
+                return ItemListDisclosureItem(presentationData: presentationData, systemStyle: .glass, title: text, label: value, sectionId: self.section, style: .blocks, action: {
+                    arguments.openBrowserSelection()
+                })
         }
     }
 }
@@ -539,6 +559,18 @@ private struct PrivacyAndSecurityControllerState: Equatable {
     var updatingAutomaticallyArchiveAndMuteNonContacts: Bool? = nil
     var updatingMessageAutoremoveTimeoutValue: Int32? = nil
     var updatingOnlyAllowPremiumNonContacts: Bool? = nil
+}
+
+private final class PrivacyAndSecurityContextReferenceContentSource: ContextReferenceContentSource {
+    private let sourceView: UIView
+
+    init(sourceView: UIView) {
+        self.sourceView = sourceView
+    }
+
+    func transitionInfo() -> ContextControllerReferenceViewInfo? {
+        return ContextControllerReferenceViewInfo(referenceView: self.sourceView, contentAreaInScreenSpace: UIScreen.main.bounds, insets: UIEdgeInsets(top: -4.0, left: 0.0, bottom: -4.0, right: 0.0))
+    }
 }
 
 private func countForSelectivePeers(_ peers: [PeerId: SelectivePrivacyPeer]) -> Int {
@@ -628,6 +660,7 @@ private func privacyAndSecurityControllerEntries(
     isPremium: Bool,
     loginEmail: String?,
     accountPeer: EnginePeer?,
+    defaultWebBrowser: String,
     appConfiguration: AppConfiguration
 ) -> [PrivacyAndSecurityEntry] {
     var entries: [PrivacyAndSecurityEntry] = []
@@ -790,6 +823,8 @@ private func privacyAndSecurityControllerEntries(
     entries.append(.dataSettings(presentationData.theme, presentationData.strings.PrivacySettings_DataSettings))
     entries.append(.dataSettingsInfo(presentationData.theme, presentationData.strings.PrivacySettings_DataSettingsHelp))
     
+    entries.append(.openLinksIn(presentationData.theme, presentationData.strings.ChatSettings_OpenLinksIn, defaultWebBrowser))
+
     return entries
 }
 
@@ -838,7 +873,9 @@ public func privacyAndSecurityController(
     var pushControllerImpl: ((ViewController, Bool) -> Void)?
     var replaceTopControllerImpl: ((ViewController) -> Void)?
     var presentControllerImpl: ((ViewController) -> Void)?
+    var presentInGlobalOverlayImpl: ((ViewController) -> Void)?
     var getNavigationControllerImpl: (() -> NavigationController?)?
+    var findAccountTimeoutReferenceNode: (() -> ItemListDisclosureItemNode?)?
     
     let actionsDisposable = DisposableSet()
     
@@ -1313,12 +1350,8 @@ public func privacyAndSecurityController(
         |> take(1)
         |> deliverOnMainQueue
         updateAccountTimeoutDisposable.set(signal.start(next: { [weak updateAccountTimeoutDisposable] privacySettingsValue in
-            if let _ = privacySettingsValue {
+            if let privacySettingsValue = privacySettingsValue {
                 let presentationData = context.sharedContext.currentPresentationData.with { $0 }
-                let controller = ActionSheetController(presentationData: presentationData)
-                let dismissAction: () -> Void = { [weak controller] in
-                    controller?.dismissAnimated()
-                }
                 let timeoutAction: (Int32) -> Void = { timeout in
                     if let updateAccountTimeoutDisposable = updateAccountTimeoutDisposable {
                         updateState { state in
@@ -1355,15 +1388,24 @@ public func privacyAndSecurityController(
                     548 * 24 * 60 * 60,
                     730 * 24 * 60 * 60
                 ]
-                var timeoutItems: [ActionSheetItem] = timeoutValues.map { value in
-                    return ActionSheetButtonItem(title: presentationData.strings.MessageTimer_Months(max(1, value / (60 * 60 * 24 * 30))), action: {
-                        dismissAction()
+                var timeoutItems: [ContextMenuItem] = timeoutValues.map { value in
+                    return .action(ContextMenuActionItem(text: presentationData.strings.MessageTimer_Months(max(1, value / (60 * 60 * 24 * 30))), icon: { theme in
+                        if privacySettingsValue.accountRemovalTimeout == value {
+                            return generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Check"), color: theme.contextMenu.primaryColor)
+                        } else {
+                            return UIImage()
+                        }
+                    }, action: { _, f in
+                        f(.default)
                         timeoutAction(value)
-                    })
+                    }))
                 }
-                timeoutItems.append(ActionSheetButtonItem(title: presentationData.strings.PrivacySettings_DeleteAccountNow, color: .destructive, action: {
-                    dismissAction()
-                    
+                timeoutItems.append(.separator)
+                timeoutItems.append(.action(ContextMenuActionItem(text: presentationData.strings.PrivacySettings_DeleteAccountNow, textColor: .destructive, icon: { _ in
+                    return nil
+                }, action: { _, f in
+                    f(.default)
+
                     guard let navigationController = getNavigationControllerImpl?() else {
                         return
                     }
@@ -1374,12 +1416,22 @@ public func privacyAndSecurityController(
                         let optionsController = deleteAccountOptionsController(context: context, navigationController: navigationController, hasTwoStepAuth: hasTwoStepAuth ?? false, twoStepAuthData: twoStepAuthData)
                         pushControllerImpl?(optionsController, true)
                     })
-                }))
-                controller.setItemGroups([
-                    ActionSheetItemGroup(items: timeoutItems),
-                    ActionSheetItemGroup(items: [ActionSheetButtonItem(title: presentationData.strings.Common_Cancel, action: { dismissAction() })])
-                ])
-                presentControllerImpl?(controller)
+                })))
+
+                guard let sourceNode = findAccountTimeoutReferenceNode?() else {
+                    return
+                }
+                let contextController = makeContextController(
+                    presentationData: presentationData,
+                    source: .reference(PrivacyAndSecurityContextReferenceContentSource(sourceView: sourceNode.labelNode.view)),
+                    items: .single(ContextController.Items(content: .list(timeoutItems))),
+                    gesture: nil
+                )
+                sourceNode.updateHasContextMenu(hasContextMenu: true)
+                contextController.dismissed = { [weak sourceNode] in
+                    sourceNode?.updateHasContextMenu(hasContextMenu: false)
+                }
+                presentInGlobalOverlayImpl?(contextController)
             }
         }))
     }, setupMessageAutoremove: {
@@ -1405,6 +1457,9 @@ public func privacyAndSecurityController(
         }))
     }, openDataSettings: {
         pushControllerImpl?(dataPrivacyController(context: context), true)
+    }, openBrowserSelection: {
+        let controller = webBrowserSettingsController(context: context)
+        pushControllerImpl?(controller, true)
     }, openEmailSettings: { emailPattern in
         if let emailPattern, !emailPattern.contains(" ") {
             let presentationData = context.sharedContext.currentPresentationData.with { $0 }
@@ -1527,13 +1582,18 @@ public func privacyAndSecurityController(
     displayPasskeys = false
     //
     
+    let webBrowserData = combineLatest(
+        context.sharedContext.accountManager.sharedData(keys: [ApplicationSpecificSharedDataKeys.contactSynchronizationSettings, ApplicationSpecificSharedDataKeys.webBrowserSettings]),
+        context.engine.data.subscribe(TelegramEngine.EngineData.Item.Configuration.ApplicationSpecificPreference(key: PreferencesKeys.webBrowserSettings))
+    )
+    
     let signal = combineLatest(
         queue: .mainQueue(),
         context.sharedContext.presentationData,
         statePromise.get(),
         privacySettingsPromise.get(),
         context.sharedContext.accountManager.noticeEntry(key: ApplicationSpecificNotice.secretChatLinkPreviewsKey()),
-        context.sharedContext.accountManager.sharedData(keys: [ApplicationSpecificSharedDataKeys.contactSynchronizationSettings]),
+        webBrowserData,
         context.engine.peers.recentPeers(),
         blockedPeersState.get(),
         webSessionsContext.state,
@@ -1544,7 +1604,7 @@ public func privacyAndSecurityController(
         context.engine.data.subscribe(TelegramEngine.EngineData.Item.Peer.Peer(id: context.account.peerId)),
         loginEmail
     )
-    |> map { presentationData, state, privacySettings, noticeView, sharedData, recentPeers, blockedPeersState, activeWebsitesState, accessChallengeData, twoStepAuth, passkeys, appConfiguration, accountPeer, loginEmail -> (ItemListControllerState, (ItemListNodeState, Any)) in
+    |> map { presentationData, state, privacySettings, noticeView, webBrowserData, recentPeers, blockedPeersState, activeWebsitesState, accessChallengeData, twoStepAuth, passkeys, appConfiguration, accountPeer, loginEmail -> (ItemListControllerState, (ItemListNodeState, Any)) in
         var canAutoarchive = false
         if let data = appConfiguration.data, let hasAutoarchive = data["autoarchive_setting_available"] as? Bool {
             canAutoarchive = hasAutoarchive
@@ -1559,8 +1619,26 @@ public func privacyAndSecurityController(
         
         let isPremium = accountPeer?.isPremium ?? false
         let isPremiumDisabled = PremiumConfiguration.with(appConfiguration: context.currentAppConfiguration.with { $0 }).isPremiumDisabled
+        let localWebBrowserSettings = webBrowserData.0.entries[ApplicationSpecificSharedDataKeys.webBrowserSettings]?.get(WebBrowserSettings.self) ?? WebBrowserSettings.defaultSettings
+        let accountWebBrowserSettings = webBrowserData.1?.get(AccountWebBrowserSettings.self) ?? AccountWebBrowserSettings.defaultSettings
+
+        let options = availableOpenInOptions(context: context, item: .url(url: "https://telegram.org"))
+        let defaultWebBrowser: String
+        if accountWebBrowserSettings.openExternalBrowser {
+            var defaultExternalBrowser = localWebBrowserSettings.defaultWebBrowser
+            if defaultExternalBrowser == nil || defaultExternalBrowser == "inApp" || defaultExternalBrowser == "inAppSafari" {
+                defaultExternalBrowser = "safari"
+            }
+            if let option = options.first(where: { $0.identifier == defaultExternalBrowser }) {
+                defaultWebBrowser = option.title
+            } else {
+                defaultWebBrowser = "Safari"
+            }
+        } else {
+            defaultWebBrowser = presentationData.strings.WebBrowser_Telegram
+        }
         
-        let listState = ItemListNodeState(presentationData: ItemListPresentationData(presentationData), entries: privacyAndSecurityControllerEntries(presentationData: presentationData, state: state, privacySettings: privacySettings, accessChallengeData: accessChallengeData.data, blockedPeerCount: blockedPeersState.totalCount, activeWebsitesCount: activeWebsitesState.sessions.count, hasTwoStepAuth: twoStepAuth.0, twoStepAuthData: twoStepAuth.1, hasPasskeys: passkeys.0, displayPasskeys: displayPasskeys, canAutoarchive: canAutoarchive, isPremiumDisabled: isPremiumDisabled, isPremium: isPremium, loginEmail: loginEmail, accountPeer: accountPeer, appConfiguration: appConfiguration), style: .blocks, ensureVisibleItemTag: focusOnItemTag, animateChanges: false)
+        let listState = ItemListNodeState(presentationData: ItemListPresentationData(presentationData), entries: privacyAndSecurityControllerEntries(presentationData: presentationData, state: state, privacySettings: privacySettings, accessChallengeData: accessChallengeData.data, blockedPeerCount: blockedPeersState.totalCount, activeWebsitesCount: activeWebsitesState.sessions.count, hasTwoStepAuth: twoStepAuth.0, twoStepAuthData: twoStepAuth.1, hasPasskeys: passkeys.0, displayPasskeys: displayPasskeys, canAutoarchive: canAutoarchive, isPremiumDisabled: isPremiumDisabled, isPremium: isPremium, loginEmail: loginEmail, accountPeer: accountPeer, defaultWebBrowser: defaultWebBrowser, appConfiguration: appConfiguration), style: .blocks, ensureVisibleItemTag: focusOnItemTag, animateChanges: false)
         
         return (controllerState, (listState, arguments))
     }
@@ -1578,8 +1656,14 @@ public func privacyAndSecurityController(
     presentControllerImpl = { [weak controller] c in
         controller?.present(c, in: .window(.root), with: nil)
     }
+    presentInGlobalOverlayImpl = { [weak controller] c in
+        controller?.presentInGlobalOverlay(c, with: nil)
+    }
     getNavigationControllerImpl = {  [weak controller] in
         return (controller?.navigationController as? NavigationController)
+    }
+    findAccountTimeoutReferenceNode = { [weak controller] in
+        return controller?.itemNode(forTag: PrivacyAndSecurityEntryTag.accountTimeout) as? ItemListDisclosureItemNode
     }
 
     controller.didAppear = { _ in

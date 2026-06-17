@@ -30,11 +30,11 @@
 
 + (UIColor *)accentColor
 {
-    TGMediaAssetsPallete *pallete = nil;
-    if ([[LegacyComponentsGlobals provider] respondsToSelector:@selector(mediaAssetsPallete)])
-        pallete = [[LegacyComponentsGlobals provider] mediaAssetsPallete];
-    
-    return pallete.maybeAccentColor ?: UIColorRGB(0x65b3ff);
+//    TGMediaAssetsPallete *pallete = nil;
+//    if ([[LegacyComponentsGlobals provider] respondsToSelector:@selector(mediaAssetsPallete)])
+//        pallete = [[LegacyComponentsGlobals provider] mediaAssetsPallete];
+//    
+    return UIColorRGB(0xffd300); //pallete.maybeAccentColor ?: UIColorRGB(0x65b3ff);
 }
 
 + (UIColor *)panelBackgroundColor
@@ -374,7 +374,7 @@
 
 + (UIFont *)editorItemTitleFont
 {
-    return [TGFont systemFontOfSize:14];
+    return [TGFont boldSystemFontOfSize:13]; //[TGFont systemFontOfSize:1];
 }
 
 + (UIColor *)filterSelectionColor

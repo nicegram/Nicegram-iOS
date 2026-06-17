@@ -341,6 +341,7 @@
       textView.opaque = NO;
     }
     textView.textContainerInset = self.textContainerInset;
+    textView.scrollsToTop = false;
     
     // Configure textView with UITextInputTraits
     {
@@ -366,6 +367,7 @@
   _placeholderTextKitComponents.textView = [[ASTextKitComponentsTextView alloc] initWithFrame:CGRectZero textContainer:_placeholderTextKitComponents.textContainer];
   _placeholderTextKitComponents.textView.userInteractionEnabled = NO;
   _placeholderTextKitComponents.textView.accessibilityElementsHidden = YES;
+  _placeholderTextKitComponents.textView.scrollsToTop = false;
   configureTextView(_placeholderTextKitComponents.textView);
 
   // Create and configure our text view.

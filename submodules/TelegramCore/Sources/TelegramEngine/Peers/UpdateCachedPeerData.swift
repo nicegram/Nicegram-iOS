@@ -258,11 +258,14 @@ func _internal_fetchAndUpdateCachedPeerData(accountPeerId: PeerId, peerId rawPee
                                     if let apiBot = connectedBots.first {
                                         switch apiBot {
                                         case let .connectedBot(connectedBotData):
-                                            let (botId, recipients, rights) = (connectedBotData.botId, connectedBotData.recipients, connectedBotData.rights)
+                                            let (botId, recipients, rights, device, date, location) = (connectedBotData.botId, connectedBotData.recipients, connectedBotData.rights, connectedBotData.device, connectedBotData.date, connectedBotData.location)
                                             mappedConnectedBot = TelegramAccountConnectedBot(
                                                 id: PeerId(namespace: Namespaces.Peer.CloudUser, id: PeerId.Id._internalFromInt64Value(botId)),
                                                 recipients: TelegramBusinessRecipients(apiValue: recipients),
-                                                rights: TelegramBusinessBotRights(apiValue: rights)
+                                                rights: TelegramBusinessBotRights(apiValue: rights),
+                                                device: device,
+                                                date: date,
+                                                location: location
                                             )
                                         }
                                     }
@@ -675,7 +678,7 @@ func _internal_fetchAndUpdateCachedPeerData(accountPeerId: PeerId, peerId rawPee
                                     
                                     switch fullChat {
                                         case let .channelFull(channelFullData):
-                                            let (flags, flags2, about, participantsCount, adminsCount, kickedCount, bannedCount, chatPhoto, apiExportedInvite, apiBotInfos, migratedFromChatId, migratedFromMaxId, pinnedMsgId, stickerSet, minAvailableMsgId, linkedChatId, location, slowmodeSeconds, slowmodeNextSendDate, statsDc, inputCall, ttl, pendingSuggestions, groupcallDefaultJoinAs, themeEmoticon, requestsPending, defaultSendAs, allowedReactions, reactionsLimit, wallpaper, appliedBoosts, boostsUnrestrict, emojiSet, verification, starGiftsCount, sendPaidMessageStars, mainTab) = (channelFullData.flags, channelFullData.flags2, channelFullData.about, channelFullData.participantsCount, channelFullData.adminsCount, channelFullData.kickedCount, channelFullData.bannedCount, channelFullData.chatPhoto, channelFullData.exportedInvite, channelFullData.botInfo, channelFullData.migratedFromChatId, channelFullData.migratedFromMaxId, channelFullData.pinnedMsgId, channelFullData.stickerset, channelFullData.availableMinId, channelFullData.linkedChatId, channelFullData.location, channelFullData.slowmodeSeconds, channelFullData.slowmodeNextSendDate, channelFullData.statsDc, channelFullData.call, channelFullData.ttlPeriod, channelFullData.pendingSuggestions, channelFullData.groupcallDefaultJoinAs, channelFullData.themeEmoticon, channelFullData.requestsPending, channelFullData.defaultSendAs, channelFullData.availableReactions, channelFullData.reactionsLimit, channelFullData.wallpaper, channelFullData.boostsApplied, channelFullData.boostsUnrestrict, channelFullData.emojiset, channelFullData.botVerification, channelFullData.stargiftsCount, channelFullData.sendPaidMessagesStars, channelFullData.mainTab)
+                                            let (flags, flags2, about, participantsCount, adminsCount, kickedCount, bannedCount, chatPhoto, apiExportedInvite, apiBotInfos, migratedFromChatId, migratedFromMaxId, pinnedMsgId, stickerSet, minAvailableMsgId, linkedChatId, location, slowmodeSeconds, slowmodeNextSendDate, statsDc, inputCall, ttl, pendingSuggestions, groupcallDefaultJoinAs, themeEmoticon, requestsPending, defaultSendAs, allowedReactions, reactionsLimit, wallpaper, appliedBoosts, boostsUnrestrict, emojiSet, verification, starGiftsCount, sendPaidMessageStars, mainTab, guardBotId) = (channelFullData.flags, channelFullData.flags2, channelFullData.about, channelFullData.participantsCount, channelFullData.adminsCount, channelFullData.kickedCount, channelFullData.bannedCount, channelFullData.chatPhoto, channelFullData.exportedInvite, channelFullData.botInfo, channelFullData.migratedFromChatId, channelFullData.migratedFromMaxId, channelFullData.pinnedMsgId, channelFullData.stickerset, channelFullData.availableMinId, channelFullData.linkedChatId, channelFullData.location, channelFullData.slowmodeSeconds, channelFullData.slowmodeNextSendDate, channelFullData.statsDc, channelFullData.call, channelFullData.ttlPeriod, channelFullData.pendingSuggestions, channelFullData.groupcallDefaultJoinAs, channelFullData.themeEmoticon, channelFullData.requestsPending, channelFullData.defaultSendAs, channelFullData.availableReactions, channelFullData.reactionsLimit, channelFullData.wallpaper, channelFullData.boostsApplied, channelFullData.boostsUnrestrict, channelFullData.emojiset, channelFullData.botVerification, channelFullData.stargiftsCount, channelFullData.sendPaidMessagesStars, channelFullData.mainTab, channelFullData.guardBotId)
                                             var channelFlags = CachedChannelFlags()
                                             if (flags & (1 << 3)) != 0 {
                                                 channelFlags.insert(.canDisplayParticipants)
@@ -899,6 +902,8 @@ func _internal_fetchAndUpdateCachedPeerData(accountPeerId: PeerId, peerId rawPee
                                                 
                                                 let mappedChatTheme: ChatTheme? = themeEmoticon.flatMap { .emoticon($0) }
                                                 
+                                                let mappedGuardBotId = guardBotId.flatMap { EnginePeer.Id(namespace: Namespaces.Peer.CloudUser, id: PeerId.Id._internalFromInt64Value($0)) }
+                                                
                                                 return previous.withUpdatedFlags(channelFlags)
                                                     .withUpdatedAbout(about)
                                                     .withUpdatedParticipantsSummary(CachedChannelParticipantsSummary(memberCount: participantsCount, adminCount: adminsCount, bannedCount: bannedCount, kickedCount: kickedCount))
@@ -935,6 +940,7 @@ func _internal_fetchAndUpdateCachedPeerData(accountPeerId: PeerId, peerId rawPee
                                                     .withUpdatedStarGiftsCount(starGiftsCount)
                                                     .withUpdatedSendPaidMessageStars(mappedSendPaidMessageStars)
                                                     .withUpdatedMainProfileTab(mappedMainProfileTab)
+                                                    .withUpdatedGuardBotId(mappedGuardBotId)
                                             })
                                         
                                             if let minAvailableMessageId = minAvailableMessageId, minAvailableMessageIdUpdated {

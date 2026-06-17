@@ -3,7 +3,6 @@ import UIKit
 import AsyncDisplayKit
 import SwiftSignalKit
 import Display
-import Postbox
 import TelegramCore
 import TelegramPresentationData
 import ActivityIndicator
@@ -421,16 +420,16 @@ public final class ChatLoadingPlaceholderNode: ASDisplayNode {
         case channel
     }
     private var chatType: ChatType = .channel
-    public func updatePresentationInterfaceState(renderedPeer: RenderedPeer?, chatLocation: ChatLocation) {
+    public func updatePresentationInterfaceState(renderedPeer: EngineRenderedPeer?, chatLocation: ChatLocation) {
         var chatType: ChatType = .channel
         if let peer = renderedPeer?.peer {
-            if peer is TelegramUser {
+            if case .user = peer {
                 chatType = .user
-            } else if peer is TelegramGroup {
+            } else if case .legacyGroup = peer {
                 chatType = .group
-            } else if let channel = peer as? TelegramChannel {
+            } else if case let .channel(channel) = peer {
                 if channel.isMonoForum {
-                    if let mainChannel = renderedPeer?.chatOrMonoforumMainPeer as? TelegramChannel, mainChannel.hasPermission(.manageDirect) {
+                    if case let .channel(mainChannel) = renderedPeer?.chatOrMonoforumMainPeer, mainChannel.hasPermission(.manageDirect) {
                         if chatLocation.threadId == nil {
                             chatType = .group
                         } else {

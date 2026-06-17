@@ -355,7 +355,7 @@ public func channelDiscussionGroupSetupController(context: AccountContext, updat
             
             let actionSheet = ActionSheetController(presentationData: presentationData)
             actionSheet.setItemGroups([ActionSheetItemGroup(items: [
-                ChannelDiscussionGroupActionSheetItem(context: context, channelPeer: channelPeer._asPeer(), groupPeer: groupPeer._asPeer(), strings: presentationData.strings, nameDisplayOrder: presentationData.nameDisplayOrder),
+                ChannelDiscussionGroupActionSheetItem(context: context, channelPeer: channelPeer, groupPeer: groupPeer, strings: presentationData.strings, nameDisplayOrder: presentationData.nameDisplayOrder),
                 ActionSheetButtonItem(title: presentationData.strings.Channel_DiscussionGroup_LinkGroup, color: .accent, action: { [weak actionSheet] in
                     actionSheet?.dismissAnimated()
                     

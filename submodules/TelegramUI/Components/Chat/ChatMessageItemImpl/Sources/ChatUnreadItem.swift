@@ -1,6 +1,6 @@
 import Foundation
 import UIKit
-import Postbox
+import TelegramCore
 import AsyncDisplayKit
 import Display
 import SwiftSignalKit
@@ -13,12 +13,12 @@ import ChatMessageItemCommon
 private let titleFont = UIFont.systemFont(ofSize: 13.0)
 
 public class ChatUnreadItem: ListViewItem {
-    public let index: MessageIndex
+    public let index: EngineMessage.Index
     public let presentationData: ChatPresentationData
     public let controllerInteraction: ChatControllerInteraction
     public let header: ChatMessageDateHeader
     
-    public init(index: MessageIndex, presentationData: ChatPresentationData, controllerInteraction: ChatControllerInteraction, context: AccountContext) {
+    public init(index: EngineMessage.Index, presentationData: ChatPresentationData, controllerInteraction: ChatControllerInteraction, context: AccountContext) {
         self.index = index
         self.presentationData = presentationData
         self.controllerInteraction = controllerInteraction

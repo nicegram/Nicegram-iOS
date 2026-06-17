@@ -66,7 +66,7 @@ func leftNavigationButtonForChatInterfaceState(_ presentationInterfaceState: Cha
             if let currentButton = currentButton, currentButton.action == .dismiss {
                 return currentButton
             } else {
-                let buttonItem = UIBarButtonItem(title: strings.Common_Close, style: .plain, target: target, action: selector)
+                let buttonItem = UIBarButtonItem(title: "___close", style: .plain, target: target, action: selector)
                 buttonItem.accessibilityLabel = strings.Common_Close
                 return ChatNavigationButton(action: .dismiss, buttonItem: buttonItem)
             }

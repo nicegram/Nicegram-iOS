@@ -1,6 +1,5 @@
 import Foundation
 import UIKit
-import Postbox
 import AsyncDisplayKit
 import Display
 import SwiftSignalKit
@@ -12,10 +11,10 @@ import TelegramPresentationData
 import ChatMessageItemCommon
 
 public enum ChatMessageItemContent: Sequence {
-    case message(message: Message, read: Bool, selection: ChatHistoryMessageSelection, attributes: ChatMessageEntryAttributes, location: MessageHistoryEntryLocation?)
-    case group(messages: [(Message, Bool, ChatHistoryMessageSelection, ChatMessageEntryAttributes, MessageHistoryEntryLocation?)])
-    
-    public func effectivelyIncoming(_ accountPeerId: PeerId, associatedData: ChatMessageItemAssociatedData? = nil) -> Bool {
+    case message(message: EngineRawMessage, read: Bool, selection: ChatHistoryMessageSelection, attributes: ChatMessageEntryAttributes, location: EngineMessageHistoryEntryLocation?)
+    case group(messages: [(EngineRawMessage, Bool, ChatHistoryMessageSelection, ChatMessageEntryAttributes, EngineMessageHistoryEntryLocation?)])
+
+    public func effectivelyIncoming(_ accountPeerId: EnginePeer.Id, associatedData: ChatMessageItemAssociatedData? = nil) -> Bool {
         if let subject = associatedData?.subject, case let .messageOptions(_, _, info) = subject {
             if case .forward = info {
                 return false
@@ -31,7 +30,7 @@ public enum ChatMessageItemContent: Sequence {
         }
     }
     
-    public var index: MessageIndex {
+    public var index: EngineMessage.Index {
         switch self {
             case let .message(message, _, _, _, _):
                 return message.index
@@ -40,7 +39,7 @@ public enum ChatMessageItemContent: Sequence {
         }
     }
     
-    public var firstMessage: Message {
+    public var firstMessage: EngineRawMessage {
         switch self {
             case let .message(message, _, _, _, _):
                 return message
@@ -58,9 +57,9 @@ public enum ChatMessageItemContent: Sequence {
         }
     }
     
-    public func makeIterator() -> AnyIterator<(Message, ChatMessageEntryAttributes)> {
+    public func makeIterator() -> AnyIterator<(EngineRawMessage, ChatMessageEntryAttributes)> {
         var index = 0
-        return AnyIterator { () -> (Message, ChatMessageEntryAttributes)? in
+        return AnyIterator { () -> (EngineRawMessage, ChatMessageEntryAttributes)? in
             switch self {
                 case let .message(message, _, _, attributes, _):
                     if index == 0 {
@@ -84,10 +83,10 @@ public enum ChatMessageItemContent: Sequence {
 }
 
 public enum ChatMessageItemAdditionalContent {
-    case eventLogPreviousMessage(Message)
-    case eventLogPreviousDescription(Message)
-    case eventLogPreviousLink(Message)
-    case eventLogGroupedMessages([Message], Bool)
+    case eventLogPreviousMessage(EngineRawMessage)
+    case eventLogPreviousDescription(EngineRawMessage)
+    case eventLogPreviousLink(EngineRawMessage)
+    case eventLogGroupedMessages([EngineRawMessage], Bool)
 }
 
 public enum ChatMessageMerge: Int32 {
@@ -131,12 +130,12 @@ public protocol ChatMessageItem: ListViewItem {
     var controllerInteraction: ChatControllerInteraction { get }
     var content: ChatMessageItemContent { get }
     var disableDate: Bool { get }
-    var effectiveAuthorId: PeerId? { get }
+    var effectiveAuthorId: EnginePeer.Id? { get }
     var additionalContent: ChatMessageItemAdditionalContent? { get }
 
     var headers: [ListViewItemHeader] { get }
     
-    var message: Message { get }
+    var message: EngineRawMessage { get }
     var read: Bool { get }
     var unsent: Bool { get }
     var sending: Bool { get }

@@ -51,6 +51,7 @@ final class SecureIdAuthControllerNode: ViewControllerTracingNode {
         self.addSubnode(self.activityIndicator)
         
         self.scrollNode.view.alwaysBounceVertical = true
+        self.scrollNode.view.scrollsToTop = false
         self.addSubnode(self.scrollNode)
         
         self.backgroundColor = presentationData.theme.list.blocksBackgroundColor

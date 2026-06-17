@@ -44,6 +44,7 @@ swift_library(
         "//submodules/ChatPresentationInterfaceState",
         "//submodules/DeviceAccess",
         "//submodules/LocationUI",
+        "//submodules/Weather",
         "//submodules/TelegramUI/Components/AudioWaveformComponent",
         "//submodules/ReactionSelectionNode",
         "//submodules/TelegramUI/Components/VolumeSliderContextItem",
@@ -63,7 +64,6 @@ swift_library(
         "//submodules/TelegramUI/Components/ListSectionComponent",
         "//submodules/WebsiteType",
         "//submodules/UrlEscaping",
-        "//submodules/DeviceLocationManager",
         "//submodules/TelegramUI/Components/SaveProgressScreen",
         "//submodules/TelegramUI/Components/MediaAssetsContext",
         "//submodules/CheckNode",
@@ -71,6 +71,7 @@ swift_library(
         "//submodules/TelegramUI/Components/AttachmentFileController",
         "//submodules/SaveToCameraRoll",
         "//submodules/TelegramUI/Components/ContextControllerImpl",
+        "//submodules/TelegramUI/Components/SliderComponent",
     ],
     visibility = [
         "//visibility:public",

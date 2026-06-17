@@ -1,7 +1,6 @@
 import Foundation
 import UIKit
 import AsyncDisplayKit
-import Postbox
 import Display
 import TelegramCore
 import SwiftSignalKit
@@ -24,7 +23,7 @@ public class ChatMessageUnlockMediaNode: ASDisplayNode {
         public let strings: PresentationStrings
         public let context: AccountContext
         public let controllerInteraction: ChatControllerInteraction
-        public let message: Message
+        public let message: EngineMessage
         public let media: TelegramMediaPaidContent
         public let constrainedSize: CGSize
         public let animationCache: AnimationCache?
@@ -35,7 +34,7 @@ public class ChatMessageUnlockMediaNode: ASDisplayNode {
             strings: PresentationStrings,
             context: AccountContext,
             controllerInteraction: ChatControllerInteraction,
-            message: Message,
+            message: EngineMessage,
             media: TelegramMediaPaidContent,
             constrainedSize: CGSize,
             animationCache: AnimationCache?,
@@ -150,7 +149,7 @@ public class ChatMessageUnlockMediaNode: ASDisplayNode {
                 }
                 
                 node.pressed = {
-                    let _ = arguments.controllerInteraction.openMessage(arguments.message, OpenMessageParams(mode: .default))
+                    let _ = arguments.controllerInteraction.openMessage(arguments.message._asMessage(), OpenMessageParams(mode: .default))
                 }
                                  
                 node.textNode?.textNode.displaysAsynchronously = !arguments.presentationData.isPreview

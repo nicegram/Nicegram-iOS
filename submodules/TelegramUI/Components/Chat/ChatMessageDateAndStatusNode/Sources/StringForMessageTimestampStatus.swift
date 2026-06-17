@@ -1,5 +1,4 @@
 import Foundation
-import Postbox
 import TelegramCore
 import TelegramPresentationData
 import TelegramUIPreferences
@@ -62,7 +61,7 @@ private func monthAtIndex(_ index: Int, strings: PresentationStrings) -> String 
     }
 }
 
-public func stringForMessageTimestampStatus(accountPeerId: PeerId, message: Message, dateTimeFormat: PresentationDateTimeFormat, nameDisplayOrder: PresentationPersonNameOrder, strings: PresentationStrings, format: MessageTimestampStatusFormat = .regular, associatedData: ChatMessageItemAssociatedData, ignoreAuthor: Bool = false) -> String {
+public func stringForMessageTimestampStatus(accountPeerId: EnginePeer.Id, message: EngineMessage, dateTimeFormat: PresentationDateTimeFormat, nameDisplayOrder: PresentationPersonNameOrder, strings: PresentationStrings, format: MessageTimestampStatusFormat = .regular, associatedData: ChatMessageItemAssociatedData, ignoreAuthor: Bool = false) -> String {
     if let adAttribute = message.adAttribute {
         switch adAttribute.messageType {
         case .sponsored:
@@ -155,11 +154,11 @@ public func stringForMessageTimestampStatus(accountPeerId: PeerId, message: Mess
     }
     
     var authorTitle: String?
-    if let author = message.author as? TelegramUser {
+    if let author = message.author, case .user = author {
         if let peer = message.peers[message.id.peerId] as? TelegramChannel, case .broadcast = peer.info {
             if let channel = message.peers[message.id.peerId] as? TelegramChannel, case let .broadcast(info) = channel.info, message.author?.id != channel.id, info.flags.contains(.messagesShouldHaveProfiles) {
             } else {
-                authorTitle = EnginePeer(author).displayTitle(strings: strings, displayOrder: nameDisplayOrder)
+                authorTitle = author.displayTitle(strings: strings, displayOrder: nameDisplayOrder)
             }
         } else if let forwardInfo = message.forwardInfo, forwardInfo.sourceMessageId?.peerId.namespace == Namespaces.Peer.CloudChannel {
             authorTitle = forwardInfo.authorSignature

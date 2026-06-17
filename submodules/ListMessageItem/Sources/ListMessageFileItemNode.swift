@@ -2,7 +2,6 @@ import Foundation
 import UIKit
 import AsyncDisplayKit
 import Display
-import Postbox
 import TelegramCore
 import SwiftSignalKit
 import TelegramPresentationData
@@ -121,7 +120,7 @@ private struct FetchControls {
 }
 
 private enum FileIconImage: Equatable {
-    case imageRepresentation(Media, TelegramMediaImageRepresentation)
+    case imageRepresentation(EngineRawMedia, TelegramMediaImageRepresentation)
     case albumArt(TelegramMediaFile, SharedMediaPlaybackAlbumArt)
     case roundVideo(TelegramMediaFile)
     
@@ -171,7 +170,7 @@ final class CachedChatListSearchResult {
     }
 }
 
-private func selectStoryMedia(item: Stories.Item, preferredHighQuality: Bool) -> Media? {
+private func selectStoryMedia(item: Stories.Item, preferredHighQuality: Bool) -> EngineRawMedia? {
     if !preferredHighQuality, let alternativeMediaValue = item.alternativeMediaList.first {
         return alternativeMediaValue
     } else {
@@ -372,11 +371,11 @@ public final class ListMessageFileItemNode: ListMessageNode {
     private let restrictionNode: ASDisplayNode
     
     private var currentIconImage: FileIconImage?
-    public var currentMedia: Media?
+    public var currentMedia: EngineRawMedia?
     
     private let statusDisposable = MetaDisposable()
     private let fetchControls = Atomic<FetchControls?>(value: nil)
-    private var fetchStatus: MediaResourceStatus?
+    private var fetchStatus: EngineMediaResourceStatus?
     private var resourceStatus: FileMediaResourceMediaStatus?
     private let fetchDisposable = MetaDisposable()
     private let playbackStatusDisposable = MetaDisposable()
@@ -389,7 +388,7 @@ public final class ListMessageFileItemNode: ListMessageNode {
     private var absoluteLocation: (CGRect, CGSize)?
     
     private var context: AccountContext?
-    private(set) var message: Message?
+    private(set) var message: EngineRawMessage?
     
     private var appliedItem: ListMessageItem?
     private var layoutParams: ListViewItemLayoutParams?
@@ -681,9 +680,9 @@ public final class ListMessageFileItemNode: ListMessageNode {
             var descriptionExtraData: (title: NSAttributedString, showIcon: Bool, iconId: Int64?, iconColor: Int32)? = nil
             var globalAuthorTitle: String?
             
-            var selectedMedia: Media?
+            var selectedMedia: EngineRawMedia?
             if let message = message {
-                var effectiveMessageMedia = message.media
+                var effectiveMessageMedia = message.effectiveMedia
                 for media in message.media {
                     if let storyMedia = media as? TelegramMediaStory {
                         if let story = message.associatedStories[storyMedia.storyId], !story.data.isEmpty, case let .item(storyItem) = story.get(Stories.StoredItem.self), let media = selectStoryMedia(item: storyItem, preferredHighQuality: item.interaction.preferredStoryHighQuality) {
@@ -1094,7 +1093,7 @@ public final class ListMessageFileItemNode: ListMessageNode {
                                     updateIconImageSignal = .complete()
                                 }
                             case let .albumArt(file, albumArt):
-                                updateIconImageSignal = playerAlbumArt(postbox: item.context.account.postbox, engine: item.context.engine, fileReference: .message(message: MessageReference(message), media: file), albumArt: albumArt, thumbnail: true, overlayColor: UIColor(white: 0.0, alpha: 0.3), emptyColor: item.presentationData.theme.theme.list.itemAccentColor)
+                                updateIconImageSignal = playerAlbumArt(engine: item.context.engine, fileReference: .message(message: MessageReference(message), media: file), albumArt: albumArt, thumbnail: true, overlayColor: UIColor(white: 0.0, alpha: 0.3), emptyColor: item.presentationData.theme.theme.list.itemAccentColor)
                             case let .roundVideo(file):
                                 updateIconImageSignal = mediaGridMessageVideo(postbox: item.context.account.postbox, userLocation: .peer(message.id.peerId), videoReference: FileMediaReference.message(message: MessageReference(message), media: file), autoFetchFullSizeThumbnail: true, overlayColor: UIColor(white: 0.0, alpha: 0.3))
                         }
@@ -1527,7 +1526,7 @@ public final class ListMessageFileItemNode: ListMessageNode {
         }
     }
     
-    override public func transitionNode(id: MessageId, media: Media, adjustRect: Bool) -> (ASDisplayNode, CGRect, () -> (UIView?, UIView?))? {
+    override public func transitionNode(id: EngineMessage.Id, media: EngineRawMedia, adjustRect: Bool) -> (ASDisplayNode, CGRect, () -> (UIView?, UIView?))? {
         if let item = self.item, let message = item.message, message.id == id, self.iconImageNode.supernode != nil {
             let iconImageNode = self.iconImageNode
             return (self.iconImageNode, self.iconImageNode.bounds, { [weak iconImageNode] in
@@ -1560,7 +1559,7 @@ public final class ListMessageFileItemNode: ListMessageNode {
         
         var downloadingString: String?
         if let resourceStatus = self.resourceStatus, !item.isAttachMusic {
-            var maybeFetchStatus: MediaResourceStatus = .Local
+            var maybeFetchStatus: EngineMediaResourceStatus = .Local
             switch resourceStatus {
                 case .playbackStatus:
                     break

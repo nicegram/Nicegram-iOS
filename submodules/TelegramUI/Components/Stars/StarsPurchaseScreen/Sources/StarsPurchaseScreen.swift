@@ -8,7 +8,6 @@ import Display
 import ComponentFlow
 import SwiftSignalKit
 import TelegramCore
-import Postbox
 import TelegramPresentationData
 import PresentationDataUtils
 import ViewControllerComponent
@@ -206,6 +205,7 @@ private final class StarsPurchaseScreenContentComponent: CombinedComponent {
             let component = context.component
             let scrollEnvironment = context.environment[ScrollChildEnvironment.self].value
             let environment = context.environment[ViewControllerComponentContainer.Environment.self].value
+            let controller = environment.controller
             let state = context.state
     
             state.products = component.products
@@ -595,7 +595,10 @@ private final class StarsPurchaseScreenContentComponent: CombinedComponent {
                         }
                     },
                     tapAction: { attributes, _ in
-                        component.context.sharedContext.openExternalUrl(context: component.context, urlContext: .generic, url: strings.Stars_Purchase_Terms_URL, forceExternal: false, presentationData: presentationData, navigationController: nil, dismissInput: {})
+                        guard let controller = controller(), let navigationController = controller.navigationController as? NavigationController else {
+                            return
+                        }
+                        component.context.sharedContext.openExternalUrl(context: component.context, urlContext: .generic, url: strings.Stars_Purchase_Terms_URL, forceExternal: false, presentationData: presentationData, navigationController: navigationController, dismissInput: {})
                     }
                 ),
                 environment: {},
@@ -1173,10 +1176,8 @@ public final class StarsPurchaseScreen: ViewControllerComponentContainer {
                 completionImpl?(stars)
             }
         ), navigationBarAppearance: .default, presentationMode: .modal, theme: customTheme.flatMap { .custom($0) } ?? .default)
-        
-        let presentationData = context.sharedContext.currentPresentationData.with { $0 }
-        
-        let cancelItem = UIBarButtonItem(title: presentationData.strings.Common_Close, style: .plain, target: self, action: #selector(self.cancelPressed))
+                
+        let cancelItem = UIBarButtonItem(title: "___close", style: .plain, target: self, action: #selector(self.cancelPressed))
         self.navigationItem.setLeftBarButton(cancelItem, animated: false)
         self.navigationPresentation = .modal
         

@@ -5,7 +5,6 @@ import Display
 import ComponentFlow
 import SearchBarNode
 import SwiftSignalKit
-import Postbox
 import TelegramCore
 import TelegramPresentationData
 import AccountContext
@@ -185,7 +184,7 @@ public final class PaneSearchContainerNode: ASDisplayNode, EntitySearchContainer
                 for attribute in file.attributes {
                     if case let .Sticker(_, packReference, _) = attribute {
                         if case let .id(id, _) = packReference {
-                            groupId = AnyHashable(ItemCollectionId(namespace: Namespaces.ItemCollection.CloudStickerPacks, id: id))
+                            groupId = AnyHashable(EngineItemCollectionId(namespace: Namespaces.ItemCollection.CloudStickerPacks, id: id))
                         }
                     }
                 }

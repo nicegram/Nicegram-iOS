@@ -1,7 +1,6 @@
 import Foundation
 import UIKit
 import Display
-import Postbox
 import TelegramCore
 import Emoji
 
@@ -138,7 +137,7 @@ public struct ChatMessageItemLayoutConstants {
     public static var compact: ChatMessageItemLayoutConstants {
         let bubble = ChatMessageItemBubbleLayoutConstants(edgeInset: 3.0, defaultSpacing: 2.0 + UIScreenPixel, mergedSpacing: 0.0, maximumWidthFill: ChatMessageItemWidthFill(compactInset: 36.0, compactWidthBoundary: 500.0, freeMaximumFillFactor: 0.85), minimumSize: CGSize(width: 40.0, height: 35.0), contentInsets: UIEdgeInsets(top: 0.0, left: 6.0, bottom: 0.0, right: 0.0), borderInset: UIScreenPixel, strokeInsets: UIEdgeInsets(top: 1.0, left: 1.0, bottom: 1.0, right: 1.0))
         let text = ChatMessageItemTextLayoutConstants(bubbleInsets: UIEdgeInsets(top: 6.0 + UIScreenPixel, left: 11.0, bottom: 6.0 - UIScreenPixel, right: 11.0))
-        let image = ChatMessageItemImageLayoutConstants(bubbleInsets: UIEdgeInsets(top: 2.0, left: 2.0, bottom: 2.0, right: 2.0), statusInsets: UIEdgeInsets(top: 0.0, left: 0.0, bottom: 6.0, right: 6.0), defaultCornerRadius: 16.0, mergedCornerRadius: 8.0, contentMergedCornerRadius: 0.0, maxDimensions: CGSize(width: 300.0, height: 380.0), minDimensions: CGSize(width: 170.0, height: 74.0))
+        let image = ChatMessageItemImageLayoutConstants(bubbleInsets: UIEdgeInsets(top: 2.0, left: 2.0, bottom: 2.0, right: 2.0), statusInsets: UIEdgeInsets(top: 0.0, left: 0.0, bottom: 6.0, right: 6.0), defaultCornerRadius: 15.0, mergedCornerRadius: 7.0, contentMergedCornerRadius: 0.0, maxDimensions: CGSize(width: 300.0, height: 380.0), minDimensions: CGSize(width: 170.0, height: 74.0))
         let video = ChatMessageItemVideoLayoutConstants(maxHorizontalHeight: 250.0, maxVerticalHeight: 360.0)
         let file = ChatMessageItemFileLayoutConstants(bubbleInsets: UIEdgeInsets(top: 15.0, left: 9.0, bottom: 15.0, right: 12.0))
         let instantVideo = ChatMessageItemInstantVideoConstants(insets: UIEdgeInsets(top: 4.0, left: 0.0, bottom: 4.0, right: 0.0), dimensions: CGSize(width: 212.0, height: 212.0))
@@ -160,7 +159,7 @@ public struct ChatMessageItemLayoutConstants {
     }
 }
 
-public func canViewMessageReactionList(message: Message) -> Bool {
+public func canViewMessageReactionList(message: EngineMessage) -> Bool {
     var found = false
     var canViewList = false
     for attribute in message.attributes {
@@ -209,7 +208,7 @@ public enum TranscribedText: Equatable {
     case error(AudioTranscriptionMessageAttribute.TranscriptionError)
 }
 
-public func transcribedText(message: Message) -> TranscribedText? {
+public func transcribedText(message: EngineMessage) -> TranscribedText? {
     for attribute in message.attributes {
         if let attribute = attribute as? AudioTranscriptionMessageAttribute {
             if !attribute.text.isEmpty {
@@ -226,7 +225,7 @@ public func transcribedText(message: Message) -> TranscribedText? {
     return nil
 }
 
-public func isPollEffectivelyClosed(message: Message, poll: TelegramMediaPoll) -> Bool {
+public func isPollEffectivelyClosed(message: EngineMessage, poll: TelegramMediaPoll) -> Bool {
     if poll.isClosed {
         return true
     } else {
@@ -235,12 +234,12 @@ public func isPollEffectivelyClosed(message: Message, poll: TelegramMediaPoll) -
 }
 
 public extension ChatReplyThreadMessage {
-    var effectiveTopId: MessageId {
-        return self.channelMessageId ?? MessageId(peerId: self.peerId, namespace: Namespaces.Message.Cloud, id: Int32(clamping: self.threadId))
+    var effectiveTopId: EngineMessage.Id {
+        return self.channelMessageId ?? EngineMessage.Id(peerId: self.peerId, namespace: Namespaces.Message.Cloud, id: Int32(clamping: self.threadId))
     }
 }
 
-public func messageIsEligibleForLargeEmoji(_ message: Message) -> Bool {
+public func messageIsEligibleForLargeEmoji(_ message: EngineMessage) -> Bool {
     if !message.text.isEmpty && message.text.containsOnlyEmoji {
         if !(message.textEntitiesAttribute?.entities.isEmpty ?? true) {
             return false
@@ -251,7 +250,7 @@ public func messageIsEligibleForLargeEmoji(_ message: Message) -> Bool {
     }
 }
 
-public func messageIsEligibleForLargeCustomEmoji(_ message: Message) -> Bool {
+public func messageIsEligibleForLargeCustomEmoji(_ message: EngineMessage) -> Bool {
     let text = message.text.replacingOccurrences(of: "\n", with: "").replacingOccurrences(of: " ", with: "")
     guard !text.isEmpty && text.containsOnlyEmoji else {
         return false
@@ -262,7 +261,7 @@ public func messageIsEligibleForLargeCustomEmoji(_ message: Message) -> Bool {
     }
     for entity in entities {
         if case let .CustomEmoji(_, fileId) = entity.type {
-            if let _ = message.associatedMedia[MediaId(namespace: Namespaces.Media.CloudFile, id: fileId)] as? TelegramMediaFile {
+            if let _ = message.associatedMedia[EngineMedia.Id(namespace: Namespaces.Media.CloudFile, id: fileId)] as? TelegramMediaFile {
                 
             } else {
                 return false
@@ -274,7 +273,7 @@ public func messageIsEligibleForLargeCustomEmoji(_ message: Message) -> Bool {
     return true
 }
 
-public func canAddMessageReactions(message: Message) -> Bool {
+public func canAddMessageReactions(message: EngineMessage) -> Bool {
     if message.id.namespace != Namespaces.Message.Cloud {
         return false
     }

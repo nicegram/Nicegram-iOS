@@ -103,7 +103,10 @@ public func chatListItemStrings(strings: PresentationStrings, nameDisplayOrder: 
         
         messageText = ""
         for message in messages {
-            if !message.text.isEmpty {
+            if let richText = message.richText {
+                messageText = richText.instantPage.previewText(strings: strings)
+                messageEntities = []
+            } else if !message.text.isEmpty {
                 messageText = message.text
                 messageEntities = message._asMessage().textEntitiesAttribute?.entities ?? []
                 for entity in messageEntities {

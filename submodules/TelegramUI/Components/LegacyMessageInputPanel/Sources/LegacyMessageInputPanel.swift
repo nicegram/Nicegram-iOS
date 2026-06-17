@@ -4,7 +4,6 @@ import AsyncDisplayKit
 import LegacyComponents
 import Display
 import TelegramCore
-import Postbox
 import SwiftSignalKit
 import AccountContext
 import ComponentFlow
@@ -805,7 +804,7 @@ public class LegacyMessageInputPanelNode: ASDisplayNode, TGCaptionPanelView {
         })))
 
         let contextController = makeContextController(presentationData: presentationData, source: .reference(HeaderContextReferenceContentSource(sourceView: sourceView, position: self.currentIsCaptionAbove ? .bottom : .top)), items: .single(ContextController.Items(content: .list(items))), gesture: gesture)
-        self.present(contextController)
+        self.presentInGlobalOverlay(contextController)
     }
 
     private func dismissAllTooltips() {
@@ -860,7 +859,7 @@ public class LegacyMessageInputPanelNode: ASDisplayNode, TGCaptionPanelView {
             }
         )
         self.tooltipController = tooltipController
-        self.present(tooltipController)
+        self.presentInGlobalOverlay(tooltipController)
     }
 
     private func presentCaptionPositionTooltip(sourceView: UIView) {
@@ -901,7 +900,7 @@ public class LegacyMessageInputPanelNode: ASDisplayNode, TGCaptionPanelView {
                 }
             )
             self.tooltipController = tooltipController
-            self.present(tooltipController)
+            self.presentInGlobalOverlay(tooltipController)
 
             let _ = ApplicationSpecificNotice.incrementCaptionAboveMediaTooltip(accountManager: self.context.sharedContext.accountManager).start()
         })

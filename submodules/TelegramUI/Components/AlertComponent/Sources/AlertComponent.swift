@@ -381,11 +381,28 @@ private final class AlertScreenComponent: Component {
                         if itemView.superview == nil {
                             self.backgroundView.contentView.addSubview(itemView)
                             item.parentState = state
+                            
+                            transition.animateAlpha(view: itemView, from: 0.0, to: 1.0)
                         }
-                        transition.setFrame(view: itemView, frame: itemFrame)
+                        itemTransition.setFrame(view: itemView, frame: itemFrame)
                     }
                     contentOriginY += itemSize.height
                 }
+            }
+            
+            var removeKeys: [AnyHashable] = []
+            for key in self.contentItems.keys {
+                if !validContentIds.contains(key) {
+                    removeKeys.append(key) 
+                    if let itemView = self.contentItems[key]?.view {
+                        transition.setAlpha(view: itemView, alpha: 0.0, completion: { _ in
+                            itemView.removeFromSuperview()
+                        })
+                    }
+                }
+            }
+            for key in removeKeys {
+                self.contentItems.removeValue(forKey: key)
             }
             
             if !contentOriginY.isZero {
@@ -407,9 +424,9 @@ private final class AlertScreenComponent: Component {
                     font: .bold
                 )
                 let destructiveActionTheme = AlertActionComponent.Theme(
-                    background: environment.theme.list.itemDestructiveColor,
-                    foreground: .white,
-                    secondary: .white.withMultipliedAlpha(0.6),
+                    background: environment.theme.actionSheet.primaryTextColor.withMultipliedAlpha(0.1),
+                    foreground: environment.theme.list.itemDestructiveColor,
+                    secondary: environment.theme.list.itemDestructiveColor.withMultipliedAlpha(0.6),
                     font: .regular
                 )
                 let defaultDestructiveActionTheme = AlertActionComponent.Theme(

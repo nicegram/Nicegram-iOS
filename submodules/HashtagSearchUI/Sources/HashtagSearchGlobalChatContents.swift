@@ -1,7 +1,6 @@
 import Foundation
 import UIKit
 import SwiftSignalKit
-import Postbox
 import TelegramCore
 import AccountContext
 
@@ -20,11 +19,11 @@ final class HashtagSearchGlobalChatContents: ChatCustomContentsProtocol {
         private let publicPosts: Bool
         private var currentSearchState: SearchMessagesState?
         
-        private(set) var mergedHistoryView: MessageHistoryView?
-        private var sourceHistoryView: MessageHistoryView?
-        
+        private(set) var mergedHistoryView: EngineRawMessageHistoryView?
+        private var sourceHistoryView: EngineRawMessageHistoryView?
+
         private var historyViewDisposable: Disposable?
-        let historyViewStream = ValuePipe<(MessageHistoryView, ViewUpdateType)>()
+        let historyViewStream = ValuePipe<(EngineRawMessageHistoryView, EngineViewUpdateType)>()
         private var nextUpdateIsHoleFill: Bool = false
         
         var hashtagSearchResultsUpdate: ((SearchMessagesResult, SearchMessagesState)) -> Void = { _ in }
@@ -64,9 +63,9 @@ final class HashtagSearchGlobalChatContents: ChatCustomContentsProtocol {
                     return
                 }
                 
-                let updateType: ViewUpdateType = .Initial
-                
-                let historyView = MessageHistoryView(tag: nil, namespaces: .just(Set([Namespaces.Message.Cloud])), entries: result.0.messages.reversed().map { MessageHistoryEntry(message: $0, isRead: false, location: nil, monthLocation: nil, attributes: MutableMessageHistoryEntryAttributes(authorIsContact: false)) }, holeEarlier: !result.0.completed, holeLater: false, isLoading: false)
+                let updateType: EngineViewUpdateType = .Initial
+
+                let historyView = EngineRawMessageHistoryView(tag: nil, namespaces: .just(Set([Namespaces.Message.Cloud])), entries: result.0.messages.reversed().map { EngineRawMessageHistoryEntry(message: $0, isRead: false, location: nil, monthLocation: nil, attributes: EngineRawMutableMessageHistoryEntryAttributes(authorIsContact: false)) }, holeEarlier: !result.0.completed, holeLater: false, isLoading: false)
                 self.sourceHistoryView = historyView
                 self.updateHistoryView(updateType: updateType)
                                 
@@ -83,11 +82,11 @@ final class HashtagSearchGlobalChatContents: ChatCustomContentsProtocol {
             })
         }
         
-        private func updateHistoryView(updateType: ViewUpdateType) {
+        private func updateHistoryView(updateType: EngineViewUpdateType) {
             var entries = self.sourceHistoryView?.entries ?? []
             entries.sort(by: { $0.message.index < $1.message.index })
-            
-            let mergedHistoryView = MessageHistoryView(tag: nil, namespaces: .just(Set([Namespaces.Message.Cloud])), entries: entries, holeEarlier: self.sourceHistoryView?.holeEarlier ?? false, holeLater: false, isLoading: false)
+
+            let mergedHistoryView = EngineRawMessageHistoryView(tag: nil, namespaces: .just(Set([Namespaces.Message.Cloud])), entries: entries, holeEarlier: self.sourceHistoryView?.holeEarlier ?? false, holeLater: false, isLoading: false)
             self.mergedHistoryView = mergedHistoryView
             
             self.historyViewStream.putNext((mergedHistoryView, updateType))
@@ -112,9 +111,9 @@ final class HashtagSearchGlobalChatContents: ChatCustomContentsProtocol {
                     return
                 }
                 
-                let updateType: ViewUpdateType = .FillHole
-                
-                let historyView = MessageHistoryView(tag: nil, namespaces: .just(Set([Namespaces.Message.Cloud])), entries: result.0.messages.reversed().map { MessageHistoryEntry(message: $0, isRead: false, location: nil, monthLocation: nil, attributes: MutableMessageHistoryEntryAttributes(authorIsContact: false)) }, holeEarlier: !result.0.completed, holeLater: false, isLoading: false)
+                let updateType: EngineViewUpdateType = .FillHole
+
+                let historyView = EngineRawMessageHistoryView(tag: nil, namespaces: .just(Set([Namespaces.Message.Cloud])), entries: result.0.messages.reversed().map { EngineRawMessageHistoryEntry(message: $0, isRead: false, location: nil, monthLocation: nil, attributes: EngineRawMutableMessageHistoryEntryAttributes(authorIsContact: false)) }, holeEarlier: !result.0.completed, holeLater: false, isLoading: false)
                 self.sourceHistoryView = historyView
                                                      
                 self.updateHistoryView(updateType: updateType)
@@ -143,7 +142,7 @@ final class HashtagSearchGlobalChatContents: ChatCustomContentsProtocol {
     
     var kind: ChatCustomContentsKind
 
-    var historyView: Signal<(MessageHistoryView, ViewUpdateType), NoError> {
+    var historyView: Signal<(EngineRawMessageHistoryView, EngineViewUpdateType), NoError> {
         return self.impl.signalWith({ impl, subscriber in
             if let mergedHistoryView = impl.mergedHistoryView {
                 subscriber.putNext((mergedHistoryView, .Initial))

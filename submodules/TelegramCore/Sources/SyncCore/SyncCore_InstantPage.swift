@@ -34,6 +34,7 @@ private enum InstantPageBlockType: Int32 {
     case map = 27
     case heading = 28
     case formula = 29
+    case thinking = 30
 }
 
 private func decodeListItems(_ decoder: PostboxDecoder) -> [InstantPageListItem] {
@@ -41,7 +42,7 @@ private func decodeListItems(_ decoder: PostboxDecoder) -> [InstantPageListItem]
     if !legacyItems.isEmpty {
         var items: [InstantPageListItem] = []
         for item in legacyItems {
-            items.append(.text(item, nil))
+            items.append(.text(item, nil, nil))
         }
         return items
     }
@@ -70,7 +71,7 @@ public indirect enum InstantPageBlock: PostboxCoding, Equatable {
     case divider
     case anchor(String)
     case list(items: [InstantPageListItem], ordered: Bool)
-    case blockQuote(text: RichText, caption: RichText)
+    case blockQuote(blocks: [InstantPageBlock], caption: RichText)
     case pullQuote(text: RichText, caption: RichText)
     case image(id: MediaId, caption: InstantPageCaption, url: String?, webpageId: MediaId?)
     case video(id: MediaId, caption: InstantPageCaption, autoplay: Bool, loop: Bool)
@@ -82,6 +83,7 @@ public indirect enum InstantPageBlock: PostboxCoding, Equatable {
     case slideshow(items: [InstantPageBlock], caption: InstantPageCaption)
     case channelBanner(TelegramChannel?)
     case kicker(RichText)
+    case thinking(RichText)
     case table(title: RichText, rows: [InstantPageTableRow], bordered: Bool, striped: Bool)
     case details(title: RichText, blocks: [InstantPageBlock], expanded: Bool)
     case relatedArticles(title: RichText, articles: [InstantPageRelatedArticle])
@@ -121,7 +123,13 @@ public indirect enum InstantPageBlock: PostboxCoding, Equatable {
             case InstantPageBlockType.list.rawValue:
                 self = .list(items: decodeListItems(decoder), ordered: decoder.decodeOptionalInt32ForKey("o") != 0)
             case InstantPageBlockType.blockQuote.rawValue:
-                self = .blockQuote(text: decoder.decodeObjectForKey("t", decoder: { RichText(decoder: $0) }) as! RichText, caption: decoder.decodeObjectForKey("c", decoder: { RichText(decoder: $0) }) as! RichText)
+                let caption = decoder.decodeObjectForKey("c", decoder: { RichText(decoder: $0) }) as! RichText
+                if let legacyText = decoder.decodeObjectForKey("t", decoder: { RichText(decoder: $0) }) as? RichText {
+                    self = .blockQuote(blocks: [.paragraph(legacyText)], caption: caption)
+                } else {
+                    let blocks: [InstantPageBlock] = decoder.decodeObjectArrayWithDecoderForKey("b")
+                    self = .blockQuote(blocks: blocks, caption: caption)
+                }
             case InstantPageBlockType.pullQuote.rawValue:
                 self = .pullQuote(text: decoder.decodeObjectForKey("t", decoder: { RichText(decoder: $0) }) as! RichText, caption: decoder.decodeObjectForKey("c", decoder: { RichText(decoder: $0) }) as! RichText)
             case InstantPageBlockType.image.rawValue:
@@ -162,6 +170,8 @@ public indirect enum InstantPageBlock: PostboxCoding, Equatable {
                 self = .audio(id: MediaId(namespace: decoder.decodeInt32ForKey("i.n", orElse: 0), id: decoder.decodeInt64ForKey("i.i", orElse: 0)), caption: decodeCaption(decoder))
             case InstantPageBlockType.kicker.rawValue:
                 self = .kicker(decoder.decodeObjectForKey("t", decoder: { RichText(decoder: $0) }) as! RichText)
+            case InstantPageBlockType.thinking.rawValue:
+                self = .thinking(decoder.decodeObjectForKey("t", decoder: { RichText(decoder: $0) }) as! RichText)
             case InstantPageBlockType.table.rawValue:
                 self = .table(title: decoder.decodeObjectForKey("t", decoder: { RichText(decoder: $0) }) as! RichText, rows: decoder.decodeObjectArrayWithDecoderForKey("r"), bordered: decoder.decodeInt32ForKey("b", orElse: 0) != 0, striped: decoder.decodeInt32ForKey("s", orElse: 0) != 0)
             case InstantPageBlockType.details.rawValue:
@@ -225,9 +235,9 @@ public indirect enum InstantPageBlock: PostboxCoding, Equatable {
                 encoder.encodeInt32(InstantPageBlockType.list.rawValue, forKey: "r")
                 encoder.encodeObjectArray(items, forKey: "ml")
                 encoder.encodeInt32(ordered ? 1 : 0, forKey: "o")
-            case let .blockQuote(text, caption):
+            case let .blockQuote(blocks, caption):
                 encoder.encodeInt32(InstantPageBlockType.blockQuote.rawValue, forKey: "r")
-                encoder.encodeObject(text, forKey: "t")
+                encoder.encodeObjectArray(blocks, forKey: "b")
                 encoder.encodeObject(caption, forKey: "c")
             case let .pullQuote(text, caption):
                 encoder.encodeInt32(InstantPageBlockType.pullQuote.rawValue, forKey: "r")
@@ -332,6 +342,9 @@ public indirect enum InstantPageBlock: PostboxCoding, Equatable {
                 encoder.encodeObject(caption, forKey: "mc")
             case let .kicker(text):
                 encoder.encodeInt32(InstantPageBlockType.kicker.rawValue, forKey: "r")
+                encoder.encodeObject(text, forKey: "t")
+            case let .thinking(text):
+                encoder.encodeInt32(InstantPageBlockType.thinking.rawValue, forKey: "r")
                 encoder.encodeObject(text, forKey: "t")
             case let .table(title, rows, bordered, striped):
                 encoder.encodeInt32(InstantPageBlockType.table.rawValue, forKey: "r")
@@ -445,8 +458,8 @@ public indirect enum InstantPageBlock: PostboxCoding, Equatable {
                 } else {
                     return false
                 }
-            case let .blockQuote(text, caption):
-                if case .blockQuote(text, caption) = rhs {
+            case let .blockQuote(lhsBlocks, lhsCaption):
+                if case let .blockQuote(rhsBlocks, rhsCaption) = rhs, lhsBlocks == rhsBlocks, lhsCaption == rhsCaption {
                     return true
                 } else {
                     return false
@@ -520,6 +533,12 @@ public indirect enum InstantPageBlock: PostboxCoding, Equatable {
                 }
             case let .kicker(text):
                 if case .kicker(text) = rhs {
+                    return true
+                } else {
+                    return false
+                }
+            case let .thinking(text):
+                if case .thinking(text) = rhs {
                     return true
                 } else {
                     return false
@@ -621,7 +640,15 @@ public indirect enum InstantPageBlock: PostboxCoding, Equatable {
             guard let value = flatBuffersObject.value(type: TelegramCore_InstantPageBlock_BlockQuote.self) else {
                 throw FlatBuffersError.missingRequiredField()
             }
-            self = .blockQuote(text: try RichText(flatBuffersObject: value.text), caption: try RichText(flatBuffersObject: value.caption))
+            let caption = try RichText(flatBuffersObject: value.caption)
+            if value.blocksCount > 0 {
+                let blocks = try (0 ..< value.blocksCount).map { try InstantPageBlock(flatBuffersObject: value.blocks(at: $0)!) }
+                self = .blockQuote(blocks: blocks, caption: caption)
+            } else if let legacyText = value.text {
+                self = .blockQuote(blocks: [.paragraph(try RichText(flatBuffersObject: legacyText))], caption: caption)
+            } else {
+                self = .blockQuote(blocks: [], caption: caption)
+            }
         case .instantpageblockPullquote:
             guard let value = flatBuffersObject.value(type: TelegramCore_InstantPageBlock_PullQuote.self) else {
                 throw FlatBuffersError.missingRequiredField()
@@ -678,6 +705,11 @@ public indirect enum InstantPageBlock: PostboxCoding, Equatable {
                 throw FlatBuffersError.missingRequiredField()
             }
             self = .kicker(try RichText(flatBuffersObject: value.text))
+        case .instantpageblockThinking:
+            guard let value = flatBuffersObject.value(type: TelegramCore_InstantPageBlock_Thinking.self) else {
+                throw FlatBuffersError.missingRequiredField()
+            }
+            self = .thinking(try RichText(flatBuffersObject: value.text))
         case .instantpageblockTable:
             guard let value = flatBuffersObject.value(type: TelegramCore_InstantPageBlock_Table.self) else {
                 throw FlatBuffersError.missingRequiredField()
@@ -796,12 +828,13 @@ public indirect enum InstantPageBlock: PostboxCoding, Equatable {
             TelegramCore_InstantPageBlock_List.addVectorOf(items: itemsOffset, &builder)
             TelegramCore_InstantPageBlock_List.add(ordered: ordered, &builder)
             offset = TelegramCore_InstantPageBlock_List.endInstantPageBlock_List(&builder, start: start)
-        case let .blockQuote(text, caption):
+        case let .blockQuote(blocks, caption):
             valueType = .instantpageblockBlockquote
-            let textOffset = text.encodeToFlatBuffers(builder: &builder)
+            let blocksOffsets = blocks.map { $0.encodeToFlatBuffers(builder: &builder) }
+            let blocksOffset = builder.createVector(ofOffsets: blocksOffsets, len: blocksOffsets.count)
             let captionOffset = caption.encodeToFlatBuffers(builder: &builder)
             let start = TelegramCore_InstantPageBlock_BlockQuote.startInstantPageBlock_BlockQuote(&builder)
-            TelegramCore_InstantPageBlock_BlockQuote.add(text: textOffset, &builder)
+            TelegramCore_InstantPageBlock_BlockQuote.addVectorOf(blocks: blocksOffset, &builder)
             TelegramCore_InstantPageBlock_BlockQuote.add(caption: captionOffset, &builder)
             offset = TelegramCore_InstantPageBlock_BlockQuote.endInstantPageBlock_BlockQuote(&builder, start: start)
         case let .pullQuote(text, caption):
@@ -922,6 +955,12 @@ public indirect enum InstantPageBlock: PostboxCoding, Equatable {
             let start = TelegramCore_InstantPageBlock_Kicker.startInstantPageBlock_Kicker(&builder)
             TelegramCore_InstantPageBlock_Kicker.add(text: textOffset, &builder)
             offset = TelegramCore_InstantPageBlock_Kicker.endInstantPageBlock_Kicker(&builder, start: start)
+        case let .thinking(text):
+            valueType = .instantpageblockThinking
+            let textOffset = text.encodeToFlatBuffers(builder: &builder)
+            let start = TelegramCore_InstantPageBlock_Thinking.startInstantPageBlock_Thinking(&builder)
+            TelegramCore_InstantPageBlock_Thinking.add(text: textOffset, &builder)
+            offset = TelegramCore_InstantPageBlock_Thinking.endInstantPageBlock_Thinking(&builder, start: start)
         case let .table(title, rows, bordered, striped):
             valueType = .instantpageblockTable
             let titleOffset = title.encodeToFlatBuffers(builder: &builder)
@@ -1021,15 +1060,15 @@ private enum InstantPageListItemType: Int32 {
 
 public indirect enum InstantPageListItem: PostboxCoding, Equatable {
     case unknown
-    case text(RichText, String?)
-    case blocks([InstantPageBlock], String?)
+    case text(RichText, String?, Bool?)
+    case blocks([InstantPageBlock], String?, Bool?)
     
     public init(decoder: PostboxDecoder) {
         switch decoder.decodeInt32ForKey("r", orElse: 0) {
             case InstantPageListItemType.text.rawValue:
-                self = .text(decoder.decodeObjectForKey("t", decoder: { RichText(decoder: $0) }) as! RichText, decoder.decodeOptionalStringForKey("n"))
+                self = .text(decoder.decodeObjectForKey("t", decoder: { RichText(decoder: $0) }) as! RichText, decoder.decodeOptionalStringForKey("n"), InstantPageListItem.checkedFromTriState(decoder.decodeInt32ForKey("ck", orElse: 0)))
             case InstantPageListItemType.blocks.rawValue:
-                self = .blocks(decoder.decodeObjectArrayWithDecoderForKey("b"), decoder.decodeOptionalStringForKey("n"))
+                self = .blocks(decoder.decodeObjectArrayWithDecoderForKey("b"), decoder.decodeOptionalStringForKey("n"), InstantPageListItem.checkedFromTriState(decoder.decodeInt32ForKey("ck", orElse: 0)))
             default:
                 self = .unknown
         }
@@ -1037,7 +1076,7 @@ public indirect enum InstantPageListItem: PostboxCoding, Equatable {
     
     public func encode(_ encoder: PostboxEncoder) {
         switch self {
-            case let .text(text, num):
+            case let .text(text, num, checked):
                 encoder.encodeInt32(InstantPageListItemType.text.rawValue, forKey: "r")
                 encoder.encodeObject(text, forKey: "t")
                 if let num = num {
@@ -1045,7 +1084,12 @@ public indirect enum InstantPageListItem: PostboxCoding, Equatable {
                 } else {
                     encoder.encodeNil(forKey: "n")
                 }
-            case let .blocks(blocks, num):
+                if let triState = InstantPageListItem.triState(fromChecked: checked) {
+                    encoder.encodeInt32(triState, forKey: "ck")
+                } else {
+                    encoder.encodeNil(forKey: "ck")
+                }
+            case let .blocks(blocks, num, checked):
                 encoder.encodeInt32(InstantPageListItemType.blocks.rawValue, forKey: "r")
                 encoder.encodeObjectArray(blocks, forKey: "b")
                 if let num = num {
@@ -1053,11 +1097,33 @@ public indirect enum InstantPageListItem: PostboxCoding, Equatable {
                 } else {
                     encoder.encodeNil(forKey: "n")
                 }
+                if let triState = InstantPageListItem.triState(fromChecked: checked) {
+                    encoder.encodeInt32(triState, forKey: "ck")
+                } else {
+                    encoder.encodeNil(forKey: "ck")
+                }
             default:
                 break
         }
     }
     
+    static func checkedFromTriState(_ value: Int32) -> Bool? {
+        switch value {
+        case 1: return false
+        case 2: return true
+        default: return nil
+        }
+    }
+
+    /// Returns the persisted tri-state (1 = unchecked, 2 = checked) or nil when not a checkbox item.
+    static func triState(fromChecked checked: Bool?) -> Int32? {
+        switch checked {
+        case .some(false): return 1
+        case .some(true): return 2
+        case .none: return nil
+        }
+    }
+
     public static func ==(lhs: InstantPageListItem, rhs: InstantPageListItem) -> Bool {
         switch lhs {
             case .unknown:
@@ -1066,14 +1132,14 @@ public indirect enum InstantPageListItem: PostboxCoding, Equatable {
                 } else {
                     return false
                 }
-            case let .text(lhsText, lhsNum):
-                if case let .text(rhsText, rhsNum) = rhs, lhsText == rhsText, lhsNum == rhsNum {
+            case let .text(lhsText, lhsNum, lhsChecked):
+                if case let .text(rhsText, rhsNum, rhsChecked) = rhs, lhsText == rhsText, lhsNum == rhsNum, lhsChecked == rhsChecked {
                     return true
                 } else {
                     return false
                 }
-            case let .blocks(lhsBlocks, lhsNum):
-                if case let .blocks(rhsBlocks, rhsNum) = rhs, lhsBlocks == rhsBlocks, lhsNum == rhsNum {
+            case let .blocks(lhsBlocks, lhsNum, lhsChecked):
+                if case let .blocks(rhsBlocks, rhsNum, rhsChecked) = rhs, lhsBlocks == rhsBlocks, lhsNum == rhsNum, lhsChecked == rhsChecked {
                     return true
                 } else {
                     return false
@@ -1087,7 +1153,7 @@ public indirect enum InstantPageListItem: PostboxCoding, Equatable {
             guard let textValue = flatBuffersObject.value(type: TelegramCore_InstantPageListItem_Text.self) else {
                 throw FlatBuffersError.missingRequiredField()
             }
-            self = .text(try RichText(flatBuffersObject: textValue.text), textValue.number)
+            self = .text(try RichText(flatBuffersObject: textValue.text), textValue.number, InstantPageListItem.checkedFromTriState(textValue.checkState))
             
         case .instantpagelistitemBlocks:
             guard let blocksValue = flatBuffersObject.value(type: TelegramCore_InstantPageListItem_Blocks.self) else {
@@ -1096,7 +1162,7 @@ public indirect enum InstantPageListItem: PostboxCoding, Equatable {
             let blocks = try (0 ..< blocksValue.blocksCount).map { i in
                 return try InstantPageBlock(flatBuffersObject: blocksValue.blocks(at: i)!)
             }
-            self = .blocks(blocks, blocksValue.number)
+            self = .blocks(blocks, blocksValue.number, InstantPageListItem.checkedFromTriState(blocksValue.checkState))
         case .instantpagelistitemUnknown:
             self = .unknown
         case .none_:
@@ -1109,27 +1175,33 @@ public indirect enum InstantPageListItem: PostboxCoding, Equatable {
         let offset: Offset
         
         switch self {
-        case let .text(text, number):
+        case let .text(text, number, checked):
             valueType = .instantpagelistitemText
             let textOffset = text.encodeToFlatBuffers(builder: &builder)
             let numberOffset = number.map { builder.create(string: $0) } ?? Offset()
-            
+
             let start = TelegramCore_InstantPageListItem_Text.startInstantPageListItem_Text(&builder)
             TelegramCore_InstantPageListItem_Text.add(text: textOffset, &builder)
             if let _ = number {
                 TelegramCore_InstantPageListItem_Text.add(number: numberOffset, &builder)
             }
+            if let triState = InstantPageListItem.triState(fromChecked: checked) {
+                TelegramCore_InstantPageListItem_Text.add(checkState: triState, &builder)
+            }
             offset = TelegramCore_InstantPageListItem_Text.endInstantPageListItem_Text(&builder, start: start)
-        case let .blocks(blocks, number):
+        case let .blocks(blocks, number, checked):
             valueType = .instantpagelistitemBlocks
             let blocksOffsets = blocks.map { $0.encodeToFlatBuffers(builder: &builder) }
             let blocksOffset = builder.createVector(ofOffsets: blocksOffsets, len: blocksOffsets.count)
             let numberOffset = number.map { builder.create(string: $0) } ?? Offset()
-            
+
             let start = TelegramCore_InstantPageListItem_Blocks.startInstantPageListItem_Blocks(&builder)
             TelegramCore_InstantPageListItem_Blocks.addVectorOf(blocks: blocksOffset, &builder)
             if let _ = number {
                 TelegramCore_InstantPageListItem_Blocks.add(number: numberOffset, &builder)
+            }
+            if let triState = InstantPageListItem.triState(fromChecked: checked) {
+                TelegramCore_InstantPageListItem_Blocks.add(checkState: triState, &builder)
             }
             offset = TelegramCore_InstantPageListItem_Blocks.endInstantPageListItem_Blocks(&builder, start: start)
         case .unknown:
@@ -1577,6 +1649,80 @@ public final class InstantPage: PostboxCoding, Equatable {
         TelegramCore_InstantPage.add(views: self.views ?? Int32.min, &builder)
         
         return TelegramCore_InstantPage.endInstantPage(&builder, start: start)
+    }
+}
+
+private extension InstantPageBlock {
+    func allMedia(mediaDict: [MediaId: Media]) -> [Media] {
+        switch self {
+        case let .audio(id, _):
+            if let file = mediaDict[id] {
+                return [file]
+            } else {
+                return []
+            }
+        case let .collage(items, _):
+            var result: [Media] = []
+            for item in items {
+                result.append(contentsOf: item.allMedia(mediaDict: mediaDict))
+            }
+            return result
+        case let .cover(block):
+            return block.allMedia(mediaDict: mediaDict)
+        case let .details(_, blocks, _):
+            var result: [Media] = []
+            for item in blocks {
+                result.append(contentsOf: item.allMedia(mediaDict: mediaDict))
+            }
+            return result
+        case let .image(id, _, _, _):
+            if let image = mediaDict[id] {
+                return [image]
+            } else {
+                return []
+            }
+        case let .list(items, _):
+            for item in items {
+                switch item {
+                case let .blocks(blocks, _, _):
+                    var result: [Media] = []
+                    for block in blocks {
+                        result.append(contentsOf: block.allMedia(mediaDict: mediaDict))
+                    }
+                    return result
+                case .text, .unknown:
+                    break
+                }
+            }
+            return []
+        case let .slideshow(items, _):
+            var result: [Media] = []
+            for item in items {
+                result.append(contentsOf: item.allMedia(mediaDict: mediaDict))
+            }
+            return result
+        case let .video(id, _, _, _):
+            if let video = mediaDict[id] {
+                return [video]
+            } else {
+                return []
+            }
+        default:
+            return []
+        }
+    }
+}
+
+public extension InstantPage {
+    func allMedia() -> [Media] {
+        if self.media.isEmpty {
+            return []
+        }
+        var result: [Media] = []
+        for block in self.blocks {
+            result.append(contentsOf: block.allMedia(mediaDict: self.media))
+        }
+        return result
     }
 }
 

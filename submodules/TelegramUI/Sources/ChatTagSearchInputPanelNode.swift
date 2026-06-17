@@ -3,7 +3,6 @@ import UIKit
 import AsyncDisplayKit
 import Display
 import TelegramCore
-import Postbox
 import SwiftSignalKit
 import TelegramNotices
 import TelegramPresentationData
@@ -75,7 +74,7 @@ final class ChatTagSearchInputPanelNode: ChatInputPanelNode {
     
     private var currentLayout: Layout?
     
-    private var tagMessageCount: (tag: MemoryBuffer, count: Int?, disposable: Disposable?)?
+    private var tagMessageCount: (tag: EngineMemoryBuffer, count: Int?, disposable: Disposable?)?
     
     private var totalMessageCount: Int?
     private var totalMessageCountDisposable: Disposable?
@@ -131,7 +130,7 @@ final class ChatTagSearchInputPanelNode: ChatInputPanelNode {
         return height
     }
     
-    func prepareSwitchToFilter(tag: MemoryBuffer, count: Int) {
+    func prepareSwitchToFilter(tag: EngineMemoryBuffer, count: Int) {
         self.tagMessageCount?.disposable?.dispose()
         self.tagMessageCount = (tag, count, nil)
     }
