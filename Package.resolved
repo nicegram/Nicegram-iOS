@@ -275,8 +275,8 @@
       "kind" : "remoteSourceControl",
       "location" : "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
       "state" : {
-        "branch" : "develop",
-        "revision" : "cd31a693cf0e9abeda7557098212e0851ff73219"
+        "branch" : "feat/one-time-purchase-tg-account",
+        "revision" : "c6cd678dbc3919ab9684f3617b0cfb14946732b8"
       }
     },
     {
@@ -284,8 +284,8 @@
       "kind" : "remoteSourceControl",
       "location" : "git@bitbucket.org:mobyrix/nicegram-wallet-ios.git",
       "state" : {
-        "branch" : "develop",
-        "revision" : "9090a4ad3f84d7e8b01b47a7a0c435736150028b"
+        "branch" : "feat/one-time-purchase-tg-account",
+        "revision" : "2b82561a840814d77491bf1ad5f2de1e085191e7"
       }
     },
     {
