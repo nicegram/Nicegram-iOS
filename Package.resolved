@@ -276,7 +276,7 @@
       "location" : "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
       "state" : {
         "branch" : "feat/one-time-purchase-tg-account",
-        "revision" : "c6cd678dbc3919ab9684f3617b0cfb14946732b8"
+        "revision" : "87f3d24efb8ef9db17ac9bdfb61cb7a3abc75602"
       }
     },
     {
