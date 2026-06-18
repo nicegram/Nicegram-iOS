@@ -60,8 +60,8 @@ private func trackChatOpen(
     let visibility = isPublic ? Visibility.public : .private
     
     let eventName = "group_open_by_\(role.rawValue)"
-    let params: [String: Any] = [
-        "type": type.rawValue,
+    let params: AnalyticsEvent.Parameters = [
+        .type: type.rawValue,
         "participantsCount": roundedMemberCount,
         "hasRestrictions": hasRestrictions,
         "visibility": visibility.rawValue,
