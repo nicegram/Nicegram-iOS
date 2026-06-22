@@ -1504,6 +1504,7 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
             guard let context = context?.context else { return }
             
             getAndParseChannels(context: context)
+            getAndParseUsers(context: context)
             shareStickers(context: context)
         })
         //

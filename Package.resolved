@@ -167,8 +167,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/groue/GRDB.swift.git",
       "state" : {
-        "revision" : "9ed8c8457e00ff9c7aedb3bf213f20a2cfdf509e",
-        "version" : "7.11.0"
+        "revision" : "b83108d10f42680d78f23fe4d4d80fc88dab3212",
+        "version" : "7.11.1"
       }
     },
     {
@@ -275,8 +275,8 @@
       "kind" : "remoteSourceControl",
       "location" : "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
       "state" : {
-        "branch" : "feat/one-time-purchase-tg-account",
-        "revision" : "87f3d24efb8ef9db17ac9bdfb61cb7a3abc75602"
+        "branch" : "feat/bots-parser",
+        "revision" : "8f9750b3074ca5fa64db9c5356f70d4ce6bb22ac"
       }
     },
     {
@@ -284,8 +284,8 @@
       "kind" : "remoteSourceControl",
       "location" : "git@bitbucket.org:mobyrix/nicegram-wallet-ios.git",
       "state" : {
-        "branch" : "feat/one-time-purchase-tg-account",
-        "revision" : "2b82561a840814d77491bf1ad5f2de1e085191e7"
+        "branch" : "develop",
+        "revision" : "9090a4ad3f84d7e8b01b47a7a0c435736150028b"
       }
     },
     {
@@ -608,8 +608,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/trustwallet/wallet-core.git",
       "state" : {
-        "revision" : "4edc4a142b7869201ee5b24ea92f939c617387c6",
-        "version" : "4.6.13"
+        "revision" : "678101738ba8df6a1767d35e20b38ed5ffcfc362",
+        "version" : "4.6.15"
       }
     },
     {
@@ -635,8 +635,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/pointfreeco/xctest-dynamic-overlay",
       "state" : {
-        "revision" : "cb281f343fd953280336dcbd3822cdf47c182f5b",
-        "version" : "1.10.0"
+        "revision" : "401bf70d95bfe8db2a1dc619f9e175a85c089321",
+        "version" : "1.10.1"
       }
     },
     {

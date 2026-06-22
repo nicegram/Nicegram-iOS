@@ -119,6 +119,7 @@ private extension ChatParserFromLocal {
         cachedData: CachedPeerData?
     ) async throws -> User {
         let botInfo = try user.botInfo.unwrap()
+        let cachedData = cachedData as? CachedUserData
         
         let messages = await getMessages(user.id)
         let langCode = getLanguageCode(messages: messages)
@@ -126,7 +127,7 @@ private extension ChatParserFromLocal {
         return await User.build(
             user: user,
             botInfo: botInfo,
-            cachedData: cachedData,
+            botInfoDetails: cachedData?.botInfo,
             icon: getIcon(user),
             langCode: langCode
         )

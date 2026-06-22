@@ -1,20 +1,20 @@
 import AccountContext
 import FeatDataSharing
 
-public func getAndParseChannels(context: AccountContext) {
+public func getAndParseUsers(context: AccountContext) {
     Task {
-        let getAndParseChannelsUseCase = DataSharingModule.shared.getAndParseChannelsUseCase()
-        try await getAndParseChannelsUseCase(
+        let getAndParseUsersUseCase = DataSharingModule.shared.getAndParseUsersUseCase()
+        let parser = UserParserFromApi(context: context)
+        try await getAndParseUsersUseCase(
             parse: { username in
                 do {
-                    let parser = ChannelParserFromApi(context: context)
-                    let channel = try await parser.parse(username)
-                    return .success(channel)
+                    let user = try await parser.parse(username)
+                    return .success(user)
                 } catch {
                     return .error(
                         .init(
                             id: 0,
-                            type: "channel",
+                            type: "bot",
                             payload: .init(
                                 username: username
                             ),

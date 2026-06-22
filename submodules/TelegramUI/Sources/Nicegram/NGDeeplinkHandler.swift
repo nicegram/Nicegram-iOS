@@ -1,5 +1,4 @@
 import CoreAnalytics
-import CorePayment
 import FeatAgents
 import FeatAssistant
 import FeatAttentionEconomy
@@ -52,10 +51,6 @@ class NGDeeplinkHandler {
     
     private func handleDeeplink(_ url: URL) -> Bool {
         guard url.scheme == "ncg" else { return false }
-        
-        if CorePayment.Module.shared.deeplinkManager().handle(url) {
-            return true
-        }
         
         switch url.host {
         case "aiAgents":

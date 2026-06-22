@@ -221,7 +221,7 @@ extension Api.Chat {
 }
 
 extension Api.User {
-    var peerId: PeerId {
+    public var peerId: PeerId {
         switch self {
             case let .user(userData):
                 let id = userData.id
@@ -234,7 +234,7 @@ extension Api.User {
 }
 
 extension Api.Peer {
-    var peerId: PeerId {
+    public var peerId: PeerId {
         switch self {
             case let .peerChannel(peerChannelData):
                 let channelId = peerChannelData.channelId
