@@ -39,6 +39,9 @@ jobs:
           cp -R $GITHUB_WORKSPACE /Users/telegram/
           mv /Users/telegram/$(basename $GITHUB_WORKSPACE) /Users/telegram/telegram-ios
 
+      - name: Install sentry-cli
+        run: curl -sL https://sentry.io/get-cli/ | bash
+
       - name: New testflight build
         run: |
           set -x
@@ -58,6 +61,10 @@ jobs:
       KEYCHAIN_NAME: ${{ secrets.KEYCHAIN_NAME }}
       KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
       MATCH_PASSWORD: ${{ secrets.SIGN_REPO_DECRYPT_PASSWORD }}
+      SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+      SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+      SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
+      SENTRY_URL: ${{ secrets.SENTRY_URL }}
       SIGN_URL: ${{ secrets.SIGN_REPO_URL }}
       SOURCE_PATH: /Users/telegram/telegram-ios
       TEAM_ID: ${{ secrets.TEAM_ID }}
