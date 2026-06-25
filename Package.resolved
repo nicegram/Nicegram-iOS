@@ -275,8 +275,8 @@
       "kind" : "remoteSourceControl",
       "location" : "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
       "state" : {
-        "branch" : "feat/sentry-sdk",
-        "revision" : "b9b72952ee247f7a384ab4dd3f83a7e9977c21b7"
+        "branch" : "feat/update-temporary-unlock-mechanism",
+        "revision" : "c9d4fbf1d873df53012b46596d95f9f3a319bdb0"
       }
     },
     {
@@ -284,8 +284,8 @@
       "kind" : "remoteSourceControl",
       "location" : "git@bitbucket.org:mobyrix/nicegram-wallet-ios.git",
       "state" : {
-        "branch" : "feat/sentry-sdk",
-        "revision" : "bcb42cc007fdc84a215937659e4d92708c7fe618"
+        "branch" : "develop",
+        "revision" : "37a7ea58cc7fef591266f870359de5e2cde3c899"
       }
     },
     {
@@ -365,8 +365,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/getsentry/sentry-cocoa.git",
       "state" : {
-        "revision" : "43abfbf9a26089ad34604c718ad0935440caf1d4",
-        "version" : "9.18.0"
+        "revision" : "00a2fec32ea665b81e406419e078bb713238e23f",
+        "version" : "9.19.0"
       }
     },
     {
