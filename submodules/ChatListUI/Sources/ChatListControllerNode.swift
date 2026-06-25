@@ -1535,9 +1535,9 @@ final class ChatListControllerNode: ASDisplayNode, ASGestureRecognizerDelegate {
             var tabs: AnyComponent<Empty>?
             
             // Nicegram FolderForKeywords
-            let showFolderForKeywords = getNicegramSettings().keywords.show[
+            let showFolderForKeywords = (getNicegramSettings().keywords.show[
                 self.context.account.peerId.toInt64()
-            ] ?? true
+            ] ?? true) && (self.controller?.hasKeywords ?? false)
             //
             
             // Nicegram FolderForKeywords, showFolderForKeywords condition

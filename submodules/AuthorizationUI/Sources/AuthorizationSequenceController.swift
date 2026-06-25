@@ -1287,14 +1287,9 @@ public final class AuthorizationSequenceController: NavigationController, ASAuth
                     if let _ = self.viewControllers.last as? AuthorizationSequenceSplashController {
                     } else {
                         var controllers: [ViewController] = []
-                        if self.otherAccountPhoneNumbers.1.isEmpty {
-                            controllers.append(self.splashController())
-                            // Nicegram Onboarding
-                            controllers.append(self.phoneEntryController(countryCode: AuthorizationSequenceController.defaultCountryCode(), number: "", splashController: nil))
-                            //
-                        } else {
-                            controllers.append(self.phoneEntryController(countryCode: AuthorizationSequenceCountrySelectionController.defaultCountryCode(), number: "", splashController: nil))
-                        }
+                        // Nicegram, hide splashController
+                        controllers.append(self.phoneEntryController(countryCode: AuthorizationSequenceCountrySelectionController.defaultCountryCode(), number: "", splashController: nil))
+                        //
                         self.setViewControllers(controllers, animated: !self.viewControllers.isEmpty)
                     }
                 case let .phoneEntry(countryCode, number):
@@ -1380,9 +1375,6 @@ public final class AuthorizationSequenceController: NavigationController, ASAuth
                     var displayCancel = false
                     if !self.otherAccountPhoneNumbers.1.isEmpty {
                         controllers.append(self.splashController())
-                        // Nicegram Onboarding
-                        displayCancel = true
-                        //
                     } else {
                         displayCancel = true
                     }
@@ -1400,9 +1392,6 @@ public final class AuthorizationSequenceController: NavigationController, ASAuth
     }
     
     override public func setViewControllers(_ viewControllers: [UIViewController], animated: Bool) {
-        // Nicegram Onboarding
-        let viewControllers = viewControllers.filter { !($0 is AuthorizationSequenceSplashController) }
-        //
         let wasEmpty = self.viewControllers.isEmpty
         super.setViewControllers(viewControllers, animated: animated)
         if wasEmpty {

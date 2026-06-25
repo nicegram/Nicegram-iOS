@@ -17,17 +17,31 @@ public extension Postbox.Peer {
             case .broadcast: .broadcast
             case .group: .group
             }
+
+            let participationStatus: TelegramBridge.TelegramChannelParticipationStatus = switch channel.participationStatus {
+            case .member: .member
+            case .left: .left
+            case .kicked: .kicked
+            }
             
             return TelegramBridge.TelegramChannel(
                 displayName: displayName,
                 id: id,
                 info: info,
+                participationStatus: participationStatus,
                 username: username
             )
-        case .legacyGroup:
+        case let .legacyGroup(group):
+            let participationStatus: TelegramBridge.TelegramChannelParticipationStatus = switch group.membership {
+            case .Member: .member
+            case .Left: .left
+            case .Removed: .kicked
+            }
+            
             return TelegramBridge.TelegramGroup(
                 displayName: displayName,
                 id: id,
+                participationStatus: participationStatus,
                 username: username
             )
         case .secretChat:

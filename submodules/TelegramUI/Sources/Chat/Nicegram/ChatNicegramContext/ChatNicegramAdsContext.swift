@@ -1,9 +1,16 @@
+import AccountContext
 import FeatAttentionEconomy
 import Postbox
 import TelegramCore
 
 final class ChatNicegramAdsContext {
-    let headerAdViewModel = ChatHeaderAdViewModel()
+    let accountContext: AccountContext
+    let headerAdViewModel: ChatHeaderAdViewModel
+    
+    init(accountContext: AccountContext) {
+        self.accountContext = accountContext
+        self.headerAdViewModel = ChatHeaderAdViewModel()
+    }
 }
 
 extension ChatNicegramAdsContext: ChatStateObserver {
@@ -46,7 +53,13 @@ extension ChatNicegramAdsContext: ChatStateObserver {
             return
         }
         
+        let isRestricted = peer.restrictionText(
+            platform: "ios",
+            contentSettings: accountContext.currentContentSettings.with { $0 }
+        ) != nil
+        
         let resolvedPeer = FeatAttentionEconomy.ChatContext.Peer(
+            isRestricted: isRestricted,
             participantsCount: participantsCount,
             type: type,
             username: peer.addressName
