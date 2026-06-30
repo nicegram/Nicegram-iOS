@@ -15,6 +15,7 @@ import TelegramStringFormatting
 import NicegramWallet
 import NGUtils
 import NGData
+import LocalizedPeerData
 
 private struct SpyOnFriendsListTransaction {
     let deletions: [ListViewDeleteItem]
@@ -22,22 +23,22 @@ private struct SpyOnFriendsListTransaction {
     let updates: [ListViewUpdateItem]
 }
 
-@available(iOS 15.0, *)
+@available(iOS 16.0, *)
 private enum SpyOnFriendsListEntry: Comparable, Identifiable {
     case header(sectionId: ItemListSectionId, context: SpyOnFriendsContext, isRefreshing: Bool)
     case group(sectionId: ItemListSectionId, context: AccountContext, group: (Date, [SpyOnFriendsGroup]))
-    case unlock(sectionId: ItemListSectionId, context: SpyOnFriendsContext)
-    case emptyData(sectionId: ItemListSectionId)
-        
+    case unlock(sectionId: ItemListSectionId, context: SpyOnFriendsContext, peerName: String)
+    case emptyData(sectionId: ItemListSectionId, peerName: String)
+
     var stableId: Int32 {
         switch self {
         case let .header(sectionId, _, _):
             return sectionId
         case let .group(sectionId, _, _):
             return sectionId
-        case let .unlock(sectionId, _):
+        case let .unlock(sectionId, _, _):
             return sectionId
-        case let .emptyData(sectionId):
+        case let .emptyData(sectionId, _):
             return sectionId
         }
     }
@@ -56,14 +57,20 @@ private enum SpyOnFriendsListEntry: Comparable, Identifiable {
             } else {
                 return false
             }
-        case let .unlock(lhsSectionId, _):
-            if case let .unlock(rhsSectionId, _) = rhs {
-                return lhsSectionId == rhsSectionId
+        case let .unlock(lhsSectionId, _, lhsPeerName):
+            if case let .unlock(rhsSectionId, _, rhsPeerName) = rhs {
+                return lhsSectionId == rhsSectionId &&
+                       lhsPeerName == rhsPeerName
             } else {
                 return false
             }
-        case .emptyData:
-            return true
+        case let .emptyData(lhsSectionId, lhsPeerName):
+            if case let .emptyData(rhsSectionId, rhsPeerName) = rhs {
+                return lhsSectionId == rhsSectionId &&
+                       lhsPeerName == rhsPeerName
+            } else {
+                return false
+            }
         }
     }
     
@@ -85,8 +92,7 @@ private enum SpyOnFriendsListEntry: Comparable, Identifiable {
         accountContext: AccountContext,
         peerId: PeerId,
         presentationData: PresentationData,
-        openMessage: @escaping (Int32) -> Void,
-        share: @escaping () -> Void
+        openMessage: @escaping (Int32) -> Void
     ) -> ListViewItem {
         switch self {
         case let .header(sectionId, context, isRefreshing):
@@ -107,18 +113,16 @@ private enum SpyOnFriendsListEntry: Comparable, Identifiable {
                 group: group,
                 openMessage: openMessage
             )
-        case let .unlock(sectionId, context):
+        case let .unlock(sectionId, context, peerName):
             return SpyOnFriendsUnlockItem(
-                sectionId: sectionId,
-                theme: presentationData.theme,
-                locale: localeWithStrings(presentationData.strings),
                 context: context,
-                accountContext: accountContext,
                 peerId: peerId,
-                share: share
+                peerName: peerName,
+                sectionId: sectionId
             )
-        case let .emptyData(sectionId):
+        case let .emptyData(sectionId, peerName):
             return SpyOnFriendsEmptyDataItem(
+                peerName: peerName,
                 sectionId: sectionId,
                 theme: presentationData.theme
             )
@@ -126,15 +130,14 @@ private enum SpyOnFriendsListEntry: Comparable, Identifiable {
     }
 }
 
-@available(iOS 15.0, *)
+@available(iOS 16.0, *)
 private func preparedTransition(
     from fromEntries: [SpyOnFriendsListEntry],
     to toEntries: [SpyOnFriendsListEntry],
     context: AccountContext,
     peerId: PeerId,
     presentationData: PresentationData,
-    openMessage: @escaping (Int32) -> Void,
-    share: @escaping () -> Void
+    openMessage: @escaping (Int32) -> Void
 ) -> SpyOnFriendsListTransaction {
     let (deleteIndices, indicesAndItems, updateIndices) = mergeListsStableWithUpdates(leftList: fromEntries, rightList: toEntries)
 
@@ -147,8 +150,7 @@ private func preparedTransition(
                 accountContext: context,
                 peerId: peerId,
                 presentationData: presentationData,
-                openMessage: openMessage,
-                share: share
+                openMessage: openMessage
             ),
             directionHint: nil
         )
@@ -161,8 +163,7 @@ private func preparedTransition(
                 accountContext: context,
                 peerId: peerId,
                 presentationData: presentationData,
-                openMessage: openMessage,
-                share: share
+                openMessage: openMessage
             ),
             directionHint: nil)
     }
@@ -170,7 +171,7 @@ private func preparedTransition(
     return SpyOnFriendsListTransaction(deletions: deletions, insertions: insertions, updates: updates)
 }
 
-@available(iOS 15.0, *)
+@available(iOS 16.0, *)
 final class SpyOnFriendsPaneNode: ASDisplayNode, PeerInfoPaneNode {
     private let context: AccountContext
     private let peerId: PeerId
@@ -205,7 +206,9 @@ final class SpyOnFriendsPaneNode: ASDisplayNode, PeerInfoPaneNode {
     var tabBarOffset: CGFloat { 0.0 }
         
     private var disposable: Disposable?
-    
+    private var peerNameDisposable: Disposable?
+    private var peerName: String = ""
+
     init(
         context: AccountContext,
         peerId: PeerId,
@@ -237,10 +240,25 @@ final class SpyOnFriendsPaneNode: ASDisplayNode, PeerInfoPaneNode {
                 self.updateEntries(state: state, presentationData: presentationData)
             }
         })
+
+        self.peerNameDisposable = (context.engine.data.subscribe(TelegramEngine.EngineData.Item.Peer.Peer(id: peerId))
+        |> map { peer -> String in
+            peer?.compactDisplayTitle ?? ""
+        }
+        |> distinctUntilChanged
+        |> deliverOnMainQueue).startStrict(next: { [weak self] peerName in
+            guard let self else { return }
+
+            self.peerName = peerName
+            if let state = self.state, let (_, _, presentationData) = self.currentParams {
+                self.updateEntries(state: state, presentationData: presentationData)
+            }
+        })
     }
-    
+
     deinit {
         self.disposable?.dispose()
+        self.peerNameDisposable?.dispose()
     }
     
     func ensureMessageIsVisible(id: EngineMessage.Id) {
@@ -368,7 +386,7 @@ final class SpyOnFriendsPaneNode: ASDisplayNode, PeerInfoPaneNode {
             
             if groups.isEmpty &&
                 state.dataState == .ready(canLoadMore: true)  {
-                entries.append(.emptyData(sectionId: 3))
+                entries.append(.emptyData(sectionId: 3, peerName: peerName))
             } else {
                 let groupsEntries = groups.map {
                     SpyOnFriendsListEntry.group(
@@ -381,7 +399,11 @@ final class SpyOnFriendsPaneNode: ASDisplayNode, PeerInfoPaneNode {
                 entries.append(contentsOf: groupsEntries)
             }
         } else {
-            entries = [.unlock(sectionId: 1, context: spyOnFriendsContext)]
+            entries = [.unlock(
+                sectionId: 1,
+                context: spyOnFriendsContext,
+                peerName: peerName
+            )]
         }
                 
         let transaction = preparedTransition(
@@ -392,8 +414,6 @@ final class SpyOnFriendsPaneNode: ASDisplayNode, PeerInfoPaneNode {
             presentationData: presentationData,
             openMessage: { [weak self] id in
                 self?.openMessage(with: id)
-            }, share: { [weak self] in
-                self?.share()
             }
         )
         self.currentEntries = entries
@@ -452,36 +472,6 @@ final class SpyOnFriendsPaneNode: ASDisplayNode, PeerInfoPaneNode {
                 keepStack: .always
             ))
         }
-    }
-    
-    private func share() {
-        let controller = context.sharedContext.makePeerSelectionController(.init(
-            context: context,
-            filter: [.onlyWriteable, .excludeDisabled, .excludeBots],
-            title: ""
-        ))
-        controller.navigationPresentation = .modal
-        controller.peerSelected = { [weak self, weak controller] peer, _ in
-            guard let self else { return }
-
-            Task {
-                let sender = await ContactMessageSender()
-                let text = await sender.nicegramReferralLink()
-                
-                if let contact = await WalletTgUtils.peerToWalletContact(id: peer.id, context: self.context) {
-                    await sender.send(
-                        contact: contact,
-                        text: text,
-                        showConfirmation: true
-                    )
-                    await controller?.dismiss()
-                }
-            }
-
-        }
-        
-        guard let navigationController = chatControllerInteraction.navigationController() else { return }
-        navigationController.pushViewController(controller)
     }
 
     private func groups(from input: [(Api.Chat?, [Message])]) -> [(Date, [SpyOnFriendsGroup])] {

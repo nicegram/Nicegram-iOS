@@ -578,7 +578,7 @@ private final class PeerInfoPendingPane {
         //
 // Nicegram NCG-7303 Spy on friends
         case .spyOnFriends:
-            if #available(iOS 15.0, *),
+            if #available(iOS 16.0, *),
                let spyOnFriendsContext = data.spyOnFriends {
                 paneNode = SpyOnFriendsPaneNode(
                     context: context,

@@ -9,13 +9,16 @@ import FeatSpyOnFriends
 
 @available(iOS 15.0, *)
 public final class SpyOnFriendsEmptyDataItem: ListViewItem, ItemListItem {
+    public let peerName: String
     public let sectionId: ItemListSectionId
     public let theme: PresentationTheme
     
     public init(
+        peerName: String,
         sectionId: ItemListSectionId,
         theme: PresentationTheme
     ) {
+        self.peerName = peerName
         self.sectionId = sectionId
         self.theme = theme
     }
@@ -93,6 +96,9 @@ class SpyOnFriendsEmptyDataNode: ListViewItemNode {
                 )
             }
 
+            emptyDataView.update(
+                peerName: item.peerName
+            )
             emptyDataView.updateConstraintsIfNeeded()
             
             let emptyDataInsets: UIEdgeInsets = isPortrait ? .vertical(20).horizontal(16) : .vertical(20).horizontal(59)

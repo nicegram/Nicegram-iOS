@@ -171,12 +171,7 @@ private final class SpyOnFriendsContextImpl {
                     if resultChats.count == self.limit {
                         self.loadMore.set(.single(Void()))
                     } else {
-                        if self.lastUpdatedDate() == nil {
-                            self.dataState = .ready(canLoadMore: true)
-                            self.pushState()
-                        } else {
-                            self.loadMessages()
-                        }
+                        self.loadMessages()
                     }
                 } else {
                     self.dataState = .ready(canLoadMore: true)
