@@ -1,6 +1,5 @@
 import Foundation
 import UIKit
-import Postbox
 import SwiftSignalKit
 import Display
 import AsyncDisplayKit
@@ -119,7 +118,6 @@ import AudioWaveform
 import PeerNameColorScreen
 import ChatEmptyNode
 import ChatMediaInputStickerGridItem
-import AdsInfoScreen
 
 extension ChatControllerImpl {
     func navigationButtonAction(_ action: ChatNavigationButtonAction) {
@@ -476,7 +474,7 @@ extension ChatControllerImpl {
                         if #available(iOS 13.0, *) {
                             Task { @MainActor [weak self] in
                                 guard let peer = await context.engine.data.get(
-                                    TelegramEngine.EngineData.Item.Peer.Peer(id: PeerId(replyThreadMessage.threadId))
+                                    TelegramEngine.EngineData.Item.Peer.Peer(id: EnginePeer.Id(replyThreadMessage.threadId))
                                 ).get() else {
                                     return
                                 }
@@ -623,7 +621,7 @@ extension ChatControllerImpl {
                         } else {
                             items.append(ActionSheetButtonItem(title: presentationData.strings.Cache_Clear("\(dataSizeString(totalSize, formatting: DataSizeStringFormatting(presentationData: presentationData)))").string, action: {
                                 let clearCategories = sizeIndex.keys.filter({ sizeIndex[$0]!.0 })
-                                var clearMediaIds = Set<MediaId>()
+                                var clearMediaIds = Set<EngineMedia.Id>()
                                 
                                 var media = stats.media
                                 if var categories = media[peerId] {
@@ -639,11 +637,11 @@ extension ChatControllerImpl {
                                     media[peerId] = categories
                                 }
                                 
-                                var clearResourceIds = Set<MediaResourceId>()
+                                var clearResourceIds = Set<EngineMediaResource.Id>()
                                 for id in clearMediaIds {
                                     if let ids = stats.mediaResourceIds[id] {
                                         for resourceId in ids {
-                                            clearResourceIds.insert(resourceId)
+                                            clearResourceIds.insert(EngineMediaResource.Id(resourceId))
                                         }
                                     }
                                 }

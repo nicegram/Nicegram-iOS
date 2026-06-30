@@ -1,7 +1,6 @@
 import Foundation
 import TelegramPresentationData
 import AccountContext
-import Postbox
 import TelegramCore
 import SwiftSignalKit
 import Display
@@ -16,8 +15,8 @@ import TopMessageReactions
 import ChatMessagePaymentAlertController
 
 extension ChatControllerImpl {
-    // Nicegram (cloud + asCopy)
-    func forwardMessages(messageIds: [MessageId], options: ChatInterfaceForwardOptionsState? = nil, resetCurrent: Bool = false, cloud: Bool = false, asCopy: Bool = false) {
+        // Nicegram (cloud + asCopy)
+    func forwardMessages(messageIds: [EngineMessage.Id], options: ChatInterfaceForwardOptionsState? = nil, resetCurrent: Bool = false, cloud: Bool = false, asCopy: Bool = false) {
         let _ = (self.context.engine.data.get(EngineDataMap(
             messageIds.map(TelegramEngine.EngineData.Item.Messages.Message.init)
         ))
@@ -31,7 +30,7 @@ extension ChatControllerImpl {
     }
 
     // Nicegram (cloud + asCopy)
-    func forwardMessages(messages: [Message], options: ChatInterfaceForwardOptionsState? = nil, resetCurrent: Bool, cloud: Bool = false, asCopy: Bool = false) {
+    func forwardMessages(messages: [EngineRawMessage], options: ChatInterfaceForwardOptionsState? = nil, resetCurrent: Bool, cloud: Bool = false, asCopy: Bool = false) {
         let _ = self.presentVoiceMessageDiscardAlert(action: {
             
             // Nicegram
@@ -193,7 +192,7 @@ extension ChatControllerImpl {
                             let inputText = convertMarkdownToAttributes(messageText)
                             for text in breakChatInputText(trimChatInputText(inputText)) {
                                 if text.length != 0 {
-                                    var attributes: [MessageAttribute] = []
+                                    var attributes: [EngineMessage.Attribute] = []
                                     let entities = generateTextEntities(text.string, enabledTypes: .all, currentEntities: generateChatInputTextEntities(text))
                                     if !entities.isEmpty {
                                         attributes.append(TextEntitiesMessageAttribute(entities: entities))
@@ -203,7 +202,7 @@ extension ChatControllerImpl {
                             }
                         }
                         
-                        var attributes: [MessageAttribute] = []
+                        var attributes: [EngineMessage.Attribute] = []
                         attributes.append(ForwardOptionsMessageAttribute(hideNames: forwardOptions?.hideNames == true, hideCaptions: forwardOptions?.hideCaptions == true))
                         
                         result.append(contentsOf: messages.map { message -> EnqueueMessage in

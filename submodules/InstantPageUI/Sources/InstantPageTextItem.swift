@@ -29,8 +29,19 @@ struct InstantPageTextMarkedItem {
     let range: NSRange
 }
 
+struct InstantPageTextSpoilerItem {
+    let frame: CGRect
+    let range: NSRange
+}
+
 struct InstantPageTextStrikethroughItem {
     let frame: CGRect
+}
+
+struct InstantPageTextUnderlineItem {
+    let frame: CGRect
+    let range: NSRange
+    let color: UIColor?
 }
 
 struct InstantPageTextImageItem {
@@ -43,6 +54,12 @@ struct InstantPageTextFormulaRun {
     let frame: CGRect
     let range: NSRange
     let attachment: InstantPageMathAttachment
+}
+
+struct InstantPageTextEmojiItem {
+    let frame: CGRect
+    let range: NSRange
+    let emoji: ChatTextInputTextCustomEmojiAttribute
 }
 
 public struct InstantPageTextAnchorItem {
@@ -68,22 +85,30 @@ public final class InstantPageTextLine {
     let range: NSRange
     public let frame: CGRect
     let strikethroughItems: [InstantPageTextStrikethroughItem]
+    let underlineItems: [InstantPageTextUnderlineItem]
     let markedItems: [InstantPageTextMarkedItem]
+    let spoilerItems: [InstantPageTextSpoilerItem]
     let imageItems: [InstantPageTextImageItem]
     let formulaItems: [InstantPageTextFormulaRun]
+    let emojiItems: [InstantPageTextEmojiItem]
     public let anchorItems: [InstantPageTextAnchorItem]
     let isRTL: Bool
-    
-    init(line: CTLine, range: NSRange, frame: CGRect, strikethroughItems: [InstantPageTextStrikethroughItem], markedItems: [InstantPageTextMarkedItem], imageItems: [InstantPageTextImageItem], formulaItems: [InstantPageTextFormulaRun], anchorItems: [InstantPageTextAnchorItem], isRTL: Bool) {
+    public let characterRects: [CGRect]?   // line-local, one rect per character in `range`; nil = not computed
+
+    init(line: CTLine, range: NSRange, frame: CGRect, strikethroughItems: [InstantPageTextStrikethroughItem], underlineItems: [InstantPageTextUnderlineItem], markedItems: [InstantPageTextMarkedItem], spoilerItems: [InstantPageTextSpoilerItem] = [], imageItems: [InstantPageTextImageItem], formulaItems: [InstantPageTextFormulaRun], emojiItems: [InstantPageTextEmojiItem] = [], anchorItems: [InstantPageTextAnchorItem], isRTL: Bool, characterRects: [CGRect]? = nil) {
         self.line = line
         self.range = range
         self.frame = frame
         self.strikethroughItems = strikethroughItems
+        self.underlineItems = underlineItems
         self.markedItems = markedItems
+        self.spoilerItems = spoilerItems
         self.imageItems = imageItems
         self.formulaItems = formulaItems
+        self.emojiItems = emojiItems
         self.anchorItems = anchorItems
         self.isRTL = isRTL
+        self.characterRects = characterRects
     }
 }
 
@@ -166,8 +191,31 @@ private func attachmentBoundsForRange(_ range: NSRange, line: InstantPageTextLin
     return alignedAttachmentFrame(localBounds, line: line, boundingWidth: boundingWidth, alignment: alignment)
 }
 
+/// Block-level role of a text item, used to reconstruct markdown from a
+/// selection. `kind` is the primary role; `quoteDepth` (0 = not quoted) is
+/// orthogonal so a heading/list/code line inside a blockquote can be emitted
+/// as e.g. `> ## Title`.
+public struct InstantPageMarkdownBlockContext: Equatable {
+    public enum Kind: Equatable {
+        case paragraph
+        case heading(level: Int)                                  // 1...6
+        case title                                                // InstantPageBlock.title → "# "
+        case listItem(ordered: Bool, marker: String, checked: Bool?)
+        case code(language: String?)
+        case tableCell(row: Int, column: Int, isHeader: Bool)
+    }
+
+    public var kind: Kind
+    public var quoteDepth: Int
+
+    public init(kind: Kind, quoteDepth: Int = 0) {
+        self.kind = kind
+        self.quoteDepth = quoteDepth
+    }
+}
+
 public final class InstantPageTextItem: InstantPageItem {
-    let attributedString: NSAttributedString
+    public let attributedString: NSAttributedString
     public let lines: [InstantPageTextLine]
     let rtlLineIndices: Set<Int>
     public var frame: CGRect
@@ -178,7 +226,8 @@ public final class InstantPageTextItem: InstantPageItem {
     public let wantsNode: Bool = false
     public let separatesTiles: Bool = false
     public var selectable: Bool = true
-    
+    public var markdownContext: InstantPageMarkdownBlockContext? = nil
+
     var containsRTL: Bool {
         return !self.rtlLineIndices.isEmpty
     }
@@ -264,6 +313,24 @@ public final class InstantPageTextItem: InstantPageItem {
                     context.fill(CGRect(x: itemFrame.minX, y: itemFrame.minY + floor((lineFrame.size.height / 2.0) + 1.0), width: itemFrame.size.width, height: 1.0))
                 }
             }
+
+            if !line.underlineItems.isEmpty {
+                for item in line.underlineItems {
+                    var color: UIColor? = item.color
+                    if color == nil {
+                        self.attributedString.enumerateAttributes(in: item.range, options: []) { attributes, _, _ in
+                            if let foreground = attributes[NSAttributedString.Key.foregroundColor] as? UIColor {
+                                color = foreground
+                            }
+                        }
+                    }
+                    if let color {
+                        context.setFillColor(color.cgColor)
+                    }
+                    let itemFrame = item.frame.offsetBy(dx: lineFrame.minX, dy: 0.0)
+                    context.fill(CGRect(x: itemFrame.minX, y: itemFrame.minY + lineFrame.size.height + 2.0, width: itemFrame.size.width, height: 1.0))
+                }
+            }
         }
         
         context.restoreGState()
@@ -274,7 +341,7 @@ public final class InstantPageTextItem: InstantPageItem {
         let boundsWidth = self.frame.width
         for i in 0 ..< self.lines.count {
             let line = self.lines[i]
-            
+
             let lineFrame = expandedFrameForLine(line, boundingWidth: boundsWidth, alignment: self.alignment)
             if lineFrame.insetBy(dx: -5.0, dy: -5.0).contains(transformedPoint) {
                 var index = CTLineGetStringIndexForPosition(line.line, CGPoint(x: transformedPoint.x - lineFrame.minX, y: transformedPoint.y - lineFrame.minY))
@@ -295,7 +362,66 @@ public final class InstantPageTextItem: InstantPageItem {
         }
         return nil
     }
-    
+
+    public func attributesAtPoint(_ point: CGPoint, orNearest: Bool) -> (Int, [NSAttributedString.Key: Any])? {
+        // Hit-testing (taps on links/entities) wants the character under the finger — keep the
+        // strict, clamping behavior.
+        if !orNearest {
+            return self.attributesAtPoint(point)
+        }
+        guard !self.lines.isEmpty else {
+            return nil
+        }
+
+        // Selection drags can travel outside the text bounds, so pick the vertically-closest line.
+        let boundsWidth = self.frame.width
+        var nearestLineIndex = 0
+        var nearestDistance = CGFloat.greatestFiniteMagnitude
+        for i in 0 ..< self.lines.count {
+            let lineFrame = expandedFrameForLine(self.lines[i], boundingWidth: boundsWidth, alignment: self.alignment)
+            let distance: CGFloat
+            if point.y < lineFrame.minY {
+                distance = lineFrame.minY - point.y
+            } else if point.y > lineFrame.maxY {
+                distance = point.y - lineFrame.maxY
+            } else {
+                distance = 0.0
+            }
+            if distance < nearestDistance {
+                nearestDistance = distance
+                nearestLineIndex = i
+            }
+        }
+
+        let line = self.lines[nearestLineIndex]
+        let lineFrame = expandedFrameForLine(line, boundingWidth: boundsWidth, alignment: self.alignment)
+        let lineRange = CTLineGetStringRange(line.line)
+        var index: Int
+        if point.x <= lineFrame.minX {
+            index = lineRange.location
+        } else if point.x >= lineFrame.maxX {
+            // Trailing edge: return the line's upper bound (one past its last character) so a
+            // right-handle drag can include the last character/item of the line. The selection
+            // upper bound is exclusive, so clamping to the last character's index — as the strict
+            // path does — would always leave it unselected. Mirrors Display.TextNode.
+            index = lineRange.location + lineRange.length
+        } else {
+            index = CTLineGetStringIndexForPosition(line.line, CGPoint(x: point.x - lineFrame.minX, y: 0.0))
+            if index != 0 {
+                var glyphStart: CGFloat = 0.0
+                CTLineGetOffsetForStringIndex(line.line, index, &glyphStart)
+                if point.x - lineFrame.minX < glyphStart {
+                    index -= 1
+                }
+            }
+        }
+        guard index >= 0, index <= self.attributedString.length else {
+            return nil
+        }
+        let attributes = index < self.attributedString.length ? self.attributedString.attributes(at: index, effectiveRange: nil) : [:]
+        return (index, attributes)
+    }
+
     private func attributeRects(name: NSAttributedString.Key, at index: Int) -> [CGRect]? {
         var range = NSRange()
         let _ = self.attributedString.attribute(name, at: index, effectiveRange: &range)
@@ -342,8 +468,18 @@ public final class InstantPageTextItem: InstantPageItem {
     
     public func linkSelectionRects(at point: CGPoint) -> [CGRect] {
         if let (index, dict) = self.attributesAtPoint(point) {
-            if let _ = dict[NSAttributedString.Key(rawValue: TelegramTextAttributes.URL)] {
-                if let rects = self.attributeRects(name: NSAttributedString.Key(rawValue: TelegramTextAttributes.URL), at: index) {
+            let interactiveKeys = [
+                TelegramTextAttributes.URL,
+                TelegramTextAttributes.PeerMention,
+                TelegramTextAttributes.PeerTextMention,
+                TelegramTextAttributes.BotCommand,
+                TelegramTextAttributes.Hashtag,
+                TelegramTextAttributes.BankCard,
+                TelegramTextAttributes.Date
+            ]
+            for key in interactiveKeys {
+                let attrKey = NSAttributedString.Key(rawValue: key)
+                if dict[attrKey] != nil, let rects = self.attributeRects(name: attrKey, at: index) {
                     return rects.compactMap { rect in
                         if rect.width > 5.0 {
                             return rect.insetBy(dx: 0.0, dy: -3.0)
@@ -370,9 +506,9 @@ public final class InstantPageTextItem: InstantPageItem {
         guard range.length != 0 else {
             return nil
         }
-        
+
         let boundsWidth = self.frame.width
-        
+
         var rects: [(CGRect, CGRect)] = []
         var startEdge: InstantPageTextRangeRectEdge?
         var endEdge: InstantPageTextRangeRectEdge?
@@ -393,11 +529,11 @@ public final class InstantPageTextItem: InstantPageItem {
                         rightOffset = ceil(secondaryOffset)
                     }
                 }
-                
+
                 let lineFrame = expandedFrameForLine(line, boundingWidth: boundsWidth, alignment: self.alignment)
-                
+
                 let width = max(0.0, abs(rightOffset - leftOffset))
-                
+
                 if line.range.contains(range.lowerBound) {
                     let offsetX = floor(CTLineGetOffsetForStringIndex(line.line, range.lowerBound, nil))
                     startEdge = InstantPageTextRangeRectEdge(x: lineFrame.minX + offsetX, y: lineFrame.minY, height: lineFrame.height)
@@ -411,7 +547,7 @@ public final class InstantPageTextItem: InstantPageItem {
                         let primaryOffset = floor(CTLineGetOffsetForStringIndex(line.line, range.upperBound - 1, &secondaryOffset))
                         secondaryOffset = floor(secondaryOffset)
                         let nextOffet = floor(CTLineGetOffsetForStringIndex(line.line, range.upperBound, &secondaryOffset))
-                        
+
                         if primaryOffset != secondaryOffset {
                             offsetX = secondaryOffset
                         } else {
@@ -420,7 +556,7 @@ public final class InstantPageTextItem: InstantPageItem {
                     }
                     endEdge = InstantPageTextRangeRectEdge(x: lineFrame.minX + offsetX, y: lineFrame.minY, height: lineFrame.height)
                 }
-                
+
                 rects.append((lineFrame, CGRect(origin: CGPoint(x: lineFrame.minX + min(leftOffset, rightOffset), y: lineFrame.minY), size: CGSize(width: width, height: lineFrame.size.height))))
             }
         }
@@ -429,7 +565,16 @@ public final class InstantPageTextItem: InstantPageItem {
         }
         return nil
     }
-    
+
+    public func textRangeRects(in range: NSRange) -> (rects: [CGRect], start: TextRangeRectEdge, end: TextRangeRectEdge)? {
+        guard let result = self.rangeRects(in: range), let start = result.start, let end = result.end, !result.rects.isEmpty else {
+            return nil
+        }
+        let startEdge = TextRangeRectEdge(x: start.x, y: start.y, height: start.height)
+        let endEdge = TextRangeRectEdge(x: end.x, y: end.y, height: end.height)
+        return (result.rects, startEdge, endEdge)
+    }
+
     public func lineRects() -> [CGRect] {
         let boundsWidth = self.frame.width
         var rects: [CGRect] = []
@@ -583,7 +728,7 @@ final class InstantPageScrollableTextItem: InstantPageScrollableItem {
     }
 }
 
-func attributedStringForRichText(_ text: RichText, styleStack: InstantPageTextStyleStack, url: InstantPageUrlItem? = nil, boundingWidth: CGFloat? = nil) -> NSAttributedString {
+func attributedStringForRichText(_ text: RichText, styleStack: InstantPageTextStyleStack, url: InstantPageUrlItem? = nil, boundingWidth: CGFloat? = nil, formatDate: ((Int32, MessageTextEntityType.DateTimeFormat) -> String)? = nil) -> NSAttributedString {
     switch text {
         case .empty:
             return NSAttributedString(string: "", attributes: styleStack.textAttributes())
@@ -595,67 +740,67 @@ func attributedStringForRichText(_ text: RichText, styleStack: InstantPageTextSt
             return NSAttributedString(string: string, attributes: attributes)
         case let .bold(text):
             styleStack.push(.bold)
-            let result = attributedStringForRichText(text, styleStack: styleStack, url: url)
+            let result = attributedStringForRichText(text, styleStack: styleStack, url: url, formatDate: formatDate)
             styleStack.pop()
             return result
         case let .italic(text):
             styleStack.push(.italic)
-            let result = attributedStringForRichText(text, styleStack: styleStack, url: url)
+            let result = attributedStringForRichText(text, styleStack: styleStack, url: url, formatDate: formatDate)
             styleStack.pop()
             return result
         case let .underline(text):
             styleStack.push(.underline)
-            let result = attributedStringForRichText(text, styleStack: styleStack, url: url)
+            let result = attributedStringForRichText(text, styleStack: styleStack, url: url, formatDate: formatDate)
             styleStack.pop()
             return result
         case let .strikethrough(text):
             styleStack.push(.strikethrough)
-            let result = attributedStringForRichText(text, styleStack: styleStack, url: url)
+            let result = attributedStringForRichText(text, styleStack: styleStack, url: url, formatDate: formatDate)
             styleStack.pop()
             return result
         case let .fixed(text):
             styleStack.push(.fontFixed(true))
-            let result = attributedStringForRichText(text, styleStack: styleStack, url: url)
+            let result = attributedStringForRichText(text, styleStack: styleStack, url: url, formatDate: formatDate)
             styleStack.pop()
             return result
         case let .url(text, url, webpageId):
             styleStack.push(.link(webpageId != nil))
-            let result = attributedStringForRichText(text, styleStack: styleStack, url: InstantPageUrlItem(url: url, webpageId: webpageId))
+            let result = attributedStringForRichText(text, styleStack: styleStack, url: InstantPageUrlItem(url: url, webpageId: webpageId), formatDate: formatDate)
             styleStack.pop()
             return result
         case let .email(text, email):
             styleStack.push(.bold)
             styleStack.push(.underline)
-            let result = attributedStringForRichText(text, styleStack: styleStack, url: InstantPageUrlItem(url: "mailto:\(email)", webpageId: nil))
+            let result = attributedStringForRichText(text, styleStack: styleStack, url: InstantPageUrlItem(url: "mailto:\(email)", webpageId: nil), formatDate: formatDate)
             styleStack.pop()
             styleStack.pop()
             return result
         case let .concat(texts):
             let string = NSMutableAttributedString()
             for text in texts {
-                let substring = attributedStringForRichText(text, styleStack: styleStack, url: url, boundingWidth: boundingWidth)
+                let substring = attributedStringForRichText(text, styleStack: styleStack, url: url, boundingWidth: boundingWidth, formatDate: formatDate)
                 string.append(substring)
             }
             return string
         case let .subscript(text):
             styleStack.push(.subscript)
-            let result = attributedStringForRichText(text, styleStack: styleStack, url: url)
+            let result = attributedStringForRichText(text, styleStack: styleStack, url: url, formatDate: formatDate)
             styleStack.pop()
             return result
         case let .superscript(text):
             styleStack.push(.superscript)
-            let result = attributedStringForRichText(text, styleStack: styleStack, url: url)
+            let result = attributedStringForRichText(text, styleStack: styleStack, url: url, formatDate: formatDate)
             styleStack.pop()
             return result
         case let .marked(text):
             styleStack.push(.marker)
-            let result = attributedStringForRichText(text, styleStack: styleStack, url: url)
+            let result = attributedStringForRichText(text, styleStack: styleStack, url: url, formatDate: formatDate)
             styleStack.pop()
             return result
         case let .phone(text, phone):
             styleStack.push(.bold)
             styleStack.push(.underline)
-            let result = attributedStringForRichText(text, styleStack: styleStack, url: InstantPageUrlItem(url: "tel:\(phone)", webpageId: nil))
+            let result = attributedStringForRichText(text, styleStack: styleStack, url: InstantPageUrlItem(url: "tel:\(phone)", webpageId: nil), formatDate: formatDate)
             styleStack.pop()
             styleStack.pop()
             return result
@@ -671,7 +816,8 @@ func attributedStringForRichText(_ text: RichText, styleStack: InstantPageTextSt
             }
             let extentBuffer = UnsafeMutablePointer<RunStruct>.allocate(capacity: 1)
             extentBuffer.initialize(to: RunStruct(ascent: 0.0, descent: 0.0, width: dimensions.cgSize.width))
-            var callbacks = CTRunDelegateCallbacks(version: kCTRunDelegateVersion1, dealloc: { (pointer) in
+            var callbacks = CTRunDelegateCallbacks(version: kCTRunDelegateVersion1, dealloc: { pointer in
+                pointer.assumingMemoryBound(to: RunStruct.self).deallocate()
             }, getAscent: { (pointer) -> CGFloat in
                 let d = pointer.assumingMemoryBound(to: RunStruct.self)
                 return d.pointee.ascent
@@ -684,7 +830,7 @@ func attributedStringForRichText(_ text: RichText, styleStack: InstantPageTextSt
             })
             let delegate = CTRunDelegateCreate(&callbacks, extentBuffer)
             let attrDictionaryDelegate = [(kCTRunDelegateAttributeName as NSAttributedString.Key): (delegate as Any), NSAttributedString.Key(rawValue: InstantPageMediaIdAttribute): id.id, NSAttributedString.Key(rawValue: InstantPageMediaDimensionsAttribute): dimensions]
-            let mutableAttributedString = attributedStringForRichText(.plain(" "), styleStack: styleStack, url: url).mutableCopy() as! NSMutableAttributedString
+            let mutableAttributedString = attributedStringForRichText(.plain(" "), styleStack: styleStack, url: url, formatDate: formatDate).mutableCopy() as! NSMutableAttributedString
             mutableAttributedString.addAttributes(attrDictionaryDelegate, range: NSMakeRange(0, mutableAttributedString.length))
             return mutableAttributedString
         case let .formula(latex):
@@ -706,7 +852,8 @@ func attributedStringForRichText(_ text: RichText, styleStack: InstantPageTextSt
             }
             let extentBuffer = UnsafeMutablePointer<RunStruct>.allocate(capacity: 1)
             extentBuffer.initialize(to: RunStruct(ascent: attachment.rendered.ascent, descent: attachment.rendered.descent, width: attachment.rendered.size.width))
-            var callbacks = CTRunDelegateCallbacks(version: kCTRunDelegateVersion1, dealloc: { _ in
+            var callbacks = CTRunDelegateCallbacks(version: kCTRunDelegateVersion1, dealloc: { pointer in
+                pointer.assumingMemoryBound(to: RunStruct.self).deallocate()
             }, getAscent: { pointer -> CGFloat in
                 let data = pointer.assumingMemoryBound(to: RunStruct.self)
                 return data.pointee.ascent
@@ -718,7 +865,7 @@ func attributedStringForRichText(_ text: RichText, styleStack: InstantPageTextSt
                 return data.pointee.width
             })
             let delegate = CTRunDelegateCreate(&callbacks, extentBuffer)
-            let mutableAttributedString = attributedStringForRichText(.plain(" "), styleStack: styleStack, url: url).mutableCopy() as! NSMutableAttributedString
+            let mutableAttributedString = attributedStringForRichText(.plain(" "), styleStack: styleStack, url: url, formatDate: formatDate).mutableCopy() as! NSMutableAttributedString
             mutableAttributedString.addAttributes([
                 kCTRunDelegateAttributeName as NSAttributedString.Key: delegate as Any,
                 NSAttributedString.Key(rawValue: InstantPageFormulaAttribute): attachment
@@ -731,15 +878,139 @@ func attributedStringForRichText(_ text: RichText, styleStack: InstantPageTextSt
                 empty = true
                 text = .plain("\u{200b}")
             }
-            let anchorText = !empty ? attributedStringForRichText(text, styleStack: styleStack, url: url) : nil
+            let anchorText = !empty ? attributedStringForRichText(text, styleStack: styleStack, url: url, formatDate: formatDate) : nil
             styleStack.push(.anchor(name, anchorText, empty))
-            let result = attributedStringForRichText(text, styleStack: styleStack, url: url)
+            let result = attributedStringForRichText(text, styleStack: styleStack, url: url, formatDate: formatDate)
             styleStack.pop()
             return result
+        case let .textAutoUrl(text):
+            styleStack.push(.link(false))
+            let result = attributedStringForRichText(text, styleStack: styleStack, url: InstantPageUrlItem(url: text.plainText, webpageId: nil), formatDate: formatDate)
+            styleStack.pop()
+            return result
+        case let .textAutoEmail(text):
+            styleStack.push(.link(false))
+            let result = attributedStringForRichText(text, styleStack: styleStack, url: InstantPageUrlItem(url: "mailto:\(text.plainText)", webpageId: nil), formatDate: formatDate)
+            styleStack.pop()
+            return result
+        case let .textAutoPhone(text):
+            styleStack.push(.link(false))
+            let result = attributedStringForRichText(text, styleStack: styleStack, url: InstantPageUrlItem(url: "tel:\(text.plainText)", webpageId: nil), formatDate: formatDate)
+            styleStack.pop()
+            return result
+        case let .textMention(text):
+            styleStack.push(.link(false))
+            let result = attributedStringForRichText(text, styleStack: styleStack, url: url, formatDate: formatDate)
+            styleStack.pop()
+            let mutable = result.mutableCopy() as! NSMutableAttributedString
+            if mutable.length != 0 {
+                mutable.addAttribute(NSAttributedString.Key(rawValue: TelegramTextAttributes.PeerTextMention), value: mutable.string, range: NSRange(location: 0, length: mutable.length))
+            }
+            return mutable
+        case let .textMentionName(text, peerId):
+            styleStack.push(.link(false))
+            let result = attributedStringForRichText(text, styleStack: styleStack, url: url, formatDate: formatDate)
+            styleStack.pop()
+            let mutable = result.mutableCopy() as! NSMutableAttributedString
+            if mutable.length != 0 {
+                let mention = TelegramPeerMention(peerId: EnginePeer.Id(namespace: Namespaces.Peer.CloudUser, id: EnginePeer.Id.Id._internalFromInt64Value(peerId)), mention: mutable.string)
+                mutable.addAttribute(NSAttributedString.Key(rawValue: TelegramTextAttributes.PeerMention), value: mention, range: NSRange(location: 0, length: mutable.length))
+            }
+            return mutable
+        case let .textHashtag(text):
+            styleStack.push(.link(false))
+            let result = attributedStringForRichText(text, styleStack: styleStack, url: url, formatDate: formatDate)
+            styleStack.pop()
+            let mutable = result.mutableCopy() as! NSMutableAttributedString
+            if mutable.length != 0 {
+                mutable.addAttribute(NSAttributedString.Key(rawValue: TelegramTextAttributes.Hashtag), value: TelegramHashtag(peerName: nil, hashtag: mutable.string), range: NSRange(location: 0, length: mutable.length))
+            }
+            return mutable
+        case let .textCashtag(text):
+            styleStack.push(.link(false))
+            let result = attributedStringForRichText(text, styleStack: styleStack, url: url, formatDate: formatDate)
+            styleStack.pop()
+            let mutable = result.mutableCopy() as! NSMutableAttributedString
+            if mutable.length != 0 {
+                mutable.addAttribute(NSAttributedString.Key(rawValue: TelegramTextAttributes.Hashtag), value: TelegramHashtag(peerName: nil, hashtag: mutable.string), range: NSRange(location: 0, length: mutable.length))
+            }
+            return mutable
+        case let .textBotCommand(text):
+            styleStack.push(.link(false))
+            let result = attributedStringForRichText(text, styleStack: styleStack, url: url, formatDate: formatDate)
+            styleStack.pop()
+            let mutable = result.mutableCopy() as! NSMutableAttributedString
+            if mutable.length != 0 {
+                mutable.addAttribute(NSAttributedString.Key(rawValue: TelegramTextAttributes.BotCommand), value: mutable.string, range: NSRange(location: 0, length: mutable.length))
+            }
+            return mutable
+        case let .textBankCard(text):
+            styleStack.push(.link(false))
+            let result = attributedStringForRichText(text, styleStack: styleStack, url: url, formatDate: formatDate)
+            styleStack.pop()
+            let mutable = result.mutableCopy() as! NSMutableAttributedString
+            if mutable.length != 0 {
+                mutable.addAttribute(NSAttributedString.Key(rawValue: TelegramTextAttributes.BankCard), value: mutable.string, range: NSRange(location: 0, length: mutable.length))
+            }
+            return mutable
+        case let .textCustomEmoji(fileId, _):
+            struct RunStruct {
+                let ascent: CGFloat
+                let descent: CGFloat
+                let width: CGFloat
+            }
+            let attributes = styleStack.textAttributes()
+            let font = (attributes[NSAttributedString.Key.font] as? UIFont) ?? UIFont.systemFont(ofSize: 17.0)
+            // Size the inline emoji to the font's line height (A + D) plus a 4pt bump at the 17pt
+            // body font (scaled proportionally). Must match the V2 layout's emoji cell size
+            // (InstantPageV2Layout.swift). The run delegate still reports the font's own
+            // ascent/descent (below), so the line height is unchanged — only the emoji width changes.
+            let itemSize = font.ascender - font.descender + 4.0 * font.pointSize / 17.0
+            let extentBuffer = UnsafeMutablePointer<RunStruct>.allocate(capacity: 1)
+            extentBuffer.initialize(to: RunStruct(ascent: font.ascender, descent: font.descender, width: itemSize))
+            var callbacks = CTRunDelegateCallbacks(version: kCTRunDelegateVersion1, dealloc: { pointer in
+                pointer.assumingMemoryBound(to: RunStruct.self).deallocate()
+            }, getAscent: { pointer -> CGFloat in
+                let d = pointer.assumingMemoryBound(to: RunStruct.self)
+                return d.pointee.ascent
+            }, getDescent: { pointer -> CGFloat in
+                let d = pointer.assumingMemoryBound(to: RunStruct.self)
+                return d.pointee.descent
+            }, getWidth: { pointer -> CGFloat in
+                let d = pointer.assumingMemoryBound(to: RunStruct.self)
+                return d.pointee.width
+            })
+            let delegate = CTRunDelegateCreate(&callbacks, extentBuffer)
+            let emojiAttribute = ChatTextInputTextCustomEmojiAttribute(interactivelySelectedFromPackId: nil, fileId: fileId, file: nil)
+            let mutableAttributedString = attributedStringForRichText(.plain(" "), styleStack: styleStack, url: url, formatDate: formatDate).mutableCopy() as! NSMutableAttributedString
+            mutableAttributedString.addAttributes([
+                kCTRunDelegateAttributeName as NSAttributedString.Key: delegate as Any,
+                ChatTextInputAttributes.customEmoji: emojiAttribute
+            ], range: NSMakeRange(0, mutableAttributedString.length))
+            return mutableAttributedString
+        case let .textSpoiler(text):
+            let result = attributedStringForRichText(text, styleStack: styleStack, url: url, formatDate: formatDate)
+            let mutable = result.mutableCopy() as! NSMutableAttributedString
+            if mutable.length != 0 {
+                mutable.addAttribute(NSAttributedString.Key(rawValue: TelegramTextAttributes.Spoiler), value: true, range: NSRange(location: 0, length: mutable.length))
+            }
+            return mutable
+        case let .textDate(text, date, format):
+            if let format, let formatDate {
+                let formatted = formatDate(date, format)
+                let result = attributedStringForRichText(.plain(formatted), styleStack: styleStack, url: url, formatDate: formatDate)
+                let mutable = result.mutableCopy() as! NSMutableAttributedString
+                if mutable.length != 0 {
+                    mutable.addAttribute(NSAttributedString.Key(rawValue: TelegramTextAttributes.Date), value: date, range: NSRange(location: 0, length: mutable.length))
+                }
+                return mutable
+            } else {
+                return attributedStringForRichText(text, styleStack: styleStack, url: url, formatDate: formatDate)
+            }
     }
 }
 
-func layoutTextItemWithString(_ string: NSAttributedString, boundingWidth: CGFloat, horizontalInset: CGFloat = 0.0, alignment: NSTextAlignment = .natural, offset: CGPoint, media: [EngineMedia.Id: EngineMedia] = [:], webpage: TelegramMediaWebpage? = nil, minimizeWidth: Bool = false, maxNumberOfLines: Int = 0, opaqueBackground: Bool = false) -> (InstantPageTextItem?, [InstantPageItem], CGSize) {
+func layoutTextItemWithString(_ string: NSAttributedString, boundingWidth: CGFloat, horizontalInset: CGFloat = 0.0, alignment: NSTextAlignment = .natural, offset: CGPoint, media: [EngineMedia.Id: EngineMedia] = [:], webpage: TelegramMediaWebpage? = nil, minimizeWidth: Bool = false, fitToWidth: Bool = false, maxNumberOfLines: Int = 0, opaqueBackground: Bool = false) -> (InstantPageTextItem?, [InstantPageItem], CGSize) {
     if string.length == 0 {
         return (nil, [], CGSize())
     }
@@ -909,15 +1180,26 @@ func layoutTextItemWithString(_ string: NSAttributedString, boundingWidth: CGFlo
             }
             
             var strikethroughItems: [InstantPageTextStrikethroughItem] = []
+            var underlineItems: [InstantPageTextUnderlineItem] = []
             var markedItems: [InstantPageTextMarkedItem] = []
             var anchorItems: [InstantPageTextAnchorItem] = []
-            
+
             string.enumerateAttributes(in: lineRange, options: []) { attributes, range, _ in
                 if let _ = attributes[NSAttributedString.Key.strikethroughStyle] {
                     let lowerX = floor(CTLineGetOffsetForStringIndex(line, range.location, nil))
                     let upperX = ceil(CTLineGetOffsetForStringIndex(line, range.location + range.length, nil))
                     let x = lowerX < upperX ? lowerX : upperX
                     strikethroughItems.append(InstantPageTextStrikethroughItem(frame: CGRect(x: workingLineOrigin.x + x, y: workingLineOrigin.y, width: abs(upperX - lowerX), height: fontLineHeight)))
+                }
+                if let _ = attributes[NSAttributedString.Key.underlineStyle] {
+                    let lowerX = floor(CTLineGetOffsetForStringIndex(line, range.location, nil))
+                    let upperX = ceil(CTLineGetOffsetForStringIndex(line, range.location + range.length, nil))
+                    let x = lowerX < upperX ? lowerX : upperX
+                    underlineItems.append(InstantPageTextUnderlineItem(
+                        frame: CGRect(x: workingLineOrigin.x + x, y: workingLineOrigin.y, width: abs(upperX - lowerX), height: fontLineHeight),
+                        range: range,
+                        color: attributes[NSAttributedString.Key.underlineColor] as? UIColor
+                    ))
                 }
                 if let color = attributes[NSAttributedString.Key.init(rawValue: InstantPageMarkerColorAttribute)] as? UIColor {
                     var lineHeight = fontLineHeight
@@ -967,7 +1249,7 @@ func layoutTextItemWithString(_ string: NSAttributedString, boundingWidth: CGFlo
                     }
                 }
             }
-            let textLine = InstantPageTextLine(line: line, range: lineRange, frame: CGRect(x: workingLineOrigin.x, y: workingLineOrigin.y, width: lineWidth, height: height), strikethroughItems: strikethroughItems, markedItems: markedItems, imageItems: lineImageItems, formulaItems: lineFormulaItems, anchorItems: anchorItems, isRTL: isRTL)
+            let textLine = InstantPageTextLine(line: line, range: lineRange, frame: CGRect(x: workingLineOrigin.x, y: workingLineOrigin.y, width: lineWidth, height: height), strikethroughItems: strikethroughItems, underlineItems: underlineItems, markedItems: markedItems, imageItems: lineImageItems, formulaItems: lineFormulaItems, anchorItems: anchorItems, isRTL: isRTL)
             
             lines.append(textLine)
             imageItems.append(contentsOf: lineImageItems)
@@ -999,6 +1281,9 @@ func layoutTextItemWithString(_ string: NSAttributedString, boundingWidth: CGFlo
     }
     
     var textWidth = boundingWidth
+    if fitToWidth {
+        textWidth = maxLineWidth
+    }
     var requiresScroll = false
     if (!imageItems.isEmpty || !formulaItems.isEmpty) && maxLineWidth > boundingWidth + 10.0 {
         textWidth = maxLineWidth

@@ -14,7 +14,6 @@ import LegacyInstantVideoController
 import UndoUI
 import ContextUI
 import TelegramCore
-import Postbox
 import AvatarNode
 import MediaEditorScreen
 import ImageCompression
@@ -80,7 +79,7 @@ public final class StoryItemSetContainerComponent: Component {
     public enum NavigationDirection {
         case previous
         case next
-        case id(StoryId)
+        case id(EngineStoryId)
     }
     
     public struct PinchState: Equatable {
@@ -122,7 +121,7 @@ public final class StoryItemSetContainerComponent: Component {
     public let close: () -> Void
     public let navigate: (NavigationDirection) -> Void
     public let delete: () -> Void
-    public let markAsSeen: (StoryId) -> Void
+    public let markAsSeen: (EngineStoryId) -> Void
     public let reorder: () -> Void
     public let createToFolder: (String, [EngineStoryItem]) -> Void
     public let addToFolder: (Int64) -> Void
@@ -163,7 +162,7 @@ public final class StoryItemSetContainerComponent: Component {
         close: @escaping () -> Void,
         navigate: @escaping (NavigationDirection) -> Void,
         delete: @escaping () -> Void,
-        markAsSeen: @escaping (StoryId) -> Void,
+        markAsSeen: @escaping (EngineStoryId) -> Void,
         reorder: @escaping () -> Void,
         createToFolder: @escaping (String, [EngineStoryItem]) -> Void,
         addToFolder: @escaping (Int64) -> Void,
@@ -363,11 +362,11 @@ public final class StoryItemSetContainerComponent: Component {
     }
     
     final class CaptionItem {
-        let itemId: StoryId
+        let itemId: EngineStoryId
         let externalState = StoryContentCaptionComponent.ExternalState()
         let view = ComponentView<Empty>()
         
-        init(itemId: StoryId) {
+        init(itemId: EngineStoryId) {
             self.itemId = itemId
         }
     }
@@ -471,7 +470,7 @@ public final class StoryItemSetContainerComponent: Component {
         
         var isSearchActive: Bool = false
         
-        var viewLists: [StoryId: ViewList] = [:]
+        var viewLists: [EngineStoryId: ViewList] = [:]
         let viewListsContainer: UIView
         
         var isEditingStory: Bool = false
@@ -479,8 +478,8 @@ public final class StoryItemSetContainerComponent: Component {
         var itemLayout: ItemLayout?
         var ignoreScrolling: Bool = false
         
-        var visibleItems: [StoryId: VisibleItem] = [:]
-        var trulyValidIds: [StoryId] = []
+        var visibleItems: [EngineStoryId: VisibleItem] = [:]
+        var trulyValidIds: [EngineStoryId] = []
         
         var reactionContextNode: ReactionContextNode?
         weak var disappearingReactionContextNode: ReactionContextNode?
@@ -506,8 +505,8 @@ public final class StoryItemSetContainerComponent: Component {
         
         let transitionCloneContainerView: UIView
         
-        private var awaitingSwitchToId: (from: StoryId, to: StoryId)?
-        private var animateNextNavigationId: StoryId?
+        private var awaitingSwitchToId: (from: EngineStoryId, to: EngineStoryId)?
+        private var animateNextNavigationId: EngineStoryId?
         private var initializedOffset: Bool = false
         
         private var viewListPanState: PanState?
@@ -1498,8 +1497,8 @@ public final class StoryItemSetContainerComponent: Component {
                 hintAllowSynchronousLoads = hint.allowSynchronousLoads
             }
             
-            var validIds: [StoryId] = []
-            var trulyValidIds: [StoryId] = []
+            var validIds: [EngineStoryId] = []
+            var trulyValidIds: [EngineStoryId] = []
             
             let centralItemX = itemLayout.contentFrame.center.x
             
@@ -1980,7 +1979,7 @@ public final class StoryItemSetContainerComponent: Component {
             
             self.trulyValidIds = trulyValidIds
             
-            var removeIds: [StoryId] = []
+            var removeIds: [EngineStoryId] = []
             for (id, visibleItem) in self.visibleItems {
                 if !validIds.contains(id) {
                     removeIds.append(id)
@@ -2001,7 +2000,7 @@ public final class StoryItemSetContainerComponent: Component {
                 return
             }
             let progressMode = self.itemProgressMode()
-            var centralId: StoryId?
+            var centralId: EngineStoryId?
             if let component = self.component {
                 centralId = component.slice.item.id
             }
@@ -3442,7 +3441,7 @@ public final class StoryItemSetContainerComponent: Component {
             let minimizedHeight = max(100.0, availableSize.height - (325.0 + 12.0))
             let defaultHeight = 60.0 + component.safeInsets.bottom + 1.0
             
-            var validViewListIds: [StoryId] = []
+            var validViewListIds: [EngineStoryId] = []
             
             var displayViewLists = false
             if case .liveStream = component.slice.item.storyItem.media {
@@ -3455,7 +3454,7 @@ public final class StoryItemSetContainerComponent: Component {
             
             var viewListHeightMidFraction: CGFloat = 0.0
             if displayViewLists, let currentIndex = component.slice.allItems.firstIndex(where: { $0.id == component.slice.item.id }) {
-                var visibleViewListIds: [StoryId] = [component.slice.item.id]
+                var visibleViewListIds: [EngineStoryId] = [component.slice.item.id]
                 if self.viewListDisplayState != .hidden, let viewListPanState = self.viewListPanState {
                     if currentIndex != 0 {
                         if viewListPanState.fraction > 0.0 {
@@ -3469,7 +3468,7 @@ public final class StoryItemSetContainerComponent: Component {
                     }
                 }
                 
-                var preloadViewListIds: [(StoryId, EngineStoryItem.Views)] = []
+                var preloadViewListIds: [(EngineStoryId, EngineStoryItem.Views)] = []
                 if let views = component.slice.item.storyItem.views {
                     preloadViewListIds.append((component.slice.item.id, views))
                 }
@@ -3507,7 +3506,7 @@ public final class StoryItemSetContainerComponent: Component {
                 }
                 
                 var fixedAnimationOffset: CGFloat = 0.0
-                var applyFixedAnimationOffsetIds: [StoryId] = []
+                var applyFixedAnimationOffsetIds: [EngineStoryId] = []
                 
                 let normalCollapsedContentAreaHeight: CGFloat = availableSize.height - minimizedHeight
                 
@@ -3929,7 +3928,7 @@ public final class StoryItemSetContainerComponent: Component {
             } else {
                 self.viewListMetrics = nil
             }
-            var removeViewListIds: [StoryId] = []
+            var removeViewListIds: [EngineStoryId] = []
             for (id, viewList) in self.viewLists {
                 if !validViewListIds.contains(id) {
                     removeViewListIds.append(id)
@@ -4544,7 +4543,7 @@ public final class StoryItemSetContainerComponent: Component {
                 }
                 var forwardInfoStory: Signal<EngineStoryItem?, NoError>? = nil
                 if let forwardInfo = component.slice.item.storyItem.forwardInfo, case let .known(peer, id, _) = forwardInfo {
-                    forwardInfoStory = component.slice.forwardInfoStories[StoryId(peerId: peer.id, id: id)]?.get()
+                    forwardInfoStory = component.slice.forwardInfoStories[EngineStoryId(peerId: peer.id, id: id)]?.get()
                 }
                 let captionSize = captionItem.view.update(
                     transition: captionItemTransition,
@@ -4566,7 +4565,7 @@ public final class StoryItemSetContainerComponent: Component {
                             }
                             switch action {
                             case let .url(url, concealed):
-                                let _ = openUserGeneratedUrl(context: component.context, peerId: component.slice.effectivePeer.id, url: url, concealed: concealed, skipUrlAuth: false, skipConcealedAlert: false, forceDark: true, present: { [weak self] c in
+                                let _ = component.context.sharedContext.openUserGeneratedUrl(context: component.context, peerId: component.slice.effectivePeer.id, url: url, webpage: nil, concealed: concealed, forceConcealed: false, skipUrlAuth: false, skipConcealedAlert: false, forceDark: true, present: { [weak self] c in
                                     guard let self, let component = self.component, let controller = component.controller() else {
                                         return
                                     }
@@ -4576,13 +4575,13 @@ public final class StoryItemSetContainerComponent: Component {
                                         return
                                     }
                                     self.sendMessageContext.openResolved(view: self, result: resolved, forceExternal: false, concealed: concealed)
-                                }, alertDisplayUpdated: { [weak self] alertController in
+                                }, progress: nil, alertDisplayUpdated: { [weak self] alertController in
                                     guard let self else {
                                         return
                                     }
                                     self.sendMessageContext.statusController = alertController
                                     self.updateIsProgressPaused()
-                                })
+                                }, concealedAlertOption: nil)
                             case let .textMention(value):
                                 self.sendMessageContext.openPeerMention(view: self, name: value)
                             case let .peerMention(peerId, _):
@@ -4600,7 +4599,7 @@ public final class StoryItemSetContainerComponent: Component {
                                 return
                             }
                             self.sendMessageContext.presentTextEntityActions(view: self, action: action, openUrl: { [weak self] url, concealed in
-                                let _ = openUserGeneratedUrl(context: component.context, peerId: component.slice.effectivePeer.id, url: url, concealed: concealed, skipUrlAuth: false, skipConcealedAlert: false, present: { [weak self] c in
+                                let _ = component.context.sharedContext.openUserGeneratedUrl(context: component.context, peerId: component.slice.effectivePeer.id, url: url, webpage: nil, concealed: concealed, forceConcealed: false, skipUrlAuth: false, skipConcealedAlert: false, forceDark: false, present: { [weak self] c in
                                     guard let self, let component = self.component, let controller = component.controller() else {
                                         return
                                     }
@@ -4610,7 +4609,7 @@ public final class StoryItemSetContainerComponent: Component {
                                         return
                                     }
                                     self.sendMessageContext.openResolved(view: self, result: resolved, forceExternal: false, concealed: concealed)
-                                })
+                                }, progress: nil, alertDisplayUpdated: nil, concealedAlertOption: nil)
                             })
                         },
                         textSelectionAction: { [weak self] text, action in
@@ -4830,7 +4829,7 @@ public final class StoryItemSetContainerComponent: Component {
                                         }
                                     }
                                 case let .custom(fileId):
-                                    selectedItems.insert(AnyHashable(MediaId(namespace: Namespaces.Media.CloudFile, id: fileId)))
+                                    selectedItems.insert(AnyHashable(EngineMedia.Id(namespace: Namespaces.Media.CloudFile, id: fileId)))
                                 }
                             }
                             
@@ -4969,8 +4968,8 @@ public final class StoryItemSetContainerComponent: Component {
                                     self.state?.updated(transition: ComponentTransition(animation: .curve(duration: 0.25, curve: .easeInOut)))
                                                                 
                                     var text = ""
-                                    var messageAttributes: [MessageAttribute] = []
-                                    var inlineStickers: [MediaId : Media] = [:]
+                                    var messageAttributes: [EngineMessage.Attribute] = []
+                                    var inlineStickers: [EngineMedia.Id : EngineRawMedia] = [:]
                                     switch updateReaction {
                                     case let .builtin(textValue):
                                         text = textValue
@@ -5654,7 +5653,7 @@ public final class StoryItemSetContainerComponent: Component {
                 return
             }
             
-            let storyId = StoryId(peerId: peer.id, id: id)
+            let storyId = EngineStoryId(peerId: peer.id, id: id)
             
             guard let viewList = self.viewLists[component.slice.item.id], let viewListView = viewList.view.view as? StoryItemSetViewListComponent.View, let viewListContext = viewListView.currentViewList else {
                 return
@@ -5681,7 +5680,7 @@ public final class StoryItemSetContainerComponent: Component {
                     transitionIn: transitionIn,
                     transitionOut: { [weak sourceView, weak viewListView] peerId, storyIdValue in
                         var destinationView: UIView?
-                        if let view = viewListView?.sourceView(storyId: StoryId(peerId: peerId, id: storyIdValue as? Int32 ?? 0)) {
+                        if let view = viewListView?.sourceView(storyId: EngineStoryId(peerId: peerId, id: storyIdValue as? Int32 ?? 0)) {
                             destinationView = view
                         } else {
                             destinationView = sourceView
@@ -6478,7 +6477,7 @@ public final class StoryItemSetContainerComponent: Component {
                                 if let story = folderPreview.item {
                                     var imageSignal: Signal<UIImage?, NoError>?
                                     
-                                    var selectedMedia: Media?
+                                    var selectedMedia: EngineRawMedia?
                                     if let image = story.media._asMedia() as? TelegramMediaImage {
                                         selectedMedia = image
                                     } else if let file = story.media._asMedia() as? TelegramMediaFile {

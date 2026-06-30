@@ -17,6 +17,7 @@ swift_library(
         "//submodules/SSignalKit/SwiftSignalKit",
         "//submodules/TelegramPresentationData",
         "//submodules/AccountContext",
+        "//submodules/ItemListUI",
         "//submodules/PresentationDataUtils",
         "//submodules/WallpaperBackgroundNode",
         "//submodules/ComponentFlow",

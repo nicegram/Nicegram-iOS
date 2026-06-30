@@ -184,6 +184,8 @@ final class ChatListNoticeItemNode: ItemListRevealOptionsItemNode {
             var okButtonLayout: (TextNodeLayout, () -> TextNode)?
             var cancelButtonLayout: (TextNodeLayout, () -> TextNode)?
             var alignment: NSTextAlignment = .left
+            var textLinkAction: (([NSAttributedString.Key: Any], Int) -> Void)?
+            var textHighlightAction: (([NSAttributedString.Key: Any]) -> NSAttributedString.Key?)?
             
             switch item.notice {
             case let .clearStorage(sizeFraction):
@@ -271,6 +273,54 @@ final class ChatListNoticeItemNode: ItemListRevealOptionsItemNode {
                 
                 okButtonLayout = makeOkButtonTextLayout(TextNodeLayoutArguments(attributedString: NSAttributedString(string: item.strings.ChatList_SessionReview_PanelConfirm, font: titleFont, textColor: item.theme.list.itemAccentColor), maximumNumberOfLines: 1, truncationType: .end, constrainedSize: CGSize(width: params.width - sideInset - rightInset, height: 100.0)))
                 cancelButtonLayout = makeCancelButtonTextLayout(TextNodeLayoutArguments(attributedString: NSAttributedString(string: item.strings.ChatList_SessionReview_PanelReject, font: titleFont, textColor: item.theme.list.itemDestructiveColor), maximumNumberOfLines: 1, truncationType: .end, constrainedSize: CGSize(width: params.width - sideInset - rightInset, height: 100.0)))
+            case let .reviewBotConnection(newBotConnectionReview, botUsername, totalCount):
+                spacing = 2.0
+                alignment = .center
+                
+                var rawTitleString = item.strings.ChatList_BotConnectionReview_PanelTitle
+                if totalCount > 1 {
+                    rawTitleString = "1/\(totalCount) \(rawTitleString)"
+                }
+                titleString = NSAttributedString(string: rawTitleString, font: titleFont, textColor: item.theme.rootController.navigationBar.primaryTextColor)
+                
+                let formattedBotUsername = botUsername.isEmpty ? "" : "[@\(botUsername)](peer)"
+                let rawText = item.strings.ChatList_BotConnectionReview_PanelText(formattedBotUsername, newBotConnectionReview.device ?? "", newBotConnectionReview.location ?? "").string
+                textString = parseMarkdownIntoAttributedString(rawText, attributes: MarkdownAttributes(
+                    body: MarkdownAttributeSet(font: textFont, textColor: item.theme.rootController.navigationBar.secondaryTextColor),
+                    bold: MarkdownAttributeSet(font: textBoldFont, textColor: item.theme.rootController.navigationBar.secondaryTextColor),
+                    link: MarkdownAttributeSet(font: textFont, textColor: item.theme.rootController.navigationBar.accentTextColor),
+                    linkAttribute: { _ in
+                        return (TelegramTextAttributes.URL, "peer")
+                    }
+                ))
+                textHighlightAction = { attributes in
+                    if let _ = attributes[NSAttributedString.Key(rawValue: TelegramTextAttributes.URL)] {
+                        return NSAttributedString.Key(rawValue: TelegramTextAttributes.URL)
+                    } else {
+                        return nil
+                    }
+                }
+                textLinkAction = { [context = item.context] attributes, _ in
+                    guard let _ = attributes[NSAttributedString.Key(rawValue: TelegramTextAttributes.URL)] as? String else {
+                        return
+                    }
+                    let _ = (context.engine.data.get(
+                        TelegramEngine.EngineData.Item.Peer.Peer(id: newBotConnectionReview.botId)
+                    )
+                    |> deliverOnMainQueue).startStandalone(next: { peer in
+                        guard let peer, let controller = context.sharedContext.makePeerInfoController(context: context, updatedPresentationData: nil, peer: peer, mode: .generic, avatarInitiallyExpanded: false, fromChat: false, requestsContext: nil) else {
+                            return
+                        }
+                        if let navigationController = context.sharedContext.mainWindow?.viewController as? NavigationController {
+                            navigationController.pushViewController(controller)
+                        } else {
+                            context.sharedContext.mainWindow?.present(controller, on: .root)
+                        }
+                    })
+                }
+                
+                okButtonLayout = makeOkButtonTextLayout(TextNodeLayoutArguments(attributedString: NSAttributedString(string: item.strings.ChatList_SessionReview_PanelConfirm, font: titleFont, textColor: item.theme.list.itemAccentColor), maximumNumberOfLines: 1, truncationType: .end, constrainedSize: CGSize(width: params.width - sideInset - rightInset, height: 100.0)))
+                cancelButtonLayout = makeCancelButtonTextLayout(TextNodeLayoutArguments(attributedString: NSAttributedString(string: item.strings.ChatList_SessionReview_PanelReject, font: titleFont, textColor: item.theme.list.itemDestructiveColor), maximumNumberOfLines: 1, truncationType: .end, constrainedSize: CGSize(width: params.width - sideInset - rightInset, height: 100.0)))
             case let .starsSubscriptionLowBalance(amount, peers):
                 let title: String
                 let text: String
@@ -331,15 +381,18 @@ final class ChatListNoticeItemNode: ItemListRevealOptionsItemNode {
                     
                     let _ = titleLayout.1(TextNodeWithEntities.Arguments(context: item.context, cache: item.context.animationCache, renderer: item.context.animationRenderer, placeholderColor: .white, attemptSynchronous: true))
                     if case .center = alignment {
-                        strongSelf.titleNode.textNode.frame = CGRect(origin: CGPoint(x: floor((params.width - titleLayout.0.size.width) * 0.5), y: verticalInset), size: titleLayout.0.size)
+                        strongSelf.titleNode.textNode.frame = CGRect(origin: CGPoint(x: floor((params.width - titleLayout.0.size.width) * 0.5), y: verticalInset + 1.0), size: titleLayout.0.size)
                     } else {
-                        strongSelf.titleNode.textNode.frame = CGRect(origin: CGPoint(x: leftInset, y: verticalInset), size: titleLayout.0.size)
+                        strongSelf.titleNode.textNode.frame = CGRect(origin: CGPoint(x: leftInset, y: verticalInset + 1.0), size: titleLayout.0.size)
                     }
                     
                     let _ = textLayout.1(TextNodeWithEntities.Arguments(context: item.context, cache: item.context.animationCache, renderer: item.context.animationRenderer, placeholderColor: .white, attemptSynchronous: true))
                     
                     strongSelf.titleNode.visibilityRect = CGRect(origin: CGPoint(), size: CGSize(width: 1000000.0, height: 1000000.0))
                     strongSelf.textNode.visibilityRect = CGRect(origin: CGPoint(), size: CGSize(width: 1000000.0, height: 1000000.0))
+                    strongSelf.textNode.linkHighlightColor = item.theme.rootController.navigationBar.accentTextColor.withAlphaComponent(0.12)
+                    strongSelf.textNode.highlightAttributeAction = textHighlightAction
+                    strongSelf.textNode.tapAttributeAction = textLinkAction
                     
                     if case .center = alignment {
                         strongSelf.textNode.textNode.frame = CGRect(origin: CGPoint(x: floor((params.width - textLayout.0.size.width) * 0.5), y: strongSelf.titleNode.textNode.frame.maxY + spacing), size: textLayout.0.size)

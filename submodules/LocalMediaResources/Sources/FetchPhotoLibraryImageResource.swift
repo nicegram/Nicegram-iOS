@@ -1,8 +1,8 @@
 import Foundation
 import UIKit
 import Photos
-import Postbox
 import SwiftSignalKit
+import TelegramCore
 import ImageCompression
 import Accelerate.vImage
 import CoreImage
@@ -104,7 +104,7 @@ extension UIImage.Orientation {
 
 private let fetchPhotoWorkers = ThreadPool(threadCount: 3, threadPriority: 0.2)
 
-public func fetchPhotoLibraryResource(localIdentifier: String, width: Int32?, height: Int32?, format: MediaImageFormat?, quality: Int32?, hd: Bool, useExif: Bool) -> Signal<MediaResourceDataFetchResult, MediaResourceDataFetchError> {
+public func fetchPhotoLibraryResource(localIdentifier: String, width: Int32?, height: Int32?, format: MediaImageFormat?, quality: Int32?, hd: Bool, useExif: Bool) -> Signal<EngineMediaResourceDataFetchResult, EngineMediaResourceDataFetchError> {
     return Signal { subscriber in
         let queue = ThreadPoolQueue(threadPool: fetchPhotoWorkers)
         
@@ -178,9 +178,9 @@ public func fetchPhotoLibraryResource(localIdentifier: String, width: Int32?, he
                                 
                                 switch format {
                                 case .none, .jpeg:
-                                    let tempFile = TempBox.shared.tempFile(fileName: "file")
+                                    let tempFile = EngineTempBox.shared.tempFile(fileName: "file")
                                     defer {
-                                        TempBox.shared.dispose(tempFile)
+                                        EngineTempBox.shared.dispose(tempFile)
                                     }
                                     if let scaledImage = scaledImage, let data = compressImageToJPEG(scaledImage, quality: 0.6, tempFilePath: tempFile.path) {
     #if DEBUG

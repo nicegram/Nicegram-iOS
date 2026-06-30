@@ -899,7 +899,7 @@ private final class SparseItemGridBindingImpl: SparseItemGridBinding, ListShimme
                 layer.updateHasSpoiler(hasSpoiler: hasSpoiler)
                 
                 var selectedMedia: Media?
-                for media in message.media {
+                for media in message.effectiveMedia {
                     if let image = media as? TelegramMediaImage {
                         selectedMedia = image
                         break
@@ -1777,7 +1777,7 @@ public final class PeerInfoVisualMediaPaneNode: ASDisplayNode, PeerInfoPaneNode,
         let _ = updateVisualMediaStoredState(engine: self.context.engine, peerId: self.peerId, messageTag: self.stateTag, state: VisualMediaStoredState(zoomLevel: level.rawValue)).start()
     }
     
-    public func ensureMessageIsVisible(id: MessageId) {
+    public func ensureMessageIsVisible(id: EngineMessage.Id) {
     }
     
     private func requestHistoryAroundVisiblePosition(synchronous: Bool, reloadAtTop: Bool) {
@@ -1880,7 +1880,7 @@ public final class PeerInfoVisualMediaPaneNode: ASDisplayNode, PeerInfoPaneNode,
         self.itemGrid.brieflyDisableTouchActions()
     }
     
-    public func findLoadedMessage(id: MessageId) -> Message? {
+    public func findLoadedMessage(id: EngineMessage.Id) -> EngineMessage? {
         guard let items = self.items else {
             return nil
         }
@@ -1889,7 +1889,7 @@ public final class PeerInfoVisualMediaPaneNode: ASDisplayNode, PeerInfoPaneNode,
                 continue
             }
             if item.message.id == id {
-                return item.message
+                return EngineMessage(item.message)
             }
         }
         return nil
@@ -1929,7 +1929,7 @@ public final class PeerInfoVisualMediaPaneNode: ASDisplayNode, PeerInfoPaneNode,
         }
     }
     
-    public func transitionNodeForGallery(messageId: MessageId, media: Media) -> (ASDisplayNode, CGRect, () -> (UIView?, UIView?))? {
+    public func transitionNodeForGallery(messageId: EngineMessage.Id, media: EngineMedia) -> (ASDisplayNode, CGRect, () -> (UIView?, UIView?))? {
         var foundItemLayer: SparseItemGridLayer?
         self.itemGrid.forEachVisibleItem { item in
             guard let itemLayer = item.layer as? ItemLayer else {

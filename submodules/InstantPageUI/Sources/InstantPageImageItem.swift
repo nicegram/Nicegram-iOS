@@ -7,12 +7,17 @@ import TelegramUIPreferences
 import AccountContext
 import ContextUI
 
-protocol InstantPageImageAttribute {
+public protocol InstantPageImageAttribute {
 }
 
-struct InstantPageMapAttribute: InstantPageImageAttribute {
-    let zoom: Int32
-    let dimensions: CGSize
+public struct InstantPageMapAttribute: InstantPageImageAttribute {
+    public let zoom: Int32
+    public let dimensions: CGSize
+
+    public init(zoom: Int32, dimensions: CGSize) {
+        self.zoom = zoom
+        self.dimensions = dimensions
+    }
 }
 
 public final class InstantPageImageItem: InstantPageItem {

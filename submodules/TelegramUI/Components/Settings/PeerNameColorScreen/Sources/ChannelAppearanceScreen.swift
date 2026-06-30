@@ -4,7 +4,6 @@ import Photos
 import Display
 import AsyncDisplayKit
 import SwiftSignalKit
-import Postbox
 import TelegramCore
 import TelegramPresentationData
 import TelegramUIPreferences
@@ -98,7 +97,7 @@ final class ChannelAppearanceScreenComponent: Component {
                     TelegramEngine.EngineData.Item.Peer.StickerPack(id: peerId),
                     TelegramEngine.EngineData.Item.Peer.Wallpaper(id: peerId)
                 ),
-                telegramThemes(postbox: context.account.postbox, network: context.account.network, accountManager: context.sharedContext.accountManager)
+                context.engine.themes.themes(accountManager: context.sharedContext.accountManager)
             )
             |> map { peerData, cloudThemes -> ContentsData in
                 let (peer, subscriberCount, emojiPack, canSetStickerPack, stickerPack, wallpaper) = peerData
@@ -170,7 +169,8 @@ final class ChannelAppearanceScreenComponent: Component {
     }
     
     final class View: UIView, UIScrollViewDelegate {
-        private let edgeEffectView: EdgeEffectView
+        private let topEdgeEffectView: EdgeEffectView
+        private let bottomEdgeEffectView: EdgeEffectView
         private let topOverscrollLayer = SimpleLayer()
         private let scrollView: ScrollView
         private let actionButton = ComponentView<Empty>()
@@ -226,7 +226,8 @@ final class ChannelAppearanceScreenComponent: Component {
         private weak var emojiStatusSelectionController: ViewController?
         
         override init(frame: CGRect) {
-            self.edgeEffectView = EdgeEffectView()
+            self.topEdgeEffectView = EdgeEffectView()
+            self.bottomEdgeEffectView = EdgeEffectView()
             
             self.scrollView = ScrollView()
             self.scrollView.showsVerticalScrollIndicator = true
@@ -247,7 +248,8 @@ final class ChannelAppearanceScreenComponent: Component {
             
             self.scrollView.layer.addSublayer(self.topOverscrollLayer)
             
-            self.addSubview(self.edgeEffectView)
+            self.addSubview(self.topEdgeEffectView)
+            self.addSubview(self.bottomEdgeEffectView)
         }
         
         required init?(coder: NSCoder) {
@@ -340,7 +342,7 @@ final class ChannelAppearanceScreenComponent: Component {
                 transition.setAlpha(view: navigationTitleView, alpha: navigationAlpha)
             }
             
-            //transition.setAlpha(view: self.edgeEffectView, alpha: navigationAlpha)
+            transition.setAlpha(view: self.topEdgeEffectView, alpha: navigationAlpha)
         }
         
         private func resolveState() -> ResolvedState? {
@@ -695,9 +697,9 @@ final class ChannelAppearanceScreenComponent: Component {
             self.previousEmojiSetupTimestamp = currentTimestamp
             
             self.emojiStatusSelectionController?.dismiss()
-            var selectedItems = Set<MediaId>()
+            var selectedItems = Set<EngineMedia.Id>()
             if let currentFileId {
-                selectedItems.insert(MediaId(namespace: Namespaces.Media.CloudFile, id: currentFileId))
+                selectedItems.insert(EngineMedia.Id(namespace: Namespaces.Media.CloudFile, id: currentFileId))
             }
             
             let mappedSubject: EmojiPagerContentComponent.Subject
@@ -929,7 +931,7 @@ final class ChannelAppearanceScreenComponent: Component {
                     if let temporaryPeerWallpaper = self.temporaryPeerWallpaper {
                         resolvedWallpaper = .single(temporaryPeerWallpaper)
                     } else if case let .file(file) = presentationTheme.chat.defaultWallpaper, file.id == 0 {
-                        resolvedWallpaper = cachedWallpaper(account: component.context.account, slug: file.slug, settings: file.settings)
+                        resolvedWallpaper = cachedWallpaper(engine: component.context.engine, network: component.context.account.network, slug: file.slug, settings: file.settings)
                         |> map { wallpaper -> TelegramWallpaper? in
                             return wallpaper?.wallpaper
                         }
@@ -1303,7 +1305,7 @@ final class ChannelAppearanceScreenComponent: Component {
                 
                 var emojiPackFile: TelegramMediaFile?
                 if let thumbnail = emojiPack?.thumbnail {
-                    emojiPackFile = TelegramMediaFile(fileId: MediaId(namespace: 0, id: 0), partialReference: nil, resource: thumbnail.resource, previewRepresentations: [], videoThumbnails: [], immediateThumbnailData: thumbnail.immediateThumbnailData, mimeType: "", size: nil, attributes: [], alternativeRepresentations: [])
+                    emojiPackFile = TelegramMediaFile(fileId: EngineMedia.Id(namespace: 0, id: 0), partialReference: nil, resource: thumbnail.resource, previewRepresentations: [], videoThumbnails: [], immediateThumbnailData: thumbnail.immediateThumbnailData, mimeType: "", size: nil, attributes: [], alternativeRepresentations: [])
                 }
                 
                 let emojiPackSectionSize = self.emojiPackSection.update(
@@ -1435,7 +1437,7 @@ final class ChannelAppearanceScreenComponent: Component {
                 
                 var stickerPackFile: TelegramMediaFile?
                 if let peerStickerPack = contentsData.peerStickerPack, let thumbnail = peerStickerPack.thumbnail {
-                    stickerPackFile = TelegramMediaFile(fileId: MediaId(namespace: 0, id: peerStickerPack.id.id), partialReference: nil, resource: thumbnail.resource, previewRepresentations: [], videoThumbnails: [], immediateThumbnailData: thumbnail.immediateThumbnailData, mimeType: "", size: nil, attributes: [], alternativeRepresentations: [])
+                    stickerPackFile = TelegramMediaFile(fileId: EngineMedia.Id(namespace: 0, id: peerStickerPack.id.id), partialReference: nil, resource: thumbnail.resource, previewRepresentations: [], videoThumbnails: [], immediateThumbnailData: thumbnail.immediateThumbnailData, mimeType: "", size: nil, attributes: [], alternativeRepresentations: [])
                 }
                 
                 let stickerPackSectionSize = self.stickerPackSection.update(
@@ -1505,7 +1507,7 @@ final class ChannelAppearanceScreenComponent: Component {
             if !isGroup {
                 let messageItem = PeerNameColorChatPreviewItem.MessageItem(
                     outgoing: false,
-                    peerId: EnginePeer.Id(namespace: peer.id.namespace, id: PeerId.Id._internalFromInt64Value(0)),
+                    peerId: EnginePeer.Id(namespace: peer.id.namespace, id: EnginePeer.Id.Id._internalFromInt64Value(0)),
                     author: peer.compactDisplayTitle,
                     photo: peer.profileImageRepresentations,
                     nameColor: .preset(resolvedState.nameColor),
@@ -1644,7 +1646,7 @@ final class ChannelAppearanceScreenComponent: Component {
                 if isGroup {
                     let incomingMessageItem = PeerNameColorChatPreviewItem.MessageItem(
                         outgoing: false,
-                        peerId: EnginePeer.Id(namespace: Namespaces.Peer.CloudUser, id: PeerId.Id._internalFromInt64Value(0)),
+                        peerId: EnginePeer.Id(namespace: Namespaces.Peer.CloudUser, id: EnginePeer.Id.Id._internalFromInt64Value(0)),
                         author: environment.strings.Group_Appearance_PreviewAuthor,
                         photo: [],
                         nameColor: .preset(.red),
@@ -1656,7 +1658,7 @@ final class ChannelAppearanceScreenComponent: Component {
                     
                     let outgoingMessageItem = PeerNameColorChatPreviewItem.MessageItem(
                         outgoing: true,
-                        peerId: EnginePeer.Id(namespace: Namespaces.Peer.CloudUser, id: PeerId.Id._internalFromInt64Value(1)),
+                        peerId: EnginePeer.Id(namespace: Namespaces.Peer.CloudUser, id: EnginePeer.Id.Id._internalFromInt64Value(1)),
                         author: peer.compactDisplayTitle,
                         photo: peer.profileImageRepresentations,
                         nameColor: .preset(.blue),
@@ -1824,10 +1826,15 @@ final class ChannelAppearanceScreenComponent: Component {
                 transition.setAlpha(view: buttonView, alpha: 1.0)
             }
             
-            let edgeEffectHeight: CGFloat = availableSize.height - buttonY + 36.0
-            let edgeEffectFrame = CGRect(origin: CGPoint(x: 0.0, y: availableSize.height - edgeEffectHeight), size: CGSize(width: availableSize.width, height: edgeEffectHeight))
-            transition.setFrame(view: self.edgeEffectView, frame: edgeEffectFrame)
-            self.edgeEffectView.update(content: environment.theme.list.blocksBackgroundColor, alpha: 1.0, rect: edgeEffectFrame, edge: .bottom, edgeSize: edgeEffectFrame.height, transition: transition)
+            let topEdgeEffectHeight: CGFloat = environment.navigationHeight + 24.0
+            let topEdgeEffectFrame = CGRect(origin: .zero, size: CGSize(width: availableSize.width, height: topEdgeEffectHeight))
+            transition.setFrame(view: self.topEdgeEffectView, frame: topEdgeEffectFrame)
+            self.topEdgeEffectView.update(content: environment.theme.list.blocksBackgroundColor, alpha: 1.0, rect: topEdgeEffectFrame, edge: .top, edgeSize: topEdgeEffectFrame.height, transition: transition)
+            
+            let bottomEdgeEffectHeight: CGFloat = availableSize.height - buttonY + 36.0
+            let bottomEdgeEffectFrame = CGRect(origin: CGPoint(x: 0.0, y: availableSize.height - bottomEdgeEffectHeight), size: CGSize(width: availableSize.width, height: bottomEdgeEffectHeight))
+            transition.setFrame(view: self.bottomEdgeEffectView, frame: bottomEdgeEffectFrame)
+            self.bottomEdgeEffectView.update(content: environment.theme.list.blocksBackgroundColor, alpha: 1.0, rect: bottomEdgeEffectFrame, edge: .bottom, edgeSize: bottomEdgeEffectFrame.height, transition: transition)
             
             let previousBounds = self.scrollView.bounds
             

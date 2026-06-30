@@ -251,12 +251,12 @@ public final class StorySearchGridScreen: ViewControllerComponentContainer {
             }
             self.present(self.context.sharedContext.makeShareController(context: self.context, params: ShareControllerParams(subject: .mapMedia(locationMap), externalShare: true)), in: .window(.root), with: nil)
         })
-        self.present(OpenInActionSheetController(context: self.context, updatedPresentationData: nil, item: .location(location: locationMap, directions: nil), additionalAction: shareAction, openUrl: { [weak self] url in
+        self.push(OpenInOptionsScreen(context: self.context, updatedPresentationData: nil, item: .location(location: locationMap, directions: nil), additionalAction: shareAction, openUrl: { [weak self] url in
             guard let self else {
                 return
             }
             self.context.sharedContext.applicationBindings.openUrl(url)
-        }), in: .window(.root), with: nil)
+        }))
     }
     
     func updateTitle() {

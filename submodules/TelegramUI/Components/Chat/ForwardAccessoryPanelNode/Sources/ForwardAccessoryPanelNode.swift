@@ -2,7 +2,6 @@ import Foundation
 import UIKit
 import AsyncDisplayKit
 import TelegramCore
-import Postbox
 import SwiftSignalKit
 import Display
 import TelegramPresentationData
@@ -23,7 +22,7 @@ import AppBundle
 import ComponentFlow
 import AlertComponent
 
-func textStringForForwardedMessage(_ message: Message, strings: PresentationStrings) -> (text: String, entities: [MessageTextEntity], isMedia: Bool) {
+func textStringForForwardedMessage(_ message: EngineRawMessage, strings: PresentationStrings) -> (text: String, entities: [MessageTextEntity], isMedia: Bool) {
     for media in message.media {
         switch media {
         case _ as TelegramMediaImage:
@@ -89,8 +88,8 @@ func textStringForForwardedMessage(_ message: Message, strings: PresentationStri
 
 public final class ForwardAccessoryPanelNode: AccessoryPanelNode {
     private let messageDisposable = MetaDisposable()
-    public let messageIds: [MessageId]
-    private var messages: [Message] = []
+    public let messageIds: [EngineMessage.Id]
+    private var messages: [EngineRawMessage] = []
     
     let closeButton: HighlightableButtonNode
     let lineNode: ASImageNode
@@ -110,7 +109,7 @@ public final class ForwardAccessoryPanelNode: AccessoryPanelNode {
     
     private var validLayout: (size: CGSize, inset: CGFloat, interfaceState: ChatPresentationInterfaceState)?
     
-    public init(context: AccountContext, messageIds: [MessageId], theme: PresentationTheme, strings: PresentationStrings, fontSize: PresentationFontSize, nameDisplayOrder: PresentationPersonNameOrder, forwardOptionsState: ChatInterfaceForwardOptionsState?, animationCache: AnimationCache?, animationRenderer: MultiAnimationRenderer?) {
+    public init(context: AccountContext, messageIds: [EngineMessage.Id], theme: PresentationTheme, strings: PresentationStrings, fontSize: PresentationFontSize, nameDisplayOrder: PresentationPersonNameOrder, forwardOptionsState: ChatInterfaceForwardOptionsState?, animationCache: AnimationCache?, animationRenderer: MultiAnimationRenderer?) {
         self.context = context
         self.messageIds = messageIds
         self.theme = theme
@@ -165,7 +164,10 @@ public final class ForwardAccessoryPanelNode: AccessoryPanelNode {
             )
         }
         
-        self.messageDisposable.set((context.account.postbox.messagesAtIds(messageIds)
+        self.messageDisposable.set((context.engine.data.get(EngineDataMap(messageIds.map(TelegramEngine.EngineData.Item.Messages.Message.init)))
+        |> map { messageMap -> [EngineRawMessage] in
+            return messageIds.compactMap { messageMap[$0]??._asMessage() }
+        }
         |> deliverOnMainQueue).start(next: { [weak self] messages in
             if let strongSelf = self {
                 if messages.isEmpty {
@@ -295,7 +297,7 @@ public final class ForwardAccessoryPanelNode: AccessoryPanelNode {
         }
         
         var authors = ""
-        var uniquePeerIds = Set<PeerId>()
+        var uniquePeerIds = Set<EnginePeer.Id>()
         var title = ""
         var text = NSMutableAttributedString(string: "")
         
@@ -325,7 +327,7 @@ public final class ForwardAccessoryPanelNode: AccessoryPanelNode {
                 case let .CustomEmoji(_, fileId):
                     let range = NSRange(location: entity.range.lowerBound, length: entity.range.upperBound - entity.range.lowerBound)
                     if range.lowerBound >= 0 && range.upperBound <= additionalText.length {
-                        additionalText.addAttribute(ChatTextInputAttributes.customEmoji, value: ChatTextInputTextCustomEmojiAttribute(interactivelySelectedFromPackId: nil, fileId: fileId, file: messages[0].associatedMedia[MediaId(namespace: Namespaces.Media.CloudFile, id: fileId)] as? TelegramMediaFile), range: range)
+                        additionalText.addAttribute(ChatTextInputAttributes.customEmoji, value: ChatTextInputTextCustomEmojiAttribute(interactivelySelectedFromPackId: nil, fileId: fileId, file: messages[0].associatedMedia[EngineMedia.Id(namespace: Namespaces.Media.CloudFile, id: fileId)] as? TelegramMediaFile), range: range)
                     }
                 default:
                     break

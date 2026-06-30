@@ -10,7 +10,6 @@ import LegacyComponents
 import ProgressNavigationButtonNode
 import ImageCompression
 import LegacyMediaPickerUI
-import Postbox
 import TextFormat
 import MoreButtonNode
 import ContextUI
@@ -272,9 +271,9 @@ final class AuthorizationSequenceSignUpController: ViewController {
         
         if let name = name {
             self.signUpWithName?(name.0, name.1, self.controllerNode.currentPhoto.flatMap({ image in
-                let tempFile = TempBox.shared.tempFile(fileName: "file")
+                let tempFile = EngineTempBox.shared.tempFile(fileName: "file")
                 let result = compressImageToJPEG(image, quality: 0.7, tempFilePath: tempFile.path)
-                TempBox.shared.dispose(tempFile)
+                EngineTempBox.shared.dispose(tempFile)
                 return result
             }), self.avatarAsset, self.avatarAdjustments, self.announceSignUp)
         }

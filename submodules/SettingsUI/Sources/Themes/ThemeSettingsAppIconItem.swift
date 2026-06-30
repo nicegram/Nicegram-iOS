@@ -179,7 +179,7 @@ private final class ThemeSettingsAppIconNode : ASDisplayNode {
         self.iconNode.frame = CGRect(origin: CGPoint(x: floorToScreenPixels((bounds.width - iconSize.width) / 2.0), y: 13.0), size: iconSize)
         self.overlayNode.frame = self.iconNode.frame
         
-        let textSize = self.textNode.updateLayout(bounds.size)
+        let textSize = self.textNode.updateLayout(CGSize(width: bounds.size.width + 8.0, height: bounds.size.height))
         let textFrame = CGRect(origin: CGPoint(x: floorToScreenPixels((bounds.width - textSize.width) / 2.0), y: 81.0), size: textSize)
         self.textNode.frame = textFrame
         

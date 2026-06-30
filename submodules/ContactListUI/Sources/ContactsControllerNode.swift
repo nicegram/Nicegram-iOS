@@ -64,7 +64,6 @@ final class ContactsControllerNode: ASDisplayNode, ASGestureRecognizerDelegate {
     var requestOpenPeerFromSearch: ((ContactListPeer) -> Void)?
     var requestOpenDisabledPeerFromSearch: ((EnginePeer, ChatListDisabledPeerReason) -> Void)?
     var requestAddContact: ((String) -> Void)?
-    var openPeopleNearby: (() -> Void)?
     var openInvite: (() -> Void)?
     var openQrScan: (() -> Void)?
     var openStories: ((EnginePeer, ASDisplayNode) -> Void)?

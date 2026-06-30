@@ -553,7 +553,7 @@ private final class ChatScheduleTimeSheetContentComponent: Component {
                 buttonTitle = strings.Conversation_CalendarSearch_Done
             }
                 
-            let buttonSideInset: CGFloat = 30.0
+            let buttonInsets = ContainerViewLayout.concentricInsets(bottomInset: environment.safeInsets.bottom, innerDiameter: 52.0, sideInset: 30.0)
             let buttonSize = self.button.update(
                 transition: transition,
                 component: AnyComponent(ButtonComponent(
@@ -583,9 +583,9 @@ private final class ChatScheduleTimeSheetContentComponent: Component {
                     }
                 )),
                 environment: {},
-                containerSize: CGSize(width: availableSize.width - buttonSideInset * 2.0, height: 52.0)
+                containerSize: CGSize(width: availableSize.width - buttonInsets.left - buttonInsets.right, height: 52.0)
             )
-            let buttonFrame = CGRect(origin: CGPoint(x: buttonSideInset, y: contentHeight), size: buttonSize)
+            let buttonFrame = CGRect(origin: CGPoint(x: buttonInsets.left, y: contentHeight), size: buttonSize)
             if let buttonView = self.button.view {
                 if buttonView.superview == nil {
                     self.addSubview(buttonView)
@@ -632,9 +632,9 @@ private final class ChatScheduleTimeSheetContentComponent: Component {
                         }
                     )),
                     environment: {},
-                    containerSize: CGSize(width: availableSize.width - buttonSideInset * 2.0, height: 52.0)
+                    containerSize: CGSize(width: availableSize.width - buttonInsets.left - buttonInsets.right, height: 52.0)
                 )
-                let buttonFrame = CGRect(origin: CGPoint(x: buttonSideInset, y: contentHeight), size: buttonSize)
+                let buttonFrame = CGRect(origin: CGPoint(x: buttonInsets.left, y: contentHeight), size: buttonSize)
                 if let buttonView = self.secondaryButton.view {
                     if buttonView.superview == nil {
                         self.addSubview(buttonView)
@@ -674,9 +674,9 @@ private final class ChatScheduleTimeSheetContentComponent: Component {
                         }
                     )),
                     environment: {},
-                    containerSize: CGSize(width: availableSize.width - buttonSideInset * 2.0, height: 52.0)
+                    containerSize: CGSize(width: availableSize.width - buttonInsets.left - buttonInsets.right, height: 52.0)
                 )
-                let buttonFrame = CGRect(origin: CGPoint(x: buttonSideInset, y: contentHeight), size: buttonSize)
+                let buttonFrame = CGRect(origin: CGPoint(x: buttonInsets.left, y: contentHeight), size: buttonSize)
                 if let buttonView = self.secondaryButton.view {
                     if buttonView.superview == nil {
                         self.addSubview(buttonView)
@@ -685,10 +685,7 @@ private final class ChatScheduleTimeSheetContentComponent: Component {
                 }
                 contentHeight += buttonSize.height
             }
-            
-            let bottomPanelPadding: CGFloat = 15.0
-            let bottomInset: CGFloat = environment.safeInsets.bottom > 0.0 ? environment.safeInsets.bottom + 5.0 : bottomPanelPadding
-            contentHeight += bottomInset
+            contentHeight += buttonInsets.bottom
             
             let contentSize = CGSize(width: availableSize.width, height: contentHeight)
             

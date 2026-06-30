@@ -134,6 +134,9 @@ public extension TelegramUser {
                 if (flags2 & (1 << 19)) != 0 {
                     botFlags.insert(.isGuestChat)
                 }
+                if (flags2 & (1 << 20)) != 0 {
+                    botFlags.insert(.isGuardBot)
+                }
                 botInfo = BotUserInfo(flags: botFlags, inlinePlaceholder: botInlinePlaceholder)
             }
             

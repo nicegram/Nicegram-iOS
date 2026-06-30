@@ -17,6 +17,7 @@ swift_library(
         "//submodules/Components/BundleIconComponent",
         "//submodules/Components/LottieAnimationComponent",
         "//submodules/AccountContext",
+        "//submodules/TelegramUI/Components/GlassBackgroundComponent",
     ],
     visibility = [
         "//visibility:public",

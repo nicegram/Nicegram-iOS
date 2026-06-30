@@ -2,7 +2,6 @@ import Foundation
 import UIKit
 import Display
 import SwiftSignalKit
-import Postbox
 import TelegramCore
 import TelegramPresentationData
 import TelegramUIPreferences
@@ -13,10 +12,7 @@ import OpenInExternalAppUI
 import ItemListPeerActionItem
 import UndoUI
 import WebKit
-import LinkPresentation
-import CoreServices
 import PersistentStringHash
-import UrlHandling
 
 private final class WebBrowserSettingsControllerArguments {
     let context: AccountContext
@@ -24,7 +20,7 @@ private final class WebBrowserSettingsControllerArguments {
     let clearCookies: () -> Void
     let clearCache: () -> Void
     let addException: () -> Void
-    let removeException: (String) -> Void
+    let removeException: (AccountWebBrowserException) -> Void
     let clearExceptions: () -> Void
     
     init(
@@ -33,7 +29,7 @@ private final class WebBrowserSettingsControllerArguments {
         clearCookies: @escaping () -> Void,
         clearCache: @escaping () -> Void,
         addException: @escaping () -> Void,
-        removeException: @escaping (String) -> Void,
+        removeException: @escaping (AccountWebBrowserException) -> Void,
         clearExceptions: @escaping () -> Void
     ) {
         self.context = context
@@ -49,31 +45,44 @@ private final class WebBrowserSettingsControllerArguments {
 private enum WebBrowserSettingsSection: Int32 {
     case browsers
     case clearCookies
-    case exceptions
+    case neverExceptions
+    case alwaysExceptions
+    case clear
 }
 
 private enum WebBrowserSettingsControllerEntry: ItemListNodeEntry {
     case browserHeader(PresentationTheme, String)
     case browser(PresentationTheme, String, OpenInApplication?, String?, Bool, Int32)
+    case browserInfo(PresentationTheme, String)
     
     case clearCookies(PresentationTheme, String)
     case clearCache(PresentationTheme, String)
     case clearCookiesInfo(PresentationTheme, String)
     
-    case exceptionsHeader(PresentationTheme, String)
-    case exceptionsAdd(PresentationTheme, String)
-    case exception(Int32, PresentationTheme, WebBrowserException)
-    case exceptionsClear(PresentationTheme, String)
-    case exceptionsInfo(PresentationTheme, String)
+    case neverHeader(PresentationTheme, String)
+    case neverAdd(PresentationTheme, String)
+    case neverException(Int32, PresentationTheme, AccountWebBrowserException)
+    case neverExceptionsInfo(PresentationTheme, String)
+    case neverExceptionsClear(PresentationTheme, String)
+    
+    case alwaysHeader(PresentationTheme, String)
+    case alwaysAdd(PresentationTheme, String)
+    case alwaysException(Int32, PresentationTheme, AccountWebBrowserException)
+    case alwaysExceptionsInfo(PresentationTheme, String)
+    case alwaysExceptionsClear(PresentationTheme, String)
     
     var section: ItemListSectionId {
         switch self {
-            case .browserHeader, .browser:
+            case .browserHeader, .browser, .browserInfo:
                 return WebBrowserSettingsSection.browsers.rawValue
             case .clearCookies, .clearCache, .clearCookiesInfo:
                 return WebBrowserSettingsSection.clearCookies.rawValue
-            case .exceptionsHeader, .exceptionsAdd, .exception, .exceptionsClear, .exceptionsInfo:
-                return WebBrowserSettingsSection.exceptions.rawValue
+            case .neverHeader, .neverAdd, .neverException, .neverExceptionsInfo:
+                return WebBrowserSettingsSection.neverExceptions.rawValue
+            case .alwaysHeader, .alwaysAdd, .alwaysException, .alwaysExceptionsInfo:
+                return WebBrowserSettingsSection.alwaysExceptions.rawValue
+            case .neverExceptionsClear, .alwaysExceptionsClear:
+                return WebBrowserSettingsSection.clear.rawValue
         }
     }
     
@@ -83,22 +92,34 @@ private enum WebBrowserSettingsControllerEntry: ItemListNodeEntry {
                 return 0
             case let .browser(_, _, _, _, _, index):
                 return UInt64(1 + index)
+            case .browserInfo:
+                return 101
             case .clearCookies:
                 return 102
             case .clearCache:
                 return 103
             case .clearCookiesInfo:
                 return 104
-            case .exceptionsHeader:
+            case .neverHeader:
                 return 105
-            case .exceptionsAdd:
+            case .neverAdd:
                 return 106
-            case let .exception(_, _, exception):
-                return 2000 + exception.domain.persistentHashValue
-            case .exceptionsClear:
-                return 1000
-            case .exceptionsInfo:
+            case let .neverException(_, _, exception):
+                return 107 + exception.domain.persistentHashValue
+            case .neverExceptionsInfo:
                 return 1001
+            case .neverExceptionsClear:
+                return 1002
+            case .alwaysHeader:
+                return 1003
+            case .alwaysAdd:
+                return 1004
+            case let .alwaysException(_, _, exception):
+                return 1005 + exception.domain.persistentHashValue
+            case .alwaysExceptionsInfo:
+                return 2000
+            case .alwaysExceptionsClear:
+                return 3000
         }
     }
     
@@ -108,22 +129,34 @@ private enum WebBrowserSettingsControllerEntry: ItemListNodeEntry {
                 return 0
             case let .browser(_, _, _, _, _, index):
                 return 1 + index
+            case .browserInfo:
+                return 101
             case .clearCookies:
                 return 102
             case .clearCache:
                 return 103
             case .clearCookiesInfo:
                 return 104
-            case .exceptionsHeader:
+            case .neverHeader:
                 return 105
-            case .exceptionsAdd:
+            case .neverAdd:
                 return 106
-            case let .exception(index, _, _):
+            case let .neverException(index, _, _):
                 return 107 + index
-            case .exceptionsClear:
-                return 1000
-            case .exceptionsInfo:
+            case .neverExceptionsInfo:
                 return 1001
+            case .neverExceptionsClear:
+                return 1002
+            case .alwaysHeader:
+                return 1003
+            case .alwaysAdd:
+                return 1004
+            case let .alwaysException(index, _, _):
+                return 1005 + index
+            case .alwaysExceptionsInfo:
+                return 2000
+            case .alwaysExceptionsClear:
+                return 3000
         }
     }
     
@@ -137,6 +170,12 @@ private enum WebBrowserSettingsControllerEntry: ItemListNodeEntry {
                 }
             case let .browser(lhsTheme, lhsTitle, lhsApplication, lhsIdentifier, lhsSelected, lhsIndex):
                 if case let .browser(rhsTheme, rhsTitle, rhsApplication, rhsIdentifier, rhsSelected, rhsIndex) = rhs, lhsTheme === rhsTheme, lhsTitle == rhsTitle, lhsApplication == rhsApplication, lhsIdentifier == rhsIdentifier, lhsSelected == rhsSelected, lhsIndex == rhsIndex {
+                    return true
+                } else {
+                    return false
+                }
+            case let .browserInfo(lhsTheme, lhsText):
+                if case let .browserInfo(rhsTheme, rhsText) = rhs, lhsTheme === rhsTheme, lhsText == rhsText {
                     return true
                 } else {
                     return false
@@ -159,32 +198,62 @@ private enum WebBrowserSettingsControllerEntry: ItemListNodeEntry {
                 } else {
                     return false
                 }
-            case let .exceptionsHeader(lhsTheme, lhsText):
-                if case let .exceptionsHeader(rhsTheme, rhsText) = rhs, lhsTheme === rhsTheme, lhsText == rhsText {
+            case let .neverHeader(lhsTheme, lhsText):
+                if case let .neverHeader(rhsTheme, rhsText) = rhs, lhsTheme === rhsTheme, lhsText == rhsText {
                     return true
                 } else {
                     return false
                 }
-            case let .exception(lhsIndex, lhsTheme, lhsException):
-                if case let .exception(rhsIndex, rhsTheme, rhsException) = rhs, lhsIndex == rhsIndex, lhsTheme === rhsTheme, lhsException == rhsException {
+            case let .neverException(lhsIndex, lhsTheme, lhsException):
+                if case let .neverException(rhsIndex, rhsTheme, rhsException) = rhs, lhsIndex == rhsIndex, lhsTheme === rhsTheme, lhsException == rhsException {
                     return true
                 } else {
                     return false
                 }
-            case let .exceptionsAdd(lhsTheme, lhsText):
-                if case let .exceptionsAdd(rhsTheme, rhsText) = rhs, lhsTheme === rhsTheme, lhsText == rhsText {
+            case let .neverAdd(lhsTheme, lhsText):
+                if case let .neverAdd(rhsTheme, rhsText) = rhs, lhsTheme === rhsTheme, lhsText == rhsText {
                     return true
                 } else {
                     return false
                 }
-            case let .exceptionsClear(lhsTheme, lhsText):
-                if case let .exceptionsClear(rhsTheme, rhsText) = rhs, lhsTheme === rhsTheme, lhsText == rhsText {
+            case let .neverExceptionsInfo(lhsTheme, lhsText):
+                if case let .neverExceptionsInfo(rhsTheme, rhsText) = rhs, lhsTheme === rhsTheme, lhsText == rhsText {
                     return true
                 } else {
                     return false
                 }
-            case let .exceptionsInfo(lhsTheme, lhsText):
-                if case let .exceptionsInfo(rhsTheme, rhsText) = rhs, lhsTheme === rhsTheme, lhsText == rhsText {
+            case let .neverExceptionsClear(lhsTheme, lhsText):
+                if case let .neverExceptionsClear(rhsTheme, rhsText) = rhs, lhsTheme === rhsTheme, lhsText == rhsText {
+                    return true
+                } else {
+                    return false
+                }
+            case let .alwaysHeader(lhsTheme, lhsText):
+                if case let .alwaysHeader(rhsTheme, rhsText) = rhs, lhsTheme === rhsTheme, lhsText == rhsText {
+                    return true
+                } else {
+                    return false
+                }
+            case let .alwaysException(lhsIndex, lhsTheme, lhsException):
+                if case let .alwaysException(rhsIndex, rhsTheme, rhsException) = rhs, lhsIndex == rhsIndex, lhsTheme === rhsTheme, lhsException == rhsException {
+                    return true
+                } else {
+                    return false
+                }
+            case let .alwaysAdd(lhsTheme, lhsText):
+                if case let .alwaysAdd(rhsTheme, rhsText) = rhs, lhsTheme === rhsTheme, lhsText == rhsText {
+                    return true
+                } else {
+                    return false
+                }
+            case let .alwaysExceptionsInfo(lhsTheme, lhsText):
+                if case let .alwaysExceptionsInfo(rhsTheme, rhsText) = rhs, lhsTheme === rhsTheme, lhsText == rhsText {
+                    return true
+                } else {
+                    return false
+                }
+            case let .alwaysExceptionsClear(lhsTheme, lhsText):
+                if case let .alwaysExceptionsClear(rhsTheme, rhsText) = rhs, lhsTheme === rhsTheme, lhsText == rhsText {
                     return true
                 } else {
                     return false
@@ -202,11 +271,13 @@ private enum WebBrowserSettingsControllerEntry: ItemListNodeEntry {
             case let .browserHeader(_, text):
                 return ItemListSectionHeaderItem(presentationData: presentationData, text: text, sectionId: self.section)
             case let .browser(_, title, application, identifier, selected, _):
-                return WebBrowserItem(context: arguments.context, presentationData: presentationData, systemStyle: .glass, title: title, application: application, checked: selected, sectionId: self.section) {
+                return WebBrowserItem(context: arguments.context, presentationData: presentationData, systemStyle: .glass, title: title, application: application, identifier: identifier, checked: selected, sectionId: self.section) {
                     arguments.updateDefaultBrowser(identifier)
                 }
+            case let .browserInfo(_, text):
+                return ItemListTextItem(presentationData: presentationData, text: .plain(text), sectionId: self.section)
             case let .clearCookies(_, text):
-                return ItemListPeerActionItem(presentationData: presentationData, systemStyle: .glass, icon: PresentationResourcesItemList.accentDeleteIconImage(presentationData.theme), title: text, sectionId: self.section, height: .generic, color: .accent, editing: false, action: {
+                return ItemListActionItem(presentationData: presentationData, systemStyle: .glass, title: text, kind: .generic, alignment: .center, sectionId: self.section, style: .blocks, action: {
                     arguments.clearCookies()
                 })
             case let .clearCache(_, text):
@@ -215,61 +286,93 @@ private enum WebBrowserSettingsControllerEntry: ItemListNodeEntry {
                 })
             case let .clearCookiesInfo(_, text):
                 return ItemListTextItem(presentationData: presentationData, text: .plain(text), sectionId: self.section)
-            case let .exceptionsHeader(_, text):
+            case let .neverHeader(_, text):
                 return ItemListSectionHeaderItem(presentationData: presentationData, text: text, sectionId: self.section)
-            case let .exception(_, _, exception):
-                return WebBrowserDomainExceptionItem(presentationData: presentationData, systemStyle: .glass, context: arguments.context, title: exception.title, label: exception.domain, icon: exception.icon, sectionId: self.section, style: .blocks, deleted: {
-                    arguments.removeException(exception.domain)
+            case let .neverException(_, _, exception):
+                return WebBrowserDomainExceptionItem(presentationData: presentationData, systemStyle: .glass, context: arguments.context, title: exception.title, label: exception.domain, favicon: exception.favicon, sectionId: self.section, style: .blocks, deleted: {
+                    arguments.removeException(exception)
                 })
-            case let .exceptionsAdd(_, text):
+            case let .neverAdd(_, text):
                 return ItemListPeerActionItem(presentationData: presentationData, systemStyle: .glass, icon: PresentationResourcesItemList.plusIconImage(presentationData.theme), title: text, sectionId: self.section, height: .generic, color: .accent, editing: false, action: {
                     arguments.addException()
                 })
-            case let .exceptionsClear(_, text):
-                return ItemListPeerActionItem(presentationData: presentationData, systemStyle: .glass, icon: PresentationResourcesItemList.deleteIconImage(presentationData.theme), title: text, sectionId: self.section, height: .generic, color: .destructive, editing: false, action: {
+            case let .neverExceptionsInfo(_, text):
+                return ItemListTextItem(presentationData: presentationData, text: .plain(text), sectionId: self.section)
+            case let .neverExceptionsClear(_, text):
+                return ItemListActionItem(presentationData: presentationData, systemStyle: .glass, title: text, kind: .destructive, alignment: .center, sectionId: self.section, style: .blocks, action: {
                     arguments.clearExceptions()
                 })
-            case let .exceptionsInfo(_, text):
+            case let .alwaysHeader(_, text):
+                return ItemListSectionHeaderItem(presentationData: presentationData, text: text, sectionId: self.section)
+            case let .alwaysException(_, _, exception):
+                return WebBrowserDomainExceptionItem(presentationData: presentationData, systemStyle: .glass, context: arguments.context, title: exception.title, label: exception.domain, favicon: exception.favicon, sectionId: self.section, style: .blocks, deleted: {
+                    arguments.removeException(exception)
+                })
+            case let .alwaysAdd(_, text):
+                return ItemListPeerActionItem(presentationData: presentationData, systemStyle: .glass, icon: PresentationResourcesItemList.plusIconImage(presentationData.theme), title: text, sectionId: self.section, height: .generic, color: .accent, editing: false, action: {
+                    arguments.addException()
+                })
+            case let .alwaysExceptionsInfo(_, text):
                 return ItemListTextItem(presentationData: presentationData, text: .plain(text), sectionId: self.section)
+            case let .alwaysExceptionsClear(_, text):
+                return ItemListActionItem(presentationData: presentationData, systemStyle: .glass, title: text, kind: .destructive, alignment: .center, sectionId: self.section, style: .blocks, action: {
+                    arguments.clearExceptions()
+                })
         }
     }
 }
 
-private func webBrowserSettingsControllerEntries(context: AccountContext, presentationData: PresentationData, settings: WebBrowserSettings) -> [WebBrowserSettingsControllerEntry] {
+private func webBrowserSettingsControllerEntries(context: AccountContext, presentationData: PresentationData, localSettings: WebBrowserSettings, accountSettings: AccountWebBrowserSettings) -> [WebBrowserSettingsControllerEntry] {
     var entries: [WebBrowserSettingsControllerEntry] = []
     
-    let options = availableOpenInOptions(context: context, item: .url(url: "http://telegram.org"))
+    let options = availableOpenInOptions(context: context, item: .url(url: "https://telegram.org"))
+    let defaultExternalBrowser = localSettings.defaultWebBrowser ?? "default"
     
     entries.append(.browserHeader(presentationData.theme, presentationData.strings.WebBrowser_OpenLinksIn_Title))
-    entries.append(.browser(presentationData.theme, presentationData.strings.WebBrowser_Telegram, nil, nil, settings.defaultWebBrowser == nil, 0))
-    
+    entries.append(.browser(presentationData.theme, presentationData.strings.WebBrowser_Telegram, nil, nil, !accountSettings.openExternalBrowser, 0))
+        
     var index: Int32 = 1
     for option in options {
-        entries.append(.browser(presentationData.theme, option.title, option.application, option.identifier, option.identifier == settings.defaultWebBrowser, index))
+        entries.append(.browser(presentationData.theme, option.title, option.application, option.identifier, accountSettings.openExternalBrowser && option.identifier == defaultExternalBrowser, index))
         index += 1
     }
     
-    if settings.defaultWebBrowser == nil {
-        entries.append(.clearCookies(presentationData.theme, presentationData.strings.WebBrowser_ClearCookies))
-//        entries.append(.clearCache(presentationData.theme, presentationData.strings.WebBrowser_ClearCache))
-        entries.append(.clearCookiesInfo(presentationData.theme, presentationData.strings.WebBrowser_ClearCookies_Info))
-        
-        entries.append(.exceptionsHeader(presentationData.theme, presentationData.strings.WebBrowser_Exceptions_Title))
-        entries.append(.exceptionsAdd(presentationData.theme, presentationData.strings.WebBrowser_Exceptions_AddException))
+    entries.append(.browserInfo(presentationData.theme, presentationData.strings.WebBrowser_OpenLinksInfo))
+    
+    entries.append(.clearCookies(presentationData.theme, presentationData.strings.WebBrowser_ClearCookies))
+    entries.append(.clearCookiesInfo(presentationData.theme, presentationData.strings.WebBrowser_ClearCookies_Info))
+    
+    //TODO:localize
+    if accountSettings.openExternalBrowser {
+        entries.append(.neverHeader(presentationData.theme, presentationData.strings.WebBrowser_Exceptions_OpenInApp))
+        entries.append(.neverAdd(presentationData.theme, presentationData.strings.WebBrowser_Exceptions_AddException))
         
         var exceptionIndex: Int32 = 0
-        for exception in settings.exceptions.reversed() {
-            entries.append(.exception(exceptionIndex, presentationData.theme, exception))
+        for exception in accountSettings.inAppExceptions.reversed() {
+            entries.append(.neverException(exceptionIndex, presentationData.theme, exception))
             exceptionIndex += 1
         }
+        entries.append(.neverExceptionsInfo(presentationData.theme, presentationData.strings.WebBrowser_Exceptions_InAppInfo))
         
-        if !settings.exceptions.isEmpty {
-            entries.append(.exceptionsClear(presentationData.theme, presentationData.strings.WebBrowser_Exceptions_Clear))
+        if !accountSettings.inAppExceptions.isEmpty {
+            entries.append(.neverExceptionsClear(presentationData.theme, presentationData.strings.WebBrowser_Exceptions_DeleteAll))
         }
+    } else {
+        entries.append(.alwaysHeader(presentationData.theme, presentationData.strings.WebBrowser_Exceptions_DontOpenInApp))
+        entries.append(.alwaysAdd(presentationData.theme, presentationData.strings.WebBrowser_Exceptions_AddException))
         
-        entries.append(.exceptionsInfo(presentationData.theme, presentationData.strings.WebBrowser_Exceptions_Info))
+        var exceptionIndex: Int32 = 0
+        for exception in accountSettings.externalExceptions.reversed() {
+            entries.append(.alwaysException(exceptionIndex, presentationData.theme, exception))
+            exceptionIndex += 1
+        }
+        entries.append(.alwaysExceptionsInfo(presentationData.theme, presentationData.strings.WebBrowser_Exceptions_Info))
+        
+        if !accountSettings.externalExceptions.isEmpty {
+            entries.append(.alwaysExceptionsClear(presentationData.theme, presentationData.strings.WebBrowser_Exceptions_DeleteAll))
+        }
     }
-    
+        
     return entries
 }
 
@@ -277,15 +380,21 @@ public func webBrowserSettingsController(context: AccountContext) -> ViewControl
     var clearCookiesImpl: (() -> Void)?
     var clearCacheImpl: (() -> Void)?
     var addExceptionImpl: (() -> Void)?
-    var removeExceptionImpl: ((String) -> Void)?
+    var removeExceptionImpl: ((AccountWebBrowserException) -> Void)?
     var clearExceptionsImpl: (() -> Void)?
     
     let arguments = WebBrowserSettingsControllerArguments(
         context: context,
         updateDefaultBrowser: { identifier in
-            let _ = updateWebBrowserSettingsInteractively(accountManager: context.sharedContext.accountManager, {
-                $0.withUpdatedDefaultWebBrowser(identifier)
-            }).start()
+            let openExternalBrowser = identifier != nil
+            if let identifier {
+                let _ = (updateWebBrowserSettingsInteractively(accountManager: context.sharedContext.accountManager, {
+                    $0.withUpdatedDefaultWebBrowser(identifier)
+                })
+                |> then(updateRemoteWebBrowserSettings(postbox: context.account.postbox, network: context.account.network, openExternalBrowser: openExternalBrowser))).start()
+            } else {
+                let _ = updateRemoteWebBrowserSettings(postbox: context.account.postbox, network: context.account.network, openExternalBrowser: openExternalBrowser).start()
+            }
         },
         clearCookies: {
             clearCookiesImpl?()
@@ -296,37 +405,39 @@ public func webBrowserSettingsController(context: AccountContext) -> ViewControl
         addException: {
             addExceptionImpl?()
         },
-        removeException: { domain in
-            removeExceptionImpl?(domain)
+        removeException: { exception in
+            removeExceptionImpl?(exception)
         },
         clearExceptions: {
             clearExceptionsImpl?()
         }
     )
     
-    let previousSettings = Atomic<WebBrowserSettings?>(value: nil)
+    let previousSettings = Atomic<(WebBrowserSettings, AccountWebBrowserSettings)?>(value: nil)
     
     let signal = combineLatest(
         context.sharedContext.presentationData,
-        context.sharedContext.accountManager.sharedData(keys: [ApplicationSpecificSharedDataKeys.webBrowserSettings])
+        context.sharedContext.accountManager.sharedData(keys: [ApplicationSpecificSharedDataKeys.webBrowserSettings]),
+        context.engine.data.subscribe(TelegramEngine.EngineData.Item.Configuration.ApplicationSpecificPreference(key: PreferencesKeys.webBrowserSettings))
     )
     |> deliverOnMainQueue
-    |> map { presentationData, sharedData -> (ItemListControllerState, (ItemListNodeState, Any)) in
-        let settings = sharedData.entries[ApplicationSpecificSharedDataKeys.webBrowserSettings]?.get(WebBrowserSettings.self) ?? WebBrowserSettings.defaultSettings
-        let previousSettings = previousSettings.swap(settings)
+    |> map { presentationData, sharedData, accountSettingsEntry -> (ItemListControllerState, (ItemListNodeState, Any)) in
+        let localSettings = sharedData.entries[ApplicationSpecificSharedDataKeys.webBrowserSettings]?.get(WebBrowserSettings.self) ?? WebBrowserSettings.defaultSettings
+        let accountSettings = accountSettingsEntry?.get(AccountWebBrowserSettings.self) ?? AccountWebBrowserSettings.defaultSettings
+        let previousSettings = previousSettings.swap((localSettings, accountSettings))
         
         var animateChanges = false
         if let previousSettings {
-            if previousSettings.defaultWebBrowser != settings.defaultWebBrowser {
+            if previousSettings.0.defaultWebBrowser != localSettings.defaultWebBrowser || previousSettings.1.openExternalBrowser != accountSettings.openExternalBrowser {
                 animateChanges = true
             }
-            if previousSettings.exceptions.count != settings.exceptions.count {
+            if previousSettings.1.externalExceptions.count != accountSettings.externalExceptions.count || previousSettings.1.inAppExceptions.count != accountSettings.inAppExceptions.count {
                 animateChanges = true
             }
         }
         
         let controllerState = ItemListControllerState(presentationData: ItemListPresentationData(presentationData), title: .text(presentationData.strings.WebBrowser_Title), leftNavigationButton: nil, rightNavigationButton: nil, backNavigationButton: ItemListBackButton(title: presentationData.strings.Common_Back))
-        let listState = ItemListNodeState(presentationData: ItemListPresentationData(presentationData), entries: webBrowserSettingsControllerEntries(context: context, presentationData: presentationData, settings: settings), style: .blocks, animateChanges: animateChanges)
+        let listState = ItemListNodeState(presentationData: ItemListPresentationData(presentationData), entries: webBrowserSettingsControllerEntries(context: context, presentationData: presentationData, localSettings: localSettings, accountSettings: accountSettings), style: .blocks, animateChanges: animateChanges)
         
         return (controllerState, (listState, arguments))
     }
@@ -401,18 +512,13 @@ public func webBrowserSettingsController(context: AccountContext) -> ViewControl
         var dismissImpl: (() -> Void)?
         let linkController = webBrowserDomainController(context: context, apply: { url in
             if let url {
-                let _ = (fetchDomainExceptionInfo(context: context, url: url)
-                |> deliverOnMainQueue).startStandalone(next: { newException in
-                    let _ = updateWebBrowserSettingsInteractively(accountManager: context.sharedContext.accountManager, { currentSettings in
-                        var currentExceptions = currentSettings.exceptions
-                        for exception in currentExceptions {
-                            if exception.domain == newException.domain {
-                                return currentSettings
-                            }
-                        }
-                        currentExceptions.append(newException)
-                        return currentSettings.withUpdatedExceptions(currentExceptions)
-                    }).start()
+                let _ = (context.account.postbox.transaction { transaction -> AccountWebBrowserSettings in
+                    return transaction.getPreferencesEntry(key: PreferencesKeys.webBrowserSettings)?.get(AccountWebBrowserSettings.self) ?? AccountWebBrowserSettings.defaultSettings
+                }
+                |> mapToSignal { settings -> Signal<Bool, NoError> in
+                    return toggleWebBrowserSettingsException(postbox: context.account.postbox, network: context.account.network, openExternalBrowser: !settings.openExternalBrowser, delete: false, url: url)
+                }
+                |> deliverOnMainQueue).startStandalone(next: { _ in
                     dismissImpl?()
                 })
             }
@@ -424,10 +530,13 @@ public func webBrowserSettingsController(context: AccountContext) -> ViewControl
         controller?.present(linkController, in: .window(.root))
     }
     
-    removeExceptionImpl = { domain in
-        let _ = updateWebBrowserSettingsInteractively(accountManager: context.sharedContext.accountManager, { currentSettings in
-            let updatedExceptions = currentSettings.exceptions.filter { $0.domain != domain  }
-            return currentSettings.withUpdatedExceptions(updatedExceptions)
+    removeExceptionImpl = { exception in
+        let url = exception.url.isEmpty ? exception.domain : exception.url
+        let _ = (context.account.postbox.transaction { transaction -> AccountWebBrowserSettings in
+            return transaction.getPreferencesEntry(key: PreferencesKeys.webBrowserSettings)?.get(AccountWebBrowserSettings.self) ?? AccountWebBrowserSettings.defaultSettings
+        }
+        |> mapToSignal { settings -> Signal<Bool, NoError> in
+            return toggleWebBrowserSettingsException(postbox: context.account.postbox, network: context.account.network, openExternalBrowser: !settings.openExternalBrowser, delete: true, url: url)
         }).start()
     }
     
@@ -442,9 +551,7 @@ public func webBrowserSettingsController(context: AccountContext) -> ViewControl
             actions: [
                 TextAlertAction(type: .genericAction, title: presentationData.strings.Common_Cancel, action: {}),
                 TextAlertAction(type: .defaultAction, title: presentationData.strings.WebBrowser_Exceptions_ClearConfirmation_Clear, action: {
-                    let _ = updateWebBrowserSettingsInteractively(accountManager: context.sharedContext.accountManager, { currentSettings in
-                        return currentSettings.withUpdatedExceptions([])
-                    }).start()
+                    let _ = deleteWebBrowserSettingsExceptions(postbox: context.account.postbox, network: context.account.network).start()
                 })
             ]
         )
@@ -452,61 +559,4 @@ public func webBrowserSettingsController(context: AccountContext) -> ViewControl
     }
     
     return controller
-}
-
-private func fetchDomainExceptionInfo(context: AccountContext, url: String) -> Signal<WebBrowserException, NoError> {
-    let (domain, domainUrl) = cleanDomain(url: url)
-    if #available(iOS 13.0, *), let url = URL(string: domainUrl) {
-        return Signal { subscriber in
-            let metadataProvider = LPMetadataProvider()
-            metadataProvider.shouldFetchSubresources = true
-            metadataProvider.startFetchingMetadata(for: url, completionHandler: { metadata, _ in
-                let completeWithImage: (Data?) -> Void = { imageData in
-                    var image: TelegramMediaImage?
-                    if let imageData, let parsedImage = UIImage(data: imageData) {
-                        let resource = LocalFileMediaResource(fileId: Int64.random(in: Int64.min ... Int64.max))
-                        context.sharedContext.accountManager.resources.storeResourceData(id: EngineMediaResource.Id(resource.id), data: imageData)
-                        image = TelegramMediaImage(
-                            imageId: MediaId(namespace: Namespaces.Media.LocalImage, id: Int64.random(in: Int64.min ... Int64.max)),
-                            representations: [
-                                TelegramMediaImageRepresentation(
-                                    dimensions: PixelDimensions(width: Int32(parsedImage.size.width), height: Int32(parsedImage.size.height)),
-                                    resource: resource,
-                                    progressiveSizes: [],
-                                    immediateThumbnailData: nil,
-                                    hasVideo: false,
-                                    isPersonal: false
-                                )
-                            ],
-                            immediateThumbnailData: nil,
-                            reference: nil,
-                            partialReference: nil,
-                            flags: []
-                        )
-                    }
-                    
-                    let title = metadata?.value(forKey: "_siteName") as? String ?? metadata?.title
-                    subscriber.putNext(WebBrowserException(domain: domain, title: title ?? domain, icon: image))
-                    subscriber.putCompletion()
-                }
-                
-                if let imageProvider = metadata?.iconProvider {
-                    imageProvider.loadFileRepresentation(forTypeIdentifier: kUTTypeImage as String, completionHandler: { imageUrl, _ in
-                        guard let imageUrl, let imageData = try? Data(contentsOf: imageUrl) else {
-                            completeWithImage(nil)
-                            return
-                        }
-                        completeWithImage(imageData)
-                    })
-                } else {
-                    completeWithImage(nil)
-                }
-            })
-            return ActionDisposable {
-                metadataProvider.cancel()
-            }
-        }
-    } else {
-        return .single(WebBrowserException(domain: domain, title: domain, icon: nil))
-    }
 }

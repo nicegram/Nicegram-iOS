@@ -102,6 +102,8 @@ public enum PostboxViewKey: Hashable {
     case savedMessagesStats(peerId: PeerId)
     case chatInterfaceState(peerId: PeerId)
     case historyView(HistoryView)
+    case typingDrafts(PeerAndThreadId)
+    case allTypingDrafts
 
     public func hash(into hasher: inout Hasher) {
         switch self {
@@ -187,7 +189,7 @@ public enum PostboxViewKey: Hashable {
         case let .topChatMessage(peerIds):
             hasher.combine(peerIds)
         case .contacts:
-            hasher.combine(16)
+            hasher.combine(24)
         case let .deletedMessages(peerId):
             hasher.combine(peerId)
         case let .notice(key):
@@ -228,6 +230,11 @@ public enum PostboxViewKey: Hashable {
             hasher.combine(20)
             hasher.combine(historyView.peerId)
             hasher.combine(historyView.threadId)
+        case let .typingDrafts(peerId):
+            hasher.combine(23)
+            hasher.combine(peerId)
+        case .allTypingDrafts:
+            hasher.combine(22)
         }
     }
     
@@ -545,6 +552,18 @@ public enum PostboxViewKey: Hashable {
             } else {
                 return false
             }
+        case let .typingDrafts(peerId):
+            if case .typingDrafts(peerId) = rhs {
+                return true
+            } else {
+                return false
+            }
+        case .allTypingDrafts:
+            if case .allTypingDrafts = rhs {
+                return true
+            } else {
+                return false
+            }
         }
     }
 }
@@ -672,5 +691,9 @@ func postboxViewForKey(postbox: PostboxImpl, key: PostboxViewKey) -> MutablePost
             topTaggedMessages: [:],
             additionalDatas: []
         )
+    case let .typingDrafts(peerId):
+        return MutableTypingDraftsView(postbox: postbox, peerAndThreadId: peerId)
+    case .allTypingDrafts:
+        return MutableAllTypingDraftsView(postbox: postbox)
     }
 }

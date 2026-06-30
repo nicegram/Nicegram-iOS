@@ -1,6 +1,5 @@
 import Foundation
 import UIKit
-import Postbox
 import TelegramCore
 import SwiftSignalKit
 import Display
@@ -22,9 +21,9 @@ public final class OpenChatMessageParams {
     public let context: AccountContext
     public let updatedPresentationData: (initial: PresentationData, signal: Signal<PresentationData, NoError>)?
     public let chatLocation: ChatLocation?
-    public let chatFilterTag: MemoryBuffer?
+    public let chatFilterTag: EngineMemoryBuffer?
     public let chatLocationContextHolder: Atomic<ChatLocationContextHolder?>?
-    public let message: Message
+    public let message: EngineRawMessage
     public let mediaSubject: GalleryMediaSubject?
     public let standalone: Bool
     public let copyProtected: Bool
@@ -34,21 +33,21 @@ public final class OpenChatMessageParams {
     public let modal: Bool
     public let dismissInput: () -> Void
     public let present: (ViewController, Any?, PresentationContextType) -> Void
-    public let transitionNode: (MessageId, Media, Bool) -> (ASDisplayNode, CGRect, () -> (UIView?, UIView?))?
+    public let transitionNode: (EngineMessage.Id, EngineRawMedia, Bool) -> (ASDisplayNode, CGRect, () -> (UIView?, UIView?))?
     public let addToTransitionSurface: (UIView) -> Void
     public let openUrl: (String) -> Void
-    public let openPeer: (Peer, ChatControllerInteractionNavigateToPeer) -> Void
-    public let callPeer: (PeerId, Bool) -> Void
-    public let openConferenceCall: (Message) -> Void
+    public let openPeer: (EngineRawPeer, ChatControllerInteractionNavigateToPeer) -> Void
+    public let callPeer: (EnginePeer.Id, Bool) -> Void
+    public let openConferenceCall: (EngineRawMessage) -> Void
     public let enqueueMessage: (EnqueueMessage) -> Void
     public let sendSticker: ((FileMediaReference, UIView?, CGRect?) -> Bool)?
     public let sendEmoji: ((String, ChatTextInputTextCustomEmojiAttribute) -> Void)?
-    public let setupTemporaryHiddenMedia: (Signal<Any?, NoError>, Int, Media) -> Void
-    public let chatAvatarHiddenMedia: (Signal<MessageId?, NoError>, Media) -> Void
+    public let setupTemporaryHiddenMedia: (Signal<Any?, NoError>, Int, EngineRawMedia) -> Void
+    public let chatAvatarHiddenMedia: (Signal<EngineMessage.Id?, NoError>, EngineRawMedia) -> Void
     public let actionInteraction: GalleryControllerActionInteraction?
     public let playlistLocation: PeerMessagesPlaylistLocation?
     public let gallerySource: GalleryControllerItemSource?
-    public let centralItemUpdated: ((MessageId) -> Void)?
+    public let centralItemUpdated: ((EngineMessage.Id) -> Void)?
     public let navigateToMessageContext: ((EngineMessage) -> Void)?
     public let getSourceRect: (() -> CGRect?)?
     public let blockInteraction: Promise<Bool>
@@ -57,9 +56,9 @@ public final class OpenChatMessageParams {
         context: AccountContext,
         updatedPresentationData: (initial: PresentationData, signal: Signal<PresentationData, NoError>)? = nil,
         chatLocation: ChatLocation?,
-        chatFilterTag: MemoryBuffer?,
+        chatFilterTag: EngineMemoryBuffer?,
         chatLocationContextHolder: Atomic<ChatLocationContextHolder?>?,
-        message: Message,
+        message: EngineRawMessage,
         mediaSubject: GalleryMediaSubject? = nil,
         standalone: Bool,
         copyProtected: Bool = false,
@@ -69,21 +68,21 @@ public final class OpenChatMessageParams {
         modal: Bool = false,
         dismissInput: @escaping () -> Void,
         present: @escaping (ViewController, Any?, PresentationContextType) -> Void,
-        transitionNode: @escaping (MessageId, Media, Bool) -> (ASDisplayNode, CGRect, () -> (UIView?, UIView?))?,
+        transitionNode: @escaping (EngineMessage.Id, EngineRawMedia, Bool) -> (ASDisplayNode, CGRect, () -> (UIView?, UIView?))?,
         addToTransitionSurface: @escaping (UIView) -> Void,
         openUrl: @escaping (String) -> Void,
-        openPeer: @escaping (Peer, ChatControllerInteractionNavigateToPeer) -> Void,
-        callPeer: @escaping (PeerId, Bool) -> Void,
-        openConferenceCall: @escaping (Message) -> Void,
+        openPeer: @escaping (EngineRawPeer, ChatControllerInteractionNavigateToPeer) -> Void,
+        callPeer: @escaping (EnginePeer.Id, Bool) -> Void,
+        openConferenceCall: @escaping (EngineRawMessage) -> Void,
         enqueueMessage: @escaping (EnqueueMessage) -> Void,
         sendSticker: ((FileMediaReference, UIView?, CGRect?) -> Bool)?,
         sendEmoji: ((String, ChatTextInputTextCustomEmojiAttribute) -> Void)?,
-        setupTemporaryHiddenMedia: @escaping (Signal<Any?, NoError>, Int, Media) -> Void,
-        chatAvatarHiddenMedia: @escaping (Signal<MessageId?, NoError>, Media) -> Void,
+        setupTemporaryHiddenMedia: @escaping (Signal<Any?, NoError>, Int, EngineRawMedia) -> Void,
+        chatAvatarHiddenMedia: @escaping (Signal<EngineMessage.Id?, NoError>, EngineRawMedia) -> Void,
         actionInteraction: GalleryControllerActionInteraction? = nil,
         playlistLocation: PeerMessagesPlaylistLocation? = nil,
         gallerySource: GalleryControllerItemSource? = nil,
-        centralItemUpdated: ((MessageId) -> Void)? = nil,
+        centralItemUpdated: ((EngineMessage.Id) -> Void)? = nil,
         navigateToMessageContext: ((EngineMessage) -> Void)? = nil,
         getSourceRect: (() -> CGRect?)? = nil
     ) {

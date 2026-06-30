@@ -3,7 +3,6 @@ import UIKit
 import Display
 import AccountContext
 import TextFormat
-import Postbox
 import TelegramCore
 
 public final class DrawingWeatherEntity: DrawingEntity, Codable {
@@ -101,7 +100,7 @@ public final class DrawingWeatherEntity: DrawingEntity, Codable {
         self.hasCustomColor = try container.decodeIfPresent(Bool.self, forKey: .hasCustomColor) ?? false
         
         if let iconData = try container.decodeIfPresent(Data.self, forKey: .icon) {
-            self.icon = PostboxDecoder(buffer: MemoryBuffer(data: iconData)).decodeRootObject() as? TelegramMediaFile
+            self.icon = EnginePostboxDecoder(buffer: EngineMemoryBuffer(data: iconData)).decodeRootObject() as? TelegramMediaFile
         }
 
         self.referenceDrawingSize = try container.decode(CGSize.self, forKey: .referenceDrawingSize)
@@ -123,9 +122,9 @@ public final class DrawingWeatherEntity: DrawingEntity, Codable {
         try container.encode(self.color, forKey: .color)
         try container.encode(self.hasCustomColor, forKey: .hasCustomColor)
         
-        var encoder = PostboxEncoder()
+        var encoder = EnginePostboxEncoder()
         if let icon = self.icon {
-            encoder = PostboxEncoder()
+            encoder = EnginePostboxEncoder()
             encoder.encodeRootObject(icon)
             let iconData = encoder.makeData()
             try container.encode(iconData, forKey: .icon)

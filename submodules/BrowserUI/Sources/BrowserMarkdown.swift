@@ -1,9 +1,9 @@
 import Foundation
 import UIKit
-import Postbox
 import TelegramCore
 import AccountContext
 import InstantPageUI
+import TextFormat
 
 private let markdownPresentationIntentAttribute = NSAttributedString.Key("NSPresentationIntent")
 private let markdownInlinePresentationIntentAttribute = NSAttributedString.Key("NSInlinePresentationIntent")
@@ -21,8 +21,6 @@ private let markdownInlineHTMLInlineIntent = InlinePresentationIntent(rawValue: 
 private let markdownDefaultBlockImageDimensions = PixelDimensions(width: 1200, height: 900)
 private let markdownDefaultInlineImageDimensions = PixelDimensions(width: 18, height: 18)
 private let markdownImageParsingEnabled = false
-private let markdownTaskListUncheckedNumber = "\u{001f}tg-md-task:unchecked"
-private let markdownTaskListCheckedNumber = "\u{001f}tg-md-task:checked"
 private let markdownRawHTMLTagRegex = try! NSRegularExpression(pattern: #"</?([A-Za-z][A-Za-z0-9:-]*)\b[^>]*?>"#)
 private let markdownFormulaPlaceholderRegex = try! NSRegularExpression(pattern: #"TGMDMATH\d+TGMD"#)
 private let markdownVoidHTMLTags: Set<String> = [
@@ -201,7 +199,7 @@ private final class MarkdownConversionBudget {
         guard self.registerBlockDepth(depth) else {
             return false
         }
-        if case let .blocks(blocks, _) = listItem {
+        if case let .blocks(blocks, _, _) = listItem {
             return self.validate(blocks: blocks, depth: depth + 1, count: &count)
         } else {
             return true
@@ -211,7 +209,7 @@ private final class MarkdownConversionBudget {
 
 private struct MarkdownPageResult {
     let blocks: [InstantPageBlock]
-    let media: [MediaId: Media]
+    let media: [EngineMedia.Id: EngineRawMedia]
 }
 
 private enum MarkdownFormulaMode {
@@ -315,7 +313,7 @@ private struct MarkdownInlineContent {
 }
 
 private struct MarkdownResolvedImage {
-    let mediaId: MediaId
+    let mediaId: EngineMedia.Id
     let inlineDimensions: PixelDimensions
     let caption: InstantPageCaption
     let linkUrl: String?
@@ -334,15 +332,15 @@ private enum MarkdownTaskListState {
 
 private final class MarkdownConversionContext {
     private let context: AccountContext
-    fileprivate let documentURL: URL
+    fileprivate let documentURL: URL?
     fileprivate let formulasByPlaceholder: [String: MarkdownFormulaDescriptor]
     fileprivate let budget: MarkdownConversionBudget
     private var nextRemoteMediaId: Int64 = 0
     private var nextLocalMediaId: Int64 = 0
 
-    private(set) var media: [MediaId: Media] = [:]
+    private(set) var media: [EngineMedia.Id: EngineRawMedia] = [:]
 
-    init(context: AccountContext, documentURL: URL, formulasByPlaceholder: [String: MarkdownFormulaDescriptor], budget: MarkdownConversionBudget) {
+    init(context: AccountContext, documentURL: URL?, formulasByPlaceholder: [String: MarkdownFormulaDescriptor], budget: MarkdownConversionBudget) {
         self.context = context
         self.documentURL = documentURL
         self.formulasByPlaceholder = formulasByPlaceholder
@@ -426,14 +424,14 @@ private final class MarkdownConversionContext {
         }
     }
     
-    private func nextMediaId(namespace: Int32) -> MediaId {
+    private func nextMediaId(namespace: Int32) -> EngineMedia.Id {
         switch namespace {
         case Namespaces.Media.LocalImage:
             self.nextLocalMediaId += 1
-            return MediaId(namespace: namespace, id: self.nextLocalMediaId)
+            return EngineMedia.Id(namespace: namespace, id: self.nextLocalMediaId)
         default:
             self.nextRemoteMediaId += 1
-            return MediaId(namespace: namespace, id: self.nextRemoteMediaId)
+            return EngineMedia.Id(namespace: namespace, id: self.nextRemoteMediaId)
         }
     }
 }
@@ -749,6 +747,11 @@ private func markdownBlockFormulaReplacement(
     }
 
     let openerContent = String(trimmedStart.dropFirst(opener.count))
+    // Block opener must be exactly `$$` (not `$$$`); a `$$$…` line is not a block and
+    // falls through to inline handling.
+    if opener == "$$", openerContent.first == "$" {
+        return nil
+    }
     var latex = ""
 
     if let closeRange = markdownFirstUnescapedRange(of: closer, in: openerContent, from: openerContent.startIndex) {
@@ -771,6 +774,11 @@ private func markdownBlockFormulaReplacement(
         return (indentation + descriptor.placeholder + ending, startLineIndex + 1, descriptor)
     }
 
+    // Reached only when there is no closer on the opener line (multi-line form).
+    // A multi-line block opener must be a bare `$$` line; `$$ content` is not a block.
+    if opener == "$$", !openerContent.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+        return nil
+    }
     let (_, openerEnding) = markdownLineContentAndEnding(lines[startLineIndex])
     latex.append(contentsOf: openerContent)
     latex.append(contentsOf: openerEnding)
@@ -863,29 +871,47 @@ private func markdownReplacingInlineFormulas(
         }
 
         if content[index] == "$", !markdownIsEscaped(content, at: index) {
-            guard let bodyStart = markdownIndex(content, offsetBy: 1, from: index), bodyStart < content.endIndex else {
+            // Outer boundary before the opener: line start, or a non-alphanumeric char.
+            // (Rejects `cost$5$total`, the `$` after `5` in `$5-$10`, etc.)
+            if index > content.startIndex {
+                let beforeOpener = content[content.index(before: index)]
+                if beforeOpener.isLetter || beforeOpener.isNumber {
+                    result.append(content[index])
+                    index = content.index(after: index)
+                    continue
+                }
+            }
+            // Opener: 1 or 2 leading `$` (a 3rd `$` becomes inner content).
+            let openerRunEnd = markdownIndex(afterRepeating: "$", in: content, from: index)
+            let openerCount = min(2, content.distance(from: index, to: openerRunEnd))
+            let bodyStart = content.index(index, offsetBy: openerCount)
+            // Inner boundary after the opener: must exist and be non-whitespace.
+            guard bodyStart < content.endIndex, !content[bodyStart].isWhitespace else {
                 result.append(content[index])
                 index = content.index(after: index)
                 continue
             }
-            if content[bodyStart] == "$" || content[bodyStart].isWhitespace {
-                result.append(content[index])
-                index = content.index(after: index)
-                continue
-            }
-
+            let closerPattern = String(repeating: "$", count: openerCount)
             var searchIndex = bodyStart
             var matchedRange: Range<String.Index>?
-            while let closeRange = markdownFirstUnescapedRange(of: "$", in: content, from: searchIndex) {
-                let closerIndex = closeRange.lowerBound
-                let previousIndex = content.index(before: closerIndex)
-                if !content[previousIndex].isWhitespace {
-                    matchedRange = closeRange
-                    break
+            while let closeRange = markdownFirstUnescapedRange(of: closerPattern, in: content, from: searchIndex) {
+                // Inner boundary before the closer: non-whitespace.
+                let beforeCloser = content[content.index(before: closeRange.lowerBound)]
+                if beforeCloser.isWhitespace {
+                    searchIndex = closeRange.upperBound
+                    continue
                 }
-                searchIndex = closeRange.upperBound
+                // Outer boundary after the closer: line end, or a non-alphanumeric char.
+                if closeRange.upperBound < content.endIndex {
+                    let afterCloser = content[closeRange.upperBound]
+                    if afterCloser.isLetter || afterCloser.isNumber {
+                        searchIndex = closeRange.upperBound
+                        continue
+                    }
+                }
+                matchedRange = closeRange
+                break
             }
-
             if let matchedRange {
                 let latex = String(content[bodyStart ..< matchedRange.lowerBound])
                 if let descriptor = markdownAcceptedFormulaDescriptor(
@@ -978,14 +1004,191 @@ func markdownWebpage(context: AccountContext, file: FileMediaReference) -> (webP
     guard let data = try? Data(contentsOf: fileURL) else {
         return nil
     }
-    guard let webPage = markdownWebpage(context: context, file: file, fileURL: fileURL, data: data) else {
+    guard let webPage = markdownWebpage(context: context, file: (file, fileURL), data: data) else {
         return nil
     }
     return (webPage, fileURL)
 }
 
+public func inputRichTextAttributeFromText(context: AccountContext, text: String) -> RichTextMessageAttribute? {
+    guard #available(iOS 15.0, *) else {
+        return nil
+    }
+    guard let data = text.data(using: .utf8) else {
+        return nil
+    }
+    guard let webpage = markdownWebpage(context: context, file: nil, data: data), case let .Loaded(content) = webpage.content, let instantPage = content.instantPage else {
+        return nil
+    }
+    return RichTextMessageAttribute(instantPage: instantPage._parse(), fullInstantPage: nil)
+}
+
+// MARK: - Markdown classification (entity-expressible vs. rich layout)
+
+private let markdownBlockHeuristicRegex = try? NSRegularExpression(
+    pattern: "(^|\\n)[ \\t]*(#{1,6}[ \\t]|[-*+][ \\t]|\\d{1,9}[.)][ \\t]|-{1,}[ \\t]*(\\n|$))",
+    options: []
+)
+
+// Cheap necessary-condition pre-filter. A safe over-approximation: if it
+// returns false, the text cannot contain a rich-only construct, so the
+// expensive markdown parse is skipped and the entity path is used.
+private func markdownMightNeedRichLayout(_ text: String) -> Bool {
+    // Tables ('|') and images ('![') can appear anywhere on a line. This over-approximates
+    // (prose containing '|' also triggers a parse); the parse + block inspection resolves it.
+    if text.contains("|") || text.contains("![") {
+        return true
+    }
+    // Math delimiters. Over-approximates (any `$` triggers a parse); the strict
+    // detection + gate decide whether a formula block is actually produced.
+    if text.contains("$") || text.contains("\\(") || text.contains("\\[") {
+        return true
+    }
+    // Setext H1 heading: a line of '=' underlining the previous line.
+    // (Setext H2 dash-underlines are caught by the dash-line branch in the regex.)
+    if text.contains("\n=") {
+        return true
+    }
+    // Line-anchored block markers: headings, list items, setext-H2 dash underlines.
+    if let regex = markdownBlockHeuristicRegex {
+        let range = NSRange(text.startIndex..., in: text)
+        if regex.firstMatch(in: text, options: [], range: range) != nil {
+            return true
+        }
+    }
+    return false
+}
+
+// True when this inline RichText maps onto Telegram message entities.
+// Returns false for inline content that forces the rich path (inline image,
+// sub/superscript, highlight, formula). Formulas trigger the rich path; casual
+// '$' usage is excluded by the strict boundary rule in the detection step, not here.
+private func richTextIsEntityExpressible(_ text: RichText) -> Bool {
+    switch text {
+    case .empty, .plain:
+        return true
+    case .bold(let inner), .italic(let inner), .underline(let inner), .strikethrough(let inner), .fixed(let inner):
+        return richTextIsEntityExpressible(inner)
+    case .superscript, .marked, .`subscript`:
+        return false
+    case .url(let inner, _, _):
+        return richTextIsEntityExpressible(inner)
+    case .email(let inner, _):
+        return richTextIsEntityExpressible(inner)
+    case .concat(let items):
+        return items.allSatisfy(richTextIsEntityExpressible)
+    case .phone(let inner, _):
+        return richTextIsEntityExpressible(inner)
+    case .image:
+        return false
+    case .anchor(let inner, _):
+        return richTextIsEntityExpressible(inner)
+    case .formula:
+        return false
+    case .textCustomEmoji:
+        return true
+    case .textAutoEmail(let inner), .textAutoPhone(let inner), .textAutoUrl(let inner), .textBankCard(let inner), .textBotCommand(let inner), .textCashtag(let inner), .textHashtag(let inner), .textMention(let inner), .textSpoiler(let inner):
+        return richTextIsEntityExpressible(inner)
+    case .textMentionName(let inner, _):
+        return richTextIsEntityExpressible(inner)
+    case .textDate:
+        return false
+    }
+}
+
+private func isEmptyRichText(_ text: RichText) -> Bool {
+    switch text {
+    case .empty:
+        return true
+    case .plain(let value):
+        return value.isEmpty
+    default:
+        return false
+    }
+}
+
+// Block types that do NOT trigger a rich-layout message. Besides the genuinely
+// entity-expressible blocks (paragraph/preformatted/blockQuote/anchor), dividers
+// are intentionally excluded as triggers too ('---' is too common in casual text).
+// Formulas DO trigger the rich path; casual '$' usage is excluded by the strict
+// boundary rule in the detection step. Effective rich triggers are therefore
+// headings, lists, tables, and formulas.
+private func blockIsEntityExpressible(_ block: InstantPageBlock) -> Bool {
+    switch block {
+    case .paragraph(let text):
+        return richTextIsEntityExpressible(text)
+    case .preformatted(let text, _):
+        return richTextIsEntityExpressible(text)
+    case .blockQuote(let blocks, let caption):
+        guard isEmptyRichText(caption) else { return false }
+        return blocks.allSatisfy { child in
+            if case let .paragraph(text) = child {
+                return richTextIsEntityExpressible(text)
+            }
+            return false
+        }
+    case .anchor, .unsupported:
+        return true
+    case .divider:
+        return true
+    default:
+        return false
+    }
+}
+
+private func instantPageNeedsRichLayout(_ blocks: [InstantPageBlock]) -> Bool {
+    return blocks.contains { !blockIsEntityExpressible($0) }
+}
+
+// Rewrites each `ChatTextInputAttributes.customEmoji` run in the attributed
+// input as a `[<alt>](tg://emoji?id=<fileId>)` markdown link, leaving all other
+// text (and its markdown syntax) verbatim. With no custom emoji present this
+// returns `attributedText.string` unchanged, so non-emoji messages are
+// unaffected. The marker is intercepted post-parse in markdownInlineContent.
+private func markdownSourceInjectingCustomEmojiMarkers(_ attributedText: NSAttributedString) -> String {
+    let nsString = attributedText.string as NSString
+    var result = ""
+    attributedText.enumerateAttribute(ChatTextInputAttributes.customEmoji, in: NSRange(location: 0, length: attributedText.length), options: []) { value, range, _ in
+        let substring = nsString.substring(with: range)
+        if let attribute = value as? ChatTextInputTextCustomEmojiAttribute {
+            // The link text must be non-empty: CommonMark drops `[](url)` (no
+            // run carries the link attribute), which would silently lose the
+            // emoji. Fall back to a space, matching the reattach helper.
+            let alt = substring.isEmpty ? " " : substring
+            result += "[\(escapeCustomEmojiMarkdownAlt(alt))](\(customEmojiMarkdownURL(fileId: attribute.fileId)))"
+        } else {
+            result += substring
+        }
+    }
+    return result
+}
+
+// Returns a RichTextMessageAttribute IFF the markdown in `text` produces an
+// InstantPage block with no entity equivalent. Returns nil (-> send via the
+// regular entity path) for plain text, pre-iOS-15, oversize markdown, or
+// markdown that maps cleanly onto entities.
+public func richMarkdownAttributeIfNeeded(context: AccountContext, attributedText: NSAttributedString) -> RichTextMessageAttribute? {
+    // Custom emoji are rewritten to `[<alt>](tg://emoji?id=...)` link markers
+    // before classification + parse; the markers are intercepted back into
+    // .textCustomEmoji in markdownInlineContent. A link is entity-expressible,
+    // so an emoji-only message still classifies as not-rich (and falls through
+    // to the entity path, where its untouched attribute makes a .CustomEmoji
+    // entity) — custom emoji alone never forces a rich message.
+    let text = markdownSourceInjectingCustomEmojiMarkers(attributedText)
+    guard markdownMightNeedRichLayout(text) else {
+        return nil
+    }
+    guard let attribute = inputRichTextAttributeFromText(context: context, text: text) else {
+        return nil
+    }
+    guard instantPageNeedsRichLayout(attribute.instantPage.blocks) else {
+        return nil
+    }
+    return attribute
+}
+
 @available(iOS 15.0, *)
-private func markdownWebpage(context: AccountContext, file: FileMediaReference, fileURL: URL, data: Data) -> TelegramMediaWebpage? {
+private func markdownWebpage(context: AccountContext, file: (file: FileMediaReference, url: URL)?, data: Data) -> TelegramMediaWebpage? {
     let limits = markdownSafetyLimits
     guard markdownPassesPreflight(data: data, limits: limits) else {
         return nil
@@ -997,42 +1200,59 @@ private func markdownWebpage(context: AccountContext, file: FileMediaReference, 
 
     let attributedString: NSAttributedString
     do {
+        let baseURL: URL?
+        if let file {
+            baseURL = file.url.deletingLastPathComponent()
+        } else {
+            baseURL = nil
+        }
         attributedString = try NSAttributedString(
             markdown: Data(preparedSource.text.utf8),
             options: .init(),
-            baseURL: fileURL.deletingLastPathComponent()
+            baseURL: baseURL
         )
     } catch {
         return nil
     }
     
     let budget = MarkdownConversionBudget(limits: limits)
-    let conversionContext = MarkdownConversionContext(context: context, documentURL: fileURL, formulasByPlaceholder: preparedSource.formulasByPlaceholder, budget: budget)
+    let conversionContext = MarkdownConversionContext(context: context, documentURL: file?.url, formulasByPlaceholder: preparedSource.formulasByPlaceholder, budget: budget)
     guard let pageResult = markdownPageResult(from: attributedString, context: conversionContext) else {
         return nil
     }
-    let blocks = markdownBlocksWithGeneratedAnchors(pageResult.blocks)
+    // Heading anchors exist for intra-document navigation ([link](#slug)); they are
+    // noise in a chat message, where they prepend an invisible block per heading.
+    // Only generate them for the document path (file != nil).
+    let blocks: [InstantPageBlock]
+    if file != nil {
+        blocks = markdownBlocksWithGeneratedAnchors(pageResult.blocks)
+    } else {
+        blocks = pageResult.blocks
+    }
     guard !blocks.isEmpty, budget.validateFinalBlocks(blocks) else {
         return nil
     }
     
-    let title = markdownTitle(from: blocks, file: file, fileURL: fileURL)
+    var title: String?
+    if let file {
+        title = markdownTitle(from: blocks, file: file.file, fileURL: file.url)
+    }
     let text = markdownFirstParagraphText(from: blocks)
     let instantPage = InstantPage(
         blocks: blocks,
         media: pageResult.media,
         isComplete: true,
         rtl: false,
-        url: fileURL.absoluteString,
+        url: file?.url.absoluteString ?? "",
         views: nil
     )
     
     return TelegramMediaWebpage(
-        webpageId: MediaId(namespace: 0, id: 0),
+        webpageId: EngineMedia.Id(namespace: 0, id: 0),
         content: .Loaded(
             TelegramMediaWebpageLoadedContent(
-                url: fileURL.absoluteString,
-                displayUrl: fileURL.absoluteString,
+                url: file?.url.absoluteString ?? "",
+                displayUrl: file?.url.absoluteString ?? "",
                 hash: 0,
                 type: "article",
                 websiteName: nil,
@@ -1169,7 +1389,12 @@ private func markdownBlocks(from node: MarkdownIntentNode, context: MarkdownConv
         }
         switch level {
         case Int.min ... 1:
-            return [.title(text)]
+            if context.documentURL == nil {
+                // Chat message: a single '#' is a normal heading, not a document title.
+                return [.heading(text: text, level: 1)]
+            } else {
+                return [.title(text)]
+            }
         default:
             return [.heading(text: text, level: Int32(max(2, min(level, 6))))]
         }
@@ -1206,24 +1431,17 @@ private func markdownBlocks(from node: MarkdownIntentNode, context: MarkdownConv
     case .thematicBreak:
         return [.divider]
     case .blockQuote:
-        var result: [InstantPageBlock] = []
+        var childBlocks: [InstantPageBlock] = []
         for child in node.children {
-            guard let childBlocks = markdownBlocks(from: child, context: context, depth: depth + 1) else {
+            guard let parsed = markdownBlocks(from: child, context: context, depth: depth + 1) else {
                 return nil
             }
-            for childBlock in childBlocks {
-                switch childBlock {
-                case let .paragraph(text):
-                    result.append(.blockQuote(text: text, caption: .empty))
-                default:
-                    let plainText = markdownPlainText(from: childBlock, depth: depth + 1)
-                    if !plainText.isEmpty {
-                        result.append(.blockQuote(text: .plain(plainText), caption: .empty))
-                    }
-                }
-            }
+            childBlocks.append(contentsOf: parsed)
         }
-        return result
+        guard !childBlocks.isEmpty else {
+            return []
+        }
+        return [.blockQuote(blocks: childBlocks, caption: .empty)]
     case .orderedList:
         guard let items = markdownListItems(from: node.children, ordered: true, context: context, depth: depth + 1) else {
             return nil
@@ -1259,40 +1477,33 @@ private func markdownListItems(from nodes: [MarkdownIntentNode], ordered: Bool, 
             return nil
         }
         let taskListState = markdownApplyTaskListMarker(to: &blocks)
-        let number: String?
-        if let taskListState {
-            number = markdownTaskListNumber(for: taskListState)
-        } else if ordered {
-            number = "\(ordinal)"
-        } else {
-            number = nil
+        let checked: Bool?
+        switch taskListState {
+        case .unchecked:
+            checked = false
+        case .checked:
+            checked = true
+        case nil:
+            checked = nil
         }
+        let number: String? = ordered ? "\(ordinal)" : nil
         if blocks.isEmpty {
-            if let number {
-                result.append(.text(.plain(" "), number))
+            if checked != nil || number != nil {
+                result.append(.text(.plain(" "), number, checked))
             }
             continue
         }
         if blocks.count == 1, case let .paragraph(text) = blocks[0] {
-            if number != nil && markdownIsWhitespaceOnly(text) {
-                result.append(.text(.plain(" "), number))
+            if markdownIsWhitespaceOnly(text) && (checked != nil || number != nil) {
+                result.append(.text(.plain(" "), number, checked))
             } else {
-                result.append(.text(text, number))
+                result.append(.text(text, number, checked))
             }
         } else {
-            result.append(.blocks(blocks, number))
+            result.append(.blocks(blocks, number, checked))
         }
     }
     return result
-}
-
-private func markdownTaskListNumber(for state: MarkdownTaskListState) -> String {
-    switch state {
-    case .unchecked:
-        return markdownTaskListUncheckedNumber
-    case .checked:
-        return markdownTaskListCheckedNumber
-    }
 }
 
 private func markdownApplyTaskListMarker(to blocks: inout [InstantPageBlock]) -> MarkdownTaskListState? {
@@ -1507,6 +1718,13 @@ private func markdownInlineContent(from attributedString: NSAttributedString, co
 
         if let image = context.resolveImage(attributes: attributes) {
             fragments.append(.image(image))
+            return
+        }
+
+        if let linkUrl = markdownLink(attributes: attributes, documentURL: context.documentURL),
+           let fileId = parseCustomEmojiFileId(fromMarkdownURL: linkUrl) {
+            // `text` is the parsed (already-unescaped) link display text = the alt.
+            fragments.append(.richText(.textCustomEmoji(fileId: fileId, alt: text)))
             return
         }
 
@@ -1765,7 +1983,7 @@ private func markdownInlineImageDimensions(attributes: [NSAttributedString.Key: 
     return PixelDimensions(width: side, height: side)
 }
 
-private func markdownLink(attributes: [NSAttributedString.Key: Any], documentURL: URL) -> String? {
+private func markdownLink(attributes: [NSAttributedString.Key: Any], documentURL: URL?) -> String? {
     if let value = attributes[markdownLinkAttribute] as? URL {
         return markdownNormalizedLink(value, documentURL: documentURL)
     }
@@ -1784,14 +2002,14 @@ private func markdownLink(attributes: [NSAttributedString.Key: Any], documentURL
     return nil
 }
 
-private func markdownNormalizedLink(_ url: URL, documentURL: URL) -> String {
+private func markdownNormalizedLink(_ url: URL, documentURL: URL?) -> String {
     if url.baseURL != nil {
         let relative = url.relativeString
         if relative.hasPrefix("#") {
             return relative
         }
     }
-    if let fragment = url.fragment, markdownMatchesDocument(url, documentURL: documentURL) {
+    if let documentURL, let fragment = url.fragment, markdownMatchesDocument(url, documentURL: documentURL) {
         return "#\(fragment)"
     }
     return url.absoluteString
@@ -1935,6 +2153,10 @@ private func markdownDroppingPrefixLength(_ length: Int, from text: RichText) ->
     case let .anchor(inner, name):
         let dropped = markdownDroppingPrefixLength(length, from: inner)
         return dropped == .empty ? .empty : .anchor(text: dropped, name: name)
+    case .textCustomEmoji:
+        return text
+    case .textAutoEmail, .textAutoPhone, .textAutoUrl, .textBankCard, .textBotCommand, .textCashtag, .textHashtag, .textMention, .textMentionName, .textSpoiler, .textDate:
+        return text
     }
 }
 
@@ -1964,6 +2186,10 @@ private func markdownHasDisplayableContent(_ richText: RichText) -> Bool {
         return true
     case let .formula(latex):
         return !latex.isEmpty
+    case .textCustomEmoji:
+        return true
+    case .textAutoEmail, .textAutoPhone, .textAutoUrl, .textBankCard, .textBotCommand, .textCashtag, .textHashtag, .textMention, .textMentionName, .textSpoiler, .textDate:
+        return true
     }
 }
 
@@ -1993,6 +2219,10 @@ private func markdownIsWhitespaceOnly(_ richText: RichText) -> Bool {
         return false
     case let .formula(latex):
         return latex.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    case .textCustomEmoji:
+        return false
+    case .textAutoEmail, .textAutoPhone, .textAutoUrl, .textBankCard, .textBotCommand, .textCashtag, .textHashtag, .textMention, .textMentionName, .textSpoiler, .textDate:
+        return false
     }
 }
 
@@ -2022,8 +2252,9 @@ private func markdownPlainText(from block: InstantPageBlock, depth: Int = 0) -> 
         return text.plainText
     case let .footer(text):
         return text.plainText
-    case let .blockQuote(text, caption):
-        return text.plainText.isEmpty ? caption.plainText : text.plainText
+    case let .blockQuote(blocks, caption):
+        let blocksText = blocks.map { markdownPlainText(from: $0, depth: depth + 1) }.joined(separator: "\n")
+        return blocksText.isEmpty ? caption.plainText : blocksText
     case let .pullQuote(text, caption):
         return text.plainText.isEmpty ? caption.plainText : text.plainText
     case let .kicker(text):
@@ -2085,11 +2316,11 @@ private func markdownFirstParagraphText(from blocks: [InstantPageBlock], depth: 
         case let .list(items, _):
             for item in items {
                 switch item {
-                case let .text(text, _):
+                case let .text(text, _, _):
                     if !text.plainText.isEmpty {
                         return text.plainText
                     }
-                case let .blocks(blocks, _):
+                case let .blocks(blocks, _, _):
                     if let text = markdownFirstParagraphText(from: blocks, depth: depth + 1) {
                         return text
                     }

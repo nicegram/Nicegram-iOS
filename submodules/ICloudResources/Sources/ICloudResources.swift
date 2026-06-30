@@ -1,6 +1,5 @@
 import Foundation
 import UIKit
-import Postbox
 import TelegramCore
 import SwiftSignalKit
 import Display
@@ -13,9 +12,9 @@ public struct ICloudFileResourceId {
     
     public var uniqueId: String {
         if self.thumbnail {
-            return "icloud-thumb-\(persistentHash32(self.urlData))"
+            return "icloud-thumb-\(enginePersistentHash32(self.urlData))"
         } else {
-            return "icloud-\(persistentHash32(self.urlData))"
+            return "icloud-\(enginePersistentHash32(self.urlData))"
         }
     }
     
@@ -37,21 +36,21 @@ public class ICloudFileResource: TelegramMediaResource {
         self.thumbnail = thumbnail
     }
     
-    public required init(decoder: PostboxDecoder) {
+    public required init(decoder: EnginePostboxDecoder) {
         self.urlData = decoder.decodeStringForKey("url", orElse: "")
         self.thumbnail = decoder.decodeBoolForKey("thumb", orElse: false)
     }
     
-    public func encode(_ encoder: PostboxEncoder) {
+    public func encode(_ encoder: EnginePostboxEncoder) {
         encoder.encodeString(self.urlData, forKey: "url")
         encoder.encodeBool(self.thumbnail, forKey: "thumb")
     }
     
-    public var id: MediaResourceId {
-        return MediaResourceId(ICloudFileResourceId(urlData: self.urlData, thumbnail: self.thumbnail).uniqueId)
+    public var id: EngineRawMediaResourceId {
+        return EngineRawMediaResourceId(ICloudFileResourceId(urlData: self.urlData, thumbnail: self.thumbnail).uniqueId)
     }
-    
-    public func isEqual(to: MediaResource) -> Bool {
+
+    public func isEqual(to: EngineRawMediaResource) -> Bool {
         if let to = to as? ICloudFileResource {
             if self.urlData != to.urlData || self.thumbnail != to.thumbnail {
                 return false
@@ -252,7 +251,7 @@ public func iCloudFileDescription(_ url: URL) -> Signal<ICloudFileDescription?, 
     }
 }
 
-private final class ICloudFileResourceCopyItem: MediaResourceDataFetchCopyLocalItem {
+private final class ICloudFileResourceCopyItem: EngineRawMediaResourceDataFetchCopyLocalItem {
     private let url: URL
     
     init(url: URL) {
@@ -274,7 +273,7 @@ private final class ICloudFileResourceCopyItem: MediaResourceDataFetchCopyLocalI
     }
 }
 
-public func fetchICloudFileResource(resource: ICloudFileResource) -> Signal<MediaResourceDataFetchResult, MediaResourceDataFetchError> {
+public func fetchICloudFileResource(resource: ICloudFileResource) -> Signal<EngineMediaResourceDataFetchResult, EngineMediaResourceDataFetchError> {
     return Signal { subscriber in
         subscriber.putNext(.reset)
         
@@ -306,7 +305,7 @@ public func fetchICloudFileResource(resource: ICloudFileResource) -> Signal<Medi
         
         let complete = {
             if resource.thumbnail {
-                let tempFile = TempBox.shared.tempFile(fileName: "thumb.jpg")
+                let tempFile = EngineTempBox.shared.tempFile(fileName: "thumb.jpg")
                 var data = Data()
                 let fileExtension = url.pathExtension.lowercased()
                 let isAudioFile = audioFileExtensions.contains(fileExtension)

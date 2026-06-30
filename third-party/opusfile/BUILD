@@ -1,8 +1,6 @@
- 
-objc_library(
+
+cc_library(
     name = "opusfile",
-    enable_modules = True,
-    module_name = "opusfile",
     srcs = glob([
         "Sources/*.c",
         "Sources/*.h",

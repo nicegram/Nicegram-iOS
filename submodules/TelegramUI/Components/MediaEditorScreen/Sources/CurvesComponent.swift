@@ -153,7 +153,7 @@ final class CurvesComponent: Component {
                         content: AnyComponent(
                             Text(
                                 text: component.strings.Story_Editor_Curves_All,
-                                font: Font.regular(14.0),
+                                font: Font.bold(13.0),
                                 color: state.section == .all ? .white : UIColor(rgb: 0x808080)
                             )
                         ),
@@ -181,7 +181,7 @@ final class CurvesComponent: Component {
                         content: AnyComponent(
                             Text(
                                 text: component.strings.Story_Editor_Curves_Red,
-                                font: Font.regular(14.0),
+                                font: Font.bold(13.0),
                                 color: state.section == .red ? .white : UIColor(rgb: 0x808080)
                             )
                         ),
@@ -209,7 +209,7 @@ final class CurvesComponent: Component {
                         content: AnyComponent(
                             Text(
                                 text: component.strings.Story_Editor_Curves_Green,
-                                font: Font.regular(14.0),
+                                font: Font.bold(13.0),
                                 color: state.section == .green ? .white : UIColor(rgb: 0x808080)
                             )
                         ),
@@ -237,7 +237,7 @@ final class CurvesComponent: Component {
                         content: AnyComponent(
                             Text(
                                 text: component.strings.Story_Editor_Curves_Blue,
-                                font: Font.regular(14.0),
+                                font: Font.bold(13.0),
                                 color: state.section == .blue ? .white : UIColor(rgb: 0x808080)
                             )
                         ),
@@ -536,7 +536,7 @@ final class CurvesScreenComponent: Component {
                         text: .plain(
                             NSAttributedString(
                                 string: String(format: "%.2f", value.blacks),
-                                font: Font.regular(14.0),
+                                font: Font.medium(13.0),
                                 textColor: UIColor(rgb: 0xffffff)
                             )
                         ),
@@ -563,7 +563,7 @@ final class CurvesScreenComponent: Component {
                         text: .plain(
                             NSAttributedString(
                                 string: String(format: "%.2f", value.shadows),
-                                font: Font.regular(14.0),
+                                font: Font.medium(13.0),
                                 textColor: UIColor(rgb: 0xffffff)
                             )
                         ),
@@ -590,7 +590,7 @@ final class CurvesScreenComponent: Component {
                         text: .plain(
                             NSAttributedString(
                                 string: String(format: "%.2f", value.midtones),
-                                font: Font.regular(14.0),
+                                font: Font.medium(13.0),
                                 textColor: UIColor(rgb: 0xffffff)
                             )
                         ),
@@ -617,7 +617,7 @@ final class CurvesScreenComponent: Component {
                         text: .plain(
                             NSAttributedString(
                                 string: String(format: "%.2f", value.highlights),
-                                font: Font.regular(14.0),
+                                font: Font.medium(13.0),
                                 textColor: UIColor(rgb: 0xffffff)
                             )
                         ),
@@ -644,7 +644,7 @@ final class CurvesScreenComponent: Component {
                         text: .plain(
                             NSAttributedString(
                                 string: String(format: "%.2f", value.whites),
-                                font: Font.regular(14.0),
+                                font: Font.medium(13.0),
                                 textColor: UIColor(rgb: 0xffffff)
                             )
                         ),

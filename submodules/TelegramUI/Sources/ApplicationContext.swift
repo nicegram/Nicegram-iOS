@@ -655,8 +655,6 @@ final class AuthorizedApplicationContext {
                             if case .requestable = required.3.status {
                                 requestedPermissions.append((required.3, false))
                             }
-                        default:
-                            break
                     }
                     i += 1
                 }
@@ -738,8 +736,6 @@ final class AuthorizedApplicationContext {
                                     }, { result in
                                         permissionsPosition.set(position + 1)
                                     })
-                                default:
-                                    break
                             }
                         }
                     }

@@ -1,5 +1,4 @@
 import Foundation
-import Postbox
 import TelegramCore
 import SwiftSignalKit
 
@@ -21,17 +20,19 @@ public enum InstantPagePresentationFontSize: Int32 {
 }
 
 public final class InstantPagePresentationSettings: Codable, Equatable {
-    public static var defaultSettings = InstantPagePresentationSettings(themeType: .light, fontSize: .standard, forceSerif: false, autoNightMode: true, ignoreAutoNightModeUntil: 0)
+    public static var defaultSettings = InstantPagePresentationSettings(themeType: .light, fontSize: .standard, lineSpacingFactor: 1.0, forceSerif: false, autoNightMode: true, ignoreAutoNightModeUntil: 0)
     
     public var themeType: InstantPageThemeType
     public var fontSize: InstantPagePresentationFontSize
+    public var lineSpacingFactor: CGFloat
     public var forceSerif: Bool
     public var autoNightMode: Bool
     public var ignoreAutoNightModeUntil: Int32
     
-    public init(themeType: InstantPageThemeType, fontSize: InstantPagePresentationFontSize, forceSerif: Bool, autoNightMode: Bool, ignoreAutoNightModeUntil: Int32) {
+    public init(themeType: InstantPageThemeType, fontSize: InstantPagePresentationFontSize, lineSpacingFactor: CGFloat, forceSerif: Bool, autoNightMode: Bool, ignoreAutoNightModeUntil: Int32) {
         self.themeType = themeType
         self.fontSize = fontSize
+        self.lineSpacingFactor = lineSpacingFactor
         self.forceSerif = forceSerif
         self.autoNightMode = autoNightMode
         self.ignoreAutoNightModeUntil = ignoreAutoNightModeUntil
@@ -42,6 +43,7 @@ public final class InstantPagePresentationSettings: Codable, Equatable {
 
         self.themeType = InstantPageThemeType(rawValue: try container.decode(Int32.self, forKey: "themeType"))!
         self.fontSize = InstantPagePresentationFontSize(rawValue: try container.decode(Int32.self, forKey: "fontSize"))!
+        self.lineSpacingFactor = try container.decodeIfPresent(Double.self, forKey: "lineSpacingFactor") ?? 1.0
         self.forceSerif = try container.decode(Int32.self, forKey: "forceSerif") != 0
         self.autoNightMode = try container.decode(Int32.self, forKey: "autoNightMode") != 0
         self.ignoreAutoNightModeUntil = try container.decode(Int32.self, forKey: "ignoreAutoNightModeUntil")
@@ -52,6 +54,7 @@ public final class InstantPagePresentationSettings: Codable, Equatable {
 
         try container.encode(self.themeType.rawValue, forKey: "themeType")
         try container.encode(self.fontSize.rawValue, forKey: "fontSize")
+        try container.encode(self.lineSpacingFactor, forKey: "lineSpacingFactor")
         try container.encode((self.forceSerif ? 1 : 0) as Int32, forKey: "forceSerif")
         try container.encode((self.autoNightMode ? 1 : 0) as Int32, forKey: "autoNightMode")
         try container.encode(self.ignoreAutoNightModeUntil, forKey: "ignoreAutoNightModeUntil")
@@ -62,6 +65,9 @@ public final class InstantPagePresentationSettings: Codable, Equatable {
             return false
         }
         if lhs.fontSize != rhs.fontSize {
+            return false
+        }
+        if lhs.lineSpacingFactor != rhs.lineSpacingFactor {
             return false
         }
         if lhs.forceSerif != rhs.forceSerif {
@@ -77,23 +83,23 @@ public final class InstantPagePresentationSettings: Codable, Equatable {
     }
     
     public func withUpdatedThemeType(_ themeType: InstantPageThemeType) -> InstantPagePresentationSettings {
-        return InstantPagePresentationSettings(themeType: themeType, fontSize: self.fontSize, forceSerif: self.forceSerif, autoNightMode: self.autoNightMode, ignoreAutoNightModeUntil: self.ignoreAutoNightModeUntil)
+        return InstantPagePresentationSettings(themeType: themeType, fontSize: self.fontSize, lineSpacingFactor: self.lineSpacingFactor, forceSerif: self.forceSerif, autoNightMode: self.autoNightMode, ignoreAutoNightModeUntil: self.ignoreAutoNightModeUntil)
     }
     
     public func withUpdatedFontSize(_ fontSize: InstantPagePresentationFontSize) -> InstantPagePresentationSettings {
-        return InstantPagePresentationSettings(themeType: self.themeType, fontSize: fontSize, forceSerif: self.forceSerif, autoNightMode: self.autoNightMode, ignoreAutoNightModeUntil: self.ignoreAutoNightModeUntil)
+        return InstantPagePresentationSettings(themeType: self.themeType, fontSize: fontSize, lineSpacingFactor: self.lineSpacingFactor, forceSerif: self.forceSerif, autoNightMode: self.autoNightMode, ignoreAutoNightModeUntil: self.ignoreAutoNightModeUntil)
     }
     
     public func withUpdatedForceSerif(_ forceSerif: Bool) -> InstantPagePresentationSettings {
-        return InstantPagePresentationSettings(themeType: self.themeType, fontSize: self.fontSize, forceSerif: forceSerif, autoNightMode: self.autoNightMode, ignoreAutoNightModeUntil: self.ignoreAutoNightModeUntil)
+        return InstantPagePresentationSettings(themeType: self.themeType, fontSize: self.fontSize, lineSpacingFactor: self.lineSpacingFactor, forceSerif: forceSerif, autoNightMode: self.autoNightMode, ignoreAutoNightModeUntil: self.ignoreAutoNightModeUntil)
     }
     
     public func withUpdatedAutoNightMode(_ autoNightMode: Bool) -> InstantPagePresentationSettings {
-        return InstantPagePresentationSettings(themeType: self.themeType, fontSize: self.fontSize, forceSerif: self.forceSerif, autoNightMode: autoNightMode, ignoreAutoNightModeUntil: self.ignoreAutoNightModeUntil)
+        return InstantPagePresentationSettings(themeType: self.themeType, fontSize: self.fontSize, lineSpacingFactor: self.lineSpacingFactor, forceSerif: self.forceSerif, autoNightMode: autoNightMode, ignoreAutoNightModeUntil: self.ignoreAutoNightModeUntil)
     }
     
     public func withUpdatedIgnoreAutoNightModeUntil(_ ignoreAutoNightModeUntil: Int32) -> InstantPagePresentationSettings {
-        return InstantPagePresentationSettings(themeType: self.themeType, fontSize: self.fontSize, forceSerif: self.forceSerif, autoNightMode: autoNightMode, ignoreAutoNightModeUntil: ignoreAutoNightModeUntil)
+        return InstantPagePresentationSettings(themeType: self.themeType, fontSize: self.fontSize, lineSpacingFactor: self.lineSpacingFactor, forceSerif: self.forceSerif, autoNightMode: autoNightMode, ignoreAutoNightModeUntil: ignoreAutoNightModeUntil)
     }
 }
 
@@ -106,7 +112,7 @@ public func updateInstantPagePresentationSettingsInteractively(accountManager: A
             } else {
                 currentSettings = InstantPagePresentationSettings.defaultSettings
             }
-            return PreferencesEntry(f(currentSettings))
+            return EnginePreferencesEntry(f(currentSettings))
         })
     }
 }

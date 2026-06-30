@@ -3,7 +3,6 @@ import UIKit
 import AsyncDisplayKit
 import Display
 import SwiftSignalKit
-import Postbox
 import TelegramCore
 import TelegramPresentationData
 import MergeLists
@@ -35,11 +34,11 @@ private extension ListMessageItemInteraction {
 }
 
 private enum ChatHistorySearchEntryStableId: Hashable {
-    case messageId(MessageId)
+    case messageId(EngineMessage.Id)
 }
 
 private enum ChatHistorySearchEntry: Comparable, Identifiable {
-    case message(Message, PresentationTheme, PresentationStrings, PresentationDateTimeFormat, PresentationFontSize)
+    case message(EngineRawMessage, PresentationTheme, PresentationStrings, PresentationDateTimeFormat, PresentationFontSize)
     
     var stableId: ChatHistorySearchEntryStableId {
         switch self {
@@ -88,7 +87,7 @@ private enum ChatHistorySearchEntry: Comparable, Identifiable {
         }
     }
     
-    func item(context: AccountContext, peerId: PeerId, interaction: ChatControllerInteraction) -> ListViewItem {
+    func item(context: AccountContext, peerId: EnginePeer.Id, interaction: ChatControllerInteraction) -> ListViewItem {
         switch self {
             case let .message(message, theme, strings, dateTimeFormat, fontSize):
             return ListMessageItem(presentationData: ChatPresentationData(theme: ChatPresentationThemeData(theme: theme, wallpaper: .builtin(WallpaperSettings())), fontSize: fontSize, strings: strings, dateTimeFormat: dateTimeFormat, nameDisplayOrder: .firstLast, disableAnimations: false, largeEmoji: false, chatBubbleCorners: PresentationChatBubbleCorners(mainRadius: 0.0, auxiliaryRadius: 0.0, mergeBubbleCorners: false)), context: context, chatLocation: .peer(id: peerId), interaction: ListMessageItemInteraction(controllerInteraction: interaction), message: message, selection: .none, displayHeader: true)
@@ -104,7 +103,7 @@ private struct ChatHistorySearchContainerTransition {
     let displayingResults: Bool
 }
 
-private func chatHistorySearchContainerPreparedTransition(from fromEntries: [ChatHistorySearchEntry], to toEntries: [ChatHistorySearchEntry], query: String, displayingResults: Bool, context: AccountContext, peerId: PeerId, interaction: ChatControllerInteraction) -> ChatHistorySearchContainerTransition {
+private func chatHistorySearchContainerPreparedTransition(from fromEntries: [ChatHistorySearchEntry], to toEntries: [ChatHistorySearchEntry], query: String, displayingResults: Bool, context: AccountContext, peerId: EnginePeer.Id, interaction: ChatControllerInteraction) -> ChatHistorySearchContainerTransition {
     let (deleteIndices, indicesAndItems, updateIndices) = mergeListsStableWithUpdates(leftList: fromEntries, rightList: toEntries)
     
     let deletions = deleteIndices.map { ListViewDeleteItem(index: $0, directionHint: nil) }
@@ -126,7 +125,7 @@ public final class ChatHistorySearchContainerNode: SearchDisplayControllerConten
     private var containerLayout: (ContainerViewLayout, CGFloat)?
     
     private var currentEntries: [ChatHistorySearchEntry]?
-    public var currentMessages: [MessageId: Message]?
+    public var currentMessages: [EngineMessage.Id: EngineRawMessage]?
     
     private var currentQuery: String?
     private let searchQuery = Promise<String?>()
@@ -149,7 +148,7 @@ public final class ChatHistorySearchContainerNode: SearchDisplayControllerConten
         return true
     }
     
-    public init(context: AccountContext, peerId: PeerId, threadId: Int64?, tagMask: MessageTags, interfaceInteraction: ChatControllerInteraction) {
+    public init(context: AccountContext, peerId: EnginePeer.Id, threadId: Int64?, tagMask: EngineMessage.Tags, interfaceInteraction: ChatControllerInteraction) {
         self.context = context
         
         let presentationData = context.sharedContext.currentPresentationData.with { $0 }
@@ -194,14 +193,14 @@ public final class ChatHistorySearchContainerNode: SearchDisplayControllerConten
         self.searchQueryDisposable.set((self.searchQuery.get()
         |> deliverOnMainQueue).startStrict(next: { [weak self] query in
             if let strongSelf = self {
-                let signal: Signal<([ChatHistorySearchEntry], [MessageId: Message])?, NoError>
+                let signal: Signal<([ChatHistorySearchEntry], [EngineMessage.Id: EngineRawMessage])?, NoError>
                 if let query = query, !query.isEmpty {
-                    let foundRemoteMessages: Signal<[Message], NoError> = context.engine.messages.searchMessages(location: .peer(peerId: peerId, fromId: nil, tags: tagMask, reactions: nil, threadId: threadId, minDate: nil, maxDate: nil), query: query, state: nil)
+                    let foundRemoteMessages: Signal<[EngineRawMessage], NoError> = context.engine.messages.searchMessages(location: .peer(peerId: peerId, fromId: nil, tags: tagMask, reactions: nil, threadId: threadId, minDate: nil, maxDate: nil), query: query, state: nil)
                     |> map { $0.0.messages }
                     |> delay(0.2, queue: Queue.concurrentDefaultQueue())
                     
                     signal = combineLatest(foundRemoteMessages, themeAndStringsPromise.get())
-                    |> map { messages, themeAndStrings -> ([ChatHistorySearchEntry], [MessageId: Message])? in
+                    |> map { messages, themeAndStrings -> ([ChatHistorySearchEntry], [EngineMessage.Id: EngineRawMessage])? in
                         if messages.isEmpty {
                             return ([], [:])
                         } else {
@@ -353,13 +352,13 @@ public final class ChatHistorySearchContainerNode: SearchDisplayControllerConten
         }
     }
     
-    public func messageForGallery(_ id: MessageId) -> Message? {
+    public func messageForGallery(_ id: EngineMessage.Id) -> EngineMessage? {
         if let currentEntries = self.currentEntries {
             for entry in currentEntries {
                 switch entry {
                 case let .message(message, _, _, _, _):
                     if message.id == id {
-                        return message
+                        return EngineMessage(message)
                     }
                 }
             }
@@ -377,7 +376,7 @@ public final class ChatHistorySearchContainerNode: SearchDisplayControllerConten
         }
     }
     
-    public func transitionNodeForGallery(messageId: MessageId, media: Media) -> (ASDisplayNode, CGRect, () -> (UIView?, UIView?))? {
+    public func transitionNodeForGallery(messageId: EngineMessage.Id, media: EngineRawMedia) -> (ASDisplayNode, CGRect, () -> (UIView?, UIView?))? {
         var transitionNode: (ASDisplayNode, CGRect, () -> (UIView?, UIView?))?
         self.listNode.forEachItemNode { itemNode in
             if let itemNode = itemNode as? ChatMessageItemView {

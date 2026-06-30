@@ -8,7 +8,6 @@ import AppBundle
 import ViewControllerComponent
 import AccountContext
 import TelegramCore
-import Postbox
 import SwiftSignalKit
 import MultilineTextComponent
 import ButtonComponent

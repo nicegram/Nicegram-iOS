@@ -66,7 +66,7 @@ final class InstantPageAudioNode: ASDisplayNode, InstantPageNode {
     private var playImage: UIImage
     private var pauseImage: UIImage
     
-    private let buttonNode: HighlightableButtonNode
+    private let buttonView: UIView
     private let statusNode: RadialStatusNode
     private let titleNode: ASTextNode
     private let scrubbingNode: MediaPlayerScrubbingNode
@@ -76,7 +76,7 @@ final class InstantPageAudioNode: ASDisplayNode, InstantPageNode {
     private var isPlaying: Bool = false
     private var playbackState: SharedMediaPlayerItemPlaybackState?
     
-    init(context: AccountContext, strings: PresentationStrings, theme: InstantPageTheme, webPage: TelegramMediaWebpage, media: InstantPageMedia, openMedia: @escaping (InstantPageMedia) -> Void) {
+    init(context: AccountContext, strings: PresentationStrings, theme: InstantPageTheme, webPage: TelegramMediaWebpage, media: InstantPageMedia, playlistId: InstantPageMediaPlaylistId, openMedia: @escaping (InstantPageMedia) -> Void) {
         self.context = context
         self.strings = strings
         self.theme = theme
@@ -86,7 +86,7 @@ final class InstantPageAudioNode: ASDisplayNode, InstantPageNode {
         self.playImage = generatePlayButton(color: theme.textCategories.paragraph.color)!
         self.pauseImage = generatePauseButton(color: theme.textCategories.paragraph.color)!
         
-        self.buttonNode = HighlightableButtonNode()
+        self.buttonView = UIView()
         self.statusNode = RadialStatusNode(backgroundNodeColor: .clear)
         self.titleNode = ASTextNode()
         self.titleNode.maximumNumberOfLines = 1
@@ -112,24 +112,10 @@ final class InstantPageAudioNode: ASDisplayNode, InstantPageNode {
         self.titleNode.attributedText = titleString(media: media, theme: theme, strings: strings)
         
         self.addSubnode(self.statusNode)
-        self.addSubnode(self.buttonNode)
         self.addSubnode(self.titleNode)
         self.addSubnode(self.scrubbingNode)
-        
+
         self.statusNode.transitionToState(RadialStatusNodeState.customIcon(self.playImage), animated: false, completion: {})
-        
-        self.buttonNode.addTarget(self, action: #selector(self.buttonPressed), forControlEvents: .touchUpInside)
-        self.buttonNode.highligthedChanged = { [weak self] highlighted in
-            if let strongSelf = self {
-                if highlighted {
-                    strongSelf.statusNode.layer.removeAnimation(forKey: "opacity")
-                    strongSelf.statusNode.alpha = 0.4
-                } else {
-                    strongSelf.statusNode.alpha = 1.0
-                    strongSelf.statusNode.layer.animateAlpha(from: 0.4, to: 1.0, duration: 0.2)
-                }
-            }
-        }
         
         self.scrubbingNode.seek = { [weak self] timestamp in
             if let strongSelf = self {
@@ -178,12 +164,12 @@ final class InstantPageAudioNode: ASDisplayNode, InstantPageNode {
                 }
             })*/
         
-        self.scrubbingNode.status = context.sharedContext.mediaManager.filteredPlaylistState(accountId: context.account.id, playlistId: InstantPageMediaPlaylistId(webpageId: webPage.webpageId), itemId: InstantPageMediaPlaylistItemId(index: self.media.index), type: self.playlistType)
+        self.scrubbingNode.status = context.sharedContext.mediaManager.filteredPlaylistState(accountId: context.account.id, playlistId: playlistId, itemId: InstantPageMediaPlaylistItemId(index: self.media.index), type: self.playlistType)
         |> map { playbackState -> MediaPlayerStatus in
             return playbackState?.status ?? MediaPlayerStatus(generationTimestamp: 0.0, duration: 0.0, dimensions: CGSize(), timestamp: 0.0, baseRate: 1.0, seekId: 0, status: .paused, soundEnabled: true)
         }
             
-        self.playerStatusDisposable = (context.sharedContext.mediaManager.filteredPlaylistState(accountId: context.account.id, playlistId: InstantPageMediaPlaylistId(webpageId: webPage.webpageId), itemId: InstantPageMediaPlaylistItemId(index: self.media.index), type: playlistType)
+        self.playerStatusDisposable = (context.sharedContext.mediaManager.filteredPlaylistState(accountId: context.account.id, playlistId: playlistId, itemId: InstantPageMediaPlaylistItemId(index: self.media.index), type: playlistType)
         |> deliverOnMainQueue).start(next: { [weak self] playbackState in
             guard let strongSelf = self else {
                 return
@@ -213,7 +199,21 @@ final class InstantPageAudioNode: ASDisplayNode, InstantPageNode {
     deinit {
         self.playerStatusDisposable?.dispose()
     }
-    
+
+    override func didLoad() {
+        super.didLoad()
+        // The play/pause tap target is a plain view + UITapGestureRecognizer, NOT an ASControl
+        // button. An ASControl's `.touchUpInside` is cancelled by the chat ListView's gesture
+        // system (the control highlights on touch-down, but the action never fires), so an
+        // embedded audio control in a rich-message bubble could never start playback. A gesture
+        // recognizer coordinates with the list's gestures and fires reliably — matching the V2
+        // image node, the details-title hit view, and the regular file/music message. The plain
+        // view sits above `statusNode` and is positioned over the icon in `layout()`. (Works in
+        // V1's full-page Instant View too; gesture recognizers fire inside its scroll view.)
+        self.view.addSubview(self.buttonView)
+        self.buttonView.addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(self.buttonPressed)))
+    }
+
     func update(strings: PresentationStrings, theme: InstantPageTheme) {
         if self.strings !== strings || self.theme !== theme {
             let themeUpdated = self.theme !== theme
@@ -268,7 +268,7 @@ final class InstantPageAudioNode: ASDisplayNode, InstantPageNode {
         let titleSize = self.titleNode.measure(CGSize(width: maxTitleWidth, height: size.height))
         self.titleNode.frame = CGRect(origin: CGPoint(x: insets.left + leftInset, y: 2.0), size: titleSize)
         
-        self.buttonNode.frame = CGRect(origin: CGPoint(x: insets.left, y: 0.0), size: CGSize(width: 48.0, height: 48.0))
+        self.buttonView.frame = CGRect(origin: CGPoint(x: insets.left, y: 0.0), size: CGSize(width: 48.0, height: 48.0))
         self.statusNode.frame = CGRect(origin: CGPoint(x: insets.left, y: 0.0), size: CGSize(width: 48.0, height: 48.0))
         
         var topOffset: CGFloat = 0.0

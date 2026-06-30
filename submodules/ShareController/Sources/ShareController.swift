@@ -2434,7 +2434,7 @@ public final class ShareController: ViewController {
         let context = accountContext.context
         
         let signals: [Signal<Float, NoError>] = messages.compactMap { message -> Signal<Float, NoError>? in
-            if let media = message.media.first {
+            if let media = message.effectiveMedia.first {
                 return SaveToCameraRoll.saveToCameraRoll(context: context, userLocation: .peer(message.id.peerId), mediaReference: .message(message: MessageReference(message), media: media))
             } else {
                 return nil

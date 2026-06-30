@@ -216,6 +216,7 @@ public final class GlassBarButtonComponent: Component {
                     }
                 }
                 componentTransition.setFrame(view: view, frame: componentFrame)
+                componentTransition.setAlpha(view: view, alpha: component.isVisible ? 1.0 : 0.0)
             }
             
             let effectiveState: DisplayState = component.state ?? .glass

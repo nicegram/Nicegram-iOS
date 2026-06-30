@@ -1,11 +1,5 @@
 import Postbox
 
-public enum AutodownloadPreset {
-    case low
-    case medium
-    case high
-}
-
 public struct AutodownloadPresetSettings: Codable {
     public let disabled: Bool
     public let photoSizeMax: Int64

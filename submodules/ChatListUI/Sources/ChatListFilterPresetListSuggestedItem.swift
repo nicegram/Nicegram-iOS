@@ -215,14 +215,8 @@ public class ChatListFilterPresetListSuggestedItemNode: ListViewItemNode, ItemLi
             
             let (labelLayout, labelApply) = makeLabelLayout(TextNodeLayoutArguments(attributedString: NSAttributedString(string: item.label, font: labelFont, textColor:labelBadgeColor), backgroundColor: nil, maximumNumberOfLines: multilineLabel ? 0 : 1, truncationType: .end, constrainedSize: CGSize(width: labelConstrain, height: CGFloat.greatestFiniteMagnitude), alignment: .natural, cutout: nil, insets: UIEdgeInsets()))
             
-            let verticalInset: CGFloat
-            switch item.systemStyle {
-            case .glass:
-                verticalInset = 15.0
-            case .legacy:
-                verticalInset = 11.0
-            }
-            let titleSpacing: CGFloat = 3.0
+            let verticalInset: CGFloat = 11.0
+            let titleSpacing: CGFloat = 2.0
             
             let height: CGFloat
             height = verticalInset * 2.0 + titleLayout.size.height + titleSpacing + labelLayout.size.height

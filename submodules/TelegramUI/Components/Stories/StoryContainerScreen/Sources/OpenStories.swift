@@ -4,7 +4,6 @@ import Display
 import AccountContext
 import SwiftSignalKit
 import TelegramCore
-import Postbox
 import AvatarNode
 
 public extension StoryContainerScreen {
@@ -170,7 +169,7 @@ public extension StoryContainerScreen {
         parentController: ViewController,
         transitionIn: @escaping () -> StoryContainerScreen.TransitionIn?,
         transitionOut: @escaping (EnginePeer.Id) -> StoryContainerScreen.TransitionOut?,
-        setFocusedItem: @escaping (Signal<StoryId?, NoError>) -> Void,
+        setFocusedItem: @escaping (Signal<EngineStoryId?, NoError>) -> Void,
         setProgress: @escaping (Signal<Never, NoError>) -> Void,
         completion: @escaping (StoryContainerScreen) -> Void = { _ in }
     ) {

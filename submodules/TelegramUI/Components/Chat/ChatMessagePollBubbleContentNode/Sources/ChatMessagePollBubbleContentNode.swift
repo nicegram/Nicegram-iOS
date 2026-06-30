@@ -485,6 +485,8 @@ private final class ChatMessagePollOptionNode: ASDisplayNode {
     private let resultBarIconNode: ASImageNode
     private var mediaNode: TransformImageNode?
     private var mediaVideoIconNode: ASImageNode?
+    private var mediaWebpageIconNode: ASImageNode?
+    private var mediaWebpageOverlayNode: ASDisplayNode?
     private var stickerMediaLayer: InlineStickerItemLayer?
     private var mediaHidden = false
     private(set) var mediaFrame: CGRect?
@@ -763,7 +765,71 @@ private final class ChatMessagePollOptionNode: ASDisplayNode {
         let alpha: CGFloat = self.mediaHidden ? 0.0 : 1.0
         self.mediaNode?.alpha = alpha
         self.mediaVideoIconNode?.alpha = alpha
+        self.mediaWebpageOverlayNode?.alpha = alpha
+        self.mediaWebpageIconNode?.alpha = alpha
         self.stickerMediaLayer?.opacity = Float(alpha)
+    }
+
+    private func updateMediaWebpageOverlayNode(frame: CGRect) {
+        let mediaWebpageOverlayNode: ASDisplayNode
+        if let current = self.mediaWebpageOverlayNode {
+            mediaWebpageOverlayNode = current
+        } else {
+            let current = ASDisplayNode()
+            current.displaysAsynchronously = false
+            current.isUserInteractionEnabled = false
+            current.backgroundColor = UIColor(rgb: 0x000000, alpha: 0.3)
+            current.cornerRadius = 10.0
+            self.mediaWebpageOverlayNode = current
+            mediaWebpageOverlayNode = current
+        }
+
+        if let mediaWebpageIconNode = self.mediaWebpageIconNode {
+            self.containerNode.insertSubnode(mediaWebpageOverlayNode, belowSubnode: mediaWebpageIconNode)
+        } else if let mediaNode = self.mediaNode {
+            self.containerNode.insertSubnode(mediaWebpageOverlayNode, aboveSubnode: mediaNode)
+        } else if mediaWebpageOverlayNode.supernode == nil {
+            self.containerNode.addSubnode(mediaWebpageOverlayNode)
+        }
+        mediaWebpageOverlayNode.frame = frame
+        mediaWebpageOverlayNode.alpha = self.mediaHidden ? 0.0 : 1.0
+    }
+
+    private func removeMediaWebpageOverlayNode() {
+        if let mediaWebpageOverlayNode = self.mediaWebpageOverlayNode {
+            mediaWebpageOverlayNode.removeFromSupernode()
+            self.mediaWebpageOverlayNode = nil
+        }
+    }
+
+    private func updateMediaWebpageIconNode(frame: CGRect, tintColor: UIColor) {
+        let mediaWebpageIconNode: ASImageNode
+        if let current = self.mediaWebpageIconNode {
+            mediaWebpageIconNode = current
+        } else {
+            let current = ASImageNode()
+            current.displaysAsynchronously = false
+            self.mediaWebpageIconNode = current
+            mediaWebpageIconNode = current
+        }
+
+        if let mediaWebpageOverlayNode = self.mediaWebpageOverlayNode {
+            self.containerNode.insertSubnode(mediaWebpageIconNode, aboveSubnode: mediaWebpageOverlayNode)
+        } else if mediaWebpageIconNode.supernode == nil {
+            self.containerNode.addSubnode(mediaWebpageIconNode)
+        }
+        mediaWebpageIconNode.image = generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Link"), color: tintColor)
+        let iconSize = mediaWebpageIconNode.image?.size ?? CGSize(width: 30.0, height: 30.0)
+        mediaWebpageIconNode.frame = CGRect(origin: CGPoint(x: frame.midX - iconSize.width * 0.5, y: frame.midY - iconSize.height * 0.5), size: iconSize)
+        mediaWebpageIconNode.isHidden = false
+        mediaWebpageIconNode.alpha = self.mediaHidden ? 0.0 : 1.0
+    }
+
+    private func removeMediaWebpageIconNode() {
+        if let mediaWebpageIconNode = self.mediaWebpageIconNode {
+            mediaWebpageIconNode.removeFromSupernode()
+            self.mediaWebpageIconNode = nil
+        }
     }
 
     func setMediaHidden(_ hidden: Bool) {
@@ -1166,6 +1232,8 @@ private final class ChatMessagePollOptionNode: ASDisplayNode {
                         stickerLayer.isVisibleForAnimations = true
                         node.mediaNode?.removeFromSupernode()
                         node.mediaNode = nil
+                        node.removeMediaWebpageOverlayNode()
+                        node.removeMediaWebpageIconNode()
                     } else {
                         if let stickerMediaLayer = node.stickerMediaLayer {
                             stickerMediaLayer.removeFromSuperlayer()
@@ -1189,11 +1257,14 @@ private final class ChatMessagePollOptionNode: ASDisplayNode {
                         mediaNode.frame = mediaFrame
 
                         let mediaReference = AnyMediaReference.message(message: MessageReference(message), media: media)
+                        let mediaUpdated = previousMedia?.isEqual(to: media) != true
                         var imageSize = ChatMessagePollOptionNode.mediaSize
                         var isVideo = false
+                        var mediaWebpageIconTintColor: UIColor?
+                        var mediaWebpageHasImageThumbnail = false
                         if let image = media as? TelegramMediaImage, let largest = largestImageRepresentation(image.representations) {
                             imageSize = largest.dimensions.cgSize.aspectFilled(ChatMessagePollOptionNode.mediaSize)
-                            if previousMedia?.isEqual(to: media) != true, let photoReference = mediaReference.concrete(TelegramMediaImage.self) {
+                            if mediaUpdated, let photoReference = mediaReference.concrete(TelegramMediaImage.self) {
                                 mediaNode.setSignal(chatMessagePhoto(postbox: context.account.postbox, userLocation: .peer(message.id.peerId), photoReference: photoReference))
                                 updatedFetchSignal = messageMediaImageInteractiveFetched(context: context, message: message, image: image, resource: largest.resource, storeToDownloadsPeerId: nil)
                             }
@@ -1201,7 +1272,7 @@ private final class ChatMessagePollOptionNode: ASDisplayNode {
                             if let dimensions = file.dimensions {
                                 imageSize = dimensions.cgSize.aspectFilled(ChatMessagePollOptionNode.mediaSize)
                             }
-                            if let fileReference = mediaReference.concrete(TelegramMediaFile.self), previousMedia?.isEqual(to: media) != true {
+                            if let fileReference = mediaReference.concrete(TelegramMediaFile.self), mediaUpdated {
                                 if file.mimeType.hasPrefix("image/") {
                                     mediaNode.setSignal(instantPageImageFile(account: context.account, userLocation: .peer(message.id.peerId), fileReference: fileReference, fetched: true))
                                 } else {
@@ -1209,8 +1280,53 @@ private final class ChatMessagePollOptionNode: ASDisplayNode {
                                 }
                             }
                             isVideo = file.isVideo
+                        } else if let webpage = media as? TelegramMediaWebpage {
+                            let webpageReference = WebpageReference(webpage)
+                            if case let .Loaded(content) = webpage.content, let image = content.image {
+                                if let largest = largestImageRepresentation(image.representations) {
+                                    imageSize = largest.dimensions.cgSize.aspectFilled(ChatMessagePollOptionNode.mediaSize)
+                                }
+                                if mediaUpdated {
+                                    mediaNode.setSignal(chatMessagePhoto(postbox: context.account.postbox, userLocation: .peer(message.id.peerId), photoReference: .webPage(webPage: webpageReference, media: image)))
+
+                                    if let smallest = smallestImageRepresentation(image.representations) {
+                                        updatedFetchSignal = fetchedMediaResource(
+                                            mediaBox: context.account.postbox.mediaBox,
+                                            userLocation: .peer(message.id.peerId),
+                                            userContentType: .image,
+                                            reference: .media(media: .webPage(webPage: webpageReference, media: image), resource: smallest.resource),
+                                            statsCategory: .image
+                                        )
+                                        |> map { _ -> Void in
+                                            return Void()
+                                        }
+                                        |> `catch` { _ -> Signal<Void, NoError> in
+                                            return .complete()
+                                        }
+                                    }
+                                }
+                                mediaWebpageIconTintColor = .white
+                                mediaWebpageHasImageThumbnail = true
+                            } else {
+                                let mediaAccentColor = incoming ? presentationData.theme.theme.chat.message.incoming.accentTextColor : presentationData.theme.theme.chat.message.outgoing.secondaryTextColor
+                                if mediaUpdated || themeUpdated {
+                                    let backgroundColor = mediaAccentColor.withAlphaComponent(0.1)
+                                    mediaNode.setSignal(.single({ arguments in
+                                        let size = arguments.imageSize
+                                        let context = DrawingContext(size: size)!
+                                        context.withFlippedContext { context in
+                                            context.clear(CGRect(origin: .zero, size: size))
+                                            context.setFillColor(backgroundColor.cgColor)
+                                            context.addPath(CGPath(roundedRect: CGRect(origin: .zero, size: size), cornerWidth: 10.0, cornerHeight: 10.0, transform: nil))
+                                            context.fillPath()
+                                        }
+                                        return context
+                                    }))
+                                }
+                                mediaWebpageIconTintColor = mediaAccentColor
+                            }
                         } else if let map = media as? TelegramMediaMap {
-                            if previousMedia?.isEqual(to: media) != true {
+                            if mediaUpdated {
                                 let resource = MapSnapshotMediaResource(latitude: map.latitude, longitude: map.longitude, width: Int32(ChatMessagePollOptionNode.mediaSize.width), height: Int32(ChatMessagePollOptionNode.mediaSize.height))
                                 mediaNode.setSignal(chatMapSnapshotImage(engine: context.engine, resource: resource))
                             }
@@ -1225,6 +1341,18 @@ private final class ChatMessagePollOptionNode: ASDisplayNode {
                             emptyColor: incoming ? presentationData.theme.theme.chat.message.incoming.mediaPlaceholderColor : presentationData.theme.theme.chat.message.outgoing.mediaPlaceholderColor
                         ))
                         apply()
+
+                        if let mediaWebpageIconTintColor {
+                            if mediaWebpageHasImageThumbnail {
+                                node.updateMediaWebpageOverlayNode(frame: mediaFrame)
+                            } else {
+                                node.removeMediaWebpageOverlayNode()
+                            }
+                            node.updateMediaWebpageIconNode(frame: mediaFrame, tintColor: mediaWebpageIconTintColor)
+                        } else {
+                            node.removeMediaWebpageOverlayNode()
+                            node.removeMediaWebpageIconNode()
+                        }
 
                         if isVideo {
                             let mediaVideoIconNode: ASImageNode
@@ -1247,6 +1375,8 @@ private final class ChatMessagePollOptionNode: ASDisplayNode {
                     } else if let mediaNode = node.mediaNode {
                         mediaNode.removeFromSupernode()
                         node.mediaNode = nil
+                        node.removeMediaWebpageOverlayNode()
+                        node.removeMediaWebpageIconNode()
                         if let mediaVideoIconNode = node.mediaVideoIconNode {
                             mediaVideoIconNode.removeFromSupernode()
                             node.mediaVideoIconNode = nil
@@ -1254,6 +1384,11 @@ private final class ChatMessagePollOptionNode: ASDisplayNode {
                     } else if let mediaVideoIconNode = node.mediaVideoIconNode {
                         mediaVideoIconNode.removeFromSupernode()
                         node.mediaVideoIconNode = nil
+                        node.removeMediaWebpageOverlayNode()
+                        node.removeMediaWebpageIconNode()
+                    } else {
+                        node.removeMediaWebpageOverlayNode()
+                        node.removeMediaWebpageIconNode()
                     }
                     node.setMediaHidden(node.mediaHidden)
                     
@@ -1386,7 +1521,10 @@ private final class ChatMessagePollAddOptionNode: ASDisplayNode {
     private var animationLayer: InlineStickerItemLayer?
     private var statusNode: RadialStatusNode?
     private var videoIconView: UIImageView?
+    private var webpageOverlayView: UIView?
+    private var webpageIconView: UIImageView?
     private var appliedMedia: AnyMediaReference?
+    private var appliedWebpagePlaceholderColor: UIColor?
     
     private var currentFont: UIFont?
     private var currentTextColor: UIColor?
@@ -1654,6 +1792,61 @@ private final class ChatMessagePollAddOptionNode: ASDisplayNode {
     @objc private func attachButtonPressed() {
         self.attachPressed?()
     }
+
+    private func updateWebpageIconView(frame: CGRect, tintColor: UIColor) {
+        let webpageIconView: UIImageView
+        if let current = self.webpageIconView {
+            webpageIconView = current
+        } else {
+            let current = UIImageView(image: UIImage(bundleImageName: "Chat/Context Menu/Link")?.withRenderingMode(.alwaysTemplate))
+            current.isUserInteractionEnabled = false
+            self.view.addSubview(current)
+            self.webpageIconView = current
+            webpageIconView = current
+        }
+
+        webpageIconView.tintColor = tintColor
+        let iconSize = webpageIconView.image?.size ?? CGSize(width: 30.0, height: 30.0)
+        webpageIconView.frame = CGRect(origin: CGPoint(x: frame.midX - iconSize.width * 0.5, y: frame.midY - iconSize.height * 0.5), size: iconSize)
+        webpageIconView.isHidden = false
+        self.view.bringSubviewToFront(webpageIconView)
+    }
+
+    private func removeWebpageIconView() {
+        if let webpageIconView = self.webpageIconView {
+            self.webpageIconView = nil
+            webpageIconView.removeFromSuperview()
+        }
+    }
+
+    private func updateWebpageOverlayView(frame: CGRect) {
+        let webpageOverlayView: UIView
+        if let current = self.webpageOverlayView {
+            webpageOverlayView = current
+        } else {
+            let current = UIView()
+            current.isUserInteractionEnabled = false
+            current.backgroundColor = UIColor(rgb: 0x000000, alpha: 0.3)
+            current.layer.cornerRadius = 10.0
+            current.clipsToBounds = true
+            self.view.addSubview(current)
+            self.webpageOverlayView = current
+            webpageOverlayView = current
+        }
+
+        webpageOverlayView.frame = frame
+        webpageOverlayView.isHidden = false
+        if let webpageIconView = self.webpageIconView {
+            self.view.insertSubview(webpageOverlayView, belowSubview: webpageIconView)
+        }
+    }
+
+    private func removeWebpageOverlayView() {
+        if let webpageOverlayView = self.webpageOverlayView {
+            self.webpageOverlayView = nil
+            webpageOverlayView.removeFromSuperview()
+        }
+    }
     
     private func updateModeSelectorLayout(size: CGSize, theme: PresentationTheme?, animated: Bool) {
         guard !size.width.isZero, !size.height.isZero, let theme = self.currentTheme else {
@@ -1791,6 +1984,9 @@ private final class ChatMessagePollAddOptionNode: ASDisplayNode {
             }
             self.imageButton.frame = imageNodeFrame
             self.imageButton.isHidden = false
+            self.removeWebpageOverlayView()
+            self.removeWebpageIconView()
+            self.appliedWebpagePlaceholderColor = nil
         } else if let animationLayer = self.animationLayer {
             self.animationLayer = nil
             animationLayer.removeFromSuperlayer()
@@ -1817,11 +2013,14 @@ private final class ChatMessagePollAddOptionNode: ASDisplayNode {
             }
             
             var isVideo = false
+            var webpageIconTintColor: UIColor?
+            var webpageHasImageThumbnail = false
             if let image = media.media as? TelegramMediaImage, let largest = largestImageRepresentation(image.representations), let photoReference = media.concrete(TelegramMediaImage.self) {
                 imageSize = largest.dimensions.cgSize.aspectFilled(imageNodeSize)
                 if updateMedia {
                     imageNode.setSignal(chatMessagePhoto(postbox: context.account.postbox, userLocation: .other, photoReference: photoReference))
                 }
+                self.appliedWebpagePlaceholderColor = nil
             } else if let file = media.media as? TelegramMediaFile, let fileReference = media.concrete(TelegramMediaFile.self) {
                 if let dimensions = file.dimensions {
                     imageSize = dimensions.cgSize.aspectFilled(imageNodeSize)
@@ -1836,12 +2035,50 @@ private final class ChatMessagePollAddOptionNode: ASDisplayNode {
                     }
                     isVideo = true
                 }
+                self.appliedWebpagePlaceholderColor = nil
+            } else if let webpage = media.media as? TelegramMediaWebpage {
+                let webpageReference = WebpageReference(webpage)
+                if case let .Loaded(content) = webpage.content, let image = content.image {
+                    if let largest = largestImageRepresentation(image.representations) {
+                        imageSize = largest.dimensions.cgSize.aspectFilled(imageNodeSize)
+                    }
+                    if updateMedia {
+                        imageNode.setSignal(chatMessagePhoto(postbox: context.account.postbox, userLocation: .other, photoReference: .webPage(webPage: webpageReference, media: image)))
+                        if let representation = smallestImageRepresentation(image.representations) {
+                            let _ = fetchedMediaResource(mediaBox: context.account.postbox.mediaBox, userLocation: .other, userContentType: .image, reference: .media(media: .webPage(webPage: webpageReference, media: image), resource: representation.resource)).startStandalone()
+                        }
+                    }
+                    self.appliedWebpagePlaceholderColor = nil
+                    webpageIconTintColor = .white
+                    webpageHasImageThumbnail = true
+                } else {
+                    let mediaAccentColor = self.currentIncoming ? theme.chat.message.incoming.accentTextColor : theme.chat.message.outgoing.secondaryTextColor
+                    let backgroundColor = mediaAccentColor.withAlphaComponent(0.1)
+                    if updateMedia || self.appliedWebpagePlaceholderColor?.isEqual(backgroundColor) != true {
+                        self.appliedWebpagePlaceholderColor = backgroundColor
+                        imageNode.setSignal(.single({ arguments in
+                            let size = arguments.imageSize
+                            let context = DrawingContext(size: size)!
+                            context.withFlippedContext { context in
+                                context.clear(CGRect(origin: .zero, size: size))
+                                context.setFillColor(backgroundColor.cgColor)
+                                context.addPath(CGPath(roundedRect: CGRect(origin: .zero, size: size), cornerWidth: 10.0, cornerHeight: 10.0, transform: nil))
+                                context.fillPath()
+                            }
+                            return context
+                        }))
+                    }
+                    webpageIconTintColor = mediaAccentColor
+                }
             } else if let map = media.media as? TelegramMediaMap {
                 imageSize = imageNodeSize
                 if updateMedia {
                     let resource = MapSnapshotMediaResource(latitude: map.latitude, longitude: map.longitude, width: Int32(imageSize.width), height: Int32(imageSize.height))
                     imageNode.setSignal(chatMapSnapshotImage(engine: context.engine, resource: resource))
                 }
+                self.appliedWebpagePlaceholderColor = nil
+            } else {
+                self.appliedWebpagePlaceholderColor = nil
             }
             
             let apply = imageNode.asyncLayout()(TransformImageArguments(corners: ImageCorners(radius: 10.0), imageSize: imageSize, boundingSize: imageNodeSize, intrinsicInsets: UIEdgeInsets(), emptyColor: theme.list.mediaPlaceholderColor))
@@ -1866,9 +2103,22 @@ private final class ChatMessagePollAddOptionNode: ASDisplayNode {
                 statusNode.frame = imageNodeFrame.insetBy(dx: 4.0, dy: 4.0)
                 statusNode.transitionToState(.progress(color: .white, lineWidth: 2.0, value: max(0.027, min(1.0, progress)), cancelEnabled: true, animateRotation: false))
                 isVideo = false
+                self.removeWebpageOverlayView()
             } else if let statusNode = self.statusNode {
                 self.statusNode = nil
                 statusNode.removeFromSupernode()
+            }
+
+            if attachment.progress == nil, let webpageIconTintColor {
+                if webpageHasImageThumbnail {
+                    self.updateWebpageOverlayView(frame: imageNodeFrame)
+                } else {
+                    self.removeWebpageOverlayView()
+                }
+                self.updateWebpageIconView(frame: imageNodeFrame, tintColor: webpageIconTintColor)
+            } else {
+                self.removeWebpageOverlayView()
+                self.removeWebpageIconView()
             }
             
             if isVideo {
@@ -1890,6 +2140,7 @@ private final class ChatMessagePollAddOptionNode: ASDisplayNode {
             }
         } else {
             self.appliedMedia = nil
+            self.appliedWebpagePlaceholderColor = nil
             if let imageNode = self.imageNode {
                 self.imageNode = nil
                 imageNode.removeFromSupernode()
@@ -1902,6 +2153,8 @@ private final class ChatMessagePollAddOptionNode: ASDisplayNode {
                 self.videoIconView = nil
                 videoIconView.removeFromSuperview()
             }
+            self.removeWebpageOverlayView()
+            self.removeWebpageIconView()
             self.imageButton.removeFromSupernode()
         }
     }
@@ -2165,7 +2418,7 @@ public class ChatMessagePollBubbleContentNode: ChatMessageBubbleContentNode {
         guard let item = self.item else {
             return
         }
-        item.controllerInteraction.requestMessageUpdate(item.message.id, false)
+        item.controllerInteraction.requestMessageUpdate(item.message.id, false, nil)
     }
 
     private func updatePollAddOptionFocused(_ focus: Bool) {
@@ -2241,7 +2494,7 @@ public class ChatMessagePollBubbleContentNode: ChatMessageBubbleContentNode {
             context: item.context,
             updatedPresentationData: item.controllerInteraction.updatedPresentationData,
             subject: .option,
-            availableButtons: [.gallery, .sticker, .location],
+            availableButtons: [.gallery, .sticker, .location, .link],
             present: { [weak item] controller, _ in
                 item?.controllerInteraction.navigationController()?.pushViewController(controller)
             },
@@ -2372,7 +2625,7 @@ public class ChatMessagePollBubbleContentNode: ChatMessageBubbleContentNode {
                     item.controllerInteraction.requestOpenMessagePollResults(item.message.id, pollId)
                 case .anonymous:
                     self.isPreviewingResults = !self.isPreviewingResults
-                    item.controllerInteraction.requestMessageUpdate(item.message.id, false)
+                    item.controllerInteraction.requestMessageUpdate(item.message.id, false, nil)
                 }
             }
         } else if !selectedOpaqueIdentifiers.isEmpty {
@@ -2460,7 +2713,7 @@ public class ChatMessagePollBubbleContentNode: ChatMessageBubbleContentNode {
                 } else {
                     dateFormat = .regular
                 }
-                let dateText = stringForMessageTimestampStatus(accountPeerId: item.context.account.peerId, message: item.message, dateTimeFormat: item.presentationData.dateTimeFormat, nameDisplayOrder: item.presentationData.nameDisplayOrder, strings: item.presentationData.strings, format: dateFormat, associatedData: item.associatedData)
+                let dateText = stringForMessageTimestampStatus(accountPeerId: item.context.account.peerId, message: EngineMessage(item.message), dateTimeFormat: item.presentationData.dateTimeFormat, nameDisplayOrder: item.presentationData.nameDisplayOrder, strings: item.presentationData.strings, format: dateFormat, associatedData: item.associatedData)
                 
                 let statusType: ChatMessageDateAndStatusType?
                 if case .customChatContents = item.associatedData.subject {
@@ -2499,7 +2752,7 @@ public class ChatMessagePollBubbleContentNode: ChatMessageBubbleContentNode {
                         impressionCount: viewCount,
                         dateText: dateText,
                         type: statusType,
-                        layoutInput: .trailingContent(contentWidth: 1000.0, reactionSettings: shouldDisplayInlineDateReactions(message: item.message, isPremium: item.associatedData.isPremium, forceInline: item.associatedData.forceInlineReactions) ? ChatMessageDateAndStatusNode.TrailingReactionSettings(displayInline: true, preferAdditionalInset: false) : nil),
+                        layoutInput: .trailingContent(contentWidth: 1000.0, reactionSettings: shouldDisplayInlineDateReactions(message: EngineMessage(item.message), isPremium: item.associatedData.isPremium, forceInline: item.associatedData.forceInlineReactions) ? ChatMessageDateAndStatusNode.TrailingReactionSettings(displayInline: true, preferAdditionalInset: false) : nil),
                         constrainedSize: textConstrainedSize,
                         availableReactions: item.associatedData.availableReactions,
                         savedMessageTags: item.associatedData.savedMessageTags,
@@ -2513,7 +2766,7 @@ public class ChatMessagePollBubbleContentNode: ChatMessageBubbleContentNode {
                         starsCount: starsCount,
                         isPinned: item.message.tags.contains(.pinned) && !item.associatedData.isInPinnedListMode && !isReplyThread,
                         hasAutoremove: item.message.isSelfExpiring,
-                        canViewReactionList: canViewMessageReactionList(message: item.topMessage),
+                        canViewReactionList: canViewMessageReactionList(message: EngineMessage(item.topMessage)),
                         animationCache: item.controllerInteraction.presentationContext.animationCache,
                         animationRenderer: item.controllerInteraction.presentationContext.animationRenderer
                     ))
@@ -2576,7 +2829,7 @@ public class ChatMessagePollBubbleContentNode: ChatMessageBubbleContentNode {
                     }
                 }
                 
-                if let poll = poll, isPollEffectivelyClosed(message: message, poll: poll) {
+                if let poll = poll, isPollEffectivelyClosed(message: EngineMessage(message), poll: poll) {
                     typeText = item.presentationData.strings.MessagePoll_LabelClosed
                 } else if let poll = poll {
                     switch poll.kind {
@@ -2676,7 +2929,7 @@ public class ChatMessagePollBubbleContentNode: ChatMessageBubbleContentNode {
                 
                 let isClosed: Bool
                 if let poll = poll {
-                    isClosed = isPollEffectivelyClosed(message: message, poll: poll)
+                    isClosed = isPollEffectivelyClosed(message: EngineMessage(message), poll: poll)
                 } else {
                     isClosed = false
                 }
@@ -2687,17 +2940,11 @@ public class ChatMessagePollBubbleContentNode: ChatMessageBubbleContentNode {
                 
                 var isRestricted = false
                 if let poll = poll {
-                    if !poll.countries.isEmpty, let accountCountry = item.associatedData.accountCountry, !poll.countries.contains(accountCountry) {
-                        isRestricted = true
-                    }
-                    if poll.restrictToSubscribers {
-                        let period: Int32 = item.context.account.testingEnvironment ? 5 * 60 : 24 * 60 * 60
-                        if !item.associatedData.isParticipant {
-                            isRestricted = true
-                        } else if let invitedOn = item.associatedData.invitedOn, invitedOn + period > Int32(CFAbsoluteTimeGetCurrent() + kCFAbsoluteTimeIntervalSince1970) {
-                            isRestricted = true
-                        }
-                    }
+                    isRestricted = item.associatedData.isPollVotingRestricted(
+                        poll: poll,
+                        accountTestingEnvironment: item.context.account.testingEnvironment,
+                        currentTimestamp: Int32(CFAbsoluteTimeGetCurrent() + kCFAbsoluteTimeIntervalSince1970)
+                    )
                     
                     orderedPollOptions = resolvedOptionOrder(for: item)
                     
@@ -3330,7 +3577,7 @@ public class ChatMessagePollBubbleContentNode: ChatMessageBubbleContentNode {
             }
         }
 
-        let isClosed = isPollEffectivelyClosed(message: item.message, poll: poll)
+        let isClosed = isPollEffectivelyClosed(message: EngineMessage(item.message), poll: poll)
         
         let canAlwaysViewResults = !poll.hideResultsUntilClose && poll.isCreator
         var hasAnyVotes = false

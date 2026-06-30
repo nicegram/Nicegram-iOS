@@ -2,7 +2,6 @@ import Foundation
 import UIKit
 import AsyncDisplayKit
 import Display
-import Postbox
 import TelegramCore
 import SwiftSignalKit
 import TelegramPresentationData
@@ -14,13 +13,13 @@ import UndoUI
 import StickerResources
 
 public final class TrendingPaneInteraction {
-    public let installPack: (ItemCollectionInfo) -> Void
-    public let openPack: (ItemCollectionInfo) -> Void
+    public let installPack: (EngineRawItemCollectionInfo) -> Void
+    public let openPack: (EngineRawItemCollectionInfo) -> Void
     public let getItemIsPreviewed: (StickerPackItem) -> Bool
     public let openSearch: () -> Void
     public let itemContext = StickerPaneSearchGlobalItemContext()
-    
-    public init(installPack: @escaping (ItemCollectionInfo) -> Void, openPack: @escaping (ItemCollectionInfo) -> Void, getItemIsPreviewed: @escaping (StickerPackItem) -> Bool, openSearch: @escaping () -> Void) {
+
+    public init(installPack: @escaping (EngineRawItemCollectionInfo) -> Void, openPack: @escaping (EngineRawItemCollectionInfo) -> Void, getItemIsPreviewed: @escaping (StickerPackItem) -> Bool, openSearch: @escaping () -> Void) {
         self.installPack = installPack
         self.openPack = openPack
         self.getItemIsPreviewed = getItemIsPreviewed
@@ -49,7 +48,7 @@ public final class TrendingPanePackEntry: Identifiable, Comparable {
         self.topSeparator = topSeparator
     }
     
-    public var stableId: ItemCollectionId {
+    public var stableId: EngineItemCollectionId {
         return self.info.id
     }
     
@@ -99,7 +98,7 @@ public final class TrendingPanePackEntry: Identifiable, Comparable {
 
 private enum TrendingPaneEntryId: Hashable {
     case search
-    case pack(ItemCollectionId)
+    case pack(EngineItemCollectionId)
 }
 
 private enum TrendingPaneEntry: Identifiable, Comparable {
@@ -175,7 +174,7 @@ private func preparedTransition(from fromEntries: [TrendingPaneEntry], to toEntr
     return TrendingPaneTransition(deletions: deletions, insertions: insertions, updates: updates, initial: initial)
 }
 
-private func trendingPaneEntries(trendingEntries: [FeaturedStickerPackItem], installedPacks: Set<ItemCollectionId>, theme: PresentationTheme, strings: PresentationStrings, isPane: Bool) -> [TrendingPaneEntry] {
+private func trendingPaneEntries(trendingEntries: [FeaturedStickerPackItem], installedPacks: Set<EngineItemCollectionId>, theme: PresentationTheme, strings: PresentationStrings, isPane: Bool) -> [TrendingPaneEntry] {
     var result: [TrendingPaneEntry] = []
     var index = 0
     if isPane {
@@ -192,12 +191,12 @@ private func trendingPaneEntries(trendingEntries: [FeaturedStickerPackItem], ins
 
 public final class ChatMediaInputTrendingPane: ChatMediaInputPane {
     public final class Interaction {
-        let sendSticker: (FileMediaReference, Bool, Bool, String?, Bool, UIView?, CGRect?, CALayer?, [ItemCollectionId]) -> Bool
+        let sendSticker: (FileMediaReference, Bool, Bool, String?, Bool, UIView?, CGRect?, CALayer?, [EngineItemCollectionId]) -> Bool
         let presentController: (ViewController, Any?) -> Void
         let getNavigationController: () -> NavigationController?
-        
+
         public init(
-            sendSticker: @escaping (FileMediaReference, Bool, Bool, String?, Bool, UIView?, CGRect?, CALayer?, [ItemCollectionId]) -> Bool,
+            sendSticker: @escaping (FileMediaReference, Bool, Bool, String?, Bool, UIView?, CGRect?, CALayer?, [EngineItemCollectionId]) -> Bool,
             presentController: @escaping (ViewController, Any?) -> Void,
             getNavigationController: @escaping () -> NavigationController?
         ) {
@@ -254,6 +253,70 @@ public final class ChatMediaInputTrendingPane: ChatMediaInputPane {
     deinit {
         self.disposable?.dispose()
         self.installDisposable.dispose()
+    }
+
+    private func presentStickerPackActionOverlay(_ actions: [StickerPackScreenActionResult]) {
+        guard let action = actions.first else {
+            return
+        }
+
+        var animateInAsReplacement = false
+        if let navigationController = self.interaction.getNavigationController() {
+            for controller in navigationController.overlayControllers {
+                if let controller = controller as? UndoOverlayController {
+                    controller.dismissWithCommitActionAndReplacementAnimation()
+                    animateInAsReplacement = true
+                }
+            }
+        }
+
+        var presentationData = self.context.sharedContext.currentPresentationData.with { $0 }
+        if let forceTheme = self.forceTheme {
+            presentationData = presentationData.withUpdated(theme: forceTheme)
+        }
+
+        let controller: UndoOverlayController
+        switch action.action {
+        case .add:
+            controller = UndoOverlayController(
+                presentationData: presentationData,
+                content: .stickersModified(
+                    title: presentationData.strings.StickerPackActionInfo_AddedTitle,
+                    text: presentationData.strings.StickerPackActionInfo_AddedText(action.info.title).string,
+                    undo: false,
+                    info: action.info,
+                    topItem: action.items.first,
+                    context: self.context
+                ),
+                elevatedLayout: false,
+                animateInAsReplacement: animateInAsReplacement,
+                action: { _ in
+                    return true
+                }
+            )
+        case let .remove(positionInList):
+            controller = UndoOverlayController(
+                presentationData: presentationData,
+                content: .stickersModified(
+                    title: presentationData.strings.StickerPackActionInfo_RemovedTitle,
+                    text: presentationData.strings.StickerPackActionInfo_RemovedText(action.info.title).string,
+                    undo: true,
+                    info: action.info,
+                    topItem: action.items.first,
+                    context: self.context
+                ),
+                elevatedLayout: false,
+                animateInAsReplacement: animateInAsReplacement,
+                action: { [weak self] overlayAction in
+                    if case .undo = overlayAction {
+                        let _ = self?.context.engine.stickers.addStickerPackInteractively(info: action.info, items: action.items, positionInList: positionInList).start()
+                    }
+                    return true
+                }
+            )
+        }
+
+        self.interaction.getNavigationController()?.presentOverlay(controller: controller)
     }
     
     public func activate() {
@@ -374,7 +437,9 @@ public final class ChatMediaInputTrendingPane: ChatMediaInputPane {
                             return false
                         }
                     },
-                    actionPerformed: nil
+                    actionPerformed: { [weak self] actions in
+                        self?.presentStickerPackActionOverlay(actions)
+                    }
                 )
                 strongSelf.interaction.presentController(controller, nil)
             }
@@ -388,19 +453,15 @@ public final class ChatMediaInputTrendingPane: ChatMediaInputPane {
         let previousEntries = Atomic<[TrendingPaneEntry]?>(value: nil)
         let context = self.context
         let forceTheme = self.forceTheme
-        self.disposable = (combineLatest(context.account.viewTracker.featuredStickerPacks(), context.account.postbox.combinedView(keys: [.itemCollectionInfos(namespaces: [Namespaces.ItemCollection.CloudStickerPacks])]), context.sharedContext.presentationData)
-        |> map { trendingEntries, view, presentationData -> TrendingPaneTransition in
+        self.disposable = (combineLatest(context.account.viewTracker.featuredStickerPacks(), context.engine.data.subscribe(TelegramEngine.EngineData.Item.ItemCollections.InstalledPackInfos(namespace: Namespaces.ItemCollection.CloudStickerPacks)), context.sharedContext.presentationData)
+        |> map { trendingEntries, packsEntries, presentationData -> TrendingPaneTransition in
             var presentationData = presentationData
             if let forceTheme {
                 presentationData = presentationData.withUpdated(theme: forceTheme)
             }
-            var installedPacks = Set<ItemCollectionId>()
-            if let stickerPacksView = view.views[.itemCollectionInfos(namespaces: [Namespaces.ItemCollection.CloudStickerPacks])] as? ItemCollectionInfosView {
-                if let packsEntries = stickerPacksView.entriesByNamespace[Namespaces.ItemCollection.CloudStickerPacks] {
-                    for entry in packsEntries {
-                        installedPacks.insert(entry.id)
-                    }
-                }
+            var installedPacks = Set<EngineItemCollectionId>()
+            for entry in packsEntries {
+                installedPacks.insert(entry.id)
             }
             let entries = trendingPaneEntries(trendingEntries: trendingEntries, installedPacks: installedPacks, theme: presentationData.theme, strings: presentationData.strings, isPane: isPane)
             let previous = previousEntries.swap(entries)

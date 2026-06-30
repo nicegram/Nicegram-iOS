@@ -320,7 +320,7 @@ public final class StatsGraphItemNode: ListViewItemNode {
                         strongSelf.topStripeNode.frame = CGRect(origin: CGPoint(x: 0.0, y: -min(insets.top, separatorHeight)), size: CGSize(width: params.width, height: separatorHeight))
                         strongSelf.bottomStripeNode.frame = CGRect(origin: CGPoint(x: bottomStripeInset, y: contentSize.height - separatorHeight), size: CGSize(width: params.width - bottomStripeInset, height: separatorHeight))
                         
-                        strongSelf.activityIndicator.frame = CGRect(origin: CGPoint(x: floor((layout.size.width - 16.0) / 2.0), y: floor((layout.size.height - 16.0) / 2.0)), size: CGSize(width: 16.0, height: 16.0))
+                        strongSelf.activityIndicator.frame = CGRect(origin: CGPoint(x: floor((strongSelf.chartContainerNode.frame.width - 16.0) / 2.0), y: floor((strongSelf.chartContainerNode.frame.height - 16.0) / 2.0)), size: CGSize(width: 16.0, height: 16.0))
                         strongSelf.errorTextNode.frame = CGRect(
                             origin: CGPoint(
                                 x: floorToScreenPixels((strongSelf.chartContainerNode.bounds.width - errorTextLayout.size.width) / 2.0),

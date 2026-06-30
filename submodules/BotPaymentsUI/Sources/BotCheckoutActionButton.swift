@@ -117,6 +117,7 @@ final class BotCheckoutActionButton: HighlightTrackingButtonNode {
                         } else {
                             applePayButton = PKPaymentButton(paymentButtonType: .buy, paymentButtonStyle: .black)
                         }
+                        applePayButton.cornerRadius = BotCheckoutActionButton.height * 0.5
                         applePayButton.addTarget(self, action: #selector(self.applePayButtonPressed), for: .touchUpInside)
                         self.view.addSubview(applePayButton)
                         self.applePayButton = applePayButton

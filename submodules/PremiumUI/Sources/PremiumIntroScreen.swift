@@ -14,7 +14,6 @@ import TelegramPresentationData
 import PresentationDataUtils
 import ViewControllerComponent
 import AccountContext
-import SolidRoundedButtonComponent
 import ButtonComponent
 import MultilineTextComponent
 import MultilineTextWithEntitiesComponent
@@ -1686,7 +1685,7 @@ private final class PremiumIntroScreenContentComponent: CombinedComponent {
                     jsonString += "]}}"
                     
                     if let context = screenContext.context, let data = jsonString.data(using: .utf8), let json = JSON(data: data) {
-                        addAppLogEvent(postbox: context.account.postbox, type: "premium.promo_screen_show", data: json)
+                        context.engine.accountData.addAppLogEvent(type: "premium.promo_screen_show", data: json)
                     }
                 }
             })
@@ -2264,7 +2263,7 @@ private final class PremiumIntroScreenContentComponent: CombinedComponent {
                             }
                             updateIsFocused(true)
 
-                            addAppLogEvent(postbox: accountContext.account.postbox, type: "premium.promo_screen_tap", data: ["item": perk.identifier])
+                            accountContext.engine.accountData.addAppLogEvent(type: "premium.promo_screen_tap", data: ["item": perk.identifier])
                         },
                         highlighting: accountContext != nil ? .default : .disabled
                     ))))
@@ -3287,7 +3286,7 @@ private final class PremiumIntroScreenComponent: CombinedComponent {
             }
                         
             if let context = self.screenContext.context {
-                addAppLogEvent(postbox: context.account.postbox, type: "premium.promo_screen_accept")
+                context.engine.accountData.addAppLogEvent(type: "premium.promo_screen_accept")
             }
             
             self.inProgress = true
@@ -3341,7 +3340,7 @@ private final class PremiumIntroScreenComponent: CombinedComponent {
                                         self.updated(transition: .immediate)
                                         
                                         if let context = self.screenContext.context {
-                                            addAppLogEvent(postbox: context.account.postbox, type: "premium.promo_screen_fail")
+                                            context.engine.accountData.addAppLogEvent(type: "premium.promo_screen_fail")
                                         }
                                         
                                         let errorText = presentationData.strings.Premium_Purchase_ErrorUnknown
@@ -3393,7 +3392,7 @@ private final class PremiumIntroScreenComponent: CombinedComponent {
                             
                             if let errorText = errorText {
                                 if let context = self.screenContext.context {
-                                    addAppLogEvent(postbox: context.account.postbox, type: "premium.promo_screen_fail")
+                                    context.engine.accountData.addAppLogEvent(type: "premium.promo_screen_fail")
                                 }
                                 
                                 let alertController = textAlertController(sharedContext: self.screenContext.sharedContext, title: nil, text: errorText, actions: [TextAlertAction(type: .defaultAction, title: presentationData.strings.Common_OK, action: {})])
@@ -3441,7 +3440,7 @@ private final class PremiumIntroScreenComponent: CombinedComponent {
         let title = Child(MultilineTextComponent.self)
         let secondaryTitle = Child(MultilineTextWithEntitiesComponent.self)
         let bottomEdgeEffect = Child(EdgeEffectComponent.self)
-        let button = Child(SolidRoundedButtonComponent.self)
+        let button = Child(ButtonComponent.self)
         
         var updatedInstalled: Bool?
         
@@ -3670,8 +3669,16 @@ private final class PremiumIntroScreenComponent: CombinedComponent {
                                     
                                     let controller = context.sharedContext.makeStickerPackScreen(context: context, updatedPresentationData: nil, mainStickerPack: packReference, stickerPacks: [packReference], loadedStickerPacks: loadedPack.flatMap { [$0] } ?? [], actionTitle: nil, isEditing: false, expandIfNeeded: false, parentNavigationController: navigationController, sendSticker: { _, _, _ in
                                         return false
-                                    }, actionPerformed: { added in
-                                        updatedInstalled = added
+                                    }, actionPerformed: { actions in
+                                        guard let action = actions.first?.action else {
+                                            return
+                                        }
+                                        switch action {
+                                        case .add:
+                                            updatedInstalled = true
+                                        case .remove:
+                                            updatedInstalled = false
+                                        }
                                     })
                                     presentController(controller)
                                     break
@@ -3842,25 +3849,51 @@ private final class PremiumIntroScreenComponent: CombinedComponent {
                 }
                 
                 let controller = environment.controller
+                let buttonGradientColors = [
+                    UIColor(rgb: 0x0077ff),
+                    UIColor(rgb: 0x6b93ff),
+                    UIColor(rgb: 0x8878ff),
+                    UIColor(rgb: 0xe46ace)
+                ]
+                let buttonContent: AnyComponent<Empty>
+                if let buttonSubtitle {
+                    buttonContent = AnyComponent(VStack([
+                        AnyComponentWithIdentity(id: AnyHashable(0), component: AnyComponent(Text(
+                            text: buttonTitle,
+                            font: Font.semibold(17.0),
+                            color: .white
+                        ))),
+                        AnyComponentWithIdentity(id: AnyHashable(1), component: AnyComponent(Text(
+                            text: buttonSubtitle,
+                            font: Font.medium(11.0),
+                            color: UIColor.white.withAlphaComponent(0.7)
+                        )))
+                    ], spacing: 1.0))
+                } else {
+                    buttonContent = AnyComponent(ButtonTextContentComponent(
+                        text: buttonTitle,
+                        badge: 0,
+                        textColor: .white,
+                        badgeBackground: .white,
+                        badgeForeground: buttonGradientColors[0]
+                    ))
+                }
                 let button = button.update(
-                    component: SolidRoundedButtonComponent(
-                        title: buttonTitle,
-                        subtitle: buttonSubtitle,
-                        theme: SolidRoundedButtonComponent.Theme(
-                            backgroundColor: UIColor(rgb: 0x8878ff),
-                            backgroundColors: [
-                                UIColor(rgb: 0x0077ff),
-                                UIColor(rgb: 0x6b93ff),
-                                UIColor(rgb: 0x8878ff),
-                                UIColor(rgb: 0xe46ace)
-                            ],
-                            foregroundColor: .white
+                    component: ButtonComponent(
+                        background: ButtonComponent.Background(
+                            style: .glass,
+                            color: UIColor(rgb: 0x8878ff),
+                            foreground: .white,
+                            pressedColor: UIColor(rgb: 0x8878ff).withMultipliedAlpha(0.8),
+                            cornerRadius: 26.0,
+                            isShimmering: true,
+                            gradient: ButtonComponent.Background.Gradient(colors: buttonGradientColors)
                         ),
-                        height: 52.0,
-                        cornerRadius: 26.0,
-                        gloss: true,
-                        glass: true,
-                        isLoading: state.inProgress,
+                        content: AnyComponentWithIdentity(
+                            id: AnyHashable("\(buttonTitle)-\(buttonSubtitle ?? "")"),
+                            component: buttonContent
+                        ),
+                        displaysProgress: state.inProgress,
                         action: {
                             if let controller = controller() as? PremiumIntroScreen, let customProceed = controller.customProceed {
                                 controller.dismiss()

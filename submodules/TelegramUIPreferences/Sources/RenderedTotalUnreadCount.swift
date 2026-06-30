@@ -1,5 +1,4 @@
 import Foundation
-import Postbox
 import TelegramCore
 import SwiftSignalKit
 
@@ -8,12 +7,7 @@ public enum RenderedTotalUnreadCountType {
     case filtered
 }
 
-public func renderedTotalUnreadCount(inAppNotificationSettings: InAppNotificationSettings, transaction: Transaction) -> (Int32, RenderedTotalUnreadCountType) {
-    let totalUnreadState = transaction.getTotalUnreadState(groupId: .root)
-    return renderedTotalUnreadCount(inAppSettings: inAppNotificationSettings, totalUnreadState: totalUnreadState)
-}
-
-public func renderedTotalUnreadCount(inAppSettings: InAppNotificationSettings, totalUnreadState: ChatListTotalUnreadState) -> (Int32, RenderedTotalUnreadCountType) {
+public func renderedTotalUnreadCount(inAppSettings: InAppNotificationSettings, totalUnreadState: EngineChatListTotalUnreadState) -> (Int32, RenderedTotalUnreadCountType) {
     let type: RenderedTotalUnreadCountType
     switch inAppSettings.totalUnreadCountDisplayStyle {
         case .filtered:

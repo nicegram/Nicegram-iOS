@@ -9,7 +9,6 @@ import TelegramStringFormatting
 import TelegramVoip
 import TelegramAudio
 import AccountContext
-import Postbox
 import TelegramCore
 import AppBundle
 import PresentationDataUtils
@@ -95,7 +94,7 @@ class VoiceChatPinButtonNode: HighlightTrackingButtonNode {
 final class VoiceChatMainStageNode: ASDisplayNode {
     private let context: AccountContext
     private let call: PresentationGroupCall
-    private(set) var currentPeer: (PeerId, String?, Bool, Bool, Bool)?
+    private(set) var currentPeer: (EnginePeer.Id, String?, Bool, Bool, Bool)?
     private var currentPeerEntry: VoiceChatPeerEntry?
         
     var callState: PresentationGroupCallState?
@@ -137,12 +136,12 @@ final class VoiceChatMainStageNode: ASDisplayNode {
     var tapped: (() -> Void)?
     var back: (() -> Void)?
     var togglePin: (() -> Void)?
-    var switchTo: ((PeerId) -> Void)?
+    var switchTo: ((EnginePeer.Id) -> Void)?
     var stopScreencast: (() -> Void)?
     
     var controlsHidden: ((Bool) -> Void)?
     
-    var getAudioLevel: ((PeerId) -> Signal<Float, NoError>)?
+    var getAudioLevel: ((EnginePeer.Id) -> Signal<Float, NoError>)?
     var getVideo: ((String, Bool, @escaping (GroupVideoNode?) -> Void) -> Void)?
     private let videoReadyDisposable = MetaDisposable()
     private var silenceTimer: SwiftSignalKit.Timer?
@@ -610,7 +609,7 @@ final class VoiceChatMainStageNode: ASDisplayNode {
         self.update(speakingPeerId: nil)
     }
     
-    private var effectiveSpeakingPeerId: PeerId?
+    private var effectiveSpeakingPeerId: EnginePeer.Id?
     private func updateSpeakingPeer() {
         guard let (_, _, _, _, isTablet) = self.validLayout else {
             return
@@ -720,14 +719,14 @@ final class VoiceChatMainStageNode: ASDisplayNode {
         }
     }
     
-    private var visiblePeerIds = Set<PeerId>()
-    func update(visiblePeerIds: Set<PeerId>) {
+    private var visiblePeerIds = Set<EnginePeer.Id>()
+    func update(visiblePeerIds: Set<EnginePeer.Id>) {
         self.visiblePeerIds = visiblePeerIds
         self.updateSpeakingPeer()
     }
     
-    private var speakingPeerId: PeerId?
-    func update(speakingPeerId: PeerId?) {
+    private var speakingPeerId: EnginePeer.Id?
+    func update(speakingPeerId: EnginePeer.Id?) {
         self.speakingPeerId = speakingPeerId
         self.updateSpeakingPeer()
     }
@@ -738,9 +737,9 @@ final class VoiceChatMainStageNode: ASDisplayNode {
                 
         let peer = peerEntry.peer
         let presentationData = self.context.sharedContext.currentPresentationData.with { $0 }
-        if !arePeersEqual(previousPeerEntry?.peer, peerEntry.peer) {
-            self.backdropAvatarNode.setSignal(peerAvatarCompleteImage(account: self.context.account, peer: EnginePeer(peer), size: CGSize(width: 240.0, height: 240.0), round: false, font: avatarPlaceholderFont(size: 78.0), drawLetters: false, blurred: true))
-            self.avatarNode.setSignal(peerAvatarCompleteImage(account: self.context.account, peer: EnginePeer(peer), size: CGSize(width: 180.0, height: 180.0), font: avatarPlaceholderFont(size: 78.0), fullSize: true))
+        if previousPeerEntry?.peer != peerEntry.peer {
+            self.backdropAvatarNode.setSignal(peerAvatarCompleteImage(account: self.context.account, peer: peer, size: CGSize(width: 240.0, height: 240.0), round: false, font: avatarPlaceholderFont(size: 78.0), drawLetters: false, blurred: true))
+            self.avatarNode.setSignal(peerAvatarCompleteImage(account: self.context.account, peer: peer, size: CGSize(width: 180.0, height: 180.0), font: avatarPlaceholderFont(size: 78.0), fullSize: true))
         }
                 
         var gradient: VoiceChatBlobNode.Gradient = .active
@@ -778,7 +777,7 @@ final class VoiceChatMainStageNode: ASDisplayNode {
         }
         
         var microphoneColor = UIColor.white
-        var titleAttributedString = NSAttributedString(string: EnginePeer(peer).displayTitle(strings: presentationData.strings, displayOrder: presentationData.nameDisplayOrder), font: Font.semibold(15.0), textColor: .white)
+        var titleAttributedString = NSAttributedString(string: peer.displayTitle(strings: presentationData.strings, displayOrder: presentationData.nameDisplayOrder), font: Font.semibold(15.0), textColor: .white)
         if mutedForYou {
             microphoneColor = destructiveColor
             
@@ -836,7 +835,7 @@ final class VoiceChatMainStageNode: ASDisplayNode {
         self.audioLevelNode.isHidden = hidden
     }
     
-    func update(peer: (peer: PeerId, endpointId: String?, isMyPeer: Bool, isPresentation: Bool, isPaused: Bool)?, isReady: Bool = true, waitForFullSize: Bool, completion: (() -> Void)? = nil) {
+    func update(peer: (peer: EnginePeer.Id, endpointId: String?, isMyPeer: Bool, isPresentation: Bool, isPaused: Bool)?, isReady: Bool = true, waitForFullSize: Bool, completion: (() -> Void)? = nil) {
         let previousPeer = self.currentPeer
         if previousPeer?.0 == peer?.0 && previousPeer?.1 == peer?.1 && previousPeer?.2 == peer?.2 && previousPeer?.3 == peer?.3 && previousPeer?.4 == peer?.4 {
             completion?()

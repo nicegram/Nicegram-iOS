@@ -28,6 +28,7 @@ swift_library(
         "//submodules/ContextUI",
         "//submodules/UndoUI",
         "//submodules/TranslateUI",
+        "//submodules/TelegramUI/Components/TextProcessingScreen",
         "//submodules/ComponentFlow:ComponentFlow",
         "//submodules/Components/ViewControllerComponent:ViewControllerComponent",
         "//submodules/Components/MultilineTextComponent:MultilineTextComponent",

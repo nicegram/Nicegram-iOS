@@ -15,13 +15,10 @@ private extension ChatControllerImpl {
     func updateSupplementViewModelWhenNeeded() {
         guard let peerId = chatLocation.peerId else { return }
         
-        applicableRestrictionRulesPublisher(peerId: peerId)
-            .sink { [weak self] rules in
+        restrictedChatInfoPublisher(peerId: peerId)
+            .sink { [weak self] chatInfo in
                 self?.chatDisplayNode.restrictedChatSupplementViewModel.update(
-                    chatInfo: RestrictedChatInfo(
-                        restrictionReasons: rules.map(\.reason),
-                        restrictionText: rules.first?.text
-                    )
+                    chatInfo: chatInfo
                 )
             }
             .store(in: &cancellables)
@@ -30,8 +27,8 @@ private extension ChatControllerImpl {
     func reloadChatWhenNeeded() {
         guard let peerId = chatLocation.peerId else { return }
         
-        applicableRestrictionRulesPublisher(peerId: peerId)
-            .map(\.isEmpty)
+        restrictedChatInfoPublisher(peerId: peerId)
+            .map { $0?.restrictionReasons.isEmpty ?? true }
             .removeDuplicates()
             .dropFirst()
             .sink { [weak self] _ in
@@ -51,28 +48,33 @@ private extension ChatControllerImpl {
             .store(in: &cancellables)
     }
     
-    func applicableRestrictionRulesPublisher(
+    func restrictedChatInfoPublisher(
         peerId: PeerId
-    ) -> some Publisher<[RestrictionRule], Never> {
+    ) -> some Publisher<RestrictedChatInfo?, Never> {
         let signal = combineLatest(
             context.engine.data.subscribe(
                 TelegramEngine.EngineData.Item.Peer.Peer(id: peerId)
-            ) |> map { $0?.restrictionInfo() },
+            ),
             context.contentSettings
         )
         |> distinctUntilChanged(isEqual: ==)
-        |> map { restrictionInfo, contentSettings -> [RestrictionRule] in
-            guard let restrictionInfo else { return [] }
+        |> map { peer, contentSettings -> RestrictedChatInfo? in
+            guard let peer else { return nil }
             
             let applicablePlatforms = Set(["all", "ios"] + contentSettings.addContentRestrictionReasons)
-
-            return restrictionInfo.rules
+            let applicableRules = (peer.restrictionInfo()?.rules ?? [])
                 .filter {
                     applicablePlatforms.contains($0.platform)
                 }
                 .filter {
                     !contentSettings.ignoreContentRestrictionReasons.contains($0.reason)
                 }
+            
+            return RestrictedChatInfo(
+                restrictionReasons: applicableRules.map(\.reason),
+                restrictionText: applicableRules.first?.text,
+                title: peer.debugDisplayTitle
+            )
         }
         |> deliverOnMainQueue
         

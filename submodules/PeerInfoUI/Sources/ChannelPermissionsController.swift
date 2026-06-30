@@ -18,7 +18,6 @@ import TelegramPermissionsUI
 import ItemListPeerActionItem
 import Markdown
 import UndoUI
-import Postbox
 import OldChannelsController
 import MessagePriceItem
 
@@ -683,7 +682,7 @@ func groupPermissionDependencies(_ right: TelegramChatBannedRightsFlags) -> Tele
     }
 }
 
-private func channelPermissionsControllerEntries(context: AccountContext, presentationData: PresentationData, view: PeerView, state: ChannelPermissionsControllerState, participants: [RenderedChannelParticipant]?, configuration: StarsSubscriptionConfiguration) -> [ChannelPermissionsEntry] {
+private func channelPermissionsControllerEntries(context: AccountContext, presentationData: PresentationData, view: EngineRawPeerView, state: ChannelPermissionsControllerState, participants: [RenderedChannelParticipant]?, configuration: StarsSubscriptionConfiguration) -> [ChannelPermissionsEntry] {
     var entries: [ChannelPermissionsEntry] = []
     
     if let channel = view.peers[view.peerId] as? TelegramChannel, let participants = participants, let cachedData = view.cachedData as? CachedChannelData, let defaultBannedRights = channel.defaultBannedRights {
@@ -870,7 +869,7 @@ public func channelPermissionsController(context: AccountContext, updatedPresent
             peersPromise.set(.single((peerId, nil)))
         } else {
             var loadCompletedCalled = false
-            let disposableAndLoadMoreControl = context.peerChannelMemberCategoriesContextsManager.restricted(engine: context.engine, postbox: context.account.postbox, network: context.account.network, accountPeerId: context.account.peerId, peerId: peerId, updated: { state in
+            let disposableAndLoadMoreControl = context.peerChannelMemberCategoriesContextsManager.restricted(engine: context.engine, accountPeerId: context.account.peerId, peerId: peerId, updated: { state in
                 if case .loading(true) = state.loadingState, !updated {
                     peersPromise.set(.single((peerId, nil)))
                 } else {
@@ -897,7 +896,7 @@ public func channelPermissionsController(context: AccountContext, updatedPresent
     let updateSendPaidMessageStarsDisposable = MetaDisposable()
     actionsDisposable.add(updateSendPaidMessageStarsDisposable)
     
-    let peerView = Promise<PeerView>()
+    let peerView = Promise<EngineRawPeerView>()
     peerView.set(sourcePeerId.get()
     |> mapToSignal(context.account.viewTracker.peerView))
     
@@ -1313,7 +1312,7 @@ public func channelPermissionsController(context: AccountContext, updatedPresent
     let previousParticipants = Atomic<[RenderedChannelParticipant]?>(value: nil)
     
     let viewAndParticipants = combineLatest(queue: .mainQueue(), sourcePeerId.get(), peerView.get(), peersPromise.get())
-    |> mapToSignal { peerIdAndChanged, view, peers -> Signal<(PeerView, [RenderedChannelParticipant]?), NoError> in
+    |> mapToSignal { peerIdAndChanged, view, peers -> Signal<(EngineRawPeerView, [RenderedChannelParticipant]?), NoError> in
         let (peerId, changed) = peerIdAndChanged
         if view.peerId != peerId {
             return .complete()

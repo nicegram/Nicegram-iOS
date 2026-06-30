@@ -2,7 +2,6 @@ import Foundation
 import UIKit
 import AsyncDisplayKit
 import Display
-import Postbox
 import TelegramCore
 import TelegramPresentationData
 import LocalizedPeerData
@@ -91,7 +90,7 @@ public class ChatMessageForwardInfoNode: ASDisplayNode {
     private var linkProgressView: TextLoadingEffectView?
     private var linkProgressDisposable: Disposable?
     
-    private var previousPeer: Peer?
+    private var previousPeer: EnginePeer?
     
     public var openPsa: ((String, ASDisplayNode) -> Void)?
     
@@ -279,7 +278,7 @@ public class ChatMessageForwardInfoNode: ASDisplayNode {
         }
     }
     
-    public static func asyncLayout(_ maybeNode: ChatMessageForwardInfoNode?) -> (_ context: AccountContext, _ presentationData: ChatPresentationData, _ strings: PresentationStrings, _ type: ChatMessageForwardInfoType, _ peer: Peer?, _ authorName: String?, _ psaType: String?, _ storyData: StoryData?, _ constrainedSize: CGSize) -> (CGSize, (CGFloat) -> ChatMessageForwardInfoNode) {
+    public static func asyncLayout(_ maybeNode: ChatMessageForwardInfoNode?) -> (_ context: AccountContext, _ presentationData: ChatPresentationData, _ strings: PresentationStrings, _ type: ChatMessageForwardInfoType, _ peer: EnginePeer?, _ authorName: String?, _ psaType: String?, _ storyData: StoryData?, _ constrainedSize: CGSize) -> (CGSize, (CGFloat) -> ChatMessageForwardInfoNode) {
         let titleNodeLayout = TextNode.asyncLayout(maybeNode?.titleNode)
         let nameNodeLayout = TextNode.asyncLayout(maybeNode?.nameNode)
         
@@ -295,10 +294,10 @@ public class ChatMessageForwardInfoNode: ASDisplayNode {
             
             let peerString: String
             if let peer = peer {
-                if let authorName = authorName, originalPeer === peer {
-                    peerString = "\(EnginePeer(peer).displayTitle(strings: strings, displayOrder: presentationData.nameDisplayOrder)) (\(authorName))"
+                if let authorName = authorName, originalPeer == peer {
+                    peerString = "\(peer.displayTitle(strings: strings, displayOrder: presentationData.nameDisplayOrder)) (\(authorName))"
                 } else {
-                    peerString = EnginePeer(peer).displayTitle(strings: strings, displayOrder: presentationData.nameDisplayOrder)
+                    peerString = peer.displayTitle(strings: strings, displayOrder: presentationData.nameDisplayOrder)
                 }
             } else if let authorName = authorName {
                 peerString = authorName
@@ -409,7 +408,7 @@ public class ChatMessageForwardInfoNode: ASDisplayNode {
             var currentCredibilityIconImage: UIImage?
             var highlight = true
             if let peer = peer {
-                if let channel = peer as? TelegramChannel, channel.addressName == nil {
+                if case let .channel(channel) = peer, channel.addressName == nil {
                     if case let .broadcast(info) = channel.info, info.flags.contains(.hasDiscussionGroup) {
                     } else if case .member = channel.participationStatus {
                     } else {
@@ -539,9 +538,9 @@ public class ChatMessageForwardInfoNode: ASDisplayNode {
                         avatarNode.updateSize(size: avatarSize)
                         if let peer {
                             if peer.smallProfileImage != nil {
-                                avatarNode.setPeerV2(context: context, theme: presentationData.theme.theme, peer: EnginePeer(peer), displayDimensions: avatarSize)
+                                avatarNode.setPeerV2(context: context, theme: presentationData.theme.theme, peer: peer, displayDimensions: avatarSize)
                             } else {
-                                avatarNode.setPeer(context: context, theme: presentationData.theme.theme, peer: EnginePeer(peer), displayDimensions: avatarSize)
+                                avatarNode.setPeer(context: context, theme: presentationData.theme.theme, peer: peer, displayDimensions: avatarSize)
                             }
                         } else if let authorName, !authorName.isEmpty {
                             avatarNode.setCustomLetters([String(authorName[authorName.startIndex])])

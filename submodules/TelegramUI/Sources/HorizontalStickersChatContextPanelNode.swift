@@ -1,7 +1,6 @@
 import Foundation
 import UIKit
 import AsyncDisplayKit
-import Postbox
 import TelegramCore
 import Display
 import SwiftSignalKit
@@ -59,7 +58,7 @@ private struct StickerEntry: Identifiable, Comparable {
     let index: Int
     let file: TelegramMediaFile
     
-    var stableId: MediaId {
+    var stableId: EngineMedia.Id {
         return self.file.fileId
     }
     

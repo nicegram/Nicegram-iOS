@@ -4,7 +4,7 @@ import SwiftSignalKit
 import TelegramApi
 
 
-public func telegramWallpapers(postbox: Postbox, network: Network, forceUpdate: Bool = false) -> Signal<[TelegramWallpaper], NoError> {
+func _internal_telegramWallpapers(postbox: Postbox, network: Network, forceUpdate: Bool = false) -> Signal<[TelegramWallpaper], NoError> {
     let fetch: ([TelegramWallpaper]?, Int64?) -> Signal<[TelegramWallpaper], NoError> = { current, hash in
         network.request(Api.functions.account.getWallPapers(hash: hash ?? 0))
         |> retryRequestIfNotFrozen

@@ -564,11 +564,10 @@ public final class AccountContextImpl: AccountContext {
             return .single(nil)
         case let .replyThread(data):
             if data.isForumPost, let peerId = location.peerId {
-                let viewKey: PostboxViewKey = .messageHistoryThreadInfo(peerId: data.peerId, threadId: data.threadId)
-                return self.account.postbox.combinedView(keys: [viewKey])
-                |> map { views -> MessageId? in
-                    if let threadInfo = views.views[viewKey] as? MessageHistoryThreadInfoView, let data = threadInfo.info?.data.get(MessageHistoryThreadData.self) {
-                        return MessageId(peerId: peerId, namespace: Namespaces.Message.Cloud, id: data.maxOutgoingReadId)
+                return self.engine.data.subscribe(TelegramEngine.EngineData.Item.Messages.ThreadInfo(peerId: data.peerId, threadId: data.threadId))
+                |> map { threadData -> MessageId? in
+                    if let threadData {
+                        return MessageId(peerId: peerId, namespace: Namespaces.Message.Cloud, id: threadData.maxOutgoingReadId)
                     } else {
                         return nil
                     }
@@ -587,26 +586,13 @@ public final class AccountContextImpl: AccountContext {
     public func chatLocationUnreadCount(for location: ChatLocation, contextHolder: Atomic<ChatLocationContextHolder?>) -> Signal<Int, NoError> {
         switch location {
         case let .peer(peerId):
-            let unreadCountsKey: PostboxViewKey = .unreadCounts(items: [.peer(id: peerId, handleThreads: false), .total(nil)])
-            return self.account.postbox.combinedView(keys: [unreadCountsKey])
-            |> map { views in
-                var unreadCount: Int32 = 0
-                
-                if let view = views.views[unreadCountsKey] as? UnreadMessageCountsView {
-                    if let count = view.count(for: .peer(id: peerId, handleThreads: false)) {
-                        unreadCount = count
-                    }
-                }
-                
-                return Int(unreadCount)
-            }
+            return self.engine.data.subscribe(TelegramEngine.EngineData.Item.Messages.PeerUnreadCount(id: peerId, handleThreads: false))
         case let .replyThread(data):
             if data.isForumPost {
-                let viewKey: PostboxViewKey = .messageHistoryThreadInfo(peerId: data.peerId, threadId: data.threadId)
-                return self.account.postbox.combinedView(keys: [viewKey])
-                |> map { views -> Int in
-                    if let threadInfo = views.views[viewKey] as? MessageHistoryThreadInfoView, let data = threadInfo.info?.data.get(MessageHistoryThreadData.self) {
-                        return Int(data.incomingUnreadCount)
+                return self.engine.data.subscribe(TelegramEngine.EngineData.Item.Messages.ThreadInfo(peerId: data.peerId, threadId: data.threadId))
+                |> map { threadData -> Int in
+                    if let threadData {
+                        return Int(threadData.incomingUnreadCount)
                     } else {
                         return 0
                     }

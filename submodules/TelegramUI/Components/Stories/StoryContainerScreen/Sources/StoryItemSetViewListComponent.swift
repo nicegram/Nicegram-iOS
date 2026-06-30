@@ -4,7 +4,6 @@ import Display
 import ComponentFlow
 import MultilineTextComponent
 import TelegramCore
-import Postbox
 import TelegramPresentationData
 import ComponentDisplayAdapters
 import AccountContext
@@ -46,7 +45,7 @@ public final class StoryItemSetViewListComponent: Component {
     }
     
     public final class SharedListsContext {
-        var viewLists: [StoryId: EngineStoryViewListContext] = [:]
+        var viewLists: [EngineStoryId: EngineStoryViewListContext] = [:]
         
         public init() {
         }
@@ -294,7 +293,7 @@ public final class StoryItemSetViewListComponent: Component {
         var requestedLoadMoreToken: EngineStoryViewListContext.LoadMoreToken?
         
         private var previewedItemDisposable: Disposable?
-        private var previewedItemId: StoryId?
+        private var previewedItemId: EngineStoryId?
         
         var eventCycleState: EventCycleState?
         
@@ -345,7 +344,7 @@ public final class StoryItemSetViewListComponent: Component {
             self.previewedItemDisposable?.dispose()
         }
         
-        func setPreviewedItem(signal: Signal<StoryId?, NoError>) {
+        func setPreviewedItem(signal: Signal<EngineStoryId?, NoError>) {
             self.previewedItemDisposable?.dispose()
             self.previewedItemDisposable = (signal |> distinctUntilChanged |> deliverOnMainQueue).start(next: { [weak self] previewedItemId in
                 guard let self else {
@@ -369,7 +368,7 @@ public final class StoryItemSetViewListComponent: Component {
             })
         }
         
-        func sourceView(storyId: StoryId) -> UIView? {
+        func sourceView(storyId: EngineStoryId) -> UIView? {
             for (itemId, visibleItem) in self.visibleItems {
                 if let itemView = visibleItem.view as? PeerListItemComponent.View {
                     if itemId.peerId == storyId.peerId && itemId.storyId == storyId.id {
@@ -808,11 +807,11 @@ public final class StoryItemSetViewListComponent: Component {
                     }
                     if self.configuration == ContentConfigurationKey(listMode: .everyone, sortMode: defaultSortMode) {
                         let viewList: EngineStoryViewListContext
-                        if let current = component.sharedListsContext.viewLists[StoryId(peerId: component.peerId, id: component.storyItem.id)] {
+                        if let current = component.sharedListsContext.viewLists[EngineStoryId(peerId: component.peerId, id: component.storyItem.id)] {
                             viewList = current
                         } else {
                             viewList = component.context.engine.messages.storyViewList(peerId: component.peerId, id: component.storyItem.id, views: views, listMode: .everyone, sortMode: defaultSortMode.sortMode)
-                            component.sharedListsContext.viewLists[StoryId(peerId: component.peerId, id: component.storyItem.id)] = viewList
+                            component.sharedListsContext.viewLists[EngineStoryId(peerId: component.peerId, id: component.storyItem.id)] = viewList
                         }
                         self.viewList = viewList
                     } else {
@@ -823,7 +822,7 @@ public final class StoryItemSetViewListComponent: Component {
                         case .contacts:
                             mappedListMode = .contacts
                         }
-                        self.viewList = component.context.engine.messages.storyViewList(peerId: component.peerId, id: component.storyItem.id, views: views, listMode: mappedListMode, sortMode: self.configuration.sortMode.sortMode, parentSource: component.sharedListsContext.viewLists[StoryId(peerId: component.peerId, id: component.storyItem.id)])
+                        self.viewList = component.context.engine.messages.storyViewList(peerId: component.peerId, id: component.storyItem.id, views: views, listMode: mappedListMode, sortMode: self.configuration.sortMode.sortMode, parentSource: component.sharedListsContext.viewLists[EngineStoryId(peerId: component.peerId, id: component.storyItem.id)])
                     }
                 }
             }
@@ -1352,11 +1351,11 @@ public final class StoryItemSetViewListComponent: Component {
             return super.hitTest(point, with: event)
         }
         
-        public func setPreviewedItem(signal: Signal<StoryId?, NoError>) {
+        public func setPreviewedItem(signal: Signal<EngineStoryId?, NoError>) {
             self.currentContentView?.setPreviewedItem(signal: signal)
         }
         
-        public func sourceView(storyId: StoryId) -> UIView? {
+        public func sourceView(storyId: EngineStoryId) -> UIView? {
             self.currentContentView?.sourceView(storyId: storyId)
         }
         
@@ -1505,11 +1504,11 @@ public final class StoryItemSetViewListComponent: Component {
                 
                 if let views = component.storyItem.views {
                     let viewList: EngineStoryViewListContext
-                    if let current = component.sharedListsContext.viewLists[StoryId(peerId: component.peerId, id: component.storyItem.id)] {
+                    if let current = component.sharedListsContext.viewLists[EngineStoryId(peerId: component.peerId, id: component.storyItem.id)] {
                         viewList = current
                     } else {
                         viewList = component.context.engine.messages.storyViewList(peerId: component.peerId, id: component.storyItem.id, views: views, listMode: .everyone, sortMode: .reactionsFirst)
-                        component.sharedListsContext.viewLists[StoryId(peerId: component.peerId, id: component.storyItem.id)] = viewList
+                        component.sharedListsContext.viewLists[EngineStoryId(peerId: component.peerId, id: component.storyItem.id)] = viewList
                     }
                     self.mainViewList = viewList
                     self.mainViewListDisposable = (viewList.state

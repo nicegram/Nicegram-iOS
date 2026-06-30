@@ -85,6 +85,7 @@ import PresentationDataUtils
 import TextProcessingScreen
 import Pasteboard
 import UndoUI
+import BrowserUI
 
 final class VideoNavigationControllerDropContentItem: NavigationControllerDropContentItem {
     let itemNode: OverlayMediaItemNode
@@ -201,6 +202,7 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
     private var scrollContainerNode: ScrollContainerNode?
     private var containerNode: ASDisplayNode?
     private var overlayNavigationBar: ChatOverlayNavigationBar?
+    private var contextTransitionContainer: UIView?
     
     var overlayTitle: String? {
         didSet {
@@ -440,7 +442,7 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
                         }
                     } else {
                         loadingPlaceholderNode = ChatLoadingPlaceholderNode(context: self.context, theme: self.chatPresentationInterfaceState.theme, chatWallpaper: self.chatPresentationInterfaceState.chatWallpaper, bubbleCorners: self.chatPresentationInterfaceState.bubbleCorners, backgroundNode: self.backgroundNode)
-                        loadingPlaceholderNode.updatePresentationInterfaceState(renderedPeer: self.chatPresentationInterfaceState.renderedPeer, chatLocation: self.chatLocation)
+                        loadingPlaceholderNode.updatePresentationInterfaceState(renderedPeer: self.chatPresentationInterfaceState.renderedPeer.flatMap(EngineRenderedPeer.init), chatLocation: self.chatLocation)
                         self.backgroundNode.supernode?.insertSubnode(loadingPlaceholderNode, aboveSubnode: self.backgroundNode)
                         
                         self.loadingPlaceholderNode = loadingPlaceholderNode
@@ -3967,7 +3969,11 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
         }
 
         self.derivedLayoutState = ChatControllerNodeDerivedLayoutState(inputContextPanelsFrame: inputContextPanelsFrame, inputContextPanelsOverMainPanelFrame: inputContextPanelsOverMainPanelFrame, inputNodeHeight: inputNodeHeightAndOverflow?.0, inputNodeAdditionalHeight: inputNodeHeightAndOverflow?.1, upperInputPositionBound: inputNodeHeightAndOverflow?.0 != nil ? self.upperInputPositionBound : nil)
-        
+
+        if let contextTransitionContainer = self.contextTransitionContainer {
+            contextTransitionContainer.frame = self.view.convert(self.frameForVisibleArea(), to: self.contentContainerNode.contentNode.view)
+        }
+
         //self.notifyTransitionCompletionListeners(transition: transition)
     }
     
@@ -4074,7 +4080,7 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
             
             self.historyNode.verticalScrollIndicatorColor = UIColor(white: 0.5, alpha: 0.8)
             if self.pendingSwitchToChatLocation == nil {
-                self.loadingPlaceholderNode?.updatePresentationInterfaceState(renderedPeer: chatPresentationInterfaceState.renderedPeer, chatLocation: self.chatLocation)
+                self.loadingPlaceholderNode?.updatePresentationInterfaceState(renderedPeer: chatPresentationInterfaceState.renderedPeer.flatMap(EngineRenderedPeer.init), chatLocation: self.chatLocation)
             }
             
             var updatedInputFocus = self.chatPresentationInterfaceStateRequiresInputFocus(self.chatPresentationInterfaceState) != self.chatPresentationInterfaceStateRequiresInputFocus(chatPresentationInterfaceState)
@@ -4479,6 +4485,37 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
         self.textInputPanelNode?.isMediaDeleted = isDeleted
     }
     
+    func ensureContextTransitionContainer() -> UIView? {
+        // Frames are expressed in self.view coords by frameForVisibleArea(), but the
+        // container lives inside self.contentContainerNode.contentNode.view (the
+        // direct parent of historyNodeContainer) so chat-side ancestor clipping
+        // applies and chrome above contentContainerNode (input panel, nav, etc.)
+        // renders over it. Convert at the boundary.
+        //
+        // In overlay chat mode (self.containerNode != nil) historyNodeContainer is
+        // reparented out of contentContainerNode (see line ~1299), making the
+        // `aboveSubview: historyNodeContainer.view` insertion invalid. Return nil
+        // so callers fall back to CCEPN's clipping path — portal-style transitions
+        // are not supported in overlay mode.
+        guard self.containerNode == nil else { return nil }
+        let parent = self.contentContainerNode.contentNode.view
+        let frame = self.view.convert(self.frameForVisibleArea(), to: parent)
+        if let existing = self.contextTransitionContainer {
+            existing.frame = frame
+            return existing
+        }
+        let container = UIView()
+        // No clipsToBounds: the source-side wrapper is faded out via alpha during the
+        // crossfade, so we don't rely on clipping to hide it. Clipping the wrapper
+        // would also clip the iOS portal mirror (which reflects ancestor clipping),
+        // producing visibly clipped pixels in the clone at intermediate positions.
+        container.isUserInteractionEnabled = false
+        container.frame = frame
+        parent.insertSubview(container, aboveSubview: self.historyNodeContainer.view)
+        self.contextTransitionContainer = container
+        return container
+    }
+
     func frameForVisibleArea() -> CGRect {
         var rect = CGRect(origin: CGPoint(x: self.visibleAreaInset.left, y: self.visibleAreaInset.top), size: CGSize(width: self.bounds.size.width - self.visibleAreaInset.left - self.visibleAreaInset.right, height: self.bounds.size.height - self.visibleAreaInset.top - self.visibleAreaInset.bottom))
         if let inputContextPanelNode = self.inputContextPanelNode, let topItemFrame = inputContextPanelNode.topItemFrame {
@@ -5254,8 +5291,8 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
                     if let editMessageState = effectivePresentationInterfaceState.editMessageState, let mediaReferenceValue = editMessageState.mediaReference {
                         mediaReference = mediaReferenceValue
                     } else {
-                        if let message = self.historyNode.messageInCurrentHistoryView(editingOriginalMessageId) {
-                            for media in message.media {
+                        if let message = self.historyNode.messageInCurrentHistoryView(editingOriginalMessageId)?._asMessage() {
+                            for media in message.effectiveMedia {
                                 if media is TelegramMediaFile || media is TelegramMediaImage {
                                     mediaReference = .message(message: MessageReference(message), media: media)
                                 }
@@ -5264,44 +5301,63 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
                     }
                 }
                 
-                for text in breakChatInputText(trimChatInputText(inputText)) {
-                    if text.length != 0 {
-                        var attributes: [MessageAttribute] = []
-                        let entities: [MessageTextEntity]
-                        if case let .customChatContents(customChatContents) = self.chatPresentationInterfaceState.subject, case .businessLinkSetup = customChatContents.kind {
-                            entities = generateChatInputTextEntities(text, generateLinks: false)
-                        } else {
-                            entities = generateTextEntities(text.string, enabledTypes: .all, currentEntities: generateChatInputTextEntities(text, maxAnimatedEmojisInText: 0))
+                var isSpecialChatContents = false
+                if case .customChatContents = self.chatPresentationInterfaceState.subject {
+                    isSpecialChatContents = true
+                }
+                if !"".isEmpty, !isSpecialChatContents, let attribute = richMarkdownAttributeIfNeeded(context: self.context, attributedText: effectiveInputText) {
+                    let attributes: [MessageAttribute] = [attribute]
+                    var richBubbleUpEmojiOrStickersets: [ItemCollectionId] = []
+                    for (_, packId) in bubbleUpEmojiOrStickersetsById {
+                        if !richBubbleUpEmojiOrStickersets.contains(packId) {
+                            richBubbleUpEmojiOrStickersets.append(packId)
                         }
-                        if !entities.isEmpty {
-                            attributes.append(TextEntitiesMessageAttribute(entities: entities))
-                        }
-                                                    
-                        if let urlPreview = self.chatPresentationInterfaceState.urlPreview {
-                            if self.chatPresentationInterfaceState.interfaceState.composeDisableUrlPreviews.contains(urlPreview.url) {
-                                attributes.append(OutgoingContentInfoMessageAttribute(flags: [.disableLinkPreviews]))
+                    }
+                    if richBubbleUpEmojiOrStickersets.count > 1 {
+                        richBubbleUpEmojiOrStickersets.removeAll()
+                    }
+                    messages.append(.message(text: "", attributes: attributes, inlineStickers: inlineStickers, mediaReference: nil, threadId: self.chatLocation.threadId, replyToMessageId: self.chatPresentationInterfaceState.interfaceState.replyMessageSubject?.subjectModel, replyToStoryId: nil, localGroupingKey: nil, correlationId: nil, bubbleUpEmojiOrStickersets: richBubbleUpEmojiOrStickersets))
+                    mediaReference = nil
+                } else {
+                    for text in breakChatInputText(trimChatInputText(inputText)) {
+                        if text.length != 0 {
+                            var attributes: [MessageAttribute] = []
+                            let entities: [MessageTextEntity]
+                            if case let .customChatContents(customChatContents) = self.chatPresentationInterfaceState.subject, case .businessLinkSetup = customChatContents.kind {
+                                entities = generateChatInputTextEntities(text, generateLinks: false)
                             } else {
-                                attributes.append(WebpagePreviewMessageAttribute(leadingPreview: !urlPreview.positionBelowText, forceLargeMedia: urlPreview.largeMedia, isManuallyAdded: true, isSafe: false))
+                                entities = generateTextEntities(text.string, enabledTypes: .all, currentEntities: generateChatInputTextEntities(text, maxAnimatedEmojisInText: 0))
                             }
-                        }
-                        
-                        var bubbleUpEmojiOrStickersets: [ItemCollectionId] = []
-                        for entity in entities {
-                            if case let .CustomEmoji(_, fileId) = entity.type {
-                                if let packId = bubbleUpEmojiOrStickersetsById[fileId] {
-                                    if !bubbleUpEmojiOrStickersets.contains(packId) {
-                                        bubbleUpEmojiOrStickersets.append(packId)
+                            if !entities.isEmpty {
+                                attributes.append(TextEntitiesMessageAttribute(entities: entities))
+                            }
+                            
+                            if let urlPreview = self.chatPresentationInterfaceState.urlPreview {
+                                if self.chatPresentationInterfaceState.interfaceState.composeDisableUrlPreviews.contains(urlPreview.url) {
+                                    attributes.append(OutgoingContentInfoMessageAttribute(flags: [.disableLinkPreviews]))
+                                } else {
+                                    attributes.append(WebpagePreviewMessageAttribute(leadingPreview: !urlPreview.positionBelowText, forceLargeMedia: urlPreview.largeMedia, isManuallyAdded: true, isSafe: false))
+                                }
+                            }
+                            
+                            var bubbleUpEmojiOrStickersets: [ItemCollectionId] = []
+                            for entity in entities {
+                                if case let .CustomEmoji(_, fileId) = entity.type {
+                                    if let packId = bubbleUpEmojiOrStickersetsById[fileId] {
+                                        if !bubbleUpEmojiOrStickersets.contains(packId) {
+                                            bubbleUpEmojiOrStickersets.append(packId)
+                                        }
                                     }
                                 }
                             }
+                            
+                            if bubbleUpEmojiOrStickersets.count > 1 {
+                                bubbleUpEmojiOrStickersets.removeAll()
+                            }
+                            
+                            messages.append(.message(text: text.string, attributes: attributes, inlineStickers: inlineStickers, mediaReference: mediaReference, threadId: self.chatLocation.threadId, replyToMessageId: self.chatPresentationInterfaceState.interfaceState.replyMessageSubject?.subjectModel, replyToStoryId: nil, localGroupingKey: nil, correlationId: nil, bubbleUpEmojiOrStickersets: bubbleUpEmojiOrStickersets))
+                            mediaReference = nil
                         }
-                        
-                        if bubbleUpEmojiOrStickersets.count > 1 {
-                            bubbleUpEmojiOrStickersets.removeAll()
-                        }
-
-                        messages.append(.message(text: text.string, attributes: attributes, inlineStickers: inlineStickers, mediaReference: mediaReference, threadId: self.chatLocation.threadId, replyToMessageId: self.chatPresentationInterfaceState.interfaceState.replyMessageSubject?.subjectModel, replyToStoryId: nil, localGroupingKey: nil, correlationId: nil, bubbleUpEmojiOrStickersets: bubbleUpEmojiOrStickersets))
-                        mediaReference = nil
                     }
                 }
                 

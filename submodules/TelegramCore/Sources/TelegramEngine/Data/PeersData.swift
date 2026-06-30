@@ -184,6 +184,36 @@ public extension TelegramEngine.EngineData.Item {
             }
         }
 
+        public struct MainPeer: TelegramEngineDataItem, TelegramEngineMapKeyDataItem, PostboxViewDataItem {
+            public typealias Result = Optional<EnginePeer>
+
+            fileprivate var id: EnginePeer.Id
+            public var mapKey: EnginePeer.Id {
+                return self.id
+            }
+
+            public init(id: EnginePeer.Id) {
+                self.id = id
+            }
+
+            var key: PostboxViewKey {
+                return .peer(peerId: self.id, components: [])
+            }
+
+            func extract(view: PostboxView) -> Result {
+                guard let view = view as? PeerView else {
+                    preconditionFailure()
+                }
+                guard let peer = view.peers[self.id] else {
+                    return nil
+                }
+                if let secretChat = peer as? TelegramSecretChat {
+                    return view.peers[secretChat.regularPeerId].flatMap(EnginePeer.init)
+                }
+                return EnginePeer(peer)
+            }
+        }
+
         public struct RenderedPeer: TelegramEngineDataItem, TelegramEngineMapKeyDataItem, PostboxViewDataItem {
             public typealias Result = Optional<EngineRenderedPeer>
 
@@ -307,6 +337,30 @@ public extension TelegramEngine.EngineData.Item {
                     return EnginePeer.NotificationSettings(TelegramPeerNotificationSettings.defaultSettings)
                 }
                 return EnginePeer.NotificationSettings(data.notificationSettings)
+            }
+        }
+
+        public struct CachedData: TelegramEngineDataItem, TelegramEngineMapKeyDataItem, PostboxViewDataItem {
+            public typealias Result = Optional<EngineCachedPeerData>
+
+            fileprivate var id: EnginePeer.Id
+            public var mapKey: EnginePeer.Id {
+                return self.id
+            }
+
+            public init(id: EnginePeer.Id) {
+                self.id = id
+            }
+
+            var key: PostboxViewKey {
+                return .cachedPeerData(peerId: self.id)
+            }
+
+            func extract(view: PostboxView) -> Result {
+                guard let view = view as? CachedPeerDataView else {
+                    preconditionFailure()
+                }
+                return view.cachedPeerData
             }
         }
 

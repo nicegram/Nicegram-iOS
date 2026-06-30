@@ -169,25 +169,7 @@
 
 - (void)blurButtonPressed:(TGPhotoEditorBlurTypeButton *)sender
 {
-//    if (sender.tag != 0 && sender.tag == _currentType)
-//    {
-//        _editingIntensity = true;
-//        _startIntensity = [(PGBlurToolValue *)self.value intensity];
-//        
-//        PGBlurToolValue *value = [(PGBlurToolValue *)self.value copy];
-//        value.editingIntensity = true;
-//        
-//        _value = value;
-//        
-//        if (self.valueChanged != nil)
-//            self.valueChanged(value);
-//        
-//        [self setIntensitySliderHidden:false animated:true];
-//    }
-//    else
-//    {
-        [self setSelectedBlurType:(PGBlurToolType)sender.tag update:true];
-//    }
+    [self setSelectedBlurType:(PGBlurToolType)sender.tag update:true];
 }
 
 - (void)setValue:(id)value

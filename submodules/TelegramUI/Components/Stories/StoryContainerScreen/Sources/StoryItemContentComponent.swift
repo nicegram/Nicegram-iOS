@@ -7,7 +7,6 @@ import Display
 import ComponentFlow
 import AccountContext
 import TelegramCore
-import Postbox
 import AsyncDisplayKit
 import PhotoResources
 import SwiftSignalKit
@@ -35,7 +34,7 @@ final class StoryItemContentComponent: Component {
     let peer: EnginePeer
     let item: EngineStoryItem
     let availableReactions: StoryAvailableReactions?
-    let entityFiles: [MediaId: TelegramMediaFile]
+    let entityFiles: [EngineMedia.Id: TelegramMediaFile]
     let audioMode: StoryContentItem.AudioMode
     let baseRate: Double
     let isVideoBuffering: Bool
@@ -47,7 +46,7 @@ final class StoryItemContentComponent: Component {
     let activateReaction: (UIView, MessageReaction.Reaction) -> Void
     let controller: () -> ViewController?
     
-    init(context: AccountContext, strings: PresentationStrings, peer: EnginePeer, item: EngineStoryItem, availableReactions: StoryAvailableReactions?, entityFiles: [MediaId: TelegramMediaFile], audioMode: StoryContentItem.AudioMode, baseRate: Double, isVideoBuffering: Bool, isCurrent: Bool, isUIHidden: Bool, preferHighQuality: Bool, isEmbeddedInCamera: Bool, canManageLiveChatMessagesFromPeers: Set<EnginePeer.Id>, activateReaction: @escaping (UIView, MessageReaction.Reaction) -> Void, controller: @escaping () -> ViewController?) {
+    init(context: AccountContext, strings: PresentationStrings, peer: EnginePeer, item: EngineStoryItem, availableReactions: StoryAvailableReactions?, entityFiles: [EngineMedia.Id: TelegramMediaFile], audioMode: StoryContentItem.AudioMode, baseRate: Double, isVideoBuffering: Bool, isCurrent: Bool, isUIHidden: Bool, preferHighQuality: Bool, isEmbeddedInCamera: Bool, canManageLiveChatMessagesFromPeers: Set<EnginePeer.Id>, activateReaction: @escaping (UIView, MessageReaction.Reaction) -> Void, controller: @escaping () -> ViewController?) {
 		self.context = context
         self.strings = strings
         self.peer = peer
@@ -611,7 +610,7 @@ final class StoryItemContentComponent: Component {
                                 if !self.markedAsSeen {
                                     self.markedAsSeen = true
                                     if let component = self.component {
-                                        self.environment?.markAsSeen(StoryId(peerId: component.peer.id, id: component.item.id))
+                                        self.environment?.markAsSeen(EngineStoryId(peerId: component.peer.id, id: component.item.id))
                                     }
                                 }
                                 
@@ -736,7 +735,7 @@ final class StoryItemContentComponent: Component {
                     if !self.markedAsSeen {
                         self.markedAsSeen = true
                         if let component = self.component {
-                            self.environment?.markAsSeen(StoryId(peerId: component.peer.id, id: component.item.id))
+                            self.environment?.markAsSeen(EngineStoryId(peerId: component.peer.id, id: component.item.id))
                         }
                     }
                     

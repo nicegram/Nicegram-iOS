@@ -171,10 +171,9 @@ private enum LocationPickerEntry: Comparable, Identifiable {
                     if let coordinate = coordinate {
                         interaction?.sendLocation(coordinate, name, address?.withUpdated(street: nil))
                     }
-                }, highlighted: { highlighted in
-                    interaction?.updateSendActionHighlight(highlighted)
+                }, highlighted: { _ in
                 })
-            case let .location(_, title, subtitle, venue, queryId, resultId, coordinate, name, address, isTop):
+            case let .location(_, title, subtitle, venue, queryId, resultId, coordinate, name, address, _):
                 let icon: LocationActionListItemIcon
                 if let venue = venue {
                     icon = .venue(venue)
@@ -187,10 +186,7 @@ private enum LocationPickerEntry: Comparable, Identifiable {
                     } else if let coordinate {
                         interaction?.sendLocation(coordinate, name, address)
                     }
-                }, highlighted: { highlighted in
-                    if isTop {
-                        interaction?.updateSendActionHighlight(highlighted)
-                    }
+                }, highlighted: { _ in
                 })
             case let .liveLocation(_, title, subtitle, coordinate):
                 return LocationActionListItem(presentationData: ItemListPresentationData(presentationData), engine: engine, title: title, subtitle: subtitle, icon: .liveLocation, beginTimeAndTimeout: nil, action: {
@@ -361,7 +357,6 @@ final class LocationPickerControllerNode: ViewControllerTracingNode, CLLocationM
     
     private var sendButton: ComponentView<Empty>?
     
-    private let optionsNode: LocationOptionsNode
     private(set) var searchContainerNode: LocationSearchContainerNode?
     
     private var placeholderBackgroundNode: NavigationBackgroundNode?
@@ -422,9 +417,7 @@ final class LocationPickerControllerNode: ViewControllerTracingNode, CLLocationM
             showPlacesInThisArea: interaction.showPlacesInThisArea
         )
         self.headerNode.mapNode.isRotateEnabled = false
-                
-        self.optionsNode = LocationOptionsNode(presentationData: presentationData, updateMapMode: interaction.updateMapMode)
-        
+                        
         self.shadeNode = ASDisplayNode()
         self.shadeNode.backgroundColor = self.presentationData.theme.list.plainBackgroundColor
         self.shadeNode.alpha = 0.0
@@ -443,7 +436,7 @@ final class LocationPickerControllerNode: ViewControllerTracingNode, CLLocationM
         
         self.addSubnode(self.listNode)
         self.addSubnode(self.headerNode)
-        //self.addSubnode(self.optionsNode)
+        
         self.listNode.addSubnode(self.emptyResultsTextNode)
         self.shadeNode.addSubnode(self.innerShadeNode)
         self.addSubnode(self.shadeNode)
@@ -1099,7 +1092,6 @@ final class LocationPickerControllerNode: ViewControllerTracingNode, CLLocationM
         self.backgroundColor = self.presentationData.theme.list.plainBackgroundColor
         self.listNode.backgroundColor = self.presentationData.theme.list.plainBackgroundColor
         self.headerNode.updatePresentationData(self.presentationData)
-        self.optionsNode.updatePresentationData(self.presentationData)
         self.shadeNode.backgroundColor = self.presentationData.theme.list.plainBackgroundColor
         self.innerShadeNode.backgroundColor = self.presentationData.theme.list.plainBackgroundColor
         self.searchContainerNode?.updatePresentationData(self.presentationData)
@@ -1214,6 +1206,16 @@ final class LocationPickerControllerNode: ViewControllerTracingNode, CLLocationM
         return (self.state.selectedLocation.isCustom || self.state.forceSelection) && !self.state.searchingVenuesAround
     }
     
+    func liveLocationActionSourceView(extend: Bool) -> UIView? {
+        var result: UIView?
+        self.listNode.forEachItemNode { itemNode in
+            if result == nil, let itemNode = itemNode as? LocationActionListItemNode {
+                result = itemNode.liveLocationContextSourceView(extend: extend)
+            }
+        }
+        return result
+    }
+    
     func requestLayout(transition: ContainedViewLayoutTransition) {
         if let (layout, navigationHeight) = self.validLayout {
             self.containerLayoutUpdated(layout, navigationHeight: navigationHeight, transition: transition)
@@ -1290,12 +1292,6 @@ final class LocationPickerControllerNode: ViewControllerTracingNode, CLLocationM
                 self.dequeueTransition()
             }
         }
-        
-        let optionsOffset: CGFloat = self.state.displayingMapModeOptions ? navigationHeight : navigationHeight - optionsHeight
-        let optionsFrame = CGRect(x: 0.0, y: optionsOffset, width: layout.size.width, height: optionsHeight)
-        transition.updateFrame(node: self.optionsNode, frame: optionsFrame)
-        self.optionsNode.updateLayout(size: optionsFrame.size, leftInset: insets.left, rightInset: insets.right, transition: transition)
-        self.optionsNode.isUserInteractionEnabled = self.state.displayingMapModeOptions
         
         if let searchContainerNode = self.searchContainerNode {
             searchContainerNode.frame = CGRect(origin: CGPoint(), size: layout.size)
@@ -1653,11 +1649,6 @@ final class LocationPickerControllerNode: ViewControllerTracingNode, CLLocationM
                 }
             }
         }
-    }
-    
-    func updateSendActionHighlight(_ highlighted: Bool) {
-        self.headerNode.updateHighlight(highlighted)
-        self.shadeNode.backgroundColor = highlighted ? self.presentationData.theme.list.itemHighlightedBackgroundColor : self.presentationData.theme.list.plainBackgroundColor
     }
     
     func goToUserLocation() {

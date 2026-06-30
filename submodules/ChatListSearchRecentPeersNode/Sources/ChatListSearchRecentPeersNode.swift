@@ -4,7 +4,6 @@ import AsyncDisplayKit
 import Display
 import SwiftSignalKit
 import TelegramCore
-import Postbox
 import TelegramPresentationData
 import MergeLists
 import HorizontalPeerItem
@@ -254,16 +253,16 @@ public final class ChatListSearchRecentPeersNode: ASDisplayNode {
                     }
                 )
                 |> mapToSignal { peerViews -> Signal<([EnginePeer], [EnginePeer.Id: (Int32, Bool)], [EnginePeer.Id: EnginePeer.Presence]), NoError> in
-                    return stateManager.postbox.combinedView(keys: peerViews.map { item -> PostboxViewKey in
-                        let key = PostboxViewKey.unreadCounts(items: [UnreadMessageCountsItem.peer(id: item.peerId, handleThreads: true)])
+                    return stateManager.postbox.combinedView(keys: peerViews.map { item -> EngineRawPostboxViewKey in
+                        let key = EngineRawPostboxViewKey.unreadCounts(items: [EngineRawUnreadMessageCountsItem.peer(id: item.peerId, handleThreads: true)])
                         return key
                     })
                     |> map { views -> [EnginePeer.Id: Int] in
                         var result: [EnginePeer.Id: Int] = [:]
                         for item in peerViews {
-                            let key = PostboxViewKey.unreadCounts(items: [UnreadMessageCountsItem.peer(id: item.peerId, handleThreads: true)])
-                            
-                            if let view = views.views[key] as? UnreadMessageCountsView {
+                            let key = EngineRawPostboxViewKey.unreadCounts(items: [EngineRawUnreadMessageCountsItem.peer(id: item.peerId, handleThreads: true)])
+
+                            if let view = views.views[key] as? EngineRawUnreadMessageCountsView {
                                 result[item.peerId] = Int(view.count(for: .peer(id: item.peerId, handleThreads: true)) ?? 0)
                             } else {
                                 result[item.peerId] = 0

@@ -4,7 +4,6 @@ import Display
 import AccountContext
 import TelegramPresentationData
 import SwiftSignalKit
-import Postbox
 import TelegramCore
 import InviteLinksUI
 import SendInviteLinkScreen
@@ -12,7 +11,7 @@ import UndoUI
 import PresentationDataUtils
 
 public func presentAddMembersImpl(context: AccountContext, updatedPresentationData: (initial: PresentationData, signal: Signal<PresentationData, NoError>)?, parentController: ViewController, groupPeer: EnginePeer, selectAddMemberDisposable: MetaDisposable, addMemberDisposable: MetaDisposable) {
-    let members: Promise<[PeerId]> = Promise()
+    let members: Promise<[EnginePeer.Id]> = Promise()
     if groupPeer.id.namespace == Namespaces.Peer.CloudChannel {
         /*var membersDisposable: Disposable?
         let (disposable, _) = context.peerChannelMemberCategoriesContextsManager.recent(postbox: context.account.postbox, network: context.account.network, accountPeerId: context.account.peerId, peerId: peerView.peerId, updated: { listState in
@@ -29,7 +28,7 @@ public func presentAddMembersImpl(context: AccountContext, updatedPresentationDa
     |> take(1)
     |> deliverOnMainQueue).startStandalone(next: { [weak parentController] recentIds in
         var createInviteLinkImpl: (() -> Void)?
-        var confirmationImpl: ((PeerId) -> Signal<Bool, NoError>)?
+        var confirmationImpl: ((EnginePeer.Id) -> Signal<Bool, NoError>)?
         let _ = confirmationImpl
         var options: [ContactListAdditionalOption] = []
         let presentationData = updatedPresentationData?.initial ?? context.sharedContext.currentPresentationData.with { $0 }
@@ -88,8 +87,8 @@ public func presentAddMembersImpl(context: AccountContext, updatedPresentationDa
             }
         }
         
-        let addMembers: ([ContactListPeerId]) -> Signal<[(PeerId, AddChannelMemberError)], NoError> = { members -> Signal<[(PeerId, AddChannelMemberError)], NoError> in
-            let memberIds = members.compactMap { contact -> PeerId? in
+        let addMembers: ([ContactListPeerId]) -> Signal<[(EnginePeer.Id, AddChannelMemberError)], NoError> = { members -> Signal<[(EnginePeer.Id, AddChannelMemberError)], NoError> in
+            let memberIds = members.compactMap { contact -> EnginePeer.Id? in
                 switch contact {
                 case let .peer(peerId):
                     return peerId
@@ -100,23 +99,23 @@ public func presentAddMembersImpl(context: AccountContext, updatedPresentationDa
             return context.account.postbox.multiplePeersView(memberIds)
             |> take(1)
             |> deliverOnMainQueue
-            |> mapToSignal { view -> Signal<[(PeerId, AddChannelMemberError)], NoError> in
+            |> mapToSignal { view -> Signal<[(EnginePeer.Id, AddChannelMemberError)], NoError> in
                 if groupPeer.id.namespace == Namespaces.Peer.CloudChannel {
                     if memberIds.count == 1 {
                         return context.peerChannelMemberCategoriesContextsManager.addMember(engine: context.engine, peerId: groupPeer.id, memberId: memberIds[0])
-                        |> map { _ -> [(PeerId, AddChannelMemberError)] in
+                        |> map { _ -> [(EnginePeer.Id, AddChannelMemberError)] in
                         }
-                        |> then(Signal<[(PeerId, AddChannelMemberError)], AddChannelMemberError>.single([]))
-                        |> `catch` { error -> Signal<[(PeerId, AddChannelMemberError)], NoError> in
+                        |> then(Signal<[(EnginePeer.Id, AddChannelMemberError)], AddChannelMemberError>.single([]))
+                        |> `catch` { error -> Signal<[(EnginePeer.Id, AddChannelMemberError)], NoError> in
                             return .single([(memberIds[0], error)])
                         }
                     } else {
                         return context.peerChannelMemberCategoriesContextsManager.addMembersAllowPartial(engine: context.engine, peerId: groupPeer.id, memberIds: memberIds)
                     }
                 } else {
-                    var signals: [Signal<(PeerId, AddChannelMemberError)?, NoError>] = []
+                    var signals: [Signal<(EnginePeer.Id, AddChannelMemberError)?, NoError>] = []
                     for memberId in memberIds {
-                        let signal: Signal<(PeerId, AddChannelMemberError)?, NoError> = context.engine.peers.addGroupMember(peerId: groupPeer.id, memberId: memberId)
+                        let signal: Signal<(EnginePeer.Id, AddChannelMemberError)?, NoError> = context.engine.peers.addGroupMember(peerId: groupPeer.id, memberId: memberId)
                         |> mapError { error -> AddChannelMemberError in
                             switch error {
                             case .generic:
@@ -132,16 +131,16 @@ public func presentAddMembersImpl(context: AccountContext, updatedPresentationDa
                             }
                         }
                         |> ignoreValues
-                        |> map { _ -> (PeerId, AddChannelMemberError)? in
+                        |> map { _ -> (EnginePeer.Id, AddChannelMemberError)? in
                         }
-                        |> then(Signal<(PeerId, AddChannelMemberError)?, AddChannelMemberError>.single(nil))
-                        |> `catch` { error -> Signal<(PeerId, AddChannelMemberError)?, NoError> in
+                        |> then(Signal<(EnginePeer.Id, AddChannelMemberError)?, AddChannelMemberError>.single(nil))
+                        |> `catch` { error -> Signal<(EnginePeer.Id, AddChannelMemberError)?, NoError> in
                             return .single((memberId, error))
                         }
                         signals.append(signal)
                     }
                     return combineLatest(signals)
-                    |> map { values -> [(PeerId, AddChannelMemberError)] in
+                    |> map { values -> [(EnginePeer.Id, AddChannelMemberError)] in
                         return values.compactMap { $0 }
                     }
                 }

@@ -13,6 +13,8 @@ import SheetComponent
 import MultilineTextComponent
 import BundleIconComponent
 import SolidRoundedButtonComponent
+import ButtonComponent
+import LottieComponent
 import Markdown
 import BalancedTextComponent
 import ConfettiEffect
@@ -832,7 +834,7 @@ private final class LimitSheetContent: CombinedComponent {
         let alternateText = Child(List<Empty>.self)
         let limit = Child(PremiumLimitDisplayComponent.self)
         let linkButton = Child(SolidRoundedButtonComponent.self)
-        let button = Child(SolidRoundedButtonComponent.self)
+        let button = Child(ButtonComponent.self)
         let peerShortcut = Child(Button.self)
         let statsButton = Child(Button.self)
         
@@ -1456,23 +1458,44 @@ private final class LimitSheetContent: CombinedComponent {
                 let isIncreaseButton = !reachedMaximumLimit && !isPremiumDisabled
                 
                 let bottomInsets = ContainerViewLayout.concentricInsets(bottomInset: environment.safeInsets.bottom, innerDiameter: 52.0, sideInset: 30.0)
+                let buttonTitle = actionButtonText ?? (isIncreaseButton ? strings.Premium_IncreaseLimit : strings.Common_OK)
+                var buttonContentItems: [AnyComponentWithIdentity<Empty>] = []
+                if let buttonIconName {
+                    buttonContentItems.append(AnyComponentWithIdentity(id: "icon", component: AnyComponent(BundleIconComponent(
+                        name: buttonIconName,
+                        tintColor: .white
+                    ))))
+                }
+                buttonContentItems.append(AnyComponentWithIdentity(id: "title", component: AnyComponent(ButtonTextContentComponent(
+                    text: buttonTitle,
+                    badge: 0,
+                    textColor: .white,
+                    badgeBackground: .white,
+                    badgeForeground: buttonGradientColors[0]
+                ))))
+                if buttonIconName == nil, isIncreaseButton, let buttonAnimationName {
+                    buttonContentItems.append(AnyComponentWithIdentity(id: "animation", component: AnyComponent(LottieComponent(
+                        content: LottieComponent.AppBundleContent(name: buttonAnimationName),
+                        color: .white,
+                        startingPosition: .begin,
+                        size: CGSize(width: 30.0, height: 30.0),
+                        loop: true
+                    ))))
+                }
                 let button = button.update(
-                    component: SolidRoundedButtonComponent(
-                        title: actionButtonText ?? (isIncreaseButton ? strings.Premium_IncreaseLimit : strings.Common_OK),
-                        theme: SolidRoundedButtonComponent.Theme(
-                            backgroundColor: .black,
-                            backgroundColors: buttonGradientColors,
-                            foregroundColor: .white
+                    component: ButtonComponent(
+                        background: ButtonComponent.Background(
+                            style: .glass,
+                            color: buttonGradientColors[0],
+                            foreground: .white,
+                            pressedColor: buttonGradientColors[0],
+                            isShimmering: isIncreaseButton && actionButtonHasGloss,
+                            gradient: ButtonComponent.Background.Gradient(colors: buttonGradientColors)
                         ),
-                        font: .bold,
-                        fontSize: 17.0,
-                        height: 52.0,
-                        cornerRadius: 26.0,
-                        gloss: isIncreaseButton && actionButtonHasGloss,
-                        glass: true,
-                        iconName: buttonIconName,
-                        animationName: isIncreaseButton ? buttonAnimationName : nil,
-                        iconPosition: buttonIconName != nil ? .left : .right,
+                        content: AnyComponentWithIdentity(
+                            id: AnyHashable("\(buttonTitle)-\(buttonIconName ?? "")-\(isIncreaseButton ? buttonAnimationName ?? "" : "")"),
+                            component: AnyComponent(HStack(buttonContentItems, spacing: 4.0))
+                        ),
                         action: {
                             if isIncreaseButton {
                                 if component.action() {

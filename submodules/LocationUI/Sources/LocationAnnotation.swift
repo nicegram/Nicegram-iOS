@@ -177,6 +177,7 @@ public class LocationPinAnnotationView: MKAnnotationView {
     var hasPulse = false
     
     var headingKvoToken: NSKeyValueObservation?
+    private var mapHeading: CGFloat = 0.0
     
     override public class var layerClass: AnyClass {
         return LocationPinAnnotationLayer.self
@@ -291,12 +292,10 @@ public class LocationPinAnnotationView: MKAnnotationView {
                         headingKvoToken.invalidate()
                     }
                     
-                    self.headingKvoToken = annotation.observe(\.heading, options: .new) { [weak self] (_, change) in
-                        guard let heading = change.newValue else {
-                            return
-                        }
-                        self?.updateHeading(heading)
+                    self.headingKvoToken = annotation.observe(\.heading, options: .new) { [weak self] (_, _) in
+                        self?.updateHeading()
                     }
+                    self.updateHeading()
                 }
                 else if let peer = annotation.peer {
                     self.iconNode.isHidden = true
@@ -310,7 +309,7 @@ public class LocationPinAnnotationView: MKAnnotationView {
                         self.headingKvoToken = nil
                         headingKvoToken.invalidate()
                     }
-                    self.updateHeading(nil)
+                    self.updateHeading()
                 } else if let location = annotation.location {
                     let venueType = location.venue?.type ?? ""
                     let color = venueType.isEmpty ? annotation.theme.list.itemAccentColor : venueIconColor(type: venueType)
@@ -347,16 +346,23 @@ public class LocationPinAnnotationView: MKAnnotationView {
                         self.headingKvoToken = nil
                         headingKvoToken.invalidate()
                     }
-                    self.updateHeading(nil)
+                    self.updateHeading()
                 }
             }
         }
     }
     
-    private func updateHeading(_ heading: NSNumber?) {
-        if let heading = heading?.int32Value {
+    func updateMapHeading(_ mapHeading: CGFloat) {
+        if self.mapHeading != mapHeading {
+            self.mapHeading = mapHeading
+            self.updateHeading()
+        }
+    }
+
+    private func updateHeading() {
+        if let heading = (self.annotation as? LocationPinAnnotation)?.heading?.doubleValue {
             self.arrowNode.isHidden = false
-            self.arrowNode.transform = CATransform3DMakeRotation(CGFloat(heading) / 180.0 * CGFloat.pi, 0.0, 0.0, 1.0)
+            self.arrowNode.transform = CATransform3DMakeRotation((CGFloat(heading) - self.mapHeading) / 180.0 * CGFloat.pi, 0.0, 0.0, 1.0)
         } else {
             self.arrowNode.isHidden = true
             self.arrowNode.transform = CATransform3DIdentity

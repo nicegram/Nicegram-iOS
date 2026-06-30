@@ -2,7 +2,6 @@ import Foundation
 import UIKit
 import Display
 import AsyncDisplayKit
-import Postbox
 import TelegramCore
 import TelegramPresentationData
 import LocalizedPeerData
@@ -12,101 +11,6 @@ import AnimatedAvatarSetNode
 import AccountContext
 import ChatPresentationInterfaceState
 import LegacyChatHeaderPanelComponent
-
-private final class ChatInfoTitlePanelPeerNearbyInfoNode: ASDisplayNode {
-    private var theme: PresentationTheme?
-    
-    private let labelNode: ImmediateTextNode
-    private let filledBackgroundNode: LinkHighlightingNode
-    
-    private let openPeersNearby: () -> Void
-    
-    init(openPeersNearby: @escaping () -> Void) {
-        self.openPeersNearby = openPeersNearby
-        
-        self.labelNode = ImmediateTextNode()
-        self.labelNode.maximumNumberOfLines = 1
-        self.labelNode.textAlignment = .center
-        
-        self.filledBackgroundNode = LinkHighlightingNode(color: .clear)
-        
-        super.init()
-        
-        self.addSubnode(self.filledBackgroundNode)
-        self.addSubnode(self.labelNode)
-    }
-    
-    override func didLoad() {
-        super.didLoad()
-        
-        let tapRecognizer = UITapGestureRecognizer(target: self, action: #selector(self.tapGesture(_:)))
-        self.view.addGestureRecognizer(tapRecognizer)
-    }
-    
-    @objc private func tapGesture(_ gestureRecognizer: UITapGestureRecognizer) {
-        self.openPeersNearby()
-    }
-    
-    func update(width: CGFloat, theme: PresentationTheme, strings: PresentationStrings, wallpaper: TelegramWallpaper, chatPeer: Peer, distance: Int32, transition: ContainedViewLayoutTransition) -> CGFloat {
-        let primaryTextColor = serviceMessageColorComponents(theme: theme, wallpaper: wallpaper).primaryText
-        
-        if self.theme !== theme {
-            self.theme = theme
-            
-            self.labelNode.linkHighlightColor = primaryTextColor.withAlphaComponent(0.3)
-        }
-        
-        let topInset: CGFloat = 6.0
-        let bottomInset: CGFloat = 6.0
-        let sideInset: CGFloat = 16.0
-        
-        let stringAndRanges = strings.Conversation_PeerNearbyDistance(EnginePeer(chatPeer).compactDisplayTitle, shortStringForDistance(strings: strings, distance: distance))
-        
-        let attributedString = NSMutableAttributedString(string: stringAndRanges.string, font: Font.regular(13.0), textColor: primaryTextColor)
-        
-        let boldAttributes = [NSAttributedString.Key.font: Font.semibold(13.0), NSAttributedString.Key(rawValue: "_Link"): true as NSNumber]
-        for range in stringAndRanges.ranges.prefix(1) {
-            attributedString.addAttributes(boldAttributes, range: range.range)
-        }
-        
-        self.labelNode.attributedText = attributedString
-        let labelLayout = self.labelNode.updateLayoutFullInfo(CGSize(width: width - sideInset * 2.0, height: CGFloat.greatestFiniteMagnitude))
-        
-        var labelRects = labelLayout.linesRects()
-        if labelRects.count > 1 {
-            let sortedIndices = (0 ..< labelRects.count).sorted(by: { labelRects[$0].width > labelRects[$1].width })
-            for i in 0 ..< sortedIndices.count {
-                let index = sortedIndices[i]
-                for j in -1 ... 1 {
-                    if j != 0 && index + j >= 0 && index + j < sortedIndices.count {
-                        if abs(labelRects[index + j].width - labelRects[index].width) < 40.0 {
-                            labelRects[index + j].size.width = max(labelRects[index + j].width, labelRects[index].width)
-                            labelRects[index].size.width = labelRects[index + j].size.width
-                        }
-                    }
-                }
-            }
-        }
-        for i in 0 ..< labelRects.count {
-            labelRects[i] = labelRects[i].insetBy(dx: -6.0, dy: floor((labelRects[i].height - 20.0) / 2.0))
-            labelRects[i].size.height = 20.0
-            labelRects[i].origin.x = floor((labelLayout.size.width - labelRects[i].width) / 2.0)
-        }
-        
-        let backgroundLayout = self.filledBackgroundNode.asyncLayout()
-        let serviceColor = serviceMessageColorComponents(theme: theme, wallpaper: wallpaper)
-        let backgroundApply = backgroundLayout(serviceColor.fill, labelRects, 10.0, 10.0, 0.0)
-        backgroundApply()
-        
-        let backgroundSize = CGSize(width: labelLayout.size.width + 8.0 + 8.0, height: labelLayout.size.height + 4.0)
-        
-        let labelFrame = CGRect(origin: CGPoint(x: floor((width - labelLayout.size.width) / 2.0), y: topInset + floorToScreenPixels((backgroundSize.height - labelLayout.size.height) / 2.0) - 1.0), size: labelLayout.size)
-        self.labelNode.frame = labelFrame
-        self.filledBackgroundNode.frame = labelFrame.offsetBy(dx: 0.0, dy: -11.0)
-        
-        return topInset + backgroundSize.height + bottomInset
-    }
-}
 
 final class ChatInviteRequestsTitlePanelNode: ChatTitleAccessoryPanelNode {
     private final class Params {
@@ -139,7 +43,7 @@ final class ChatInviteRequestsTitlePanelNode: ChatTitleAccessoryPanelNode {
     
     private var theme: PresentationTheme?
     
-    private var peerId: PeerId?
+    private var peerId: EnginePeer.Id?
     private var peers: [EnginePeer] = []
     private var count: Int32 = 0
     
@@ -184,7 +88,7 @@ final class ChatInviteRequestsTitlePanelNode: ChatTitleAccessoryPanelNode {
     }
     
 
-    func update(peerId: PeerId, peers: [EnginePeer], count: Int32) {
+    func update(peerId: EnginePeer.Id, peers: [EnginePeer], count: Int32) {
         self.peerId = peerId
         self.peers = peers
         self.count = count
@@ -202,7 +106,18 @@ final class ChatInviteRequestsTitlePanelNode: ChatTitleAccessoryPanelNode {
         if interfaceState.theme !== self.theme {
             self.theme = interfaceState.theme
             
-            self.closeButton.setImage(PresentationResourcesChat.chatInputPanelEncircledCloseIconImage(interfaceState.theme), for: [])
+            self.closeButton.setImage(generateImage(CGSize(width: 12.0, height: 12.0), contextGenerator: { size, context in
+                context.clear(CGRect(origin: CGPoint(), size: size))
+                context.setStrokeColor(interfaceState.theme.chat.inputPanel.panelControlColor.cgColor)
+                context.setLineWidth(1.33)
+                context.setLineCap(.round)
+                context.move(to: CGPoint(x: 1.0, y: 1.0))
+                context.addLine(to: CGPoint(x: size.width - 1.0, y: size.height - 1.0))
+                context.strokePath()
+                context.move(to: CGPoint(x: size.width - 1.0, y: 1.0))
+                context.addLine(to: CGPoint(x: 1.0, y: size.height - 1.0))
+                context.strokePath()
+            }), for: [])
             self.separatorNode.backgroundColor = interfaceState.theme.rootController.navigationBar.separatorColor
         }
 
@@ -211,14 +126,14 @@ final class ChatInviteRequestsTitlePanelNode: ChatTitleAccessoryPanelNode {
         let contentRightInset: CGFloat = 14.0 + rightInset
         
         let closeButtonSize = self.closeButton.measure(CGSize(width: 100.0, height: 100.0))
-        transition.updateFrame(node: self.closeButton, frame: CGRect(origin: CGPoint(x: width - contentRightInset - closeButtonSize.width, y: floorToScreenPixels((panelHeight - closeButtonSize.height) / 2.0)), size: closeButtonSize))
+        transition.updateFrame(node: self.closeButton, frame: CGRect(origin: CGPoint(x: width - contentRightInset - closeButtonSize.width - 3.0, y: floorToScreenPixels((panelHeight - closeButtonSize.height) / 2.0)), size: closeButtonSize))
         
-        self.buttonTitle.attributedText = NSAttributedString(string: interfaceState.strings.Conversation_RequestsToJoin(self.count), font: Font.regular(16.0), textColor: interfaceState.theme.rootController.navigationBar.accentTextColor)
+        self.buttonTitle.attributedText = NSAttributedString(string: interfaceState.strings.Conversation_RequestsToJoin(self.count), font: Font.medium(15.0), textColor: interfaceState.theme.chat.inputPanel.panelControlColor)
         
         transition.updateFrame(node: self.button, frame: CGRect(origin: CGPoint(x: 0.0, y: 0.0), size: CGSize(width: width, height: panelHeight)))
         
         let titleSize = self.buttonTitle.updateLayout(CGSize(width: width - leftInset - 90.0 - contentRightInset, height: 100.0))
-        var buttonTitleFrame = CGRect(origin: CGPoint(x: leftInset + floor((width - leftInset - titleSize.width) * 0.5), y: floor((panelHeight - titleSize.height) * 0.5)), size: titleSize)
+        var buttonTitleFrame = CGRect(origin: CGPoint(x: leftInset + floor((width - leftInset - titleSize.width) * 0.5), y: floor((panelHeight - titleSize.height) * 0.5) + 1.0), size: titleSize)
         buttonTitleFrame.origin.x = max(buttonTitleFrame.minX, leftInset + 90.0)
         transition.updatePosition(node: self.buttonTitle, position: buttonTitleFrame.origin)
         self.buttonTitle.bounds = CGRect(origin: CGPoint(), size: buttonTitleFrame.size)
@@ -228,7 +143,7 @@ final class ChatInviteRequestsTitlePanelNode: ChatTitleAccessoryPanelNode {
         
         if let avatarsContent = self.avatarsContent {
             let avatarsSize = self.avatarsNode.update(context: self.context, content: avatarsContent, itemSize: CGSize(width: 32.0, height: 32.0), animated: true, synchronousLoad: true)
-            transition.updateFrame(node: self.avatarsNode, frame: CGRect(origin: CGPoint(x: leftInset + 8.0, y: floor((panelHeight - avatarsSize.height) / 2.0)), size: avatarsSize))
+            transition.updateFrame(node: self.avatarsNode, frame: CGRect(origin: CGPoint(x: leftInset + 4.0, y: floor((panelHeight - avatarsSize.height) / 2.0)), size: avatarsSize))
         }
         
         self.activateAreaNode.frame = CGRect(origin: .zero, size: CGSize(width: width, height: panelHeight))

@@ -1,6 +1,5 @@
 import Foundation
 import SwiftSignalKit
-import Postbox
 import TelegramCore
 import TelegramPresentationData
 import TelegramUIPreferences
@@ -9,7 +8,7 @@ import MultiAnimationRenderer
 import Display
 
 public enum StorySharingSubject {
-    case messages([Message])
+    case messages([EngineRawMessage])
     case gift(StarGift.UniqueGift)
 }
 
@@ -110,12 +109,12 @@ public enum ShareControllerSubject {
     case url(String)
     case text(String)
     case quote(text: String, url: String)
-    case messages([Message])
+    case messages([EngineRawMessage])
     case image([ImageRepresentationWithReference])
     // Nicegram, text added
     case media(AnyMediaReference, MediaParameters?, text: String = "")
     case mapMedia(TelegramMediaMap)
-    case fromExternal(Int, ([PeerId], [PeerId: Int64], [PeerId: StarsAmount], String, ShareControllerAccountContext, Bool) -> Signal<ShareControllerExternalStatus, ShareControllerError>)
+    case fromExternal(Int, ([EnginePeer.Id], [EnginePeer.Id: Int64], [EnginePeer.Id: StarsAmount], String, ShareControllerAccountContext, Bool) -> Signal<ShareControllerExternalStatus, ShareControllerError>)
 }
 
 public struct ShareControllerAction {
@@ -152,12 +151,12 @@ public final class ShareControllerParams {
     public let subject: ShareControllerSubject
     public let presetText: String?
     public let preferredAction: ShareControllerPreferredAction
-    public let showInChat: ((Message) -> Void)?
+    public let showInChat: ((EngineRawMessage) -> Void)?
     public let fromForeignApp: Bool
     public let segmentedValues: [ShareControllerSegmentedValue]?
     public let externalShare: Bool
     public let immediateExternalShare: Bool
-    public let immediatePeerId: PeerId?
+    public let immediatePeerId: EnginePeer.Id?
     public let updatedPresentationData: (initial: PresentationData, signal: Signal<PresentationData, NoError>)?
     public let forceTheme: PresentationTheme?
     public let forcedActionTitle: String?
@@ -166,8 +165,8 @@ public final class ShareControllerParams {
 
     public let actionCompleted: (() -> Void)?
     public let dismissed: ((Bool) -> Void)?
-    public let completed: (([PeerId]) -> Void)?
-    public let enqueued: (([PeerId], [Int64]) -> Void)?
+    public let completed: (([EnginePeer.Id]) -> Void)?
+    public let enqueued: (([EnginePeer.Id], [Int64]) -> Void)?
     public let shareStory: (() -> Void)?
     public let debugAction: (() -> Void)?
     public let onMediaTimestampLinkCopied: ((Int32?) -> Void)?
@@ -178,12 +177,12 @@ public final class ShareControllerParams {
         subject: ShareControllerSubject,
         presetText: String? = nil,
         preferredAction: ShareControllerPreferredAction = .default,
-        showInChat: ((Message) -> Void)? = nil,
+        showInChat: ((EngineRawMessage) -> Void)? = nil,
         fromForeignApp: Bool = false,
         segmentedValues: [ShareControllerSegmentedValue]? = nil,
         externalShare: Bool = true,
         immediateExternalShare: Bool = false,
-        immediatePeerId: PeerId? = nil,
+        immediatePeerId: EnginePeer.Id? = nil,
         updatedPresentationData: (initial: PresentationData, signal: Signal<PresentationData, NoError>)? = nil,
         forceTheme: PresentationTheme? = nil,
         forcedActionTitle: String? = nil,
@@ -191,8 +190,8 @@ public final class ShareControllerParams {
         collectibleItemInfo: TelegramCollectibleItemInfo? = nil,
         actionCompleted: (() -> Void)? = nil,
         dismissed: ((Bool) -> Void)? = nil,
-        completed: (([PeerId]) -> Void)? = nil,
-        enqueued: (([PeerId], [Int64]) -> Void)? = nil,
+        completed: (([EnginePeer.Id]) -> Void)? = nil,
+        enqueued: (([EnginePeer.Id], [Int64]) -> Void)? = nil,
         shareStory: (() -> Void)? = nil,
         debugAction: (() -> Void)? = nil,
         onMediaTimestampLinkCopied: ((Int32?) -> Void)? = nil,

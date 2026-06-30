@@ -26,13 +26,19 @@ public final class BatchVideoRenderingContext {
         }
         
         deinit {
-            self.context?.targetRemoved(id: self.id)
+            // The handle can be released on any queue; hop to main so the context's
+            // non-thread-safe state (targetContexts, disposables, displayLink) is only
+            // mutated from one queue.
+            let context = self.context
+            let id = self.id
+            Queue.mainQueue().async {
+                context?.targetRemoved(id: id)
+            }
         }
     }
     
     public final class TargetState {
         private var lastRenderedFrame: (timestamp: Double, pts: Double, duration: Double)?
-        private var ptsOffset: Double = 0.0
         private(set) var sampleBuffers: [CMSampleBuffer] = []
         
         init() {
@@ -124,6 +130,10 @@ public final class BatchVideoRenderingContext {
                 case .endOfStream:
                     self.reader = nil
                 case .waitingForMoreData:
+                    // Invariant: the reader is only constructed once the consumer's
+                    // `data.isComplete == true` (see `BatchVideoRenderingContext.update`),
+                    // so a `.file(...)` source should never report waitingForMoreData.
+                    // Treat it as fatal rather than spin if the invariant is ever violated.
                     self.isFailed = true
                     break outer
                 }
@@ -187,7 +197,10 @@ public final class BatchVideoRenderingContext {
     }
     
     private func targetRemoved(id: Int) {
-        if self.targetContexts.removeValue(forKey: id) != nil {
+        if let removed = self.targetContexts.removeValue(forKey: id) {
+            // Clear the leftover TargetState so a recycled target doesn't start its
+            // next session by replaying our queued buffers and stale lastRenderedFrame.
+            removed.target?.batchVideoRenderingTargetState = nil
             self.update()
         }
     }
@@ -229,6 +242,10 @@ public final class BatchVideoRenderingContext {
             self.targetContexts.removeValue(forKey: id)
         }
         
+        self.updateDisplayLink()
+    }
+
+    private func updateDisplayLink() {
         if !self.targetContexts.isEmpty {
             if self.displayLink == nil {
                 self.displayLink = SharedDisplayLinkDriver.shared.add { [weak self] _ in
@@ -242,7 +259,7 @@ public final class BatchVideoRenderingContext {
             self.displayLink = nil
         }
     }
-    
+
     private func updateRendering() {
         if self.isRendering {
             return
@@ -319,18 +336,7 @@ public final class BatchVideoRenderingContext {
             self.updateFrames()
         }
         
-        if !self.targetContexts.isEmpty {
-            if self.displayLink == nil {
-                self.displayLink = SharedDisplayLinkDriver.shared.add { [weak self] _ in
-                    guard let self else {
-                        return
-                    }
-                    self.updateRendering()
-                }
-            }
-        } else {
-            self.displayLink = nil
-        }
+        self.updateDisplayLink()
     }
     
     private func updateFrames() {

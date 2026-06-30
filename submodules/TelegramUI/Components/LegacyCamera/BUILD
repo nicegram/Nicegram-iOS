@@ -16,7 +16,6 @@ swift_library(
         "//submodules/LegacyComponents",
         "//submodules/Display",
         "//submodules/TelegramCore",
-        "//submodules/Postbox",
         "//submodules/AccountContext",
         "//submodules/ShareController",
         "//submodules/LegacyUI",

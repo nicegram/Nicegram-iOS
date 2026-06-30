@@ -5,7 +5,6 @@ import SwiftSignalKit
 import ComponentFlow
 import MultilineTextComponent
 import MultilineTextWithEntitiesComponent
-import Postbox
 import TelegramCore
 import TelegramPresentationData
 import ContextUI
@@ -111,7 +110,7 @@ final class VideoAdComponent: Component {
 
             let titleString = component.message.author?.compactDisplayTitle ?? ""
                
-            var media: Media?
+            var media: EngineRawMedia?
             if let photo = component.message.media.first as? TelegramMediaImage {
                 media = photo
             } else if let file = component.message.media.first as? TelegramMediaFile {

@@ -26,7 +26,6 @@ swift_library(
         "//submodules/DirectionalPanGesture:DirectionalPanGesture",
         "//submodules/AttachmentTextInputPanelNode:AttachmentTextInputPanelNode",
         "//submodules/ChatSendMessageActionUI:ChatSendMessageActionUI",
-        "//submodules/ChatTextLinkEditUI:ChatTextLinkEditUI",
         "//submodules/ContextUI:ContextUI",
         "//submodules/ManagedAnimationNode:ManagedAnimationNode",
         "//submodules/PhotoResources:PhotoResources",

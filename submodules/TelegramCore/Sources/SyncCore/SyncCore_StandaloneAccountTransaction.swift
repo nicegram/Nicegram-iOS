@@ -129,8 +129,15 @@ public let telegramPostboxSeedConfiguration: SeedConfiguration = {
                     break
                 }
             }
+            var previousRichText: RichTextMessageAttribute?
+            for attribute in previous {
+                if let attribute = attribute as? RichTextMessageAttribute {
+                    previousRichText = attribute
+                    break
+                }
+            }
             
-            if let audioTranscription = audioTranscription {
+            if let audioTranscription {
                 var found = false
                 for i in 0 ..< updated.count {
                     if let attribute = updated[i] as? AudioTranscriptionMessageAttribute {
@@ -153,6 +160,18 @@ public let telegramPostboxSeedConfiguration: SeedConfiguration = {
                 }
                 if !found {
                     updated.append(previousDerivedData)
+                }
+            }
+            if let previousRichText, previousRichText.fullInstantPage != nil {
+                for i in 0 ..< updated.count {
+                    if let attribute = updated[i] as? RichTextMessageAttribute {
+                        if attribute.fullInstantPage == nil {
+                            if attribute.instantPage == previousRichText.instantPage {
+                                updated[i] = previousRichText
+                            }
+                        }
+                        break
+                    }
                 }
             }
         },

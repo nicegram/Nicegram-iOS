@@ -20,7 +20,6 @@ import LegacyUI
 import LocationUI
 import ItemListPeerItem
 import ItemListAvatarAndNameInfoItem
-import WebSearchUI
 import Geocoding
 import PeerInfoUI
 import MapResourceToAvatarSizes
@@ -923,7 +922,7 @@ public func createGroupControllerImpl(context: AccountContext, peerIds: [PeerId]
         keyboardInputData.set(AvatarEditorScreen.inputData(context: context, isGroup: true))
         
         var dismissPickerImpl: (() -> Void)?
-        let (mainController, pickerHolder) = context.sharedContext.makeAvatarMediaPickerScreen(context: context, getSourceRect: { return nil }, canDelete: pendingAvatar != nil, performDelete: {
+        let (mainController, pickerHolder) = context.sharedContext.makeAvatarMediaPickerScreen(context: context, peerType: .group, getSourceRect: { return nil }, canDelete: pendingAvatar != nil, performDelete: {
             clearPendingAvatar()
         }, completion: { result, transitionView, transitionRect, transitionImage, fromCamera, _, cancelled in
             avatarPickerHolder = nil
@@ -1043,32 +1042,32 @@ public func createGroupControllerImpl(context: AccountContext, peerIds: [PeerId]
     }, changeLocation: {
         endEditingImpl?()
                  
-         let controller = LocationPickerController(context: context, mode: .pick, completion: { location, _, _, address, _ in
-             let addressSignal: Signal<String, NoError>
-             if let address = address {
-                 addressSignal = .single(address)
-             } else {
-                 addressSignal = reverseGeocodeLocation(latitude: location.latitude, longitude: location.longitude)
-                 |> map { placemark in
-                     if let placemark = placemark {
-                         return placemark.fullAddress
-                     } else {
-                         return "\(location.latitude), \(location.longitude)"
-                     }
-                 }
-             }
-             
-             let _ = (addressSignal
-             |> deliverOnMainQueue).start(next: { address in
-                 addressPromise.set(.single(address))
-                 updateState { current in
-                     var current = current
-                     current.location = PeerGeoLocation(latitude: location.latitude, longitude: location.longitude, address: address)
-                     return current
-                 }
-             })
-         })
-         pushImpl?(controller)
+        let controller = LocationPickerController(context: context, style: .glass, mode: .pick, completion: { location, _, _, address, _ in
+            let addressSignal: Signal<String, NoError>
+            if let address = address {
+                addressSignal = .single(address)
+            } else {
+                addressSignal = reverseGeocodeLocation(latitude: location.latitude, longitude: location.longitude)
+                |> map { placemark in
+                    if let placemark = placemark {
+                        return placemark.fullAddress
+                    } else {
+                        return "\(location.latitude), \(location.longitude)"
+                    }
+                }
+            }
+            
+            let _ = (addressSignal
+            |> deliverOnMainQueue).start(next: { address in
+                addressPromise.set(.single(address))
+                updateState { current in
+                    var current = current
+                    current.location = PeerGeoLocation(latitude: location.latitude, longitude: location.longitude, address: address)
+                    return current
+                }
+            })
+        })
+        pushImpl?(controller)
     }, updateWithVenue: { venue in
         guard let venueData = venue.venue else {
             return

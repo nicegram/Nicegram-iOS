@@ -1,7 +1,6 @@
 import Foundation
 import SwiftSignalKit
 import TelegramCore
-import Postbox
 import AccountContext
 import ReactionSelectionNode
 
@@ -10,7 +9,7 @@ public enum AllowedReactions {
     case all
 }
 
-public func peerMessageAllowedReactions(context: AccountContext, message: Message, ignoreDefault: Bool = false) -> Signal<(allowedReactions: AllowedReactions?, areStarsEnabled: Bool), NoError> {
+public func peerMessageAllowedReactions(context: AccountContext, message: EngineRawMessage, ignoreDefault: Bool = false) -> Signal<(allowedReactions: AllowedReactions?, areStarsEnabled: Bool), NoError> {
     if message.id.peerId == context.account.peerId {
         return .single((.all, false))
     }
@@ -106,18 +105,11 @@ public func tagMessageReactions(context: AccountContext, subPeerId: EnginePeer.I
     
     return combineLatest(
         context.engine.stickers.availableReactions(),
-        context.account.postbox.itemCollectionsView(orderedItemListCollectionIds: [Namespaces.OrderedItemList.CloudDefaultTagReactions], namespaces: [ItemCollectionId.Namespace.max - 1], aroundIndex: nil, count: 10000000),
+        context.engine.data.subscribe(TelegramEngine.EngineData.Item.OrderedLists.ListItems(collectionId: Namespaces.OrderedItemList.CloudDefaultTagReactions)),
         topTags
     )
     |> take(1)
-    |> map { availableReactions, view, topTags -> [ReactionItem] in
-        var defaultTagReactions: OrderedItemListView?
-        for orderedView in view.orderedItemListsViews {
-            if orderedView.collectionId == Namespaces.OrderedItemList.CloudDefaultTagReactions {
-                defaultTagReactions = orderedView
-            }
-        }
-        
+    |> map { availableReactions, defaultTagReactionItems, topTags -> [ReactionItem] in
         var result: [ReactionItem] = []
         var existingIds = Set<MessageReaction.Reaction>()
         
@@ -176,8 +168,8 @@ public func tagMessageReactions(context: AccountContext, subPeerId: EnginePeer.I
             }
         }
         
-        if let defaultTagReactions {
-            for item in defaultTagReactions.items {
+        do {
+            for item in defaultTagReactionItems {
                 guard let topReaction = item.contents.get(RecentReactionItem.self) else {
                     continue
                 }
@@ -260,7 +252,7 @@ public func tagMessageReactions(context: AccountContext, subPeerId: EnginePeer.I
     }
 }
 
-public func topMessageReactions(context: AccountContext, message: Message, subPeerId: EnginePeer.Id?, ignoreDefault: Bool = false) -> Signal<[ReactionItem], NoError> {
+public func topMessageReactions(context: AccountContext, message: EngineRawMessage, subPeerId: EnginePeer.Id?, ignoreDefault: Bool = false) -> Signal<[ReactionItem], NoError> {
     if message.id.peerId == context.account.peerId {
         var loadTags = false
         if let effectiveReactionsAttribute = message.effectiveReactionsAttribute(isTags: message.areReactionsTags(accountPeerId: context.account.peerId)) {
@@ -279,13 +271,9 @@ public func topMessageReactions(context: AccountContext, message: Message, subPe
         }
     }
     
-    let viewKey: PostboxViewKey = .orderedItemList(id: Namespaces.OrderedItemList.CloudTopReactions)
-    let topReactions = context.account.postbox.combinedView(keys: [viewKey])
-    |> map { views -> [RecentReactionItem] in
-        guard let view = views.views[viewKey] as? OrderedItemListView else {
-            return []
-        }
-        return view.items.compactMap { item -> RecentReactionItem? in
+    let topReactions = context.engine.data.subscribe(TelegramEngine.EngineData.Item.OrderedLists.ListItems(collectionId: Namespaces.OrderedItemList.CloudTopReactions))
+    |> map { items -> [RecentReactionItem] in
+        return items.compactMap { item -> RecentReactionItem? in
             return item.contents.get(RecentReactionItem.self)
         }
     }

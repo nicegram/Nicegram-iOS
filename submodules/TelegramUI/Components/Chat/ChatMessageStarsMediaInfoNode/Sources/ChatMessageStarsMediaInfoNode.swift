@@ -1,7 +1,6 @@
 import Foundation
 import UIKit
 import AsyncDisplayKit
-import Postbox
 import Display
 import TelegramCore
 import SwiftSignalKit
@@ -178,7 +177,7 @@ public class ChatMessageStarsMediaInfoNode: ASDisplayNode {
     public class Arguments {
         public let presentationData: ChatPresentationData
         public let context: AccountContext
-        public let message: Message
+        public let message: EngineMessage
         public let media: TelegramMediaPaidContent
         public let constrainedSize: CGSize
         public let animationCache: AnimationCache?
@@ -187,7 +186,7 @@ public class ChatMessageStarsMediaInfoNode: ASDisplayNode {
         public init(
             presentationData: ChatPresentationData,
             context: AccountContext,
-            message: Message,
+            message: EngineMessage,
             media: TelegramMediaPaidContent,
             constrainedSize: CGSize,
             animationCache: AnimationCache?,

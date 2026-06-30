@@ -1,6 +1,5 @@
 import Foundation
 import UIKit
-import Postbox
 import TelegramCore
 import SwiftSignalKit
 
@@ -69,7 +68,7 @@ public struct WallpaperPresentationOptions: OptionSet {
     public static let blur = WallpaperPresentationOptions(rawValue: 1 << 1)
 }
 
-public struct PresentationLocalTheme: PostboxCoding, Equatable {
+public struct PresentationLocalTheme: EnginePostboxCoding, Equatable {
     public let title: String
     public let resource: LocalFileMediaResource
     public let resolvedWallpaper: TelegramWallpaper?
@@ -80,13 +79,13 @@ public struct PresentationLocalTheme: PostboxCoding, Equatable {
         self.resolvedWallpaper = resolvedWallpaper
     }
     
-    public init(decoder: PostboxDecoder) {
+    public init(decoder: EnginePostboxDecoder) {
         self.title = decoder.decodeStringForKey("title", orElse: "")
         self.resource = decoder.decodeObjectForKey("resource", decoder: { LocalFileMediaResource(decoder: $0) }) as! LocalFileMediaResource
         self.resolvedWallpaper = decoder.decode(TelegramWallpaperNativeCodable.self, forKey: "wallpaper")?.value
     }
     
-    public func encode(_ encoder: PostboxEncoder) {
+    public func encode(_ encoder: EnginePostboxEncoder) {
         encoder.encodeString(self.title, forKey: "title")
         encoder.encodeObject(self.resource, forKey: "resource")
         if let resolvedWallpaper = self.resolvedWallpaper {
@@ -148,12 +147,12 @@ public struct PresentationCloudTheme: Codable, Equatable {
     }
 }
 
-public enum PresentationThemeReference: PostboxCoding, Equatable {
+public enum PresentationThemeReference: EnginePostboxCoding, Equatable {
     case builtin(PresentationBuiltinThemeReference)
     case local(PresentationLocalTheme)
     case cloud(PresentationCloudTheme)
     
-    public init(decoder: PostboxDecoder) {
+    public init(decoder: EnginePostboxDecoder) {
         switch decoder.decodeInt32ForKey("v", orElse: 0) {
             case 0:
                 self = .builtin(PresentationBuiltinThemeReference(rawValue: decoder.decodeInt32ForKey("t", orElse: 0))!)
@@ -177,7 +176,7 @@ public enum PresentationThemeReference: PostboxCoding, Equatable {
         }
     }
     
-    public func encode(_ encoder: PostboxEncoder) {
+    public func encode(_ encoder: EnginePostboxEncoder) {
         switch self {
             case let .builtin(reference):
                 encoder.encodeInt32(0, forKey: "v")
@@ -380,8 +379,8 @@ public struct AutomaticThemeSwitchSetting: Codable, Equatable {
 
         self.force = try container.decodeIfPresent(Bool.self, forKey: "force") ?? false
         self.trigger = try container.decode(AutomaticThemeSwitchTrigger.self, forKey: "trigger")
-        if let themeData = try container.decodeIfPresent(AdaptedPostboxDecoder.RawObjectData.self, forKey: "theme_v2") {
-            self.theme = PresentationThemeReference(decoder: PostboxDecoder(buffer: MemoryBuffer(data: themeData.data)))
+        if let themeData = try container.decodeIfPresent(EngineAdaptedPostboxDecoder.RawObjectData.self, forKey: "theme_v2") {
+            self.theme = PresentationThemeReference(decoder: EnginePostboxDecoder(buffer: EngineMemoryBuffer(data: themeData.data)))
         } else {
             self.theme = .builtin(.night)
         }
@@ -393,7 +392,7 @@ public struct AutomaticThemeSwitchSetting: Codable, Equatable {
         try container.encode(self.force, forKey: "force")
         try container.encode(self.trigger, forKey: "trigger")
 
-        let themeData = PostboxEncoder().encodeObjectToRawData(self.theme)
+        let themeData = EnginePostboxEncoder().encodeObjectToRawData(self.theme)
         try container.encode(themeData, forKey: "theme_v2")
     }
 }
@@ -446,7 +445,7 @@ public enum PresentationThemeBaseColor: Int32, CaseIterable {
     }
 }
 
-public struct PresentationThemeAccentColor: PostboxCoding, Equatable {
+public struct PresentationThemeAccentColor: EnginePostboxCoding, Equatable {
     public static func == (lhs: PresentationThemeAccentColor, rhs: PresentationThemeAccentColor) -> Bool {
         return lhs.index == rhs.index && lhs.baseColor == rhs.baseColor && lhs.accentColor == rhs.accentColor && lhs.bubbleColors == rhs.bubbleColors
     }
@@ -487,7 +486,7 @@ public struct PresentationThemeAccentColor: PostboxCoding, Equatable {
         self.themeIndex = themeIndex
     }
     
-    public init(decoder: PostboxDecoder) {
+    public init(decoder: EnginePostboxDecoder) {
         self.index = decoder.decodeInt32ForKey("i", orElse: -1)
         self.baseColor = PresentationThemeBaseColor(rawValue: decoder.decodeInt32ForKey("b", orElse: 0)) ?? .blue
         self.accentColor = decoder.decodeOptionalInt32ForKey("c").flatMap { UInt32(bitPattern: $0) }
@@ -511,7 +510,7 @@ public struct PresentationThemeAccentColor: PostboxCoding, Equatable {
         self.themeIndex = decoder.decodeOptionalInt64ForKey("t")
     }
     
-    public func encode(_ encoder: PostboxEncoder) {
+    public func encode(_ encoder: EnginePostboxEncoder) {
         encoder.encodeInt32(self.index, forKey: "i")
         encoder.encodeInt32(self.baseColor.rawValue, forKey: "b")
         if let value = self.accentColor {
@@ -628,12 +627,12 @@ public struct PresentationThemeSettings: Codable {
     public var largeEmoji: Bool
     public var reduceMotion: Bool
     
-    private func wallpaperResources(_ wallpaper: TelegramWallpaper) -> [MediaResourceId] {
+    private func wallpaperResources(_ wallpaper: TelegramWallpaper) -> [EngineRawMediaResourceId] {
         switch wallpaper {
             case let .image(representations, _):
                 return representations.map { $0.resource.id }
             case let .file(file):
-                var resources: [MediaResourceId] = []
+                var resources: [EngineRawMediaResourceId] = []
                 resources.append(file.file.resource.id)
                 resources.append(contentsOf: file.file.previewRepresentations.map { $0.resource.id })
                 return resources
@@ -642,8 +641,8 @@ public struct PresentationThemeSettings: Codable {
         }
     }
     
-    public var relatedResources: [MediaResourceId] {
-        var resources: [MediaResourceId] = []
+    public var relatedResources: [EngineRawMediaResourceId] {
+        var resources: [EngineRawMediaResourceId] = []
         for (_, chatWallpaper) in self.themeSpecificChatWallpapers {
             resources.append(contentsOf: wallpaperResources(chatWallpaper))
         }
@@ -685,8 +684,8 @@ public struct PresentationThemeSettings: Codable {
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: StringCodingKey.self)
 
-        if let themeData = try container.decodeIfPresent(AdaptedPostboxDecoder.RawObjectData.self, forKey: "t") {
-            self.theme = PresentationThemeReference(decoder: PostboxDecoder(buffer: MemoryBuffer(data: themeData.data)))
+        if let themeData = try container.decodeIfPresent(EngineAdaptedPostboxDecoder.RawObjectData.self, forKey: "t") {
+            self.theme = PresentationThemeReference(decoder: EnginePostboxDecoder(buffer: EngineMemoryBuffer(data: themeData.data)))
         } else {
             self.theme = .builtin(.dayClassic)
         }
@@ -707,10 +706,10 @@ public struct PresentationThemeSettings: Codable {
         }
         self.themeSpecificChatWallpapers = mappedThemeSpecificChatWallpapers
 
-        let themeSpecificAccentColorsDict = try container.decode([DictionaryKey: AdaptedPostboxDecoder.RawObjectData].self, forKey: "themeSpecificAccentColors")
+        let themeSpecificAccentColorsDict = try container.decode([DictionaryKey: EngineAdaptedPostboxDecoder.RawObjectData].self, forKey: "themeSpecificAccentColors")
         var mappedThemeSpecificAccentColors: [Int64: PresentationThemeAccentColor] = [:]
         for (key, value) in themeSpecificAccentColorsDict {
-            let innerDecoder = PostboxDecoder(buffer: MemoryBuffer(data: value.data))
+            let innerDecoder = EnginePostboxDecoder(buffer: EngineMemoryBuffer(data: value.data))
             mappedThemeSpecificAccentColors[key.key] = PresentationThemeAccentColor(decoder: innerDecoder)
         }
         self.themeSpecificAccentColors = mappedThemeSpecificAccentColors
@@ -731,7 +730,7 @@ public struct PresentationThemeSettings: Codable {
     public func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: StringCodingKey.self)
 
-        try container.encode(PostboxEncoder().encodeObjectToRawData(self.theme), forKey: "t")
+        try container.encode(EnginePostboxEncoder().encodeObjectToRawData(self.theme), forKey: "t")
 
         var mappedThemePreferredBaseTheme: [Int64: Int64] = [:]
         for (key, value) in self.themePreferredBaseTheme {
@@ -739,9 +738,9 @@ public struct PresentationThemeSettings: Codable {
         }
         try container.encode(mappedThemePreferredBaseTheme, forKey: "themePreferredBaseTheme")
         
-        var mappedThemeSpecificAccentColors: [DictionaryKey: AdaptedPostboxEncoder.RawObjectData] = [:]
+        var mappedThemeSpecificAccentColors: [DictionaryKey: EngineAdaptedPostboxEncoder.RawObjectData] = [:]
         for (key, value) in self.themeSpecificAccentColors {
-            mappedThemeSpecificAccentColors[DictionaryKey(key)] = PostboxEncoder().encodeObjectToRawData(value)
+            mappedThemeSpecificAccentColors[DictionaryKey(key)] = EnginePostboxEncoder().encodeObjectToRawData(value)
         }
         try container.encode(mappedThemeSpecificAccentColors, forKey: "themeSpecificAccentColors")
 
@@ -814,7 +813,7 @@ public func updatePresentationThemeSettingsInteractively(accountManager: Account
             } else {
                 currentSettings = PresentationThemeSettings.defaultSettings
             }
-            return PreferencesEntry(f(currentSettings))
+            return EnginePreferencesEntry(f(currentSettings))
         })
     }
 }

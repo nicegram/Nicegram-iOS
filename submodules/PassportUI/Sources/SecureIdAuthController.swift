@@ -3,7 +3,6 @@ import UIKit
 import Display
 import AsyncDisplayKit
 import SwiftSignalKit
-import Postbox
 import TelegramCore
 import TelegramPresentationData
 import TextFormat
@@ -19,7 +18,7 @@ public enum SecureIdRequestResult: String {
     case error = "error"
 }
 
-public func secureIdCallbackUrl(with baseUrl: String, peerId: PeerId, result: SecureIdRequestResult, parameters: [String : String]) -> String {
+public func secureIdCallbackUrl(with baseUrl: String, peerId: EnginePeer.Id, result: SecureIdRequestResult, parameters: [String : String]) -> String {
     var query = (parameters.compactMap({ (key, value) -> String in
         return "\(key)=\(value)"
     }) as Array).joined(separator: "&")
@@ -64,7 +63,7 @@ final class SecureIdAuthControllerInteraction {
 }
 
 public enum SecureIdAuthControllerMode {
-    case form(peerId: PeerId, scope: String, publicKey: String, callbackUrl: String?, opaquePayload: Data, opaqueNonce: Data)
+    case form(peerId: EnginePeer.Id, scope: String, publicKey: String, callbackUrl: String?, opaquePayload: Data, opaqueNonce: Data)
     case list
 }
 
@@ -174,7 +173,7 @@ public final class SecureIdAuthController: ViewController, StandalonePresentable
             }
         }))
         
-        let handleError: (Any, String?, PeerId?) -> Void = { [weak self] error, callbackUrl, peerId in
+        let handleError: (Any, String?, EnginePeer.Id?) -> Void = { [weak self] error, callbackUrl, peerId in
             if let strongSelf = self {
                 var passError: String?
                 var appUpdateRequired = false

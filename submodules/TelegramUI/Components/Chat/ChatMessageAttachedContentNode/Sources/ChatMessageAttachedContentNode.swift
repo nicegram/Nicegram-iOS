@@ -1,6 +1,5 @@
 import Foundation
 import UIKit
-import Postbox
 import Display
 import AsyncDisplayKit
 import SwiftSignalKit
@@ -61,7 +60,7 @@ public struct ChatMessageAttachedContentNodeMediaFlags: OptionSet {
 
 public final class ChatMessageAttachedContentNode: ASDisplayNode {
     private enum InlineMedia: Equatable {
-        case media(Media)
+        case media(EngineRawMedia)
         case peerAvatar(EnginePeer)
         
         static func ==(lhs: InlineMedia, rhs: InlineMedia) -> Bool {
@@ -108,8 +107,8 @@ public final class ChatMessageAttachedContentNode: ASDisplayNode {
     private var linkHighlightingNode: LinkHighlightingNode?
     
     private var context: AccountContext?
-    private var message: Message?
-    private var media: Media?
+    private var message: EngineRawMessage?
+    private var media: EngineRawMedia?
     private var theme: ChatPresentationThemeData?
     private var mainColor: UIColor?
     
@@ -168,7 +167,7 @@ public final class ChatMessageAttachedContentNode: ASDisplayNode {
         self.activateBadgeAction?()
     }
     
-    public typealias AsyncLayout = (_ presentationData: ChatPresentationData, _ automaticDownloadSettings: MediaAutoDownloadSettings, _ associatedData: ChatMessageItemAssociatedData, _ attributes: ChatMessageEntryAttributes, _ context: AccountContext, _ controllerInteraction: ChatControllerInteraction, _ message: Message, _ messageRead: Bool, _ chatLocation: ChatLocation, _ title: String?, _ titleBadge: String?, _ subtitle: NSAttributedString?, _ text: String?, _ entities: [MessageTextEntity]?, _ media: ([Media], ChatMessageAttachedContentNodeMediaFlags)?, _ mediaBadge: String?, _ actionIcon: ChatMessageAttachedContentActionIcon?, _ actionTitle: String?, _ displayLine: Bool, _ layoutConstants: ChatMessageItemLayoutConstants, _ preparePosition: ChatMessageBubblePreparePosition, _ constrainedSize: CGSize, _ animationCache: AnimationCache, _ animationRenderer: MultiAnimationRenderer) -> (CGFloat, (CGSize, ChatMessageBubbleContentPosition) -> (CGFloat, (CGFloat) -> (CGSize, (ListViewItemUpdateAnimation, Bool, ListViewItemApply?) -> Void)))
+    public typealias AsyncLayout = (_ presentationData: ChatPresentationData, _ automaticDownloadSettings: MediaAutoDownloadSettings, _ associatedData: ChatMessageItemAssociatedData, _ attributes: ChatMessageEntryAttributes, _ context: AccountContext, _ controllerInteraction: ChatControllerInteraction, _ message: EngineRawMessage, _ messageRead: Bool, _ chatLocation: ChatLocation, _ title: String?, _ titleBadge: String?, _ subtitle: NSAttributedString?, _ text: String?, _ entities: [MessageTextEntity]?, _ media: ([EngineRawMedia], ChatMessageAttachedContentNodeMediaFlags)?, _ mediaBadge: String?, _ actionIcon: ChatMessageAttachedContentActionIcon?, _ actionTitle: String?, _ displayLine: Bool, _ layoutConstants: ChatMessageItemLayoutConstants, _ preparePosition: ChatMessageBubblePreparePosition, _ constrainedSize: CGSize, _ animationCache: AnimationCache, _ animationRenderer: MultiAnimationRenderer) -> (CGFloat, (CGSize, ChatMessageBubbleContentPosition) -> (CGFloat, (CGFloat) -> (CGSize, (ListViewItemUpdateAnimation, Bool, ListViewItemApply?) -> Void)))
     
     public func makeProgress() -> Promise<Bool> {
         let progress = Promise<Bool>()
@@ -236,7 +235,7 @@ public final class ChatMessageAttachedContentNode: ASDisplayNode {
                 if let peer = forwardInfo.author {
                     author = peer
                 } else if let authorSignature = forwardInfo.authorSignature {
-                    author = TelegramUser(id: PeerId(namespace: Namespaces.Peer.Empty, id: PeerId.Id._internalFromInt64Value(Int64(authorSignature.persistentHashValue % 32))), accessHash: nil, firstName: authorSignature, lastName: nil, username: nil, phone: nil, photo: [], botInfo: nil, restrictionInfo: nil, flags: [], emojiStatus: nil, usernames: [], storiesHidden: nil, nameColor: nil, backgroundEmojiId: nil, profileColor: nil, profileBackgroundEmojiId: nil, subscriberCount: nil, verificationIconFileId: nil)
+                    author = TelegramUser(id: EnginePeer.Id(namespace: Namespaces.Peer.Empty, id: EnginePeer.Id.Id._internalFromInt64Value(Int64(authorSignature.persistentHashValue % 32))), accessHash: nil, firstName: authorSignature, lastName: nil, username: nil, phone: nil, photo: [], botInfo: nil, restrictionInfo: nil, flags: [], emojiStatus: nil, usernames: [], storiesHidden: nil, nameColor: nil, backgroundEmojiId: nil, profileColor: nil, profileBackgroundEmojiId: nil, subscriberCount: nil, verificationIconFileId: nil)
                 }
             }
             
@@ -314,7 +313,7 @@ public final class ChatMessageAttachedContentNode: ASDisplayNode {
                 insets.right += 6.0
             }
             
-            var contentMediaValue: Media?
+            var contentMediaValue: EngineRawMedia?
             var contentFileValue: TelegramMediaFile?
             var contentAnimatedFilesValue: [TelegramMediaFile] = []
             
@@ -714,7 +713,7 @@ public final class ChatMessageAttachedContentNode: ASDisplayNode {
                 } else {
                     dateFormat = .regular
                 }
-                let dateText = stringForMessageTimestampStatus(accountPeerId: context.account.peerId, message: message, dateTimeFormat: presentationData.dateTimeFormat, nameDisplayOrder: presentationData.nameDisplayOrder, strings: presentationData.strings, format: dateFormat, associatedData: associatedData)
+                let dateText = stringForMessageTimestampStatus(accountPeerId: context.account.peerId, message: EngineMessage(message), dateTimeFormat: presentationData.dateTimeFormat, nameDisplayOrder: presentationData.nameDisplayOrder, strings: presentationData.strings, format: dateFormat, associatedData: associatedData)
                 
                 let statusType: ChatMessageDateAndStatusType
                 if incoming {
@@ -753,7 +752,7 @@ public final class ChatMessageAttachedContentNode: ASDisplayNode {
                                 type: statusType,
                                 layoutInput: .trailingContent(
                                     contentWidth: trailingContentWidth,
-                                    reactionSettings: ChatMessageDateAndStatusNode.TrailingReactionSettings(displayInline: shouldDisplayInlineDateReactions(message: message, isPremium: associatedData.isPremium, forceInline: associatedData.forceInlineReactions), preferAdditionalInset: false)
+                                    reactionSettings: ChatMessageDateAndStatusNode.TrailingReactionSettings(displayInline: shouldDisplayInlineDateReactions(message: EngineMessage(message), isPremium: associatedData.isPremium, forceInline: associatedData.forceInlineReactions), preferAdditionalInset: false)
                                 ),
                                 constrainedSize: CGSize(width: maxStatusContentWidth, height: CGFloat.greatestFiniteMagnitude),
                                 availableReactions: associatedData.availableReactions,
@@ -768,7 +767,7 @@ public final class ChatMessageAttachedContentNode: ASDisplayNode {
                                 starsCount: starsCount,
                                 isPinned: message.tags.contains(.pinned) && !associatedData.isInPinnedListMode && !isReplyThread,
                                 hasAutoremove: message.isSelfExpiring,
-                                canViewReactionList: canViewMessageReactionList(message: message),
+                                canViewReactionList: canViewMessageReactionList(message: EngineMessage(message)),
                                 animationCache: controllerInteraction.presentationContext.animationCache,
                                 animationRenderer: controllerInteraction.presentationContext.animationRenderer
                             ))
@@ -1563,7 +1562,7 @@ public final class ChatMessageAttachedContentNode: ASDisplayNode {
                                 pattern = MessageInlineBlockBackgroundView.Pattern(
                                     context: context,
                                     fileId: backgroundEmojiId,
-                                    file: message.associatedMedia[MediaId(
+                                    file: message.associatedMedia[EngineMedia.Id(
                                         namespace: Namespaces.Media.CloudFile,
                                         id: backgroundEmojiId
                                     )] as? TelegramMediaFile
@@ -1605,7 +1604,7 @@ public final class ChatMessageAttachedContentNode: ASDisplayNode {
         }
     }
     
-    public func updateHiddenMedia(_ media: [Media]?) -> Bool {
+    public func updateHiddenMedia(_ media: [EngineRawMedia]?) -> Bool {
         if let currentMedia = self.media {
             if let media = media {
                 var found = false
@@ -1628,7 +1627,7 @@ public final class ChatMessageAttachedContentNode: ASDisplayNode {
         return false
     }
     
-    public func transitionNode(media: Media) -> (ASDisplayNode, CGRect, () -> (UIView?, UIView?))? {
+    public func transitionNode(media: EngineRawMedia) -> (ASDisplayNode, CGRect, () -> (UIView?, UIView?))? {
         if let contentImageNode = self.contentMedia, let image = self.media as? TelegramMediaImage, image.isEqual(to: media) {
             return (contentImageNode, contentImageNode.bounds, { [weak contentImageNode] in
                 return (contentImageNode?.view.snapshotContentTree(unhide: true), nil)

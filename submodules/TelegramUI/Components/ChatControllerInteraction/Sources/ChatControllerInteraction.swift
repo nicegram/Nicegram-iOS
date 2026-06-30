@@ -16,7 +16,6 @@ import TextFormat
 import WallpaperBackgroundNode
 import AnimationCache
 import MultiAnimationRenderer
-import Postbox
 
 public struct ChatInterfaceHighlightedState: Equatable {
     public struct Quote: Equatable {
@@ -41,9 +40,9 @@ public struct ChatInterfaceHighlightedState: Equatable {
 }
 
 public struct ChatInterfacePollActionState: Equatable {
-    public var pollMessageIdsInProgress: [MessageId: [Data]] = [:]
+    public var pollMessageIdsInProgress: [EngineMessage.Id: [Data]] = [:]
     
-    public init(pollMessageIdsInProgress: [MessageId: [Data]] = [:]) {
+    public init(pollMessageIdsInProgress: [EngineMessage.Id: [Data]] = [:]) {
         self.pollMessageIdsInProgress = pollMessageIdsInProgress
     }
 }
@@ -59,10 +58,10 @@ public enum ChatControllerInteractionReaction {
 }
 
 public struct UnreadMessageRangeKey: Hashable {
-    public var peerId: PeerId
-    public var namespace: MessageId.Namespace
+    public var peerId: EnginePeer.Id
+    public var namespace: Int32
     
-    public init(peerId: PeerId, namespace: MessageId.Namespace) {
+    public init(peerId: EnginePeer.Id, namespace: Int32) {
         self.peerId = peerId
         self.namespace = namespace
     }
@@ -137,7 +136,7 @@ public final class ChatControllerInteraction: ChatControllerInteractionProtocol 
     public enum OpenPeerSource {
         case `default`
         case reaction
-        case groupParticipant(storyStats: PeerStoryStats?, avatarHeaderNode: ASDisplayNode?)
+        case groupParticipant(storyStats: EnginePeerStoryStats?, avatarHeaderNode: ASDisplayNode?)
     }
     
     // Nicegram Translate
@@ -148,11 +147,11 @@ public final class ChatControllerInteraction: ChatControllerInteractionProtocol 
         public var url: String
         public var concealed: Bool
         public var external: Bool?
-        public var message: Message?
+        public var message: EngineRawMessage?
         public var allowInlineWebpageResolution: Bool
         public var progress: Promise<Bool>?
         
-        public init(url: String, concealed: Bool, external: Bool? = nil, message: Message? = nil, allowInlineWebpageResolution: Bool = false, progress: Promise<Bool>? = nil) {
+        public init(url: String, concealed: Bool, external: Bool? = nil, message: EngineRawMessage? = nil, allowInlineWebpageResolution: Bool = false, progress: Promise<Bool>? = nil) {
             self.url = url
             self.concealed = concealed
             self.external = external
@@ -162,14 +161,30 @@ public final class ChatControllerInteraction: ChatControllerInteractionProtocol 
         }
     }
     
+    public struct OpenInstantPage {
+        public var webpageId: EngineMedia.Id
+        public var url: String
+        public var anchor: String?
+        public var concealed: Bool
+        public var progress: Promise<Bool>?
+        
+        public init(webpageId: EngineMedia.Id, url: String, anchor: String?, concealed: Bool, progress: Promise<Bool>? = nil) {
+            self.webpageId = webpageId
+            self.url = url
+            self.anchor = anchor
+            self.concealed = concealed
+            self.progress = progress
+        }
+    }
+    
     public struct LongTapParams {
-        public var message: Message?
+        public var message: EngineRawMessage?
         public var contentNode: ContextExtractedContentContainingNode?
         public var messageNode: ASDisplayNode?
         public var progress: Promise<Bool>?
         public var gesture: TapLongTapOrDoubleTapGestureRecognizer?
         
-        public init(message: Message? = nil, contentNode: ContextExtractedContentContainingNode? = nil, messageNode: ASDisplayNode? = nil, progress: Promise<Bool>? = nil, gesture: TapLongTapOrDoubleTapGestureRecognizer? = nil) {
+        public init(message: EngineRawMessage? = nil, contentNode: ContextExtractedContentContainingNode? = nil, messageNode: ASDisplayNode? = nil, progress: Promise<Bool>? = nil, gesture: TapLongTapOrDoubleTapGestureRecognizer? = nil) {
             self.message = message
             self.contentNode = contentNode
             self.messageNode = messageNode
@@ -183,99 +198,100 @@ public final class ChatControllerInteraction: ChatControllerInteractionProtocol 
         case solution(TelegramMediaPollResults.Solution)
     }
     
-    public let openMessage: (Message, OpenMessageParams) -> Bool
+    public let openMessage: (EngineRawMessage, OpenMessageParams) -> Bool
     public let openPeer: (EnginePeer, ChatControllerInteractionNavigateToPeer, MessageReference?, OpenPeerSource) -> Void
     public let openPeerMention: (String, Promise<Bool>?) -> Void
-    public let openMessageContextMenu: (Message, Bool, ASDisplayNode, CGRect, UIGestureRecognizer?, CGPoint?) -> Void
-    public let updateMessageReaction: (Message, ChatControllerInteractionReaction, Bool, ContextExtractedContentContainingView?) -> Void
-    public let openMessageReactionContextMenu: (Message, ContextExtractedContentContainingView, ContextGesture?, MessageReaction.Reaction) -> Void
+    public let openMessageContextMenu: (EngineRawMessage, Bool, ASDisplayNode, CGRect, UIGestureRecognizer?, CGPoint?) -> Void
+    public let updateMessageReaction: (EngineRawMessage, ChatControllerInteractionReaction, Bool, ContextExtractedContentContainingView?) -> Void
+    public let openMessageReactionContextMenu: (EngineRawMessage, ContextExtractedContentContainingView, ContextGesture?, MessageReaction.Reaction) -> Void
     public let activateMessagePinch: (PinchSourceContainerNode) -> Void
-    public let openMessageContextActions: (Message, ASDisplayNode, CGRect, ContextGesture?) -> Void
-    public let navigateToMessage: (MessageId, MessageId, NavigateToMessageParams) -> Void
-    public let navigateToMessageStandalone: (MessageId) -> Void
-    public let navigateToThreadMessage: (PeerId, Int64, MessageId?) -> Void
-    public let tapMessage: ((Message) -> Void)?
+    public let openMessageContextActions: (EngineRawMessage, ASDisplayNode, CGRect, ContextGesture?) -> Void
+    public let navigateToMessage: (EngineMessage.Id, EngineMessage.Id, NavigateToMessageParams) -> Void
+    public let navigateToMessageStandalone: (EngineMessage.Id) -> Void
+    public let navigateToThreadMessage: (EnginePeer.Id, Int64, EngineMessage.Id?) -> Void
+    public let tapMessage: ((EngineRawMessage) -> Void)?
     public let clickThroughMessage: (UIView?, CGPoint?) -> Void
-    public let toggleMessagesSelection: ([MessageId], Bool) -> Void
+    public let toggleMessagesSelection: ([EngineMessage.Id], Bool) -> Void
     public let sendCurrentMessage: (Bool, ChatSendMessageEffect?) -> Void
-    public let sendMessage: (String) -> Void
-    public let sendSticker: (FileMediaReference, Bool, Bool, String?, Bool, UIView?, CGRect?, CALayer?, [ItemCollectionId]) -> Bool
+    public let sendMessage: (String, EngineMessage.Id?) -> Void
+    public let sendSticker: (FileMediaReference, Bool, Bool, String?, Bool, UIView?, CGRect?, CALayer?, [EngineItemCollectionId]) -> Bool
     public let sendEmoji: (String, ChatTextInputTextCustomEmojiAttribute, Bool) -> Void
     public let sendGif: (FileMediaReference, UIView, CGRect, Bool, Bool) -> Bool
     public let sendBotContextResultAsGif: (ChatContextResultCollection, ChatContextResult, UIView, CGRect, Bool, Bool) -> Bool
     public let editGif: (FileMediaReference, Bool) -> Void
-    public let requestMessageActionCallback: (Message, MemoryBuffer?, Bool, Bool, Promise<Bool>?) -> Void
+    public let requestMessageActionCallback: (EngineRawMessage, EngineMemoryBuffer?, Bool, Bool, Promise<Bool>?) -> Void
     public let requestMessageActionUrlAuth: (String, MessageActionUrlSubject) -> Void
-    public let activateSwitchInline: (PeerId?, String, ReplyMarkupButtonAction.PeerTypes?) -> Void
+    public let activateSwitchInline: (EnginePeer.Id?, String, ReplyMarkupButtonAction.PeerTypes?) -> Void
     public let openUrl: (OpenUrl) -> Void
-    public let shareCurrentLocation: () -> Void
-    public let shareAccountContact: () -> Void
-    public let sendBotCommand: (MessageId?, String) -> Void
-    public let openInstantPage: (Message, ChatMessageItemAssociatedData?) -> Void
-    public let openWallpaper: (Message) -> Void
-    public let openTheme: (Message) -> Void
+    public let openExternalInstantPage: (OpenInstantPage) -> Void
+    public let shareCurrentLocation: (EngineMessage.Id?) -> Void
+    public let shareAccountContact: (EngineMessage.Id?) -> Void
+    public let sendBotCommand: (EngineMessage.Id?, String) -> Void
+    public let openInstantPage: (EngineRawMessage, ChatMessageItemAssociatedData?) -> Void
+    public let openWallpaper: (EngineRawMessage) -> Void
+    public let openTheme: (EngineRawMessage) -> Void
     public let openHashtag: (String?, String) -> Void
     public let updateInputState: ((ChatTextInputState) -> ChatTextInputState) -> Void
     public let updateInputMode: ((ChatInputMode) -> ChatInputMode) -> Void
     public let updatePresentationState: ((ChatPresentationInterfaceState) -> ChatPresentationInterfaceState) -> Void
-    public let openMessageShareMenu: (MessageId) -> Void
+    public let openMessageShareMenu: (EngineMessage.Id) -> Void
     public let presentController: (ViewController, Any?) -> Void
     public let presentControllerInCurrent: (ViewController, Any?) -> Void
     public let navigationController: () -> NavigationController?
     public let chatControllerNode: () -> ASDisplayNode?
     public let presentGlobalOverlayController: (ViewController, Any?) -> Void
-    public let callPeer: (PeerId, Bool) -> Void
-    public let openConferenceCall: (Message) -> Void
+    public let callPeer: (EnginePeer.Id, Bool) -> Void
+    public let openConferenceCall: (EngineRawMessage) -> Void
     public let longTap: (ChatControllerInteractionLongTapAction, LongTapParams?) -> Void
     public let todoItemLongTap: (Int32, LongTapParams?) -> Void
     public let pollOptionLongTap: (Data, LongTapParams?) -> Void
-    public let openCheckoutOrReceipt: (MessageId, OpenMessageParams?) -> Void
+    public let openCheckoutOrReceipt: (EngineMessage.Id, OpenMessageParams?) -> Void
     public let openSearch: () -> Void
-    public let setupReply: (MessageId) -> Void
-    public let canSetupReply: (Message) -> ChatControllerInteractionSwipeAction
+    public let setupReply: (EngineMessage.Id) -> Void
+    public let canSetupReply: (EngineRawMessage) -> ChatControllerInteractionSwipeAction
     public let canSendMessages: () -> Bool
     public let navigateToFirstDateMessage: (Int32, Bool) -> Void
-    public let requestRedeliveryOfFailedMessages: (MessageId) -> Void
+    public let requestRedeliveryOfFailedMessages: (EngineMessage.Id) -> Void
     public let addContact: (String) -> Void
-    public let rateCall: (Message, CallId, Bool) -> Void
-    public let requestSelectMessagePollOptions: (MessageId, [Data]) -> Void
-    public let requestAddMessagePollOption: (MessageId, String, [MessageTextEntity], Data, AnyMediaReference?) -> Void
-    public let requestOpenMessagePollResults: (MessageId, MediaId) -> Void
+    public let rateCall: (EngineRawMessage, CallId, Bool) -> Void
+    public let requestSelectMessagePollOptions: (EngineMessage.Id, [Data]) -> Void
+    public let requestAddMessagePollOption: (EngineMessage.Id, String, [MessageTextEntity], Data, AnyMediaReference?) -> Void
+    public let requestOpenMessagePollResults: (EngineMessage.Id, EngineMedia.Id) -> Void
     public let openAppStorePage: () -> Void
-    public let displayMessageTooltip: (MessageId, String, Bool, ASDisplayNode?, CGRect?) -> Void
-    public let seekToTimecode: (Message, Double, Bool) -> Void
+    public let displayMessageTooltip: (EngineMessage.Id, String, Bool, ASDisplayNode?, CGRect?) -> Void
+    public let seekToTimecode: (EngineRawMessage, Double, Bool) -> Void
     public let scheduleCurrentMessage: (ChatSendMessageActionSheetController.SendParameters?) -> Void
-    public let sendScheduledMessagesNow: ([MessageId]) -> Void
-    public let editScheduledMessagesTime: ([MessageId]) -> Void
-    public let performTextSelectionAction: (Message?, Bool, NSAttributedString, [MessageTextEntity]?, TextSelectionAction) -> Void
+    public let sendScheduledMessagesNow: ([EngineMessage.Id]) -> Void
+    public let editScheduledMessagesTime: ([EngineMessage.Id]) -> Void
+    public let performTextSelectionAction: (EngineRawMessage?, Bool, NSAttributedString, [MessageTextEntity]?, TextSelectionAction) -> Void
     public let displayImportedMessageTooltip: (ASDisplayNode) -> Void
     public let displaySwipeToReplyHint: () -> Void
-    public let dismissReplyMarkupMessage: (Message) -> Void
-    public let openMessagePollResults: (MessageId, Data) -> Void
-    public let openPollCreation: (Bool?) -> Void
-    public let openPollMedia: (Message, PollMediaSubject) -> Void
+    public let dismissReplyMarkupMessage: (EngineRawMessage) -> Void
+    public let openMessagePollResults: (EngineMessage.Id, Data) -> Void
+    public let openPollCreation: (EngineMessage.Id?, Bool?) -> Void
+    public let openPollMedia: (EngineRawMessage, PollMediaSubject) -> Void
     public let displayPollSolution: (TelegramMediaPollResults.Solution?, ASDisplayNode?) -> Void
     public let displayPsa: (String, ASDisplayNode) -> Void
     public let displayDiceTooltip: (TelegramMediaDice) -> Void
     public let animateDiceSuccess: (Bool, Bool) -> Void
-    public let displayPremiumStickerTooltip: (TelegramMediaFile, Message) -> Void
-    public let displayEmojiPackTooltip: (TelegramMediaFile, Message) -> Void
-    public let openPeerContextMenu: (Peer, MessageId?, ASDisplayNode, CGRect, ContextGesture?) -> Void
-    public let openMessageReplies: (MessageId, Bool, Bool) -> Void
-    public let openReplyThreadOriginalMessage: (Message) -> Void
-    public let openMessageStats: (MessageId) -> Void
-    public let editMessageMedia: (MessageId, Bool) -> Void
+    public let displayPremiumStickerTooltip: (TelegramMediaFile, EngineRawMessage) -> Void
+    public let displayEmojiPackTooltip: (TelegramMediaFile, EngineRawMessage) -> Void
+    public let openPeerContextMenu: (EngineRawPeer, EngineMessage.Id?, ASDisplayNode, CGRect, ContextGesture?) -> Void
+    public let openMessageReplies: (EngineMessage.Id, Bool, Bool) -> Void
+    public let openReplyThreadOriginalMessage: (EngineRawMessage) -> Void
+    public let openMessageStats: (EngineMessage.Id) -> Void
+    public let editMessageMedia: (EngineMessage.Id, Bool) -> Void
     public let copyText: (String) -> Void
     public let displayUndo: (UndoOverlayContent) -> Void
     public let isAnimatingMessage: (UInt32) -> Bool
     public let getMessageTransitionNode: () -> ChatMessageTransitionProtocol?
     public let updateChoosingSticker: (Bool) -> Void
-    public let commitEmojiInteraction: (MessageId, String, EmojiInteraction, TelegramMediaFile) -> Void
+    public let commitEmojiInteraction: (EngineMessage.Id, String, EmojiInteraction, TelegramMediaFile) -> Void
     public let openLargeEmojiInfo: (String, String?, TelegramMediaFile) -> Void
     public let openJoinLink: (String) -> Void
     public let openWebView: (String, String, Bool, ChatOpenWebViewSource) -> Void
     public let activateAdAction: (EngineMessage.Id, Promise<Bool>?, Bool, Bool) -> Void
-    public let adContextAction: (Message, ASDisplayNode, ContextGesture?) -> Void
+    public let adContextAction: (EngineRawMessage, ASDisplayNode, ContextGesture?) -> Void
     public let removeAd: (Data) -> Void
     public let openRequestedPeerSelection: (EngineMessage.Id, ReplyMarkupButtonRequestPeerType, Int32, Int32) -> Void
     public let saveMediaToFiles: (EngineMessage.Id) -> Void
@@ -286,44 +302,45 @@ public final class ChatControllerInteraction: ChatControllerInteractionProtocol 
     public let openRecommendedChannelContextMenu: (EnginePeer, UIView, ContextGesture?) -> Void
     public let openGroupBoostInfo: (EnginePeer.Id?, Int) -> Void
     public let openStickerEditor: () -> Void
-    public let openAgeRestrictedMessageMedia: (Message, @escaping () -> Void) -> Void
-    public let playMessageEffect: (Message) -> Void
-    public let editMessageFactCheck: (MessageId) -> Void
+    public let openAgeRestrictedMessageMedia: (EngineRawMessage, @escaping () -> Void) -> Void
+    public let playMessageEffect: (EngineRawMessage) -> Void
+    public let editMessageFactCheck: (EngineMessage.Id) -> Void
     public let sendGift: (EnginePeer.Id) -> Void
     public let openUniqueGift: (String) -> Void
     public let openMessageFeeException: () -> Void
-    public let requestMessageUpdate: (MessageId, Bool) -> Void
+    public let requestMessageUpdate: (EngineMessage.Id, Bool, ControlledTransition?) -> Void
     public let cancelInteractiveKeyboardGestures: () -> Void
     public let dismissTextInput: () -> Void
-    public let scrollToMessageId: (MessageIndex) -> Void
-    public let navigateToStory: (Message, StoryId) -> Void
-    public let attemptedNavigationToPrivateQuote: (Peer?) -> Void
+    public let scrollToMessageId: (EngineMessage.Index, CGFloat) -> Void
+    public let scrollToMessageIdWithAnchor: (EngineMessage.Index, String) -> Void
+    public let navigateToStory: (EngineRawMessage, EngineStoryId) -> Void
+    public let attemptedNavigationToPrivateQuote: (EngineRawPeer?) -> Void
     public let forceUpdateWarpContents: () -> Void
     public let playShakeAnimation:  () -> Void
-    public let displayQuickShare: (MessageId, ASDisplayNode, ContextGesture) -> Void
+    public let displayQuickShare: (EngineMessage.Id, ASDisplayNode, ContextGesture) -> Void
     public let updateChatLocationThread: (Int64?, ChatControllerAnimateInnerChatSwitchDirection?) -> Void
-    public let requestToggleTodoMessageItem: (MessageId, Int32, Bool) -> Void
-    public let displayTodoToggleUnavailable: (MessageId) -> Void
+    public let requestToggleTodoMessageItem: (EngineMessage.Id, Int32, Bool) -> Void
+    public let displayTodoToggleUnavailable: (EngineMessage.Id) -> Void
     public let openStarsPurchase: (Int64?) -> Void
     public let openRankInfo: (EnginePeer, ChatRankInfoScreenRole, String) -> Void
     public let openSetPeerAvatar: () -> Void
     public let displayPollRestrictedToast: (EngineMessage.Id) -> Void
     
     public var canPlayMedia: Bool = false
-    public var hiddenMedia: [MessageId: [Media]] = [:]
+    public var hiddenMedia: [EngineMessage.Id: [EngineRawMedia]] = [:]
     public var expandedTranslationMessageStableIds: Set<UInt32> = Set()
     public var selectionState: ChatInterfaceSelectionState?
     public var highlightedState: ChatInterfaceHighlightedState?
     public var contextHighlightedState: ChatInterfaceHighlightedState?
     public var automaticMediaDownloadSettings: MediaAutoDownloadSettings
     public var pollActionState: ChatInterfacePollActionState
-    public var currentPollMessageWithTooltip: MessageId?
-    public var currentPsaMessageWithTooltip: MessageId?
+    public var currentPollMessageWithTooltip: EngineMessage.Id?
+    public var currentPsaMessageWithTooltip: EngineMessage.Id?
     public var stickerSettings: ChatInterfaceStickerSettings
-    public var searchTextHighightState: (String, [MessageIndex])?
-    public var unreadMessageRange: [UnreadMessageRangeKey: Range<MessageId.Id>] = [:]
-    public var seenOneTimeAnimatedMedia = Set<MessageId>()
-    public var currentMessageWithLoadingReplyThread: MessageId?
+    public var searchTextHighightState: (String, [EngineMessage.Index])?
+    public var unreadMessageRange: [UnreadMessageRangeKey: Range<Int32>] = [:]
+    public var seenOneTimeAnimatedMedia = Set<EngineMessage.Id>()
+    public var currentMessageWithLoadingReplyThread: EngineMessage.Id?
     public var updatedPresentationData: (initial: PresentationData, signal: Signal<PresentationData, NoError>)?
     public let presentationContext: ChatPresentationContext
     public var playNextOutgoingGift: Bool = false
@@ -331,9 +348,9 @@ public final class ChatControllerInteraction: ChatControllerInteractionProtocol 
     public var enableFullTranslucency: Bool = true
     public var chatIsRotated: Bool = true
     public var canReadHistory: Bool = false
-    public var summarizedMessageIds: Set<MessageId> = Set()
+    public var summarizedMessageIds: Set<EngineMessage.Id> = Set()
     public var focusedTextInputIsMedia: Bool = false
-    public var focusedPollAddOptionMessageId: MessageId?
+    public var focusedPollAddOptionMessageId: EngineMessage.Id?
     
     private var isOpeningMediaValue: Bool = false
     public var isOpeningMedia: Bool {
@@ -364,99 +381,100 @@ public final class ChatControllerInteraction: ChatControllerInteractionProtocol 
         // Nicegram Translate
         onTranslateButtonLongTap: @escaping () -> Void = {},
         //
-        openMessage: @escaping (Message, OpenMessageParams) -> Bool,
+        openMessage: @escaping (EngineRawMessage, OpenMessageParams) -> Bool,
         openPeer: @escaping (EnginePeer, ChatControllerInteractionNavigateToPeer, MessageReference?, OpenPeerSource) -> Void,
         openPeerMention: @escaping (String, Promise<Bool>?) -> Void,
-        openMessageContextMenu: @escaping (Message, Bool, ASDisplayNode, CGRect, UIGestureRecognizer?, CGPoint?) -> Void,
-        openMessageReactionContextMenu: @escaping (Message, ContextExtractedContentContainingView, ContextGesture?, MessageReaction.Reaction) -> Void,
-        updateMessageReaction: @escaping (Message, ChatControllerInteractionReaction, Bool, ContextExtractedContentContainingView?) -> Void,
+        openMessageContextMenu: @escaping (EngineRawMessage, Bool, ASDisplayNode, CGRect, UIGestureRecognizer?, CGPoint?) -> Void,
+        openMessageReactionContextMenu: @escaping (EngineRawMessage, ContextExtractedContentContainingView, ContextGesture?, MessageReaction.Reaction) -> Void,
+        updateMessageReaction: @escaping (EngineRawMessage, ChatControllerInteractionReaction, Bool, ContextExtractedContentContainingView?) -> Void,
         activateMessagePinch: @escaping (PinchSourceContainerNode) -> Void,
-        openMessageContextActions: @escaping (Message, ASDisplayNode, CGRect, ContextGesture?) -> Void,
-        navigateToMessage: @escaping (MessageId, MessageId, NavigateToMessageParams) -> Void,
-        navigateToMessageStandalone: @escaping (MessageId) -> Void,
-        navigateToThreadMessage: @escaping (PeerId, Int64, MessageId?) -> Void,
-        tapMessage: ((Message) -> Void)?,
+        openMessageContextActions: @escaping (EngineRawMessage, ASDisplayNode, CGRect, ContextGesture?) -> Void,
+        navigateToMessage: @escaping (EngineMessage.Id, EngineMessage.Id, NavigateToMessageParams) -> Void,
+        navigateToMessageStandalone: @escaping (EngineMessage.Id) -> Void,
+        navigateToThreadMessage: @escaping (EnginePeer.Id, Int64, EngineMessage.Id?) -> Void,
+        tapMessage: ((EngineRawMessage) -> Void)?,
         clickThroughMessage: @escaping (UIView?, CGPoint?) -> Void,
-        toggleMessagesSelection: @escaping ([MessageId], Bool) -> Void,
+        toggleMessagesSelection: @escaping ([EngineMessage.Id], Bool) -> Void,
         sendCurrentMessage: @escaping (Bool, ChatSendMessageEffect?) -> Void,
-        sendMessage: @escaping (String) -> Void,
-        sendSticker: @escaping (FileMediaReference, Bool, Bool, String?, Bool, UIView?, CGRect?, CALayer?, [ItemCollectionId]) -> Bool,
+        sendMessage: @escaping (String, EngineMessage.Id?) -> Void,
+        sendSticker: @escaping (FileMediaReference, Bool, Bool, String?, Bool, UIView?, CGRect?, CALayer?, [EngineItemCollectionId]) -> Bool,
         sendEmoji: @escaping (String, ChatTextInputTextCustomEmojiAttribute, Bool) -> Void,
         sendGif: @escaping (FileMediaReference, UIView, CGRect, Bool, Bool) -> Bool,
         sendBotContextResultAsGif: @escaping (ChatContextResultCollection, ChatContextResult, UIView, CGRect, Bool, Bool) -> Bool,
         editGif: @escaping (FileMediaReference, Bool) -> Void,
-        requestMessageActionCallback: @escaping (Message, MemoryBuffer?, Bool, Bool, Promise<Bool>?) -> Void,
+        requestMessageActionCallback: @escaping (EngineRawMessage, EngineMemoryBuffer?, Bool, Bool, Promise<Bool>?) -> Void,
         requestMessageActionUrlAuth: @escaping (String, MessageActionUrlSubject) -> Void,
-        activateSwitchInline: @escaping (PeerId?, String, ReplyMarkupButtonAction.PeerTypes?) -> Void,
+        activateSwitchInline: @escaping (EnginePeer.Id?, String, ReplyMarkupButtonAction.PeerTypes?) -> Void,
         openUrl: @escaping (OpenUrl) -> Void,
-        shareCurrentLocation: @escaping () -> Void,
-        shareAccountContact: @escaping () -> Void,
-        sendBotCommand: @escaping (MessageId?, String) -> Void,
-        openInstantPage: @escaping (Message, ChatMessageItemAssociatedData?) -> Void,
-        openWallpaper: @escaping (Message) -> Void,
-        openTheme: @escaping (Message) -> Void,
+        openExternalInstantPage: @escaping (OpenInstantPage) -> Void,
+        shareCurrentLocation: @escaping (EngineMessage.Id?) -> Void,
+        shareAccountContact: @escaping (EngineMessage.Id?) -> Void,
+        sendBotCommand: @escaping (EngineMessage.Id?, String) -> Void,
+        openInstantPage: @escaping (EngineRawMessage, ChatMessageItemAssociatedData?) -> Void,
+        openWallpaper: @escaping (EngineRawMessage) -> Void,
+        openTheme: @escaping (EngineRawMessage) -> Void,
         openHashtag: @escaping (String?, String) -> Void,
         updateInputState: @escaping ((ChatTextInputState) -> ChatTextInputState) -> Void,
         updateInputMode: @escaping ((ChatInputMode) -> ChatInputMode) -> Void,
         updatePresentationState: @escaping ((ChatPresentationInterfaceState) -> ChatPresentationInterfaceState) -> Void,
-        openMessageShareMenu: @escaping (MessageId) -> Void,
+        openMessageShareMenu: @escaping (EngineMessage.Id) -> Void,
         presentController: @escaping (ViewController, Any?) -> Void,
         presentControllerInCurrent: @escaping (ViewController, Any?) -> Void,
         navigationController: @escaping () -> NavigationController?,
         chatControllerNode: @escaping () -> ASDisplayNode?,
         presentGlobalOverlayController: @escaping (ViewController, Any?) -> Void,
-        callPeer: @escaping (PeerId, Bool) -> Void,
-        openConferenceCall: @escaping (Message) -> Void,
+        callPeer: @escaping (EnginePeer.Id, Bool) -> Void,
+        openConferenceCall: @escaping (EngineRawMessage) -> Void,
         longTap: @escaping (ChatControllerInteractionLongTapAction, LongTapParams?) -> Void,
         todoItemLongTap: @escaping (Int32, LongTapParams?) -> Void,
         pollOptionLongTap: @escaping (Data, LongTapParams?) -> Void,
-        openCheckoutOrReceipt: @escaping (MessageId, OpenMessageParams?) -> Void,
+        openCheckoutOrReceipt: @escaping (EngineMessage.Id, OpenMessageParams?) -> Void,
         openSearch: @escaping () -> Void,
-        setupReply: @escaping (MessageId) -> Void,
-        canSetupReply: @escaping (Message) -> ChatControllerInteractionSwipeAction,
+        setupReply: @escaping (EngineMessage.Id) -> Void,
+        canSetupReply: @escaping (EngineRawMessage) -> ChatControllerInteractionSwipeAction,
         canSendMessages: @escaping () -> Bool,
         navigateToFirstDateMessage: @escaping(Int32, Bool) ->Void,
-        requestRedeliveryOfFailedMessages: @escaping (MessageId) -> Void,
+        requestRedeliveryOfFailedMessages: @escaping (EngineMessage.Id) -> Void,
         addContact: @escaping (String) -> Void,
-        rateCall: @escaping (Message, CallId, Bool) -> Void,
-        requestSelectMessagePollOptions: @escaping (MessageId, [Data]) -> Void,
-        requestAddMessagePollOption: @escaping (MessageId, String, [MessageTextEntity], Data, AnyMediaReference?) -> Void,
-        requestOpenMessagePollResults: @escaping (MessageId, MediaId) -> Void,
+        rateCall: @escaping (EngineRawMessage, CallId, Bool) -> Void,
+        requestSelectMessagePollOptions: @escaping (EngineMessage.Id, [Data]) -> Void,
+        requestAddMessagePollOption: @escaping (EngineMessage.Id, String, [MessageTextEntity], Data, AnyMediaReference?) -> Void,
+        requestOpenMessagePollResults: @escaping (EngineMessage.Id, EngineMedia.Id) -> Void,
         openAppStorePage: @escaping () -> Void,
-        displayMessageTooltip: @escaping (MessageId, String, Bool, ASDisplayNode?, CGRect?) -> Void,
-        seekToTimecode: @escaping (Message, Double, Bool) -> Void,
+        displayMessageTooltip: @escaping (EngineMessage.Id, String, Bool, ASDisplayNode?, CGRect?) -> Void,
+        seekToTimecode: @escaping (EngineRawMessage, Double, Bool) -> Void,
         scheduleCurrentMessage: @escaping (ChatSendMessageActionSheetController.SendParameters?) -> Void,
-        sendScheduledMessagesNow: @escaping ([MessageId]) -> Void,
-        editScheduledMessagesTime: @escaping ([MessageId]) -> Void,
-        performTextSelectionAction: @escaping (Message?, Bool, NSAttributedString, [MessageTextEntity]?, TextSelectionAction) -> Void,
+        sendScheduledMessagesNow: @escaping ([EngineMessage.Id]) -> Void,
+        editScheduledMessagesTime: @escaping ([EngineMessage.Id]) -> Void,
+        performTextSelectionAction: @escaping (EngineRawMessage?, Bool, NSAttributedString, [MessageTextEntity]?, TextSelectionAction) -> Void,
         displayImportedMessageTooltip: @escaping (ASDisplayNode) -> Void,
         displaySwipeToReplyHint: @escaping () -> Void,
-        dismissReplyMarkupMessage: @escaping (Message) -> Void,
-        openMessagePollResults: @escaping (MessageId, Data) -> Void,
-        openPollCreation: @escaping (Bool?) -> Void,
-        openPollMedia: @escaping (Message, PollMediaSubject) -> Void,
+        dismissReplyMarkupMessage: @escaping (EngineRawMessage) -> Void,
+        openMessagePollResults: @escaping (EngineMessage.Id, Data) -> Void,
+        openPollCreation: @escaping (EngineMessage.Id?, Bool?) -> Void,
+        openPollMedia: @escaping (EngineRawMessage, PollMediaSubject) -> Void,
         displayPollSolution: @escaping (TelegramMediaPollResults.Solution?, ASDisplayNode?) -> Void,
         displayPsa: @escaping (String, ASDisplayNode) -> Void,
         displayDiceTooltip: @escaping (TelegramMediaDice) -> Void,
         animateDiceSuccess: @escaping (Bool, Bool) -> Void,
-        displayPremiumStickerTooltip: @escaping (TelegramMediaFile, Message) -> Void,
-        displayEmojiPackTooltip: @escaping (TelegramMediaFile, Message) -> Void,
-        openPeerContextMenu: @escaping (Peer, MessageId?, ASDisplayNode, CGRect, ContextGesture?) -> Void,
-        openMessageReplies: @escaping (MessageId, Bool, Bool) -> Void,
-        openReplyThreadOriginalMessage: @escaping (Message) -> Void,
-        openMessageStats: @escaping (MessageId) -> Void,
-        editMessageMedia: @escaping (MessageId, Bool) -> Void,
+        displayPremiumStickerTooltip: @escaping (TelegramMediaFile, EngineRawMessage) -> Void,
+        displayEmojiPackTooltip: @escaping (TelegramMediaFile, EngineRawMessage) -> Void,
+        openPeerContextMenu: @escaping (EngineRawPeer, EngineMessage.Id?, ASDisplayNode, CGRect, ContextGesture?) -> Void,
+        openMessageReplies: @escaping (EngineMessage.Id, Bool, Bool) -> Void,
+        openReplyThreadOriginalMessage: @escaping (EngineRawMessage) -> Void,
+        openMessageStats: @escaping (EngineMessage.Id) -> Void,
+        editMessageMedia: @escaping (EngineMessage.Id, Bool) -> Void,
         copyText: @escaping (String) -> Void,
         displayUndo: @escaping (UndoOverlayContent) -> Void,
         isAnimatingMessage: @escaping (UInt32) -> Bool,
         getMessageTransitionNode: @escaping () -> ChatMessageTransitionProtocol?,
         updateChoosingSticker: @escaping (Bool) -> Void,
-        commitEmojiInteraction: @escaping (MessageId, String, EmojiInteraction, TelegramMediaFile) -> Void,
+        commitEmojiInteraction: @escaping (EngineMessage.Id, String, EmojiInteraction, TelegramMediaFile) -> Void,
         openLargeEmojiInfo: @escaping (String, String?, TelegramMediaFile) -> Void,
         openJoinLink: @escaping (String) -> Void,
         openWebView: @escaping (String, String, Bool, ChatOpenWebViewSource) -> Void,
         activateAdAction: @escaping (EngineMessage.Id, Promise<Bool>?, Bool, Bool) -> Void,
-        adContextAction: @escaping (Message, ASDisplayNode, ContextGesture?) -> Void,
+        adContextAction: @escaping (EngineRawMessage, ASDisplayNode, ContextGesture?) -> Void,
         removeAd: @escaping (Data) -> Void,
         openRequestedPeerSelection: @escaping (EngineMessage.Id, ReplyMarkupButtonRequestPeerType, Int32, Int32) -> Void,
         saveMediaToFiles: @escaping (EngineMessage.Id) -> Void,
@@ -467,24 +485,25 @@ public final class ChatControllerInteraction: ChatControllerInteractionProtocol 
         openRecommendedChannelContextMenu: @escaping (EnginePeer, UIView, ContextGesture?) -> Void,
         openGroupBoostInfo: @escaping (EnginePeer.Id?, Int) -> Void,
         openStickerEditor: @escaping () -> Void,
-        openAgeRestrictedMessageMedia: @escaping (Message, @escaping () -> Void) -> Void,
-        playMessageEffect: @escaping (Message) -> Void,
-        editMessageFactCheck: @escaping (MessageId) -> Void,
+        openAgeRestrictedMessageMedia: @escaping (EngineRawMessage, @escaping () -> Void) -> Void,
+        playMessageEffect: @escaping (EngineRawMessage) -> Void,
+        editMessageFactCheck: @escaping (EngineMessage.Id) -> Void,
         sendGift: @escaping (EnginePeer.Id) -> Void,
         openUniqueGift: @escaping (String) -> Void,
         openMessageFeeException: @escaping () -> Void,
-        requestMessageUpdate: @escaping (MessageId, Bool) -> Void,
+        requestMessageUpdate: @escaping (EngineMessage.Id, Bool, ControlledTransition?) -> Void,
         cancelInteractiveKeyboardGestures: @escaping () -> Void,
         dismissTextInput: @escaping () -> Void,
-        scrollToMessageId: @escaping (MessageIndex) -> Void,
-        navigateToStory: @escaping (Message, StoryId) -> Void,
-        attemptedNavigationToPrivateQuote: @escaping (Peer?) -> Void,
+        scrollToMessageId: @escaping (EngineMessage.Index, CGFloat) -> Void,
+        scrollToMessageIdWithAnchor: @escaping (EngineMessage.Index, String) -> Void,
+        navigateToStory: @escaping (EngineRawMessage, EngineStoryId) -> Void,
+        attemptedNavigationToPrivateQuote: @escaping (EngineRawPeer?) -> Void,
         forceUpdateWarpContents: @escaping () -> Void,
         playShakeAnimation: @escaping () -> Void,
-        displayQuickShare: @escaping (MessageId, ASDisplayNode, ContextGesture) -> Void,
+        displayQuickShare: @escaping (EngineMessage.Id, ASDisplayNode, ContextGesture) -> Void,
         updateChatLocationThread: @escaping (Int64?, ChatControllerAnimateInnerChatSwitchDirection?) -> Void,
-        requestToggleTodoMessageItem: @escaping (MessageId, Int32, Bool) -> Void,
-        displayTodoToggleUnavailable: @escaping (MessageId) -> Void,
+        requestToggleTodoMessageItem: @escaping (EngineMessage.Id, Int32, Bool) -> Void,
+        displayTodoToggleUnavailable: @escaping (EngineMessage.Id) -> Void,
         openStarsPurchase: @escaping (Int64?) -> Void,
         openRankInfo: @escaping (EnginePeer, ChatRankInfoScreenRole, String) -> Void,
         openSetPeerAvatar: @escaping () -> Void,
@@ -522,6 +541,7 @@ public final class ChatControllerInteraction: ChatControllerInteractionProtocol 
         self.requestMessageActionUrlAuth = requestMessageActionUrlAuth
         self.activateSwitchInline = activateSwitchInline
         self.openUrl = openUrl
+        self.openExternalInstantPage = openExternalInstantPage
         self.shareCurrentLocation = shareCurrentLocation
         self.shareAccountContact = shareAccountContact
         self.sendBotCommand = sendBotCommand
@@ -611,6 +631,7 @@ public final class ChatControllerInteraction: ChatControllerInteractionProtocol 
         self.cancelInteractiveKeyboardGestures = cancelInteractiveKeyboardGestures
         self.dismissTextInput = dismissTextInput
         self.scrollToMessageId = scrollToMessageId
+        self.scrollToMessageIdWithAnchor = scrollToMessageIdWithAnchor
         self.navigateToStory = navigateToStory
         self.attemptedNavigationToPrivateQuote = attemptedNavigationToPrivateQuote
         self.forceUpdateWarpContents = forceUpdateWarpContents

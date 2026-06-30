@@ -293,7 +293,7 @@ public func callFeedbackController(sharedContext: SharedAccountContext, account:
     let signal = combineLatest(sharedContext.presentationData, statePromise.get())
     |> deliverOnMainQueue
     |> map { presentationData, state -> (ItemListControllerState, (ItemListNodeState, Any)) in
-        let leftNavigationButton = ItemListNavigationButton(content: .text(presentationData.strings.Common_Cancel), style: .regular, enabled: true, action: {
+        let leftNavigationButton = ItemListNavigationButton(content: .icon(.close), style: .regular, enabled: true, action: {
             dismissImpl?()
         })
         let rightNavigationButton = ItemListNavigationButton(content: .text(presentationData.strings.CallFeedback_Send), style: .bold, enabled: true, action: {

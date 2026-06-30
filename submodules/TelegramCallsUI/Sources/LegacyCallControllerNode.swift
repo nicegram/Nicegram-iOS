@@ -2,7 +2,6 @@ import Foundation
 import UIKit
 import Display
 import AsyncDisplayKit
-import Postbox
 import TelegramCore
 import SwiftSignalKit
 import TelegramPresentationData
@@ -20,7 +19,7 @@ final class LegacyCallControllerNode: ASDisplayNode, CallControllerNodeProtocol 
     private let statusBar: StatusBar
     
     private var presentationData: PresentationData
-    private var peer: Peer?
+    private var peer: EnginePeer?
     private let debugInfo: Signal<(String, String), NoError>
     private var forceReportRating = false
     private let easyDebugAccess: Bool
@@ -167,10 +166,10 @@ final class LegacyCallControllerNode: ASDisplayNode, CallControllerNodeProtocol 
         self.view.addGestureRecognizer(tapRecognizer)
     }
     
-    func updatePeer(accountPeer: Peer, peer: Peer, hasOther: Bool) {
-        if !arePeersEqual(self.peer, peer) {
+    func updatePeer(accountPeer: EnginePeer, peer: EnginePeer, hasOther: Bool) {
+        if self.peer != peer {
             self.peer = peer
-            if let peerReference = PeerReference(peer), !peer.profileImageRepresentations.isEmpty {
+            if let peerReference = PeerReference(peer._asPeer()), !peer.profileImageRepresentations.isEmpty {
                 let representations: [ImageRepresentationWithReference] = peer.profileImageRepresentations.map({ ImageRepresentationWithReference(representation: $0, reference: .avatar(peer: peerReference, resource: $0.resource)) })
                 self.imageNode.setSignal(chatAvatarGalleryPhoto(account: self.account, representations: representations, immediateThumbnailData: nil, autoFetchFullSize: true))
                 self.dimNode.isHidden = false
@@ -178,10 +177,10 @@ final class LegacyCallControllerNode: ASDisplayNode, CallControllerNodeProtocol 
                 self.imageNode.setSignal(callDefaultBackground())
                 self.dimNode.isHidden = true
             }
-            
-            self.statusNode.title = EnginePeer(peer).displayTitle(strings: self.presentationData.strings, displayOrder: self.presentationData.nameDisplayOrder)
+
+            self.statusNode.title = peer.displayTitle(strings: self.presentationData.strings, displayOrder: self.presentationData.nameDisplayOrder)
             if hasOther {
-                self.statusNode.subtitle = self.presentationData.strings.Call_AnsweringWithAccount(EnginePeer(accountPeer).displayTitle(strings: self.presentationData.strings, displayOrder: self.presentationData.nameDisplayOrder)).string
+                self.statusNode.subtitle = self.presentationData.strings.Call_AnsweringWithAccount(accountPeer.displayTitle(strings: self.presentationData.strings, displayOrder: self.presentationData.nameDisplayOrder)).string
                 
                 if let callState = callState {
                     self.updateCallState(callState)
@@ -444,7 +443,7 @@ final class LegacyCallControllerNode: ASDisplayNode, CallControllerNodeProtocol 
     
     @objc func keyPressed() {
         if self.keyPreviewNode == nil, let keyText = self.keyTextData?.1, let peer = self.peer {
-            let keyPreviewNode = CallControllerKeyPreviewNode(keyText: keyText, infoText: self.presentationData.strings.Call_EmojiDescription(EnginePeer(peer).compactDisplayTitle).string.replacingOccurrences(of: "%%", with: "%"), dismiss: { [weak self] in
+            let keyPreviewNode = CallControllerKeyPreviewNode(keyText: keyText, infoText: self.presentationData.strings.Call_EmojiDescription(peer.compactDisplayTitle).string.replacingOccurrences(of: "%%", with: "%"), dismiss: { [weak self] in
                 if let _ = self?.keyPreviewNode {
                     self?.backPressed()
                 }

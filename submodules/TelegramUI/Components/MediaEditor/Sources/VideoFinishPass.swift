@@ -265,7 +265,7 @@ private func lookupSpringValue(_ t: CGFloat) -> CGFloat {
     for i in 0 ..< table.count - 2 {
         let lhs = table[i]
         let rhs = table[i + 1]
-        
+
         if t >= lhs.0 && t <= rhs.0 {
             let fraction = (t - lhs.0) / (rhs.0 - lhs.0)
             let value = lhs.1 + fraction * (rhs.1 - lhs.1)
@@ -289,7 +289,7 @@ struct VideoEncodeParameters {
 
 final class VideoFinishPass: RenderPass {
     private var cachedTexture: MTLTexture?
-    
+
     var gradientPipelineState: MTLRenderPipelineState?
     
     var mainPipelineState: MTLRenderPipelineState?
@@ -444,9 +444,8 @@ final class VideoFinishPass: RenderPass {
         if let position = values.additionalVideoPosition, let scale = values.additionalVideoScale, let rotation = values.additionalVideoRotation {
             self.additionalPosition = VideoFinishPass.VideoPosition(position: position, size: CGSize(width: 1080.0 / 4.0, height: 1440.0 / 4.0), scale: scale, rotation: rotation, mirroring: false, baseScale: self.additionalPosition.baseScale)
         }
-        if !values.additionalVideoPositionChanges.isEmpty {
-            self.videoPositionChanges = values.additionalVideoPositionChanges
-        }
+        self.videoPositionChanges = values.additionalVideoPositionChanges
+        self.additionalVideoMirroringChanges = values.additionalVideoMirroringChanges
         self.videoDuration = videoDuration
         self.additionalVideoDuration = additionalVideoDuration
         self.videoRange = values.videoTrimRange
@@ -486,12 +485,30 @@ final class VideoFinishPass: RenderPass {
     private var isSticker = true
     private var coverDimensions: CGSize?
     private var videoPositionChanges: [VideoPositionChange] = []
+    private var additionalVideoMirroringChanges: [VideoMirroringChange] = []
     private var videoDuration: Double?
     private var additionalVideoDuration: Double?
     private var videoRange: Range<Double>?
     private var additionalVideoRange: Range<Double>?
     private var additionalVideoOffset: Double?
     
+    private func additionalVideoMirroring(at timestamp: Double) -> Bool {
+        guard let firstChange = self.additionalVideoMirroringChanges.first else {
+            return false
+        }
+        let assetTimestamp = timestamp + (self.additionalVideoOffset ?? 0.0)
+
+        var isMirrored = firstChange.isMirrored
+        for change in self.additionalVideoMirroringChanges {
+            if assetTimestamp >= change.timestamp {
+                isMirrored = change.isMirrored
+            } else {
+                break
+            }
+        }
+        return isMirrored
+    }
+
     enum VideoType {
         case main
         case additional
@@ -566,6 +583,7 @@ final class VideoFinishPass: RenderPass {
         
         var mainPosition = self.mainPosition
         var additionalPosition = self.additionalPosition
+        additionalPosition = VideoPosition(position: additionalPosition.position, size: additionalPosition.size, scale: additionalPosition.scale, rotation: additionalPosition.rotation, mirroring: self.additionalVideoMirroring(at: timestamp), baseScale: additionalPosition.baseScale)
         var disappearingPosition = self.mainPosition
         
         var transitionFraction = 1.0
@@ -588,7 +606,7 @@ final class VideoFinishPass: RenderPass {
                     backgroundTexture = additionalInput
                     backgroundTextureRotation = self.additionalTextureRotation
                     
-                    mainPosition = VideoPosition(position: mainPosition.position, size: CGSize(width: 1440.0, height: 1920.0), scale: mainPosition.scale, rotation: mainPosition.rotation, mirroring: mainPosition.mirroring, baseScale: mainPosition.baseScale)
+                    mainPosition = VideoPosition(position: mainPosition.position, size: CGSize(width: 1440.0, height: 1920.0), scale: mainPosition.scale, rotation: mainPosition.rotation, mirroring: additionalPosition.mirroring, baseScale: mainPosition.baseScale)
                     additionalPosition = VideoPosition(position: additionalPosition.position, size: CGSize(width: 1080.0 / 4.0, height: 1920.0 / 4.0), scale: additionalPosition.scale, rotation: additionalPosition.rotation, mirroring: additionalPosition.mirroring, baseScale: additionalPosition.baseScale)
                     
                     foregroundTexture = mainInput

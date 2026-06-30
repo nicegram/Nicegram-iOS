@@ -1,6 +1,5 @@
 import Foundation
 import Display
-import Postbox
 import TelegramCore
 import AccountContext
 import WebKit
@@ -417,23 +416,23 @@ public class YoutubeEmbedStoryboardMediaResource: TelegramMediaResource {
         self.url = url
     }
     
-    public required init(decoder: PostboxDecoder) {
+    public required init(decoder: EnginePostboxDecoder) {
         self.videoId = decoder.decodeStringForKey("v", orElse: "")
         self.storyboardId = decoder.decodeInt32ForKey("i", orElse: 0)
         self.url = decoder.decodeStringForKey("u", orElse: "")
     }
-    
-    public func encode(_ encoder: PostboxEncoder) {
+
+    public func encode(_ encoder: EnginePostboxEncoder) {
         encoder.encodeString(self.videoId, forKey: "v")
         encoder.encodeInt32(self.storyboardId, forKey: "i")
         encoder.encodeString(self.url, forKey: "u")
     }
-    
-    public var id: MediaResourceId {
-        return MediaResourceId(YoutubeEmbedStoryboardMediaResourceId(videoId: self.videoId, storyboardId: self.storyboardId).uniqueId)
+
+    public var id: EngineRawMediaResourceId {
+        return EngineRawMediaResourceId(YoutubeEmbedStoryboardMediaResourceId(videoId: self.videoId, storyboardId: self.storyboardId).uniqueId)
     }
-    
-    public func isEqual(to: MediaResource) -> Bool {
+
+    public func isEqual(to: EngineRawMediaResource) -> Bool {
         if let to = to as? YoutubeEmbedStoryboardMediaResource {
             return self.videoId == to.videoId && self.storyboardId == to.storyboardId && self.url == to.url
         } else {
@@ -442,17 +441,17 @@ public class YoutubeEmbedStoryboardMediaResource: TelegramMediaResource {
     }
 }
 
-public final class YoutubeEmbedStoryboardMediaResourceRepresentation: CachedMediaResourceRepresentation {
-    public let keepDuration: CachedMediaRepresentationKeepDuration = .shortLived
-    
+public final class YoutubeEmbedStoryboardMediaResourceRepresentation: EngineRawCachedMediaResourceRepresentation {
+    public let keepDuration: EngineCachedMediaRepresentationKeepDuration = .shortLived
+
     public var uniqueId: String {
         return "cached"
     }
-    
+
     public init() {
     }
-    
-    public func isEqual(to: CachedMediaResourceRepresentation) -> Bool {
+
+    public func isEqual(to: EngineRawCachedMediaResourceRepresentation) -> Bool {
         if to is YoutubeEmbedStoryboardMediaResourceRepresentation {
             return true
         } else {
@@ -461,14 +460,14 @@ public final class YoutubeEmbedStoryboardMediaResourceRepresentation: CachedMedi
     }
 }
 
-public func fetchYoutubeEmbedStoryboardResource(resource: YoutubeEmbedStoryboardMediaResource) -> Signal<CachedMediaResourceRepresentationResult, NoError> {
+public func fetchYoutubeEmbedStoryboardResource(resource: YoutubeEmbedStoryboardMediaResource) -> Signal<EngineCachedMediaResourceRepresentationResult, NoError> {
     return Signal { subscriber in
         subscriber.putNext(.reset)
                 
         let disposable = MetaDisposable()
         disposable.set(fetchHttpResource(url: resource.url).start(next: { next in
             if case let .dataPart(_, data, _, complete) = next, complete {
-                let tempFile = TempBox.shared.tempFile(fileName: "image.jpg")
+                let tempFile = EngineTempBox.shared.tempFile(fileName: "image.jpg")
                 if let _ = try? data.write(to: URL(fileURLWithPath: tempFile.path), options: .atomic) {
                     subscriber.putNext(.tempFile(tempFile))
                     subscriber.putCompletion()

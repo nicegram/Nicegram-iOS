@@ -13,6 +13,7 @@ import AppBundle
 import InstantPageUI
 import UndoUI
 import TranslateUI
+import TextProcessingScreen
 import ContextUI
 import Pasteboard
 import SaveToCameraRoll
@@ -166,6 +167,7 @@ final class BrowserInstantPageContent: UIView, BrowserContent, UIScrollViewDeleg
         
         self.scrollNode.view.delaysContentTouches = false
         self.scrollNode.view.delegate = self
+        self.scrollNode.view.scrollsToTop = false
         
         if #available(iOSApplicationExtension 11.0, iOS 11.0, *) {
             self.scrollNode.view.contentInsetAdjustmentBehavior = .never
@@ -401,6 +403,7 @@ final class BrowserInstantPageContent: UIView, BrowserContent, UIScrollViewDeleg
         self.settings = InstantPagePresentationSettings(
             themeType: self.presentationData.theme.overallDarkAppearance ? .dark : .light,
             fontSize: fontSize,
+            lineSpacingFactor: 1.0,
             forceSerif: state.isSerif,
             autoNightMode: false,
             ignoreAutoNightModeUntil: 0
@@ -498,7 +501,7 @@ final class BrowserInstantPageContent: UIView, BrowserContent, UIScrollViewDeleg
             return
         }
         
-        let currentLayout = instantPageLayoutForWebPage(webPage, instantPage: instantPage, userLocation: self.sourceLocation.userLocation, boundingWidth: size.width, safeInset: insets.left, strings: self.presentationData.strings, theme: self.theme, dateTimeFormat: self.presentationData.dateTimeFormat, webEmbedHeights: self.currentWebEmbedHeights, cachedMessageSyntaxHighlight: self.codeHighlight)
+        let currentLayout = instantPageLayoutForWebPage(webPage, instantPage: instantPage, userLocation: self.sourceLocation.userLocation, boundingWidth: size.width, sideInset: 17.0, safeInset: insets.left, strings: self.presentationData.strings, theme: self.theme, dateTimeFormat: self.presentationData.dateTimeFormat, webEmbedHeights: self.currentWebEmbedHeights, cachedMessageSyntaxHighlight: self.codeHighlight)
         
         let currentLayoutTiles = instantPageTilesFromLayout(currentLayout, boundingWidth: size.width)
         
@@ -628,7 +631,7 @@ final class BrowserInstantPageContent: UIView, BrowserContent, UIScrollViewDeleg
                     collect(blocks: blocks)
                 case let .list(items, _):
                     for item in items {
-                        if case let .blocks(blocks, _) = item {
+                        if case let .blocks(blocks, _, _) = item {
                             collect(blocks: blocks)
                         }
                     }
@@ -1531,12 +1534,12 @@ final class BrowserInstantPageContent: UIView, BrowserContent, UIScrollViewDeleg
         }
         
         let presentationData = self.context.sharedContext.currentPresentationData.with { $0 }
-        let actionSheet = OpenInActionSheetController(context: self.context, item: .url(url: baseUrl), openUrl: { [weak self] url in
+        let actionSheet = OpenInOptionsScreen(context: self.context, item: .url(url: baseUrl), openUrl: { [weak self] url in
             if let self {
                 self.context.sharedContext.openExternalUrl(context: self.context, urlContext: .generic, url: url, forceExternal: true, presentationData: presentationData, navigationController: nil, dismissInput: {})
             }
         })
-        self.present(actionSheet, nil)
+        self.push(actionSheet)
     }
         
     private func openMedia(_ media: InstantPageMedia) {
@@ -1587,7 +1590,7 @@ final class BrowserInstantPageContent: UIView, BrowserContent, UIScrollViewDeleg
                     }
                 }
             }
-            self.context.sharedContext.mediaManager.setPlaylist((self.context, InstantPageMediaPlaylist(webPage: webPage, items: medias, initialItemIndex: initialIndex)), type: file.isVoice ? .voice : .music, control: .playback(.play))
+            self.context.sharedContext.mediaManager.setPlaylist((self.context, InstantPageMediaPlaylist(playlistId: .instantPage(webpageId: webPage.webpageId), webPage: webPage, messageReference: nil, items: medias, initialItemIndex: initialIndex)), type: file.isVoice ? .voice : .music, control: .playback(.play))
             return
         }
         
@@ -1819,15 +1822,22 @@ final class BrowserInstantPageContent: UIView, BrowserContent, UIScrollViewDeleg
                 let (canTranslate, language) = canTranslateText(context: context, text: text, showTranslate: translationSettings.showTranslate, showTranslateIfTopical: false, ignoredLanguages: translationSettings.ignoredLanguages)
                 if canTranslate {
                     actions.append(ContextMenuAction(content: .text(title: strings.Conversation_ContextMenuTranslate, accessibilityLabel: strings.Conversation_ContextMenuTranslate), action: { [weak self] in
-                        let controller = TranslateScreen(context: context, text: text, canCopy: true, fromLanguage: language)
-                        controller.pushController = { [weak self] c in
-                            self?.getNavigationController()?._keepModalDismissProgress = true
-                            self?.push(c)
+                        Task { @MainActor [weak self] in
+                            guard let self else {
+                                return
+                            }
+                            let controller = await TextProcessingScreen(
+                                context: context,
+                                mode: .translate(fromLanguage: language, applyResult: nil),
+                                inputText: TextWithEntities(text: text, entities: []),
+                                copyResult: { [weak self] text in
+                                    storeMessageTextInPasteboard(text.text, entities: text.entities)
+                                    self?.present(UndoOverlayController(presentationData: presentationData, content: .copy(text: strings.Conversation_TextCopied), elevatedLayout: true, animateInAsReplacement: false, action: { _ in return false }), nil)
+                                },
+                                translateChat: nil
+                            )
+                            self.present(controller, nil)
                         }
-                        controller.presentController = { [weak self] c in
-                            self?.present(c, nil)
-                        }
-                        self?.present(controller, nil)
                     }))
                 }
                 

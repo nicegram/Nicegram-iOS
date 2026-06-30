@@ -7,7 +7,6 @@ import TelegramPresentationData
 import AppBundle
 import ChatListUI
 import AccountContext
-import Postbox
 import TelegramCore
 
 final class GreetingMessageListItemComponent: Component {
@@ -197,6 +196,8 @@ final class GreetingMessageListItemComponent: Component {
                     },
                     performActiveSessionAction: { _, _ in
                     },
+                    performBotConnectionReviewAction: { _, _ in
+                    },
                     openChatFolderUpdates: {
                     },
                     hideChatFolderUpdates: {
@@ -226,7 +227,7 @@ final class GreetingMessageListItemComponent: Component {
                 context: component.context,
                 chatListLocation: .chatList(groupId: .root),
                 filterData: nil,
-                index: EngineChatList.Item.Index.chatList(ChatListIndex(pinningIndex: nil, messageIndex: component.message.index)),
+                index: EngineChatList.Item.Index.chatList(EngineChatListIndex(pinningIndex: nil, messageIndex: component.message.index)),
                 content: .peer(ChatListItemContent.PeerData(
                     messages: [component.message],
                     peer: EngineRenderedPeer(peer: component.accountPeer),

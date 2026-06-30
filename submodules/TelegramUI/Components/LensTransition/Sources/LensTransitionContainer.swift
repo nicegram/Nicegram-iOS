@@ -1481,26 +1481,28 @@ private final class LensTransitionContainerFallbackImpl: UIView, LensTransitionC
     
     override init(frame: CGRect) {
         self.backgroundView = GlassBackgroundView()
-        
+
         super.init(frame: frame)
-        
+
+        self.backgroundView.contentView.clipsToBounds = true
         self.addSubview(self.backgroundView)
     }
-    
+
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
-    
+
     func animateIn(fromRect: CGRect, toRect: CGRect, fromCornerRadius: CGFloat, toCornerRadius: CGFloat, isDark: Bool, sourceEffectView: LensTransitionContainerEffectView) {
     }
-    
+
     func animateOut(fromRect: CGRect, toRect: CGRect, fromCornerRadius: CGFloat, toCornerRadius: CGFloat, isDark: Bool, sourceEffectView: LensTransitionContainerEffectView) {
     }
-    
+
     func update(size: CGSize, cornerRadius: CGFloat, isDark: Bool, transition: ComponentTransition) {
         transition.setBounds(view: self.backgroundView, bounds: CGRect(origin: .zero, size: size))
         transition.setPosition(view: self.backgroundView, position: CGPoint(x: size.width * 0.5, y: size.height * 0.5))
         self.backgroundView.update(size: size, cornerRadius: cornerRadius, isDark: isDark, tintColor: .init(kind: .panel), transition: transition)
+        transition.setCornerRadius(layer: self.backgroundView.contentView.layer, cornerRadius: cornerRadius)
     }
 }
 

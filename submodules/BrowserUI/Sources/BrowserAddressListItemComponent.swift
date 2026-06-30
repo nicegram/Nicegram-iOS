@@ -3,7 +3,6 @@ import UIKit
 import Display
 import ComponentFlow
 import SwiftSignalKit
-import Postbox
 import TelegramCore
 import MultilineTextComponent
 import TelegramPresentationData
@@ -26,21 +25,21 @@ final class BrowserAddressListItemComponent: Component {
     let context: AccountContext
     let theme: PresentationTheme
     let webPage: TelegramMediaWebpage
-    var message: Message?
+    var message: EngineMessage?
     let hasNext: Bool
     let insets: UIEdgeInsets
     let action: () -> Void
-    let contextAction: ((TelegramMediaWebpage, Message?, ContextExtractedContentContainingView, ContextGesture) -> Void)?
-    
+    let contextAction: ((TelegramMediaWebpage, EngineMessage?, ContextExtractedContentContainingView, ContextGesture) -> Void)?
+
     init(
         context: AccountContext,
         theme: PresentationTheme,
         webPage: TelegramMediaWebpage,
-        message: Message?,
+        message: EngineMessage?,
         hasNext: Bool,
         insets: UIEdgeInsets,
         action: @escaping () -> Void,
-        contextAction: ((TelegramMediaWebpage, Message?, ContextExtractedContentContainingView, ContextGesture) -> Void)?
+        contextAction: ((TelegramMediaWebpage, EngineMessage?, ContextExtractedContentContainingView, ContextGesture) -> Void)?
     ) {
         self.context = context
         self.theme = theme
@@ -190,7 +189,7 @@ final class BrowserAddressListItemComponent: Component {
                 if let image = content.image {
                     if let representation = imageRepresentationLargerThan(image.representations, size: PixelDimensions(width: 80, height: 80)) {
                         if let message = component.message {
-                            iconImageReferenceAndRepresentation = (.message(message: MessageReference(message), media: image), representation)
+                            iconImageReferenceAndRepresentation = (.message(message: MessageReference(message._asMessage()), media: image), representation)
                         } else {
                             iconImageReferenceAndRepresentation = (.standalone(media: image), representation)
                         }
@@ -198,7 +197,7 @@ final class BrowserAddressListItemComponent: Component {
                 } else if let file = content.file {
                     if let representation = smallestImageRepresentation(file.previewRepresentations) {
                         if let message = component.message {
-                            iconImageReferenceAndRepresentation = (.message(message: MessageReference(message), media: file), representation)
+                            iconImageReferenceAndRepresentation = (.message(message: MessageReference(message._asMessage()), media: file), representation)
                         } else {
                             iconImageReferenceAndRepresentation = (.standalone(media: file), representation)
                         }

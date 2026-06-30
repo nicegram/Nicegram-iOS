@@ -236,7 +236,7 @@
         
         [strongController dismissWhenReadyAnimated:true];
     };
-    model.interfaceView.doneLongPressed = ^(TGMediaPickerGalleryItem *item)
+    model.interfaceView.doneLongPressed = ^(TGMediaPickerGalleryItem *item, UIView *sourceView)
     {
         __strong TGModernGalleryController *strongController = weakGalleryController;
         __strong TGMediaPickerGalleryModel *strongModel = weakModel;
@@ -286,6 +286,19 @@
                 complete(silentPosting, time);
             });
         };
+        if (sourceView != nil && stickersContext.presentMediaPickerSendActionMenu != nil && stickersContext.presentMediaPickerSendActionMenu(sourceView, hasSilentPosting, hasSchedule, hasSchedule, reminder, false, ^{
+            if (sendController.sendSilently != nil)
+                sendController.sendSilently();
+        }, ^{
+            if (sendController.sendWhenOnline != nil)
+                sendController.sendWhenOnline();
+        }, ^{
+            if (sendController.schedule != nil)
+                sendController.schedule();
+        }, ^{
+        })) {
+            return;
+        }
         [strongController presentViewController:sendController animated:false completion:nil];
     };
     

@@ -2,7 +2,6 @@ import Foundation
 import UIKit
 import Display
 import AsyncDisplayKit
-import Postbox
 import TelegramCore
 import SwiftSignalKit
 import TelegramPresentationData
@@ -22,7 +21,7 @@ public final class VoiceChatJoinScreen: ViewController {
     private var animatedIn = false
     
     private let context: AccountContext
-    private let peerId: PeerId
+    private let peerId: EnginePeer.Id
     private let invite: String?
     private var join: (CachedChannelData.ActiveCall) -> Void
     
@@ -30,7 +29,7 @@ public final class VoiceChatJoinScreen: ViewController {
     
     private let disposable = MetaDisposable()
     
-    public init(context: AccountContext, peerId: PeerId, invite: String?, join: @escaping (CachedChannelData.ActiveCall) -> Void) {
+    public init(context: AccountContext, peerId: EnginePeer.Id, invite: String?, join: @escaping (CachedChannelData.ActiveCall) -> Void) {
         self.context = context
         self.peerId = peerId
         self.invite = invite
@@ -132,7 +131,7 @@ public final class VoiceChatJoinScreen: ViewController {
                         return
                     }
                     
-                    let defaultJoinAsPeerId: PeerId? = callJoinAsPeerId
+                    let defaultJoinAsPeerId: EnginePeer.Id? = callJoinAsPeerId
                     
                     let activeCall = CachedChannelData.ActiveCall(id: call.info.id, accessHash: call.info.accessHash, title: call.info.title, scheduleTimestamp: call.info.scheduleTimestamp, subscribedToScheduled: call.info.subscribedToScheduled, isStream: call.info.isStream)
                     if availablePeers.count > 0 && defaultJoinAsPeerId == nil {
@@ -242,6 +241,7 @@ public final class VoiceChatJoinScreen: ViewController {
             self.wrappingScrollNode.view.alwaysBounceVertical = true
             self.wrappingScrollNode.view.delaysContentTouches = false
             self.wrappingScrollNode.view.canCancelContentTouches = true
+            self.wrappingScrollNode.view.scrollsToTop = false
             
             self.dimNode = ASDisplayNode()
             self.dimNode.backgroundColor = UIColor(white: 0.0, alpha: 0.5)
@@ -682,7 +682,7 @@ final class VoiceChatPreviewContentNode: ASDisplayNode, ShareContentContainerNod
     func deactivate() {
     }
     
-    func setEnsurePeerVisibleOnLayout(_ peerId: PeerId?) {
+    func setEnsurePeerVisibleOnLayout(_ peerId: EnginePeer.Id?) {
     }
     
     func setDidBeginDragging(_ f: (() -> Void)?) {

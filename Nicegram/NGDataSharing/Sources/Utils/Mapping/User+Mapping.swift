@@ -6,12 +6,10 @@ extension User {
     static func build(
         user: TelegramUser,
         botInfo: BotUserInfo,
-        cachedData: CachedPeerData?,
+        botInfoDetails: BotInfo?,
         icon: String?,
         langCode: String?
     ) -> User {
-        let cachedData = cachedData as? CachedUserData
-        
         let botFlags = botInfo.flags
         let userFlags = user.flags
     
@@ -44,7 +42,8 @@ extension User {
                     username: $0.username
                 )
             },
-            description: cachedData?.botInfo?.description
+            description: botInfoDetails?.description,
+            subscriberCount: user.subscriberCount
         )
         
         return User(

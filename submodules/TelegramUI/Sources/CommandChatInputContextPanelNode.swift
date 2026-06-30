@@ -1,7 +1,6 @@
 import Foundation
 import UIKit
 import AsyncDisplayKit
-import Postbox
 import TelegramCore
 import Display
 import TelegramPresentationData
@@ -167,6 +166,8 @@ private struct CommandChatInputContextPanelEntry: Comparable, Identifiable {
                     },
                     performActiveSessionAction: { _, _ in
                     },
+                    performBotConnectionReviewAction: { _, _ in
+                    },
                     openChatFolderUpdates: {
                     },
                     hideChatFolderUpdates: {
@@ -211,7 +212,7 @@ private struct CommandChatInputContextPanelEntry: Comparable, Identifiable {
                     context: context,
                     chatListLocation: .chatList(groupId: .root),
                     filterData: nil,
-                    index: EngineChatList.Item.Index.chatList(ChatListIndex(pinningIndex: nil, messageIndex: MessageIndex(id: MessageId(peerId: context.account.peerId, namespace: 0, id: 0), timestamp: 0))),
+                    index: EngineChatList.Item.Index.chatList(EngineChatListIndex(pinningIndex: nil, messageIndex: EngineMessage.Index(id: EngineMessage.Id(peerId: context.account.peerId, namespace: 0, id: 0), timestamp: 0))),
                     content: .peer(ChatListItemContent.PeerData(
                         messages: [shortcut.topMessage],
                         peer: renderedPeer,
@@ -368,7 +369,7 @@ final class CommandChatInputContextPanelNode: ChatInputContextPanelNode {
             switch command {
             case let .command(command):
                 if sendImmediately {
-                    interfaceInteraction.sendBotCommand(command.peer, "/" + command.command.text)
+                    interfaceInteraction.sendBotCommand(command.peer._asPeer(), "/" + command.command.text)
                 } else {
                     interfaceInteraction.updateTextInputStateAndMode { textInputState, inputMode in
                         var commandQueryRange: NSRange?

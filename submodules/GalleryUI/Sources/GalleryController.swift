@@ -21,26 +21,27 @@ import UndoUI
 import TranslateUI
 
 private func tagsForMessage(_ message: Message) -> MessageTags? {
-    for media in message.media {
+    //TODO:rewrite to take all media (effectiveMedia returns all rich-text media; we stop at the first)
+    for media in message.effectiveMedia {
         switch media {
-            case _ as TelegramMediaImage:
-                return .photoOrVideo
-            case let file as TelegramMediaFile:
-                if file.isVideo {
-                    if file.isAnimated {
-                        return .gif
-                    } else {
-                        return .photoOrVideo
-                    }
-                } else if file.isVoice {
-                    return .voiceOrInstantVideo
-                } else if file.isSticker {
-                    return nil
+        case _ as TelegramMediaImage:
+            return .photoOrVideo
+        case let file as TelegramMediaFile:
+            if file.isVideo {
+                if file.isAnimated {
+                    return .gif
                 } else {
-                    return .file
+                    return .photoOrVideo
                 }
-            default:
-                break
+            } else if file.isVoice {
+                return .voiceOrInstantVideo
+            } else if file.isSticker {
+                return nil
+            } else {
+                return .file
+            }
+        default:
+            break
         }
     }
     return nil
@@ -64,7 +65,8 @@ private func galleryMediaForMedia(media: Media) -> Media? {
 }
 
 func mediaForMessage(message: Message, mediaSubject: GalleryMediaSubject? = nil) -> [(Media, TelegramMediaImage?)] {
-    for media in message.media {
+    //TODO:rewrite to take all media (effectiveMedia returns all rich-text media; we return the first match)
+    for media in message.effectiveMedia {
         if let result = galleryMediaForMedia(media: media) {
             return [(result, nil)]
         } else if let poll = media as? TelegramMediaPoll {
@@ -118,6 +120,7 @@ func mediaForMessage(message: Message, mediaSubject: GalleryMediaSubject? = nil)
             }
         }
     }
+
     return []
 }
 

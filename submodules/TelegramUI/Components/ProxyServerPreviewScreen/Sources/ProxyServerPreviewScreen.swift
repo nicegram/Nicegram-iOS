@@ -20,22 +20,25 @@ import OverlayStatusController
 private final class ProxyServerPreviewSheetContent: CombinedComponent {
     typealias EnvironmentType = ViewControllerComponentContainer.Environment
     
-    let context: AccountContext
+    let sharedContext: SharedAccountContext
+    let network: Network
     let server: ProxyServerSettings
     let cancel: (Bool) -> Void
     
     init(
-        context: AccountContext,
+        sharedContext: SharedAccountContext,
+        network: Network,
         server: ProxyServerSettings,
         cancel: @escaping  (Bool) -> Void
     ) {
-        self.context = context
+        self.sharedContext = sharedContext
+        self.network = network
         self.server = server
         self.cancel = cancel
     }
     
     static func ==(lhs: ProxyServerPreviewSheetContent, rhs: ProxyServerPreviewSheetContent) -> Bool {
-        if lhs.context !== rhs.context {
+        if lhs.sharedContext !== rhs.sharedContext {
             return false
         }
         if lhs.server != rhs.server {
@@ -45,7 +48,8 @@ private final class ProxyServerPreviewSheetContent: CombinedComponent {
     }
     
     final class State: ComponentState {
-        private let context: AccountContext
+        private let sharedContext: SharedAccountContext
+        private let network: Network
         private let server: ProxyServerSettings
         
         private var disposable = MetaDisposable()
@@ -59,8 +63,9 @@ private final class ProxyServerPreviewSheetContent: CombinedComponent {
         
         private var revertSettings: ProxySettings?
         
-        init(context: AccountContext, server: ProxyServerSettings) {
-            self.context = context
+        init(sharedContext: SharedAccountContext, network: Network, server: ProxyServerSettings) {
+            self.sharedContext = sharedContext
+            self.network = network
             self.server = server
             
             super.init()
@@ -71,7 +76,7 @@ private final class ProxyServerPreviewSheetContent: CombinedComponent {
             self.statusDisposable.dispose()
             
             if let revertSettings = self.revertSettings {
-                let _ = updateProxySettingsInteractively(accountManager: self.context.sharedContext.accountManager, { _ in
+                let _ = updateProxySettingsInteractively(accountManager: self.sharedContext.accountManager, { _ in
                     return revertSettings
                 })
             }
@@ -91,7 +96,7 @@ private final class ProxyServerPreviewSheetContent: CombinedComponent {
                     return
                 }
                 
-                let statusesContext = ProxyServersStatuses(network: self.context.account.network, servers: .single([self.server]))
+                let statusesContext = ProxyServersStatuses(network: self.network, servers: .single([self.server]))
                 self.statusesContext = statusesContext
                 
                 self.status = .checking
@@ -114,13 +119,13 @@ private final class ProxyServerPreviewSheetContent: CombinedComponent {
                 return
             }
             
-            let presentationData = self.context.sharedContext.currentPresentationData.with { $0 }
+            let presentationData = self.sharedContext.currentPresentationData.with { $0 }
             
             self.displayWarningIfNeeded { [weak self] in
                 guard let self else {
                     return
                 }
-                let accountManager = self.context.sharedContext.accountManager
+                let accountManager = self.sharedContext.accountManager
                 let proxyServerSettings = self.server
                 let _ = (accountManager.transaction { transaction -> ProxySettings in
                     var currentSettings: ProxySettings?
@@ -145,7 +150,7 @@ private final class ProxyServerPreviewSheetContent: CombinedComponent {
                         self.inProgress = true
                         self.updated()
                         
-                        let signal = self.context.account.network.connectionStatus
+                        let signal = self.network.connectionStatus
                         |> filter { status in
                             switch status {
                                 case let .online(proxyAddress):
@@ -181,7 +186,7 @@ private final class ProxyServerPreviewSheetContent: CombinedComponent {
                                     let _ = updateProxySettingsInteractively(accountManager: accountManager, { _ in
                                         return previousSettings
                                     }).start()
-                                    self.controller?.present(textAlertController(sharedContext: self.context.sharedContext, title: nil, text: presentationData.strings.SocksProxySetup_FailedToConnect, actions: [TextAlertAction(type: .defaultAction, title: presentationData.strings.Common_OK, action: {})]), in: .window(.root))
+                                    self.controller?.present(textAlertController(sharedContext: self.sharedContext, title: nil, text: presentationData.strings.SocksProxySetup_FailedToConnect, actions: [TextAlertAction(type: .defaultAction, title: presentationData.strings.Common_OK, action: {})]), in: .window(.root))
                                 }
                             }
                         }))
@@ -195,9 +200,9 @@ private final class ProxyServerPreviewSheetContent: CombinedComponent {
                 commit()
                 return
             }
-            let presentationData = self.context.sharedContext.currentPresentationData.with { $0 }
+            let presentationData = self.sharedContext.currentPresentationData.with { $0 }
             let alertController = textAlertController(
-                context: context,
+                sharedContext: self.sharedContext,
                 title: presentationData.strings.SocksProxySetup_Warning_Title,
                 text: presentationData.strings.SocksProxySetup_Warning_Text,
                 actions: [
@@ -212,7 +217,7 @@ private final class ProxyServerPreviewSheetContent: CombinedComponent {
     }
     
     func makeState() -> State {
-        return State(context: self.context, server: self.server)
+        return State(sharedContext: self.sharedContext, network: self.network, server: self.server)
     }
     
     static var body: Body {
@@ -414,19 +419,22 @@ private final class ProxyServerPreviewSheetContent: CombinedComponent {
 private final class ProxyServerPreviewSheetComponent: CombinedComponent {
     typealias EnvironmentType = ViewControllerComponentContainer.Environment
     
-    let context: AccountContext
+    let sharedContext: SharedAccountContext
+    let network: Network
     let server: ProxyServerSettings
     
     init(
-        context: AccountContext,
+        sharedContext: SharedAccountContext,
+        network: Network,
         server: ProxyServerSettings
     ) {
-        self.context = context
+        self.sharedContext = sharedContext
+        self.network = network
         self.server = server
     }
     
     static func ==(lhs: ProxyServerPreviewSheetComponent, rhs: ProxyServerPreviewSheetComponent) -> Bool {
-        if lhs.context !== rhs.context {
+        if lhs.sharedContext !== rhs.sharedContext {
             return false
         }
         if lhs.server != rhs.server {
@@ -446,7 +454,8 @@ private final class ProxyServerPreviewSheetComponent: CombinedComponent {
             let sheet = sheet.update(
                 component: SheetComponent<EnvironmentType>(
                     content: AnyComponent<EnvironmentType>(ProxyServerPreviewSheetContent(
-                        context: context.component.context,
+                        sharedContext: context.component.sharedContext,
+                        network: context.component.network,
                         server: context.component.server,
                         cancel: { animate in
                             if animate {
@@ -504,23 +513,42 @@ private final class ProxyServerPreviewSheetComponent: CombinedComponent {
 }
 
 public class ProxyServerPreviewScreen: ViewControllerComponentContainer {
-    private let context: AccountContext
-    
     public init(
         context: AccountContext,
         server: ProxyServerSettings
     ) {
-        self.context = context
-        
         super.init(
             context: context,
             component: ProxyServerPreviewSheetComponent(
-                context: context,
+                sharedContext: context.sharedContext,
+                network: context.account.network,
                 server: server
             ),
             navigationBarAppearance: .none,
             statusBarStyle: .ignore,
             theme: .default
+        )
+        
+        self.navigationPresentation = .flatModal
+    }
+    
+    public init(
+        sharedContext: SharedAccountContext,
+        network: Network,
+        updatedPresentationData: (initial: PresentationData, signal: Signal<PresentationData, NoError>),
+        server: ProxyServerSettings
+    ) {
+        super.init(
+            component: ProxyServerPreviewSheetComponent(
+                sharedContext: sharedContext,
+                network: network,
+                server: server
+            ),
+            navigationBarAppearance: .none,
+            statusBarStyle: .ignore,
+            presentationMode: .default,
+            theme: .default,
+            updatedPresentationData: updatedPresentationData
         )
         
         self.navigationPresentation = .flatModal

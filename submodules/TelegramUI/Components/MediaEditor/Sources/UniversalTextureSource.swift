@@ -264,8 +264,7 @@ private class VideoInputContext: NSObject, InputContext, AVPlayerItemOutputPullD
         
         super.init()
         
-        //TODO: mirror if self.additionalPlayer == nil && self.mirror
-        self.textureRotation = textureRotatonForAVAsset(self.playerItem.asset, mirror: rect == nil ? additional : false)
+        self.textureRotation = textureRotatonForAVAsset(self.playerItem.asset, mirror: false)
         
         let colorProperties: [String: Any] = [
             AVVideoColorPrimariesKey: AVVideoColorPrimaries_ITU_R_709_2,

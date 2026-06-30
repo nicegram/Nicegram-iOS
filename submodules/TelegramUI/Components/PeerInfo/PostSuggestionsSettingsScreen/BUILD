@@ -18,7 +18,6 @@ swift_library(
         "//submodules/Components/ViewControllerComponent",
         "//submodules/SSignalKit/SwiftSignalKit",
         "//submodules/TelegramCore",
-        "//submodules/Postbox",
         "//submodules/AccountContext",
         "//submodules/TelegramUI/Components/SwitchComponent",
         "//submodules/Components/MultilineTextComponent",

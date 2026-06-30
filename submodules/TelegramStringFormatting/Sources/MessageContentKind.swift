@@ -1,5 +1,4 @@
 import Foundation
-import Postbox
 import TelegramCore
 import TelegramPresentationData
 import TelegramUIPreferences
@@ -282,10 +281,13 @@ public func messageTextWithAttributes(message: EngineMessage) -> NSAttributedStr
             }
             
             let range = NSRange(location: entity.range.lowerBound, length: entity.range.upperBound - entity.range.lowerBound)
+            if range.upperBound >= updatedString.length {
+                continue
+            }
             
             let currentDict = updatedString.attributes(at: range.lowerBound, effectiveRange: nil)
             var updatedAttributes: [NSAttributedString.Key: Any] = currentDict
-            updatedAttributes[ChatTextInputAttributes.customEmoji] = ChatTextInputTextCustomEmojiAttribute(interactivelySelectedFromPackId: nil, fileId: fileId, file: message.associatedMedia[MediaId(namespace: Namespaces.Media.CloudFile, id: fileId)] as? TelegramMediaFile)
+            updatedAttributes[ChatTextInputAttributes.customEmoji] = ChatTextInputTextCustomEmojiAttribute(interactivelySelectedFromPackId: nil, fileId: fileId, file: message.associatedMedia[EngineMedia.Id(namespace: Namespaces.Media.CloudFile, id: fileId)] as? TelegramMediaFile)
             
             let insertString = NSAttributedString(string: updatedString.attributedSubstring(from: range).string, attributes: updatedAttributes)
             updatedString.replaceCharacters(in: range, with: insertString)
@@ -308,6 +310,11 @@ public func messageContentKind(contentSettings: ContentSettings, message: Engine
     for media in message.media {
         if let kind = mediaContentKind(EngineMedia(media), message: message, strings: strings, nameDisplayOrder: nameDisplayOrder, dateTimeFormat: dateTimeFormat, accountPeerId: accountPeerId) {
             return kind
+        }
+    }
+    for attribute in message.attributes {
+        if let attribute = attribute as? RichTextMessageAttribute {
+            return .text(NSAttributedString(string: attribute.instantPage.previewText(strings: strings)))
         }
     }
     return .text(messageTextWithAttributes(message: message))

@@ -3,7 +3,6 @@ import UIKit
 import SwiftSignalKit
 import AsyncDisplayKit
 import Display
-import Postbox
 import TelegramCore
 import TelegramPresentationData
 import TelegramUIPreferences
@@ -24,7 +23,7 @@ private final class ChatMessageActionUrlAuthAlertContentNode: AlertContentNode {
     private let nameDisplayOrder: PresentationPersonNameOrder
     private let defaultUrl: String
     private let domain: String
-    private let bot: Peer
+    private let bot: EnginePeer
     private let displayName: String
     
     private let titleNode: ASTextNode
@@ -62,7 +61,7 @@ private final class ChatMessageActionUrlAuthAlertContentNode: AlertContentNode {
         }
     }
     
-    init(theme: AlertControllerTheme, ptheme: PresentationTheme, strings: PresentationStrings, nameDisplayOrder: PresentationPersonNameOrder, defaultUrl: String, domain: String, bot: Peer, requestWriteAccess: Bool, displayName: String, actions: [TextAlertAction]) {
+    init(theme: AlertControllerTheme, ptheme: PresentationTheme, strings: PresentationStrings, nameDisplayOrder: PresentationPersonNameOrder, defaultUrl: String, domain: String, bot: EnginePeer, requestWriteAccess: Bool, displayName: String, actions: [TextAlertAction]) {
         self.strings = strings
         self.nameDisplayOrder = nameDisplayOrder
         self.defaultUrl = defaultUrl
@@ -163,7 +162,7 @@ private final class ChatMessageActionUrlAuthAlertContentNode: AlertContentNode {
         
         self.textNode.attributedText = formattedText(strings.Conversation_OpenBotLinkText(self.defaultUrl).string, color: theme.primaryColor, textAlignment: .center)
         self.authorizeLabelNode.attributedText = formattedText(strings.Conversation_OpenBotLinkLogin(self.domain, self.displayName).string, color: theme.primaryColor)
-        self.allowWriteLabelNode.attributedText = formattedText(strings.Conversation_OpenBotLinkAllowMessages(EnginePeer(self.bot).displayTitle(strings: self.strings, displayOrder: self.nameDisplayOrder)).string, color: theme.primaryColor)
+        self.allowWriteLabelNode.attributedText = formattedText(strings.Conversation_OpenBotLinkAllowMessages(self.bot.displayTitle(strings: self.strings, displayOrder: self.nameDisplayOrder)).string, color: theme.primaryColor)
         
         self.actionNodesSeparator.backgroundColor = theme.separatorColor
         for actionNode in self.actionNodes {
@@ -301,7 +300,7 @@ private final class ChatMessageActionUrlAuthAlertContentNode: AlertContentNode {
     }
 }
 
-func chatMessageActionUrlAuthController(context: AccountContext, defaultUrl: String, domain: String, bot: Peer, requestWriteAccess: Bool, displayName: String, open: @escaping (Bool, Bool) -> Void) -> AlertController {
+func chatMessageActionUrlAuthController(context: AccountContext, defaultUrl: String, domain: String, bot: EnginePeer, requestWriteAccess: Bool, displayName: String, open: @escaping (Bool, Bool) -> Void) -> AlertController {
     let presentationData = context.sharedContext.currentPresentationData.with { $0 }
     let theme = presentationData.theme
     let strings = presentationData.strings

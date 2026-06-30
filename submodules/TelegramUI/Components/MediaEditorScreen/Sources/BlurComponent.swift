@@ -2,9 +2,9 @@ import Foundation
 import UIKit
 import Display
 import ComponentFlow
-import LegacyComponents
 import MediaEditor
 import TelegramPresentationData
+import SliderComponent
 
 private final class BlurModeComponent: Component {
     typealias EnvironmentType = Empty
@@ -73,7 +73,7 @@ private final class BlurModeComponent: Component {
                 component: AnyComponent(
                     Text(
                         text: component.title,
-                        font: Font.regular(14.0),
+                        font: Font.bold(13.0),
                         color: component.isSelected ? UIColor(rgb: 0xffd300) : UIColor(rgb: 0x808080)
                     )
                 ),
@@ -198,7 +198,7 @@ final class BlurComponent: Component {
                 component: AnyComponent(
                     Text(
                         text: component.strings.Story_Editor_Blur_Title,
-                        font: Font.regular(14.0),
+                        font: Font.bold(13.0),
                         color: UIColor(rgb: 0x808080)
                     )
                 ),
@@ -331,27 +331,30 @@ final class BlurComponent: Component {
             let sliderSize = self.slider.update(
                 transition: transition,
                 component: AnyComponent(
-                    AdjustmentSliderComponent(
-                        title: "",
-                        value: state.value.intensity,
-                        minValue: 0.0,
-                        maxValue: 1.0,
-                        startValue: 0.0,
-                        isEnabled: state.value.mode != .off,
-                        trackColor: nil,
-                        displayValue: false,
-                        valueUpdated: { [weak state] value in
-                            if let state {
-                                valueUpdated(state.value.withUpdatedIntensity(value))
+                    SliderComponent(
+                        content: .continuous(SliderComponent.Continuous(
+                            value: CGFloat(state.value.intensity),
+                            range: 0.0 ... 1.0,
+                            startValue: 0.0,
+                            valueUpdated: { [weak state] value in
+                                if let state {
+                                    valueUpdated(state.value.withUpdatedIntensity(Float(value)))
+                                }
                             }
-                        },
+                        )),
+                        useNative: true,
+                        trackBackgroundColor: UIColor(rgb: 0xffffff, alpha: 0.1),
+                        trackForegroundColor: state.value.mode != .off ? UIColor(rgb: 0xffd300) : UIColor(rgb: 0xffffff),
+                        isEnabled: state.value.mode != .off,
+                        trackHeight: 6.0,
+                        displaysBorderOnTracking: true,
                         isTrackingUpdated: { isTracking in
                             isTrackingUpdated(isTracking)
                         }
                     )
                 ),
                 environment: {},
-                containerSize: availableSize
+                containerSize: CGSize(width: max(0.0, availableSize.width - 28.0 * 2.0), height: 44.0)
             )
             
             var buttons = [self.offButton, self.radialButton, self.linearButton]
@@ -375,7 +378,8 @@ final class BlurComponent: Component {
             }
             
             let verticalSpacing: CGFloat = -5.0
-            let sliderFrame = CGRect(origin: CGPoint(x: 0.0, y: topInset + offButtonSize.height + verticalSpacing), size: sliderSize)
+            let sliderRowHeight: CGFloat = 52.0
+            let sliderFrame = CGRect(origin: CGPoint(x: 28.0, y: topInset + offButtonSize.height + verticalSpacing + 7.0), size: sliderSize)
             if let view = self.slider.view {
                 if view.superview == nil {
                     self.addSubview(view)
@@ -383,7 +387,7 @@ final class BlurComponent: Component {
                 transition.setFrame(view: view, frame: sliderFrame)
             }
             
-            return CGSize(width: availableSize.width, height: topInset + offButtonSize.height + verticalSpacing + sliderSize.height + 6.0)
+            return CGSize(width: availableSize.width, height: topInset + offButtonSize.height + verticalSpacing + sliderRowHeight + 6.0)
         }
     }
 

@@ -663,6 +663,7 @@ final class MediaPickerSelectedListNode: ASDisplayNode, ASScrollViewDelegate, AS
         self.scrollNode.view.delegate = self.wrappedScrollViewDelegate
         self.scrollNode.view.panGestureRecognizer.cancelsTouchesInView = true
         self.scrollNode.view.showsVerticalScrollIndicator = false
+        self.scrollNode.view.scrollsToTop = false
         
         self.view.addGestureRecognizer(ReorderingGestureRecognizer(animateOnTouch: !self.persistentItems, shouldBegin: { [weak self] point in
             if let strongSelf = self, !strongSelf.scrollNode.view.isDragging && strongSelf.itemNodes.count > 1 {

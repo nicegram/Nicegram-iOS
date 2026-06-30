@@ -76,6 +76,7 @@ public final class GlobalControlPanelsContext {
         case setupBirthday
         case birthdayPremiumGift(peers: [EnginePeer], birthdays: [EnginePeer.Id: TelegramBirthday])
         case reviewLogin(newSessionReview: NewSessionReview, totalCount: Int)
+        case reviewBotConnection(newBotConnectionReview: NewBotConnectionReview, botUsername: String, totalCount: Int)
         case premiumGrace
         case starsSubscriptionLowBalance(amount: StarsAmount, peers: [EnginePeer])
         case setupPhoto(EnginePeer)
@@ -333,6 +334,7 @@ public final class GlobalControlPanelsContext {
                     context.engine.notices.getServerDismissedSuggestions(),
                     twoStepData,
                     newSessionReviews(postbox: context.account.postbox),
+                    newBotConnectionReviews(postbox: context.account.postbox),
                     context.engine.data.subscribe(
                         TelegramEngine.EngineData.Item.Peer.Peer(id: context.account.peerId),
                         TelegramEngine.EngineData.Item.Peer.Birthday(id: context.account.peerId)
@@ -341,11 +343,23 @@ public final class GlobalControlPanelsContext {
                     starsSubscriptionsContextPromise.get(),
                     accountFreezeConfiguration
                 )
-                |> mapToSignal { suggestions, dismissedSuggestions, configuration, newSessionReviews, data, birthdays, starsSubscriptionsContext, accountFreezeConfiguration -> Signal<ChatListNotice?, NoError> in
+                |> mapToSignal { suggestions, dismissedSuggestions, configuration, newSessionReviews, newBotConnectionReviews, data, birthdays, starsSubscriptionsContext, accountFreezeConfiguration -> Signal<ChatListNotice?, NoError> in
                     let (accountPeer, birthday) = data
                     
                     if let newSessionReview = newSessionReviews.first {
                         return .single(.reviewLogin(newSessionReview: newSessionReview, totalCount: newSessionReviews.count))
+                    }
+                    if let newBotConnectionReview = newBotConnectionReviews.first {
+                        return context.engine.data.get(
+                            TelegramEngine.EngineData.Item.Peer.Peer(id: newBotConnectionReview.botId)
+                        )
+                        |> map { peer -> ChatListNotice? in
+                            return .reviewBotConnection(
+                                newBotConnectionReview: newBotConnectionReview,
+                                botUsername: peer?.addressName ?? "",
+                                totalCount: newBotConnectionReviews.count
+                            )
+                        }
                     }
                     if suggestions.contains(.setupPassword), let configuration {
                         var notSet = false

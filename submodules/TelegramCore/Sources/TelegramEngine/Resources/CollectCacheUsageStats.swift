@@ -14,15 +14,15 @@ public enum PeerCacheUsageCategory: Int32 {
 public struct CacheUsageStats {
     public let media: [PeerId: [PeerCacheUsageCategory: [MediaId: Int64]]]
     public let mediaResourceIds: [MediaId: [MediaResourceId]]
-    public let peers: [PeerId: Peer]
+    public let peers: [EnginePeer.Id: EnginePeer]
     public let otherSize: Int64
     public let otherPaths: [String]
     public let cacheSize: Int64
     public let tempPaths: [String]
     public let tempSize: Int64
     public let immutableSize: Int64
-    
-    public init(media: [PeerId: [PeerCacheUsageCategory: [MediaId: Int64]]], mediaResourceIds: [MediaId: [MediaResourceId]], peers: [PeerId: Peer], otherSize: Int64, otherPaths: [String], cacheSize: Int64, tempPaths: [String], tempSize: Int64, immutableSize: Int64) {
+
+    public init(media: [PeerId: [PeerCacheUsageCategory: [MediaId: Int64]]], mediaResourceIds: [MediaId: [MediaResourceId]], peers: [EnginePeer.Id: EnginePeer], otherSize: Int64, otherPaths: [String], cacheSize: Int64, tempPaths: [String], tempSize: Int64, immutableSize: Int64) {
         self.media = media
         self.mediaResourceIds = mediaResourceIds
         self.peers = peers
@@ -736,7 +736,7 @@ func _internal_collectCacheUsageStats(account: Account, peerId: PeerId? = nil, a
                                         continue
                                     }
                                     if let message = transaction.getMessage(MessageId(peerId: PeerId(reference.peerId), namespace: MessageId.Namespace(reference.messageNamespace), id: reference.messageId)) {
-                                        for mediaItem in message.media {
+                                        for mediaItem in message.effectiveMedia {
                                             guard let mediaId = mediaItem.id else {
                                                 continue
                                             }
@@ -894,7 +894,7 @@ func _internal_collectCacheUsageStats(account: Account, peerId: PeerId? = nil, a
                                 subscriber.putNext(.result(CacheUsageStats(
                                     media: state.media,
                                     mediaResourceIds: state.mediaResourceIds,
-                                    peers: state.peers,
+                                    peers: state.peers.mapValues(EnginePeer.init),
                                     otherSize: state.otherSize,
                                     otherPaths: state.otherPaths,
                                     cacheSize: cacheSize,

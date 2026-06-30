@@ -8,7 +8,6 @@ import UIKit
 import AsyncDisplayKit
 import Display
 import TelegramCore
-import Postbox
 import SwiftSignalKit
 import TelegramPresentationData
 import AlertUI
@@ -68,7 +67,7 @@ private func titleAndColorForAction(_ action: SubscriberAction, theme: Presentat
     }
 }
 
-private func actionForPeer(context: AccountContext, peer: Peer, interfaceState: ChatPresentationInterfaceState, isJoining: Bool, isMuted: Bool) -> SubscriberAction? {
+private func actionForPeer(context: AccountContext, peer: EnginePeer, interfaceState: ChatPresentationInterfaceState, isJoining: Bool, isMuted: Bool) -> SubscriberAction? {
     if case let .replyThread(message) = interfaceState.chatLocation, message.peerId == context.account.peerId {
         if let peer = interfaceState.savedMessagesTopicPeer {
             if case let .channel(channel) = peer {
@@ -84,9 +83,9 @@ private func actionForPeer(context: AccountContext, peer: Peer, interfaceState: 
         return .openChat
     } else if case .pinnedMessages = interfaceState.subject {
         var canManagePin = false
-        if let channel = peer as? TelegramChannel {
+        if case let .channel(channel) = peer {
             canManagePin = channel.hasPermission(.pinMessages)
-        } else if let group = peer as? TelegramGroup {
+        } else if case let .legacyGroup(group) = peer {
             switch group.role {
                 case .creator, .admin:
                     canManagePin = true
@@ -97,7 +96,7 @@ private func actionForPeer(context: AccountContext, peer: Peer, interfaceState: 
                         canManagePin = true
                     }
             }
-        } else if let _ = peer as? TelegramUser, interfaceState.explicitelyCanPinMessages {
+        } else if case .user = peer, interfaceState.explicitelyCanPinMessages {
             canManagePin = true
         }
         if canManagePin {
@@ -106,7 +105,7 @@ private func actionForPeer(context: AccountContext, peer: Peer, interfaceState: 
             return .hidePinnedMessages
         }
     } else {
-        if let channel = peer as? TelegramChannel {
+        if case let .channel(channel) = peer {
             if case .broadcast = channel.info, isJoining {
                 if isMuted {
                     return .unmuteNotifications
@@ -222,6 +221,7 @@ public final class ChatChannelSubscriberInputPanelNode: ChatInputPanelNode {
             if let (width, leftInset, rightInset, bottomInset, additionalSideInsets, maxHeight, maxOverlayHeight, isSecondary, metrics, deviceMetrics) = self.layoutData, let presentationInterfaceState = self.presentationInterfaceState {
                 let _ = self.updateLayout(width: width, leftInset: leftInset, rightInset: rightInset, bottomInset: bottomInset, additionalSideInsets: additionalSideInsets, maxHeight: maxHeight, maxOverlayHeight: maxOverlayHeight, isSecondary: isSecondary, transition: .immediate, interfaceState: presentationInterfaceState, metrics: metrics, deviceMetrics: deviceMetrics, force: true)
             }
+            var didJoin = false
             self.actionDisposable.set((context.peerChannelMemberCategoriesContextsManager.join(engine: context.engine, peerId: peer.id, hash: nil)
             |> afterDisposed { [weak self] in
                 Queue.mainQueue().async {
@@ -229,7 +229,19 @@ public final class ChatChannelSubscriberInputPanelNode: ChatInputPanelNode {
                         strongSelf.isJoining = false
                     }
                 }
-            }).startStrict(error: { [weak self] error in
+            }).startStrict(next: { [weak self] result in
+                guard let strongSelf = self else {
+                    return
+                }
+                switch result {
+                case .joined:
+                    didJoin = true
+                case let .webView(webView):
+                    if let controller = strongSelf.interfaceInteraction?.getNavigationController()?.viewControllers.last as? ViewController {
+                        context.sharedContext.openJoinChatWebView(context: context, parentController: controller, updatedPresentationData: nil, webView: webView)
+                    }
+                }
+            }, error: { [weak self] error in
                 guard let strongSelf = self, let presentationInterfaceState = strongSelf.presentationInterfaceState, let peer = presentationInterfaceState.renderedPeer?.peer else {
                     return
                 }
@@ -258,6 +270,9 @@ public final class ChatChannelSubscriberInputPanelNode: ChatInputPanelNode {
                 strongSelf.interfaceInteraction?.presentController(textAlertController(context: context, title: nil, text: text, actions: [TextAlertAction(type: .defaultAction, title: presentationInterfaceState.strings.Common_OK, action: {})]), nil)
             }, completed: { [weak self] in
                 guard let self else {
+                    return
+                }
+                if !didJoin {
                     return
                 }
                 
@@ -417,7 +432,7 @@ public final class ChatChannelSubscriberInputPanelNode: ChatInputPanelNode {
         self.presentationInterfaceState = interfaceState
         
         var centerAction: (title: String, isAccent: Bool)?
-        if let context = self.context, let peer = interfaceState.renderedPeer?.peer, let action = actionForPeer(context: context, peer: peer, interfaceState: interfaceState, isJoining: self.isJoining, isMuted: interfaceState.peerIsMuted) {
+        if let context = self.context, let peer = interfaceState.renderedPeer?.peer, let action = actionForPeer(context: context, peer: EnginePeer(peer), interfaceState: interfaceState, isJoining: self.isJoining, isMuted: interfaceState.peerIsMuted) {
             self.action = action
             let (title, _) = titleAndColorForAction(action, theme: interfaceState.theme, strings: interfaceState.strings)
             

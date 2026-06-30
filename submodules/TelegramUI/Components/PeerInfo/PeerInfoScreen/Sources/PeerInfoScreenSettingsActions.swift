@@ -9,7 +9,6 @@ import UIKit
 import Display
 import AccountContext
 import SwiftSignalKit
-import Postbox
 import TelegramCore
 import SettingsUI
 import PeerInfoStoryGridScreen
@@ -179,7 +178,7 @@ extension PeerInfoScreenNode {
         case .watch:
             push(watchSettingsController(context: self.context))
         case .support:
-            let supportPeer = Promise<PeerId?>()
+            let supportPeer = Promise<EnginePeer.Id?>()
             supportPeer.set(context.engine.peers.supportPeerId())
             
             self.controller?.present(textAlertController(context: self.context, updatedPresentationData: self.controller?.updatedPresentationData, title: nil, text: self.presentationData.strings.Settings_FAQ_Intro.replacingTelegramWithNicegram, actions: [

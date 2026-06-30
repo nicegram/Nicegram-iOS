@@ -199,6 +199,12 @@ final class TermsOfServiceControllerNode: ViewControllerTracingNode {
     deinit {
     }
     
+    override func didLoad() {
+        super.didLoad()
+        
+        self.scrollNode.view.scrollsToTop = false
+    }
+    
     func containerLayoutUpdated(_ layout: ContainerViewLayout, navigationBarHeight: CGFloat, transition: ContainedViewLayoutTransition) {
         self.containerLayout = (layout, navigationBarHeight)
         

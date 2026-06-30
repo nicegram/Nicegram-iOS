@@ -3,7 +3,6 @@ import UIKit
 import Display
 import AsyncDisplayKit
 import SwiftSignalKit
-import Postbox
 import TelegramCore
 import TelegramPresentationData
 import TelegramUIPreferences
@@ -429,15 +428,11 @@ final class BusinessIntroSetupScreenComponent: Component {
                                         )
                                     }
                                     
-                                    let installedPackIds = context.account.postbox.combinedView(keys: [.itemCollectionInfos(namespaces: [Namespaces.ItemCollection.CloudStickerPacks])])
-                                    |> map { view -> Set<ItemCollectionId> in
-                                        var installedPacks = Set<ItemCollectionId>()
-                                        if let stickerPacksView = view.views[.itemCollectionInfos(namespaces: [Namespaces.ItemCollection.CloudStickerPacks])] as? ItemCollectionInfosView {
-                                            if let packsEntries = stickerPacksView.entriesByNamespace[Namespaces.ItemCollection.CloudStickerPacks] {
-                                                for entry in packsEntries {
-                                                    installedPacks.insert(entry.id)
-                                                }
-                                            }
+                                    let installedPackIds = context.engine.data.subscribe(TelegramEngine.EngineData.Item.ItemCollections.InstalledPackInfos(namespace: Namespaces.ItemCollection.CloudStickerPacks))
+                                    |> map { entries -> Set<EngineItemCollectionId> in
+                                        var installedPacks = Set<EngineItemCollectionId>()
+                                        for entry in entries {
+                                            installedPacks.insert(entry.id)
                                         }
                                         return installedPacks
                                     }
@@ -473,7 +468,7 @@ final class BusinessIntroSetupScreenComponent: Component {
                                         
                                         var items: [EmojiPagerContentComponent.Item] = []
                                         
-                                        var existingIds = Set<MediaId>()
+                                        var existingIds = Set<EngineMedia.Id>()
                                         for (_, entry) in foundItems {
                                             let itemFile = entry.file
                                             
@@ -565,7 +560,7 @@ final class BusinessIntroSetupScreenComponent: Component {
                                 |> mapToSignal { files -> Signal<(items: [EmojiPagerContentComponent.ItemGroup], isFinalResult: Bool), NoError> in
                                     var items: [EmojiPagerContentComponent.Item] = []
                                     
-                                    var existingIds = Set<MediaId>()
+                                    var existingIds = Set<EngineMedia.Id>()
                                     for item in files.items {
                                         let itemFile = item.file
                                         if existingIds.contains(itemFile.fileId) {
@@ -1020,7 +1015,7 @@ final class BusinessIntroSetupScreenComponent: Component {
                     stickerSelectionControl = ComponentView()
                     self.stickerSelectionControl = stickerSelectionControl
                 }
-                var selectedItems = Set<MediaId>()
+                var selectedItems = Set<EngineMedia.Id>()
                 if let stickerFile = self.stickerFile {
                     selectedItems.insert(stickerFile.fileId)
                 }

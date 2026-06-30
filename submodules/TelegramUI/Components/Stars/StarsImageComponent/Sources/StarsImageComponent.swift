@@ -3,7 +3,6 @@ import UIKit
 import AsyncDisplayKit
 import Display
 import SwiftSignalKit
-import Postbox
 import TelegramCore
 import ComponentFlow
 import TelegramPresentationData
@@ -272,7 +271,7 @@ public final class StarsImageComponent: Component {
                     return false
                 }
             case let .media(lhsMedia):
-                if case let .media(rhsMedia) = rhs, areMediaArraysEqual(lhsMedia.map { $0.media }, rhsMedia.map { $0.media }) {
+                if case let .media(rhsMedia) = rhs, engineAreMediaArraysEqual(lhsMedia.map { $0.media }, rhsMedia.map { $0.media }) {
                     return true
                 } else {
                     return false
@@ -323,7 +322,7 @@ public final class StarsImageComponent: Component {
     public let backgroundColor: UIColor
     public let icon: Icon?
     public let value: Int64?
-    public let action: ((@escaping (Media) -> (ASDisplayNode, CGRect, () -> (UIView?, UIView?))?, @escaping (UIView) -> Void) -> Void)?
+    public let action: ((@escaping (EngineRawMedia) -> (ASDisplayNode, CGRect, () -> (UIView?, UIView?))?, @escaping (UIView) -> Void) -> Void)?
     
     public init(
         context: AccountContext,
@@ -333,7 +332,7 @@ public final class StarsImageComponent: Component {
         backgroundColor: UIColor,
         icon: Icon? = nil,
         value: Int64? = nil,
-        action: ((@escaping (Media) -> (ASDisplayNode, CGRect, () -> (UIView?, UIView?))?, @escaping (UIView) -> Void) -> Void)? = nil
+        action: ((@escaping (EngineRawMedia) -> (ASDisplayNode, CGRect, () -> (UIView?, UIView?))?, @escaping (UIView) -> Void) -> Void)? = nil
     ) {
         self.context = context
         self.subject = subject
@@ -401,7 +400,7 @@ public final class StarsImageComponent: Component {
         private let fetchDisposable = MetaDisposable()
         private var hiddenMediaDisposable: Disposable?
         
-        private var hiddenMedia: [Media] = []
+        private var hiddenMedia: [EngineRawMedia] = []
         
         public override init(frame: CGRect) {
             super.init(frame: frame)
@@ -432,7 +431,7 @@ public final class StarsImageComponent: Component {
             })
         }
         
-        public func transitionNode(_ transitionMedia: Media) -> (ASDisplayNode, CGRect, () -> (UIView?, UIView?))? {
+        public func transitionNode(_ transitionMedia: EngineRawMedia) -> (ASDisplayNode, CGRect, () -> (UIView?, UIView?))? {
             guard let component = self.component, let containerNode = self.containerNode else {
                 return nil
             }
@@ -644,7 +643,7 @@ public final class StarsImageComponent: Component {
                 let media: TelegramMediaImage
                 switch extendedMedia.first {
                 case let .preview(imageDimensions, immediateThumbnailData, _):
-                    let thumbnailMedia = TelegramMediaImage(imageId: MediaId(namespace: 0, id: 0), representations: [], immediateThumbnailData: immediateThumbnailData, reference: nil, partialReference: nil, flags: [])
+                    let thumbnailMedia = TelegramMediaImage(imageId: EngineMedia.Id(namespace: 0, id: 0), representations: [], immediateThumbnailData: immediateThumbnailData, reference: nil, partialReference: nil, flags: [])
                     media = thumbnailMedia
                     if let imageDimensions {
                         dimensions = imageDimensions.cgSize.aspectFilled(imageSize)
@@ -686,7 +685,7 @@ public final class StarsImageComponent: Component {
                     let media: TelegramMediaImage
                     switch extendedMedia[1] {
                     case let .preview(imageDimensions, immediateThumbnailData, _):
-                        let thumbnailMedia = TelegramMediaImage(imageId: MediaId(namespace: 0, id: 0), representations: [], immediateThumbnailData: immediateThumbnailData, reference: nil, partialReference: nil, flags: [])
+                        let thumbnailMedia = TelegramMediaImage(imageId: EngineMedia.Id(namespace: 0, id: 0), representations: [], immediateThumbnailData: immediateThumbnailData, reference: nil, partialReference: nil, flags: [])
                         media = thumbnailMedia
                         if let imageDimensions {
                             secondDimensions = imageDimensions.cgSize.aspectFilled(imageSize)
@@ -1038,7 +1037,7 @@ public final class StarsImageComponent: Component {
                         guard let self, let component = self.component else {
                             return
                         }
-                        var hiddenMedia: [Media] = []
+                        var hiddenMedia: [EngineRawMedia] = []
                         for id in ids {
                             if case let .chat(accountId, _, media) = id, accountId == component.context.account.id {
                                 hiddenMedia.append(media)

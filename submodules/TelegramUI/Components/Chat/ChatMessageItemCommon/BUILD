@@ -15,7 +15,6 @@ swift_library(
     ],
     deps = NGDEPS + [
         "//submodules/Display",
-        "//submodules/Postbox",
         "//submodules/TelegramCore",
         "//submodules/Emoji",
     ],

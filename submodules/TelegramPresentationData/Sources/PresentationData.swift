@@ -504,11 +504,6 @@ private func automaticThemeShouldSwitchNow(_ parameters: AutomaticThemeSwitchPar
     }
 }
 
-public func automaticThemeShouldSwitchNow(settings: AutomaticThemeSwitchSetting, systemUserInterfaceStyle: WindowUserInterfaceStyle) -> Bool {
-    let parameters = AutomaticThemeSwitchParameters(settings: settings)
-    return automaticThemeShouldSwitchNow(parameters, systemUserInterfaceStyle: systemUserInterfaceStyle)
-}
-
 private func automaticThemeShouldSwitch(_ settings: AutomaticThemeSwitchSetting, systemUserInterfaceStyle: WindowUserInterfaceStyle) -> Signal<Bool, NoError> {
     if settings.force {
         return .single(true)

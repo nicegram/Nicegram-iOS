@@ -114,10 +114,7 @@ public final class PermissionController: ViewController {
         
         self.state = state
         if case let .permission(permission) = state, let state = permission {
-            if case .nearbyLocation = state {
-            } else {
-                self.navigationItem.rightBarButtonItem = UIBarButtonItem(title: self.presentationData.strings.Permissions_Skip, style: .plain, target: self, action: #selector(PermissionController.nextPressed))
-            }
+            self.navigationItem.rightBarButtonItem = UIBarButtonItem(title: self.presentationData.strings.Permissions_Skip, style: .plain, target: self, action: #selector(PermissionController.nextPressed))
             
             switch state {
                 case let .contacts(status):
@@ -184,28 +181,6 @@ public final class PermissionController: ViewController {
                         if let strongSelf = self {
                             strongSelf.openAppSettings()
                             strongSelf.proceed?(true)
-                        }
-                    }
-                case let .nearbyLocation(status):
-                    self.title = self.presentationData.strings.Permissions_PeopleNearbyTitle_v0
-                    
-                    if self.locationManager == nil {
-                        self.locationManager = LocationManager()
-                    }
-                    
-                    self.allow = { [weak self] in
-                        if let strongSelf = self {
-                            switch status {
-                                case .requestable:
-                                    DeviceAccess.authorizeAccess(to: .location(.tracking), locationManager: strongSelf.locationManager, presentationData: strongSelf.context.sharedContext.currentPresentationData.with { $0 }, { [weak self] result in
-                                        self?.proceed?(result)
-                                    })
-                            case .denied, .unreachable:
-                                strongSelf.openAppSettings()
-                                strongSelf.proceed?(false)
-                            default:
-                                break
-                            }
                         }
                     }
             }

@@ -145,9 +145,13 @@ func _internal_outgoingMessageWithChatContextResult(to peerId: PeerId, threadId:
                 return .message(text: caption, attributes: attributes, inlineStickers: [:], mediaReference: nil, threadId: threadId, replyToMessageId: replyToMessageId, replyToStoryId: replyToStoryId, localGroupingKey: nil, correlationId: correlationId, bubbleUpEmojiOrStickersets: [])
             }
         }
-    case let .text(text, entities, disableUrlPreview, previewParameters, replyMarkup):
-        if let entities = entities {
-            attributes.append(entities)
+    case let .text(text, entities, richText, disableUrlPreview, previewParameters, replyMarkup):
+        if let richText {
+            attributes.append(richText)
+        } else {
+            if let entities = entities {
+                attributes.append(entities)
+            }
         }
         if let replyMarkup = replyMarkup {
             attributes.append(replyMarkup)

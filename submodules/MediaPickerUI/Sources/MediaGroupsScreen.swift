@@ -470,7 +470,7 @@ public final class MediaGroupsScreen: ViewController, AttachmentContainable {
             self.updateNavigationStack { current in
                 var mediaPickerContext: AttachmentMediaPickerContext?
                 if let first = current.first as? MediaPickerScreenImpl {
-                    mediaPickerContext = first.webSearchController?.mediaPickerContext ?? first.mediaPickerContext
+                    mediaPickerContext = first.mediaPickerContext
                 }
                 return (current.filter { $0 !== self }, mediaPickerContext)
             }

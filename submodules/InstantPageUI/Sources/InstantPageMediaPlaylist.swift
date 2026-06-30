@@ -30,15 +30,28 @@ private func extractFileMedia(_ item: InstantPageMedia) -> TelegramMediaFile? {
 
 final class InstantPageMediaPlaylistItem: SharedMediaPlaylistItem {
     let webPage: TelegramMediaWebpage
+    let messageReference: MessageReference?
     let id: SharedMediaPlaylistItemId
     let item: InstantPageMedia
-    
-    init(webPage: TelegramMediaWebpage, item: InstantPageMedia) {
+
+    init(webPage: TelegramMediaWebpage, messageReference: MessageReference?, item: InstantPageMedia) {
         self.webPage = webPage
+        self.messageReference = messageReference
         self.id = InstantPageMediaPlaylistItemId(index: item.index)
         self.item = item
     }
-    
+
+    private func fileReference(_ file: TelegramMediaFile) -> FileMediaReference {
+        // Require a resolvable message id (mirrors the playlist-key fallback in
+        // InstantPageV2MediaAudioView): a `.none`-content reference can't revalidate, so fall
+        // back to the webpage reference in that case.
+        if let messageReference = self.messageReference, messageReference.id != nil {
+            return .message(message: messageReference, media: file)
+        } else {
+            return .webPage(webPage: WebpageReference(self.webPage), media: file)
+        }
+    }
+
     var stableId: AnyHashable {
         return self.item.index
     }
@@ -49,13 +62,13 @@ final class InstantPageMediaPlaylistItem: SharedMediaPlaylistItem {
                 switch attribute {
                     case let .Audio(isVoice, _, _, _, _):
                         if isVoice {
-                            return SharedMediaPlaybackData(type: .voice, source: .telegramFile(reference: .webPage(webPage: WebpageReference(self.webPage), media: file), isCopyProtected: false, isViewOnce: false))
+                            return SharedMediaPlaybackData(type: .voice, source: .telegramFile(reference: self.fileReference(file), isCopyProtected: false, isViewOnce: false))
                         } else {
-                            return SharedMediaPlaybackData(type: .music, source: .telegramFile(reference: .webPage(webPage: WebpageReference(self.webPage), media: file), isCopyProtected: false, isViewOnce: false))
+                            return SharedMediaPlaybackData(type: .music, source: .telegramFile(reference: self.fileReference(file), isCopyProtected: false, isViewOnce: false))
                         }
                     case let .Video(_, _, flags, _, _, _):
                         if flags.contains(.instantRoundVideo) {
-                            return SharedMediaPlaybackData(type: .instantVideo, source: .telegramFile(reference: .webPage(webPage: WebpageReference(self.webPage), media: file), isCopyProtected: false, isViewOnce: false))
+                            return SharedMediaPlaybackData(type: .instantVideo, source: .telegramFile(reference: self.fileReference(file), isCopyProtected: false, isViewOnce: false))
                         } else {
                             return nil
                         }
@@ -64,12 +77,12 @@ final class InstantPageMediaPlaylistItem: SharedMediaPlaylistItem {
                 }
             }
             if file.mimeType.hasPrefix("audio/") {
-                return SharedMediaPlaybackData(type: .music, source: .telegramFile(reference: .webPage(webPage: WebpageReference(self.webPage), media: file), isCopyProtected: false, isViewOnce: false))
+                return SharedMediaPlaybackData(type: .music, source: .telegramFile(reference: self.fileReference(file), isCopyProtected: false, isViewOnce: false))
             }
             if let fileName = file.fileName {
                 let ext = (fileName as NSString).pathExtension.lowercased()
                 if ext == "wav" || ext == "opus" {
-                    return SharedMediaPlaybackData(type: .music, source: .telegramFile(reference: .webPage(webPage: WebpageReference(self.webPage), media: file), isCopyProtected: false, isViewOnce: false))
+                    return SharedMediaPlaybackData(type: .music, source: .telegramFile(reference: self.fileReference(file), isCopyProtected: false, isViewOnce: false))
                 }
             }
         }
@@ -116,14 +129,15 @@ final class InstantPageMediaPlaylistItem: SharedMediaPlaylistItem {
     }
 }
 
-struct InstantPageMediaPlaylistId: SharedMediaPlaylistId {
-    let webpageId: EngineMedia.Id
-    
-    func isEqual(to: SharedMediaPlaylistId) -> Bool {
-        if let to = to as? InstantPageMediaPlaylistId {
-            return self.webpageId == to.webpageId
+public enum InstantPageMediaPlaylistId: Equatable, SharedMediaPlaylistId {
+    case instantPage(webpageId: EngineMedia.Id)
+    case richMessage(messageId: EngineMessage.Id)
+
+    public func isEqual(to: SharedMediaPlaylistId) -> Bool {
+        guard let to = to as? InstantPageMediaPlaylistId else {
+            return false
         }
-        return false
+        return self == to
     }
 }
 
@@ -134,15 +148,13 @@ struct InstantPagePlaylistLocation: Equatable, SharedMediaPlaylistLocation {
         guard let to = to as? InstantPagePlaylistLocation else {
             return false
         }
-        if self.webpageId == to.webpageId {
-            return false
-        }
-        return true
+        return self.webpageId == to.webpageId
     }
 }
 
 public final class InstantPageMediaPlaylist: SharedMediaPlaylist {
     private let webPage: TelegramMediaWebpage
+    private let messageReference: MessageReference?
     private let items: [InstantPageMedia]
     private let initialItemIndex: Int
     
@@ -164,15 +176,16 @@ public final class InstantPageMediaPlaylist: SharedMediaPlaylist {
         return self.stateValue.get()
     }
     
-    public init(webPage: TelegramMediaWebpage, items: [InstantPageMedia], initialItemIndex: Int) {
+    public init(playlistId: InstantPageMediaPlaylistId, webPage: TelegramMediaWebpage, messageReference: MessageReference?, items: [InstantPageMedia], initialItemIndex: Int) {
         assert(Queue.mainQueue().isCurrent())
-        
-        self.id = InstantPageMediaPlaylistId(webpageId: webPage.webpageId)
-        
+
+        self.id = playlistId
+
         self.webPage = webPage
+        self.messageReference = messageReference
         self.items = items
         self.initialItemIndex = initialItemIndex
-        
+
         self.control(.next)
     }
     
@@ -243,7 +256,7 @@ public final class InstantPageMediaPlaylist: SharedMediaPlaylist {
     }
     
     private func updateState() {
-        self.stateValue.set(.single(SharedMediaPlaylistState(loading: false, playedToEnd: self.playedToEnd, item: self.currentItem.flatMap({ InstantPageMediaPlaylistItem(webPage: self.webPage, item: $0) }), nextItem: nil, previousItem: nil, order: self.order, looping: self.looping)))
+        self.stateValue.set(.single(SharedMediaPlaylistState(loading: false, playedToEnd: self.playedToEnd, item: self.currentItem.flatMap({ InstantPageMediaPlaylistItem(webPage: self.webPage, messageReference: self.messageReference, item: $0) }), nextItem: nil, previousItem: nil, order: self.order, looping: self.looping)))
     }
     
     public func onItemPlaybackStarted(_ item: SharedMediaPlaylistItem) {

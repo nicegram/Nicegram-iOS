@@ -11,7 +11,6 @@ import AccountContext
 import TelegramCore
 import MultilineTextComponent
 import EmojiStatusComponent
-import Postbox
 import TelegramStringFormatting
 import TelegramNotices
 import EntityKeyboard
@@ -288,15 +287,15 @@ final class AvatarEditorScreenComponent: Component {
                     } else {
                         self.stickerSearchContext = nil
                         
-                        let emojiItemsSignal = context.account.postbox.itemCollectionsView(orderedItemListCollectionIds: [], namespaces: [Namespaces.ItemCollection.CloudEmojiPacks], aroundIndex: nil, count: 10000000)
+                        let emojiItemsSignal = context.engine.itemCollections.allItems(namespace: Namespaces.ItemCollection.CloudEmojiPacks)
                         |> take(1)
-                        
-                        let buildGroups: (ItemCollectionsView, [String: String], StickerSearchContext.State, StickerSearchContext?) -> (groups: [EmojiPagerContentComponent.ItemGroup], canLoadMore: Bool, isSearching: Bool, searchContext: StickerSearchContext?) = { view, allEmoticons, stickerState, searchContext in
+
+                        let buildGroups: ([EngineRawItemCollectionItem], [String: String], StickerSearchContext.State, StickerSearchContext?) -> (groups: [EmojiPagerContentComponent.ItemGroup], canLoadMore: Bool, isSearching: Bool, searchContext: StickerSearchContext?) = { items, allEmoticons, stickerState, searchContext in
                             let hasPremium = true
-                            
+
                             var emoji: [(String, TelegramMediaFile.Accessor?, String)] = []
-                            for entry in view.entries {
-                                guard let item = entry.item as? StickerPackItem else {
+                            for rawItem in items {
+                                guard let item = rawItem as? StickerPackItem else {
                                     continue
                                 }
                                 if let alt = item.file.customEmojiAlt {
@@ -311,7 +310,7 @@ final class AvatarEditorScreenComponent: Component {
                             }
                             
                             var emojiItems: [EmojiPagerContentComponent.Item] = []
-                            var existingIds = Set<MediaId>()
+                            var existingIds = Set<EngineMedia.Id>()
                             for item in emoji {
                                 if let itemFile = item.1 {
                                     if existingIds.contains(itemFile.fileId) {
@@ -402,8 +401,8 @@ final class AvatarEditorScreenComponent: Component {
                             let allEmoticons = [query.basicEmoji.0: query.basicEmoji.0]
                             let searchContext = context.engine.stickers.stickerSearchContext(query: nil, emoticon: [query.basicEmoji.0], inputLanguageCode: languageCode)
                             resultSignal = combineLatest(emojiItemsSignal, searchContext.state)
-                            |> map { view, stickerState in
-                                return buildGroups(view, allEmoticons, stickerState, searchContext)
+                            |> map { items, stickerState in
+                                return buildGroups(items, allEmoticons, stickerState, searchContext)
                             }
                         } else {
                             var keywordsSignal = context.engine.stickers.searchEmojiKeywords(inputLanguageCode: languageCode, query: query, completeMatch: false)
@@ -432,15 +431,15 @@ final class AvatarEditorScreenComponent: Component {
                                 let emoticon = Array(allEmoticons.keys)
                                 guard !emoticon.isEmpty else {
                                     return combineLatest(emojiItemsSignal, .single(StickerSearchContext.State(items: [], canLoadMore: false, isLoadingMore: false)))
-                                    |> map { view, stickerState in
-                                        return buildGroups(view, allEmoticons, stickerState, nil)
+                                    |> map { items, stickerState in
+                                        return buildGroups(items, allEmoticons, stickerState, nil)
                                     }
                                 }
-                                
+
                                 let searchContext = context.engine.stickers.stickerSearchContext(query: query, emoticon: emoticon, inputLanguageCode: languageCode)
                                 return combineLatest(emojiItemsSignal, searchContext.state)
-                                |> map { view, stickerState in
-                                    return buildGroups(view, allEmoticons, stickerState, searchContext)
+                                |> map { items, stickerState in
+                                    return buildGroups(items, allEmoticons, stickerState, searchContext)
                                 }
                             }
                         }
@@ -465,7 +464,7 @@ final class AvatarEditorScreenComponent: Component {
                     |> mapToSignal { files, isFinalResult -> Signal<(items: [EmojiPagerContentComponent.ItemGroup], isFinalResult: Bool), NoError> in
                         var items: [EmojiPagerContentComponent.Item] = []
                         
-                        var existingIds = Set<MediaId>()
+                        var existingIds = Set<EngineMedia.Id>()
                         for itemFile in files {
                             if existingIds.contains(itemFile.fileId) {
                                 continue
@@ -560,18 +559,14 @@ final class AvatarEditorScreenComponent: Component {
                 openSearch: {
                 },
                 addGroupAction: { [weak self] groupId, isPremiumLocked, _ in
-                    guard let strongSelf = self, let controller = strongSelf.controller?(), let collectionId = groupId.base as? ItemCollectionId else {
+                    guard let strongSelf = self, let controller = strongSelf.controller?(), let collectionId = groupId.base as? EngineItemCollectionId else {
                         return
                     }
                     let context = controller.context
-                    let viewKey = PostboxViewKey.orderedItemList(id: Namespaces.OrderedItemList.CloudFeaturedEmojiPacks)
-                    let _ = (context.account.postbox.combinedView(keys: [viewKey])
+                    let _ = (context.engine.data.subscribe(TelegramEngine.EngineData.Item.OrderedLists.ListItems(collectionId: Namespaces.OrderedItemList.CloudFeaturedEmojiPacks))
                     |> take(1)
-                    |> deliverOnMainQueue).start(next: { views in
-                        guard let view = views.views[viewKey] as? OrderedItemListView else {
-                            return
-                        }
-                        for featuredStickerPack in view.items.lazy.map({ $0.contents.get(FeaturedStickerPackItem.self)! }) {
+                    |> deliverOnMainQueue).start(next: { items in
+                        for featuredStickerPack in items.lazy.map({ $0.contents.get(FeaturedStickerPackItem.self)! }) {
                             if featuredStickerPack.info.id == collectionId {
                                 let _ = (context.engine.stickers.loadedStickerPack(reference: .id(id: featuredStickerPack.info.id.id, accessHash: featuredStickerPack.info.accessHash), forceActualized: false)
                                 |> mapToSignal { result -> Signal<Void, NoError> in
@@ -591,7 +586,7 @@ final class AvatarEditorScreenComponent: Component {
                                 }
                                 |> deliverOnMainQueue).start(completed: {
                                 })
-                                
+
                                 break
                             }
                         }
@@ -698,18 +693,14 @@ final class AvatarEditorScreenComponent: Component {
                 openSearch: {
                 },
                 addGroupAction: { [weak self] groupId, isPremiumLocked, _ in
-                    guard let strongSelf = self, let controller = strongSelf.controller?(), let collectionId = groupId.base as? ItemCollectionId else {
+                    guard let strongSelf = self, let controller = strongSelf.controller?(), let collectionId = groupId.base as? EngineItemCollectionId else {
                         return
                     }
                     let context = controller.context
-                    let viewKey = PostboxViewKey.orderedItemList(id: Namespaces.OrderedItemList.CloudFeaturedStickerPacks)
-                    let _ = (context.account.postbox.combinedView(keys: [viewKey])
+                    let _ = (context.engine.data.subscribe(TelegramEngine.EngineData.Item.OrderedLists.ListItems(collectionId: Namespaces.OrderedItemList.CloudFeaturedStickerPacks))
                     |> take(1)
-                    |> deliverOnMainQueue).start(next: { views in
-                        guard let view = views.views[viewKey] as? OrderedItemListView else {
-                            return
-                        }
-                        for featuredStickerPack in view.items.lazy.map({ $0.contents.get(FeaturedStickerPackItem.self)! }) {
+                    |> deliverOnMainQueue).start(next: { items in
+                        for featuredStickerPack in items.lazy.map({ $0.contents.get(FeaturedStickerPackItem.self)! }) {
                             if featuredStickerPack.info.id == collectionId {
                                 let _ = (context.engine.stickers.loadedStickerPack(reference: .id(id: featuredStickerPack.info.id.id, accessHash: featuredStickerPack.info.accessHash), forceActualized: false)
                                 |> mapToSignal { result -> Signal<Void, NoError> in
@@ -755,15 +746,11 @@ final class AvatarEditorScreenComponent: Component {
                         ])])
                         context.sharedContext.mainWindow?.presentInGlobalOverlay(actionSheet)
                     } else if groupId == AnyHashable("featuredTop") {
-                        let viewKey = PostboxViewKey.orderedItemList(id: Namespaces.OrderedItemList.CloudFeaturedStickerPacks)
-                        let _ = (context.account.postbox.combinedView(keys: [viewKey])
+                        let _ = (context.engine.data.subscribe(TelegramEngine.EngineData.Item.OrderedLists.ListItems(collectionId: Namespaces.OrderedItemList.CloudFeaturedStickerPacks))
                         |> take(1)
-                        |> deliverOnMainQueue).start(next: { views in
-                            guard let view = views.views[viewKey] as? OrderedItemListView else {
-                                return
-                            }
+                        |> deliverOnMainQueue).start(next: { items in
                             var stickerPackIds: [Int64] = []
-                            for featuredStickerPack in view.items.lazy.map({ $0.contents.get(FeaturedStickerPackItem.self)! }) {
+                            for featuredStickerPack in items.lazy.map({ $0.contents.get(FeaturedStickerPackItem.self)! }) {
                                 stickerPackIds.append(featuredStickerPack.info.id.id)
                             }
                             let _ = ApplicationSpecificNotice.setDismissedTrendingStickerPacks(accountManager: context.sharedContext.accountManager, values: stickerPackIds).start()
@@ -1535,7 +1522,7 @@ final class AvatarEditorScreenComponent: Component {
                     }
                     
                     let values = MediaEditorValues(
-                        peerId: EnginePeer.Id(namespace: Namespaces.Peer.CloudUser, id: PeerId.Id._internalFromInt64Value(0)),
+                        peerId: EnginePeer.Id(namespace: Namespaces.Peer.CloudUser, id: EnginePeer.Id.Id._internalFromInt64Value(0)),
                         originalDimensions: PixelDimensions(size),
                         cropOffset: .zero,
                         cropRect: CGRect(origin: .zero, size: size),
@@ -1552,6 +1539,7 @@ final class AvatarEditorScreenComponent: Component {
                         videoVolume: nil,
                         additionalVideoPath: nil,
                         additionalVideoIsDual: false,
+                        additionalVideoMirroringChanges: [],
                         additionalVideoPosition: nil,
                         additionalVideoScale: nil,
                         additionalVideoRotation: nil,

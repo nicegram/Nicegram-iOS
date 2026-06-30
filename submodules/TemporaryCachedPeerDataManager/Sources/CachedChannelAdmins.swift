@@ -1,5 +1,4 @@
 import Foundation
-import Postbox
 import TelegramCore
 import SwiftSignalKit
 
@@ -43,16 +42,16 @@ public enum CachedChannelAdminRank: Codable, Equatable {
 
 public final class CachedChannelAdminRanks: Codable {
     private struct DictionaryKey: Codable, Hashable {
-        var key: PeerId
+        var key: EnginePeer.Id
 
-        init(_ key: PeerId) {
+        init(_ key: EnginePeer.Id) {
             self.key = key
         }
 
         init(from decoder: Decoder) throws {
             let container = try decoder.container(keyedBy: StringCodingKey.self)
 
-            self.key = PeerId(try container.decode(Int64.self, forKey: "k"))
+            self.key = EnginePeer.Id(try container.decode(Int64.self, forKey: "k"))
         }
 
         func encode(to encoder: Encoder) throws {
@@ -61,18 +60,18 @@ public final class CachedChannelAdminRanks: Codable {
             try container.encode(self.key.toInt64(), forKey: "k")
         }
     }
-    
-    public let ranks: [PeerId: CachedChannelAdminRank]
-    
-    public init(ranks: [PeerId: CachedChannelAdminRank]) {
+
+    public let ranks: [EnginePeer.Id: CachedChannelAdminRank]
+
+    public init(ranks: [EnginePeer.Id: CachedChannelAdminRank]) {
         self.ranks = ranks
     }
-    
+
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: StringCodingKey.self)
 
         let dict = try container.decode([DictionaryKey: CachedChannelAdminRank].self, forKey: "ranks")
-        var mappedDict: [PeerId: CachedChannelAdminRank] = [:]
+        var mappedDict: [EnginePeer.Id: CachedChannelAdminRank] = [:]
         for (key, value) in dict {
             mappedDict[key.key] = value
         }
@@ -89,17 +88,17 @@ public final class CachedChannelAdminRanks: Codable {
         try container.encode(mappedDict, forKey: "ranks")
     }
     
-    public static func cacheKey(peerId: PeerId) -> ValueBoxKey {
-        let key = ValueBoxKey(length: 8)
+    public static func cacheKey(peerId: EnginePeer.Id) -> EngineDataBuffer {
+        let key = EngineDataBuffer(length: 8)
         key.setInt64(0, value: peerId.toInt64())
         return key
     }
 }
 
-public func cachedChannelAdminRanksEntryId(peerId: PeerId) -> ItemCacheEntryId {
-    return ItemCacheEntryId(collectionId: 100, key: CachedChannelAdminRanks.cacheKey(peerId: peerId))
+public func cachedChannelAdminRanksEntryId(peerId: EnginePeer.Id) -> EngineItemCacheEntryId {
+    return EngineItemCacheEntryId(collectionId: 100, key: CachedChannelAdminRanks.cacheKey(peerId: peerId))
 }
 
-func updateCachedChannelAdminRanks(engine: TelegramEngine, peerId: PeerId, ranks: Dictionary<PeerId, CachedChannelAdminRank>) -> Signal<Never, NoError> {
+func updateCachedChannelAdminRanks(engine: TelegramEngine, peerId: EnginePeer.Id, ranks: Dictionary<EnginePeer.Id, CachedChannelAdminRank>) -> Signal<Never, NoError> {
     return engine.itemCache.put(collectionId: 100, id: CachedChannelAdminRanks.cacheKey(peerId: peerId), item: CachedChannelAdminRanks(ranks: ranks))
 }

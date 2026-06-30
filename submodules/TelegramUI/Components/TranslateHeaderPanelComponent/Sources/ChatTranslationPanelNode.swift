@@ -3,7 +3,6 @@ import UIKit
 import Display
 import AsyncDisplayKit
 import SwiftSignalKit
-import Postbox
 import TelegramCore
 import TelegramPresentationData
 import LocalizedPeerData
@@ -394,7 +393,7 @@ final class ChatTranslationPanelNode: ASDisplayNode {
             
             let cocoonPath = getAppBundle().url(forResource: "Cocoon", withExtension: "tgs")?.path ?? ""
             let cocoonFile = TelegramMediaFile(
-                fileId: MediaId(namespace: Namespaces.Media.CloudFile, id: -123456789),
+                fileId: EngineMedia.Id(namespace: Namespaces.Media.CloudFile, id: -123456789),
                 partialReference: nil,
                 resource: BundleResource(name: "Cocoon", path: cocoonPath),
                 previewRepresentations: [],

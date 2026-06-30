@@ -1,13 +1,13 @@
 import Foundation
 import UIKit
 import SwiftSignalKit
-import Postbox
 import TelegramCore
 import AsyncDisplayKit
 import Display
 import ContextUI
 import UndoUI
 import AccountContext
+import ChatMessageBubbleContentNode
 import ChatMessageItemView
 import ChatMessageItemCommon
 import ChatControllerInteraction
@@ -43,18 +43,28 @@ extension ChatControllerImpl {
         if let peerId = pollOption.addedBy {
             addedByPeer = self.context.engine.data.get(TelegramEngine.EngineData.Item.Peer.Peer(id: peerId))
         }
-        
+
+        let messageItemView = params.messageNode as? ChatMessageItemView
+        let associatedData = (params.messageNode as? ChatMessageBubbleContentNode)?.item?.associatedData ?? messageItemView?.item?.associatedData
+
         let _ = combineLatest(
             queue: Queue.mainQueue(),
-            contextMenuForChatPresentationInterfaceState(chatPresentationInterfaceState: self.presentationInterfaceState, context: self.context, messages: [message], controllerInteraction: self.controllerInteraction, selectAll: false, interfaceInteraction: self.interfaceInteraction, messageNode: params.messageNode as? ChatMessageItemView),
+            contextMenuForChatPresentationInterfaceState(chatPresentationInterfaceState: self.presentationInterfaceState, context: self.context, messages: [message], controllerInteraction: self.controllerInteraction, selectAll: false, interfaceInteraction: self.interfaceInteraction, messageNode: messageItemView),
             addedByPeer
         ).start(next: { [weak self] actions, addedByPeer in
             guard let self else {
                 return
             }
-          
+
             var items: [ContextMenuItem] = []
-            if !poll.isClosed && (selectedOptions.isEmpty || !poll.revotingDisabled) {
+
+            let isRestricted = associatedData?.isPollVotingRestricted(
+                poll: poll,
+                accountTestingEnvironment: self.context.account.testingEnvironment,
+                currentTimestamp: Int32(CFAbsoluteTimeGetCurrent() + kCFAbsoluteTimeIntervalSince1970)
+            ) ?? false
+            let canVote = poll.pollId.namespace == Namespaces.Media.CloudPoll && !Namespaces.Message.allNonRegular.contains(message.id.namespace) && !isPollEffectivelyClosed(message: EngineMessage(message), poll: poll) && !isRestricted && (selectedOptions.isEmpty || !poll.revotingDisabled)
+            if canVote {
                 if selectedOptions.contains(pollOption.opaqueIdentifier) {
                     items.append(.action(ContextMenuActionItem(text: self.presentationData.strings.Chat_Poll_RetractOptionVote, icon: { theme in return generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Unvote"), color: theme.contextMenu.primaryColor) }, action: { [weak self] c, _ in
                         guard let self else {
@@ -126,7 +136,7 @@ extension ChatControllerImpl {
                     guard let self else {
                         return
                     }
-                    var threadMessageId: MessageId?
+                    var threadMessageId: EngineMessage.Id?
                     if case let .replyThread(replyThreadMessage) = self.presentationInterfaceState.chatLocation {
                         threadMessageId = replyThreadMessage.effectiveMessageId
                     }
@@ -254,7 +264,7 @@ extension ChatControllerImpl {
                 )
             )
             
-            let messageContentSource = ChatMessageContextExtractedContentSource(chatController: self, chatNode: self.chatDisplayNode, engine: self.context.engine, message: message, selectAll: false, snapshot: true)
+            let messageContentSource = ChatMessageContextExtractedContentSource(chatController: self, chatNode: self.chatDisplayNode, engine: self.context.engine, message: EngineMessage(message), selectAll: false, snapshot: true)
             
             sources.append(
                 ContextController.Source(

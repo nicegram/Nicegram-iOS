@@ -455,7 +455,7 @@ final class BotCheckoutInfoControllerNode: ViewControllerTracingNode, ASScrollVi
         
         let inset = max(16.0, floor((layout.size.width - 674.0) / 2.0))
         var sideInset: CGFloat = 0.0
-        if layout.size.width >= 375.0 {
+        if layout.size.width >= 320.0 {
             sideInset = inset
         }
         

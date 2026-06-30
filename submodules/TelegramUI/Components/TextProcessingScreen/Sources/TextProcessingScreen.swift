@@ -471,6 +471,7 @@ final class TextProcessingContentComponent: Component {
             let alphaTransition: ComponentTransition = transition.animation.isImmediate ? .immediate : .easeInOut(duration: 0.2)
             
             let environment = environment[ViewControllerComponentContainer.Environment.self].value
+            let theme = environment.theme.withModalBlocksBackground()
             
             let isFirstTime = self.component == nil
             
@@ -516,8 +517,8 @@ final class TextProcessingContentComponent: Component {
                             content: .animation(
                                 content: .file(file: previewIconFile),
                                 size: previewIconSize,
-                                placeholderColor: environment.theme.list.mediaPlaceholderColor,
-                                themeColor: environment.theme.list.itemPrimaryTextColor,
+                                placeholderColor: theme.list.mediaPlaceholderColor,
+                                themeColor: theme.list.itemPrimaryTextColor,
                                 loopMode: .count(1)
                             ),
                             isVisibleForAnimations: true,
@@ -557,7 +558,7 @@ final class TextProcessingContentComponent: Component {
                 let titleSize = previewTitle.update(
                     transition: .immediate,
                     component: AnyComponent(MultilineTextComponent(
-                        text: .plain(NSAttributedString(string: style.title, font: Font.bold(30.0), textColor: environment.theme.list.itemPrimaryTextColor))
+                        text: .plain(NSAttributedString(string: style.title, font: Font.bold(30.0), textColor: theme.list.itemPrimaryTextColor))
                     )),
                     environment: {},
                     containerSize: CGSize(width: availableSize.width, height: 100.0)
@@ -576,7 +577,7 @@ final class TextProcessingContentComponent: Component {
                 let descriptionSize = previewDescription.update(
                     transition: .immediate,
                     component: AnyComponent(MultilineTextComponent(
-                        text: .plain(NSAttributedString(string: environment.strings.TextProcessing_StylePreview_Subtitle, font: Font.regular(15.0), textColor: environment.theme.list.itemPrimaryTextColor)),
+                        text: .plain(NSAttributedString(string: environment.strings.TextProcessing_StylePreview_Subtitle, font: Font.regular(15.0), textColor: theme.list.itemPrimaryTextColor)),
                         horizontalAlignment: .center,
                         maximumNumberOfLines: 0,
                         lineSpacing: 0.12
@@ -683,7 +684,7 @@ final class TextProcessingContentComponent: Component {
                 let modeTabsSize = self.modeTabs.update(
                     transition: transition,
                     component: AnyComponent(TabBarComponent(
-                        theme: environment.theme,
+                        theme: theme,
                         tintSelectedItem: false,
                         isLiftedStateEnabled: false,
                         strings: environment.strings,
@@ -725,7 +726,7 @@ final class TextProcessingContentComponent: Component {
                 contentExternalState = self.translateState
                 contentComponent = AnyComponent(TextProcessingTranslateContentComponent(
                     context: component.context,
-                    theme: environment.theme,
+                    theme: theme,
                     strings: environment.strings,
                     styles: component.styles,
                     externalState: self.translateState,
@@ -771,7 +772,7 @@ final class TextProcessingContentComponent: Component {
                 contentExternalState = self.stylizeState
                 contentComponent = AnyComponent(TextProcessingTranslateContentComponent(
                     context: component.context,
-                    theme: environment.theme,
+                    theme: theme,
                     strings: environment.strings,
                     styles: component.styles,
                     externalState: self.stylizeState,
@@ -892,7 +893,7 @@ final class TextProcessingContentComponent: Component {
                 contentExternalState = self.fixState
                 contentComponent = AnyComponent(TextProcessingTranslateContentComponent(
                     context: component.context,
-                    theme: environment.theme,
+                    theme: theme,
                     strings: environment.strings,
                     styles: component.styles,
                     externalState: self.fixState,
@@ -997,7 +998,7 @@ final class TextProcessingContentComponent: Component {
             if self.currentContentBackground.image == nil {
                 self.currentContentBackground.image = generateStretchableFilledCircleImage(diameter: 60.0, color: .white)?.withRenderingMode(.alwaysTemplate)
             }
-            self.currentContentBackground.tintColor = environment.theme.list.itemBlocksBackgroundColor
+            self.currentContentBackground.tintColor = theme.list.itemBlocksBackgroundColor
             transition.setFrame(view: self.currentContentBackground, frame: contentFrame)
             contentHeight += contentSize.height
             
@@ -1057,19 +1058,19 @@ final class TextProcessingContentComponent: Component {
             if case .translate = component.mode {
                 if let copyTranslation = component.copyCurrentResult {
                     actionsSectionItems.append(AnyComponentWithIdentity(id: "copy", component: AnyComponent(ListActionItemComponent(
-                        theme: environment.theme,
+                        theme: theme,
                         style: .glass,
                         title: AnyComponent(
                             MultilineTextComponent(
                                 text: .plain(NSAttributedString(
                                     string: environment.strings.Translate_CopyTranslation,
                                     font: Font.regular(17.0),
-                                    textColor: environment.theme.list.itemAccentColor
+                                    textColor: theme.list.itemAccentColor
                                 )),
                                 maximumNumberOfLines: 1
                             )
                         ),
-                        leftIcon: .custom(AnyComponentWithIdentity(id: "icon", component: AnyComponent(BundleIconComponent(name: "Chat/Context Menu/Copy", tintColor: environment.theme.list.itemAccentColor))), false),
+                        leftIcon: .custom(AnyComponentWithIdentity(id: "icon", component: AnyComponent(BundleIconComponent(name: "Chat/Context Menu/Copy", tintColor: theme.list.itemAccentColor))), false),
                         action: { _ in
                             copyTranslation()
                         }
@@ -1077,19 +1078,19 @@ final class TextProcessingContentComponent: Component {
                 }
                 if let translateChat = component.translateChat {
                     actionsSectionItems.append(AnyComponentWithIdentity(id: "translate", component: AnyComponent(ListActionItemComponent(
-                        theme: environment.theme,
+                        theme: theme,
                         style: .glass,
                         title: AnyComponent(
                             MultilineTextComponent(
                                 text: .plain(NSAttributedString(
                                     string: environment.strings.Localization_TranslateEntireChat,
                                     font: Font.regular(17.0),
-                                    textColor: environment.theme.list.itemAccentColor
+                                    textColor: theme.list.itemAccentColor
                                 )),
                                 maximumNumberOfLines: 1
                             )
                         ),
-                        leftIcon: .custom(AnyComponentWithIdentity(id: "icon", component: AnyComponent(BundleIconComponent(name: "Chat/Context Menu/Translate", tintColor: environment.theme.list.itemAccentColor))), false),
+                        leftIcon: .custom(AnyComponentWithIdentity(id: "icon", component: AnyComponent(BundleIconComponent(name: "Chat/Context Menu/Translate", tintColor: theme.list.itemAccentColor))), false),
                         action: { [weak self] _ in
                             guard let self, let language = self.translateState.result?.language else {
                                 return
@@ -1105,7 +1106,7 @@ final class TextProcessingContentComponent: Component {
                 let actionsSectionSize = self.actionsSection.update(
                     transition: transition,
                     component: AnyComponent(ListSectionComponent(
-                        theme: environment.theme,
+                        theme: theme,
                         style: .glass,
                         header: nil,
                         footer: nil,
@@ -1368,7 +1369,7 @@ private final class TextProcessingSheetComponent: Component {
             let environmentValue = environment[ViewControllerComponentContainer.Environment.self].value
             self.environment = environmentValue
             let controller = environmentValue.controller
-            let theme = environmentValue.theme
+            let theme = environmentValue.theme.withModalBlocksBackground()
 
             let dismiss: (Bool) -> Void = { [weak self] animated in
                 if animated {
@@ -1427,11 +1428,23 @@ private final class TextProcessingSheetComponent: Component {
                         }
                         dismiss(true)
                     }
-                case .translate:
-                    actionButtonTitle = environmentValue.strings.TextProcessing_ActionClose
-                    isMainActionEnabled = true
-                    performMainAction = {
-                        dismiss(true)
+                case let .translate(_, applyResult):
+                    if let applyResult {
+                        actionButtonTitle = environmentValue.strings.TextProcessing_ActionApply
+                        isMainActionEnabled = !self.contentExternalState.isProcessing && self.contentExternalState.result != nil
+                        performMainAction = { [weak self] in
+                            guard let self, let result = self.contentExternalState.result else {
+                                return
+                            }
+                            applyResult(result)
+                            dismiss(true)
+                        }
+                    } else {
+                        actionButtonTitle = environmentValue.strings.TextProcessing_ActionClose
+                        isMainActionEnabled = true
+                        performMainAction = {
+                            dismiss(true)
+                        }
                     }
                 case let .preview(style, _, _, isAlreadyAdded, added):
                     actionButtonTitle = isAlreadyAdded ? environmentValue.strings.TextProcessing_StyleMenu_ButtonClose : environmentValue.strings.TextProcessing_StyleMenu_ButtonAdd

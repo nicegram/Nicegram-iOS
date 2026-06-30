@@ -3,7 +3,6 @@ import UIKit
 import AsyncDisplayKit
 import Display
 import ContextUI
-import Postbox
 import TelegramCore
 import SwiftSignalKit
 import ChatMessageItemView
@@ -38,7 +37,7 @@ final class ChatMessageContextExtractedContentSource: ContextExtractedContentSou
     private weak var chatController: ChatControllerImpl?
     private weak var chatNode: ChatControllerNode?
     private let engine: TelegramEngine
-    private let message: Message
+    private let message: EngineMessage
     private let selectAll: Bool
     private let snapshot: Bool
     
@@ -61,7 +60,7 @@ final class ChatMessageContextExtractedContentSource: ContextExtractedContentSou
         |> distinctUntilChanged
     }
     
-    init(chatController: ChatControllerImpl, chatNode: ChatControllerNode, engine: TelegramEngine, message: Message, selectAll: Bool, centerVertically: Bool = false, keepDefaultContentTouches: Bool = false, snapshot: Bool = false) {
+    init(chatController: ChatControllerImpl, chatNode: ChatControllerNode, engine: TelegramEngine, message: EngineMessage, selectAll: Bool, centerVertically: Bool = false, keepDefaultContentTouches: Bool = false, snapshot: Bool = false) {
         self.chatController = chatController
         self.chatNode = chatNode
         self.engine = engine
@@ -88,8 +87,14 @@ final class ChatMessageContextExtractedContentSource: ContextExtractedContentSou
                 return
             }
             if item.content.contains(where: { $0.0.stableId == self.message.stableId }), let contentNode = itemNode.getMessageContextSourceNode(stableId: self.selectAll ? nil : self.message.stableId) {
-                result = ContextControllerTakeViewInfo(containingItem: .node(contentNode), contentAreaInScreenSpace: chatNode.convert(chatNode.frameForVisibleArea(), to: nil))
-            
+                let sourceTransitionSurface: UIView?
+                if self.snapshot {
+                    sourceTransitionSurface = nil
+                } else {
+                    sourceTransitionSurface = chatNode.ensureContextTransitionContainer()
+                }
+                result = ContextControllerTakeViewInfo(containingItem: .node(contentNode), contentAreaInScreenSpace: chatNode.convert(chatNode.frameForVisibleArea(), to: nil), sourceTransitionSurface: sourceTransitionSurface)
+                
                 if self.snapshot, let snapshotView = contentNode.contentNode.view.snapshotContentTree(unhide: false, keepPortals: true, keepTransform: true) {
                     contentNode.view.superview?.addSubview(snapshotView)
                     self.snapshotView = snapshotView
@@ -113,10 +118,16 @@ final class ChatMessageContextExtractedContentSource: ContextExtractedContentSou
                 return
             }
             if item.content.contains(where: { $0.0.stableId == self.message.stableId }) {
-                result = ContextControllerPutBackViewInfo(contentAreaInScreenSpace: chatNode.convert(chatNode.frameForVisibleArea(), to: nil))
+                let sourceTransitionSurface: UIView?
+                if self.snapshot {
+                    sourceTransitionSurface = nil
+                } else {
+                    sourceTransitionSurface = chatNode.ensureContextTransitionContainer()
+                }
+                result = ContextControllerPutBackViewInfo(contentAreaInScreenSpace: chatNode.convert(chatNode.frameForVisibleArea(), to: nil), sourceTransitionSurface: sourceTransitionSurface)
             }
         }
-        
+
         return result
     }
 }
@@ -134,7 +145,7 @@ final class ChatViewOnceMessageContextExtractedContentSource: ContextExtractedCo
     private weak var chatNode: ChatControllerNode?
     private weak var backgroundNode: WallpaperBackgroundNode?
     private let engine: TelegramEngine
-    private let message: Message
+    private let message: EngineMessage
     private let present: (ViewController) -> Void
 
     private var messageNodeCopy: ChatMessageItemView?
@@ -167,7 +178,7 @@ final class ChatViewOnceMessageContextExtractedContentSource: ContextExtractedCo
         )
     }
     
-    init(context: AccountContext, presentationData: PresentationData, chatNode: ChatControllerNode, backgroundNode: WallpaperBackgroundNode, engine: TelegramEngine, message: Message, present: @escaping (ViewController) -> Void) {
+    init(context: AccountContext, presentationData: PresentationData, chatNode: ChatControllerNode, backgroundNode: WallpaperBackgroundNode, engine: TelegramEngine, message: EngineMessage, present: @escaping (ViewController) -> Void) {
         self.context = context
         self.presentationData = presentationData
         self.chatNode = chatNode
@@ -220,7 +231,7 @@ final class ChatViewOnceMessageContextExtractedContentSource: ContextExtractedCo
             if (isIncoming || "".isEmpty) {
                 let messageItem = self.context.sharedContext.makeChatMessagePreviewItem(
                     context: self.context,
-                    messages: [self.message],
+                    messages: [self.message._asMessage()],
                     theme: self.presentationData.theme,
                     strings: self.presentationData.strings,
                     wallpaper: self.presentationData.chatWallpaper,
@@ -424,7 +435,7 @@ final class ChatMessageReactionContextExtractedContentSource: ContextExtractedCo
     
     private weak var chatNode: ChatControllerNode?
     private let engine: TelegramEngine
-    private let message: Message
+    private let message: EngineMessage
     private let contentView: ContextExtractedContentContainingView
     
     var shouldBeDismissed: Signal<Bool, NoError> {
@@ -443,7 +454,7 @@ final class ChatMessageReactionContextExtractedContentSource: ContextExtractedCo
         |> distinctUntilChanged
     }
     
-    init(chatNode: ChatControllerNode, engine: TelegramEngine, message: Message, contentView: ContextExtractedContentContainingView) {
+    init(chatNode: ChatControllerNode, engine: TelegramEngine, message: EngineMessage, contentView: ContextExtractedContentContainingView) {
         self.chatNode = chatNode
         self.engine = engine
         self.message = message
@@ -464,17 +475,17 @@ final class ChatMessageReactionContextExtractedContentSource: ContextExtractedCo
                 return
             }
             if item.content.contains(where: { $0.0.stableId == self.message.stableId }) {
-                result = ContextControllerTakeViewInfo(containingItem: .view(self.contentView), contentAreaInScreenSpace: chatNode.convert(chatNode.frameForVisibleArea(), to: nil))
+                result = ContextControllerTakeViewInfo(containingItem: .view(self.contentView), contentAreaInScreenSpace: chatNode.convert(chatNode.frameForVisibleArea(), to: nil), sourceTransitionSurface: chatNode.ensureContextTransitionContainer())
             }
         }
         return result
     }
-    
+
     func putBack() -> ContextControllerPutBackViewInfo? {
         guard let chatNode = self.chatNode else {
             return nil
         }
-        
+
         var result: ContextControllerPutBackViewInfo?
         chatNode.historyNode.forEachItemNode { itemNode in
             guard let itemNode = itemNode as? ChatMessageItemView else {
@@ -484,7 +495,7 @@ final class ChatMessageReactionContextExtractedContentSource: ContextExtractedCo
                 return
             }
             if item.content.contains(where: { $0.0.stableId == self.message.stableId }) {
-                result = ContextControllerPutBackViewInfo(contentAreaInScreenSpace: chatNode.convert(chatNode.frameForVisibleArea(), to: nil))
+                result = ContextControllerPutBackViewInfo(contentAreaInScreenSpace: chatNode.convert(chatNode.frameForVisibleArea(), to: nil), sourceTransitionSurface: chatNode.ensureContextTransitionContainer())
             }
         }
         return result

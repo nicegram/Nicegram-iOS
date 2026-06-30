@@ -3,7 +3,6 @@ import UIKit
 import Display
 import AsyncDisplayKit
 import SwiftSignalKit
-import Postbox
 import TelegramCore
 import TelegramPresentationData
 import TelegramUIPreferences
@@ -12,9 +11,7 @@ import AccountContext
 import ComponentFlow
 import ViewControllerComponent
 import BundleIconComponent
-import MultilineTextComponent
-import ButtonComponent
-import BlurredBackgroundComponent
+import BottomButtonPanelComponent
 import ContextUI
 
 final class AddGiftsScreenComponent: Component {
@@ -56,9 +53,8 @@ final class AddGiftsScreenComponent: Component {
         
         private var giftsListView: GiftsListView?
         
-        private let buttonBackground = ComponentView<Empty>()
-        private let buttonSeparator = SimpleLayer()
-        private let button = ComponentView<Empty>()
+        private let buttonPanel = ComponentView<Empty>()
+        private var bottomPanelHeight: CGFloat = 68.0
         
         private var isUpdating: Bool = false
         
@@ -114,7 +110,7 @@ final class AddGiftsScreenComponent: Component {
             var contentSize = CGSize(width: self.scrollView.bounds.width, height: contentHeight)
             contentSize.height += environment.safeInsets.bottom
             contentSize.height = max(contentSize.height, self.scrollView.bounds.size.height)
-            contentSize.height += 50.0 + 24.0
+            contentSize.height += self.bottomPanelHeight
             transition.setFrame(view: giftsListView, frame: CGRect(origin: CGPoint(), size: contentSize))
             
             if self.scrollView.contentSize != contentSize {
@@ -161,47 +157,15 @@ final class AddGiftsScreenComponent: Component {
             self.state = state
             
             let sideInset: CGFloat = 16.0 + environment.safeInsets.left
-            let buttonHeight: CGFloat = 50.0
-            let bottomPanelPadding: CGFloat = 12.0
-            let bottomInset: CGFloat = environment.safeInsets.bottom > 0.0 ? environment.safeInsets.bottom + 5.0 : bottomPanelPadding
-            let bottomPanelHeight = bottomPanelPadding + buttonHeight + bottomInset
-                      
-            let bottomPanelOffset: CGFloat = giftsListView.selectedItems.count > 0 ? 0.0 : bottomPanelHeight
-            
-            let buttonString = environment.strings.AddGifts_AddGifts(Int32(giftsListView.selectedItems.count))
-            let bottomPanelSize = self.buttonBackground.update(
+            let buttonString = environment.strings.AddGifts_AddGifts(Int32(max(1, giftsListView.selectedItems.count)))
+            let bottomPanelSize = self.buttonPanel.update(
                 transition: transition,
-                component: AnyComponent(BlurredBackgroundComponent(
-                    color: environment.theme.rootController.tabBar.backgroundColor
-                )),
-                environment: {},
-                containerSize: CGSize(width: availableSize.width, height: bottomPanelHeight)
-            )
-            self.buttonSeparator.backgroundColor = environment.theme.rootController.tabBar.separatorColor.cgColor
-            
-            if let view = self.buttonBackground.view {
-                if view.superview == nil {
-                    self.addSubview(view)
-                    self.layer.addSublayer(self.buttonSeparator)
-                }
-                transition.setFrame(view: view, frame: CGRect(origin: CGPoint(x: 0.0, y: availableSize.height - bottomPanelSize.height + bottomPanelOffset), size: bottomPanelSize))
-                transition.setFrame(layer: self.buttonSeparator, frame: CGRect(origin: CGPoint(x: 0.0, y: availableSize.height - bottomPanelSize.height + bottomPanelOffset), size: CGSize(width: availableSize.width, height: UIScreenPixel)))
-            }
-            
-            let buttonAttributedString = NSMutableAttributedString(string: buttonString, font: Font.semibold(17.0), textColor: environment.theme.list.itemCheckColors.foregroundColor, paragraphAlignment: .center)
-            let buttonSize = self.button.update(
-                transition: transition,
-                component: AnyComponent(ButtonComponent(
-                    background: ButtonComponent.Background(
-                        color: environment.theme.list.itemCheckColors.fillColor,
-                        foreground: environment.theme.list.itemCheckColors.foregroundColor,
-                        pressedColor: environment.theme.list.itemCheckColors.fillColor.withMultipliedAlpha(0.9),
-                        cornerRadius: 10.0
-                    ),
-                    content: AnyComponentWithIdentity(
-                        id: AnyHashable(buttonAttributedString.string),
-                        component: AnyComponent(MultilineTextComponent(text: .plain(buttonAttributedString)))
-                    ),
+                component: AnyComponent(BottomButtonPanelComponent(
+                    theme: environment.theme,
+                    title: buttonString,
+                    label: nil,
+                    isEnabled: true,
+                    insets: UIEdgeInsets(top: 0.0, left: sideInset, bottom: environment.safeInsets.bottom, right: sideInset),
                     action: { [weak self] in
                         guard let self, let controller = self.environment?.controller() as? AddGiftsScreen, let giftsListView = self.giftsListView else {
                             return
@@ -211,18 +175,21 @@ final class AddGiftsScreenComponent: Component {
                     }
                 )),
                 environment: {},
-                containerSize: CGSize(width: availableSize.width - sideInset * 2.0, height: buttonHeight)
+                containerSize: availableSize
             )
-            if let buttonView = self.button.view {
-                if buttonView.superview == nil {
-                    self.addSubview(buttonView)
+            self.bottomPanelHeight = bottomPanelSize.height
+
+            let bottomPanelOffset: CGFloat = giftsListView.selectedItems.count > 0 ? 0.0 : bottomPanelSize.height
+            if let buttonPanelView = self.buttonPanel.view {
+                if buttonPanelView.superview == nil {
+                    self.addSubview(buttonPanelView)
                 }
-                transition.setFrame(view: buttonView, frame: CGRect(origin: CGPoint(x: floor((availableSize.width - buttonSize.width) / 2.0), y: availableSize.height - bottomPanelHeight + bottomPanelPadding + bottomPanelOffset), size: buttonSize))
+                transition.setFrame(view: buttonPanelView, frame: CGRect(origin: CGPoint(x: 0.0, y: availableSize.height - bottomPanelSize.height + bottomPanelOffset), size: bottomPanelSize))
             }
             
             let visibleBounds = self.scrollView.bounds.insetBy(dx: 0.0, dy: -10.0)
             let presentationData = component.context.sharedContext.currentPresentationData.with({ $0 })
-            let _ = giftsListView.update(size: availableSize, sideInset: 0.0, bottomInset: max(environment.safeInsets.bottom, bottomPanelHeight), deviceMetrics: environment.deviceMetrics, visibleHeight: availableSize.height, isScrollingLockedAtTop: false, expandProgress: 0.0, presentationData: presentationData, synchronous: false, visibleBounds: visibleBounds, transition: transition.containedViewLayoutTransition)
+            let _ = giftsListView.update(size: availableSize, sideInset: 0.0, bottomInset: max(environment.safeInsets.bottom, bottomPanelSize.height), deviceMetrics: environment.deviceMetrics, visibleHeight: availableSize.height, isScrollingLockedAtTop: false, expandProgress: 0.0, presentationData: presentationData, synchronous: false, visibleBounds: visibleBounds, transition: transition.containedViewLayoutTransition)
             
             transition.setFrame(view: self.backgroundView, frame: CGRect(origin: .zero, size: availableSize))
             self.backgroundView.backgroundColor = environment.theme.list.blocksBackgroundColor
@@ -299,7 +266,7 @@ public final class AddGiftsScreen: ViewControllerComponentContainer {
         }
         self.filterButton.addTarget(self, action: #selector(self.filterPressed), forControlEvents: .touchUpInside)
         
-        self.navigationItem.leftBarButtonItem = UIBarButtonItem(title: presentationData.strings.Common_Cancel, style: .plain, target: self, action: #selector(self.cancelPressed))
+        self.navigationItem.leftBarButtonItem = UIBarButtonItem(title: "___close", style: .plain, target: self, action: #selector(self.cancelPressed))
         self.navigationItem.rightBarButtonItem = UIBarButtonItem(customDisplayNode: self.filterButton)
     }
     

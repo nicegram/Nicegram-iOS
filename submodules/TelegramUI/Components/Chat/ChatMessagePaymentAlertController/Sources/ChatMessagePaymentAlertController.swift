@@ -5,7 +5,6 @@ import AsyncDisplayKit
 import Display
 import ComponentFlow
 import ComponentDisplayAdapters
-import Postbox
 import TelegramCore
 import TelegramPresentationData
 import TelegramUIPreferences

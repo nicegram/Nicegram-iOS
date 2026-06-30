@@ -39,4 +39,7 @@
 
 - (void)willRotateToInterfaceOrientation:(UIInterfaceOrientation)toInterfaceOrientation duration:(NSTimeInterval)duration;
 
+- (bool)canBeginEditingCaption;
+- (void)beginEditingCaption;
+
 @end

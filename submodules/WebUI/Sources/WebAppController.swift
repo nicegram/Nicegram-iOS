@@ -8,7 +8,6 @@ import UIKit
 @preconcurrency import WebKit
 import Display
 import AsyncDisplayKit
-import Postbox
 import TelegramCore
 import SwiftSignalKit
 import ComponentFlow
@@ -71,8 +70,8 @@ public struct WebAppParameters {
     }
     
     let source: Source
-    let peerId: PeerId
-    let botId: PeerId
+    let peerId: EnginePeer.Id
+    let botId: EnginePeer.Id
     let botName: String
     let botVerified: Bool
     let botAddress: String
@@ -85,12 +84,13 @@ public struct WebAppParameters {
     let forceHasSettings: Bool
     let fullSize: Bool
     let isFullscreen: Bool
+    let sameOrigin: Bool
     let appSettings: BotAppSettings?
     
     public init(
         source: Source,
-        peerId: PeerId,
-        botId: PeerId,
+        peerId: EnginePeer.Id,
+        botId: EnginePeer.Id,
         botName: String,
         botVerified: Bool,
         botAddress: String,
@@ -103,6 +103,7 @@ public struct WebAppParameters {
         forceHasSettings: Bool,
         fullSize: Bool,
         isFullscreen: Bool = false,
+        sameOrigin: Bool = false,
         appSettings: BotAppSettings? = nil
     ) {
         self.source = source
@@ -120,6 +121,7 @@ public struct WebAppParameters {
         self.forceHasSettings = forceHasSettings
         self.fullSize = fullSize || isFullscreen
         self.isFullscreen = isFullscreen
+        self.sameOrigin = sameOrigin
         self.appSettings = appSettings
     }
 }
@@ -483,6 +485,10 @@ public final class WebAppController: ViewController, AttachmentContainable {
             super.didLoad()
             
             self.setupWebView()
+            if let pendingExternalUrl = self.controller?.pendingExternalUrl {
+                self.controller?.pendingExternalUrl = nil
+                self.loadExternal(url: pendingExternalUrl)
+            }
             
             guard let webView = self.webView else {
                 return
@@ -530,7 +536,7 @@ public final class WebAppController: ViewController, AttachmentContainable {
             }
             #endif*/
 
-            if !"".isEmpty {
+            if self.controller?.sameOrigin == true {
                 self.webView?.bindTrustedOrigin(from: url)
             } else {
                 self.webView?.setupEventProxySource()
@@ -538,6 +544,13 @@ public final class WebAppController: ViewController, AttachmentContainable {
             self.webView?.load(URLRequest(url: url))
         }
         
+        fileprivate func loadExternal(url: String) {
+            guard let parsedUrl = URL(string: url) else {
+                return
+            }
+            self.load(url: parsedUrl)
+        }
+
         func setupWebView() {
             guard let controller = self.controller else {
                 return
@@ -569,6 +582,7 @@ public final class WebAppController: ViewController, AttachmentContainable {
                         }
                         if let parsedUrl = URL(string: result.url) {
                             strongSelf.queryId = result.queryId
+                            strongSelf.controller?.sameOrigin = result.flags.contains(.sameOrigin)
                             strongSelf.load(url: parsedUrl)
                         }
                     })
@@ -589,6 +603,7 @@ public final class WebAppController: ViewController, AttachmentContainable {
                                     return
                                 }
                                 self.controller?.titleView?.title = WebAppTitle(title: botApp.title, counter: self.presentationData.strings.WebApp_Miniapp, isVerified: controller.botVerified)
+                                self.controller?.sameOrigin = result.flags.contains(.sameOrigin)
                                 self.load(url: parsedUrl)
                             })
                         })
@@ -599,6 +614,7 @@ public final class WebAppController: ViewController, AttachmentContainable {
                                 return
                             }
                             strongSelf.queryId = result.queryId
+                            strongSelf.controller?.sameOrigin = result.flags.contains(.sameOrigin)
                             strongSelf.load(url: parsedUrl)
                                                         
                             if let keepAliveSignal = result.keepAliveSignal {
@@ -697,7 +713,7 @@ public final class WebAppController: ViewController, AttachmentContainable {
         @available(iOS 14.5, *)
         func downloadDidFinish(_ download: WKDownload) {
             if let (path, fileName) = self.downloadArguments {
-                let tempFile = TempBox.shared.file(path: path, fileName: fileName)
+                let tempFile = EngineTempBox.shared.file(path: path, fileName: fileName)
                 let url = URL(fileURLWithPath: tempFile.path)
                 
                 if fileName.hasSuffix(".pkpass") {
@@ -1280,8 +1296,9 @@ public final class WebAppController: ViewController, AttachmentContainable {
             case "web_app_open_tg_link":
                 if let json = json, let path = json["path_full"] as? String {
                     let forceRequest = json["force_request"] as? Bool ?? false
-                    controller.openUrl("https://t.me\(path)", false, forceRequest, {
-                    })
+                    if let url = makeWebAppTelegramLink(pathFull: path) {
+                        controller.openUrl(url, false, forceRequest, {})
+                    }
                 }
             case "web_app_open_invoice":
                 if let json = json, let slug = json["slug"] as? String {
@@ -1690,7 +1707,7 @@ public final class WebAppController: ViewController, AttachmentContainable {
                             if let image = UIImage(data: data) {
                                 source = image
                             } else {
-                                let tempFile = TempBox.shared.tempFile(fileName: "image.mp4")
+                                let tempFile = EngineTempBox.shared.tempFile(fileName: "image.mp4")
                                 if let _ = try? data.write(to: URL(fileURLWithPath: tempFile.path), options: .atomic) {
                                     source = tempFile.path
                                 }
@@ -3087,7 +3104,7 @@ public final class WebAppController: ViewController, AttachmentContainable {
                                 tooltip.dismissWithCommitAction()
                             }
                             
-                            let tempFile = TempBox.shared.file(path: resultUrl.absoluteString, fileName: fileName)
+                            let tempFile = EngineTempBox.shared.file(path: resultUrl.absoluteString, fileName: fileName)
                             let url = URL(fileURLWithPath: tempFile.path)
                             try? FileManager.default.copyItem(at: resultUrl, to: url)
                             
@@ -3571,8 +3588,8 @@ public final class WebAppController: ViewController, AttachmentContainable {
     
     private let context: AccountContext
     public let source: WebAppParameters.Source
-    private let peerId: PeerId
-    public let botId: PeerId
+    private let peerId: EnginePeer.Id
+    public let botId: EnginePeer.Id
     fileprivate let botName: String
     fileprivate let botVerified: Bool
     fileprivate let botAppSettings: BotAppSettings?
@@ -3584,9 +3601,11 @@ public final class WebAppController: ViewController, AttachmentContainable {
     private let buttonText: String?
     private let forceHasSettings: Bool
     private let keepAliveSignal: Signal<Never, KeepWebViewError>?
-    private let replyToMessageId: MessageId?
+    private let replyToMessageId: EngineMessage.Id?
     private let threadId: Int64?
     public var isFullscreen: Bool
+    private var sameOrigin: Bool
+    private var pendingExternalUrl: String?
     
     private var presentationData: PresentationData
     fileprivate let updatedPresentationData: (initial: PresentationData, signal: Signal<PresentationData, NoError>)?
@@ -3602,7 +3621,7 @@ public final class WebAppController: ViewController, AttachmentContainable {
     public var verifyAgeCompletion: ((Int) -> Void)?
     
     // Nicegram, add customization
-    public init(context: AccountContext, updatedPresentationData: (initial: PresentationData, signal: Signal<PresentationData, NoError>)? = nil, params: WebAppParameters, replyToMessageId: MessageId?, threadId: Int64?, customization: TelegramWebAppCustomization? = nil) {
+    public init(context: AccountContext, updatedPresentationData: (initial: PresentationData, signal: Signal<PresentationData, NoError>)? = nil, params: WebAppParameters, replyToMessageId: EngineMessage.Id?, threadId: Int64?, customization: TelegramWebAppCustomization? = nil) {
         // Nicegram
         self.customization = customization
         //
@@ -3624,6 +3643,7 @@ public final class WebAppController: ViewController, AttachmentContainable {
         self.replyToMessageId = replyToMessageId
         self.threadId = threadId
         self.isFullscreen = params.isFullscreen
+        self.sameOrigin = params.sameOrigin
         
         self.updatedPresentationData = updatedPresentationData
         
@@ -3644,6 +3664,8 @@ public final class WebAppController: ViewController, AttachmentContainable {
         self.automaticallyControlPresentationContextLayout = false
         
         if case .attachMenu = self.source {
+            
+        } else if self.isVerifyAgeBot {
             
         } else {
             self.navigationItem.leftBarButtonItem = UIBarButtonItem(customDisplayNode: self.cancelButtonNode)
@@ -3722,15 +3744,21 @@ public final class WebAppController: ViewController, AttachmentContainable {
     }
     
     private func updateNavigationButtons() {
+        var showGlassButtons = false
         if case .attachMenu = self.source {
+            showGlassButtons = true
+        } else if self.isVerifyAgeBot {
+            showGlassButtons = true
+        }
+        if showGlassButtons {
             let barButtonSize = CGSize(width: 44.0, height: 44.0)
             let closeComponent: AnyComponentWithIdentity<Empty> = AnyComponentWithIdentity(
                 id: "close",
                 component: AnyComponent(GlassBarButtonComponent(
                     size: barButtonSize,
-                    backgroundColor: self.presentationData.theme.rootController.navigationBar.glassBarButtonBackgroundColor,
+                    backgroundColor: nil,
                     isDark: self.presentationData.theme.overallDarkAppearance,
-                    state: .generic,
+                    state: .glass,
                     component: AnyComponentWithIdentity(id: self.controllerNode.hasBackButton ? "back" : "close", component: AnyComponent(
                         BundleIconComponent(
                             name: self.controllerNode.hasBackButton ? "Navigation/Back" : "Navigation/Close",
@@ -3747,9 +3775,9 @@ public final class WebAppController: ViewController, AttachmentContainable {
                 id: "more",
                 component: AnyComponent(GlassBarButtonComponent(
                     size: barButtonSize,
-                    backgroundColor: self.presentationData.theme.rootController.navigationBar.glassBarButtonBackgroundColor,
+                    backgroundColor: nil,
                     isDark: self.presentationData.theme.overallDarkAppearance,
-                    state: .generic,
+                    state: .glass,
                     component: AnyComponentWithIdentity(id: "more", component: AnyComponent(
                         LottieComponent(
                             content: LottieComponent.AppBundleContent(
@@ -3777,14 +3805,16 @@ public final class WebAppController: ViewController, AttachmentContainable {
                 self.navigationItem.leftBarButtonItem = UIBarButtonItem(customDisplayNode: cancelButtonNode)
             }
             
-            let moreButtonNode: BarComponentHostNode
-            if let current = self.moreBarButtonNode {
-                moreButtonNode = current
-                moreButtonNode.component = moreComponent
-            } else {
-                moreButtonNode = BarComponentHostNode(component: moreComponent, size: barButtonSize)
-                self.moreBarButtonNode = moreButtonNode
-                self.navigationItem.rightBarButtonItem = UIBarButtonItem(customDisplayNode: moreButtonNode)
+            if !self.isVerifyAgeBot {
+                let moreButtonNode: BarComponentHostNode
+                if let current = self.moreBarButtonNode {
+                    moreButtonNode = current
+                    moreButtonNode.component = moreComponent
+                } else {
+                    moreButtonNode = BarComponentHostNode(component: moreComponent, size: barButtonSize)
+                    self.moreBarButtonNode = moreButtonNode
+                    self.navigationItem.rightBarButtonItem = UIBarButtonItem(customDisplayNode: moreButtonNode)
+                }
             }
         }
             
@@ -3793,7 +3823,9 @@ public final class WebAppController: ViewController, AttachmentContainable {
     
     private var isVerifyAgeBot: Bool {
         if let ageBotUsername = self.context.currentAppConfiguration.with({ $0 }).data?["verify_age_bot_username"] as? String {
-            return self.botAddress == ageBotUsername
+            if self.botAddress == ageBotUsername {
+                return true
+            }
         }
         return false
     }
@@ -4098,6 +4130,14 @@ public final class WebAppController: ViewController, AttachmentContainable {
         self.updateTabBarAlpha(1.0, .immediate)
     }
     
+    public func loadExternal(url: String) {
+        if self.isNodeLoaded {
+            self.controllerNode.loadExternal(url: url)
+        } else {
+            self.pendingExternalUrl = url
+        }
+    }
+
     public func isContainerPanningUpdated(_ isPanning: Bool) {
         self.controllerNode.isContainerPanningUpdated(isPanning)
     }
@@ -4141,23 +4181,18 @@ public final class WebAppController: ViewController, AttachmentContainable {
     
     public func requestDismiss(completion: @escaping () -> Void) {
         if self.controllerNode.needDismissConfirmation {
-            let actionSheet = ActionSheetController(presentationData: self.presentationData)
-            actionSheet.setItemGroups([
-                ActionSheetItemGroup(items: [
-                    ActionSheetTextItem(title: self.presentationData.strings.WebApp_CloseConfirmation),
-                    ActionSheetButtonItem(title: self.presentationData.strings.WebApp_CloseAnyway, color: .destructive, action: { [weak actionSheet] in
-                        actionSheet?.dismissAnimated()
-                        
+            let alertController = textAlertController(
+                context: self.context,
+                title: nil,
+                text: self.presentationData.strings.WebApp_CloseConfirmation,
+                actions: [
+                    TextAlertAction(type: .genericAction, title: self.presentationData.strings.Common_Cancel, action: {}),
+                    TextAlertAction(type: .destructiveAction, title: self.presentationData.strings.WebApp_CloseAnyway, action: {
                         completion()
                     })
-                ]),
-                ActionSheetItemGroup(items: [
-                    ActionSheetButtonItem(title: self.presentationData.strings.Common_Cancel, color: .accent, font: .bold, action: { [weak actionSheet] in
-                        actionSheet?.dismissAnimated()
-                    })
-                ])
-            ])
-            self.present(actionSheet, in: .window(.root))
+                ]
+            )
+            self.present(alertController, in: .window(.root))
         } else {
             completion()
         }
@@ -4310,7 +4345,8 @@ public func standaloneWebAppController(
     didDismiss: @escaping () -> Void = {},
     getNavigationController: @escaping () -> NavigationController? = { return nil },
     getSourceRect: (() -> CGRect?)? = nil,
-    verifyAgeCompletion: ((Int) -> Void)? = nil
+    verifyAgeCompletion: ((Int) -> Void)? = nil,
+    onControllerCreated: @escaping (WebAppController) -> Void = { _ in }
 ) -> ViewController {
     let controller = AttachmentController(
         context: context,
@@ -4332,6 +4368,7 @@ public func standaloneWebAppController(
         webAppController.getNavigationController = getNavigationController
         webAppController.requestSwitchInline = requestSwitchInline
         webAppController.verifyAgeCompletion = verifyAgeCompletion
+        onControllerCreated(webAppController)
         present(webAppController, webAppController.mediaPickerContext)
         return true
     }
@@ -4370,117 +4407,4 @@ private struct WebAppConfiguration {
             return .defaultValue
         }
     }
-}
-
-private func isAllowedBotMediaUrl(_ urlString: String) -> Bool {
-    guard let escaped = urlString.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed),
-          let url = URL(string: escaped) else {
-        return false
-    }
-    guard url.scheme?.lowercased() == "https" else {
-        return false
-    }
-    if url.user != nil || url.password != nil {
-        return false
-    }
-    guard var host = url.host?.lowercased(), !host.isEmpty else {
-        return false
-    }
-    if host.hasPrefix("[") && host.hasSuffix("]") {
-        host = String(host.dropFirst().dropLast())
-    }
-
-    // Strict canonical dotted-decimal IPv4 (4 octets, no leading zeros, each 0-255).
-    // Do NOT use inet_pton here: Darwin's inet_pton accepts "0177.0.0.1" as
-    // decimal 177.0.0.1, but getaddrinfo (used by URLSession) interprets the
-    // same string as octal 127.0.0.1 — the divergence is a loopback bypass.
-    if let v4Bytes = parseCanonicalIPv4(host) {
-        return isPublicIPv4(v4Bytes)
-    }
-
-    // IPv6 only — host must contain ":" so we don't accidentally hand a
-    // numeric-looking hostname to inet_pton.
-    if host.contains(":") {
-        var v6 = in6_addr()
-        if host.withCString({ inet_pton(AF_INET6, $0, &v6) }) == 1 {
-            let bytes = withUnsafeBytes(of: &v6) { ptr -> [UInt8] in
-                return Array(ptr)
-            }
-            return isPublicIPv6(bytes)
-        }
-        return false
-    }
-
-    // Strict DNS-name validation. Anything that doesn't look like a real
-    // FQDN is rejected — this catches non-canonical numeric IP forms
-    // (decimal-32 like "2130706433", octal like "0177.0.0.1", hex like
-    // "0x7f.0.0.1", short forms like "127.1") that the OS resolver may
-    // still treat as 127.0.0.1 even when inet_pton would accept them as
-    // a different value or reject outright.
-    let labels = host.split(separator: ".", omittingEmptySubsequences: false)
-    guard labels.count >= 2 else { return false }
-    for label in labels {
-        guard !label.isEmpty, label.count <= 63 else { return false }
-        if label.first == "-" || label.last == "-" { return false }
-        for ch in label {
-            guard ch.isASCII else { return false }
-            if !(ch.isLetter || ch.isNumber || ch == "-") { return false }
-        }
-    }
-    guard let tld = labels.last, tld.count >= 2, tld.contains(where: { $0.isLetter }) else {
-        return false
-    }
-
-    if host == "localhost" || host.hasSuffix(".localhost") || host.hasSuffix(".local") {
-        return false
-    }
-    return true
-}
-
-private func parseCanonicalIPv4(_ host: String) -> [UInt8]? {
-    let parts = host.split(separator: ".", omittingEmptySubsequences: false)
-    guard parts.count == 4 else { return nil }
-    var bytes: [UInt8] = []
-    bytes.reserveCapacity(4)
-    for part in parts {
-        guard !part.isEmpty, part.count <= 3 else { return nil }
-        if part.count > 1 && part.first == "0" { return nil }      // no leading zeros (octal-spoof)
-        guard part.allSatisfy({ $0.isASCII && $0.isNumber }) else { return nil }
-        guard let value = UInt8(part) else { return nil }          // also caps at 255
-        bytes.append(value)
-    }
-    return bytes
-}
-
-private func isPublicIPv4(_ bytes: [UInt8]) -> Bool {
-    guard bytes.count == 4 else { return false }
-    let a = bytes[0]
-    let b = bytes[1]
-    if a == 0 { return false }                          // 0.0.0.0/8
-    if a == 10 { return false }                         // 10.0.0.0/8
-    if a == 127 { return false }                        // 127.0.0.0/8 loopback
-    if a == 169 && b == 254 { return false }            // 169.254.0.0/16 link-local
-    if a == 172 && (b & 0xf0) == 16 { return false }    // 172.16.0.0/12
-    if a == 192 && b == 168 { return false }            // 192.168.0.0/16
-    if a == 100 && (b & 0xc0) == 64 { return false }    // 100.64.0.0/10 CGNAT
-    if a >= 224 { return false }                        // multicast + reserved + 255.255.255.255
-    return true
-}
-
-private func isPublicIPv6(_ bytes: [UInt8]) -> Bool {
-    guard bytes.count == 16 else { return false }
-    if bytes.allSatisfy({ $0 == 0 }) { return false }                       // ::
-    let loopback: [UInt8] = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1]
-    if bytes == loopback { return false }                                   // ::1
-    if bytes[0] == 0xff { return false }                                    // ff00::/8 multicast
-    if bytes[0] == 0xfe && (bytes[1] & 0xc0) == 0x80 { return false }       // fe80::/10 link-local
-    if (bytes[0] & 0xfe) == 0xfc { return false }                           // fc00::/7 unique-local
-    let v4MappedPrefix: [UInt8] = [0,0,0,0,0,0,0,0,0,0,0xff,0xff]
-    if Array(bytes.prefix(12)) == v4MappedPrefix {                          // ::ffff:a.b.c.d
-        return isPublicIPv4(Array(bytes.suffix(4)))
-    }
-    if Array(bytes.prefix(12)).allSatisfy({ $0 == 0 }) {                    // ::a.b.c.d (deprecated)
-        return isPublicIPv4(Array(bytes.suffix(4)))
-    }
-    return true
 }

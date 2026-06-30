@@ -2,7 +2,6 @@ import Foundation
 import UIKit
 import Display
 import SwiftSignalKit
-import Postbox
 import TelegramCore
 import MediaResources
 import LocalMediaResources
@@ -111,7 +110,7 @@ public func uploadCustomWallpaper(context: AccountContext, wallpaper: WallpaperG
             let accountManager = context.sharedContext.accountManager
             let account = context.account
             let updateWallpaper: (TelegramWallpaper) -> Void = { wallpaper in
-                var resource: MediaResource?
+                var resource: TelegramMediaResource?
                 if case let .image(representations, _) = wallpaper, let representation = largestImageRepresentation(representations) {
                     resource = representation.resource
                 } else if case let .file(file) = wallpaper {
@@ -257,7 +256,7 @@ public func getTemporaryCustomPeerWallpaper(context: AccountContext, wallpaper: 
     }
 }
 
-public func uploadCustomPeerWallpaper(context: AccountContext, wallpaper: WallpaperGalleryEntry, mode: WallpaperPresentationOptions, editedImage: UIImage?, cropRect: CGRect?, brightness: CGFloat?, peerId: PeerId, forBoth: Bool, completion: @escaping () -> Void) {
+public func uploadCustomPeerWallpaper(context: AccountContext, wallpaper: WallpaperGalleryEntry, mode: WallpaperPresentationOptions, editedImage: UIImage?, cropRect: CGRect?, brightness: CGFloat?, peerId: EnginePeer.Id, forBoth: Bool, completion: @escaping () -> Void) {
     var imageSignal: Signal<UIImage, NoError>
     switch wallpaper {
         case let .wallpaper(wallpaper, _):

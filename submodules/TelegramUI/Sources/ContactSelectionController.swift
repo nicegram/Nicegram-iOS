@@ -2,7 +2,6 @@ import Foundation
 import UIKit
 import Display
 import AsyncDisplayKit
-import Postbox
 import SwiftSignalKit
 import TelegramCore
 import TelegramPresentationData
@@ -39,7 +38,6 @@ class ContactSelectionControllerImpl: ViewController, ContactSelectionController
         }
     }
     
-    private let index: PeerNameIndex = .lastNameFirst
     private let titleProducer: (PresentationStrings) -> String
     private let options: Signal<[ContactListAdditionalOption], NoError>
     private let displayDeviceContacts: Bool

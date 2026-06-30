@@ -206,6 +206,7 @@ final class MessageItemView: UIView {
     private var customEmojiContainerView: CustomEmojiContainerView?
     private var emojiViewProvider: ((ChatTextInputTextCustomEmojiAttribute) -> UIView)?
     
+    private var richTextPreviewView: UIView?
     private var mediaPreviewClippingView: UIView?
     private var mediaPreview: ChatSendMessageContextScreenMediaPreview?
     
@@ -283,6 +284,8 @@ final class MessageItemView: UIView {
         presentationData: PresentationData,
         backgroundNode: WallpaperBackgroundNode?,
         textString: NSAttributedString,
+        richTextPreview: ChatSendMessageContextScreenRichTextPreview?,
+        maxRichBubbleWidth: CGFloat,
         sourceTextInputView: ChatInputTextView?,
         emojiViewProvider: ((ChatTextInputTextCustomEmojiAttribute) -> UIView)?,
         sourceMediaPreview: ChatSendMessageContextScreenMediaPreview?,
@@ -690,9 +693,38 @@ final class MessageItemView: UIView {
             let size = CGSize(width: positionedTextSize.width + textInsets.left + textInsets.right, height: positionedTextSize.height + textInsets.top + textInsets.bottom)
             
             let textFrame = CGRect(origin: CGPoint(x: textInsets.left, y: textInsets.top), size: positionedTextSize)
-            
-            let backgroundSize = explicitBackgroundSize ?? size
-            
+
+            // The outgoing bubble reserves space on the right for its tail (mirrors the
+            // plain-text path's `backgroundSize.width - 1 - 7`); the left keeps a 1pt border.
+            // The injected page lays out within this content width, so it never runs into the
+            // tail and the bubble can't exceed the available container width.
+            let richBubbleLeftInset: CGFloat = 1.0
+            let richBubbleRightInset: CGFloat = 7.0
+
+            var richContentSize: CGSize?
+            if let richTextPreview {
+                let richView = richTextPreview.view
+                if richView.superview !== self {
+                    richView.removeFromSuperview()
+                    self.addSubview(richView)
+                    self.richTextPreviewView = richView
+                }
+                let richBoundingWidth = max(1.0, maxRichBubbleWidth - richBubbleLeftInset - richBubbleRightInset)
+                richContentSize = richTextPreview.update(boundingWidth: richBoundingWidth, presentationData: presentationData, transition: transition)
+            } else if let richTextPreviewView = self.richTextPreviewView {
+                self.richTextPreviewView = nil
+                richTextPreviewView.removeFromSuperview()
+            }
+
+            let settledContentSize: CGSize
+            if let richContentSize {
+                // Height = 1pt top inset + content + 5pt bottom inset (page sits at y = 1).
+                settledContentSize = CGSize(width: richContentSize.width + richBubbleLeftInset + richBubbleRightInset, height: richContentSize.height + 6.0)
+            } else {
+                settledContentSize = size
+            }
+            let backgroundSize = explicitBackgroundSize ?? settledContentSize
+
             let previousSize = self.currentSize
             self.currentSize = backgroundSize
             
@@ -711,7 +743,20 @@ final class MessageItemView: UIView {
             
             textNode.view.frame = CGRect(origin: CGPoint(x: textFrame.minX + textPositioningInsets.left - textClippingContainerFrame.minX, y: textFrame.minY + textPositioningInsets.top - textClippingContainerFrame.minY), size: CGSize(width: maxTextWidth, height: textHeight))
             self.updateTextContents()
-            
+
+            // Blend between the raw plain text (source/morph) and the injected rich layout
+            // (settled). `explicitBackgroundSize != nil` means source-morph; nil means settled.
+            let isSettled = explicitBackgroundSize == nil
+            if let richTextPreviewView = self.richTextPreviewView, let richContentSize {
+                let richAlpha: CGFloat = isSettled ? 1.0 : 0.0
+                let plainAlpha: CGFloat = isSettled ? 0.0 : 1.0
+                transition.setAlpha(view: richTextPreviewView, alpha: richAlpha)
+                transition.setAlpha(view: self.textClippingContainer, alpha: plainAlpha)
+                transition.setFrame(view: richTextPreviewView, frame: CGRect(origin: CGPoint(x: richBubbleLeftInset, y: 1.0), size: richContentSize))
+            } else {
+                transition.setAlpha(view: self.textClippingContainer, alpha: 1.0)
+            }
+
             if let effectIcon = self.effectIcon, let effectIconSize {
                 if let effectIconView = effectIcon.view {
                     var animateIn = false

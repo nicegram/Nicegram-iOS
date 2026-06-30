@@ -4,7 +4,6 @@ import AsyncDisplayKit
 import Display
 import TelegramCore
 import SwiftSignalKit
-import Postbox
 import TelegramPresentationData
 import AccountContext
 import ContextUI
@@ -37,7 +36,7 @@ enum PeerMembersListAction {
 
 private enum PeerMembersListEntryStableId: Hashable {
     case addMember
-    case peer(PeerId)
+    case peer(EnginePeer.Id)
 }
 
 private enum PeerMembersListEntry: Comparable, Identifiable {
@@ -317,7 +316,7 @@ final class PeerInfoMembersPaneNode: ASDisplayNode, PeerInfoPaneNode {
         
     private var disposable: Disposable?
     
-    init(context: AccountContext, peerId: PeerId, membersContext: PeerInfoMembersContext, addMemberAction: @escaping () -> Void, action: @escaping (PeerInfoMember, PeerMembersListAction) -> Void) {
+    init(context: AccountContext, peerId: EnginePeer.Id, membersContext: PeerInfoMembersContext, addMemberAction: @escaping () -> Void, action: @escaping (PeerInfoMember, PeerMembersListAction) -> Void) {
         self.context = context
         self.membersContext = membersContext
         self.addMemberAction = addMemberAction
@@ -394,7 +393,7 @@ final class PeerInfoMembersPaneNode: ASDisplayNode, PeerInfoPaneNode {
         self.disposable?.dispose()
     }
     
-    func ensureMessageIsVisible(id: MessageId) {   
+    func ensureMessageIsVisible(id: EngineMessage.Id) {   
     }
     
     func scrollToTop() -> Bool {
@@ -542,7 +541,7 @@ final class PeerInfoMembersPaneNode: ASDisplayNode, PeerInfoPaneNode {
         transition.updateFrame(view: self.listMaskView, frame: listMaskFrame)
     }
     
-    func findLoadedMessage(id: MessageId) -> Message? {
+    func findLoadedMessage(id: EngineMessage.Id) -> EngineMessage? {
         return nil
     }
     
@@ -558,7 +557,7 @@ final class PeerInfoMembersPaneNode: ASDisplayNode, PeerInfoPaneNode {
     func cancelPreviewGestures() {
     }
     
-    func transitionNodeForGallery(messageId: MessageId, media: Media) -> (ASDisplayNode, CGRect, () -> (UIView?, UIView?))? {
+    func transitionNodeForGallery(messageId: EngineMessage.Id, media: EngineMedia) -> (ASDisplayNode, CGRect, () -> (UIView?, UIView?))? {
         return nil
     }
     

@@ -3,7 +3,6 @@ import UIKit
 import LegacyComponents
 import Display
 import SwiftSignalKit
-import Postbox
 import TelegramCore
 import TelegramPresentationData
 import DeviceAccess
@@ -159,7 +158,7 @@ public func legacyStoryMediaEditor(context: AccountContext, item: TGMediaEditabl
 
 public func legacyMediaEditor(
     context: AccountContext,
-    peer: Peer,
+    peer: EnginePeer,
     threadTitle: String?,
     media: AnyMediaReference,
     mode: LegacyMediaEditorMode,
@@ -167,6 +166,7 @@ public func legacyMediaEditor(
     snapshots: [UIView],
     transitionCompletion: (() -> Void)?,
     getCaptionPanelView: @escaping () -> TGCaptionPanelView?,
+    photoToolbarView: ((TGPhotoEditorBackButton, TGPhotoEditorDoneButton, Bool, Bool) -> (UIView & TGPhotoToolbarViewProtocol)?)? = nil,
     hasSilentPosting: Bool = false,
     hasSchedule: Bool = false,
     reminder: Bool = false,
@@ -192,6 +192,7 @@ public func legacyMediaEditor(
         paintStickersContext.captionPanelView = {
             return getCaptionPanelView()
         }
+        paintStickersContext.photoToolbarView = photoToolbarView
         
         let presentationData = context.sharedContext.currentPresentationData.with { $0 }
         let recipientName: String
@@ -201,7 +202,7 @@ public func legacyMediaEditor(
             if peer.id == context.account.peerId {
                 recipientName = presentationData.strings.DialogList_SavedMessages
             } else {
-                recipientName = EnginePeer(peer).displayTitle(strings: presentationData.strings, displayOrder: presentationData.nameDisplayOrder)
+                recipientName = peer.displayTitle(strings: presentationData.strings, displayOrder: presentationData.nameDisplayOrder)
             }
         }
         
@@ -209,15 +210,28 @@ public func legacyMediaEditor(
         legacyController.blocksBackgroundWhenInOverlay = true
         legacyController.acceptsFocusWhenInOverlay = true
         legacyController.statusBar.statusBarStyle = .Ignore
+        paintStickersContext.presentMediaPickerSendActionMenu = makeLegacyMediaPickerSendActionMenuPresenter(context: context, presentationData: presentationData, presentInGlobalOverlay: { [weak legacyController] controller in
+            if let legacyController {
+                legacyController.presentInGlobalOverlay(controller)
+            } else if let mainWindow = context.sharedContext.mainWindow {
+                mainWindow.presentInGlobalOverlay(controller)
+            } else {
+                context.sharedContext.presentGlobalController(controller, nil)
+            }
+        })
         legacyController.controllerLoaded = { [weak legacyController] in
             legacyController?.view.disablesInteractiveTransitionGestureRecognizer = true
         }
-
+        legacyController.presentationCompleted = {
+            Queue.mainQueue().after(0.1) {
+                transitionCompletion?()
+            }
+        }
+        
         let schedulePicker: (Bool, @escaping (Int32, Bool) -> Void) -> Void = { media, done in
             presentSchedulePicker(media, done)
         }
         let appeared: () -> Void = {
-            transitionCompletion?()
         }
         let completion: (TGMediaEditableItem, TGMediaEditingContext, Bool, Int32) -> Void = { result, editingContext, silentPosting, scheduleTime in
             let nativeGenerator = legacyAssetPickerItemGenerator()
@@ -236,70 +250,36 @@ public func legacyMediaEditor(
         
         legacyController.enableSizeClassSignal = true
         
-        if isGif {
-            let galleryController = TGPhotoVideoEditor.controller(
-                with: legacyController.context,
-                caption: initialCaption,
-                withItem: item,
-                paint: mode == .draw,
-                adjustments: mode == .adjustments,
-                recipientName: recipientName,
-                stickersContext: paintStickersContext,
-                from: .zero,
-                mainSnapshot: nil,
-                snapshots: snapshots as [Any],
-                immediate: transitionCompletion != nil,
-                activateInput: mode == .caption,
-                isGif: true,
-                hasSilentPosting: hasSilentPosting,
-                hasSchedule: hasSchedule,
-                reminder: reminder,
-                presentSchedulePicker: schedulePicker,
-                appeared: appeared,
-                completion: completion,
-                dismissed: dismissed
-            )
-            legacyController.bind(controller: galleryController)
-            present(legacyController, nil)
-        } else {
-            let emptyController = LegacyEmptyController(context: legacyController.context)!
-            emptyController.navigationBarShouldBeHidden = true
-            let navigationController = makeLegacyNavigationController(rootController: emptyController)
-            navigationController.setNavigationBarHidden(true, animated: false)
-            legacyController.bind(controller: navigationController)
-            
-            present(legacyController, nil)
-            
-            TGPhotoVideoEditor.present(
-                with: legacyController.context,
-                controller: emptyController,
-                caption: initialCaption,
-                withItem: item,
-                paint: mode == .draw,
-                adjustments: mode == .adjustments,
-                recipientName: recipientName,
-                stickersContext: paintStickersContext,
-                from: .zero,
-                mainSnapshot: nil,
-                snapshots: snapshots as [Any],
-                immediate: transitionCompletion != nil,
-                activateInput: mode == .caption,
-                isGif: false,
-                hasSilentPosting: hasSilentPosting,
-                hasSchedule: hasSchedule,
-                reminder: reminder,
-                presentSchedulePicker: schedulePicker,
-                appeared: appeared,
-                completion: completion,
-                dismissed: dismissed
-            )
-        }
+        let galleryController = TGPhotoVideoEditor.controller(
+            with: legacyController.context,
+            caption: initialCaption,
+            withItem: item,
+            paint: mode == .draw,
+            adjustments: mode == .adjustments,
+            recipientName: recipientName,
+            stickersContext: paintStickersContext,
+            from: .zero,
+            mainSnapshot: nil,
+            snapshots: snapshots as [Any],
+            immediate: transitionCompletion != nil,
+            activateInput: mode == .caption,
+            isGif: isGif,
+            hasSilentPosting: hasSilentPosting,
+            hasSchedule: hasSchedule,
+            reminder: reminder,
+            presentSchedulePicker: schedulePicker,
+            appeared: appeared,
+            completion: completion,
+            dismissed: dismissed
+        )
+        legacyController.bind(controller: galleryController)
+        present(legacyController, nil)
     })
 }
     
 public func legacyAttachmentMenu(
     context: AccountContext,
-    peer: Peer?,
+    peer: EnginePeer?,
     threadTitle: String?,
     chatLocation: ChatLocation,
     editMediaOptions: LegacyAttachmentMenuMediaEditing?,
@@ -310,7 +290,7 @@ public func legacyAttachmentMenu(
     canSendPolls: Bool,
     updatedPresentationData: (initial: PresentationData, signal: Signal<PresentationData, NoError>),
     parentController: LegacyController,
-    recentlyUsedInlineBots: [Peer],
+    recentlyUsedInlineBots: [EnginePeer],
     initialCaption: NSAttributedString,
     openGallery: @escaping () -> Void,
     openCamera: @escaping (TGAttachmentCameraView?, TGMenuSheetController?) -> Void,
@@ -325,7 +305,7 @@ public func legacyAttachmentMenu(
     presentSchedulePicker: @escaping (Bool, @escaping (Int32, Bool) -> Void) -> Void,
     presentTimerPicker: @escaping (@escaping (Int32) -> Void) -> Void,
     sendMessagesWithSignals: @escaping ([Any]?, Bool, Int32, ((String) -> UIView?)?, @escaping () -> Void) -> Void,
-    selectRecentlyUsedInlineBot: @escaping (Peer) -> Void,
+    selectRecentlyUsedInlineBot: @escaping (EnginePeer) -> Void,
     getCaptionPanelView: @escaping () -> TGCaptionPanelView?,
     present: @escaping (ViewController, Any?) -> Void
 ) -> TGMenuSheetController {
@@ -340,7 +320,7 @@ public func legacyAttachmentMenu(
         if peer.id == context.account.peerId {
             recipientName = presentationData.strings.DialogList_SavedMessages
         } else {
-            recipientName = EnginePeer(peer).displayTitle(strings: presentationData.strings, displayOrder: presentationData.nameDisplayOrder)
+            recipientName = peer.displayTitle(strings: presentationData.strings, displayOrder: presentationData.nameDisplayOrder)
         }
     } else {
         recipientName = ""
@@ -384,12 +364,21 @@ public func legacyAttachmentMenu(
     
     var selectionLimit: Int32 = 100
     var slowModeEnabled = false
-    if let channel = peer as? TelegramChannel, channel.isRestrictedBySlowmode {
+    if case let .channel(channel) = peer, channel.isRestrictedBySlowmode {
         slowModeEnabled = true
         selectionLimit = 10
     }
     
     let paintStickersContext = LegacyPaintStickersContext(context: context)
+    paintStickersContext.presentMediaPickerSendActionMenu = makeLegacyMediaPickerSendActionMenuPresenter(context: context, presentationData: updatedPresentationData.initial, presentInGlobalOverlay: { [weak parentController] controller in
+        if let parentController {
+            parentController.presentInGlobalOverlay(controller)
+        } else if let mainWindow = context.sharedContext.mainWindow {
+            mainWindow.presentInGlobalOverlay(controller)
+        } else {
+            context.sharedContext.presentGlobalController(controller, nil)
+        }
+    })
     paintStickersContext.captionPanelView = {
         return getCaptionPanelView()
     }
@@ -423,7 +412,7 @@ public func legacyAttachmentMenu(
             presentSelectionLimitExceeded()
         }
         if let peer, peer.id != context.account.peerId {
-            if peer is TelegramUser {
+            if case .user = peer {
                 carouselItem.hasTimer = hasSchedule
             }
             carouselItem.hasSilentPosting = true
@@ -573,7 +562,7 @@ public func legacyAttachmentMenu(
                 
                 let recipientName: String
                 if let peer {
-                    recipientName = EnginePeer(peer).displayTitle(strings: presentationData.strings, displayOrder: presentationData.nameDisplayOrder)
+                    recipientName = peer.displayTitle(strings: presentationData.strings, displayOrder: presentationData.nameDisplayOrder)
                 } else {
                     recipientName = ""
                 }
@@ -615,13 +604,16 @@ public func legacyAttachmentMenu(
         
         var peerSupportsPolls = false
         if let peer {
-            if peer is TelegramGroup || peer is TelegramChannel {
+            switch peer {
+            case .legacyGroup, .channel:
                 peerSupportsPolls = true
-            } else if let user = peer as? TelegramUser, let _ = user.botInfo {
+            case let .user(user) where user.botInfo != nil:
                 peerSupportsPolls = true
+            default:
+                break
             }
         }
-        if let peer, peerSupportsPolls, canSendMessagesToPeer(EnginePeer(peer)) && canSendPolls {
+        if let peer, peerSupportsPolls, canSendMessagesToPeer(peer) && canSendPolls {
             let pollItem = TGMenuSheetButtonItemView(title: presentationData.strings.AttachmentMenu_Poll, type: TGMenuSheetButtonTypeDefault, fontSize: fontSize, action: { [weak controller] in
                 controller?.dismiss(animated: true)
                 openPoll()

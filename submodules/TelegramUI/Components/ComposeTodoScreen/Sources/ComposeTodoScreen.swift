@@ -318,6 +318,32 @@ final class ComposeTodoScreenComponent: Component {
             }
         }
         
+        private static func limitedAttributedString(_ text: NSAttributedString, characterLimit: Int) -> NSAttributedString {
+            if text.string.count <= characterLimit {
+                return text
+            }
+
+            let string = text.string
+            let endIndex = string.index(string.startIndex, offsetBy: characterLimit)
+            let length = NSRange(string.startIndex ..< endIndex, in: string).length
+            return text.attributedSubstring(from: NSRange(location: 0, length: length))
+        }
+
+        private static func attributedTodoItemLines(from text: NSAttributedString, characterLimit: Int) -> [NSAttributedString] {
+            var result: [NSAttributedString] = []
+
+            text.string.enumerateSubstrings(in: text.string.startIndex ..< text.string.endIndex, options: [.byLines, .substringNotRequired]) { _, substringRange, _, _ in
+                let range = NSRange(substringRange, in: text.string)
+                let line = text.attributedSubstring(from: range)
+                if line.string.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                    return
+                }
+                result.append(Self.limitedAttributedString(line, characterLimit: characterLimit))
+            }
+
+            return result
+        }
+
         func validatedInput() -> TelegramMediaTodo? {
             if self.todoTextInputState.text.string.trimmingCharacters(in: .whitespacesAndNewlines).count == 0 {
                 return nil
@@ -328,19 +354,10 @@ final class ComposeTodoScreenComponent: Component {
                 if todoItem.textInputState.text.string.trimmingCharacters(in: .whitespacesAndNewlines).count == 0 {
                     continue
                 }
-                var entities: [MessageTextEntity] = []
-                for entity in generateChatInputTextEntities(todoItem.textInputState.text) {
-                    switch entity.type {
-                    case .CustomEmoji:
-                        entities.append(entity)
-                    default:
-                        break
-                    }
-                }
                 mappedItems.append(
                     TelegramMediaTodo.Item(
                         text: todoItem.textInputState.text.string,
-                        entities: entities,
+                        entities: generateChatInputTextEntities(todoItem.textInputState.text),
                         id: todoItem.id
                     )
                 )
@@ -350,16 +367,6 @@ final class ComposeTodoScreenComponent: Component {
                 return nil
             }
                 
-            var textEntities: [MessageTextEntity] = []
-            for entity in generateChatInputTextEntities(self.todoTextInputState.text) {
-                switch entity.type {
-                case .CustomEmoji:
-                    textEntities.append(entity)
-                default:
-                    break
-                }
-            }
-            
             var flags: TelegramMediaTodo.Flags = []
             if self.isCompletableByOthers {
                 flags.insert(.othersCanComplete)
@@ -371,7 +378,7 @@ final class ComposeTodoScreenComponent: Component {
             return TelegramMediaTodo(
                 flags: flags,
                 text: self.todoTextInputState.text.string,
-                textEntities: textEntities,
+                textEntities: generateChatInputTextEntities(self.todoTextInputState.text),
                 items: mappedItems
             )
         }
@@ -792,6 +799,7 @@ final class ComposeTodoScreenComponent: Component {
                 },
                 assumeIsEditing: self.inputMediaNodeTargetTag === self.todoTextFieldTag,
                 characterLimit: component.initialData.maxTodoTextLength,
+                formattingAvailable: true,
                 emptyLineHandling: .allowed,
                 returnKeyAction: { [weak self] in
                     guard let self else {
@@ -884,6 +892,7 @@ final class ComposeTodoScreenComponent: Component {
                     hasLeftInset: true,
                     canReorder: isEnabled,
                     canAdd: isEnabled && i != 0 && i < component.initialData.maxTodoItemsCount,
+                    formattingAvailable: true,
                     emptyLineHandling: .notAllowed,
                     returnKeyAction: { [weak self] in
                         guard let self else {
@@ -945,23 +954,19 @@ final class ComposeTodoScreenComponent: Component {
                             return
                         }
                         if case let .text(text) = data {
-                            let lines = text.string.components(separatedBy: "\n")
+                            let lines = ComposeTodoScreenComponent.View.attributedTodoItemLines(from: text, characterLimit: component.initialData.maxTodoItemLength)
                             if !lines.isEmpty {
                                 self.endEditing(true)
                                 var i = 0
                                 for line in lines {
-                                    if line.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                                        continue
-                                    }
-                                    let line = String(line.prefix(component.initialData.maxTodoItemLength))
                                     if i < self.todoItems.count {
-                                        self.todoItems[i].resetText = NSAttributedString(string: line)
+                                        self.todoItems[i].resetText = line
                                     } else {
                                         if self.todoItems.count < component.initialData.maxTodoItemsCount {
                                             let todoItem = ComposeTodoScreenComponent.TodoItem(
                                                 id: self.nextTodoItemId
                                             )
-                                            todoItem.resetText = NSAttributedString(string: line)
+                                            todoItem.resetText = line
                                             self.todoItems.append(todoItem)
                                             self.nextTodoItemId += 1
                                         }
@@ -1294,7 +1299,14 @@ final class ComposeTodoScreenComponent: Component {
                     component: AnyComponent(ListSectionComponent(
                         theme: theme,
                         style: .glass,
-                        header: nil,
+                        header: AnyComponent(MultilineTextComponent(
+                            text: .plain(NSAttributedString(
+                                string: environment.strings.CreatePoll_SettingsTitle,
+                                font: Font.regular(presentationData.listsFontSize.itemListBaseHeaderFontSize),
+                                textColor: theme.list.freeTextColor
+                            )),
+                            maximumNumberOfLines: 0
+                        )),
                         footer: nil,
                         items: todoSettingsSectionItems
                     )),

@@ -1085,11 +1085,17 @@ public final class TelegramAccountConnectedBot: Codable, Equatable {
     public let id: PeerId
     public let recipients: TelegramBusinessRecipients
     public let rights: TelegramBusinessBotRights
+    public let device: String?
+    public let date: Int32?
+    public let location: String?
     
-    public init(id: PeerId, recipients: TelegramBusinessRecipients, rights: TelegramBusinessBotRights) {
+    public init(id: PeerId, recipients: TelegramBusinessRecipients, rights: TelegramBusinessBotRights, device: String? = nil, date: Int32? = nil, location: String? = nil) {
         self.id = id
         self.recipients = recipients
         self.rights = rights
+        self.device = device
+        self.date = date
+        self.location = location
     }
     
     public static func ==(lhs: TelegramAccountConnectedBot, rhs: TelegramAccountConnectedBot) -> Bool {
@@ -1105,7 +1111,33 @@ public final class TelegramAccountConnectedBot: Codable, Equatable {
         if lhs.rights != rhs.rights {
             return false
         }
+        if lhs.device != rhs.device {
+            return false
+        }
+        if lhs.date != rhs.date {
+            return false
+        }
+        if lhs.location != rhs.location {
+            return false
+        }
         return true
+    }
+    
+    fileprivate func preservingConnectionMetadata(from current: TelegramAccountConnectedBot?) -> TelegramAccountConnectedBot {
+        guard let current, current.id == self.id else {
+            return self
+        }
+        if self.device != nil || self.date != nil || self.location != nil {
+            return self
+        }
+        return TelegramAccountConnectedBot(
+            id: self.id,
+            recipients: self.recipients,
+            rights: self.rights,
+            device: current.device,
+            date: current.date,
+            location: current.location
+        )
     }
 }
 
@@ -1251,7 +1283,7 @@ public func _internal_setAccountConnectedBot(account: Account, bot: TelegramAcco
     return account.postbox.transaction { transaction in
         transaction.updatePeerCachedData(peerIds: Set([account.peerId]), update: { _, current in
             var current = (current as? CachedUserData) ?? CachedUserData()
-            current = current.withUpdatedConnectedBot(bot)
+            current = current.withUpdatedConnectedBot(bot?.preservingConnectionMetadata(from: current.connectedBot))
             return current
         })
     }

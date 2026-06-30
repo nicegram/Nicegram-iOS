@@ -2661,6 +2661,8 @@ Unused sets are archived when you add more.";
 "Channel.EditAdmin.PermissionInviteViaLink" = "Invite Users via Link";
 "Channel.EditAdmin.PermissionPinMessages" = "Pin Messages";
 "Channel.EditAdmin.PermissionAddAdmins" = "Add New Admins";
+"Channel.EditAdmin.PermissionProcessJoinRequests" = "Process Join Requests";
+"Channel.EditAdmin.PermissionProcessJoinRequestsInfo" = "Allow this bot to approve new members using its own interfaces, such as captchas.";
 
 "Channel.EditAdmin.PermissinAddAdminOn" = "This Admin will be able to add new admins with the same (or more limited) permissions.";
 "Channel.EditAdmin.PermissinAddAdminOff" = "This Admin will not be able to add new admins.";
@@ -2874,6 +2876,13 @@ Unused sets are archived when you add more.";
 "Call.ReportSend" = "Send";
 
 "Channel.EditAdmin.CannotEdit" = "You cannot edit the rights of this admin.";
+"Channel.EditAdmin.GuardBotEnableMembersText" = "New members will now need approval from **%@** before they can send messages in this group";
+"Channel.EditAdmin.GuardBotEnableSubscribersText" = "New subscribers will now need approval from **%@** before they can join this channel";
+"Channel.EditAdmin.GuardBotEnable" = "Enable";
+"Channel.EditAdmin.GuardBotReplaceTitle" = "Replace Bot";
+"Channel.EditAdmin.GuardBotReplaceText" = "**%@** is currently processing join requests. Switch to **%@** instead?";
+"Channel.EditAdmin.GuardBotReplaceKeep" = "Keep %@";
+"Channel.EditAdmin.GuardBotReplaceUse" = "Use %@";
 "Call.RateCall" = "Rate This Call";
 "Call.ShareStats" = "Share Statistics";
 
@@ -7020,6 +7029,9 @@ Sorry for the inconvenience.";
 "InviteLink.Create.RequestApprovalOffInfoChannel" = "New users will be able to join the channel without being approved by the admins.";
 "InviteLink.Create.RequestApprovalOnInfoGroup" = "New users will be able to join the group only after having been approved by the admins.";
 "InviteLink.Create.RequestApprovalOnInfoChannel" = "New users will be able to join the channel only after having been approved by the admins.";
+"InviteLink.Create.RequestApprovalInfo" = "Request admin approval for people joining through this link.";
+"InviteLink.Create.RequestApprovalPublicGroupUnavailable" = "This option is unavailable because anyone can join and send messages through the public group link.";
+"InviteLink.ApprovalRequired" = "approval required";
 
 "InviteLink.Create.LinkNameTitle" = "Link Name";
 "InviteLink.Create.LinkName" = "Link Name (Optional)";
@@ -7606,6 +7618,15 @@ Sorry for the inconvenience.";
 
 "Group.Setup.ApproveNewMembers" = "Approve New Members";
 "Group.Setup.ApproveNewMembersInfo" = "Turn this on if you want users to be able to send messages only after they are approved by an admin.";
+"Group.Setup.ApproveNewMembersManagedBy" = "Managed by %@";
+"Group.Setup.ApproveNewMembersApplyToExistingInviteLinksTitle" = "Apply to existing invite links?";
+"Group.Setup.ApproveNewMembersApplyToExistingInviteLinksText" = "Also %@ **%@** for **%@ existing invite links** in this %@?";
+"Group.Setup.ApproveNewMembersApplyToExistingInviteLinksEnable" = "enable";
+"Group.Setup.ApproveNewMembersApplyToExistingInviteLinksDisable" = "disable";
+"Group.Setup.ApproveNewMembersApplyToExistingInviteLinksPeerGroup" = "group";
+"Group.Setup.ApproveNewMembersApplyToExistingInviteLinksPeerChannel" = "channel";
+"Channel.Setup.ApproveNewSubscribers" = "Approve New Subscribers";
+"Channel.Setup.ApproveNewSubscribersInfo" = "Turn this on if you want users to be able to join only after they are approved by an admin.";
 
 "Gallery.GifSaved" = "GIF Saved";
 
@@ -8276,6 +8297,7 @@ Sorry for the inconvenience.";
 "Chat.EmptyTopicPlaceholder.Text" = "Send the first message to\nstart this topic.";
 
 "Chat.Message.TopicAuthorBadge" = "Topic Author";
+"Chat.RichText.ShowMore" = "Show more";
 
 "Chat.PanelRestartTopic" = "Restart Topic";
 "Chat.PanelTopicClosedText" = "The topic is closed by admin";
@@ -16306,3 +16328,48 @@ Error: %8$@";
 
 "VideoChat.StatusPeerJoined" = "%@ joined";
 "VideoChat.StatusPeerLeft" = "%@ left";
+
+"ChatList.BotConnectionReview.PanelTitle" = "A bot just got access to your messages!";
+"ChatList.BotConnectionReview.PanelText" = "%1$@ connected to your account from %2$@ (%3$@). Was this you?";
+
+"RecentSession.ConnectedBot.Subtitle" = "Chat Automation Bot";
+"RecentSession.ConnectedBot.ConnectedFrom" = "CONNECTED FROM";
+"RecentSession.ConnectedBot.Date" = "Date";
+"RecentSession.ConnectedBot.Device" = "Device";
+"RecentSessions.ConnectedBot.ConnectedTime" = "connected %@";
+"RecentSessions.ConnectedBot.TerminateCheckbox" = "Also terminate %@";
+
+"Chat.GuestChatMessageTooltip" = "This bot can't read the chat – only the messages where it was mentioned.";
+
+"MediaPicker.SetNewGroupPhoto" = "Set new group photo";
+"MediaPicker.SetNewChannelPhoto" = "Set new channel photo";
+
+"Attachment.Link" = "Link";
+
+"Checkout.PaymentMethod.Proceed" = "Proceed";
+"Checkout.ShippingMethod.Proceed" = "Proceed";
+
+"OpenLinkConfirmation.Title" = "Open link?";
+"OpenLinkConfirmation.Open" = "Open";
+
+"Chat.ContextMenu.OpenInBrowser" = "Open in Browser";
+"Chat.ContextMenu.OpenInApp" = "Open In-App";
+
+"CreatePoll.Link.Description" = "Attach a link to this option.";
+
+"ChatList.ClearSearchHistory.Confirm" = "Clear";
+
+"ChatList.RemoveFolderConfirmationTitle" = "Remove %@?";
+
+"SocksProxySetup.QrCode.TgLink" = "tg:// link";
+"SocksProxySetup.QrCode.TMeLink" = "t.me link";
+
+"WebBrowser.OpenLinksInfo" = "Open links inside Telegram instead of your default browser for more privacy.";
+"WebBrowser.Exceptions.OpenInApp" = "OPEN IN-APP";
+"WebBrowser.Exceptions.DontOpenInApp" = "DON'T OPEN IN-APP";
+"WebBrowser.Exceptions.InAppInfo" = "These sites will still be opened in-app.";
+"WebBrowser.Exceptions.DeleteAll" = "Delete All Exceptions";
+
+"RichTextPreview.Formula" = "[formula]";
+"RichTextPreview.Table" = "[table]";
+"RichTextPreview.Music" = "Music";

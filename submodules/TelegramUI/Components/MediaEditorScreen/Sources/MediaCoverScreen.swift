@@ -230,6 +230,7 @@ private final class MediaCoverScreenComponent: Component {
                 component: AnyComponent(
                     ButtonComponent(
                         background: ButtonComponent.Background(
+                            style: .glass,
                             color: environment.theme.list.itemCheckColors.fillColor,
                             foreground: environment.theme.list.itemCheckColors.foregroundColor,
                             pressedColor: environment.theme.list.itemCheckColors.fillColor.withMultipliedAlpha(0.9)
@@ -261,7 +262,7 @@ private final class MediaCoverScreenComponent: Component {
                     )
                 ),
                 environment: {},
-                containerSize: CGSize(width: availableSize.width - buttonSideInset * 2.0, height: 50.0)
+                containerSize: CGSize(width: availableSize.width - buttonSideInset * 2.0, height: 52.0)
             )
             let doneButtonFrame = CGRect(
                 origin: CGPoint(x: floor((availableSize.width - doneButtonSize.width) / 2.0), y: min(buttonsContainerFrame.minY, availableSize.height - doneButtonSize.height - buttonSideInset)),

@@ -1,44 +1,14 @@
 #import <LegacyComponents/TGPhotoEditorButton.h>
+#import <LegacyComponents/TGPhotoToolbarViewProtocol.h>
 
 #import <LegacyComponents/LegacyComponentsContext.h>
 
 @protocol TGPhotoPaintStickersContext;
 
-typedef NS_OPTIONS(NSUInteger, TGPhotoEditorTab) {
-    TGPhotoEditorNoneTab        = 0,
-    TGPhotoEditorCropTab        = 1 << 0,
-    TGPhotoEditorRotateTab      = 1 << 1,
-    TGPhotoEditorMirrorTab      = 1 << 2,
-    TGPhotoEditorPaintTab       = 1 << 3,
-    TGPhotoEditorEraserTab      = 1 << 4,
-    TGPhotoEditorStickerTab     = 1 << 5,
-    TGPhotoEditorTextTab        = 1 << 6,
-    TGPhotoEditorToolsTab       = 1 << 7,
-    TGPhotoEditorQualityTab     = 1 << 8,
-    TGPhotoEditorTimerTab       = 1 << 9,
-    TGPhotoEditorAspectRatioTab = 1 << 10,
-    TGPhotoEditorTintTab        = 1 << 11,
-    TGPhotoEditorBlurTab        = 1 << 12,
-    TGPhotoEditorCurvesTab      = 1 << 13
-};
-
-typedef enum
-{
-    TGPhotoEditorBackButtonBack,
-    TGPhotoEditorBackButtonCancel
-} TGPhotoEditorBackButton;
-
-typedef enum
-{
-    TGPhotoEditorDoneButtonSend,
-    TGPhotoEditorDoneButtonCheck,
-    TGPhotoEditorDoneButtonDone,
-    TGPhotoEditorDoneButtonSchedule
-} TGPhotoEditorDoneButton;
-
-@interface TGPhotoToolbarView : UIView
+@interface TGPhotoToolbarView : UIView <TGPhotoToolbarViewProtocol>
 
 @property (nonatomic, assign) UIInterfaceOrientation interfaceOrientation;
+@property (nonatomic, assign) CGFloat bottomInset;
 
 @property (nonatomic, readonly) UIButton *doneButton;
 
@@ -79,8 +49,12 @@ typedef enum
 
 - (void)setActiveTab:(TGPhotoEditorTab)tab;
 
+- (void)setQualityButtonIsPhoto:(bool)isPhoto highQuality:(bool)highQuality videoPreset:(NSInteger)videoPreset;
+- (void)setTimerButtonValue:(NSInteger)value;
+
 - (void)setInfoString:(NSString *)string;
 
+- (UIView *)viewForTab:(TGPhotoEditorTab)tab;
 - (TGPhotoEditorButton *)buttonForTab:(TGPhotoEditorTab)tab;
 
 @end

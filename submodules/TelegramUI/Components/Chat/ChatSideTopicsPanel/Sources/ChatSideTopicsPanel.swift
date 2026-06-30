@@ -1,7 +1,6 @@
 import Foundation
 import UIKit
 import SwiftSignalKit
-import Postbox
 import TelegramCore
 import Display
 import AsyncDisplayKit
@@ -1535,7 +1534,7 @@ public final class ChatSideTopicsPanel: Component {
         public func topicIndex(threadId: Int64?) -> Int? {
             if let threadId {
                 if let value = self.rawItems.firstIndex(where: { item in
-                    if item.id == .chatList(PeerId(threadId)) {
+                    if item.id == .chatList(EnginePeer.Id(threadId)) {
                         return true
                     } else if item.id == .forum(threadId) {
                         return true

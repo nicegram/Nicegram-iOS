@@ -2,7 +2,6 @@ import Foundation
 import UIKit
 import AsyncDisplayKit
 import Display
-import Postbox
 import TelegramCore
 import SwiftSignalKit
 import TelegramPresentationData
@@ -136,21 +135,6 @@ private final class GlassButtonView: UIView {
         super.init(frame: frame)
         
         self.addSubview(self.backgroundView)
-        
-        if #available(iOS 26.0, *) {
-        } else {
-            self.button.highligthedChanged = { [weak self] highlighted in
-                guard let self else {
-                    return
-                }
-                if highlighted && self.isEnabled && !self.isImplicitlyDisabled {
-                    self.backgroundView.contentView.alpha = 0.6
-                } else {
-                    self.backgroundView.contentView.alpha = 1.0
-                    self.backgroundView.contentView.layer.animateAlpha(from: 0.6, to: 1.0, duration: 0.2)
-                }
-            }
-        }
     }
     
     required init?(coder: NSCoder) {
@@ -177,7 +161,8 @@ private final class GlassButtonView: UIView {
         transition.setFrame(view: self.button, frame: CGRect(origin: CGPoint(), size: params.size))
         
         transition.setFrame(view: self.backgroundView, frame: CGRect(origin: CGPoint(), size: params.size))
-        self.backgroundView.update(size: params.size, cornerRadius: min(params.size.width, params.size.height) * 0.5, isDark: params.theme.overallDarkAppearance, tintColor: .init(kind: params.preferClearGlass ? .clear : .panel), isInteractive: isEnabled, transition: transition)
+        self.backgroundView.update(size: params.size, cornerRadius: min(params.size.width, params.size.height) * 0.5, isDark: params.theme.overallDarkAppearance, tintColor: .init(kind: params.preferClearGlass ? .clear : .panel), isInteractive: true, transition: transition)
+        self.backgroundView.isUserInteractionEnabled = isEnabled
         
         self.iconView.alpha = isEnabled ? 1.0 : 0.5
         self.iconView.tintMask.alpha = self.iconView.alpha
@@ -217,7 +202,7 @@ public final class ChatMessageSelectionInputPanelNode: ChatInputPanelNode {
     
     private let canDeleteMessagesDisposable = MetaDisposable()
     
-    public var selectedMessages = Set<MessageId>() {
+    public var selectedMessages = Set<EngineMessage.Id>() {
         didSet {
             if oldValue != self.selectedMessages {
                 self.updateActions()
@@ -351,7 +336,7 @@ public final class ChatMessageSelectionInputPanelNode: ChatInputPanelNode {
     }
     
     @objc private func deleteButtonPressed() {
-        self.interfaceInteraction?.deleteSelectedMessages()
+        self.interfaceInteraction?.deleteSelectedMessages(self.deleteButton)
     }
     
     @objc private func reportButtonPressed() {

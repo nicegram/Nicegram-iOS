@@ -11,22 +11,24 @@ import OpenInExternalAppUI
 import AccountContext
 import AppBundle
 
-class WebBrowserItem: ListViewItem, ItemListItem {
+final class WebBrowserItem: ListViewItem, ItemListItem {
     let context: AccountContext
     let presentationData: ItemListPresentationData
     let systemStyle: ItemListSystemStyle
     let title: String
     let application: OpenInApplication?
+    let identifier: String?
     let checked: Bool
     public let sectionId: ItemListSectionId
     let action: () -> Void
     
-    public init(context: AccountContext, presentationData: ItemListPresentationData, systemStyle: ItemListSystemStyle, title: String, application: OpenInApplication?, checked: Bool, sectionId: ItemListSectionId, action: @escaping () -> Void) {
+    public init(context: AccountContext, presentationData: ItemListPresentationData, systemStyle: ItemListSystemStyle, title: String, application: OpenInApplication?, identifier: String?, checked: Bool, sectionId: ItemListSectionId, action: @escaping () -> Void) {
         self.context = context
         self.presentationData = presentationData
         self.systemStyle = systemStyle
         self.title = title
         self.application = application
+        self.identifier = identifier
         self.checked = checked
         self.sectionId = sectionId
         self.action = action
@@ -148,11 +150,16 @@ private final class WebBrowserItemNode: ListViewItemNode {
             if currentItem == nil {
                 switch item.application {
                 case .none:
-                    let icons = item.context.sharedContext.applicationBindings.getAvailableAlternateIcons()
-                    let current = item.context.sharedContext.applicationBindings.getAlternateIconName()
-                    let currentIcon = icons.first(where: { $0.name == current })?.imageName ?? "BlueIcon"
-                    if let image = UIImage(named: currentIcon, in: getAppBundle(), compatibleWith: nil) {
-                        updatedIconSignal = openInAppIcon(engine: item.context.engine, appIcon: .image(image: image))
+                    if item.identifier == "default" {
+                        let image = renderSettingsIcon(name: "Chat/Context Menu/Globe", backgroundColors: [UIColor(rgb: 0x8E8E93)])!
+                        updatedIconSignal = openInAppIcon(engine: item.context.engine, appIcon: .image(image: image), withChrome: false)
+                    } else {
+                        let icons = item.context.sharedContext.applicationBindings.getAvailableAlternateIcons()
+                        let current = item.context.sharedContext.applicationBindings.getAlternateIconName()
+                        let currentIcon = icons.first(where: { $0.name == current })?.imageName ?? "BlueIcon"
+                        if let image = UIImage(named: currentIcon, in: getAppBundle(), compatibleWith: nil) {
+                            updatedIconSignal = openInAppIcon(engine: item.context.engine, appIcon: .image(image: image))
+                        }
                     }
                 case .safari:
                     if let image = UIImage(bundleImageName: "Open In/Safari") {

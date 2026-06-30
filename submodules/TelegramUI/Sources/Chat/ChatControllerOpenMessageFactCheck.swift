@@ -4,7 +4,7 @@ import FactCheckAlertController
 
 extension ChatControllerImpl {
     func openEditMessageFactCheck(messageId: EngineMessage.Id) {
-        guard let message = self.chatDisplayNode.historyNode.messageInCurrentHistoryView(messageId) else {
+        guard let message = self.chatDisplayNode.historyNode.messageInCurrentHistoryView(messageId)?._asMessage() else {
             return
         }
         var currentText: String = ""

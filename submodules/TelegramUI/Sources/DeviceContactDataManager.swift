@@ -1,6 +1,5 @@
 import Foundation
 import SwiftSignalKit
-import Postbox
 import TelegramCore
 import Contacts
 import TelegramUIPreferences
@@ -16,7 +15,7 @@ private protocol DeviceContactDataContext {
     func appendContactData(_ contactData: DeviceContactExtendedData, to stableId: DeviceContactStableId) -> DeviceContactExtendedData?
     func appendPhoneNumber(_ phoneNumber: DeviceContactPhoneNumberData, to stableId: DeviceContactStableId) -> DeviceContactExtendedData?
     func createContactWithData(_ contactData: DeviceContactExtendedData) -> (DeviceContactStableId, DeviceContactExtendedData)?
-    func deleteContactWithAppSpecificReference(peerId: PeerId)
+    func deleteContactWithAppSpecificReference(peerId: EnginePeer.Id)
 }
 
 private final class DeviceContactDataModernContext: DeviceContactDataContext {
@@ -25,11 +24,11 @@ private final class DeviceContactDataModernContext: DeviceContactDataContext {
     let store = CNContactStore()
     var updateHandle: NSObjectProtocol?
     var currentContacts: [DeviceContactStableId: DeviceContactBasicData] = [:]
-    var currentAppSpecificReferences: [PeerId: DeviceContactBasicDataWithReference] = [:]
+    var currentAppSpecificReferences: [EnginePeer.Id: DeviceContactBasicDataWithReference] = [:]
     
     private var retrieveContactsDisposable: Disposable?
     
-    init(queue: Queue, accountManager: AccountManager<TelegramAccountManagerTypes>, updated: @escaping ([DeviceContactStableId: DeviceContactBasicData]) -> Void, appSpecificReferencesUpdated: @escaping ([PeerId: DeviceContactBasicDataWithReference]) -> Void) {
+    init(queue: Queue, accountManager: AccountManager<TelegramAccountManagerTypes>, updated: @escaping ([DeviceContactStableId: DeviceContactBasicData]) -> Void, appSpecificReferencesUpdated: @escaping ([EnginePeer.Id: DeviceContactBasicDataWithReference]) -> Void) {
         self.queue = queue
         self.accountManager = accountManager
         
@@ -78,12 +77,12 @@ private final class DeviceContactDataModernContext: DeviceContactDataContext {
         }
     }
     
-    private func retrieveContacts() -> Signal<([DeviceContactStableId: DeviceContactBasicData], [PeerId: DeviceContactBasicDataWithReference]), NoError> {
+    private func retrieveContacts() -> Signal<([DeviceContactStableId: DeviceContactBasicData], [EnginePeer.Id: DeviceContactBasicDataWithReference]), NoError> {
         return self.accountManager.transaction { transaction -> DeviceContactDataState? in
             return transaction.getSharedData(SharedDataKeys.deviceContacts)?.get(DeviceContactDataState.self)
         }
         |> deliverOn(self.queue)
-        |> map { currentData -> ([DeviceContactStableId: DeviceContactBasicData], [PeerId: DeviceContactBasicDataWithReference]) in
+        |> map { currentData -> ([DeviceContactStableId: DeviceContactBasicData], [EnginePeer.Id: DeviceContactBasicDataWithReference]) in
             if let currentData, let stateToken = currentData.stateToken, !sharedDisableDeviceContactDataDiffing {
                 final class ChangeVisitor: NSObject, CNChangeHistoryEventVisitor {
                     let onDropEverything: () -> Void
@@ -126,8 +125,8 @@ private final class DeviceContactDataModernContext: DeviceContactDataContext {
                 ]
                 
                 var contacts: [DeviceContactStableId: DeviceContactBasicData] = currentData.contacts
-                var telegramReferences: [PeerId: String] = currentData.telegramReferences
-                var reverseTelegramReferences: [String: Set<PeerId>] = [:]
+                var telegramReferences: [EnginePeer.Id: String] = currentData.telegramReferences
+                var reverseTelegramReferences: [String: Set<EnginePeer.Id>] = [:]
                 for (peerId, id) in telegramReferences {
                     if reverseTelegramReferences[id] == nil {
                         reverseTelegramReferences[id] = Set()
@@ -183,12 +182,12 @@ private final class DeviceContactDataModernContext: DeviceContactDataContext {
                 
                 let _ = self.accountManager.transaction({ transaction -> Void in
                     transaction.updateSharedData(SharedDataKeys.deviceContacts, { _ in
-                        return PreferencesEntry(DeviceContactDataState(
+                        return EnginePreferencesEntry(DeviceContactDataState(
                             contacts: contacts, telegramReferences: telegramReferences, stateToken: resultState?.stateToken))
                     })
                 }).startStandalone()
                 
-                var references: [PeerId: DeviceContactBasicDataWithReference] = [:]
+                var references: [EnginePeer.Id: DeviceContactBasicDataWithReference] = [:]
                 for (peerId, id) in telegramReferences {
                     if let basicData = contacts[id] {
                         references[peerId] = DeviceContactBasicDataWithReference(stableId: id, basicData: basicData)
@@ -220,12 +219,12 @@ private final class DeviceContactDataModernContext: DeviceContactDataContext {
                 
                 let _ = self.accountManager.transaction({ transaction -> Void in
                     transaction.updateSharedData(SharedDataKeys.deviceContacts, { _ in
-                        return PreferencesEntry(DeviceContactDataState(
+                        return EnginePreferencesEntry(DeviceContactDataState(
                             contacts: contacts, telegramReferences: telegramReferences, stateToken: resultState?.stateToken))
                     })
                 }).startStandalone()
                 
-                var references: [PeerId: DeviceContactBasicDataWithReference] = [:]
+                var references: [EnginePeer.Id: DeviceContactBasicDataWithReference] = [:]
                 for (peerId, id) in telegramReferences {
                     if let basicData = contacts[id] {
                         references[peerId] = DeviceContactBasicDataWithReference(stableId: id, basicData: basicData)
@@ -455,7 +454,7 @@ private final class DeviceContactDataModernContext: DeviceContactDataContext {
         return (mutableContact.identifier, contactData)
     }
     
-    func deleteContactWithAppSpecificReference(peerId: PeerId) {
+    func deleteContactWithAppSpecificReference(peerId: EnginePeer.Id) {
         guard let reference = self.currentAppSpecificReferences[peerId] else {
             return
         }
@@ -495,8 +494,8 @@ private final class DeviceContactDataManagerPrivateImpl {
     
     private var stableIdToBasicContactData: [DeviceContactStableId: DeviceContactBasicData] = [:]
     private var normalizedPhoneNumberToStableId: [DeviceContactNormalizedPhoneNumber: [DeviceContactStableId]] = [:]
-    private var appSpecificReferences: [PeerId: DeviceContactBasicDataWithReference] = [:]
-    private var stableIdToAppSpecificReference: [DeviceContactStableId: PeerId] = [:]
+    private var appSpecificReferences: [EnginePeer.Id: DeviceContactBasicDataWithReference] = [:]
+    private var stableIdToAppSpecificReference: [DeviceContactStableId: EnginePeer.Id] = [:]
     
     private var importableContacts: [DeviceContactNormalizedPhoneNumber: ImportableDeviceContactData] = [:]
     
@@ -506,7 +505,7 @@ private final class DeviceContactDataManagerPrivateImpl {
     private let basicDataSubscribers = Bag<([DeviceContactStableId: DeviceContactBasicData]) -> Void>()
     private var basicDataForNormalizedNumberContexts: [DeviceContactNormalizedPhoneNumber: BasicDataForNormalizedNumberContext] = [:]
     private let importableContactsSubscribers = Bag<([DeviceContactNormalizedPhoneNumber: ImportableDeviceContactData]) -> Void>()
-    private let appSpecificReferencesSubscribers = Bag<([PeerId: DeviceContactBasicDataWithReference]) -> Void>()
+    private let appSpecificReferencesSubscribers = Bag<([EnginePeer.Id: DeviceContactBasicDataWithReference]) -> Void>()
     
     init(queue: Queue, accountManager: AccountManager<TelegramAccountManagerTypes>) {
         self.queue = queue
@@ -620,9 +619,9 @@ private final class DeviceContactDataManagerPrivateImpl {
         }
     }
     
-    private func updateAppSpecificReferences(appSpecificReferences: [PeerId: DeviceContactBasicDataWithReference]) {
+    private func updateAppSpecificReferences(appSpecificReferences: [EnginePeer.Id: DeviceContactBasicDataWithReference]) {
         self.appSpecificReferences = appSpecificReferences
-        var stableIdToAppSpecificReference: [DeviceContactStableId: PeerId] = [:]
+        var stableIdToAppSpecificReference: [DeviceContactStableId: EnginePeer.Id] = [:]
         for (peerId, value) in appSpecificReferences {
             stableIdToAppSpecificReference[value.stableId] = peerId
         }
@@ -712,7 +711,7 @@ private final class DeviceContactDataManagerPrivateImpl {
         }
     }
     
-    func appSpecificReferences(updated: @escaping ([PeerId: DeviceContactBasicDataWithReference]) -> Void) -> Disposable {
+    func appSpecificReferences(updated: @escaping ([EnginePeer.Id: DeviceContactBasicDataWithReference]) -> Void) -> Disposable {
         let queue = self.queue
         
         let index = self.appSpecificReferencesSubscribers.add({ data in
@@ -732,9 +731,9 @@ private final class DeviceContactDataManagerPrivateImpl {
         }
     }
     
-    func search(query: String, updated: @escaping ([DeviceContactStableId: (DeviceContactBasicData, PeerId?)]) -> Void) -> Disposable {
+    func search(query: String, updated: @escaping ([DeviceContactStableId: (DeviceContactBasicData, EnginePeer.Id?)]) -> Void) -> Disposable {
         let normalizedQuery = query.lowercased()
-        var result: [DeviceContactStableId: (DeviceContactBasicData, PeerId?)] = [:]
+        var result: [DeviceContactStableId: (DeviceContactBasicData, EnginePeer.Id?)] = [:]
         for (stableId, basicData) in self.stableIdToBasicContactData {
             if basicData.firstName.lowercased().hasPrefix(normalizedQuery) || basicData.lastName.lowercased().hasPrefix(normalizedQuery) {
                 result[stableId] = (basicData, self.stableIdToAppSpecificReference[stableId])
@@ -759,7 +758,7 @@ private final class DeviceContactDataManagerPrivateImpl {
         completion(result)
     }
     
-    func deleteContactWithAppSpecificReference(peerId: PeerId, completion: @escaping () -> Void) {
+    func deleteContactWithAppSpecificReference(peerId: EnginePeer.Id, completion: @escaping () -> Void) {
         self.dataContext?.deleteContactWithAppSpecificReference(peerId: peerId)
         completion()
     }
@@ -836,7 +835,7 @@ public final class DeviceContactDataManagerImpl: DeviceContactDataManager {
         }
     }
     
-    public func appSpecificReferences() -> Signal<[PeerId: DeviceContactBasicDataWithReference], NoError> {
+    public func appSpecificReferences() -> Signal<[EnginePeer.Id: DeviceContactBasicDataWithReference], NoError> {
         return Signal { subscriber in
             let disposable = MetaDisposable()
             self.impl.with({ impl in
@@ -848,7 +847,7 @@ public final class DeviceContactDataManagerImpl: DeviceContactDataManager {
         }
     }
     
-    public func search(query: String) -> Signal<[DeviceContactStableId: (DeviceContactBasicData, PeerId?)], NoError> {
+    public func search(query: String) -> Signal<[DeviceContactStableId: (DeviceContactBasicData, EnginePeer.Id?)], NoError> {
         return Signal { subscriber in
             let disposable = MetaDisposable()
             self.impl.with({ impl in
@@ -907,7 +906,7 @@ public final class DeviceContactDataManagerImpl: DeviceContactDataManager {
         }
     }
     
-    public func deleteContactWithAppSpecificReference(peerId: PeerId) -> Signal<Never, NoError> {
+    public func deleteContactWithAppSpecificReference(peerId: EnginePeer.Id) -> Signal<Never, NoError> {
         return Signal { subscriber in
             let disposable = MetaDisposable()
             self.impl.with({ impl in

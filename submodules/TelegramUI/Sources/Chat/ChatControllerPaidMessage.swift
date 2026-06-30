@@ -1,7 +1,6 @@
 import Foundation
 import UIKit
 import SwiftSignalKit
-import Postbox
 import TelegramCore
 import AsyncDisplayKit
 import Display
@@ -120,7 +119,7 @@ extension ChatControllerImpl {
                 return false
             }
             if case .undo = action {
-                var messageIds: [MessageId] = []
+                var messageIds: [EngineMessage.Id] = []
                 self.chatDisplayNode.historyNode.forEachItemNode { itemNode in
                     if let itemNode = itemNode as? ChatMessageItemNodeProtocol {
                         for message in itemNode.messages() {

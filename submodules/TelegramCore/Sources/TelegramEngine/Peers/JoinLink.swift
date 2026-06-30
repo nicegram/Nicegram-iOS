@@ -17,6 +17,64 @@ public enum JoinLinkError {
     case flood
 }
 
+public enum JoinChatWebViewResult {
+    case approved
+    case declined
+    case queued
+    case webView(url: String)
+}
+
+extension JoinChatWebViewResult {
+    init(apiResult: Api.JoinChatBotResult) {
+        switch apiResult {
+        case .joinChatBotResultApproved:
+            self = .approved
+        case .joinChatBotResultDeclined:
+            self = .declined
+        case .joinChatBotResultQueued:
+            self = .queued
+        case let .joinChatBotResultWebView(data):
+            self = .webView(url: data.url)
+        }
+    }
+}
+
+public struct JoinChatWebView {
+    public let botPeer: EnginePeer
+    public let url: String
+    public let queryId: Int64
+    public let peerId: EnginePeer.Id?
+
+    public init(botPeer: EnginePeer, url: String, queryId: Int64, peerId: EnginePeer.Id?) {
+        self.botPeer = botPeer
+        self.url = url
+        self.queryId = queryId
+        self.peerId = peerId
+    }
+}
+
+public struct JoinChatWebViewDecision {
+    public let peerId: EnginePeer.Id
+    public let queryId: Int64
+    public let result: JoinChatWebViewResult
+
+    public init(peerId: EnginePeer.Id, queryId: Int64, result: JoinChatWebViewResult) {
+        self.peerId = peerId
+        self.queryId = queryId
+        self.result = result
+    }
+}
+
+public enum JoinLinkResult {
+    case joined(EnginePeer?)
+    case webView(JoinChatWebView)
+}
+
+enum InternalJoinLinkResult {
+    case joined(PeerId?)
+    case webView(JoinChatWebView)
+}
+
 func apiUpdatesGroups(_ updates: Api.Updates) -> [Api.Chat] {
     switch updates {
         case let .updates(updatesData):
@@ -62,7 +120,7 @@ public enum ExternalJoiningChatState {
     case peek(EnginePeer, Int32)
 }
 
-func _internal_joinChatInteractively(with hash: String, account: Account) -> Signal<PeerId?, JoinLinkError> {
+func _internal_joinChatInteractively(with hash: String, account: Account) -> Signal<InternalJoinLinkResult, JoinLinkError> {
     return account.network.request(Api.functions.messages.importChatInvite(hash: hash), automaticFloodWait: false)
     |> mapError { error -> JoinLinkError in
         switch error.errorDescription {
@@ -80,21 +138,39 @@ func _internal_joinChatInteractively(with hash: String, account: Account) -> Sig
                 }
         }
     }
-    |> mapToSignal { updates -> Signal<PeerId?, JoinLinkError> in
-        account.stateManager.addUpdates(updates)
-        if let peerId = apiUpdatesGroups(updates).first?.peerId {
-            return account.postbox.multiplePeersView([peerId])
-            |> castError(JoinLinkError.self)
-            |> filter { view in
-                return view.peers[peerId] != nil
+    |> mapToSignal { result -> Signal<InternalJoinLinkResult, JoinLinkError> in
+        switch result {
+        case let .chatInviteJoinResultOk(data):
+            let updates = data.updates
+            account.stateManager.addUpdates(updates)
+            if let peerId = apiUpdatesGroups(updates).first?.peerId {
+                return account.postbox.multiplePeersView([peerId])
+                |> castError(JoinLinkError.self)
+                |> filter { view in
+                    return view.peers[peerId] != nil
+                }
+                |> take(1)
+                |> map { _ in
+                    return .joined(peerId)
+                }
+                |> timeout(5.0, queue: Queue.concurrentDefaultQueue(), alternate: .single(.joined(nil)) |> castError(JoinLinkError.self))
             }
-            |> take(1)
-            |> map { _ in
-                return peerId
+            return .single(.joined(nil))
+        case let .chatInviteJoinResultWebView(data):
+            switch data.webview {
+            case let .webViewResultUrl(urlData):
+                let botPeerId = PeerId(namespace: Namespaces.Peer.CloudUser, id: PeerId.Id._internalFromInt64Value(data.botId))
+                return account.postbox.transaction { transaction -> Signal<InternalJoinLinkResult, JoinLinkError> in
+                    updatePeers(transaction: transaction, accountPeerId: account.peerId, peers: AccumulatedPeers(users: data.users))
+                    guard let botPeer = transaction.getPeer(botPeerId) else {
+                        return .fail(.generic)
+                    }
+                    return .single(.webView(JoinChatWebView(botPeer: EnginePeer(botPeer), url: urlData.url, queryId: urlData.queryId ?? 0, peerId: nil)))
+                }
+                |> castError(JoinLinkError.self)
+                |> switchToLatest
             }
-            |> timeout(5.0, queue: Queue.concurrentDefaultQueue(), alternate: .single(nil) |> castError(JoinLinkError.self))
         }
-        return .single(nil)
     }
 }
 

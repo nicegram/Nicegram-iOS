@@ -3,7 +3,6 @@ import UIKit
 import Display
 import AsyncDisplayKit
 import SwiftSignalKit
-import Postbox
 import TelegramCore
 import TelegramPresentationData
 import ItemListUI
@@ -14,12 +13,12 @@ import TextFormat
 public class ItemListCallListItem: ListViewItem, ItemListItem {
     let presentationData: ItemListPresentationData
     let dateTimeFormat: PresentationDateTimeFormat
-    let messages: [Message]
+    let messages: [EngineMessage]
     public let sectionId: ItemListSectionId
     let style: ItemListStyle
     let displayDecorations: Bool
-    
-    public init(presentationData: ItemListPresentationData, dateTimeFormat: PresentationDateTimeFormat, messages: [Message], sectionId: ItemListSectionId, style: ItemListStyle, displayDecorations: Bool = true) {
+
+    public init(presentationData: ItemListPresentationData, dateTimeFormat: PresentationDateTimeFormat, messages: [EngineMessage], sectionId: ItemListSectionId, style: ItemListStyle, displayDecorations: Bool = true) {
         self.presentationData = presentationData
         self.dateTimeFormat = dateTimeFormat
         self.messages = messages
@@ -62,7 +61,7 @@ public class ItemListCallListItem: ListViewItem, ItemListItem {
     }
 }
 
-private func stringForCallType(message: Message, strings: PresentationStrings) -> String {
+private func stringForCallType(message: EngineMessage, strings: PresentationStrings) -> String {
     var string = ""
     for media in message.media {
         switch media {

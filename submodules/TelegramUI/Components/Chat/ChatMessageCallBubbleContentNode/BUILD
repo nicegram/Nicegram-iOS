@@ -14,7 +14,6 @@ swift_library(
         "//submodules/AsyncDisplayKit",
         "//submodules/Display",
         "//submodules/TelegramCore",
-        "//submodules/Postbox",
         "//submodules/TelegramPresentationData",
         "//submodules/AppBundle",
         "//submodules/TelegramUI/Components/Chat/ChatMessageBubbleContentNode",

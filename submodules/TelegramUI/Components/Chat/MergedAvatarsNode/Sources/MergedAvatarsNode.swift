@@ -4,16 +4,15 @@ import AsyncDisplayKit
 import Display
 import SwiftSignalKit
 import TelegramPresentationData
-import Postbox
 import TelegramCore
 import AvatarNode
 import AccountContext
 
 private enum PeerAvatarReference: Equatable {
-    case letters(PeerId, PeerColor?, [String])
+    case letters(EnginePeer.Id, PeerColor?, [String])
     case image(PeerReference, TelegramMediaImageRepresentation)
     
-    var peerId: PeerId {
+    var peerId: EnginePeer.Id {
         switch self {
         case let .letters(value, _, _):
             return value
@@ -35,13 +34,13 @@ private extension PeerAvatarReference {
 
 private final class MergedAvatarsNodeArguments: NSObject {
     let peers: [PeerAvatarReference]
-    let images: [PeerId: UIImage]
+    let images: [EnginePeer.Id: UIImage]
     let imageSize: CGFloat
     let imageSpacing: CGFloat
     let borderWidth: CGFloat
     let avatarFontSize: CGFloat
     
-    init(peers: [PeerAvatarReference], images: [PeerId: UIImage], imageSize: CGFloat, imageSpacing: CGFloat, borderWidth: CGFloat, avatarFontSize: CGFloat) {
+    init(peers: [PeerAvatarReference], images: [EnginePeer.Id: UIImage], imageSize: CGFloat, imageSpacing: CGFloat, borderWidth: CGFloat, avatarFontSize: CGFloat) {
         self.peers = peers
         self.images = images
         self.imageSize = imageSize
@@ -62,8 +61,8 @@ public final class MergedAvatarsNode: ASDisplayNode {
     public static let defaultAvatarFontSize: CGFloat = 8.0
     
     private var peers: [PeerAvatarReference] = []
-    private var images: [PeerId: UIImage] = [:]
-    private var disposables: [PeerId: Disposable] = [:]
+    private var images: [EnginePeer.Id: UIImage] = [:]
+    private var disposables: [EnginePeer.Id: Disposable] = [:]
     private let buttonNode: HighlightTrackingButtonNode
     private var imageSize: CGFloat = defaultMergedImageSize
     private var imageSpacing: CGFloat = defaultMergedImageSpacing
@@ -110,20 +109,20 @@ public final class MergedAvatarsNode: ASDisplayNode {
         if filteredPeers != self.peers {
             self.peers = filteredPeers
             
-            var validImageIds: [PeerId] = []
+            var validImageIds: [EnginePeer.Id] = []
             for peer in filteredPeers {
                 if case .image = peer {
                     validImageIds.append(peer.peerId)
                 }
             }
             
-            var removedImageIds: [PeerId] = []
+            var removedImageIds: [EnginePeer.Id] = []
             for (id, _) in self.images {
                 if !validImageIds.contains(id) {
                     removedImageIds.append(id)
                 }
             }
-            var removedDisposableIds: [PeerId] = []
+            var removedDisposableIds: [EnginePeer.Id] = []
             for (id, disposable) in self.disposables {
                 if !validImageIds.contains(id) {
                     disposable.dispose()

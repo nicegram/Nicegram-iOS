@@ -141,6 +141,7 @@ public final class ChatTextInputActionButtonsNode: ASDisplayNode, ChatSendMessag
     public let micButtonBackgroundView: GlassBackgroundView
     public let micButtonTintMaskView: UIImageView
     public let micButton: ChatTextInputMediaRecordingButton
+    public let stopButtonIcon: GlassBackgroundView.ContentImageView
     
     public let sendContainerNode: ASDisplayNode
     public let sendButtonBackgroundView: UIImageView
@@ -196,6 +197,10 @@ public final class ChatTextInputActionButtonsNode: ASDisplayNode, ChatSendMessag
         self.micButton = ChatTextInputMediaRecordingButton(context: context, theme: theme, pause: true, strings: strings, presentController: presentController)
         self.micButton.animationOutput = self.micButtonTintMaskView
         self.micButtonBackgroundView.maskContentView.addSubview(self.micButtonTintMaskView)
+        
+        self.stopButtonIcon = GlassBackgroundView.ContentImageView()
+        self.micButtonBackgroundView.contentView.addSubview(self.stopButtonIcon)
+        self.stopButtonIcon.alpha = 0.0
         
         // Nicegram
         self.ngSendContainerNode = ASDisplayNode()
@@ -377,8 +382,28 @@ public final class ChatTextInputActionButtonsNode: ASDisplayNode, ChatSendMessag
         transition.updateFrame(view: self.micButtonBackgroundView, frame: CGRect(origin: CGPoint(), size: size))
         self.micButtonBackgroundView.update(size: size, cornerRadius: size.height * 0.5, isDark:  interfaceState.theme.overallDarkAppearance, tintColor: defaultGlassTintColor, isInteractive: true, transition: ComponentTransition(transition))
         
-        transition.updateFrame(layer: self.micButton.layer, frame: CGRect(origin: CGPoint(), size: size))
+        transition.updatePosition(layer: self.micButton.layer, position: CGRect(origin: CGPoint(), size: size).center)
+        transition.updateBounds(layer: self.micButton.layer, bounds: CGRect(origin: CGPoint(), size: size))
         self.micButton.layoutItems()
+        
+        if self.stopButtonIcon.image == nil {
+            self.stopButtonIcon.image = generateImage(CGSize(width: 14.0, height: 14.0), rotatedContext: { size, context in
+                UIGraphicsPushContext(context)
+                defer {
+                    UIGraphicsPopContext()
+                }
+                
+                context.clear(CGRect(origin: CGPoint(), size: size))
+                context.setFillColor(UIColor.white.cgColor)
+                
+                UIBezierPath(roundedRect: CGRect(origin: CGPoint(), size: size), cornerRadius: 3.0).fill()
+            })?.withRenderingMode(.alwaysTemplate)
+        }
+        if let image = self.stopButtonIcon.image {
+            self.stopButtonIcon.tintColor = interfaceState.theme.chat.inputPanel.panelControlColor
+            transition.updateFrame(view: self.stopButtonIcon, frame: image.size.centered(in: CGRect(origin: CGPoint(), size: size)))
+        }
+        
         
         // Nicegram
         transition.updateFrame(node: self.ngSendContainerNode, frame: CGRect(origin: CGPoint(), size: innerSize))
@@ -546,7 +571,11 @@ public final class ChatTextInputActionButtonsNode: ASDisplayNode, ChatSendMessag
     
     public func updateAccessibility() {
         self.accessibilityTraits = .button
-        if !self.micButton.alpha.isZero {
+        if !self.stopButtonIcon.alpha.isZero {
+            //TODO:localize
+            self.accessibilityLabel = "Stop"
+            self.accessibilityHint = nil
+        } else if !self.micButton.alpha.isZero {
             switch self.micButton.mode {
                 case .audio:
                     self.accessibilityLabel = self.strings.VoiceOver_Chat_RecordModeVoiceMessage

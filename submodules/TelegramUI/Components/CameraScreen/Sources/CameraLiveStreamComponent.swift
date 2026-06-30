@@ -2,7 +2,6 @@ import Foundation
 import UIKit
 import Display
 import ComponentFlow
-import Postbox
 import TelegramCore
 import SwiftSignalKit
 import AccountContext
@@ -145,7 +144,7 @@ final class CameraLiveStreamComponent: Component {
                         
             if let story = component.story {
                 if self.storyContentDisposable == nil {
-                    let storyContent = SingleStoryContentContextImpl(context: component.context, storyId: StoryId(peerId: component.peerId, id: story.id), storyItem: story, readGlobally: false)
+                    let storyContent = SingleStoryContentContextImpl(context: component.context, storyId: EngineStoryId(peerId: component.peerId, id: story.id), storyItem: story, readGlobally: false)
                     self.storyContent = storyContent
                     self.storyContentDisposable = (storyContent.state
                     |> deliverOnMainQueue).start(next: { [weak self] state in

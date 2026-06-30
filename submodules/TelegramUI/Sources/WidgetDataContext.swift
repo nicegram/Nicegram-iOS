@@ -1,6 +1,5 @@
 import Foundation
 import SwiftSignalKit
-import Postbox
 import TelegramCore
 import WidgetItems
 import TelegramPresentationData
@@ -101,11 +100,11 @@ final class WidgetDataContext {
         self.reloadManager = WidgetReloadManager(inForeground: inForeground)
         
         let queue = Queue()
-        let updatedAdditionalPeerIds: Signal<[AccountRecordId: Set<PeerId>], NoError> = Signal { subscriber in
+        let updatedAdditionalPeerIds: Signal<[AccountRecordId: Set<EnginePeer.Id>], NoError> = Signal { subscriber in
             if #available(iOSApplicationExtension 14.0, iOS 14.0, *) {
                 #if arch(arm64) || arch(x86_64)
                 WidgetCenter.shared.getCurrentConfigurations { result in
-                    var peerIds: [AccountRecordId: Set<PeerId>] = [:]
+                    var peerIds: [AccountRecordId: Set<EnginePeer.Id>] = [:]
                     
                     func processFriend(_ item: Friend) {
                         guard let identifier = item.identifier else {
@@ -121,7 +120,7 @@ final class WidgetDataContext {
                             return
                         }
                         let accountId = AccountRecordId(rawValue: accountIdValue)
-                        let peerId = PeerId(peerIdValue)
+                        let peerId = EnginePeer.Id(peerIdValue)
                         if peerIds[accountId] == nil {
                             peerIds[accountId] = Set()
                         }
@@ -162,7 +161,7 @@ final class WidgetDataContext {
         }
         |> runOn(queue)
         |> then(
-            Signal<[AccountRecordId: Set<PeerId>], NoError>.complete()
+            Signal<[AccountRecordId: Set<EnginePeer.Id>], NoError>.complete()
             |> delay(10.0, queue: queue)
         )
         |> restart

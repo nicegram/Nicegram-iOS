@@ -54,6 +54,10 @@ elif [ "${ARCH}" == "sim_arm64" ]; then
   PLATFORM="iphonesimulator"
   EXTRA_CFLAGS="-arch arm64 --target=arm64-apple-ios$MINIOSVERSION-simulator"
   EXTRA_CONFIG="--host=arm-apple-darwin20"
+elif [ "${ARCH}" == "macos_arm64" ]; then
+  PLATFORM="macosx"
+  EXTRA_CFLAGS="-arch arm64 --target=arm64-apple-macosx14.0"
+  EXTRA_CONFIG="--host=arm-apple-darwin20"
 else
   PLATFORM="iphoneos"
   EXTRA_CFLAGS="-arch ${ARCH}"

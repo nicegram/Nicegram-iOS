@@ -172,6 +172,7 @@ open class NavigationController: UINavigationController, ContainableController, 
     private var inCallStatusBar: StatusBar?
     private var updateInCallStatusBarState: CallStatusBarNode?
     private var globalScrollToTopNode: ScrollToTopNode?
+    private var windowScrollToTopProxyViews: WindowScrollToTopProxyViews?
     private var rootContainer: RootContainer?
     private var rootModalFrame: NavigationModalFrame?
     private var modalContainers: [NavigationModalContainer] = []
@@ -345,6 +346,54 @@ open class NavigationController: UINavigationController, ContainableController, 
     }
     
     deinit {
+        self.windowScrollToTopProxyViews?.update(window: nil, mode: .disabled, referenceView: nil)
+    }
+
+    private func getWindowScrollToTopProxyViews() -> WindowScrollToTopProxyViews {
+        if let windowScrollToTopProxyViews = self.windowScrollToTopProxyViews {
+            return windowScrollToTopProxyViews
+        }
+
+        let windowScrollToTopProxyViews = WindowScrollToTopProxyViews(scrollToTop: { [weak self] subject in
+            self?.scrollToTop(subject)
+        })
+        self.windowScrollToTopProxyViews = windowScrollToTopProxyViews
+        return windowScrollToTopProxyViews
+    }
+
+    private func windowScrollToTopReferenceView(window: UIWindow) -> UIView? {
+        var view: UIView? = self.view
+        while let currentView = view {
+            if currentView.superview === window {
+                return currentView
+            }
+            view = currentView.superview
+        }
+        return nil
+    }
+
+    private func updateWindowScrollToTopProxyViews(layout: ContainerViewLayout) {
+        guard let window = self.view.window, let rootContainer = self.rootContainer else {
+            (self.globalScrollToTopNode?.view as? ScrollToTopView)?.scrollsToTop = true
+            self.windowScrollToTopProxyViews?.update(window: nil, mode: .disabled, referenceView: nil)
+            return
+        }
+
+        (self.globalScrollToTopNode?.view as? ScrollToTopView)?.scrollsToTop = false
+        let referenceView = self.windowScrollToTopReferenceView(window: window)
+        let proxyViews = self.getWindowScrollToTopProxyViews()
+        switch rootContainer {
+        case .flat:
+            let scrollToTopHeight = max(layout.statusBarHeight ?? layout.safeInsets.top, 1.0)
+            let frame = self.view.convert(CGRect(origin: CGPoint(), size: CGSize(width: layout.size.width, height: scrollToTopHeight)), to: window)
+            proxyViews.update(window: window, mode: .flat(frame: frame), referenceView: referenceView)
+        case let .split(container):
+            let frames = container.scrollToTopProxyFrames(layout: layout)
+            proxyViews.update(window: window, mode: .split(
+                masterFrame: container.view.convert(frames.master, to: window),
+                detailFrame: container.view.convert(frames.detail, to: window)
+            ), referenceView: referenceView)
+        }
     }
     
     public func combinedSupportedOrientations(currentOrientationToLock: UIInterfaceOrientationMask) -> ViewControllerSupportedOrientations {
@@ -513,7 +562,7 @@ open class NavigationController: UINavigationController, ContainableController, 
         }
         
         if let globalScrollToTopNode = self.globalScrollToTopNode {
-            globalScrollToTopNode.frame = CGRect(origin: CGPoint(x: 0.0, y: -1.0), size: CGSize(width: layout.size.width, height: 1))
+            globalScrollToTopNode.frame = CGRect(origin: CGPoint(x: 0.0, y: -1.0), size: CGSize(width: layout.size.width, height: 1.0))
         }
         
         var overlayContainerLayout = layout
@@ -1033,8 +1082,6 @@ open class NavigationController: UINavigationController, ContainableController, 
                 case let .flat(flatContainer):
                     let splitContainer = NavigationSplitContainer(theme: self.theme, controllerRemoved: { [weak self] controller in
                         self?.controllerRemoved(controller)
-                    }, scrollToTop: { [weak self] subject in
-                        self?.scrollToTop(subject)
                     })
                     if let detailsPlaceholderNode = self.detailsPlaceholderNode {
                         self.displayNode.insertSubnode(splitContainer, aboveSubnode: detailsPlaceholderNode)
@@ -1068,8 +1115,6 @@ open class NavigationController: UINavigationController, ContainableController, 
             } else {
                 let splitContainer = NavigationSplitContainer(theme: self.theme, controllerRemoved: { [weak self] controller in
                     self?.controllerRemoved(controller)
-                }, scrollToTop: { [weak self] subject in
-                    self?.scrollToTop(subject)
                 })
                 if let detailsPlaceholderNode = self.detailsPlaceholderNode {
                     self.displayNode.insertSubnode(splitContainer, aboveSubnode: detailsPlaceholderNode)
@@ -1400,6 +1445,8 @@ open class NavigationController: UINavigationController, ContainableController, 
             }
         }
         
+        self.updateWindowScrollToTopProxyViews(layout: layout)
+
         self.isUpdatingContainers = false
         
         if notifyGlobalOverlayControllersUpdated {

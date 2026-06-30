@@ -15,7 +15,7 @@ private func generateBorderImage(theme: PresentationTheme, bordered: Bool, selec
     if let image = cachedBorderImages[key] {
         return image
     } else {
-        let image = generateImage(CGSize(width: 20.0, height: 20.0), rotatedContext: { size, context in
+        let image = generateImage(CGSize(width: 32.0, height: 32.0), rotatedContext: { size, context in
             let bounds = CGRect(origin: CGPoint(), size: size)
             context.clear(bounds)
 
@@ -41,7 +41,7 @@ private func generateBorderImage(theme: PresentationTheme, bordered: Bool, selec
                 context.setLineWidth(lineWidth)
                 context.strokeEllipse(in: bounds.insetBy(dx: lineWidth / 2.0, dy: lineWidth / 2.0))
             }
-        })?.stretchableImage(withLeftCapWidth: 10, topCapHeight: 10)
+        })?.stretchableImage(withLeftCapWidth: 16, topCapHeight: 16)
         cachedBorderImages[key] = image
         return image
     }
@@ -113,7 +113,7 @@ final class ThemeGridControllerItemNode: GridItemNode {
     override func didLoad() {
         super.didLoad()
         
-        self.view.layer.cornerRadius = 10.0
+        self.view.layer.cornerRadius = 16.0
         
         self.view.isExclusiveTouch = true
         self.view.addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(self.tapGesture(_:))))

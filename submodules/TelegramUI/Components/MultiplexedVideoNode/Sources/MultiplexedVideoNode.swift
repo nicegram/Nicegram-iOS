@@ -3,7 +3,6 @@ import UIKit
 import Display
 import SwiftSignalKit
 import AsyncDisplayKit
-import Postbox
 import TelegramCore
 import AVFoundation
 import ContextUI
@@ -59,8 +58,8 @@ private final class MultiplexedVideoTrackingNode: ASDisplayNode {
 
 private final class VisibleVideoItem {
     enum Id: Equatable, Hashable {
-        case saved(MediaId)
-        case trending(MediaId)
+        case saved(EngineMedia.Id)
+        case trending(EngineMedia.Id)
     }
     let id: Id
     let file: MultiplexedVideoNodeFile
@@ -317,6 +316,7 @@ public final class MultiplexedVideoNode: ASDisplayNode, ASScrollViewDelegate {
         }
         
         self.scrollNode.view.delegate = self.wrappedScrollViewDelegate
+        self.scrollNode.view.scrollsToTop = false
         
         let recognizer = UITapGestureRecognizer(target: self, action: #selector(self.tapGesture(_:)))
         self.view.addGestureRecognizer(recognizer)
@@ -766,7 +766,7 @@ public final class MultiplexedVideoNode: ASDisplayNode, ASScrollViewDelegate {
         }
     }
     
-    public func frameForItem(_ id: MediaId) -> CGRect? {
+    public func frameForItem(_ id: EngineMedia.Id) -> CGRect? {
         for item in self.displayItems {
             if item.file.file.media.fileId == id {
                 return item.frame

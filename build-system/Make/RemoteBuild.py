@@ -57,7 +57,7 @@ def session_ssh(session, command):
     return os.system(ssh_command)
 
 
-def remote_build_darwin_containers(darwin_containers_path, darwin_containers_host, macos_version, bazel_cache_host, configuration, build_input_data_path):
+def remote_build_darwin_containers(darwin_containers_path, darwin_containers_host, macos_version, bazel_cache_host, configuration, build_input_data_path, embed_watch_app=False, watch_api_id=None, watch_api_hash=None, watch_signing_identity=None, watch_provisioning_profile_remote_path=None):
     DarwinContainers = import_module_from_file('darwin-containers', darwin_containers_path)
 
     base_dir = os.getcwd()
@@ -135,6 +135,14 @@ def remote_build_darwin_containers(darwin_containers_path, darwin_containers_hos
             guest_build_sh += '--configurationPath=$HOME/telegram-build-input/configuration.json \\'
             guest_build_sh += '--codesigningInformationPath=$HOME/telegram-build-input \\'
             guest_build_sh += '--outputBuildArtifactsPath=/Users/Shared/telegram-ios/build/artifacts \\'
+            if embed_watch_app:
+                guest_build_sh += '--embedWatchApp \\'
+                guest_build_sh += '--watchApiId="{}" \\'.format(watch_api_id)
+                guest_build_sh += '--watchApiHash="{}" \\'.format(watch_api_hash)
+                if watch_signing_identity is not None:
+                    guest_build_sh += '--watchSigningIdentity="{}" \\'.format(watch_signing_identity)
+                if watch_provisioning_profile_remote_path is not None:
+                    guest_build_sh += '--watchProvisioningProfile="{}" \\'.format(watch_provisioning_profile_remote_path)
 
             guest_build_file_path = tempfile.mktemp()
             with open(guest_build_file_path, 'w+') as file:

@@ -140,7 +140,7 @@ final class CommandChatInputPanelItemNode: ListViewItemNode {
             let leftInset: CGFloat = 55.0 + params.leftInset
             let rightInset: CGFloat = 10.0 + params.rightInset
             
-            let peerName = EnginePeer(item.command.peer).displayTitle(strings: item.presentationData.strings, displayOrder: item.presentationData.nameDisplayOrder)
+            let peerName = item.command.peer.displayTitle(strings: item.presentationData.strings, displayOrder: item.presentationData.nameDisplayOrder)
             
             let commandString = NSMutableAttributedString()
             commandString.append(NSAttributedString(string: "/" + item.command.command.text, font: textFont, textColor: item.presentationData.theme.list.itemPrimaryTextColor))
@@ -165,7 +165,7 @@ final class CommandChatInputPanelItemNode: ListViewItemNode {
                     
                     strongSelf.arrowNode.setImage(iconImage, for: [])
                     
-                    strongSelf.avatarNode.setPeer(context: item.context, theme: item.presentationData.theme, peer: EnginePeer(item.command.peer), emptyColor: item.presentationData.theme.list.mediaPlaceholderColor)
+                    strongSelf.avatarNode.setPeer(context: item.context, theme: item.presentationData.theme, peer: item.command.peer, emptyColor: item.presentationData.theme.list.mediaPlaceholderColor)
                     
                     let _ = textApply()
                     

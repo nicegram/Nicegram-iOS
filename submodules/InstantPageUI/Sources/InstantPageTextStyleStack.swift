@@ -197,6 +197,9 @@ final class InstantPageTextStyleStack {
         
         if let link = link, let linkColor = linkColor {
             attributes[NSAttributedString.Key.foregroundColor] = linkColor
+            if linkColor == color {
+                attributes[NSAttributedString.Key.underlineStyle] = NSUnderlineStyle.single.rawValue as NSNumber
+            }
             if link, let linkMarkerColor = linkMarkerColor {
                 attributes[NSAttributedString.Key(rawValue: InstantPageMarkerColorAttribute)] = linkMarkerColor
             }

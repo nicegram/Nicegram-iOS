@@ -5,7 +5,9 @@ import AsyncDisplayKit
 import ComponentFlow
 import ComponentDisplayAdapters
 import TelegramPresentationData
+import AnimatedTextComponent
 import ButtonComponent
+import EdgeEffect
 import MultilineTextComponent
 
 public final class BottomButtonPanelComponent: Component {
@@ -58,20 +60,18 @@ public final class BottomButtonPanelComponent: Component {
     }
     
     public class View: UIView {
-        private let backgroundView: BlurredBackgroundView
-        private let separatorLayer: SimpleLayer
+        private let edgeEffectView: EdgeEffectView
         private let actionButton = ComponentView<Empty>()
-        
+
         private var component: BottomButtonPanelComponent?
         
         override public init(frame: CGRect) {
-            self.backgroundView = BlurredBackgroundView(color: nil, enableBlur: true)
-            self.separatorLayer = SimpleLayer()
+            self.edgeEffectView = EdgeEffectView()
+            self.edgeEffectView.isUserInteractionEnabled = false
             
             super.init(frame: frame)
             
-            self.addSubview(self.backgroundView)
-            self.layer.addSublayer(self.separatorLayer)
+            self.addSubview(self.edgeEffectView)
         }
         
         required public init?(coder: NSCoder) {
@@ -79,7 +79,6 @@ public final class BottomButtonPanelComponent: Component {
         }
         
         func update(component: BottomButtonPanelComponent, availableSize: CGSize, state: EmptyComponentState, environment: Environment<Empty>, transition: ComponentTransition) -> CGSize {
-            let themeUpdated = self.component?.theme !== component.theme
             self.component = component
             
             let topInset: CGFloat = 8.0
@@ -91,28 +90,34 @@ public final class BottomButtonPanelComponent: Component {
                 bottomInset = component.insets.bottom + 10.0
             }
             
-            let height: CGFloat = topInset + 50.0 + bottomInset
+            let buttonHeight: CGFloat = 52.0
+            let height: CGFloat = topInset + buttonHeight + bottomInset
 
-            if themeUpdated {
-                self.backgroundView.updateColor(color: component.theme.rootController.navigationBar.blurredBackgroundColor, transition: .immediate)
-                self.separatorLayer.backgroundColor = component.theme.rootController.navigationBar.separatorColor.cgColor
-            }
-            
-            
-            let backgroundFrame = CGRect(origin: CGPoint(x: 0.0, y: 0.0), size: CGSize(width: availableSize.width, height: height))
-            transition.setFrame(view: self.backgroundView, frame: backgroundFrame)
-            self.backgroundView.update(size: backgroundFrame.size, transition: transition.containedViewLayoutTransition)
-            
-            transition.setFrame(layer: self.separatorLayer, frame: CGRect(origin: CGPoint(x: 0.0, y: -UIScreenPixel), size: CGSize(width: availableSize.width, height: UIScreenPixel)))
-            
+            let edgeEffectFrame = CGRect(origin: CGPoint(), size: CGSize(width: availableSize.width, height: height))
+            transition.setFrame(view: self.edgeEffectView, frame: edgeEffectFrame)
+            self.edgeEffectView.update(content: component.theme.list.blocksBackgroundColor, blur: true, alpha: 1.0, rect: edgeEffectFrame, edge: .bottom, edgeSize: edgeEffectFrame.height, transition: transition)
+
             var buttonTitleVStack: [AnyComponentWithIdentity<Empty>] = []
-            
-            let titleString = NSMutableAttributedString(string: component.title, font: Font.semibold(17.0), textColor: component.theme.list.itemCheckColors.foregroundColor, paragraphAlignment: .center)
-            buttonTitleVStack.append(AnyComponentWithIdentity(id: AnyHashable(0), component: AnyComponent(MultilineTextComponent(text: .plain(titleString)))))
+            buttonTitleVStack.append(AnyComponentWithIdentity(id: AnyHashable(0), component: AnyComponent(AnimatedTextComponent(
+                font: Font.with(size: 18.0, weight: .semibold, traits: .monospacedNumbers),
+                color: component.theme.list.itemCheckColors.foregroundColor,
+                items: [
+                    AnimatedTextComponent.Item(id: AnyHashable("title"), content: .text(component.title))
+                ],
+                noDelay: true,
+                blur: false
+            ))))
             
             if let label = component.label {
-                let labelString = NSMutableAttributedString(string: label, font: Font.semibold(11.0), textColor: component.theme.list.itemCheckColors.foregroundColor.withAlphaComponent(0.7), paragraphAlignment: .center)
-                buttonTitleVStack.append(AnyComponentWithIdentity(id: AnyHashable(1), component: AnyComponent(MultilineTextComponent(text: .plain(labelString)))))
+                buttonTitleVStack.append(AnyComponentWithIdentity(id: AnyHashable(1), component: AnyComponent(AnimatedTextComponent(
+                    font: Font.with(size: 11.0, weight: .semibold, traits: .monospacedNumbers),
+                    color: component.theme.list.itemCheckColors.foregroundColor.withAlphaComponent(0.7),
+                    items: [
+                        AnimatedTextComponent.Item(id: AnyHashable("label"), content: .text(label))
+                    ],
+                    noDelay: true,
+                    blur: false
+                ))))
             }
             
             var buttonTitleContent: AnyComponent<Empty> = AnyComponent(VStack(buttonTitleVStack, spacing: 1.0))
@@ -127,10 +132,10 @@ public final class BottomButtonPanelComponent: Component {
                 transition: transition,
                 component: AnyComponent(ButtonComponent(
                     background: ButtonComponent.Background(
+                        style: .glass,
                         color: component.theme.list.itemCheckColors.fillColor,
                         foreground: component.theme.list.itemCheckColors.foregroundColor,
-                        pressedColor: component.theme.list.itemCheckColors.fillColor.withMultipliedAlpha(0.9),
-                        cornerRadius: 10.0
+                        pressedColor: component.theme.list.itemCheckColors.fillColor.withMultipliedAlpha(0.9)
                     ),
                     content: AnyComponentWithIdentity(
                         id: 0,
@@ -146,7 +151,7 @@ public final class BottomButtonPanelComponent: Component {
                     }
                 )),
                 environment: {},
-                containerSize: CGSize(width: availableSize.width - component.insets.left - component.insets.right, height: 50.0)
+                containerSize: CGSize(width: availableSize.width - component.insets.left - component.insets.right, height: buttonHeight)
             )
             if let actionButtonView = self.actionButton.view {
                 if actionButtonView.superview == nil {

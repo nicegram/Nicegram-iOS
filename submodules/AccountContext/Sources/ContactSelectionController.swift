@@ -1,7 +1,6 @@
 import Foundation
 import Display
 import SwiftSignalKit
-import Postbox
 import TelegramCore
 import TelegramPresentationData
 
@@ -47,7 +46,7 @@ public struct ContactListAdditionalOption: Equatable {
 }
 
 public enum ContactListPeerId: Hashable {
-    case peer(PeerId)
+    case peer(EnginePeer.Id)
     case deviceContact(DeviceContactStableId)
 }
 

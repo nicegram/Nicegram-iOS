@@ -8,7 +8,6 @@ import AppBundle
 import ViewControllerComponent
 import AccountContext
 import TelegramCore
-import Postbox
 import SwiftSignalKit
 import EntityKeyboard
 import MultilineTextComponent
@@ -698,14 +697,14 @@ final class PeerAllowedReactionsScreenComponent: Component {
                                                 let remoteSignal = emojiSearchContext.state
                                                 
                                                 return combineLatest(
-                                                    context.account.postbox.itemCollectionsView(orderedItemListCollectionIds: [], namespaces: [Namespaces.ItemCollection.CloudEmojiPacks], aroundIndex: nil, count: 10000000) |> take(1),
+                                                    context.engine.itemCollections.allItems(namespace: Namespaces.ItemCollection.CloudEmojiPacks) |> take(1),
                                                     context.engine.stickers.availableReactions() |> take(1),
                                                     hasPremium |> take(1),
                                                     remotePacksSignal,
                                                     remoteSignal,
                                                     localPacksSignal
                                                 )
-                                                |> map { view, availableReactions, hasPremium, foundPacks, foundEmoji, foundLocalPacks -> (groups: [EmojiPagerContentComponent.ItemGroup], canLoadMore: Bool, isSearching: Bool, searchContext: EmojiSearchContext?) in
+                                                |> map { rawItems, availableReactions, hasPremium, foundPacks, foundEmoji, foundLocalPacks -> (groups: [EmojiPagerContentComponent.ItemGroup], canLoadMore: Bool, isSearching: Bool, searchContext: EmojiSearchContext?) in
                                                     var result: [(String, TelegramMediaFile.Accessor?, String)] = []
                                                     
                                                     var allEmoticons: [String: String] = [:]
@@ -730,8 +729,8 @@ final class PeerAllowedReactionsScreenComponent: Component {
                                                         }
                                                     }
                                                     
-                                                    for entry in view.entries {
-                                                        guard let item = entry.item as? StickerPackItem else {
+                                                    for rawItem in rawItems {
+                                                        guard let item = rawItem as? StickerPackItem else {
                                                             continue
                                                         }
                                                         if !item.file.isPremiumEmoji {
@@ -747,7 +746,7 @@ final class PeerAllowedReactionsScreenComponent: Component {
                                                     
                                                     var items: [EmojiPagerContentComponent.Item] = []
                                                     
-                                                    var existingIds = Set<MediaId>()
+                                                    var existingIds = Set<EngineMedia.Id>()
                                                     for item in result {
                                                         if let itemFile = item.1 {
                                                             if existingIds.contains(itemFile.fileId) {
@@ -790,7 +789,7 @@ final class PeerAllowedReactionsScreenComponent: Component {
                                                     combinedSets = foundLocalPacks
                                                     combinedSets = combinedSets.merge(with: foundPacks.sets)
                                                     
-                                                    var existingCollectionIds = Set<ItemCollectionId>()
+                                                    var existingCollectionIds = Set<EngineItemCollectionId>()
                                                     for (collectionId, info, _, _) in combinedSets.infos {
                                                         if !existingCollectionIds.contains(collectionId) {
                                                             existingCollectionIds.insert(collectionId)
@@ -876,7 +875,7 @@ final class PeerAllowedReactionsScreenComponent: Component {
                                     |> mapToSignal { files, isFinalResult -> Signal<(items: [EmojiPagerContentComponent.ItemGroup], isFinalResult: Bool), NoError> in
                                         var items: [EmojiPagerContentComponent.Item] = []
                                         
-                                        var existingIds = Set<MediaId>()
+                                        var existingIds = Set<EngineMedia.Id>()
                                         for itemFile in files {
                                             if existingIds.contains(itemFile.fileId) {
                                                 continue
@@ -1818,10 +1817,10 @@ public class PeerAllowedReactionsScreen: ViewControllerComponentContainer {
     public static func content(context: AccountContext, peerId: EnginePeer.Id) -> Signal<Content, NoError> {
         return combineLatest(
             context.engine.stickers.availableReactions(),
-            context.account.postbox.combinedView(keys: [.cachedPeerData(peerId: peerId)])
+            context.engine.data.subscribe(TelegramEngine.EngineData.Item.Peer.CachedData(id: peerId))
         )
-        |> mapToSignal { availableReactions, combinedView -> Signal<Content, NoError> in
-            guard let cachedDataView = combinedView.views[.cachedPeerData(peerId: peerId)] as? CachedPeerDataView, let cachedData = cachedDataView.cachedPeerData as? CachedChannelData else {
+        |> mapToSignal { availableReactions, cachedPeerData -> Signal<Content, NoError> in
+            guard let cachedData = cachedPeerData as? CachedChannelData else {
                 return .complete()
             }
             

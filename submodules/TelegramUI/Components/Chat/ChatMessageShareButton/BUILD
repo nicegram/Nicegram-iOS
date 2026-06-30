@@ -16,7 +16,6 @@ swift_library(
         "//submodules/TelegramUI/Components/ChatControllerInteraction",
         "//submodules/AccountContext",
         "//submodules/TelegramCore",
-        "//submodules/Postbox",
         "//submodules/WallpaperBackgroundNode",
         "//submodules/TelegramUI/Components/Chat/ChatMessageItemCommon",
         "//submodules/ContextUI",

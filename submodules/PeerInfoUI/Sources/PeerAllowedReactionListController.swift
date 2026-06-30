@@ -3,7 +3,6 @@ import UIKit
 import Display
 import AsyncDisplayKit
 import SwiftSignalKit
-import Postbox
 import TelegramCore
 import TelegramPresentationData
 import TelegramUIPreferences
@@ -274,14 +273,14 @@ private struct PeerAllowedReactionListControllerState: Equatable {
 private func peerAllowedReactionListControllerEntries(
     presentationData: PresentationData,
     availableReactions: AvailableReactions?,
-    peer: Peer?,
-    cachedData: CachedPeerData?,
+    peer: EnginePeer?,
+    cachedData: EngineCachedPeerData?,
     state: PeerAllowedReactionListControllerState
 ) -> [PeerAllowedReactionListControllerEntry] {
     var entries: [PeerAllowedReactionListControllerEntry] = []
-    
+
     if let peer = peer, let availableReactions = availableReactions, let allowedReactions = state.updatedAllowedReactions, let mode = state.updatedMode {
-        if let channel = peer as? TelegramChannel, case .broadcast = channel.info {
+        if case let .channel(channel) = peer, case .broadcast = channel.info {
             entries.append(.allowSwitch(text: presentationData.strings.PeerInfo_AllowedReactions_AllowAllText, value: mode != .empty))
             
             entries.append(.itemsHeader(presentationData.strings.PeerInfo_AllowedReactions_ReactionListHeader))
@@ -301,7 +300,7 @@ private func peerAllowedReactionListControllerEntries(
             entries.append(.allowNone(text: presentationData.strings.PeerInfo_AllowedReactions_OptionNoReactions, isEnabled: mode == .empty))
             
             let allInfoText: String
-            if let peer = peer as? TelegramChannel, case .broadcast = peer.info {
+            if case let .channel(peer) = peer, case .broadcast = peer.info {
                 switch mode {
                 case .all:
                     allInfoText = presentationData.strings.PeerInfo_AllowedReactions_GroupOptionAllInfo
@@ -343,7 +342,7 @@ private func peerAllowedReactionListControllerEntries(
 public func peerAllowedReactionListController(
     context: AccountContext,
     updatedPresentationData: (initial: PresentationData, signal: Signal<PresentationData, NoError>)? = nil,
-    peerId: PeerId
+    peerId: EnginePeer.Id
 ) -> ViewController {
     let statePromise = ValuePromise(PeerAllowedReactionListControllerState(), ignoreRepeated: true)
     let stateValue = Atomic(value: PeerAllowedReactionListControllerState())
@@ -476,7 +475,7 @@ public func peerAllowedReactionListController(
         let entries = peerAllowedReactionListControllerEntries(
             presentationData: presentationData,
             availableReactions: availableReactions,
-            peer: peerView.peers[peerId],
+            peer: peerView.peers[peerId].flatMap(EnginePeer.init),
             cachedData: peerView.cachedData,
             state: state
         )

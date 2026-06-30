@@ -3,7 +3,6 @@ import UIKit
 import AsyncDisplayKit
 import Display
 import TelegramCore
-import Postbox
 import TelegramPresentationData
 import TelegramUIPreferences
 import TelegramStringFormatting
@@ -102,7 +101,7 @@ final class GroupCallNavigationAccessoryPanel: ASDisplayNode {
     private let avatarsContext: AnimatedAvatarSetContext
     private var avatarsContent: AnimatedAvatarSetContext.Content?
     private let avatarsNode: AnimatedAvatarSetNode
-    private var audioLevelGenerators: [PeerId: FakeAudioLevelGenerator] = [:]
+    private var audioLevelGenerators: [EnginePeer.Id: FakeAudioLevelGenerator] = [:]
     private var audioLevelGeneratorTimer: SwiftSignalKit.Timer?
 
     private let backgroundNode: ASDisplayNode
@@ -546,7 +545,7 @@ final class GroupCallNavigationAccessoryPanel: ASDisplayNode {
                     self.audioLevelGenerators[peerId] = FakeAudioLevelGenerator()
                 }
             }
-            var removeGenerators: [PeerId] = []
+            var removeGenerators: [EnginePeer.Id] = []
             for peerId in self.audioLevelGenerators.keys {
                 if !data.activeSpeakers.contains(peerId) {
                     removeGenerators.append(peerId)
@@ -571,7 +570,7 @@ final class GroupCallNavigationAccessoryPanel: ASDisplayNode {
     }
     
     private func sampleAudioGenerators() {
-        var levels: [PeerId: Float] = [:]
+        var levels: [EnginePeer.Id: Float] = [:]
         for (peerId, generator) in self.audioLevelGenerators {
             levels[peerId] = generator.get()
         }

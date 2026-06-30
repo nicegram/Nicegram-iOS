@@ -405,12 +405,12 @@ private func updateContactPresences(postbox: Postbox, network: Network, accountP
     }
     |> mapToSignal { statuses -> Signal<Never, NoError> in
         return postbox.transaction { transaction -> Void in
-            var peerPresences: [PeerId: PeerPresence] = [:]
+            var peerPresences: [PeerId: UpdatedApiPresence] = [:]
             for status in statuses {
                 switch status {
-                    case let .contactStatus(contactStatusData):
-                        let (userId, status) = (contactStatusData.userId, contactStatusData.status)
-                        peerPresences[PeerId(namespace: Namespaces.Peer.CloudUser, id: PeerId.Id._internalFromInt64Value(userId))] = TelegramUserPresence(apiStatus: status)
+                case let .contactStatus(contactStatusData):
+                    let (userId, status) = (contactStatusData.userId, contactStatusData.status)
+                    peerPresences[PeerId(namespace: Namespaces.Peer.CloudUser, id: PeerId.Id._internalFromInt64Value(userId))] = UpdatedApiPresence(status: status, isMin: false)
                 }
             }
             updatePeerPresencesClean(transaction: transaction, accountPeerId: accountPeerId, peerPresences: peerPresences)

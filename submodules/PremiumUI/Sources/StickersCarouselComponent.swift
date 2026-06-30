@@ -335,6 +335,7 @@ private class StickersCarouselNode: ASDisplayNode, ASScrollViewDelegate {
         self.scrollNode.view.showsHorizontalScrollIndicator = false
         self.scrollNode.view.showsVerticalScrollIndicator = false
         self.scrollNode.view.canCancelContentTouches = true
+        self.scrollNode.view.scrollsToTop = false
         
         self.tapNode.view.addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(self.stickerTapped(_:))))
     }

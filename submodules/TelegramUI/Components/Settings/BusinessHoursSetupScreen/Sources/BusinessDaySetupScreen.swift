@@ -21,7 +21,7 @@ import LocationUI
 import TelegramStringFormatting
 import TextFormat
 import PlainButtonComponent
-import TimeSelectionActionSheet
+import ChatTimerScreen
 
 func clipMinutes(_ value: Int) -> Int {
     return value % (24 * 60)
@@ -180,31 +180,42 @@ final class BusinessDaySetupScreenComponent: Component {
                 return
             }
             
-            let controller = TimeSelectionActionSheet(context: component.context, currentValue: Int32(isStartTime ? clipMinutes(range.startMinute) : clipMinutes(range.endMinute)) * 60, applyValue: { [weak self] value in
-                guard let self else {
-                    return
-                }
-                guard let value else {
-                    return
-                }
-                if let index = self.ranges.firstIndex(where: { $0.id == rangeId }) {
-                    var startMinute = range.startMinute
-                    var endMinute = range.endMinute
-                    if isStartTime {
-                        startMinute = Int(value) / 60
-                    } else {
-                        endMinute = Int(value) / 60
+            let controller = ChatTimerScreen(
+                context: component.context,
+                configuration: ChatTimerScreen.Configuration(
+                    style: .default,
+                    picker: .timeOfDay,
+                    currentValue: Int32(isStartTime ? clipMinutes(range.startMinute) : clipMinutes(range.endMinute)) * 60,
+                    pickerValueMapping: .secondsFromMidnightGMT,
+                    primaryActionTitle: { strings, _, _ in
+                        strings.Wallpaper_Set
                     }
-                    if endMinute < startMinute {
-                        endMinute = endMinute + 24 * 60
+                ),
+                completion: { [weak self] value in
+                    guard let self else {
+                        return
                     }
-                    self.ranges[index].startMinute = startMinute
-                    self.ranges[index].endMinute = endMinute
-                    self.validateRanges()
-                    
-                    self.state?.updated(transition: .immediate)
-                }
-            })
+                    guard let value else {
+                        return
+                    }
+                    if let index = self.ranges.firstIndex(where: { $0.id == rangeId }) {
+                        var startMinute = range.startMinute
+                        var endMinute = range.endMinute
+                        if isStartTime {
+                            startMinute = Int(value) / 60
+                        } else {
+                            endMinute = Int(value) / 60
+                        }
+                        if endMinute < startMinute {
+                            endMinute = endMinute + 24 * 60
+                        }
+                        self.ranges[index].startMinute = startMinute
+                        self.ranges[index].endMinute = endMinute
+                        self.validateRanges()
+
+                        self.state?.updated(transition: .immediate)
+                    }
+                })
             self.environment?.controller()?.present(controller, in: .window(.root))
         }
         

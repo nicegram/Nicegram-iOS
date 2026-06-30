@@ -1,6 +1,5 @@
 import Foundation
 import UIKit
-import Postbox
 import Display
 import AsyncDisplayKit
 import SwiftSignalKit
@@ -48,7 +47,7 @@ public final class ChatMessageQuizAnswerBubbleContentNode: ChatMessageBubbleCont
             let title: String = item.presentationData.strings.MessagePoll_Explanation
             var text: String = ""
             var entities: [MessageTextEntity] = []
-            var mediaAndFlags: ([Media], ChatMessageAttachedContentNodeMediaFlags)? = nil
+            var mediaAndFlags: ([EngineRawMedia], ChatMessageAttachedContentNodeMediaFlags)? = nil
             var solution: TelegramMediaPollResults.Solution?
             if let poll = item.message.media.first(where: { $0 is TelegramMediaPoll }) as? TelegramMediaPoll, let solutionValue = poll.results.solution {
                 text = solutionValue.text
@@ -124,11 +123,11 @@ public final class ChatMessageQuizAnswerBubbleContentNode: ChatMessageBubbleCont
         self.contentNode.updateTouchesAtPoint(point.flatMap { $0.offsetBy(dx: -contentNodeFrame.minX, dy: -contentNodeFrame.minY) })
     }
     
-    override public func updateHiddenMedia(_ media: [Media]?) -> Bool {
+    override public func updateHiddenMedia(_ media: [EngineRawMedia]?) -> Bool {
         return self.contentNode.updateHiddenMedia(media)
     }
     
-    override public func transitionNode(messageId: MessageId, media: Media, adjustRect: Bool) -> (ASDisplayNode, CGRect, () -> (UIView?, UIView?))? {
+    override public func transitionNode(messageId: EngineMessage.Id, media: EngineRawMedia, adjustRect: Bool) -> (ASDisplayNode, CGRect, () -> (UIView?, UIView?))? {
         if self.item?.message.id != messageId {
             return nil
         }

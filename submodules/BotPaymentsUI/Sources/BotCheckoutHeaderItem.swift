@@ -206,7 +206,7 @@ class BotCheckoutHeaderItemNode: ListViewItemNode {
             }
             
             let contentSize = CGSize(width: params.width, height: contentHeight)
-            let insets = itemListNeighborsPlainInsets(neighbors)
+            let insets = itemListNeighborsGroupedInsets(neighbors, params)
             
             let layout = ListViewItemNodeLayout(contentSize: contentSize, insets: insets)
             

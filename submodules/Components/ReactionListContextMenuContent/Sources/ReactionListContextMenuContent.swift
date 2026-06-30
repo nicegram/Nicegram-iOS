@@ -291,6 +291,7 @@ public final class ReactionListContextMenuContent: ContextControllerItemsContent
                 self.scrollNode.view.contentInsetAdjustmentBehavior = .never
             }
             self.scrollNode.view.disablesInteractiveTransitionGestureRecognizer = true
+            self.scrollNode.view.scrollsToTop = false
             
             self.itemNodes = reactions.map { reaction, count in
                 return ItemNode(context: context, availableReactions: availableReactions, reaction: reaction, animationCache: animationCache, animationRenderer: animationRenderer, count: count)
@@ -897,6 +898,7 @@ public final class ReactionListContextMenuContent: ContextControllerItemsContent
                 self.scrollNode.view.contentInsetAdjustmentBehavior = .never
             }
             self.scrollNode.clipsToBounds = false
+            self.scrollNode.view.scrollsToTop = false
             
             super.init()
             

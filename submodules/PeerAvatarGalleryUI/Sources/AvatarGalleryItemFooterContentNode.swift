@@ -4,19 +4,11 @@ import AsyncDisplayKit
 import Display
 import TelegramCore
 import SwiftSignalKit
-import Photos
 import TelegramPresentationData
-import TelegramUIPreferences
-import TelegramStringFormatting
 import AccountContext
 import GalleryUI
-import AppBundle
-
-private let deleteImage = generateTintedImage(image: UIImage(bundleImageName: "Chat/Input/Accessory Panels/MessageSelectionTrash"), color: .white)
-private let actionImage = generateTintedImage(image: UIImage(bundleImageName: "Chat/Input/Accessory Panels/MessageSelectionForward"), color: .white)
-
-private let nameFont = Font.medium(15.0)
-private let dateFont = Font.regular(14.0)
+import ComponentFlow
+import GlassControls
 
 enum AvatarGalleryItemFooterContent {
     case info
@@ -27,24 +19,19 @@ final class AvatarGalleryItemFooterContentNode: GalleryFooterContentNode {
     private let context: AccountContext
     private var presentationData: PresentationData
     private var strings: PresentationStrings
-    private var dateTimeFormat: PresentationDateTimeFormat
     
-    private let deleteButton: UIButton
-    private let actionButton: UIButton
-    private let nameNode: ASTextNode
-    private let dateNode: ASTextNode
+    private let buttonPanel = ComponentView<Empty>()
     private let mainNode: ASTextNode
     private let setMainButton: HighlightableButtonNode
     
-    private var currentNameText: String?
-    private var currentDateText: String?
     private var currentTypeText: String?
+    private var displayActionButton: Bool = true
     
     private var validLayout: (CGSize, LayoutMetrics, CGFloat, CGFloat, CGFloat, CGFloat)?
     
-    var delete: (() -> Void)? {
+    var delete: ((UIView) -> Void)? {
         didSet {
-            self.deleteButton.isHidden = self.delete == nil
+            self.requestLayout?(.immediate)
         }
     }
     
@@ -56,25 +43,6 @@ final class AvatarGalleryItemFooterContentNode: GalleryFooterContentNode {
         self.context = context
         self.presentationData = presentationData
         self.strings = presentationData.strings
-        self.dateTimeFormat = presentationData.dateTimeFormat
-        
-        self.deleteButton = UIButton()
-        self.deleteButton.isHidden = true
-        
-        self.actionButton = UIButton()
-        
-        self.deleteButton.setImage(deleteImage, for: [.normal])
-        self.actionButton.setImage(actionImage, for: [.normal])
-        
-        self.nameNode = ASTextNode()
-        self.nameNode.maximumNumberOfLines = 1
-        self.nameNode.isUserInteractionEnabled = false
-        self.nameNode.displaysAsynchronously = false
-        
-        self.dateNode = ASTextNode()
-        self.dateNode.maximumNumberOfLines = 1
-        self.dateNode.isUserInteractionEnabled = false
-        self.dateNode.displaysAsynchronously = false
         
         self.setMainButton = HighlightableButtonNode()
         self.setMainButton.isHidden = true
@@ -86,36 +54,18 @@ final class AvatarGalleryItemFooterContentNode: GalleryFooterContentNode {
         
         super.init()
         
-        self.view.addSubview(self.deleteButton)
-        self.view.addSubview(self.actionButton)
-        
-        self.addSubnode(self.nameNode)
-        self.addSubnode(self.dateNode)
         self.addSubnode(self.setMainButton)
         self.addSubnode(self.mainNode)
         
-        self.deleteButton.addTarget(self, action: #selector(self.deleteButtonPressed), for: [.touchUpInside])
-        self.actionButton.addTarget(self, action: #selector(self.actionButtonPressed), for: [.touchUpInside])
         self.setMainButton.addTarget(self, action: #selector(self.setMainButtonPressed), forControlEvents: .touchUpInside)
     }
         
     func setEntry(_ entry: AvatarGalleryEntry, content: AvatarGalleryItemFooterContent) {
-        var nameText: String?
-        var dateText: String?
         var typeText: String?
         var buttonText: String?
         var canShare = true
         switch entry {
-            case let .image(_, _, _, videoRepresentations, peer, date, _, _, _, _, isFallback, _):
-                if date != 0 || isFallback {
-                    nameText = peer?.displayTitle(strings: self.presentationData.strings, displayOrder: self.presentationData.nameDisplayOrder) ?? ""
-                }
-                if let date = date, date != 0 {
-                    dateText = humanReadableStringForTimestamp(strings: self.strings, dateTimeFormat: self.dateTimeFormat, timestamp: date).string
-                } else if isFallback {
-                    dateText = !videoRepresentations.isEmpty ? self.strings.ProfilePhoto_PublicVideo : self.strings.ProfilePhoto_PublicPhoto
-                }
-                
+            case let .image(_, _, _, videoRepresentations, peer, _, _, _, _, _, _, _):
                 if (!videoRepresentations.isEmpty) {
                     typeText = self.strings.ProfilePhoto_MainVideo
                     buttonText = self.strings.ProfilePhoto_SetMainVideo
@@ -131,23 +81,6 @@ final class AvatarGalleryItemFooterContentNode: GalleryFooterContentNode {
                 break
         }
         
-        if self.currentNameText != nameText || self.currentDateText != dateText {
-            self.currentNameText = nameText
-            self.currentDateText = dateText
-            
-            if let nameText = nameText {
-                self.nameNode.attributedText = NSAttributedString(string: nameText, font: nameFont, textColor: .white)
-            } else {
-                self.nameNode.attributedText = nil
-            }
-            
-            if let dateText = dateText {
-                self.dateNode.attributedText = NSAttributedString(string: dateText, font: dateFont, textColor: .white)
-            } else {
-                self.dateNode.attributedText = nil
-            }
-        }
-        
         if self.currentTypeText != typeText {
             self.currentTypeText = typeText
             
@@ -159,17 +92,16 @@ final class AvatarGalleryItemFooterContentNode: GalleryFooterContentNode {
             }
         }
         
-        self.actionButton.isHidden = !canShare
+        if self.displayActionButton != canShare {
+            self.displayActionButton = canShare
+            self.requestLayout?(.immediate)
+        }
         
         switch content {
             case .info:
-                self.nameNode.isHidden = false
-                self.dateNode.isHidden = false
                 self.mainNode.isHidden = true
                 self.setMainButton.isHidden = true
             case let .own(isMainPhoto):
-                self.nameNode.isHidden = true
-                self.dateNode.isHidden = true
                 self.mainNode.isHidden = !isMainPhoto
                 self.setMainButton.isHidden = isMainPhoto
         }
@@ -179,52 +111,116 @@ final class AvatarGalleryItemFooterContentNode: GalleryFooterContentNode {
         self.validLayout = (size, metrics, leftInset, rightInset, bottomInset, contentInset)
         
         let width = size.width
-        var panelHeight: CGFloat = 44.0 + bottomInset
+        var panelHeight: CGFloat = 54.0 + bottomInset
         panelHeight += contentInset
         
-        self.actionButton.frame = CGRect(origin: CGPoint(x: leftInset, y: panelHeight - bottomInset - 44.0), size: CGSize(width: 44.0, height: 44.0))
-        self.deleteButton.frame = CGRect(origin: CGPoint(x: width - 44.0 - rightInset, y: panelHeight - bottomInset - 44.0), size: CGSize(width: 44.0, height: 44.0))
-        
-        let constrainedSize = CGSize(width: width - 44.0 * 2.0 - 8.0 * 2.0 - leftInset - rightInset, height: CGFloat.greatestFiniteMagnitude)
-        let nameSize = self.nameNode.measure(constrainedSize)
-        let dateSize = self.dateNode.measure(constrainedSize)
-        
-        if nameSize.height.isZero {
-            self.dateNode.frame = CGRect(origin: CGPoint(x: floor((width - dateSize.width) / 2.0), y: panelHeight - bottomInset - 44.0 + floor((44.0 - dateSize.height) / 2.0)), size: dateSize)
-        } else {
-            let labelsSpacing: CGFloat = 0.0
-            self.nameNode.frame = CGRect(origin: CGPoint(x: floor((width - nameSize.width) / 2.0), y: panelHeight - bottomInset - 44.0 + floor((44.0 - dateSize.height - nameSize.height - labelsSpacing) / 2.0)), size: nameSize)
-            self.dateNode.frame = CGRect(origin: CGPoint(x: floor((width - dateSize.width) / 2.0), y: panelHeight - bottomInset - 44.0 + floor((44.0 - dateSize.height - nameSize.height - labelsSpacing) / 2.0) + nameSize.height + labelsSpacing), size: dateSize)
+        var buttonPanelInsets = UIEdgeInsets()
+        buttonPanelInsets.left = 8.0
+        buttonPanelInsets.right = 8.0
+        buttonPanelInsets.bottom = bottomInset + 8.0
+        if bottomInset <= 32.0 {
+            buttonPanelInsets.left += 18.0
+            buttonPanelInsets.right += 18.0
         }
         
+        let constrainedSize = CGSize(width: width - 44.0 * 2.0 - 8.0 * 2.0 - leftInset - rightInset, height: CGFloat.greatestFiniteMagnitude)
+        let controlsY = panelHeight - buttonPanelInsets.bottom - 44.0
+
         let mainSize = self.mainNode.measure(constrainedSize)
-        self.mainNode.frame = CGRect(origin: CGPoint(x: floor((width - mainSize.width) / 2.0), y: panelHeight - bottomInset - 44.0 + floor((44.0 - mainSize.height) / 2.0)), size: mainSize)
-        
+        self.mainNode.frame = CGRect(origin: CGPoint(x: floor((width - mainSize.width) / 2.0), y: controlsY + floor((44.0 - mainSize.height) / 2.0)), size: mainSize)
+
         let mainButtonSize = self.setMainButton.measure(constrainedSize)
-        self.setMainButton.frame = CGRect(origin: CGPoint(x: floor((width - mainButtonSize.width) / 2.0), y: panelHeight - bottomInset - 44.0 + floor((44.0 - mainButtonSize.height) / 2.0)), size: mainButtonSize)
+        self.setMainButton.frame = CGRect(origin: CGPoint(x: floor((width - mainButtonSize.width) / 2.0), y: controlsY + floor((44.0 - mainButtonSize.height) / 2.0)), size: mainButtonSize)
+
+        var leftControlItems: [GlassControlGroupComponent.Item] = []
+        var rightControlItems: [GlassControlGroupComponent.Item] = []
+
+        if self.displayActionButton {
+            leftControlItems.append(GlassControlGroupComponent.Item(
+                id: AnyHashable("forward"),
+                content: .icon("Chat/Input/Accessory Panels/MessageSelectionForward"),
+                action: { [weak self] in
+                    guard let self else {
+                        return
+                    }
+                    self.actionButtonPressed()
+                }
+            ))
+        }
+
+        if self.delete != nil {
+            rightControlItems.append(GlassControlGroupComponent.Item(
+                id: AnyHashable("delete"),
+                content: .icon("Chat/Input/Accessory Panels/MessageSelectionTrash"),
+                action: { [weak self] in
+                    guard let self else {
+                        return
+                    }
+                    self.deleteButtonPressed()
+                }
+            ))
+        }
+
+        if leftControlItems.isEmpty && rightControlItems.isEmpty {
+            self.buttonPanel.view?.removeFromSuperview()
+        } else {
+            let buttonPanelSize = self.buttonPanel.update(
+                transition: ComponentTransition(transition),
+                component: AnyComponent(GlassControlPanelComponent(
+                    theme: defaultDarkColorPresentationTheme,
+                    leftItem: leftControlItems.isEmpty ? nil : GlassControlPanelComponent.Item(
+                        items: leftControlItems,
+                        background: .panel
+                    ),
+                    centralItem: nil,
+                    rightItem: rightControlItems.isEmpty ? nil : GlassControlPanelComponent.Item(
+                        items: rightControlItems,
+                        background: .panel
+                    ),
+                    centerAlignmentIfPossible: true
+                )),
+                environment: {},
+                containerSize: CGSize(width: size.width - buttonPanelInsets.left - buttonPanelInsets.right, height: 44.0)
+            )
+            let buttonPanelFrame = CGRect(origin: CGPoint(x: buttonPanelInsets.left, y: panelHeight - buttonPanelInsets.bottom - buttonPanelSize.height), size: buttonPanelSize)
+            if let buttonPanelView = self.buttonPanel.view {
+                if buttonPanelView.superview == nil {
+                    self.view.addSubview(buttonPanelView)
+                }
+                ComponentTransition(transition).setFrame(view: buttonPanelView, frame: buttonPanelFrame)
+            }
+        }
         
         return LayoutInfo(height: panelHeight, needsShadow: false)
     }
     
     override func animateIn(fromHeight: CGFloat, previousContentNode: GalleryFooterContentNode, transition: ContainedViewLayoutTransition) {
-        self.deleteButton.alpha = 1.0
-        self.actionButton.alpha = 1.0
-        self.nameNode.alpha = 1.0
-        self.dateNode.alpha = 1.0
+        if let buttonPanelView = self.buttonPanel.view {
+            buttonPanelView.alpha = 1.0
+        }
+        self.mainNode.alpha = 1.0
         self.setMainButton.alpha = 1.0
     }
     
     override func animateOut(toHeight: CGFloat, nextContentNode: GalleryFooterContentNode, transition: ContainedViewLayoutTransition, completion: @escaping () -> Void) {
-        self.deleteButton.alpha = 0.0
-        self.actionButton.alpha = 0.0
-        self.nameNode.alpha = 0.0
-        self.dateNode.alpha = 0.0
+        if let buttonPanelView = self.buttonPanel.view {
+            buttonPanelView.alpha = 0.0
+        }
+        self.mainNode.alpha = 0.0
         self.setMainButton.alpha = 0.0
         completion()
     }
     
     @objc private func deleteButtonPressed() {
-        self.delete?()
+        let sourceView: UIView
+        if let buttonPanelView = self.buttonPanel.view as? GlassControlPanelComponent.View, let itemView = buttonPanelView.rightItemView?.itemView(id: AnyHashable("delete")) {
+            sourceView = itemView
+        } else if let buttonPanelView = self.buttonPanel.view {
+            sourceView = buttonPanelView
+        } else {
+            sourceView = self.view
+        }
+        self.delete?(sourceView)
     }
     
     @objc private func actionButtonPressed() {

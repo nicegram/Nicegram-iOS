@@ -3,7 +3,6 @@ import UIKit
 import AsyncDisplayKit
 import SwiftSignalKit
 import TelegramCore
-import Postbox
 import Display
 import UniversalMediaPlayer
 import TelegramPresentationData
@@ -304,7 +303,7 @@ final class ChatVideoGalleryItemScrubberView: UIView {
         self.scrubberNode.bufferingStatus = status
     }
     
-    func setFetchStatusSignal(_ fetchStatus: Signal<MediaResourceStatus, NoError>?, strings: PresentationStrings, decimalSeparator: String, fileSize: Int64?) {
+    func setFetchStatusSignal(_ fetchStatus: Signal<EngineMediaResource.FetchStatus, NoError>?, strings: PresentationStrings, decimalSeparator: String, fileSize: Int64?) {
         let formatting = DataSizeStringFormatting(strings: strings, decimalSeparator: decimalSeparator)
         if let fileSize = fileSize {
             if let fetchStatus = fetchStatus {

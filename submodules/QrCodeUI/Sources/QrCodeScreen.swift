@@ -18,47 +18,56 @@ import Markdown
 import TextFormat
 import QrCode
 import LottieComponent
+import MtProtoKit
+import SegmentControlComponent
+import UrlEscaping
 
-private func shareQrCode(context: AccountContext, link: String, ecl: String, view: UIView) {
-    let _ = (qrCode(string: link, color: .black, backgroundColor: .white, icon: .custom(UIImage(bundleImageName: "Chat/Links/QrLogo")), ecl: ecl)
-    |> map { _, generator -> UIImage? in
-        let imageSize = CGSize(width: 768.0, height: 768.0)
-        let context = generator(TransformImageArguments(corners: ImageCorners(), imageSize: imageSize, boundingSize: imageSize, intrinsicInsets: UIEdgeInsets(), scale: 1.0))
-        return context?.generateImage()
-    }
-    |> deliverOnMainQueue).start(next: { image in
-        guard let image = image else {
-            return
-        }
-
-        let activityController = UIActivityViewController(activityItems: [image], applicationActivities: nil)
+private func shareQrCode(sharedContext: SharedAccountContext, subject: QrCodeScreen.Subject, asImage: Bool, view: UIView) {
+    let shareImpl: (Any) -> Void = { item in
+        let activityController = UIActivityViewController(activityItems: [item], applicationActivities: nil)
         if let window = view.window {
             activityController.popoverPresentationController?.sourceView = window
             activityController.popoverPresentationController?.sourceRect = CGRect(origin: CGPoint(x: window.bounds.width / 2.0, y: window.bounds.size.height - 1.0), size: CGSize(width: 1.0, height: 1.0))
         }
-        context.sharedContext.applicationBindings.presentNativeController(activityController)
-    })
+        sharedContext.applicationBindings.presentNativeController(activityController)
+    }
+    if asImage {
+        let _ = (qrCode(string: subject.link, color: .black, backgroundColor: .white, icon: subject.icon, ecl: subject.ecl)
+                 |> map { _, generator -> UIImage? in
+            let imageSize = CGSize(width: 768.0, height: 768.0)
+            let context = generator(TransformImageArguments(corners: ImageCorners(), imageSize: imageSize, boundingSize: imageSize, intrinsicInsets: UIEdgeInsets(), scale: 1.0))
+            return context?.generateImage()
+        }
+                 |> deliverOnMainQueue).start(next: { image in
+            guard let image else {
+                return
+            }
+            shareImpl(image)
+        })
+    } else {
+        shareImpl(subject.link)
+    }
 }
 
 private final class SheetContent: CombinedComponent {
     typealias EnvironmentType = ViewControllerComponentContainer.Environment
     
-    let context: AccountContext
+    let sharedContext: SharedAccountContext
     let subject: QrCodeScreen.Subject
     let dismiss: () -> Void
     
     init(
-        context: AccountContext,
+        sharedContext: SharedAccountContext,
         subject: QrCodeScreen.Subject,
         dismiss: @escaping () -> Void
     ) {
-        self.context = context
+        self.sharedContext = sharedContext
         self.subject = subject
         self.dismiss = dismiss
     }
     
     static func ==(lhs: SheetContent, rhs: SheetContent) -> Bool {
-        if lhs.context !== rhs.context {
+        if lhs.sharedContext !== rhs.sharedContext {
             return false
         }
         return true
@@ -70,11 +79,19 @@ private final class SheetContent: CombinedComponent {
         private var initialBrightness: CGFloat?
         private var brightnessArguments: (Double, Double, CGFloat, CGFloat)?
         private var animator: ConstantDisplayLinkAnimator?
-        
-        init(context: AccountContext) {
+
+        var selectedProxyExternalLink: Bool
+
+        init(sharedContext: SharedAccountContext, subject: QrCodeScreen.Subject) {
+            if case let .proxy(_, externalLink) = subject {
+                self.selectedProxyExternalLink = externalLink
+            } else {
+                self.selectedProxyExternalLink = false
+            }
+
             super.init()
             
-            self.idleTimerExtensionDisposable.set(context.sharedContext.applicationBindings.pushIdleTimerExtension())
+            self.idleTimerExtensionDisposable.set(sharedContext.applicationBindings.pushIdleTimerExtension())
             
             self.animator = ConstantDisplayLinkAnimator(update: { [weak self] in
                 self?.updateBrightness()
@@ -116,16 +133,18 @@ private final class SheetContent: CombinedComponent {
     }
     
     func makeState() -> State {
-        return State(context: self.context)
+        return State(sharedContext: self.sharedContext, subject: self.subject)
     }
         
     static var body: Body {
         let qrCode = Child(PlainButtonComponent.self)
         let closeButton = Child(GlassBarButtonComponent.self)
         let title = Child(Text.self)
+        let segmentControl = Child(SegmentControlComponent.self)
         let text = Child(BalancedTextComponent.self)
         
         let button = Child(ButtonComponent.self)
+        let secondaryButton = Child(ButtonComponent.self)
         
         return { context in
             let environment = context.environment[EnvironmentType.self]
@@ -134,10 +153,15 @@ private final class SheetContent: CombinedComponent {
             
             let theme = environment.theme
             let strings = environment.strings
-                        
-            let link = component.subject.link
-            let ecl = component.subject.ecl
-            
+            let state = context.state
+
+            let effectiveSubject: QrCodeScreen.Subject
+            if case let .proxy(server, _) = component.subject {
+                effectiveSubject = .proxy(server: server, externalLink: state.selectedProxyExternalLink)
+            } else {
+                effectiveSubject = component.subject
+            }
+
             let titleString: String
             let textString: String
             switch component.subject {
@@ -154,6 +178,9 @@ private final class SheetContent: CombinedComponent {
             case .chatFolder:
                 titleString = strings.InviteLink_QRCodeFolder_Title
                 textString = strings.InviteLink_QRCodeFolder_Text
+            case .proxy:
+                titleString = ""
+                textString = strings.SocksProxySetup_ShareQRCodeInfo
             default:
                 titleString = ""
                 textString = ""
@@ -185,24 +212,66 @@ private final class SheetContent: CombinedComponent {
             )
             
             let constrainedTitleWidth = context.availableSize.width - 16.0 * 2.0
-                        
-            let title = title.update(
-                component: Text(text: titleString, font: Font.semibold(17.0), color: theme.list.itemPrimaryTextColor),
-                availableSize: CGSize(width: constrainedTitleWidth, height: context.availableSize.height),
-                transition: .immediate
-            )
-            context.add(title
-                .position(CGPoint(x: context.availableSize.width / 2.0, y: contentSize.height))
-            )
-            contentSize.height += title.size.height
+
+            if case .proxy = component.subject {
+                let constrainedSegmentWidth = min(constrainedTitleWidth, max(200.0, context.availableSize.width - 144.0))
+                
+                let theme = SegmentControlComponent.Theme(
+                    backgroundColor: theme.rootController.navigationBar.segmentedBackgroundColor,
+                    legacyBackgroundColor: theme.overallDarkAppearance ? theme.list.itemBlocksBackgroundColor : theme.rootController.navigationBar.segmentedBackgroundColor,
+                    foregroundColor: theme.actionSheet.opaqueItemBackgroundColor,
+                    textColor: theme.rootController.navigationBar.segmentedTextColor,
+                    dividerColor: theme.rootController.navigationBar.segmentedDividerColor
+                )
+                
+                let segmentControl = segmentControl.update(
+                    component: SegmentControlComponent(
+                        theme: theme,
+                        items: [
+                            SegmentControlComponent.Item(id: AnyHashable(false), title: strings.SocksProxySetup_QrCode_TgLink),
+                            SegmentControlComponent.Item(id: AnyHashable(true), title: strings.SocksProxySetup_QrCode_TMeLink)
+                        ],
+                        selectedId: AnyHashable(state.selectedProxyExternalLink),
+                        action: { id in
+                            guard let externalLink = id.base as? Bool else {
+                                return
+                            }
+                            if state.selectedProxyExternalLink != externalLink {
+                                state.selectedProxyExternalLink = externalLink
+                                state.updated(transition: ComponentTransition(animation: .curve(duration: 0.3, curve: .spring)))
+                            }
+                        }
+                    ),
+                    availableSize: CGSize(width: constrainedSegmentWidth, height: 36.0),
+                    transition: .immediate
+                )
+                context.add(segmentControl
+                    .position(CGPoint(x: context.availableSize.width / 2.0, y: contentSize.height))
+                )
+                contentSize.height += segmentControl.size.height
+            } else {
+                let title = title.update(
+                    component: Text(text: titleString, font: Font.semibold(17.0), color: theme.list.itemPrimaryTextColor),
+                    availableSize: CGSize(width: constrainedTitleWidth, height: context.availableSize.height),
+                    transition: .immediate
+                )
+                context.add(title
+                    .position(CGPoint(x: context.availableSize.width / 2.0, y: contentSize.height))
+                )
+                contentSize.height += title.size.height
+            }
             contentSize.height += 13.0
             
             let qrCode = qrCode.update(
                 component: PlainButtonComponent(
-                    content: AnyComponent(QrCodeComponent(context: component.context, link: link, ecl: ecl)),
+                    content: AnyComponent(
+                        QrCodeComponent(
+                            subject: effectiveSubject
+                        )
+                    ),
                     action: { [weak controller] in
                         if let view = controller?.view {
-                            shareQrCode(context: component.context, link: link, ecl: ecl, view: view)
+                            shareQrCode(sharedContext: component.sharedContext, subject: effectiveSubject, asImage: true, view: view)
                         }
                     },
                     animateScale: false
@@ -250,8 +319,7 @@ private final class SheetContent: CombinedComponent {
                         style: .glass,
                         color: theme.list.itemCheckColors.fillColor,
                         foreground: theme.list.itemCheckColors.foregroundColor,
-                        pressedColor: theme.list.itemCheckColors.fillColor.withMultipliedAlpha(0.9),
-                        cornerRadius: 10.0,
+                        pressedColor: theme.list.itemCheckColors.fillColor.withMultipliedAlpha(0.9)
                     ),
                     content: AnyComponentWithIdentity(
                         id: AnyHashable(0),
@@ -261,7 +329,7 @@ private final class SheetContent: CombinedComponent {
                     displaysProgress: false,
                     action: { [weak controller] in
                         if let view = controller?.view {
-                            shareQrCode(context: component.context, link: link, ecl: ecl, view: view)
+                            shareQrCode(sharedContext: component.sharedContext, subject: effectiveSubject, asImage: true, view: view)
                         }
                     }
                 ),
@@ -272,8 +340,42 @@ private final class SheetContent: CombinedComponent {
                 .position(CGPoint(x: context.availableSize.width / 2.0, y: contentSize.height + button.size.height / 2.0))
             )
             contentSize.height += button.size.height
+
+            if case .proxy = component.subject {
+                contentSize.height += 8.0
+
+                let buttonInsets = ContainerViewLayout.concentricInsets(bottomInset: environment.safeInsets.bottom, innerDiameter: 52.0, sideInset: 30.0)
+                let secondaryButton = secondaryButton.update(
+                    component: ButtonComponent(
+                        background: ButtonComponent.Background(
+                            style: .glass,
+                            color: theme.list.itemAccentColor.withMultipliedAlpha(0.1),
+                            foreground: theme.list.itemAccentColor,
+                            pressedColor: theme.list.itemAccentColor.withMultipliedAlpha(0.8)
+                        ),
+                        content: AnyComponentWithIdentity(
+                            id: AnyHashable(0),
+                            component: AnyComponent(MultilineTextComponent(text: .plain(NSMutableAttributedString(string: strings.SocksProxySetup_ShareLink, font: Font.semibold(17.0), textColor: theme.list.itemAccentColor, paragraphAlignment: .center))))
+                        ),
+                        isEnabled: true,
+                        displaysProgress: false,
+                        action: { [weak controller] in
+                            if let view = controller?.view {
+                                shareQrCode(sharedContext: component.sharedContext, subject: effectiveSubject, asImage: false, view: view)
+                            }
+                        }
+                    ),
+                    availableSize: CGSize(width: context.availableSize.width - buttonInsets.left - buttonInsets.right, height: 52.0),
+                    transition: .immediate
+                )
+                context.add(secondaryButton
+                    .position(CGPoint(x: context.availableSize.width / 2.0, y: contentSize.height + secondaryButton.size.height / 2.0))
+                )
+                contentSize.height += secondaryButton.size.height
+            }
+
             contentSize.height += buttonInsets.bottom
-            
+
             return contentSize
         }
     }
@@ -282,19 +384,19 @@ private final class SheetContent: CombinedComponent {
 private final class QrCodeSheetComponent: CombinedComponent {
     typealias EnvironmentType = ViewControllerComponentContainer.Environment
     
-    private let context: AccountContext
+    private let sharedContext: SharedAccountContext
     private let subject: QrCodeScreen.Subject
     
     init(
-        context: AccountContext,
+        sharedContext: SharedAccountContext,
         subject: QrCodeScreen.Subject
     ) {
-        self.context = context
+        self.sharedContext = sharedContext
         self.subject = subject
     }
     
     static func ==(lhs: QrCodeSheetComponent, rhs: QrCodeSheetComponent) -> Bool {
-        if lhs.context !== rhs.context {
+        if lhs.sharedContext !== rhs.sharedContext {
             return false
         }
         return true
@@ -312,7 +414,7 @@ private final class QrCodeSheetComponent: CombinedComponent {
             let sheet = sheet.update(
                 component: SheetComponent<EnvironmentType>(
                     content: AnyComponent<EnvironmentType>(SheetContent(
-                        context: context.component.context,
+                        sharedContext: context.component.sharedContext,
                         subject: context.component.subject,
                         dismiss: {
                             animateOut.invoke(Action { _ in
@@ -372,10 +474,11 @@ public final class QrCodeScreen: ViewControllerComponentContainer {
         case groupCall
     }
     
-    public enum Subject {
+    public enum Subject: Equatable {
         case peer(peer: EnginePeer)
         case invite(invite: ExportedInvitation, type: SubjectType)
         case chatFolder(slug: String)
+        case proxy(server: ProxyServerSettings, externalLink: Bool)
         
         var link: String {
             switch self {
@@ -389,39 +492,79 @@ public final class QrCodeScreen: ViewControllerComponentContainer {
                 } else {
                     return "https://t.me/addlist/\(slug)"
                 }
+            case let .proxy(server, externalLink):
+                var link: String
+                let serverHost = server.host.addingPercentEncoding(withAllowedCharacters: CharacterSet.urlQueryValueAllowed) ?? ""
+                switch server.connection {
+                case let .mtp(secret):
+                    let secret = MTProxySecret.parseData(secret)?.serializeToString() ?? ""
+                    link = "\(externalLink ? "https://t.me/proxy" : "tg://proxy")?server=\(serverHost)&port=\(server.port)"
+                    link += "&secret=\(secret.addingPercentEncoding(withAllowedCharacters: CharacterSet.urlQueryValueAllowed) ?? "")"
+                case let .socks5(username, password):
+                    link = "\(externalLink ? "https://t.me/socks" : "tg://socks")?server=\(serverHost)&port=\(server.port)"
+                    if let username, !username.isEmpty {
+                        link += "&user=\(username.addingPercentEncoding(withAllowedCharacters: CharacterSet.urlQueryValueAllowed) ?? "")"
+                    }
+                    if let password, !password.isEmpty {
+                        link += "&pass=\(password.addingPercentEncoding(withAllowedCharacters: CharacterSet.urlQueryValueAllowed) ?? "")"
+                    }
+                }
+                return link
             }
         }
         
         var ecl: String {
             switch self {
-            case .peer:
-                return "Q"
-            case .invite:
-                return "Q"
-            case .chatFolder:
+            case .peer, .invite, .chatFolder, .proxy:
                 return "Q"
             }
         }
+
+        var icon: QrCodeIcon {
+            switch self {
+            case .peer, .invite, .chatFolder:
+                return .custom(UIImage(bundleImageName: "Chat/Links/QrLogo"))
+            case .proxy:
+                return .proxy
+            }
+        }
     }
-    
-    private let context: AccountContext
-    
+        
     public init(
         context: AccountContext,
         updatedPresentationData: (initial: PresentationData, signal: Signal<PresentationData, NoError>)? = nil,
         subject: QrCodeScreen.Subject
     ) {
-        self.context = context
-        
         super.init(
             context: context,
             component: QrCodeSheetComponent(
-                context: context,
+                sharedContext: context.sharedContext,
                 subject: subject
             ),
             navigationBarAppearance: .none,
             statusBarStyle: .ignore,
-            theme: .default //
+            theme: .default,
+            updatedPresentationData: updatedPresentationData
+        )
+        
+        self.navigationPresentation = .flatModal
+    }
+    
+    public init(
+        sharedContext: SharedAccountContext,
+        updatedPresentationData: (initial: PresentationData, signal: Signal<PresentationData, NoError>),
+        subject: QrCodeScreen.Subject
+    ) {        
+        super.init(
+            component: QrCodeSheetComponent(
+                sharedContext: sharedContext,
+                subject: subject
+            ),
+            navigationBarAppearance: .none,
+            statusBarStyle: .ignore,
+            presentationMode: .default,
+            theme: .default,
+            updatedPresentationData: updatedPresentationData
         )
         
         self.navigationPresentation = .flatModal
@@ -439,28 +582,16 @@ public final class QrCodeScreen: ViewControllerComponentContainer {
 }
 
 private final class QrCodeComponent: Component {
-    let context: AccountContext
-    let link: String
-    let ecl: String
+    let subject: QrCodeScreen.Subject
     
     init(
-        context: AccountContext,
-        link: String,
-        ecl: String
+        subject: QrCodeScreen.Subject
     ) {
-        self.context = context
-        self.link = link
-        self.ecl = ecl
+        self.subject = subject
     }
 
     static func ==(lhs: QrCodeComponent, rhs: QrCodeComponent) -> Bool {
-        if lhs.context !== rhs.context {
-            return false
-        }
-        if lhs.link != rhs.link {
-            return false
-        }
-        if lhs.ecl != rhs.ecl {
+        if lhs.subject != rhs.subject {
             return false
         }
         return true
@@ -502,9 +633,14 @@ private final class QrCodeComponent: Component {
             let previousComponent = self.component
             self.component = component
             self.state = state
-            
-            if previousComponent?.link != component.link {
-                self.imageNode.setSignal(qrCode(string: component.link, color: .black, backgroundColor: .white, icon: .cutout, ecl: component.ecl) |> beforeNext { [weak self] size, _ in
+
+            var isProxy = false
+            if case .proxy = component.subject {
+                isProxy = true
+            }
+
+            if previousComponent?.subject != component.subject {
+                self.imageNode.setSignal(qrCode(string: component.subject.link, color: .black, backgroundColor: .white, icon: isProxy ? .proxy : .cutout, ecl: component.subject.ecl) |> beforeNext { [weak self] size, _ in
                     guard let self else {
                         return
                     }
@@ -524,7 +660,7 @@ private final class QrCodeComponent: Component {
             let imageFrame = CGRect(origin: CGPoint(x: (size.width - imageSize.width) / 2.0, y: (size.height - imageSize.height) / 2.0), size: imageSize)
             self.imageNode.frame = imageFrame
             
-            if let qrCodeSize = self.qrCodeSize {
+            if !isProxy, let qrCodeSize = self.qrCodeSize {
                 let (_, cutoutFrame, _) = qrCodeCutout(size: qrCodeSize, dimensions: imageSize, scale: nil)
                 
                 let _ = self.icon.update(

@@ -5,7 +5,6 @@ import ComponentFlow
 import PagerComponent
 import TelegramPresentationData
 import TelegramCore
-import Postbox
 import BundleIconComponent
 import AudioToolbox
 import SwiftSignalKit

@@ -97,9 +97,9 @@ private final class ChatManagingBotTitlePanelComponent: Component {
             let topInset: CGFloat = 6.0
             let bottomInset: CGFloat = 6.0
             let avatarDiameter: CGFloat = 36.0
-            let avatarTextSpacing: CGFloat = 10.0
+            let avatarTextSpacing: CGFloat = 8.0
             let titleTextSpacing: CGFloat = 1.0
-            let leftInset: CGFloat = component.insets.left + 12.0
+            let leftInset: CGFloat = component.insets.left + 6.0
             let rightInset: CGFloat = component.insets.right + 10.0
             let actionAndSettingsButtonsSpacing: CGFloat = 8.0
             
@@ -134,7 +134,7 @@ private final class ChatManagingBotTitlePanelComponent: Component {
                 component: AnyComponent(PlainButtonComponent(
                     content: AnyComponent(BundleIconComponent(
                         name: "Chat/Context Menu/Customize",
-                        tintColor: component.theme.rootController.navigationBar.controlColor
+                        tintColor: component.theme.chat.inputPanel.panelControlColor
                     )),
                     effectAlignment: .center,
                     minSize: CGSize(width: 1.0, height: 40.0),
@@ -164,7 +164,7 @@ private final class ChatManagingBotTitlePanelComponent: Component {
             let titleSize = self.title.update(
                 transition: .immediate,
                 component: AnyComponent(MultilineTextComponent(
-                    text: .plain(NSAttributedString(string: component.peer.displayTitle(strings: component.strings, displayOrder: .firstLast), font: Font.semibold(16.0), textColor: component.theme.rootController.navigationBar.primaryTextColor))
+                    text: .plain(NSAttributedString(string: component.peer.displayTitle(strings: component.strings, displayOrder: .firstLast), font: Font.semibold(16.0), textColor: component.theme.chat.inputPanel.panelControlColor))
                 )),
                 environment: {},
                 containerSize: CGSize(width: maxTextWidth, height: 100.0)
@@ -178,7 +178,7 @@ private final class ChatManagingBotTitlePanelComponent: Component {
             let textSize = self.text.update(
                 transition: .immediate,
                 component: AnyComponent(MultilineTextComponent(
-                    text: .plain(NSAttributedString(string: textValue, font: Font.regular(15.0), textColor: component.theme.rootController.navigationBar.secondaryTextColor))
+                    text: .plain(NSAttributedString(string: textValue, font: Font.regular(14.0), textColor: component.theme.rootController.navigationBar.secondaryTextColor))
                 )),
                 environment: {},
                 containerSize: CGSize(width: maxTextWidth, height: 100.0)

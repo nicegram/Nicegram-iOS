@@ -2,7 +2,6 @@ import Foundation
 import UIKit
 import Display
 import AsyncDisplayKit
-import Postbox
 import SwiftSignalKit
 import TelegramCore
 import TelegramPresentationData
@@ -21,8 +20,6 @@ public class ComposeControllerImpl: ViewController, ComposeController {
     private var contactsNode: ComposeControllerNode {
         return self.displayNode as! ComposeControllerNode
     }
-    
-    private let index: PeerNameIndex = .lastNameFirst
     
     private var _ready = Promise<Bool>()
     override public var ready: Promise<Bool> {
@@ -312,7 +309,7 @@ public class ComposeControllerImpl: ViewController, ComposeController {
         }
     }
     
-    private func openPeer(peerId: PeerId) {
+    private func openPeer(peerId: EnginePeer.Id) {
         (self.navigationController as? NavigationController)?.replaceTopController(ChatControllerImpl(context: self.context, chatLocation: .peer(id: peerId)), animated: true)
     }
     

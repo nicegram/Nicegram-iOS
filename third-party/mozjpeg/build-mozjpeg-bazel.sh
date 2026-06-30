@@ -39,6 +39,22 @@ elif [ "$ARCH" = "sim_arm64" ]; then
 
   cmake -G"Unix Makefiles" -DCMAKE_TOOLCHAIN_FILE=toolchain.cmake -DCMAKE_OSX_SYSROOT=${IOS_SYSROOT[0]} -DPNG_SUPPORTED=FALSE -DENABLE_SHARED=FALSE -DWITH_JPEG8=1 -DBUILD=10000 -DCMAKE_POLICY_VERSION_MINIMUM=3.5 ../mozjpeg
   make
+elif [ "$ARCH" = "macos_arm64" ]; then
+  IOS_PLATFORMDIR="$(xcode-select -p)/Platforms/MacOSX.platform"
+  IOS_SYSROOT=($IOS_PLATFORMDIR/Developer/SDKs/MacOSX*.sdk)
+  export CFLAGS="-Wall -arch arm64 --target=arm64-apple-macosx14.0 -mmacosx-version-min=14.0 -funwind-tables"
+
+  cd "$BUILD_DIR"
+  mkdir build
+  cd build
+
+  touch toolchain.cmake
+  echo "set(CMAKE_SYSTEM_NAME Darwin)" >> toolchain.cmake
+  echo "set(CMAKE_SYSTEM_PROCESSOR aarch64)" >> toolchain.cmake
+  echo "set(CMAKE_C_COMPILER $(xcode-select -p)/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang)" >> toolchain.cmake
+
+  cmake -G"Unix Makefiles" -DCMAKE_TOOLCHAIN_FILE=toolchain.cmake -DCMAKE_OSX_SYSROOT=${IOS_SYSROOT[0]} -DPNG_SUPPORTED=FALSE -DENABLE_SHARED=FALSE -DWITH_JPEG8=1 -DBUILD=10000 -DCMAKE_POLICY_VERSION_MINIMUM=3.5 ../mozjpeg
+  make
 else
   echo "Unsupported architecture $ARCH"
   exit 1

@@ -1,7 +1,6 @@
 import Foundation
 import UIKit
 import TelegramCore
-import Postbox
 import TextFormat
 import AsyncDisplayKit
 import Display
@@ -264,6 +263,23 @@ public extension ChatMessageItemAssociatedData {
         } else {
             return false
         }
+    }
+
+    func isPollVotingRestricted(poll: TelegramMediaPoll, accountTestingEnvironment: Bool, currentTimestamp: Int32) -> Bool {
+        if !poll.countries.isEmpty, let accountCountry = self.accountCountry, !poll.countries.contains(accountCountry) {
+            return true
+        }
+
+        if poll.restrictToSubscribers {
+            let period: Int32 = accountTestingEnvironment ? 5 * 60 : 24 * 60 * 60
+            if !self.isParticipant {
+                return true
+            } else if let invitedOn = self.invitedOn, invitedOn + period > currentTimestamp {
+                return true
+            }
+        }
+
+        return false
     }
 }
 
@@ -817,7 +833,7 @@ public enum ChatControllerSubject: Equatable {
         }
     }
     
-    case tag(MessageTags)
+    case tag(EngineMessage.Tags)
     case message(id: MessageSubject, highlight: MessageHighlight?, timecode: Double?, setupReply: Bool)
     case scheduledMessages
     case pinnedMessages(id: EngineMessage.Id?)
@@ -1014,7 +1030,7 @@ public enum PeerInfoAvatarUploadStatus {
 }
 
 public protocol PeerInfoScreen: ViewController {
-    var peerId: PeerId { get }
+    var peerId: EnginePeer.Id { get }
     var privacySettings: Promise<AccountPrivacySettings?> { get }
     var twoStepAuthData: Promise<TwoStepAuthData?> { get }
     var notificationExceptions: Promise<NotificationExceptionsList?> { get }
@@ -1032,7 +1048,7 @@ public protocol PeerInfoScreen: ViewController {
     func updateProfileVideo(_ image: UIImage, video: Any?, values: Any?, markup: UploadPeerPhotoMarkup?)
 }
 
-public extension Peer {
+public extension EngineRawPeer {
     func canSetupAutoremoveTimeout(accountPeerId: EnginePeer.Id) -> Bool {
         if let _ = self as? TelegramSecretChat {
             return false
@@ -1128,7 +1144,7 @@ public protocol ChatController: ViewController {
     func activateSearch(domain: ChatSearchDomain, query: String)
     func activateInput(type: ChatControllerActivateInput)
     func beginClearHistory(type: InteractiveHistoryClearingType)
-    func presentReactionDeletionOptions(author: Peer, messageId: MessageId)
+    func presentReactionDeletionOptions(author: EnginePeer, messageId: EngineMessage.Id)
     
     func performScrollToTop() -> Bool
     func transferScrollingVelocity(_ velocity: CGFloat)
@@ -1168,19 +1184,19 @@ public enum FileMediaResourceMediaStatus: Equatable {
 public protocol ChatMessageItemNodeProtocol: ListViewItemNode {
     func makeProgress() -> Promise<Bool>?
     func targetReactionView(value: MessageReaction.Reaction) -> UIView?
-    func targetForStoryTransition(id: StoryId) -> UIView?
+    func targetForStoryTransition(id: EngineStoryId) -> UIView?
     func contentFrame() -> CGRect
-    func matchesMessage(id: MessageId) -> Bool
+    func matchesMessage(id: EngineMessage.Id) -> Bool
     func cancelInsertionAnimations()
-    func messages() -> [Message]
+    func messages() -> [EngineRawMessage]
     func updateHiddenMedia()
 }
 
 public final class ChatControllerNavigationData: CustomViewControllerNavigationData {
-    public let peerId: PeerId
+    public let peerId: EnginePeer.Id
     public let threadId: Int64?
-    
-    public init(peerId: PeerId, threadId: Int64?) {
+
+    public init(peerId: EnginePeer.Id, threadId: Int64?) {
         self.peerId = peerId
         self.threadId = threadId
     }
@@ -1223,8 +1239,8 @@ public enum ChatHistoryListSource {
     }
     
     case `default`
-    case custom(messages: Signal<([Message], Int32, Bool), NoError>, messageId: MessageId?, quote: Quote?, isSavedMusic: Bool, canReorder: Bool, loadMore: (() -> Void)?)
-    case customView(historyView: Signal<(MessageHistoryView, ViewUpdateType), NoError>)
+    case custom(messages: Signal<([EngineRawMessage], Int32, Bool), NoError>, messageId: EngineMessage.Id?, quote: Quote?, isSavedMusic: Bool, canReorder: Bool, loadMore: (() -> Void)?)
+    case customView(historyView: Signal<(EngineRawMessageHistoryView, EngineViewUpdateType), NoError>)
 }
 
 public enum ChatQuickReplyShortcutType {
@@ -1241,7 +1257,7 @@ public enum ChatCustomContentsKind: Equatable {
 
 public protocol ChatCustomContentsProtocol: AnyObject {
     var kind: ChatCustomContentsKind { get }
-    var historyView: Signal<(MessageHistoryView, ViewUpdateType), NoError> { get }
+    var historyView: Signal<(EngineRawMessageHistoryView, EngineViewUpdateType), NoError> { get }
     var messageLimit: Int? { get }
     
     func enqueueMessages(messages: [EnqueueMessage])
@@ -1281,7 +1297,7 @@ public protocol ChatHistoryListNode: ListView {
     
     func scrollToEndOfHistory()
     func updateLayout(transition: ContainedViewLayoutTransition, updateSizeAndInsets: ListViewUpdateSizeAndInsets)
-    func messageInCurrentHistoryView(_ id: MessageId) -> Message?
+    func messageInCurrentHistoryView(_ id: EngineMessage.Id) -> EngineMessage?
     
     var contentPositionChanged: (ListViewVisibleContentOffset) -> Void { get set }
 }

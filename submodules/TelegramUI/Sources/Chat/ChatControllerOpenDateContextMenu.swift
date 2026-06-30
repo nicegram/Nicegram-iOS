@@ -1,7 +1,6 @@
 import Foundation
 import UIKit
 import SwiftSignalKit
-import Postbox
 import TelegramCore
 import AsyncDisplayKit
 import Display
@@ -97,7 +96,7 @@ extension ChatControllerImpl: EKEventEditViewDelegate {
                         guard let self else {
                             return
                         }
-                        let attributes: [MessageAttribute] = [
+                        let attributes: [EngineMessage.Attribute] = [
                             OutgoingScheduleInfoMessageAttribute(scheduleTime: result.time, repeatPeriod: result.repeatPeriod)
                         ]
                         let forwardMessage: EnqueueMessage = .forward(source: message.id, threadId: nil, grouping: .auto, attributes: attributes, correlationId: nil)

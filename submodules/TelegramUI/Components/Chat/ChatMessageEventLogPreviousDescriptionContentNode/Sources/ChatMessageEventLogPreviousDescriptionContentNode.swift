@@ -1,6 +1,5 @@
 import Foundation
 import UIKit
-import Postbox
 import Display
 import AsyncDisplayKit
 import SwiftSignalKit
@@ -50,7 +49,7 @@ public final class ChatMessageEventLogPreviousDescriptionContentNode: ChatMessag
             } else {
                 text = item.message.text
             }
-            let mediaAndFlags: ([Media], ChatMessageAttachedContentNodeMediaFlags)? = nil
+            let mediaAndFlags: ([EngineRawMedia], ChatMessageAttachedContentNodeMediaFlags)? = nil
             
             let (initialWidth, continueLayout) = contentNodeLayout(item.presentationData, item.controllerInteraction.automaticMediaDownloadSettings, item.associatedData, item.attributes, item.context, item.controllerInteraction, item.message, true, .peer(id: item.message.id.peerId), title, nil, nil, text, messageEntities, mediaAndFlags, nil, nil, nil, true, layoutConstants, preparePosition, constrainedSize, item.controllerInteraction.presentationContext.animationCache, item.controllerInteraction.presentationContext.animationRenderer)
             
@@ -103,11 +102,11 @@ public final class ChatMessageEventLogPreviousDescriptionContentNode: ChatMessag
         return ChatMessageBubbleContentTapAction(content: .none)
     }
     
-    override public func updateHiddenMedia(_ media: [Media]?) -> Bool {
+    override public func updateHiddenMedia(_ media: [EngineRawMedia]?) -> Bool {
         return self.contentNode.updateHiddenMedia(media)
     }
     
-    override public func transitionNode(messageId: MessageId, media: Media, adjustRect: Bool) -> (ASDisplayNode, CGRect, () -> (UIView?, UIView?))? {
+    override public func transitionNode(messageId: EngineMessage.Id, media: EngineRawMedia, adjustRect: Bool) -> (ASDisplayNode, CGRect, () -> (UIView?, UIView?))? {
         if self.item?.message.id != messageId {
             return nil
         }

@@ -104,19 +104,19 @@ public final class DeviceLocationManager: NSObject {
             self.currentTopMode = topMode
             if let topMode = topMode {
                 self.log?("setting mode \(topMode)")
+                switch topMode {
+                case .preciseForeground:
+                    self.manager.allowsBackgroundLocationUpdates = false
+                case .preciseAlways:
+                    self.manager.allowsBackgroundLocationUpdates = true
+                }
+                
                 if previousTopMode == nil {
                     if !self.requestedAuthorization {
                         self.requestedAuthorization = true
                         self.manager.requestAlwaysAuthorization()
                     }
-                    
-                    switch topMode {
-                    case .preciseForeground:
-                        self.manager.allowsBackgroundLocationUpdates = false
-                    case .preciseAlways:
-                        self.manager.allowsBackgroundLocationUpdates = true
-                    }
-                    
+
                     self.manager.startUpdatingLocation()
                     self.manager.startUpdatingHeading()
                 }

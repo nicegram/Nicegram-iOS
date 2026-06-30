@@ -10,18 +10,15 @@ import AccountContext
 import UndoUI
 import InviteLinksUI
 import TextFormat
-import Postbox
 
 private final class UsernameSetupControllerArguments {
-    let account: Account
     let updatePublicLinkText: (String?, String) -> Void
     let shareLink: () -> Void
     let activateLink: (String) -> Void
     let deactivateLink: (String) -> Void
     let openAuction: (String) -> Void
-    
-    init(account: Account, updatePublicLinkText: @escaping (String?, String) -> Void, shareLink: @escaping () -> Void, activateLink: @escaping (String) -> Void, deactivateLink: @escaping (String) -> Void, openAuction: @escaping (String) -> Void) {
-        self.account = account
+
+    init(updatePublicLinkText: @escaping (String?, String) -> Void, shareLink: @escaping () -> Void, activateLink: @escaping (String) -> Void, deactivateLink: @escaping (String) -> Void, openAuction: @escaping (String) -> Void) {
         self.updatePublicLinkText = updatePublicLinkText
         self.shareLink = shareLink
         self.activateLink = activateLink
@@ -291,10 +288,10 @@ private struct UsernameSetupControllerState: Equatable {
     }
 }
 
-private func usernameSetupControllerEntries(presentationData: PresentationData, view: PeerView, state: UsernameSetupControllerState, temporaryOrder: [String]?, mode: UsernameSetupMode) -> [UsernameSetupEntry] {
+private func usernameSetupControllerEntries(presentationData: PresentationData, peer: EnginePeer?, state: UsernameSetupControllerState, temporaryOrder: [String]?, mode: UsernameSetupMode) -> [UsernameSetupEntry] {
     var entries: [UsernameSetupEntry] = []
-    
-    if let peer = view.peers[view.peerId] as? TelegramUser {
+
+    if case let .user(peer) = peer {
         let currentUsername: String
         if let current = state.editingPublicLinkText {
             currentUsername = current
@@ -444,7 +441,7 @@ public func usernameSetupController(context: AccountContext, mode: UsernameSetup
         peerId = botPeerId
     }
     
-    let arguments = UsernameSetupControllerArguments(account: context.account, updatePublicLinkText: { currentText, text in
+    let arguments = UsernameSetupControllerArguments(updatePublicLinkText: { currentText, text in
         if text.isEmpty {
             checkAddressNameDisposable.set(nil)
             updateState { state in
@@ -544,20 +541,18 @@ public func usernameSetupController(context: AccountContext, mode: UsernameSetup
     
     let temporaryOrder = Promise<[String]?>(nil)
         
-    let peerView = context.account.viewTracker.peerView(peerId)
+    let peerSignal = context.engine.data.subscribe(TelegramEngine.EngineData.Item.Peer.Peer(id: peerId))
     |> deliverOnMainQueue
-    
+
     let signal = combineLatest(
         context.sharedContext.presentationData,
         statePromise.get() |> deliverOnMainQueue,
-        peerView,
+        peerSignal,
         temporaryOrder.get()
     )
-    |> map { presentationData, state, view, temporaryOrder -> (ItemListControllerState, (ItemListNodeState, Any)) in
-        let peer = peerViewMainPeer(view)
-        
+    |> map { presentationData, state, peer, temporaryOrder -> (ItemListControllerState, (ItemListNodeState, Any)) in
         var rightNavigationButton: ItemListNavigationButton?
-        if let peer = peer as? TelegramUser {
+        if case let .user(peer) = peer {
             var doneEnabled = true
             
             if let addressNameValidationStatus = state.addressNameValidationStatus {
@@ -569,7 +564,7 @@ public func usernameSetupController(context: AccountContext, mode: UsernameSetup
                 }
             }
             
-            rightNavigationButton = ItemListNavigationButton(content: .text(presentationData.strings.Common_Done), style: state.updatingAddressName ? .activity : .bold, enabled: doneEnabled, action: {
+            rightNavigationButton = ItemListNavigationButton(content: .icon(.done), style: state.updatingAddressName ? .activity : .bold, enabled: doneEnabled, action: {
                 var updatedAddressNameValue: String?
                 updateState { state in
                     if state.editingPublicLinkText != peer.addressName {
@@ -602,7 +597,7 @@ public func usernameSetupController(context: AccountContext, mode: UsernameSetup
             })
         }
         
-        let leftNavigationButton = ItemListNavigationButton(content: .text(presentationData.strings.Common_Cancel), style: .regular, enabled: true, action: {
+        let leftNavigationButton = ItemListNavigationButton(content: .icon(.close), style: .regular, enabled: true, action: {
             dismissImpl?()
         })
         
@@ -613,7 +608,7 @@ public func usernameSetupController(context: AccountContext, mode: UsernameSetup
             title = presentationData.strings.Username_Title
         }
         let controllerState = ItemListControllerState(presentationData: ItemListPresentationData(presentationData), title: .text(title), leftNavigationButton: leftNavigationButton, rightNavigationButton: rightNavigationButton, backNavigationButton: ItemListBackButton(title: presentationData.strings.Common_Back), animateChanges: false)
-        let listState = ItemListNodeState(presentationData: ItemListPresentationData(presentationData), entries: usernameSetupControllerEntries(presentationData: presentationData, view: view, state: state, temporaryOrder: temporaryOrder, mode: mode), style: .blocks, focusItemTag: mode == .account ? UsernameEntryTag.username : nil, animateChanges: true)
+        let listState = ItemListNodeState(presentationData: ItemListPresentationData(presentationData), entries: usernameSetupControllerEntries(presentationData: presentationData, peer: peer, state: state, temporaryOrder: temporaryOrder, mode: mode), style: .blocks, focusItemTag: mode == .account ? UsernameEntryTag.username : nil, animateChanges: true)
             
         return (controllerState, (listState, arguments))
     } |> afterDisposed {

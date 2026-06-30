@@ -1,6 +1,5 @@
 import Foundation
 import SwiftSignalKit
-import Postbox
 import TelegramCore
 import AccountContext
 import MultiplexedVideoNode
@@ -96,7 +95,7 @@ public func paneGifSearchForQuery(context: AccountContext, query: String, offset
                     if let content = externalReference.content {
                         imageResource = content.resource
                         if let resource = content.resource as? WebFileReferenceMediaResource {
-                            uniqueId = Int64(HashFunctions.murMurHash32(resource.url))
+                            uniqueId = Int64(EngineHashFunctions.murMurHash32(resource.url))
                         }
                     }
                     if let thumbnail = externalReference.thumbnail {
@@ -126,7 +125,7 @@ public func paneGifSearchForQuery(context: AccountContext, query: String, offset
                                 ))
                             }
                         }
-                        let file = TelegramMediaFile(fileId: MediaId(namespace: Namespaces.Media.LocalFile, id: uniqueId ?? 0), partialReference: nil, resource: resource, previewRepresentations: previews, videoThumbnails: videoThumbnails, immediateThumbnailData: nil, mimeType: "video/mp4", size: nil, attributes: [.Animated, .Video(duration: 0, size: dimensions, flags: [], preloadSize: nil, coverTime: nil, videoCodec: nil)], alternativeRepresentations: [])
+                        let file = TelegramMediaFile(fileId: EngineMedia.Id(namespace: Namespaces.Media.LocalFile, id: uniqueId ?? 0), partialReference: nil, resource: resource, previewRepresentations: previews, videoThumbnails: videoThumbnails, immediateThumbnailData: nil, mimeType: "video/mp4", size: nil, attributes: [.Animated, .Video(duration: 0, size: dimensions, flags: [], preloadSize: nil, coverTime: nil, videoCodec: nil)], alternativeRepresentations: [])
                         references.append(MultiplexedVideoNodeFile(file: FileMediaReference.standalone(media: file), contextResult: (collection, result)))
                     }
                 case let .internalReference(internalReference):
@@ -339,7 +338,7 @@ public final class GifContext {
             gifItems = combineLatest(hasRecentGifs, paneGifSearchForQuery(context: context, query: query.joined(separator: ""), offset: token, incompleteResults: true, staleCachedResults: true, delayRequest: false, updateActivity: nil), searchCategories)
             |> map { hasRecentGifs, result, searchCategories -> EntityKeyboardGifContent in
                 var items: [GifPagerContentComponent.Item] = []
-                var existingIds = Set<MediaId>()
+                var existingIds = Set<EngineMedia.Id>()
                 for item in componentValue.component.items {
                     items.append(item)
                     existingIds.insert(item.file.media.fileId)

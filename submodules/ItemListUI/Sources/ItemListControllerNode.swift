@@ -6,6 +6,8 @@ import SwiftSignalKit
 import TelegramCore
 import TelegramPresentationData
 import MergeLists
+import ComponentFlow
+import GlassControls
 
 public protocol ItemListHeaderItemNode: AnyObject {
     func updateTheme(theme: PresentationTheme)
@@ -255,7 +257,7 @@ open class ItemListControllerNode: ASDisplayNode, ASGestureRecognizerDelegate {
     private var emptyStateItem: ItemListControllerEmptyStateItem?
     private var emptyStateNode: ItemListControllerEmptyStateItemNode?
     
-    private var toolbarNode: ToolbarNode?
+    private var toolbar: ComponentView<Empty>?
     
     private var searchItem: ItemListControllerSearch?
     private var searchNode: ItemListControllerSearchNode?
@@ -654,7 +656,7 @@ open class ItemListControllerNode: ASDisplayNode, ASGestureRecognizerDelegate {
         insets.bottom = max(insets.bottom, additionalInsets.bottom)
         
         let inset = max(16.0, floor((layout.size.width - 674.0) / 2.0))
-        if layout.size.width >= 375.0 {
+        if layout.size.width >= 320.0 {
             insets.left += inset
             insets.right += inset
         }
@@ -666,60 +668,165 @@ open class ItemListControllerNode: ASDisplayNode, ASGestureRecognizerDelegate {
             self.listNodeContainer.insertSubnode(self.leftOverlayNode, aboveSubnode: self.listNode)
         }
 
-        if let toolbarItem = self.toolbarItem {
-            var tabBarHeight: CGFloat
-            let bottomInset: CGFloat = insets.bottom
-            if !layout.safeInsets.left.isZero {
-                tabBarHeight = 34.0 + bottomInset
-                insets.bottom += 34.0
+        if let toolbarData = self.toolbarItem, let theme = self.theme {
+            var panelsBottomInset: CGFloat = layout.insets(options: []).bottom
+            if layout.metrics.widthClass == .regular, let inputHeight = layout.inputHeight, inputHeight != 0.0 {
+                panelsBottomInset = inputHeight + 8.0
+            }
+            if panelsBottomInset == 0.0 {
+                panelsBottomInset = 8.0
             } else {
-                tabBarHeight = 49.0 + bottomInset
-                insets.bottom += 49.0
+                panelsBottomInset = max(panelsBottomInset, 8.0)
             }
             
-            let toolbarFrame = CGRect(origin: CGPoint(x: 0.0, y: layout.size.height - tabBarHeight), size: CGSize(width: layout.size.width, height: tabBarHeight))
+            let sideInset: CGFloat = 20.0
+            let toolbarHeight = 44.0
+            let toolbarFrame = CGRect(origin: CGPoint(x: sideInset, y: layout.size.height - panelsBottomInset - toolbarHeight), size: CGSize(width: layout.size.width - sideInset * 2.0, height: toolbarHeight))
             
-            if let toolbarNode = self.toolbarNode {
-                transition.updateFrame(node: toolbarNode, frame: toolbarFrame)
-                toolbarNode.updateLayout(size: toolbarFrame.size, leftInset: layout.safeInsets.left, rightInset: layout.safeInsets.right, additionalSideInsets: layout.additionalInsets, bottomInset: layout.intrinsicInsets.bottom, toolbar: toolbarItem.toolbar, transition: transition)
-            } else if let theme = self.theme {
-                let toolbarNode = ToolbarNode(theme: ToolbarTheme(rootControllerTheme: theme), displaySeparator: true)
-                toolbarNode.frame = toolbarFrame
-                toolbarNode.updateLayout(size: toolbarFrame.size, leftInset: layout.safeInsets.left, rightInset: layout.safeInsets.right, additionalSideInsets: layout.additionalInsets, bottomInset: layout.intrinsicInsets.bottom, toolbar: toolbarItem.toolbar, transition: .immediate)
-                self.addSubnode(toolbarNode)
-                self.toolbarNode = toolbarNode
-                if case let .animated(duration, curve) = transition {
-                    toolbarNode.layer.animatePosition(from: CGPoint(x: 0.0, y: toolbarFrame.height), to: CGPoint(), duration: duration, mediaTimingFunction: curve.mediaTimingFunction, additive: true)
+            let toolbar: ComponentView<Empty>
+            var toolbarTransition = ComponentTransition(transition)
+            if let current = self.toolbar {
+                toolbar = current
+            } else {
+                toolbar = ComponentView()
+                self.toolbar = toolbar
+                toolbarTransition = .immediate
+            }
+            
+            let _ = toolbar.update(
+                transition: toolbarTransition,
+                component: AnyComponent(GlassControlPanelComponent(
+                    theme: theme,
+                    leftItem: toolbarData.toolbar.leftAction.flatMap { value in
+                        return GlassControlPanelComponent.Item(
+                            items: [GlassControlGroupComponent.Item(
+                                id: "left_" + value.title,
+                                content: .text(value.title),
+                                action: value.isEnabled ? { [weak self] in
+                                    guard let self, let toolbarData = self.toolbarItem else {
+                                        return
+                                    }
+                                    toolbarData.actions[0].action()
+                                } : nil
+                            )],
+                            background: .panel
+                        )
+                    },
+                    centralItem: toolbarData.toolbar.middleAction.flatMap { value in
+                        return GlassControlPanelComponent.Item(
+                            items: [GlassControlGroupComponent.Item(
+                                id: "right_" + value.title,
+                                content: .text(value.title),
+                                action: value.isEnabled ? { [weak self] in
+                                    guard let self, let toolbarData = self.toolbarItem else {
+                                        return
+                                    }
+                                    if toolbarData.actions.count == 1 {
+                                        toolbarData.actions[0].action()
+                                    } else if toolbarData.actions.count == 3 {
+                                        toolbarData.actions[1].action()
+                                    }
+                                } : nil
+                            )],
+                            background: .panel
+                        )
+                    },
+                    rightItem: toolbarData.toolbar.rightAction.flatMap { value in
+                        return GlassControlPanelComponent.Item(
+                            items: [GlassControlGroupComponent.Item(
+                                id: "right_" + value.title,
+                                content: .text(value.title),
+                                action: value.isEnabled ? { [weak self] in
+                                    guard let self, let toolbarData = self.toolbarItem else {
+                                        return
+                                    }
+                                    if toolbarData.actions.count == 2 {
+                                        toolbarData.actions[1].action()
+                                    } else if toolbarData.actions.count == 3 {
+                                        toolbarData.actions[2].action()
+                                    }
+                                } : nil
+                            )],
+                            background: .panel
+                        )
+                    },
+                    centerAlignmentIfPossible: true
+                )),
+                environment: {},
+                containerSize: toolbarFrame.size
+            )
+            
+            if let toolbarView = toolbar.view {
+                if toolbarView.superview == nil {
+                    self.view.addSubview(toolbarView)
+                    toolbarView.alpha = 0.0
                 }
+                toolbarTransition.setFrame(view: toolbarView, frame: toolbarFrame)
+                ComponentTransition(transition).setAlpha(view: toolbarView, alpha: 1.0)
             }
-                
-            self.toolbarNode?.left = {
-                toolbarItem.actions[0].action()
-            }
-            self.toolbarNode?.right = {
-                if toolbarItem.actions.count == 2 {
-                    toolbarItem.actions[1].action()
-                } else if toolbarItem.actions.count == 3 {
-                    toolbarItem.actions[2].action()
-                }
-            }
-            self.toolbarNode?.middle = {
-                if toolbarItem.actions.count == 1 {
-                    toolbarItem.actions[0].action()
-                } else if toolbarItem.actions.count == 3 {
-                    toolbarItem.actions[1].action()
-                }
-            }
-        } else if let toolbarNode = self.toolbarNode {
-            self.toolbarNode = nil
-            if case let .animated(duration, curve) = transition {
-                toolbarNode.layer.animatePosition(from: CGPoint(), to: CGPoint(x: 0.0, y: toolbarNode.frame.size.height), duration: duration, mediaTimingFunction: curve.mediaTimingFunction, removeOnCompletion: false, additive: true, completion: { [weak toolbarNode] _ in
-                    toolbarNode?.removeFromSupernode()
+        } else if let toolbar = self.toolbar {
+            self.toolbar = nil
+            if let toolbarView = toolbar.view {
+                ComponentTransition(transition).setAlpha(view: toolbarView, alpha: 0.0, completion: { [weak toolbarView] _ in
+                    toolbarView?.removeFromSuperview()
                 })
-            } else {
-                toolbarNode.removeFromSupernode()
             }
         }
+        
+//        if let toolbarItem = self.toolbarItem {
+//            var tabBarHeight: CGFloat
+//            let bottomInset: CGFloat = insets.bottom
+//            if !layout.safeInsets.left.isZero {
+//                tabBarHeight = 34.0 + bottomInset
+//                insets.bottom += 34.0
+//            } else {
+//                tabBarHeight = 49.0 + bottomInset
+//                insets.bottom += 49.0
+//            }
+//            
+//            let toolbarFrame = CGRect(origin: CGPoint(x: 0.0, y: layout.size.height - tabBarHeight), size: CGSize(width: layout.size.width, height: tabBarHeight))
+//            
+//            if let toolbarNode = self.toolbarNode {
+//                transition.updateFrame(node: toolbarNode, frame: toolbarFrame)
+//                toolbarNode.updateLayout(size: toolbarFrame.size, leftInset: layout.safeInsets.left, rightInset: layout.safeInsets.right, additionalSideInsets: layout.additionalInsets, bottomInset: layout.intrinsicInsets.bottom, toolbar: toolbarItem.toolbar, transition: transition)
+//            } else if let theme = self.theme {
+//                let toolbarNode = ToolbarNode(theme: ToolbarTheme(rootControllerTheme: theme), displaySeparator: true)
+//                toolbarNode.frame = toolbarFrame
+//                toolbarNode.updateLayout(size: toolbarFrame.size, leftInset: layout.safeInsets.left, rightInset: layout.safeInsets.right, additionalSideInsets: layout.additionalInsets, bottomInset: layout.intrinsicInsets.bottom, toolbar: toolbarItem.toolbar, transition: .immediate)
+//                self.addSubnode(toolbarNode)
+//                self.toolbarNode = toolbarNode
+//                if case let .animated(duration, curve) = transition {
+//                    toolbarNode.layer.animatePosition(from: CGPoint(x: 0.0, y: toolbarFrame.height), to: CGPoint(), duration: duration, mediaTimingFunction: curve.mediaTimingFunction, additive: true)
+//                }
+//            }
+//                
+//            self.toolbarNode?.left = {
+//                toolbarItem.actions[0].action()
+//            }
+//            self.toolbarNode?.right = {
+//                if toolbarItem.actions.count == 2 {
+//                    toolbarItem.actions[1].action()
+//                } else if toolbarItem.actions.count == 3 {
+//                    toolbarItem.actions[2].action()
+//                }
+//            }
+//            self.toolbarNode?.middle = {
+//                if toolbarItem.actions.count == 1 {
+//                    toolbarItem.actions[0].action()
+//                } else if toolbarItem.actions.count == 3 {
+//                    toolbarItem.actions[1].action()
+//                }
+//            }
+//        } else if let toolbarNode = self.toolbarNode {
+//            self.toolbarNode = nil
+//            if case let .animated(duration, curve) = transition {
+//                toolbarNode.layer.animatePosition(from: CGPoint(), to: CGPoint(x: 0.0, y: toolbarNode.frame.size.height), duration: duration, mediaTimingFunction: curve.mediaTimingFunction, removeOnCompletion: false, additive: true, completion: { [weak toolbarNode] _ in
+//                    toolbarNode?.removeFromSupernode()
+//                })
+//            } else {
+//                toolbarNode.removeFromSupernode()
+//            }
+//        }
     
         if let headerItemNode = self.headerItemNode {
             let headerHeight = headerItemNode.updateLayout(layout: layout, transition: transition)
@@ -977,7 +1084,7 @@ open class ItemListControllerNode: ASDisplayNode, ASGestureRecognizerDelegate {
                             insets.bottom = footerHeight
                             
                             let inset = max(16.0, floor((layout.size.width - 674.0) / 2.0))
-                            if layout.size.width >= 375.0 {
+                            if layout.size.width >= 320.0 {
                                 insets.left += inset
                                 insets.right += inset
                             }

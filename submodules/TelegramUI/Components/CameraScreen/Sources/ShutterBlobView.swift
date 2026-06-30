@@ -43,7 +43,7 @@ final class ShutterBlobView: UIView {
             case .generic, .video, .transientToFlip:
                 return CGSize(width: 0.63, height: 0.63)
             case .live:
-                return CGSize(width: 3.4, height: 0.55)
+                return CGSize(width: 3.1, height: 0.55)
             case .transientToLock, .lock, .stopVideo:
                 return CGSize(width: 0.275, height: 0.275)
             }

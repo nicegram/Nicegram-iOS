@@ -2,11 +2,10 @@ import Foundation
 import UIKit
 import Display
 import ComponentFlow
-import SwiftSignalKit
-import LegacyComponents
 import MediaEditor
+import SliderComponent
 
-final class AdjustmentSliderComponent: Component {
+private final class AdjustmentSliderRowComponent: Component {
     typealias EnvironmentType = Empty
     
     let title: String
@@ -44,7 +43,7 @@ final class AdjustmentSliderComponent: Component {
         self.isTrackingUpdated = isTrackingUpdated
     }
     
-    static func ==(lhs: AdjustmentSliderComponent, rhs: AdjustmentSliderComponent) -> Bool {
+    static func ==(lhs: AdjustmentSliderRowComponent, rhs: AdjustmentSliderRowComponent) -> Bool {
         if lhs.title != rhs.title {
             return false
         }
@@ -72,12 +71,12 @@ final class AdjustmentSliderComponent: Component {
         return true
     }
     
-    final class View: UIView, UITextFieldDelegate {
+    final class View: UIView {
         private let title = ComponentView<Empty>()
         private let value = ComponentView<Empty>()
-        private var sliderView: TGPhotoEditorSliderView?
+        private let slider = ComponentView<Empty>()
         
-        private var component: AdjustmentSliderComponent?
+        private var component: AdjustmentSliderRowComponent?
         private weak var state: EmptyComponentState?
         
         override init(frame: CGRect) {
@@ -88,22 +87,15 @@ final class AdjustmentSliderComponent: Component {
             fatalError("init(coder:) has not been implemented")
         }
                 
-        func update(component: AdjustmentSliderComponent, availableSize: CGSize, state: EmptyComponentState, environment: Environment<EnvironmentType>, transition: ComponentTransition) -> CGSize {
+        func update(component: AdjustmentSliderRowComponent, availableSize: CGSize, state: EmptyComponentState, environment: Environment<EnvironmentType>, transition: ComponentTransition) -> CGSize {
             self.component = component
             self.state = state
             
             var internalIsTrackingUpdated: ((Bool) -> Void)?
             if let isTrackingUpdated = component.isTrackingUpdated {
                 internalIsTrackingUpdated = { [weak self] isTracking in
+                    isTrackingUpdated(isTracking)
                     if let self {
-                        if isTracking {
-                            self.sliderView?.bordered = true
-                        } else {
-                            Queue.mainQueue().after(0.1) {
-                                self.sliderView?.bordered = false
-                            }
-                        }
-                        isTrackingUpdated(isTracking)
                         let transition: ComponentTransition
                         if isTracking {
                             transition = .immediate
@@ -119,52 +111,27 @@ final class AdjustmentSliderComponent: Component {
                     }
                 }
             }
-                        
-            let sliderView: TGPhotoEditorSliderView
-            if let current = self.sliderView {
-                sliderView = current
-                sliderView.value = CGFloat(component.value)
-            } else {
-                sliderView = TGPhotoEditorSliderView()
-                sliderView.backgroundColor = .clear
-                sliderView.startColor = UIColor(rgb: 0xffffff)
-                sliderView.enablePanHandling = true
-                sliderView.trackCornerRadius = 1.0
-                sliderView.lineSize = 2.0
-                sliderView.minimumValue = CGFloat(component.minValue)
-                sliderView.maximumValue = CGFloat(component.maxValue)
-                sliderView.startValue = CGFloat(component.startValue)
-                sliderView.value = CGFloat(component.value)
-                sliderView.disablesInteractiveTransitionGestureRecognizer = true
-                sliderView.addTarget(self, action: #selector(self.sliderValueChanged), for: .valueChanged)
-                sliderView.layer.allowsGroupOpacity = true
-                self.sliderView = sliderView
-                self.addSubview(sliderView)
-            }
-            sliderView.interactionBegan = {
-                internalIsTrackingUpdated?(true)
-            }
-            sliderView.interactionEnded = {
-                internalIsTrackingUpdated?(false)
-            }
             
-            if component.isEnabled {
-                sliderView.alpha = 1.3
-                sliderView.trackColor = component.trackColor ?? UIColor(rgb: 0xffffff)
-                sliderView.isUserInteractionEnabled = true
+            var hasValue = false
+            let valueText: String
+            if component.displayValue {
+                if component.value > 0.005 {
+                    valueText = String(format: "+%.2f", component.value)
+                    hasValue = true
+                } else if component.value < -0.005 {
+                    valueText = String(format: "%.2f", component.value)
+                    hasValue = true
+                } else {
+                    valueText = ""
+                }
             } else {
-                sliderView.trackColor = UIColor(rgb: 0xffffff)
-                sliderView.alpha = 0.3
-                sliderView.isUserInteractionEnabled = false
+                valueText = ""
             }
-            
-            transition.setFrame(view: sliderView, frame: CGRect(origin: CGPoint(x: 22.0, y: 7.0), size: CGSize(width: availableSize.width - 22.0 * 2.0, height: 44.0)))
-            sliderView.hitTestEdgeInsets = UIEdgeInsets(top: -sliderView.frame.minX, left: 0.0, bottom: 0.0, right: -sliderView.frame.minX)
             
             let titleSize = self.title.update(
                 transition: .immediate,
                 component: AnyComponent(
-                    Text(text: component.title, font: Font.regular(14.0), color: UIColor(rgb: 0x808080))
+                    Text(text: component.title, font: Font.bold(13.0), color: hasValue ? UIColor(rgb: 0xffffff) : UIColor(rgb: 0x808080))
                 ),
                 environment: {},
                 containerSize: CGSize(width: 100.0, height: 100.0)
@@ -173,26 +140,13 @@ final class AdjustmentSliderComponent: Component {
                 if titleView.superview == nil {
                     self.addSubview(titleView)
                 }
-                transition.setFrame(view: titleView, frame: CGRect(origin: CGPoint(x: 21.0, y: 0.0), size: titleSize))
-            }
-            
-            let valueText: String
-            if component.displayValue {
-                if component.value > 0.005 {
-                    valueText = String(format: "+%.2f", component.value)
-                } else if component.value < -0.005 {
-                    valueText = String(format: "%.2f", component.value)
-                } else {
-                    valueText = ""
-                }
-            } else {
-                valueText = ""
+                transition.setFrame(view: titleView, frame: CGRect(origin: CGPoint(x: 30.0, y: 0.0), size: titleSize))
             }
             
             let valueSize = self.value.update(
                 transition: .immediate,
                 component: AnyComponent(
-                    Text(text: valueText, font: Font.with(size: 14.0, traits: .monospacedNumbers), color: UIColor(rgb: 0xffd300))
+                    Text(text: valueText, font: Font.with(size: 13.0, weight: .medium, traits: .monospacedNumbers), color: UIColor(rgb: 0xffd300))
                 ),
                 environment: {},
                 containerSize: CGSize(width: 100.0, height: 100.0)
@@ -201,17 +155,44 @@ final class AdjustmentSliderComponent: Component {
                 if valueView.superview == nil {
                     self.addSubview(valueView)
                 }
-                transition.setFrame(view: valueView, frame: CGRect(origin: CGPoint(x: availableSize.width - 21.0 - valueSize.width, y: 0.0), size: valueSize))
+                transition.setFrame(view: valueView, frame: CGRect(origin: CGPoint(x: availableSize.width - 30.0 - valueSize.width, y: 0.0), size: valueSize))
             }
             
-            return CGSize(width: availableSize.width, height: 52.0)
-        }
-        
-        @objc private func sliderValueChanged() {
-            guard let component = self.component, let sliderView = self.sliderView else {
-                return
+            let sliderSize = self.slider.update(
+                transition: transition,
+                component: AnyComponent(
+                    SliderComponent(
+                        content: .continuous(SliderComponent.Continuous(
+                            value: CGFloat(component.value),
+                            range: CGFloat(component.minValue) ... CGFloat(component.maxValue),
+                            startValue: CGFloat(component.startValue),
+                            valueUpdated: { [weak self] value in
+                                guard let self, let component = self.component else {
+                                    return
+                                }
+                                component.valueUpdated(Float(value))
+                            }
+                        )),
+                        useNative: true,
+                        trackBackgroundColor: UIColor(rgb: 0xffffff, alpha: 0.1),
+                        trackForegroundColor: component.isEnabled ? (component.trackColor ?? UIColor(rgb: 0xffffff)) : UIColor(rgb: 0xffffff),
+                        isEnabled: component.isEnabled,
+                        trackHeight: 6.0,
+                        displaysBorderOnTracking: component.isTrackingUpdated != nil,
+                        isTrackingUpdated: internalIsTrackingUpdated
+                    )
+                ),
+                environment: {},
+                containerSize: CGSize(width: max(0.0, availableSize.width - 28.0 * 2.0), height: 44.0)
+            )
+            if let sliderView = self.slider.view {
+                if sliderView.superview == nil {
+                    self.addSubview(sliderView)
+                }
+                transition.setFrame(view: sliderView, frame: CGRect(origin: CGPoint(x: 28.0, y: 7.0), size: sliderSize))
             }
-            component.valueUpdated(Float(sliderView.value))
+
+            return CGSize(width: availableSize.width, height: 52.0)
         }
     }
 
@@ -325,14 +306,14 @@ final class AdjustmentsComponent: Component {
                 let size = componentView.update(
                     transition: transition,
                     component: AnyComponent(
-                        AdjustmentSliderComponent(
+                        AdjustmentSliderRowComponent(
                             title: tool.title,
                             value: value,
                             minValue: tool.minValue,
                             maxValue: tool.maxValue,
                             startValue: tool.startValue,
                             isEnabled: true,
-                            trackColor: nil,
+                            trackColor: UIColor(rgb: 0xffd300),
                             displayValue: true,
                             valueUpdated: { value in
                                 var updatedValue = value
@@ -363,7 +344,7 @@ final class AdjustmentsComponent: Component {
                     }
                     transition.setFrame(view: view, frame: CGRect(origin: origin, size: size))
                 }
-                origin = origin.offsetBy(dx: 0.0, dy: size.height)
+                origin = origin.offsetBy(dx: 0.0, dy: size.height + 8.0)
             }
             
             let size = CGSize(width: availableSize.width, height: 180.0)

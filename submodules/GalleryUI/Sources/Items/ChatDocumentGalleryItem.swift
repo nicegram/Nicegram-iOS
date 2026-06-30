@@ -1,7 +1,6 @@
 import Foundation
 import UIKit
 import AsyncDisplayKit
-import Postbox
 import Display
 import SwiftSignalKit
 import WebKit
@@ -17,10 +16,10 @@ class ChatDocumentGalleryItem: GalleryItem {
     
     let context: AccountContext
     let presentationData: PresentationData
-    let message: Message
-    let location: MessageHistoryEntryLocation?
+    let message: EngineRawMessage
+    let location: EngineMessageHistoryEntryLocation?
     
-    init(context: AccountContext, presentationData: PresentationData, message: Message, location: MessageHistoryEntryLocation?) {
+    init(context: AccountContext, presentationData: PresentationData, message: EngineRawMessage, location: EngineMessageHistoryEntryLocation?) {
         self.context = context
         self.presentationData = presentationData
         self.message = message
@@ -30,7 +29,7 @@ class ChatDocumentGalleryItem: GalleryItem {
     func node(synchronous: Bool) -> GalleryItemNode {
         let node = ChatDocumentGalleryItemNode(context: self.context, presentationData: self.presentationData)
         
-        for media in self.message.media {
+        for media in self.message.effectiveMedia {
             if let file = media as? TelegramMediaFile {
                 node.setFile(context: context, fileReference: .message(message: MessageReference(self.message), media: file))
                 break
@@ -104,7 +103,7 @@ class ChatDocumentGalleryItemNode: ZoomableContentGalleryItemNode, WKNavigationD
     
     private var itemIsVisible = false
     
-    private var message: Message?
+    private var message: EngineRawMessage?
     
     private let footerContentNode: ChatItemGalleryFooterContentNode
     
@@ -162,7 +161,7 @@ class ChatDocumentGalleryItemNode: ZoomableContentGalleryItemNode, WKNavigationD
         transition.updateFrame(node: self.statusNode, frame: CGRect(origin: CGPoint(), size: statusSize))
     }
     
-    fileprivate func setMessage(_ message: Message) {
+    fileprivate func setMessage(_ message: EngineRawMessage) {
         self.footerContentNode.setMessage(message)
     }
     
@@ -186,7 +185,7 @@ class ChatDocumentGalleryItemNode: ZoomableContentGalleryItemNode, WKNavigationD
         }
     }
     
-    private func setupStatus(context: AccountContext, resource: MediaResource) {
+    private func setupStatus(context: AccountContext, resource: EngineRawMediaResource) {
         self.statusDisposable.set((context.engine.resources.status(resource: EngineMediaResource(resource))
         |> deliverOnMainQueue).start(next: { [weak self] status in
             if let strongSelf = self {

@@ -4,7 +4,6 @@ import AccountContext
 import AsyncDisplayKit
 import Display
 import SwiftSignalKit
-import Postbox
 import TelegramCore
 import TelegramPresentationData
 import PresentationDataUtils
@@ -44,18 +43,18 @@ public final class BrowserBookmarksScreen: ViewController {
             self.controller = controller
             self.presentationData = presentationData
         
-            var openMessageImpl: ((Message) -> Bool)?
-            var openContextMenuImpl: ((Message, ASDisplayNode, CGRect, UIGestureRecognizer?) -> Void)?
+            var openMessageImpl: ((EngineMessage) -> Bool)?
+            var openContextMenuImpl: ((EngineMessage, ASDisplayNode, CGRect, UIGestureRecognizer?) -> Void)?
             self.controllerInteraction = ChatControllerInteraction(openMessage: { message, _ in
                 if let openMessageImpl = openMessageImpl {
-                    return openMessageImpl(message)
+                    return openMessageImpl(EngineMessage(message))
                 } else {
                     return false
                 }
             }, openPeer: { _, _, _, _ in
             }, openPeerMention: { _, _ in
             }, openMessageContextMenu: { message, _, sourceView, rect, gesture, _ in
-                openContextMenuImpl?(message, sourceView, rect, gesture)
+                openContextMenuImpl?(EngineMessage(message), sourceView, rect, gesture)
             }, openMessageReactionContextMenu: { _, _, _, _ in
             }, updateMessageReaction: { _, _, _, _ in
             }, activateMessagePinch: { _ in
@@ -66,7 +65,7 @@ public final class BrowserBookmarksScreen: ViewController {
             }, tapMessage: nil, clickThroughMessage: { _, _ in
             }, toggleMessagesSelection: { _, _ in
             }, sendCurrentMessage: { _, _ in
-            }, sendMessage: { _ in
+            }, sendMessage: { _, _ in
             }, sendSticker: { _, _, _, _, _, _, _, _, _ in
                 return false
             }, sendEmoji: { _, _, _ in
@@ -83,12 +82,13 @@ public final class BrowserBookmarksScreen: ViewController {
                     controller.openUrl(url.url)
                     controller.dismiss()
                 }
-            }, shareCurrentLocation: {
-            }, shareAccountContact: {
+            }, openExternalInstantPage: { _ in
+            }, shareCurrentLocation: { _ in
+            }, shareAccountContact: { _ in
             }, sendBotCommand: { _, _ in
             }, openInstantPage: { message, _ in
                 if let openMessageImpl = openMessageImpl {
-                    let _ = openMessageImpl(message)
+                    let _ = openMessageImpl(EngineMessage(message))
                 }
             }, openWallpaper: { _ in
             }, openTheme: {_ in
@@ -134,7 +134,7 @@ public final class BrowserBookmarksScreen: ViewController {
             }, displaySwipeToReplyHint: {
             }, dismissReplyMarkupMessage: { _ in
             }, openMessagePollResults: { _, _ in
-            }, openPollCreation: { _ in
+            }, openPollCreation: { _, _ in
             }, openPollMedia: { _, _ in
             }, displayPollSolution: { _, _ in
             }, displayPsa: { _, _ in
@@ -176,10 +176,11 @@ public final class BrowserBookmarksScreen: ViewController {
             }, sendGift: { _ in
             }, openUniqueGift: { _ in
             }, openMessageFeeException: {  
-            }, requestMessageUpdate: { _, _ in
+            }, requestMessageUpdate: { _, _, _ in
             }, cancelInteractiveKeyboardGestures: {
             }, dismissTextInput: {
-            }, scrollToMessageId: { _ in
+            }, scrollToMessageId: { _, _ in
+            }, scrollToMessageIdWithAnchor: { _, _ in
             }, navigateToStory: { _, _ in
             }, attemptedNavigationToPrivateQuote: { _ in
             }, forceUpdateWarpContents: {
@@ -195,7 +196,7 @@ public final class BrowserBookmarksScreen: ViewController {
             }, automaticMediaDownloadSettings: MediaAutoDownloadSettings.defaultSettings, pollActionState: ChatInterfacePollActionState(), stickerSettings: ChatInterfaceStickerSettings(), presentationContext: ChatPresentationContext(context: context, backgroundNode: nil))
             
             
-            let tagMask: MessageTags = .webPage
+            let tagMask: EngineMessage.Tags = .webPage
             let chatLocationContextHolder = Atomic<ChatLocationContextHolder?>(value: nil)
             self.historyNode = context.sharedContext.makeChatHistoryListNode(
                 context: context,
@@ -259,7 +260,13 @@ public final class BrowserBookmarksScreen: ViewController {
                 let presentationData = self.context.sharedContext.currentPresentationData.with { $0 }
                 
                 var itemList: [ContextMenuItem] = []
-                if let webPage = message.media.first(where: { $0 is TelegramMediaWebpage }) as? TelegramMediaWebpage, let url = webPage.content.url {
+                let foundWebpage = message.engineMedia.compactMap { engineMedia -> TelegramMediaWebpage? in
+                    if case let .webpage(webpage) = engineMedia {
+                        return webpage
+                    }
+                    return nil
+                }.first
+                if let webPage = foundWebpage, let url = webPage.content.url {
                     itemList.append(.action(ContextMenuActionItem(text: presentationData.strings.WebBrowser_CopyLink, icon: { theme in
                         return generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Copy"), color: theme.contextMenu.primaryColor)
                     }, action: { [weak self] _, f in
@@ -297,7 +304,7 @@ public final class BrowserBookmarksScreen: ViewController {
             guard let (layout, navigationBarHeight, _) = self.validLayout, let navigationBar = self.controller?.navigationBar else {
                 return
             }
-            let tagMask: MessageTags = .webPage
+            let tagMask: EngineMessage.Tags = .webPage
             
             self.searchDisplayController = SearchDisplayController(presentationData: self.presentationData, mode: .navigation, placeholder: self.presentationData.strings.Common_Search, hasBackground: true, contentNode: ChatHistorySearchContainerNode(context: self.context, peerId: self.context.account.peerId, threadId: nil, tagMask: tagMask, interfaceInteraction: self.controllerInteraction), cancel: { [weak self] in
                 self?.controller?.deactivateSearch()
@@ -395,7 +402,7 @@ public final class BrowserBookmarksScreen: ViewController {
         
         self.navigationItem.backBarButtonItem = UIBarButtonItem(title: self.presentationData.strings.Common_Back, style: .plain, target: nil, action: nil)
         
-        self.navigationItem.leftBarButtonItem = UIBarButtonItem(title: self.presentationData.strings.Common_Close, style: .plain, target: self, action: #selector(self.cancelPressed))
+        self.navigationItem.leftBarButtonItem = UIBarButtonItem(title: "___close", style: .plain, target: self, action: #selector(self.cancelPressed))
         self.title = self.presentationData.strings.WebBrowser_Bookmarks_Title
         
         self.searchContentNode = NavigationBarSearchContentNode(theme: self.presentationData.theme, placeholder: self.presentationData.strings.Common_Search, activate: { [weak self] in

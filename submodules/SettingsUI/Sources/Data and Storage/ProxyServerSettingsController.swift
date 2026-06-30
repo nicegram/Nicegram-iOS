@@ -10,20 +10,7 @@ import PresentationDataUtils
 import AccountContext
 import UrlEscaping
 import UrlHandling
-
-private func shareLink(for server: ProxyServerSettings) -> String {
-    var link: String
-    switch server.connection {
-    case let .mtp(secret):
-        let secret = MTProxySecret.parseData(secret)?.serializeToString() ?? ""
-        link = "tg://proxy?server=\(server.host)&port=\(server.port)"
-        link += "&secret=\(secret.addingPercentEncoding(withAllowedCharacters: CharacterSet.urlQueryValueAllowed) ?? "")"
-    case let .socks5(username, password):
-        link = "https://t.me/socks?server=\(server.host)&port=\(server.port)"
-        link += "&user=\(username?.addingPercentEncoding(withAllowedCharacters: CharacterSet.urlQueryValueAllowed) ?? "")&pass=\(password?.addingPercentEncoding(withAllowedCharacters: CharacterSet.urlQueryValueAllowed) ?? "")"
-    }
-    return link
-}
+import QrCodeUI
 
 private final class ProxyServerSettingsControllerArguments {
     let updateState: ((ProxyServerSettingsControllerState) -> ProxyServerSettingsControllerState) -> Void
@@ -300,7 +287,7 @@ func proxyServerSettingsController(sharedContext: SharedAccountContext, context:
         statePromise.set(stateValue.modify { f($0) })
     }
     
-    var presentControllerImpl: ((ViewController, Any?) -> Void)?
+    var pushControllerImpl: ((ViewController) -> Void)?
     var dismissImpl: (() -> Void)?
     
     var shareImpl: (() -> Void)?
@@ -332,10 +319,14 @@ func proxyServerSettingsController(sharedContext: SharedAccountContext, context:
     let signal = combineLatest(updatedPresentationData, statePromise.get())
     |> deliverOnMainQueue
     |> map { presentationData, state -> (ItemListControllerState, (ItemListNodeState, Any)) in
-        let leftNavigationButton = ItemListNavigationButton(content: .text("___close"), style: .regular, enabled: true, action: {
+        var presentationData = presentationData
+        let updatedTheme = presentationData.theme.withModalBlocksBackground()
+        presentationData = presentationData.withUpdated(theme: updatedTheme)
+        
+        let leftNavigationButton = ItemListNavigationButton(content: .icon(.close), style: .regular, enabled: true, action: {
             dismissImpl?()
         })
-        let rightNavigationButton = ItemListNavigationButton(content: .text("___done"), style: .bold, enabled: state.isComplete, action: {
+        let rightNavigationButton = ItemListNavigationButton(content: .icon(.done), style: .bold, enabled: state.isComplete, action: {
             if let proxyServerSettings = proxyServerSettings(with: state) {
                 let _ = (updateProxySettingsInteractively(accountManager: accountManager, { settings in
                     var settings = settings
@@ -370,8 +361,8 @@ func proxyServerSettingsController(sharedContext: SharedAccountContext, context:
     
     let controller = ItemListController(presentationData: ItemListPresentationData(presentationData), updatedPresentationData: updatedPresentationData |> map(ItemListPresentationData.init(_:)), state: signal, tabBarItem: nil)
     controller.navigationPresentation = .modal
-    presentControllerImpl = { [weak controller] c, d in
-        controller?.present(c, in: .window(.root), with: d)
+    pushControllerImpl = { [weak controller] c in
+        controller?.push(c)
     }
     dismissImpl = { [weak controller] in
         let _ = controller?.dismiss()
@@ -381,12 +372,14 @@ func proxyServerSettingsController(sharedContext: SharedAccountContext, context:
         guard let server = proxyServerSettings(with: state) else {
             return
         }
-        
-        let link = shareLink(for: server)
         controller?.view.endEditing(true)
         
-        let controller = ShareProxyServerActionSheetController(presentationData: presentationData, updatedPresentationData: updatedPresentationData, link: link)
-        presentControllerImpl?(controller, nil)
+        let controller = QrCodeScreen(
+            sharedContext: sharedContext,
+            updatedPresentationData: (presentationData, updatedPresentationData),
+            subject: .proxy(server: server, externalLink: false)
+        )
+        pushControllerImpl?(controller)
     }
     
     return controller

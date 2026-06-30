@@ -3,7 +3,6 @@ import UIKit
 import Display
 import AsyncDisplayKit
 import SwiftSignalKit
-import Postbox
 import TelegramCore
 import LegacyComponents
 import TelegramPresentationData
@@ -21,16 +20,24 @@ import WallpaperBackgroundNode
 import TextFormat
 import TooltipUI
 import TelegramNotices
+import ComponentFlow
+import GlassControls
 
 struct WallpaperGalleryItemArguments {
     let colorPreview: Bool
     let isColorsList: Bool
     let patternEnabled: Bool
+    let toolbarHeight: CGFloat
+    let toolbarDoneButtonType: WallpaperGalleryToolbarDoneButtonType
+    let toolbarRequiredLevel: Int?
     
-    init(colorPreview: Bool = false, isColorsList: Bool = false, patternEnabled: Bool = false) {
+    init(colorPreview: Bool = false, isColorsList: Bool = false, patternEnabled: Bool = false, toolbarHeight: CGFloat = 66.0, toolbarDoneButtonType: WallpaperGalleryToolbarDoneButtonType = .set, toolbarRequiredLevel: Int? = nil) {
         self.colorPreview = colorPreview
         self.isColorsList = isColorsList
         self.patternEnabled = patternEnabled
+        self.toolbarHeight = toolbarHeight
+        self.toolbarDoneButtonType = toolbarDoneButtonType
+        self.toolbarRequiredLevel = toolbarRequiredLevel
     }
 }
 
@@ -78,7 +85,7 @@ class WallpaperGalleryItem: GalleryItem {
 private let progressDiameter: CGFloat = 50.0
 private let motionAmount: CGFloat = 32.0
 
-private func reference(for resource: MediaResource, media: Media, message: Message?, slug: String?) -> MediaResourceReference {
+private func reference(for resource: TelegramMediaResource, media: EngineRawMedia, message: EngineRawMessage?, slug: String?) -> MediaResourceReference {
     if let message = message {
         return .media(media: .message(message: MessageReference(message), media: media), resource: resource)
     }
@@ -106,10 +113,11 @@ final class WallpaperGalleryItemNode: GalleryItemNode {
     private let blurredNode: BlurredImageNode
     let cropNode: WallpaperCropNode
     
-    private let cancelButtonNode: WallpaperNavigationButtonNode
-    private let shareButtonNode: WallpaperNavigationButtonNode
-    private let dayNightButtonNode: WallpaperNavigationButtonNode
-    private let editButtonNode: WallpaperNavigationButtonNode
+    private let topButtons: ComponentView<Empty>
+    private var topCanShare = false
+    private var topCanSwitchTheme = false
+    private var topCanEdit = false
+    private var controlsGlassIsDark = true
     
     private let buttonsContainerNode: SparseNode
     private let blurButtonNode: WallpaperOptionButtonNode
@@ -118,6 +126,8 @@ final class WallpaperGalleryItemNode: GalleryItemNode {
     private let colorsButtonNode: WallpaperOptionButtonNode
     private let playButtonNode: WallpaperNavigationButtonNode
     private let sliderNode: WallpaperSliderNode
+    private let toolbarNode: WallpaperGalleryToolbarNode
+    private var toolbarDoneEnabled = true
     
     private let messagesContainerNode: ASDisplayNode
     private var messageNodes: [ListViewItemNode]?
@@ -139,6 +149,7 @@ final class WallpaperGalleryItemNode: GalleryItemNode {
     var requestRotateGradient: ((Int32) -> Void)?
     
     private var validLayout: (ContainerViewLayout, CGFloat)?
+    private var validToolbarLayout: (ContainerViewLayout, CGFloat)?
     private var validOffset: CGFloat?
 
     private var initialWallpaper: TelegramWallpaper?
@@ -177,6 +188,7 @@ final class WallpaperGalleryItemNode: GalleryItemNode {
         self.messagesContainerNode.transform = CATransform3DMakeScale(1.0, -1.0, 1.0)
         self.messagesContainerNode.isUserInteractionEnabled = false
         
+        self.topButtons = ComponentView<Empty>()
         self.buttonsContainerNode = SparseNode()
         self.blurButtonNode = WallpaperOptionButtonNode(title: self.presentationData.strings.WallpaperPreview_Blurred, value: .check(false))
         self.blurButtonNode.setEnabled(false)
@@ -193,16 +205,8 @@ final class WallpaperGalleryItemNode: GalleryItemNode {
         })
 
         self.colorsButtonNode = WallpaperOptionButtonNode(title: self.presentationData.strings.WallpaperPreview_WallpaperColors, value: .colors(false, [.clear]))
+        self.toolbarNode = WallpaperGalleryToolbarNode(theme: self.presentationData.theme, strings: self.presentationData.strings)
 
-        self.cancelButtonNode = WallpaperNavigationButtonNode(content: .text(self.presentationData.strings.Common_Cancel), dark: true)
-        self.cancelButtonNode.enableSaturation = true
-        self.shareButtonNode = WallpaperNavigationButtonNode(content: .icon(image: UIImage(bundleImageName: "Chat/Links/Share"), size: CGSize(width: 28.0, height: 28.0)), dark: true)
-        self.shareButtonNode.enableSaturation = true
-        self.dayNightButtonNode = WallpaperNavigationButtonNode(content: .dayNight(isNight: self.isDarkAppearance), dark: true)
-        self.dayNightButtonNode.enableSaturation = true
-        self.editButtonNode = WallpaperNavigationButtonNode(content: .icon(image: UIImage(bundleImageName: "Settings/WallpaperAdjustments"), size: CGSize(width: 28.0, height: 28.0)), dark: true)
-        self.editButtonNode.enableSaturation = true
-        
         self.playButtonPlayImage = generateImage(CGSize(width: 48.0, height: 48.0), rotatedContext: { size, context in
             context.clear(CGRect(origin: CGPoint(), size: size))
             context.setFillColor(UIColor.white.cgColor)
@@ -265,10 +269,7 @@ final class WallpaperGalleryItemNode: GalleryItemNode {
         self.buttonsContainerNode.addSubnode(self.colorsButtonNode)
         self.buttonsContainerNode.addSubnode(self.playButtonNode)
         self.buttonsContainerNode.addSubnode(self.sliderNode)
-        self.buttonsContainerNode.addSubnode(self.cancelButtonNode)
-        self.buttonsContainerNode.addSubnode(self.shareButtonNode)
-        self.buttonsContainerNode.addSubnode(self.dayNightButtonNode)
-        self.buttonsContainerNode.addSubnode(self.editButtonNode)
+        self.buttonsContainerNode.addSubnode(self.toolbarNode)
         
         self.imageNode.addSubnode(self.brightnessNode)
         
@@ -277,10 +278,6 @@ final class WallpaperGalleryItemNode: GalleryItemNode {
         self.patternButtonNode.addTarget(self, action: #selector(self.togglePattern), forControlEvents: .touchUpInside)
         self.colorsButtonNode.addTarget(self, action: #selector(self.toggleColors), forControlEvents: .touchUpInside)
         self.playButtonNode.addTarget(self, action: #selector(self.togglePlay), forControlEvents: .touchUpInside)
-        self.cancelButtonNode.addTarget(self, action: #selector(self.cancelPressed), forControlEvents: .touchUpInside)
-        self.shareButtonNode.addTarget(self, action: #selector(self.actionPressed), forControlEvents: .touchUpInside)
-        self.dayNightButtonNode.addTarget(self, action: #selector(self.dayNightPressed), forControlEvents: .touchUpInside)
-        self.editButtonNode.addTarget(self, action: #selector(self.editPressed), forControlEvents: .touchUpInside)
         
         sliderValueChangedImpl = { [weak self] value in
             if let self {
@@ -460,7 +457,6 @@ final class WallpaperGalleryItemNode: GalleryItemNode {
     
     @objc private func dayNightPressed() {
         self.isDarkAppearance = !self.isDarkAppearance
-        self.dayNightButtonNode.setIsNight(self.isDarkAppearance)
                 
         if let layout = self.validLayout?.0 {
             let offset = CGPoint(x: self.validOffset ?? 0.0, y: 0.0)
@@ -595,6 +591,20 @@ final class WallpaperGalleryItemNode: GalleryItemNode {
         self.source = source
         self.mode = mode
         self.interaction = interaction
+
+        self.toolbarNode.doneButtonType = arguments.toolbarDoneButtonType
+        self.toolbarNode.requiredLevel = arguments.toolbarRequiredLevel
+        self.updateToolbarThemeAndStrings(theme: self.presentationData.theme, strings: self.presentationData.strings)
+        self.toolbarNode.cancel = { [weak self] in
+            if let interaction = self?.interaction {
+                interaction.toolbarCancel()
+            }
+        }
+        self.toolbarNode.done = { [weak self] forBoth in
+            if let interaction = self?.interaction {
+                interaction.toolbarDone(forBoth)
+            }
+        }
         
         if self.arguments.colorPreview != previousArguments.colorPreview {
             if self.arguments.colorPreview {
@@ -614,7 +624,7 @@ final class WallpaperGalleryItemNode: GalleryItemNode {
             let imagePromise = Promise<UIImage?>()
             
             let signal: Signal<(TransformImageArguments) -> DrawingContext?, NoError>
-            let fetchSignal: Signal<FetchResourceSourceType, FetchResourceError>
+            let fetchSignal: Signal<EngineFetchResourceSourceType, EngineFetchResourceError>
             let statusSignal: Signal<EngineMediaResource.FetchStatus, NoError>
             let subtitleSignal: Signal<String?, NoError>
             var actionSignal: Signal<UIBarButtonItem?, NoError> = .single(nil)
@@ -697,16 +707,25 @@ final class WallpaperGalleryItemNode: GalleryItemNode {
                 self.playButtonNode.setIcon(self.playButtonRotateImage)
             }
             
-            self.cancelButtonNode.enableSaturation = isColor
-            self.dayNightButtonNode.enableSaturation = isColor
-            self.editButtonNode.enableSaturation = isColor
-            self.shareButtonNode.enableSaturation = isColor
             self.patternButtonNode.backgroundNode.enableSaturation = isColor
             self.blurButtonNode.backgroundNode.enableSaturation = isColor
             self.motionButtonNode.backgroundNode.enableSaturation = isColor
             self.colorsButtonNode.backgroundNode.enableSaturation = isColor
             self.playButtonNode.enableSaturation = isColor
-                        
+
+            let controlsGlassIsDark = self.presentationData.theme.overallDarkAppearance //!isColor
+            self.controlsGlassIsDark = controlsGlassIsDark
+            self.patternButtonNode.backgroundNode.isDark = controlsGlassIsDark
+            self.blurButtonNode.backgroundNode.isDark = controlsGlassIsDark
+            self.motionButtonNode.backgroundNode.isDark = controlsGlassIsDark
+            self.colorsButtonNode.backgroundNode.isDark = controlsGlassIsDark
+            self.playButtonNode.dark = controlsGlassIsDark
+            self.toolbarNode.dark = controlsGlassIsDark
+            self.blurButtonNode.dark = controlsGlassIsDark
+            self.motionButtonNode.dark = controlsGlassIsDark
+            self.patternButtonNode.dark = controlsGlassIsDark
+            self.colorsButtonNode.dark = controlsGlassIsDark
+            
             var canShare = false
             var canSwitchTheme = false
             var canEdit = false
@@ -719,7 +738,7 @@ final class WallpaperGalleryItemNode: GalleryItemNode {
                         case .builtin, .emoticon:
                             displaySize = CGSize(width: 1308.0, height: 2688.0).fitted(CGSize(width: 1280.0, height: 1280.0)).dividedByScreenScale().integralFloor
                             contentSize = displaySize
-                            signal = settingsBuiltinWallpaperImage(account: self.context.account)
+                            signal = settingsBuiltinWallpaperImage()
                             fetchSignal = .complete()
                             statusSignal = .single(.Local)
                             subtitleSignal = .single(nil)
@@ -875,7 +894,7 @@ final class WallpaperGalleryItemNode: GalleryItemNode {
                     let dimensions = CGSize(width: asset.pixelWidth, height: asset.pixelHeight)
                     contentSize = dimensions
                     displaySize = dimensions.aspectFittedOrSmaller(CGSize(width: 2048.0, height: 2048.0))
-                    signal = photoWallpaper(postbox: context.account.postbox, photoLibraryResource: PhotoLibraryMediaResource(localIdentifier: asset.localIdentifier, uniqueId: Int64.random(in: Int64.min ... Int64.max)))
+                    signal = photoWallpaper(photoLibraryResource: PhotoLibraryMediaResource(localIdentifier: asset.localIdentifier, uniqueId: Int64.random(in: Int64.min ... Int64.max)))
                     fetchSignal = .complete()
                     statusSignal = .single(.Local)
                     subtitleSignal = .single(nil)
@@ -923,7 +942,7 @@ final class WallpaperGalleryItemNode: GalleryItemNode {
                             representations.append(TelegramMediaImageRepresentation(dimensions: PixelDimensions(thumbnailDimensions), resource: thumbnailResource, progressiveSizes: [], immediateThumbnailData: nil, hasVideo: false, isPersonal: false))
                         }
                         representations.append(TelegramMediaImageRepresentation(dimensions: PixelDimensions(imageDimensions), resource: imageResource, progressiveSizes: [], immediateThumbnailData: nil, hasVideo: false, isPersonal: false))
-                        let tmpImage = TelegramMediaImage(imageId: MediaId(namespace: 0, id: 0), representations: representations, immediateThumbnailData: nil, reference: nil, partialReference: nil, flags: [])
+                        let tmpImage = TelegramMediaImage(imageId: EngineMedia.Id(namespace: 0, id: 0), representations: representations, immediateThumbnailData: nil, reference: nil, partialReference: nil, flags: [])
                         
                         signal = chatMessagePhoto(postbox: context.account.postbox, userLocation: .other, photoReference: .standalone(media: tmpImage))
                         fetchSignal = context.engine.resources.fetch(reference: .media(media: .standalone(media: tmpImage), resource: imageResource), userLocation: .other, userContentType: .other)
@@ -949,14 +968,9 @@ final class WallpaperGalleryItemNode: GalleryItemNode {
                 canSwitchTheme = true
             }
             
-            if canSwitchTheme {
-                self.dayNightButtonNode.isHidden = false
-                self.shareButtonNode.isHidden = true
-            } else {
-                self.dayNightButtonNode.isHidden = true
-                self.shareButtonNode.isHidden = !canShare
-            }
-            self.editButtonNode.isHidden = !canEdit
+            self.topCanSwitchTheme = canSwitchTheme
+            self.topCanShare = canShare
+            self.topCanEdit = canEdit
             
             if self.cropNode.supernode == nil {
                 self.imageNode.contentMode = .scaleAspectFill
@@ -1016,6 +1030,7 @@ final class WallpaperGalleryItemNode: GalleryItemNode {
                     strongSelf.blurButtonNode.setEnabled(local)
                     strongSelf.motionButtonNode.setEnabled(local)
                     strongSelf.patternButtonNode.setEnabled(local)
+                    strongSelf.setToolbarDoneEnabled(local)
                 }
             }))
             
@@ -1029,10 +1044,6 @@ final class WallpaperGalleryItemNode: GalleryItemNode {
                     return
                 }
                 strongSelf.statusNode.backgroundNodeColor = color
-                strongSelf.patternButtonNode.buttonColor = color
-                strongSelf.blurButtonNode.buttonColor = color
-                strongSelf.motionButtonNode.buttonColor = color
-                strongSelf.colorsButtonNode.buttonColor = color
             }))
         } else if self.arguments.patternEnabled != previousArguments.patternEnabled {
             self.patternButtonNode.isSelected = self.arguments.patternEnabled
@@ -1067,12 +1078,18 @@ final class WallpaperGalleryItemNode: GalleryItemNode {
             self.updateButtonsLayout(layout: layout, offset: CGPoint(x: offset, y: 0.0), transition: .immediate)
             self.updateMessagesLayout(layout: layout, offset: CGPoint(x: offset, y: 0.0), transition:.immediate)
         }
+        if let (layout, toolbarHeight) = self.validToolbarLayout {
+            self.updateToolbarLayout(layout: layout, toolbarHeight: toolbarHeight, offset: CGPoint(x: offset, y: 0.0), transition: .immediate)
+        }
     }
     
     func updateDismissTransition(_ value: CGFloat) {
         if let (layout, _) = self.validLayout {
             self.updateButtonsLayout(layout: layout, offset: CGPoint(x: 0.0, y: value), transition: .immediate)
             self.updateMessagesLayout(layout: layout, offset: CGPoint(x: 0.0, y: value), transition: .immediate)
+        }
+        if let (layout, toolbarHeight) = self.validToolbarLayout {
+            self.updateToolbarLayout(layout: layout, toolbarHeight: toolbarHeight, offset: CGPoint(x: self.validOffset ?? 0.0, y: value), transition: .immediate)
         }
     }
     
@@ -1297,6 +1314,34 @@ final class WallpaperGalleryItemNode: GalleryItemNode {
         }
         transition.updatePosition(node: self.wrapperNode, position: CGPoint(x: layout.size.width / 2.0 + appliedOffset, y: layout.size.height / 2.0))
     }
+
+    func setToolbarDoneEnabled(_ enabled: Bool) {
+        self.toolbarDoneEnabled = enabled
+        self.toolbarNode.setDoneEnabled(enabled)
+    }
+
+    func setToolbarDoneIsSolid(_ isSolid: Bool, transition: ContainedViewLayoutTransition) {
+        self.toolbarNode.setDoneIsSolid(isSolid, transition: transition)
+    }
+
+    func updateToolbarThemeAndStrings(theme: PresentationTheme, strings: PresentationStrings) {
+        self.toolbarNode.updateThemeAndStrings(theme: theme, strings: strings)
+        self.toolbarNode.setDoneEnabled(self.toolbarDoneEnabled)
+    }
+
+    func updateToolbarLayout(layout: ContainerViewLayout, toolbarHeight: CGFloat, transition: ContainedViewLayoutTransition) {
+        self.validToolbarLayout = (layout, toolbarHeight)
+        self.updateToolbarLayout(layout: layout, toolbarHeight: toolbarHeight, offset: CGPoint(x: self.validOffset ?? 0.0, y: 0.0), transition: transition)
+    }
+
+    private func updateToolbarLayout(layout: ContainerViewLayout, toolbarHeight: CGFloat, offset: CGPoint, transition: ContainedViewLayoutTransition) {
+        let toolbarFrame = CGRect(
+            origin: CGPoint(x: offset.x, y: layout.size.height - toolbarHeight - layout.intrinsicInsets.bottom + offset.y),
+            size: CGSize(width: layout.size.width, height: toolbarHeight + layout.intrinsicInsets.bottom)
+        )
+        transition.updateFrame(node: self.toolbarNode, frame: toolbarFrame)
+        self.toolbarNode.updateLayout(size: CGSize(width: layout.size.width, height: toolbarHeight), layout: layout, transition: transition)
+    }
     
     func updateButtonsLayout(layout: ContainerViewLayout, offset: CGPoint, transition: ContainedViewLayoutTransition) {
         let patternButtonSize = self.patternButtonNode.measure(layout.size)
@@ -1329,10 +1374,7 @@ final class WallpaperGalleryItemNode: GalleryItemNode {
 
         let buttonSpacing: CGFloat = 18.0
         
-        var toolbarHeight: CGFloat = 66.0
-        if let mode = self.mode, case let .peer(peer, _) = mode, case .user = peer {
-            toolbarHeight += 58.0
-        }
+        let toolbarHeight = self.arguments.toolbarHeight
         
         let leftButtonFrame = CGRect(origin: CGPoint(x: floor(layout.size.width / 2.0 - buttonSize.width - buttonSpacing) + offset.x, y: layout.size.height - toolbarHeight - layout.intrinsicInsets.bottom - 54.0 + offset.y + additionalYOffset), size: buttonSize)
         let centerButtonFrame = CGRect(origin: CGPoint(x: floor((layout.size.width - buttonSize.width) / 2.0) + offset.x, y: layout.size.height - toolbarHeight - layout.intrinsicInsets.bottom - 54.0 + offset.y + additionalYOffset), size: buttonSize)
@@ -1363,11 +1405,8 @@ final class WallpaperGalleryItemNode: GalleryItemNode {
         } else {
             sliderFrame = sliderFrame.offsetBy(dx: 0.0, dy: 22.0)
         }
-                
-        let cancelSize = self.cancelButtonNode.measure(layout.size)
-        let cancelFrame = CGRect(origin: CGPoint(x: 16.0 + offset.x, y: 16.0), size: cancelSize)
-        let shareFrame = CGRect(origin: CGPoint(x: layout.size.width - 16.0 - 28.0 + offset.x, y: 16.0), size: CGSize(width: 28.0, height: 28.0))
-        let editFrame = CGRect(origin: CGPoint(x: layout.size.width - 16.0 - 28.0 + offset.x - 46.0, y: 16.0), size: CGSize(width: 28.0, height: 28.0))
+
+        var topCanShare = self.topCanShare
         
         let centerOffset: CGFloat = 32.0
 
@@ -1461,7 +1500,7 @@ final class WallpaperGalleryItemNode: GalleryItemNode {
                 colorsAlpha = 0.0
                 blurAlpha = 0.0
                 playAlpha = 0.0
-                self.shareButtonNode.isHidden = true
+                topCanShare = false
             }
             blurFrame = centerButtonFrame
         }
@@ -1487,10 +1526,70 @@ final class WallpaperGalleryItemNode: GalleryItemNode {
         transition.updateTransformScale(node: self.sliderNode, scale: sliderScale)
         self.sliderNode.updateLayout(size: sliderFrame.size)
         
-        transition.updateFrame(node: self.cancelButtonNode, frame: cancelFrame)
-        transition.updateFrame(node: self.shareButtonNode, frame: shareFrame)
-        transition.updateFrame(node: self.dayNightButtonNode, frame: shareFrame)
-        transition.updateFrame(node: self.editButtonNode, frame: editFrame)
+        let leftControlItems: [GlassControlGroupComponent.Item] = [
+            GlassControlGroupComponent.Item(
+                id: AnyHashable("close"),
+                content: .icon("Navigation/Close"),
+                action: { [weak self] in
+                    self?.cancelPressed()
+                }
+            )
+        ]
+        var rightControlItems: [GlassControlGroupComponent.Item] = []
+        if self.topCanEdit {
+            rightControlItems.append(GlassControlGroupComponent.Item(
+                id: AnyHashable("edit"),
+                content: .icon("Settings/WallpaperAdjustments"),
+                action: { [weak self] in
+                    self?.editPressed()
+                }
+            ))
+        }
+        if self.topCanSwitchTheme {
+            rightControlItems.append(GlassControlGroupComponent.Item(
+                id: AnyHashable("dayNight"),
+                content: .animation(self.isDarkAppearance ? "anim_sun_reverse" : "anim_sun"),
+                action: { [weak self] in
+                    self?.dayNightPressed()
+                }
+            ))
+        } else if topCanShare {
+            rightControlItems.append(GlassControlGroupComponent.Item(
+                id: AnyHashable("share"),
+                content: .icon("Navigation/Share"),
+                action: { [weak self] in
+                    self?.actionPressed()
+                }
+            ))
+        }
+
+        let topButtonSideInset: CGFloat = 16.0
+        let topButtonsSize = self.topButtons.update(
+            transition: ComponentTransition(transition),
+            component: AnyComponent(GlassControlPanelComponent(
+                theme: self.controlsGlassIsDark ? defaultDarkPresentationTheme : self.presentationData.theme,
+                leftItem: GlassControlPanelComponent.Item(
+                    items: leftControlItems,
+                    background: .panel
+                ),
+                centralItem: nil,
+                rightItem: rightControlItems.isEmpty ? nil : GlassControlPanelComponent.Item(
+                    items: rightControlItems,
+                    background: .panel
+                ),
+                centerAlignmentIfPossible: true,
+                isDark: self.controlsGlassIsDark
+            )),
+            environment: {},
+            containerSize: CGSize(width: layout.size.width - topButtonSideInset * 2.0 - layout.safeInsets.left - layout.safeInsets.right, height: 44.0)
+        )
+        let topButtonsFrame = CGRect(origin: CGPoint(x: topButtonSideInset + layout.safeInsets.left + offset.x, y: topButtonSideInset), size: topButtonsSize)
+        if let topButtonsView = self.topButtons.view {
+            if topButtonsView.superview == nil {
+                self.buttonsContainerNode.view.addSubview(topButtonsView)
+            }
+            transition.updateFrame(view: topButtonsView, frame: topButtonsFrame)
+        }
     }
     
     private func updateMessagesLayout(layout: ContainerViewLayout, offset: CGPoint, transition: ContainedViewLayoutTransition) {
@@ -1506,24 +1605,24 @@ final class WallpaperGalleryItemNode: GalleryItemNode {
         }
 
         var items: [ListViewItem] = []
-        var peerId = PeerId(namespace: Namespaces.Peer.CloudUser, id: PeerId.Id._internalFromInt64Value(1))
+        var peerId = EnginePeer.Id(namespace: Namespaces.Peer.CloudUser, id: EnginePeer.Id.Id._internalFromInt64Value(1))
         let otherPeerId = self.context.account.peerId
-        var peers = SimpleDictionary<PeerId, Peer>()
-        var messages = SimpleDictionary<MessageId, Message>()
+        var peers = EngineSimpleDictionary<EnginePeer.Id, EngineRawPeer>()
+        var messages = EngineSimpleDictionary<EngineMessage.Id, EngineRawMessage>()
         
         let replyAuthor = self.presentationData.strings.Appearance_ThemePreview_Chat_2_ReplyName
         
-        var messageAuthor: Peer = TelegramUser(id: peerId, accessHash: nil, firstName: self.presentationData.strings.Appearance_PreviewReplyAuthor, lastName: "", username: nil, phone: nil, photo: [], botInfo: nil, restrictionInfo: nil, flags: [], emojiStatus: nil, usernames: [], storiesHidden: nil, nameColor: .preset(.blue), backgroundEmojiId: nil, profileColor: nil, profileBackgroundEmojiId: nil, subscriberCount: nil, verificationIconFileId: nil)
+        var messageAuthor: EngineRawPeer = TelegramUser(id: peerId, accessHash: nil, firstName: self.presentationData.strings.Appearance_PreviewReplyAuthor, lastName: "", username: nil, phone: nil, photo: [], botInfo: nil, restrictionInfo: nil, flags: [], emojiStatus: nil, usernames: [], storiesHidden: nil, nameColor: .preset(.blue), backgroundEmojiId: nil, profileColor: nil, profileBackgroundEmojiId: nil, subscriberCount: nil, verificationIconFileId: nil)
         let otherAuthor = TelegramUser(id: otherPeerId, accessHash: nil, firstName: replyAuthor, lastName: "", username: nil, phone: nil, photo: [], botInfo: nil, restrictionInfo: nil, flags: [], emojiStatus: nil, usernames: [], storiesHidden: nil, nameColor: .preset(.blue), backgroundEmojiId: nil, profileColor: nil, profileBackgroundEmojiId: nil, subscriberCount: nil, verificationIconFileId: nil)
         peers[otherPeerId] = otherAuthor
         
-        var messageAttributes: [MessageAttribute] = []
+        var messageAttributes: [EngineMessage.Attribute] = []
         if let mode = self.mode, case let .peer(peer, _) = mode, case .channel = peer {
             peerId = peer.id
             messageAuthor = peer._asPeer()
             
-            let replyMessageId = MessageId(peerId: peerId, namespace: 0, id: 3)
-            messages[replyMessageId] = Message(stableId: 3, stableVersion: 0, id: replyMessageId, globallyUniqueId: nil, groupingKey: nil, groupInfo: nil, threadId: nil, timestamp: 66000, flags: [], tags: [], globalTags: [], localTags: [], customTags: [], forwardInfo: nil, author: messageAuthor, text: self.presentationData.strings.WallpaperPreview_ChannelReplyText, attributes: [], media: [], peers: peers, associatedMessages: SimpleDictionary(), associatedMessageIds: [], associatedMedia: [:], associatedThreadInfo: nil, associatedStories: [:])
+            let replyMessageId = EngineMessage.Id(peerId: peerId, namespace: 0, id: 3)
+            messages[replyMessageId] = EngineRawMessage(stableId: 3, stableVersion: 0, id: replyMessageId, globallyUniqueId: nil, groupingKey: nil, groupInfo: nil, threadId: nil, timestamp: 66000, flags: [], tags: [], globalTags: [], localTags: [], customTags: [], forwardInfo: nil, author: messageAuthor, text: self.presentationData.strings.WallpaperPreview_ChannelReplyText, attributes: [], media: [], peers: peers, associatedMessages: EngineSimpleDictionary(), associatedMessageIds: [], associatedMedia: [:], associatedThreadInfo: nil, associatedStories: [:])
             messageAttributes = [ReplyMessageAttribute(messageId: replyMessageId, threadMessageId: nil, quote: nil, isQuote: false, innerSubject: nil)]
         }
         
@@ -1626,19 +1725,19 @@ final class WallpaperGalleryItemNode: GalleryItemNode {
         let theme = self.presentationData.theme
                    
         if !bottomMessageText.isEmpty {
-            let message1 = Message(stableId: 2, stableVersion: 0, id: MessageId(peerId: peerId, namespace: 0, id: 2), globallyUniqueId: nil, groupingKey: nil, groupInfo: nil, threadId: nil, timestamp: 66001, flags: [], tags: [], globalTags: [], localTags: [], customTags: [], forwardInfo: nil, author: peers[otherPeerId], text: bottomMessageText, attributes: [], media: [], peers: peers, associatedMessages: messages, associatedMessageIds: [], associatedMedia: [:], associatedThreadInfo: nil, associatedStories: [:])
+            let message1 = EngineRawMessage(stableId: 2, stableVersion: 0, id: EngineMessage.Id(peerId: peerId, namespace: 0, id: 2), globallyUniqueId: nil, groupingKey: nil, groupInfo: nil, threadId: nil, timestamp: 66001, flags: [], tags: [], globalTags: [], localTags: [], customTags: [], forwardInfo: nil, author: peers[otherPeerId], text: bottomMessageText, attributes: [], media: [], peers: peers, associatedMessages: messages, associatedMessageIds: [], associatedMedia: [:], associatedThreadInfo: nil, associatedStories: [:])
             items.append(self.context.sharedContext.makeChatMessagePreviewItem(context: self.context, messages: [message1], theme: theme, strings: self.presentationData.strings, wallpaper: currentWallpaper, fontSize: self.presentationData.chatFontSize, chatBubbleCorners: self.presentationData.chatBubbleCorners, dateTimeFormat: self.presentationData.dateTimeFormat, nameOrder: self.presentationData.nameDisplayOrder, forcedResourceStatus: nil, tapMessage: nil, clickThroughMessage: nil, backgroundNode: self.nativeNode, availableReactions: nil, accountPeer: nil, isCentered: false, isPreview: true, isStandalone: false, rank: nil, rankRole: nil))
         }
     
         
-        let message2 = Message(stableId: 1, stableVersion: 0, id: MessageId(peerId: peerId, namespace: 0, id: 1), globallyUniqueId: nil, groupingKey: nil, groupInfo: nil, threadId: nil, timestamp: 66000, flags: [.Incoming], tags: [], globalTags: [], localTags: [], customTags: [], forwardInfo: nil, author: peers[peerId], text: topMessageText, attributes: messageAttributes, media: [], peers: peers, associatedMessages: messages, associatedMessageIds: [], associatedMedia: [:], associatedThreadInfo: nil, associatedStories: [:])
+        let message2 = EngineRawMessage(stableId: 1, stableVersion: 0, id: EngineMessage.Id(peerId: peerId, namespace: 0, id: 1), globallyUniqueId: nil, groupingKey: nil, groupInfo: nil, threadId: nil, timestamp: 66000, flags: [.Incoming], tags: [], globalTags: [], localTags: [], customTags: [], forwardInfo: nil, author: peers[peerId], text: topMessageText, attributes: messageAttributes, media: [], peers: peers, associatedMessages: messages, associatedMessageIds: [], associatedMedia: [:], associatedThreadInfo: nil, associatedStories: [:])
         items.append(self.context.sharedContext.makeChatMessagePreviewItem(context: self.context, messages: [message2], theme: theme, strings: self.presentationData.strings, wallpaper: currentWallpaper, fontSize: self.presentationData.chatFontSize, chatBubbleCorners: self.presentationData.chatBubbleCorners, dateTimeFormat: self.presentationData.dateTimeFormat, nameOrder: self.presentationData.nameDisplayOrder, forcedResourceStatus: nil, tapMessage: nil, clickThroughMessage: nil, backgroundNode: self.nativeNode, availableReactions: nil, accountPeer: nil, isCentered: false, isPreview: true, isStandalone: false, rank: nil, rankRole: nil))
         
         if let serviceMessageText {
             let attributedText = convertMarkdownToAttributes(NSAttributedString(string: serviceMessageText))
             let entities = generateChatInputTextEntities(attributedText)
             
-            let message3 = Message(stableId: 0, stableVersion: 0, id: MessageId(peerId: peerId, namespace: 0, id: 0), globallyUniqueId: nil, groupingKey: nil, groupInfo: nil, threadId: nil, timestamp: 66002, flags: [.Incoming], tags: [], globalTags: [], localTags: [], customTags: [], forwardInfo: nil, author: peers[peerId], text: "", attributes: [], media: [TelegramMediaAction(action: .customText(text: attributedText.string, entities: entities, additionalAttributes: nil))], peers: peers, associatedMessages: messages, associatedMessageIds: [], associatedMedia: [:], associatedThreadInfo: nil, associatedStories: [:])
+            let message3 = EngineRawMessage(stableId: 0, stableVersion: 0, id: EngineMessage.Id(peerId: peerId, namespace: 0, id: 0), globallyUniqueId: nil, groupingKey: nil, groupInfo: nil, threadId: nil, timestamp: 66002, flags: [.Incoming], tags: [], globalTags: [], localTags: [], customTags: [], forwardInfo: nil, author: peers[peerId], text: "", attributes: [], media: [TelegramMediaAction(action: .customText(text: attributedText.string, entities: entities, additionalAttributes: nil))], peers: peers, associatedMessages: messages, associatedMessageIds: [], associatedMedia: [:], associatedThreadInfo: nil, associatedStories: [:])
             items.append(self.context.sharedContext.makeChatMessagePreviewItem(context: self.context, messages: [message3], theme: theme, strings: self.presentationData.strings, wallpaper: currentWallpaper, fontSize: self.presentationData.chatFontSize, chatBubbleCorners: self.presentationData.chatBubbleCorners, dateTimeFormat: self.presentationData.dateTimeFormat, nameOrder: self.presentationData.nameDisplayOrder, forcedResourceStatus: nil, tapMessage: nil, clickThroughMessage: nil, backgroundNode: self.nativeNode, availableReactions: nil, accountPeer: nil, isCentered: false, isPreview: true, isStandalone: false, rank: nil, rankRole: nil))
         }
         
@@ -1751,6 +1850,7 @@ final class WallpaperGalleryItemNode: GalleryItemNode {
         
         self.updateButtonsLayout(layout: layout, offset: CGPoint(x: offset, y: 0.0), transition: transition)
         self.updateMessagesLayout(layout: layout, offset: CGPoint(x: offset, y: 0.0), transition: transition)
+        self.updateToolbarLayout(layout: layout, toolbarHeight: self.arguments.toolbarHeight, transition: transition)
         
         self.validLayout = (layout, navigationBarHeight)
     }
@@ -1769,7 +1869,11 @@ final class WallpaperGalleryItemNode: GalleryItemNode {
             return
         }
         
-        let frame = self.dayNightButtonNode.view.convert(self.dayNightButtonNode.bounds, to: self.view)
+        guard let controlsView = self.topButtons.view as? GlassControlPanelComponent.View, let dayNightView = controlsView.rightItemView?.itemView(id: AnyHashable("dayNight")) else {
+            return
+        }
+
+        let frame = dayNightView.convert(dayNightView.bounds, to: self.view)
         let currentTimestamp = Int32(Date().timeIntervalSince1970)
         
         let isDark = self.isDarkAppearance

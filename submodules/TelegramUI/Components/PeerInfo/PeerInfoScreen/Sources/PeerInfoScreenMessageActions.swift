@@ -3,14 +3,13 @@ import UIKit
 import Display
 import AccountContext
 import SwiftSignalKit
-import Postbox
 import TelegramCore
 import TextFormat
 import UndoUI
 import ChatInterfaceState
 
 extension PeerInfoScreenNode {
-    func deleteMessages(messageIds: Set<MessageId>?) {
+    func deleteMessages(messageIds: Set<EngineMessage.Id>?) {
         if let messageIds = messageIds ?? self.state.selectedMessageIds, !messageIds.isEmpty {
             self.activeActionDisposable.set((self.context.sharedContext.chatAvailableMessageActions(engine: self.context.engine, accountPeerId: self.context.account.peerId, messageIds: messageIds, keepUpdated: false)
             |> deliverOnMainQueue).startStrict(next: { [weak self] actions in
@@ -71,7 +70,7 @@ extension PeerInfoScreenNode {
         }
     }
     
-    func forwardMessages(messageIds: Set<MessageId>?) {
+    func forwardMessages(messageIds: Set<EngineMessage.Id>?) {
         if let messageIds = messageIds ?? self.state.selectedMessageIds, !messageIds.isEmpty {
             let peerSelectionController = self.context.sharedContext.makePeerSelectionController(PeerSelectionControllerParams(context: self.context, updatedPresentationData: self.controller?.updatedPresentationData, filter: [.onlyWriteable, .excludeDisabled], hasFilters: true, multipleSelection: true, selectForumThreads: true))
             peerSelectionController.multiplePeersSelected = { [weak self, weak peerSelectionController] peers, peerMap, messageText, mode, forwardOptions, _ in
@@ -85,7 +84,7 @@ extension PeerInfoScreenNode {
                     let inputText = convertMarkdownToAttributes(messageText)
                     for text in breakChatInputText(trimChatInputText(inputText)) {
                         if text.length != 0 {
-                            var attributes: [MessageAttribute] = []
+                            var attributes: [EngineMessage.Attribute] = []
                             let entities = generateTextEntities(text.string, enabledTypes: .all, currentEntities: generateChatInputTextEntities(text))
                             if !entities.isEmpty {
                                 attributes.append(TextEntitiesMessageAttribute(entities: entities))
@@ -95,7 +94,7 @@ extension PeerInfoScreenNode {
                     }
                 }
                 
-                var attributes: [MessageAttribute] = []
+                var attributes: [EngineMessage.Attribute] = []
                 attributes.append(ForwardOptionsMessageAttribute(hideNames: forwardOptions?.hideNames == true, hideCaptions: forwardOptions?.hideCaptions == true))
                 
                 result.append(contentsOf: messageIds.map { messageId -> EnqueueMessage in

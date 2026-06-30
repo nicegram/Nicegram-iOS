@@ -1,7 +1,6 @@
 import Foundation
 import TelegramPresentationData
 import AccountContext
-import Postbox
 import TelegramCore
 import SwiftSignalKit
 import CalendarMessageScreen
@@ -52,7 +51,7 @@ extension ChatControllerImpl {
                     
                     strongSelf.loadingMessage.set(.single(.generic))
                     
-                    let peerId: PeerId
+                    let peerId: EnginePeer.Id
                     let threadId: Int64?
                     switch strongSelf.chatLocation {
                     case let .peer(peerIdValue):
@@ -89,7 +88,7 @@ extension ChatControllerImpl {
                         
                         strongSelf.loadingMessage.set(.single(.generic))
                         
-                        let peerId: PeerId
+                        let peerId: EnginePeer.Id
                         let threadId: Int64?
                         switch strongSelf.chatLocation {
                         case let .peer(peerIdValue):
@@ -210,7 +209,7 @@ extension ChatControllerImpl {
                     
                     self.loadingMessage.set(.single(.generic))
                     
-                    let peerId: PeerId
+                    let peerId: EnginePeer.Id
                     let threadId: Int64?
                     switch self.chatLocation {
                     case let .peer(peerIdValue):

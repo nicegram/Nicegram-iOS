@@ -320,7 +320,7 @@ final class ThemeGridControllerNode: ASDisplayNode {
         
         self.addSubnode(self.gridNode)
         self.gridNode.addSubnode(self.maskNode)
-        self.maskNode.image = PresentationResourcesItemList.cornersImage(presentationData.theme, top: true, bottom: true)
+        self.maskNode.image = PresentationResourcesItemList.cornersImage(presentationData.theme, top: true, bottom: true, glass: true)
         
         let previousEntries = Atomic<[ThemeGridControllerEntry]?>(value: nil)
         let interaction = ThemeGridControllerInteraction(openWallpaper: { [weak self] wallpaper in
@@ -577,7 +577,7 @@ final class ThemeGridControllerNode: ASDisplayNode {
                 
                 let sideInset = max(16.0, floor((layout.size.width - 674.0) / 2.0))
                 var listInsets = layout.safeInsets
-                if layout.size.width >= 375.0 {
+                if layout.size.width >= 320.0 {
                     listInsets.left = sideInset
                     listInsets.right = sideInset
                 }
@@ -596,7 +596,7 @@ final class ThemeGridControllerNode: ASDisplayNode {
                 transition.updateFrame(node: strongSelf.resetDescriptionItemNode, frame: CGRect(origin: CGPoint(x: 0.0, y: gridLayout.contentSize.height + 35.0 + resetLayout.contentSize.height), size: resetDescriptionLayout.contentSize))
                 
                 let maskSideInset = strongSelf.leftOverlayNode.frame.maxX
-                strongSelf.maskNode.frame = CGRect(origin: CGPoint(x: maskSideInset, y: strongSelf.separatorNode.frame.minY + UIScreenPixel + 4.0), size: CGSize(width: layout.size.width - sideInset * 2.0, height: gridLayout.contentSize.height + 6.0))
+                strongSelf.maskNode.frame = CGRect(origin: CGPoint(x: maskSideInset, y: strongSelf.separatorNode.frame.minY + UIScreenPixel), size: CGSize(width: layout.size.width - sideInset * 2.0, height: gridLayout.contentSize.height + 10.0))
             }
         }
     }
@@ -633,7 +633,7 @@ final class ThemeGridControllerNode: ASDisplayNode {
         switch self.mode {
         case .generic:
             self.wallpapersPromise.set(combineLatest(queue: .mainQueue(),
-                telegramWallpapers(postbox: self.context.account.postbox, network: self.context.account.network),
+                self.context.engine.themes.wallpapers(),
                 self.context.sharedContext.accountManager.sharedData(keys: [SharedDataKeys.wallapersState])
             )
             |> map { remoteWallpapers, sharedData -> [Wallpaper] in
@@ -766,22 +766,23 @@ final class ThemeGridControllerNode: ASDisplayNode {
         
         var scrollIndicatorInsets = insets
         
+        let padding: CGFloat = 12.0
         let minSpacing: CGFloat = 6.0
+
         let referenceImageSize: CGSize
         let screenWidth = min(layout.size.width, layout.size.height)
         if screenWidth >= 390.0 {
-            referenceImageSize = CGSize(width: 112.0, height: 150.0)
+            referenceImageSize = CGSize(width: 110.0, height: 150.0)
         } else {
-            referenceImageSize = CGSize(width: 91.0, height: 161.0)
+            referenceImageSize = CGSize(width: 90.0, height: 150.0)
         }
-        
         let sideInset = max(16.0, floor((layout.size.width - 674.0) / 2.0))
         
         let gridWidth = layout.size.width - sideInset * 2.0
         
-        let imageCount = Int((gridWidth - minSpacing * 2.0) / (referenceImageSize.width))
-        let imageSize = referenceImageSize.aspectFilled(CGSize(width: floor((gridWidth - CGFloat(imageCount + 1) * minSpacing) / CGFloat(imageCount)), height: referenceImageSize.height))
-        let spacing = floor((gridWidth - CGFloat(imageCount) * imageSize.width) / CGFloat(imageCount + 1))
+        let imageCount = Int((gridWidth - padding * 2.0) / (referenceImageSize.width))
+        let imageSize = referenceImageSize.aspectFilled(CGSize(width: floorToScreenPixels((gridWidth - padding * 2.0 - CGFloat(imageCount - 1) * minSpacing) / CGFloat(imageCount)), height: referenceImageSize.height))
+        let spacing = floorToScreenPixels((gridWidth - padding * 2.0 - CGFloat(imageCount) * imageSize.width) / CGFloat(imageCount - 1))
         
         let makeColorLayout = self.colorItemNode.asyncLayout()
         let makeGalleryLayout = (self.galleryItemNode as? ItemListActionItemNode)?.asyncLayout()
@@ -790,7 +791,7 @@ final class ThemeGridControllerNode: ASDisplayNode {
         let makeDescriptionLayout = self.descriptionItemNode.asyncLayout()
         
         var listInsets = insets
-        if layout.size.width >= 375.0 {
+        if layout.size.width >= 320.0 {
             listInsets.left = sideInset
             listInsets.right = sideInset
             if self.leftOverlayNode.supernode == nil {
@@ -850,10 +851,10 @@ final class ThemeGridControllerNode: ASDisplayNode {
         }
         let buttonOffset = buttonInset + 10.0
         
-        transition.updateFrame(node: self.backgroundNode, frame: CGRect(origin: CGPoint(x: 0.0, y: -buttonOffset - 500.0), size: CGSize(width: layout.size.width, height: buttonInset + 504.0)))
+        transition.updateFrame(node: self.backgroundNode, frame: CGRect(origin: CGPoint(x: 0.0, y: -buttonOffset - 500.0), size: CGSize(width: layout.size.width, height: buttonInset + 500.0)))
         transition.updateFrame(node: self.separatorNode, frame: CGRect(origin: CGPoint(x: 0.0, y: -buttonOffset + buttonInset - UIScreenPixel), size: CGSize(width: layout.size.width, height: UIScreenPixel)))
         
-        var originY = -buttonOffset + buttonTopInset
+        var originY = -buttonOffset + buttonTopInset - 4.0
         if !isChannel {
             transition.updateFrame(node: self.colorItemNode, frame: CGRect(origin: CGPoint(x: 0.0, y: originY), size: colorLayout.contentSize))
             originY += colorLayout.contentSize.height
@@ -876,7 +877,9 @@ final class ThemeGridControllerNode: ASDisplayNode {
         self.rightOverlayNode.frame = CGRect(x: layout.size.width - listInsets.right, y: -buttonOffset, width: listInsets.right, height: buttonTopInset + colorLayout.contentSize.height + galleryLayout.contentSize.height + 10000.0)
         
         insets.top += spacing + buttonInset
-        listInsets.top = insets.top
+        listInsets.top = insets.top + 4.0
+        listInsets.left += 3.0
+        listInsets.right += 3.0
         
         if self.currentState.editing {
             let panelHeight: CGFloat

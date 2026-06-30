@@ -1,14 +1,13 @@
 import Foundation
 import UIKit
 import SwiftSignalKit
-import Postbox
 import TelegramCore
 import AccountContext
 
 final class AutomaticBusinessMessageSetupChatContents: ChatCustomContentsProtocol {
     private final class PendingMessageContext {
         let disposable = MetaDisposable()
-        var message: Message?
+        var message: EngineRawMessage?
         
         init() {
         }
@@ -21,13 +20,13 @@ final class AutomaticBusinessMessageSetupChatContents: ChatCustomContentsProtoco
         private var shortcut: String
         private var shortcutId: Int32?
         
-        private(set) var mergedHistoryView: MessageHistoryView?
-        private var sourceHistoryView: MessageHistoryView?
-        
+        private(set) var mergedHistoryView: EngineRawMessageHistoryView?
+        private var sourceHistoryView: EngineRawMessageHistoryView?
+
         private var pendingMessages: [PendingMessageContext] = []
         private var historyViewDisposable: Disposable?
         private var pendingHistoryViewDisposable: Disposable?
-        let historyViewStream = ValuePipe<(MessageHistoryView, ViewUpdateType)>()
+        let historyViewStream = ValuePipe<(EngineRawMessageHistoryView, EngineViewUpdateType)>()
         private var nextUpdateIsHoleFill: Bool = false
         
         init(queue: Queue, context: AccountContext, shortcut: String, shortcutId: Int32?) {
@@ -98,17 +97,17 @@ final class AutomaticBusinessMessageSetupChatContents: ChatCustomContentsProtoco
             }
         }
         
-        private func updateHistoryView(updateType: ViewUpdateType) {
+        private func updateHistoryView(updateType: EngineViewUpdateType) {
             var entries = self.sourceHistoryView?.entries ?? []
             for pendingMessage in self.pendingMessages {
                 if let message = pendingMessage.message {
                     if !entries.contains(where: { $0.message.stableId == message.stableId }) {
-                        entries.append(MessageHistoryEntry(
+                        entries.append(EngineRawMessageHistoryEntry(
                             message: message,
                             isRead: true,
                             location: nil,
                             monthLocation: nil,
-                            attributes: MutableMessageHistoryEntryAttributes(
+                            attributes: EngineRawMutableMessageHistoryEntryAttributes(
                                 authorIsContact: false
                             )
                         ))
@@ -116,8 +115,8 @@ final class AutomaticBusinessMessageSetupChatContents: ChatCustomContentsProtoco
                 }
             }
             entries.sort(by: { $0.message.index < $1.message.index })
-            
-            let mergedHistoryView = MessageHistoryView(tag: nil, namespaces: .just(Namespaces.Message.allQuickReply), entries: entries, holeEarlier: false, holeLater: false, isLoading: false)
+
+            let mergedHistoryView = EngineRawMessageHistoryView(tag: nil, namespaces: .just(Namespaces.Message.allQuickReply), entries: entries, holeEarlier: false, holeLater: false, isLoading: false)
             self.mergedHistoryView = mergedHistoryView
             
             self.historyViewStream.putNext((mergedHistoryView, updateType))
@@ -184,7 +183,7 @@ final class AutomaticBusinessMessageSetupChatContents: ChatCustomContentsProtoco
     
     var kind: ChatCustomContentsKind
 
-    var historyView: Signal<(MessageHistoryView, ViewUpdateType), NoError> {
+    var historyView: Signal<(EngineRawMessageHistoryView, EngineViewUpdateType), NoError> {
         return self.impl.signalWith({ impl, subscriber in
             if let mergedHistoryView = impl.mergedHistoryView {
                 subscriber.putNext((mergedHistoryView, .Initial))

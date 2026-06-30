@@ -3,7 +3,6 @@ import UIKit
 import AsyncDisplayKit
 import Display
 import SwiftSignalKit
-import Postbox
 import TelegramCore
 import AccountContext
 import TelegramPresentationData
@@ -249,6 +248,7 @@ private final class GiftAttributeListContextItemNode: ASDisplayNode, ContextMenu
         self.scrollNode.view.alwaysBounceVertical = false
         self.scrollNode.view.showsHorizontalScrollIndicator = false
         self.scrollNode.view.scrollIndicatorInsets = UIEdgeInsets(top: 0.0, left: 0.0, bottom: 5.0, right: 0.0)
+        self.scrollNode.view.scrollsToTop = false
     }
     
     func scrollViewDidScroll(_ scrollView: UIScrollView) {
@@ -518,20 +518,20 @@ private final class GiftAttributeListContextItemNode: ASDisplayNode, ContextMenu
 }
 
 
-private func stringTokens(_ string: String) -> [ValueBoxKey] {
+private func stringTokens(_ string: String) -> [EngineDataBuffer] {
     let nsString = string.folding(options: .diacriticInsensitive, locale: .current).lowercased() as NSString
     
     let flag = UInt(kCFStringTokenizerUnitWord)
     let tokenizer = CFStringTokenizerCreate(kCFAllocatorDefault, nsString, CFRangeMake(0, nsString.length), flag, CFLocaleCopyCurrent())
     var tokenType = CFStringTokenizerAdvanceToNextToken(tokenizer)
-    var tokens: [ValueBoxKey] = []
+    var tokens: [EngineDataBuffer] = []
     
-    var addedTokens = Set<ValueBoxKey>()
+    var addedTokens = Set<EngineDataBuffer>()
     while tokenType != [] {
         let currentTokenRange = CFStringTokenizerGetCurrentTokenRange(tokenizer)
         
         if currentTokenRange.location >= 0 && currentTokenRange.length != 0 {
-            let token = ValueBoxKey(length: currentTokenRange.length * 2)
+            let token = EngineDataBuffer(length: currentTokenRange.length * 2)
             nsString.getCharacters(token.memory.assumingMemoryBound(to: unichar.self), range: NSMakeRange(currentTokenRange.location, currentTokenRange.length))
             if !addedTokens.contains(token) {
                 tokens.append(token)
@@ -544,7 +544,7 @@ private func stringTokens(_ string: String) -> [ValueBoxKey] {
     return tokens
 }
 
-private func matchStringTokens(_ tokens: [ValueBoxKey], with other: [ValueBoxKey]) -> Bool {
+private func matchStringTokens(_ tokens: [EngineDataBuffer], with other: [EngineDataBuffer]) -> Bool {
     if other.isEmpty {
         return false
     } else if other.count == 1 {

@@ -1,12 +1,11 @@
 import Foundation
-import Postbox
 import SwiftSignalKit
 import TelegramCore
 
 public enum TotalUnreadCountDisplayStyle: Int32 {
     case filtered = 0
     
-    public var category: ChatListTotalUnreadStateCategory {
+    public var category: EngineChatListTotalUnreadStateCategory {
         switch self {
             case .filtered:
                 return .filtered
@@ -18,7 +17,7 @@ public enum TotalUnreadCountDisplayCategory: Int32 {
     case chats = 0
     case messages = 1
     
-    public var statsType: ChatListTotalUnreadStateStats {
+    public var statsType: EngineChatListTotalUnreadStateStats {
         switch self {
             case .chats:
                 return .chats
@@ -34,7 +33,7 @@ public struct InAppNotificationSettings: Codable, Equatable {
     public var displayPreviews: Bool
     public var totalUnreadCountDisplayStyle: TotalUnreadCountDisplayStyle
     public var totalUnreadCountDisplayCategory: TotalUnreadCountDisplayCategory
-    public var totalUnreadCountIncludeTags: PeerSummaryCounterTags
+    public var totalUnreadCountIncludeTags: EnginePeerSummaryCounterTags
     public var displayNameOnLockscreen: Bool
     public var displayNotificationsFromAllAccounts: Bool
     public var customSound: String?
@@ -43,7 +42,7 @@ public struct InAppNotificationSettings: Codable, Equatable {
         return InAppNotificationSettings(playSounds: true, vibrate: false, displayPreviews: true, totalUnreadCountDisplayStyle: .filtered, totalUnreadCountDisplayCategory: .messages, totalUnreadCountIncludeTags: .all, displayNameOnLockscreen: true, displayNotificationsFromAllAccounts: true, customSound: nil)
     }
     
-    public init(playSounds: Bool, vibrate: Bool, displayPreviews: Bool, totalUnreadCountDisplayStyle: TotalUnreadCountDisplayStyle, totalUnreadCountDisplayCategory: TotalUnreadCountDisplayCategory, totalUnreadCountIncludeTags: PeerSummaryCounterTags, displayNameOnLockscreen: Bool, displayNotificationsFromAllAccounts: Bool, customSound: String?) {
+    public init(playSounds: Bool, vibrate: Bool, displayPreviews: Bool, totalUnreadCountDisplayStyle: TotalUnreadCountDisplayStyle, totalUnreadCountDisplayCategory: TotalUnreadCountDisplayCategory, totalUnreadCountIncludeTags: EnginePeerSummaryCounterTags, displayNameOnLockscreen: Bool, displayNotificationsFromAllAccounts: Bool, customSound: String?) {
         self.playSounds = playSounds
         self.vibrate = vibrate
         self.displayPreviews = displayPreviews
@@ -64,9 +63,9 @@ public struct InAppNotificationSettings: Codable, Equatable {
         self.totalUnreadCountDisplayStyle = TotalUnreadCountDisplayStyle(rawValue: try container.decode(Int32.self, forKey: "cds")) ?? .filtered
         self.totalUnreadCountDisplayCategory = TotalUnreadCountDisplayCategory(rawValue: try container.decodeIfPresent(Int32.self, forKey: "totalUnreadCountDisplayCategory") ?? 1) ?? .messages
         if let value = try container.decodeIfPresent(Int32.self, forKey: "totalUnreadCountIncludeTags_2") {
-            self.totalUnreadCountIncludeTags = PeerSummaryCounterTags(rawValue: value)
+            self.totalUnreadCountIncludeTags = EnginePeerSummaryCounterTags(rawValue: value)
         } else if let value = try container.decodeIfPresent(Int32.self, forKey: "totalUnreadCountIncludeTags") {
-            var resultTags: PeerSummaryCounterTags = []
+            var resultTags: EnginePeerSummaryCounterTags = []
             for legacyTag in LegacyPeerSummaryCounterTags(rawValue: value) {
                 if legacyTag == .regularChatsAndPrivateGroups {
                     resultTags.insert(.contact)
@@ -113,7 +112,7 @@ public func updateInAppNotificationSettingsInteractively(accountManager: Account
             } else {
                 currentSettings = InAppNotificationSettings.defaultSettings
             }
-            return PreferencesEntry(f(currentSettings))
+            return EnginePreferencesEntry(f(currentSettings))
         })
     }
 }

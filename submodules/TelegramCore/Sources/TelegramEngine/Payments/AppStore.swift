@@ -202,10 +202,6 @@ func _internal_sendAppStoreReceipt(postbox: Postbox, network: Network, stateMana
     }
 }
 
-public enum RestoreAppStoreReceiptError {
-    case generic
-}
-
 func _internal_canPurchasePremium(postbox: Postbox, network: Network, purpose: AppStoreTransactionPurpose) -> Signal<Bool, NoError> {
     return apiInputStorePaymentPurpose(postbox: postbox, purpose: purpose)
     |> mapToSignal { purpose -> Signal<Bool, NoError> in

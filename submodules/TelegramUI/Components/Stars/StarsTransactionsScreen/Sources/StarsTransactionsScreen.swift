@@ -9,7 +9,6 @@ import ComponentDisplayAdapters
 import TelegramPresentationData
 import AccountContext
 import TelegramCore
-import Postbox
 import MultilineTextComponent
 import BalancedTextComponent
 import Markdown
@@ -634,7 +633,7 @@ final class StarsTransactionsScreenComponent: Component {
                 starTransition.setFrame(view: topBalanceIconView, frame: topBalanceIconFrame)
             }
 
-            contentHeight += 181.0
+            contentHeight += 197.0
             
             let descriptionSize = self.descriptionView.update(
                 transition: .immediate,

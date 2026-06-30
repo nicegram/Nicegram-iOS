@@ -16,7 +16,6 @@ import Display
 import AccountContext
 import TelegramPresentationData
 import TelegramCore
-import Postbox
 import PhoneNumberFormat
 import ItemListUI
 import SwiftSignalKit
@@ -161,7 +160,7 @@ func settingsItems(data: PeerInfoScreenData?, context: AccountContext, presentat
                         return context.engine.stickers.resolveInlineStickers(fileIds: fileIds)
                     }
                 ))
-                let member: PeerInfoMember = .account(peer: RenderedPeer(peer: peer))
+                let member: PeerInfoMember = .account(peer: EngineRenderedPeer(peer: peer))
                 items[.accounts]!.append(PeerInfoScreenMemberItem(id: member.id, context: mappedContext, enclosingPeer: nil, member: member, badge: badgeCount > 0 ? "\(compactNumericCountString(Int(badgeCount), decimalSeparator: presentationData.dateTimeFormat.decimalSeparator))" : nil, isAccount: true, action: { action in
                     switch action {
                     case .open:

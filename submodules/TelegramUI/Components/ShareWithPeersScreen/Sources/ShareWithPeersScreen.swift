@@ -768,7 +768,7 @@ final class ShareWithPeersScreenComponent: Component {
                 })
             } else if peer.id.namespace == Namespaces.Peer.CloudChannel {
                 let participants: Signal<[EnginePeer], NoError> = Signal { subscriber in
-                    let (disposable, _) = context.peerChannelMemberCategoriesContextsManager.recent(engine: context.engine, postbox: context.account.postbox, network: context.account.network, accountPeerId: context.account.peerId, peerId: peer.id, requestUpdate: true, count: 200, updated: { list in
+                    let (disposable, _) = context.peerChannelMemberCategoriesContextsManager.recent(engine: context.engine, accountPeerId: context.account.peerId, peerId: peer.id, requestUpdate: true, count: 200, updated: { list in
                         var peers: [EnginePeer] = []
                         for item in list.list {
                             if item.peer.id == context.account.peerId {
@@ -2766,9 +2766,9 @@ final class ShareWithPeersScreenComponent: Component {
                 transition: transition,
                 component: AnyComponent(GlassBarButtonComponent(
                     size: CGSize(width: 44.0, height: 44.0),
-                    backgroundColor: environment.theme.rootController.navigationBar.glassBarButtonBackgroundColor,
+                    backgroundColor: nil,
                     isDark: environment.theme.overallDarkAppearance,
-                    state: .generic,
+                    state: .glass,
                     component: AnyComponentWithIdentity(id: "close", component: AnyComponent(
                         BundleIconComponent(
                             name: "Navigation/Close",

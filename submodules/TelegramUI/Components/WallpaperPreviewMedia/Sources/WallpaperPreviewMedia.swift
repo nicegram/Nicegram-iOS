@@ -1,6 +1,5 @@
 import Foundation
 import UIKit
-import Postbox
 import TelegramCore
 
 public enum WallpaperPreviewMediaContent: Equatable {
@@ -12,11 +11,11 @@ public enum WallpaperPreviewMediaContent: Equatable {
     case emoticon(String)
 }
 
-public final class WallpaperPreviewMedia: Media {
-    public var id: MediaId? {
+public final class WallpaperPreviewMedia: EngineRawMedia {
+    public var id: EngineMedia.Id? {
         return nil
     }
-    public let peerIds: [PeerId] = []
+    public let peerIds: [EnginePeer.Id] = []
     
     public let content: WallpaperPreviewMediaContent
     
@@ -24,14 +23,14 @@ public final class WallpaperPreviewMedia: Media {
         self.content = content
     }
     
-    public init(decoder: PostboxDecoder) {
+    public init(decoder: EnginePostboxDecoder) {
         self.content = .color(.clear)
     }
     
-    public func encode(_ encoder: PostboxEncoder) {
+    public func encode(_ encoder: EnginePostboxEncoder) {
     }
     
-    public func isEqual(to other: Media) -> Bool {
+    public func isEqual(to other: EngineRawMedia) -> Bool {
         guard let other = other as? WallpaperPreviewMedia else {
             return false
         }
@@ -43,7 +42,7 @@ public final class WallpaperPreviewMedia: Media {
         return true
     }
     
-    public func isSemanticallyEqual(to other: Media) -> Bool {
+    public func isSemanticallyEqual(to other: EngineRawMedia) -> Bool {
         return self.isEqual(to: other)
     }
 }
@@ -73,11 +72,11 @@ public extension WallpaperPreviewMedia {
     }
 }
 
-public final class UniqueGiftPreviewMedia: Media {
-    public var id: MediaId? {
+public final class UniqueGiftPreviewMedia: EngineRawMedia {
+    public var id: EngineMedia.Id? {
         return nil
     }
-    public let peerIds: [PeerId] = []
+    public let peerIds: [EnginePeer.Id] = []
     
     public let content: StarGift.UniqueGift?
     
@@ -85,14 +84,14 @@ public final class UniqueGiftPreviewMedia: Media {
         self.content = content
     }
     
-    public init(decoder: PostboxDecoder) {
+    public init(decoder: EnginePostboxDecoder) {
         self.content = nil
     }
     
-    public func encode(_ encoder: PostboxEncoder) {
+    public func encode(_ encoder: EnginePostboxEncoder) {
     }
     
-    public func isEqual(to other: Media) -> Bool {
+    public func isEqual(to other: EngineRawMedia) -> Bool {
         guard let other = other as? UniqueGiftPreviewMedia else {
             return false
         }
@@ -104,17 +103,17 @@ public final class UniqueGiftPreviewMedia: Media {
         return true
     }
     
-    public func isSemanticallyEqual(to other: Media) -> Bool {
+    public func isSemanticallyEqual(to other: EngineRawMedia) -> Bool {
         return self.isEqual(to: other)
     }
 }
 
 
-public final class GiftAuctionPreviewMedia: Media {
-    public var id: MediaId? {
+public final class GiftAuctionPreviewMedia: EngineRawMedia {
+    public var id: EngineMedia.Id? {
         return nil
     }
-    public let peerIds: [PeerId] = []
+    public let peerIds: [EnginePeer.Id] = []
     
     public let content: StarGift.Gift?
     public let endTime: Int32
@@ -124,15 +123,15 @@ public final class GiftAuctionPreviewMedia: Media {
         self.endTime = endTime
     }
     
-    public init(decoder: PostboxDecoder) {
+    public init(decoder: EnginePostboxDecoder) {
         self.content = nil
         self.endTime = 0
     }
     
-    public func encode(_ encoder: PostboxEncoder) {
+    public func encode(_ encoder: EnginePostboxEncoder) {
     }
     
-    public func isEqual(to other: Media) -> Bool {
+    public func isEqual(to other: EngineRawMedia) -> Bool {
         guard let other = other as? GiftAuctionPreviewMedia else {
             return false
         }
@@ -144,7 +143,7 @@ public final class GiftAuctionPreviewMedia: Media {
         return true
     }
     
-    public func isSemanticallyEqual(to other: Media) -> Bool {
+    public func isSemanticallyEqual(to other: EngineRawMedia) -> Bool {
         return self.isEqual(to: other)
     }
 }

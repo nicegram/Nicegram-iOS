@@ -11,7 +11,7 @@ let telegramThemeFormat = "ios"
 let telegramThemeFileExtension = "tgios-theme"
 #endif
 
-public func telegramThemes(postbox: Postbox, network: Network, accountManager: AccountManager<TelegramAccountManagerTypes>?, forceUpdate: Bool = false) -> Signal<[TelegramTheme], NoError> {
+func _internal_telegramThemes(postbox: Postbox, network: Network, accountManager: AccountManager<TelegramAccountManagerTypes>?, forceUpdate: Bool = false) -> Signal<[TelegramTheme], NoError> {
     let fetch: ([TelegramTheme]?, Int64?) -> Signal<[TelegramTheme], NoError> = { current, hash in
         network.request(Api.functions.account.getThemes(format: telegramThemeFormat, hash: hash ?? 0))
         |> retryRequest
@@ -145,7 +145,7 @@ private func saveUnsaveTheme(account: Account, accountManager: AccountManager<Te
             return .complete()
         }
         |> mapToSignal { _ -> Signal<Void, NoError> in
-            return telegramThemes(postbox: account.postbox, network: account.network, accountManager: accountManager, forceUpdate: true)
+            return _internal_telegramThemes(postbox: account.postbox, network: account.network, accountManager: accountManager, forceUpdate: true)
             |> take(1)
             |> mapToSignal { _ -> Signal<Void, NoError> in
                 return .complete()
@@ -542,7 +542,7 @@ func managedThemesUpdates(accountManager: AccountManager<TelegramAccountManagerT
                                 }
                                 transaction.replaceOrderedItemListItems(collectionId: Namespaces.OrderedItemList.CloudThemes, items: updatedEntries)
                             } else {
-                                let _ = (telegramThemes(postbox: postbox, network: network, accountManager: accountManager, forceUpdate: true)
+                                let _ = (_internal_telegramThemes(postbox: postbox, network: network, accountManager: accountManager, forceUpdate: true)
                                 |> take(1)).start()
                             }
                         }.start()

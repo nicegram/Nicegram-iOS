@@ -4,7 +4,6 @@ import AsyncDisplayKit
 import Display
 import ComponentFlow
 import SwiftSignalKit
-import Postbox
 import TelegramCore
 import Markdown
 import TextFormat
@@ -486,18 +485,18 @@ private final class CreateLinkSheetComponent: CombinedComponent {
                 }
             }
             
-            var attributes: [MessageAttribute] = []
+            var attributes: [EngineMessage.Attribute] = []
             attributes.append(TextEntitiesMessageAttribute(entities: [.init(range: 0 ..< (text as NSString).length, type: .Url)]))
             if !self.dismissed {
                 attributes.append(WebpagePreviewMessageAttribute(leadingPreview: !self.positionBelowText, forceLargeMedia: self.largeMedia ?? webpageHasLargeMedia, isManuallyAdded: false, isSafe: true))
             }
-            
-            let peerId = PeerId(namespace: Namespaces.Peer.CloudUser, id: PeerId.Id._internalFromInt64Value(1))
-            let message = Message(stableId: 1, stableVersion: 0, id: MessageId(peerId: peerId, namespace: 0, id: 1), globallyUniqueId: nil, groupingKey: nil, groupInfo: nil, threadId: nil, timestamp: 0, flags: [.Incoming], tags: [], globalTags: [], localTags: [], customTags: [], forwardInfo: nil, author: nil, text: text, attributes: attributes, media: effectiveMedia.flatMap { [$0] } ?? [], peers: SimpleDictionary(), associatedMessages: SimpleDictionary(), associatedMessageIds: [], associatedMedia: [:], associatedThreadInfo: nil, associatedStories: [:])
+
+            let peerId = EnginePeer.Id(namespace: Namespaces.Peer.CloudUser, id: EnginePeer.Id.Id._internalFromInt64Value(1))
+            let message = EngineRawMessage(stableId: 1, stableVersion: 0, id: EngineMessage.Id(peerId: peerId, namespace: 0, id: 1), globallyUniqueId: nil, groupingKey: nil, groupInfo: nil, threadId: nil, timestamp: 0, flags: [.Incoming], tags: [], globalTags: [], localTags: [], customTags: [], forwardInfo: nil, author: nil, text: text, attributes: attributes, media: effectiveMedia.flatMap { [$0] } ?? [], peers: EngineSimpleDictionary(), associatedMessages: EngineSimpleDictionary(), associatedMessageIds: [], associatedMedia: [:], associatedThreadInfo: nil, associatedStories: [:])
             
             
             let completion = controller.completion
-            let renderer = DrawingMessageRenderer(context: self.context, messages: [message], parentView: controller.view, isLink: true)
+            let renderer = DrawingMessageRenderer(context: self.context, messages: [EngineMessage(message)], parentView: controller.view, isLink: true)
             renderer.render(completion: { result in
                 completion(
                     CreateLinkScreen.Result(

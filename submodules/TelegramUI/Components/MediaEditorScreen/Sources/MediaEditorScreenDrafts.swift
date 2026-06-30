@@ -3,7 +3,6 @@ import UIKit
 import Display
 import CoreLocation
 import Photos
-import Postbox
 import TelegramCore
 import AccountContext
 import MediaEditor
@@ -182,7 +181,7 @@ extension MediaEditorScreenImpl {
                         values: values,
                         caption: caption,
                         privacy: privacy,
-                        forwardInfo: forwardSource.flatMap { StoryId(peerId: $0.0.id, id: $0.1.id) },
+                        forwardInfo: forwardSource.flatMap { EngineStoryId(peerId: $0.0.id, id: $0.1.id) },
                         timestamp: timestamp,
                         location: location,
                         expiresOn: expiresOn

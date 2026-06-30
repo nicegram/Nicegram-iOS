@@ -126,7 +126,7 @@ private enum ChatListRecentEntry: Comparable, Identifiable {
         peerSelected: @escaping (EnginePeer, Int64?, Bool, OpenPeerAction) -> Void,
         disabledPeerSelected: @escaping (EnginePeer, Int64?, ChatListDisabledPeerReason) -> Void,
         peerContextAction: ((EnginePeer, ChatListSearchContextActionSource, ASDisplayNode, ContextGesture?, CGPoint?) -> Void)?,
-        clearRecentlySearchedPeers: @escaping () -> Void,
+        clearRecentlySearchedPeers: @escaping (ASDisplayNode) -> Void,
         deletePeer: @escaping (EnginePeer.Id) -> Void,
         animationCache: AnimationCache,
         animationRenderer: MultiAnimationRenderer,
@@ -294,8 +294,8 @@ private enum ChatListRecentEntry: Comparable, Identifiable {
                 } else if case .globalPosts = key {
                     header = ChatListSearchItemHeader(type: .text(strings.ChatList_HeaderPublicPosts, 0), theme: theme, strings: strings, actionTitle: nil, action: nil)
                 } else {
-                    header = ChatListSearchItemHeader(type: .recentPeers, theme: theme, strings: strings, actionTitle: strings.WebSearch_RecentSectionClear, action: { _ in
-                        clearRecentlySearchedPeers()
+                    header = ChatListSearchItemHeader(type: .recentPeers, theme: theme, strings: strings, actionTitle: strings.WebSearch_RecentSectionClear, action: { sourceNode in
+                        clearRecentlySearchedPeers(sourceNode)
                     })
                 }
             
@@ -1334,7 +1334,7 @@ private func chatListSearchContainerPreparedRecentTransition(
     peerSelected: @escaping (EnginePeer, Int64?, Bool, OpenPeerAction) -> Void,
     disabledPeerSelected: @escaping (EnginePeer, Int64?, ChatListDisabledPeerReason) -> Void,
     peerContextAction: ((EnginePeer, ChatListSearchContextActionSource, ASDisplayNode, ContextGesture?, CGPoint?) -> Void)?,
-    clearRecentlySearchedPeers: @escaping () -> Void,
+    clearRecentlySearchedPeers: @escaping (ASDisplayNode) -> Void,
     deletePeer: @escaping (EnginePeer.Id) -> Void,
     animationCache: AnimationCache,
     animationRenderer: MultiAnimationRenderer,
@@ -2106,7 +2106,7 @@ final class ChatListSearchListPaneNode: ASDisplayNode, ChatListSearchPaneNode {
                 let queryTokens = stringIndexTokens(query ?? "", transliteration: .combined)
                 
                 func messageMatchesTokens(message: EngineMessage, tokens: [ValueBoxKey]) -> Bool {
-                    for media in message.media {
+                    for media in message.effectiveMedia {
                         if let file = media as? TelegramMediaFile {
                             if let fileName = file.fileName {
                                 if matchStringIndexTokens(stringIndexTokens(fileName, transliteration: .none), with: tokens) {
@@ -2732,7 +2732,7 @@ final class ChatListSearchListPaneNode: ASDisplayNode, ChatListSearchPaneNode {
                 }
             } else {
                 if !finalQuery.isEmpty {
-                    addAppLogEvent(postbox: context.account.postbox, type: "search_global_query")
+                    context.engine.accountData.addAppLogEvent(type: "search_global_query")
                 }
                 
                 let searchSignals: [Signal<(SearchMessagesResult, SearchMessagesState), NoError>]
@@ -3517,6 +3517,7 @@ final class ChatListSearchListPaneNode: ASDisplayNode, ChatListSearchPaneNode {
         }, openActiveSessions: {
         }, openBirthdaySetup: {
         }, performActiveSessionAction: { _, _ in
+        }, performBotConnectionReviewAction: { _, _ in
         }, openChatFolderUpdates: {
         }, hideChatFolderUpdates: {
         }, openStories: { [weak self] subject, sourceNode in
@@ -4523,8 +4524,8 @@ final class ChatListSearchListPaneNode: ASDisplayNode, ChatListSearchPaneNode {
                     } else {
                         gesture?.cancel()
                     }
-                }, clearRecentlySearchedPeers: {
-                    interaction.clearRecentSearch()
+                }, clearRecentlySearchedPeers: { sourceNode in
+                    interaction.clearRecentSearch(sourceNode)
                 }, deletePeer: { peerId in
                     let _ = context.engine.peers.removeRecentlySearchedPeer(peerId: peerId).startStandalone()
                 }, animationCache: strongSelf.animationCache, animationRenderer: strongSelf.animationRenderer, openStories: { peerId, avatarNode in
@@ -5814,6 +5815,7 @@ public final class ChatListSearchShimmerNode: ASDisplayNode {
             }, present: { _ in }, openForumThread: { _, _ in }, openStorageManagement: {}, openPasswordSetup: {}, openPremiumIntro: {}, openPremiumGift: { _, _ in }, openPremiumManagement: {}, openActiveSessions: {
             }, openBirthdaySetup: {
             }, performActiveSessionAction: { _, _ in
+            }, performBotConnectionReviewAction: { _, _ in
             }, openChatFolderUpdates: {}, hideChatFolderUpdates: {
             }, openStories: { _, _ in
             }, openStarsTopup: { _ in
@@ -6540,10 +6542,10 @@ private final class EmptyResultsButton: Component {
                 transition: transition,
                 component: AnyComponent(ButtonComponent(
                     background: ButtonComponent.Background(
+                        style: .glass,
                         color: component.theme.list.itemCheckColors.fillColor,
                         foreground: component.theme.list.itemCheckColors.foregroundColor,
-                        pressedColor: component.theme.list.itemCheckColors.fillColor.withMultipliedAlpha(0.9),
-                        cornerRadius: 10.0
+                        pressedColor: component.theme.list.itemCheckColors.fillColor.withMultipliedAlpha(0.9)
                     ),
                     content: buttonContent,
                     isEnabled: isEnabled,
@@ -6555,7 +6557,7 @@ private final class EmptyResultsButton: Component {
                     }
                 )),
                 environment: {},
-                containerSize: CGSize(width: availableSize.width, height: 50.0)
+                containerSize: CGSize(width: availableSize.width, height: 52.0)
             )
             if let buttonView = self.button.view {
                 if buttonView.superview == nil {

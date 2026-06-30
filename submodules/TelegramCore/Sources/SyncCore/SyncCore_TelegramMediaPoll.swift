@@ -463,7 +463,7 @@ public final class TelegramMediaPoll: Media, Equatable {
                     }
                 }
                 updatedResults = TelegramMediaPollResults(voters: updatedVoters.map({ voters in
-                    return TelegramMediaPollOptionVoters(selected: selectedOpaqueIdentifiers.contains(voters.opaqueIdentifier), opaqueIdentifier: voters.opaqueIdentifier, count: voters.count, isCorrect: correctOpaqueIdentifiers.contains(voters.opaqueIdentifier), recentVoters: voters.recentVoters)
+                    return TelegramMediaPollOptionVoters(selected: selectedOpaqueIdentifiers.contains(voters.opaqueIdentifier), opaqueIdentifier: voters.opaqueIdentifier, count: voters.count, isCorrect: voters.isCorrect || correctOpaqueIdentifiers.contains(voters.opaqueIdentifier), recentVoters: voters.recentVoters)
                 }), totalVoters: results.totalVoters, recentVoters: results.recentVoters, solution: results.solution ?? self.results.solution, hasUnseenVotes: results.hasUnseenVotes ?? self.results.hasUnseenVotes, canViewStats: results.canViewStats)
             } else if let updatedVoters = results.voters {
                 updatedResults = TelegramMediaPollResults(voters: updatedVoters, totalVoters: results.totalVoters, recentVoters: results.recentVoters, solution: results.solution ?? self.results.solution, hasUnseenVotes: results.hasUnseenVotes ?? self.results.hasUnseenVotes, canViewStats: results.canViewStats)
@@ -481,4 +481,3 @@ public final class TelegramMediaPoll: Media, Equatable {
         return TelegramMediaPoll(pollId: self.pollId, publicity: self.publicity, kind: self.kind, text: self.text, textEntities: self.textEntities, options: self.options, correctAnswers: self.correctAnswers, results: updatedResults, isClosed: self.isClosed, deadlineTimeout: self.deadlineTimeout, deadlineDate: self.deadlineDate, pollHash: self.pollHash, openAnswers: self.openAnswers, revotingDisabled: self.revotingDisabled, shuffleAnswers: self.shuffleAnswers, hideResultsUntilClose: self.hideResultsUntilClose, isCreator: self.isCreator, attachedMedia: self.attachedMedia, restrictToSubscribers: self.restrictToSubscribers, countries: self.countries)
     }
 }
-

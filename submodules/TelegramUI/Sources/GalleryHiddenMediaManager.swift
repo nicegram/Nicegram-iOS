@@ -1,6 +1,6 @@
 import Foundation
 import UIKit
-import Postbox
+import TelegramCore
 import SwiftSignalKit
 import AsyncDisplayKit
 import AccountContext
@@ -144,7 +144,7 @@ final class GalleryHiddenMediaManagerImpl: GalleryHiddenMediaManager {
         }
     }
     
-    func findTarget(messageId: MessageId, media: Media) -> ((UIView) -> Void, ASDisplayNode, () -> (UIView?, UIView?))? {
+    func findTarget(messageId: EngineMessage.Id, media: EngineMedia) -> ((UIView) -> Void, ASDisplayNode, () -> (UIView?, UIView?))? {
         for i in (0 ..< self.targets.count).reversed() {
             if let holderTarget = self.targets[i].target {
                 if let result = holderTarget.getTransitionInfo(messageId: messageId, media: media) {

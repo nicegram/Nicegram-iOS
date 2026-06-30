@@ -36,7 +36,8 @@ union InstantPageBlock_Value {
     InstantPageBlock_RelatedArticles,
     InstantPageBlock_Map,
     InstantPageBlock_Heading,
-    InstantPageBlock_Formula
+    InstantPageBlock_Formula,
+    InstantPageBlock_Thinking
 }
 
 table InstantPageBlock {
@@ -91,8 +92,9 @@ table InstantPageBlock_List {
 }
 
 table InstantPageBlock_BlockQuote {
-    text:RichText (id: 0, required);
+    text:RichText (id: 0);
     caption:RichText (id: 1, required);
+    blocks:[InstantPageBlock] (id: 2);
 }
 
 table InstantPageBlock_PullQuote {
@@ -196,6 +198,10 @@ table InstantPageBlock_Formula {
     latex:string (id: 0, required);
 }
 
+table InstantPageBlock_Thinking {
+    text:RichText (id: 0, required);
+}
+
 table InstantPageCaption {
     text:RichText (id: 0, required);
     credit:RichText (id: 1, required);
@@ -214,11 +220,13 @@ table InstantPageListItem {
 table InstantPageListItem_Text {
     text:RichText (id: 0, required);
     number:string (id: 1);
+    checkState:int32 (id: 2);
 }
 
 table InstantPageListItem_Blocks {
     blocks:[InstantPageBlock] (id: 0, required);
     number:string (id: 1);
+    checkState:int32 (id: 2);
 }
 
 table InstantPageListItem_Unknown {}

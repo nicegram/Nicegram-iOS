@@ -45,7 +45,7 @@ public struct PresentationResourcesRootController {
     
     public static func navigationShareIcon(_ theme: PresentationTheme) -> UIImage? {
         return theme.image(PresentationResourceKey.navigationShareIcon.rawValue, { theme in
-            return generateTintedImage(image: UIImage(bundleImageName: "Chat/Input/Accessory Panels/MessageSelectionForward"), color: theme.rootController.navigationBar.buttonColor)
+            return generateTintedImage(image: UIImage(bundleImageName: "Chat/Input/Accessory Panels/MessageSelectionForward"), color: theme.chat.inputPanel.panelControlColor)
         })
 //        return theme.image(PresentationResourceKey.navigationShareIcon.rawValue, generateShareButtonImage)
     }
@@ -197,6 +197,18 @@ public struct PresentationResourcesRootController {
     public static func navigationSortIcon(_ theme: PresentationTheme) -> UIImage? {
         return theme.image(PresentationResourceKey.navigationSortIcon.rawValue, { theme in
             return generateTintedImage(image: UIImage(bundleImageName: "Peer Info/SortIcon"), color: .white)
+        })
+    }
+    
+    public static func navigationBackIcon(_ theme: PresentationTheme) -> UIImage? {
+        return theme.image(PresentationResourceKey.navigationBackIcon.rawValue, { theme in
+            return generateTintedImage(image: UIImage(bundleImageName: "Navigation/Back"), color: .white)
+        })
+    }
+    
+    public static func navigationCloseIcon(_ theme: PresentationTheme) -> UIImage? {
+        return theme.image(PresentationResourceKey.navigationCloseIcon.rawValue, { theme in
+            return generateTintedImage(image: UIImage(bundleImageName: "Navigation/Close"), color: .white)
         })
     }
     

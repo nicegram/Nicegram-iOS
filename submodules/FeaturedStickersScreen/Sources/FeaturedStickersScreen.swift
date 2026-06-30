@@ -389,23 +389,16 @@ private final class FeaturedStickersScreenNode: ViewControllerTracingNode {
         self.disposable = (combineLatest(queue: .mainQueue(),
             mappedFeatured,
             self.additionalPacks.get(),
-            context.account.postbox.combinedView(keys: [.itemCollectionInfos(namespaces: [Namespaces.ItemCollection.CloudStickerPacks])]),
+            context.engine.data.subscribe(TelegramEngine.EngineData.Item.ItemCollections.InstalledPackIds(namespace: Namespaces.ItemCollection.CloudStickerPacks)),
             context.sharedContext.presentationData
         )
-        |> map { featuredEntries, additionalPacks, view, presentationData -> FeaturedTransition in
+        |> map { featuredEntries, additionalPacks, installedPackIds, presentationData -> FeaturedTransition in
             var presentationData = presentationData
             if let forceTheme {
                 presentationData = presentationData.withUpdated(theme: forceTheme)
             }
-            
-            var installedPacks = Set<ItemCollectionId>()
-            if let stickerPacksView = view.views[.itemCollectionInfos(namespaces: [Namespaces.ItemCollection.CloudStickerPacks])] as? ItemCollectionInfosView {
-                if let packsEntries = stickerPacksView.entriesByNamespace[Namespaces.ItemCollection.CloudStickerPacks] {
-                    for entry in packsEntries {
-                        installedPacks.insert(entry.id)
-                    }
-                }
-            }
+
+            let installedPacks = Set(installedPackIds)
             let entries = featuredScreenEntries(featuredEntries: featuredEntries.0, installedPacks: installedPacks, theme: presentationData.theme, strings: presentationData.strings, fixedUnread: featuredEntries.1, additionalPacks: additionalPacks)
             let previous = previousEntries.swap(entries)
             
@@ -1370,17 +1363,9 @@ private final class FeaturedPaneSearchContentNode: ASDisplayNode {
                 )
             }
             
-            let installedPackIds = context.account.postbox.combinedView(keys: [.itemCollectionInfos(namespaces: [Namespaces.ItemCollection.CloudStickerPacks])])
-            |> map { view -> Set<ItemCollectionId> in
-                var installedPacks = Set<ItemCollectionId>()
-                if let stickerPacksView = view.views[.itemCollectionInfos(namespaces: [Namespaces.ItemCollection.CloudStickerPacks])] as? ItemCollectionInfosView {
-                    if let packsEntries = stickerPacksView.entriesByNamespace[Namespaces.ItemCollection.CloudStickerPacks] {
-                        for entry in packsEntries {
-                            installedPacks.insert(entry.id)
-                        }
-                    }
-                }
-                return installedPacks
+            let installedPackIds = context.engine.data.subscribe(TelegramEngine.EngineData.Item.ItemCollections.InstalledPackIds(namespace: Namespaces.ItemCollection.CloudStickerPacks))
+            |> map { installedPackIds -> Set<ItemCollectionId> in
+                return Set(installedPackIds)
             }
             |> distinctUntilChanged
             let packs = combineLatest(rawPacks, installedPackIds)

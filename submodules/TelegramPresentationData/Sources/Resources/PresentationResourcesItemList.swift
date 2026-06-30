@@ -269,19 +269,7 @@ public struct PresentationResourcesItemList {
             })
         })
     }
-    
-    public static func makeVisibleIcon(_ theme: PresentationTheme) -> UIImage? {
-        return theme.image(PresentationResourceKey.itemListMakeVisibleIcon.rawValue, { theme in
-            return generateTintedImage(image: UIImage(bundleImageName: "Contact List/MakeVisibleIcon"), color: theme.list.itemAccentColor)
-        })
-    }
-    
-    public static func makeInvisibleIcon(_ theme: PresentationTheme) -> UIImage? {
-        return theme.image(PresentationResourceKey.itemListMakeInvisibleIcon.rawValue, { theme in
-            return generateTintedImage(image: UIImage(bundleImageName: "Contact List/MakeInvisibleIcon"), color: theme.list.itemDestructiveColor)
-        })
-    }
-    
+        
     public static func editThemeIcon(_ theme: PresentationTheme) -> UIImage? {
         return theme.image(PresentationResourceKey.itemListEditThemeIcon.rawValue, { theme in
             return generateTintedImage(image: UIImage(bundleImageName: "Settings/EditTheme"), color: theme.list.itemAccentColor)

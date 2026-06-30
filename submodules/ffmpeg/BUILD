@@ -271,6 +271,13 @@ genrule(
         elif [ "$(TARGET_CPU)" == "ios_sim_arm64" ]; then
             BUILD_ARCH="sim_arm64"
             VARIANT="debug"
+        elif [ "$(TARGET_CPU)" == "darwin_arm64" ]; then
+            BUILD_ARCH="macos_arm64"
+            VARIANT="debug"
+        elif [ "$(TARGET_CPU)" == "k8" ] || [ "$(TARGET_CPU)" == "x86_64" ]; then
+            BUILD_ARCH="linux_x86_64"
+        elif [ "$(TARGET_CPU)" == "aarch64" ] || [ "$(TARGET_CPU)" == "arm64" ]; then
+            BUILD_ARCH="linux_arm64"
         else
             echo "Unsupported architecture $(TARGET_CPU)"
         fi
@@ -301,24 +308,21 @@ cc_library(
     ]
 )
 
-objc_library(
+cc_library(
     name = "ffmpeg",
-    module_name = "ffmpeg",
-    enable_modules = True,
     hdrs = ["Public/third_party/ffmpeg/" + x for x in ffmpeg_header_paths] + ["Public/" + x for x in ffmpeg_header_paths],
     includes = [
         "Public",
     ],
-    sdk_dylibs = [
-        "libbz2",
-        "libiconv",
-        "z",
-    ],
-    sdk_frameworks = [
-        "AudioToolbox",
-        "CoreAudio",
-        "VideoToolbox"
-    ],
+    linkopts = select({
+        "@platforms//os:linux": ["-lbz2", "-lz"],
+        "//conditions:default": [
+            "-lbz2", "-liconv", "-lz",
+            "-framework AudioToolbox",
+            "-framework CoreAudio",
+            "-framework VideoToolbox",
+        ],
+    }),
     deps = [
         ":ffmpeg_lib",
         "//third-party/libvpx:vpx",
@@ -327,5 +331,5 @@ objc_library(
     ],
     visibility = [
         "//visibility:public",
-    ]
+    ],
 )

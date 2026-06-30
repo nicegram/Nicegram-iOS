@@ -46,7 +46,7 @@ extension BotVerifierSettings {
 }
 
 extension BotInfo {
-    convenience init(apiBotInfo: Api.BotInfo) {
+    public convenience init(apiBotInfo: Api.BotInfo) {
         switch apiBotInfo {
             case let .botInfo(botInfoData):
                 let (_, _, description, descriptionPhoto, descriptionDocument, apiCommands, apiMenuButton, privacyPolicyUrl, appSettings, verifierSettings) = (botInfoData.flags, botInfoData.userId, botInfoData.description, botInfoData.descriptionPhoto, botInfoData.descriptionDocument, botInfoData.commands, botInfoData.menuButton, botInfoData.privacyPolicyUrl, botInfoData.appSettings, botInfoData.verifierSettings)

@@ -25,10 +25,6 @@ public func freeMediaFileResourceInteractiveFetched(postbox: Postbox, userLocati
     return fetchedMediaResource(mediaBox: postbox.mediaBox, userLocation: userLocation, userContentType: MediaResourceUserContentType(file: fileReference.media), reference: fileReference.resourceReference(resource), range: range)
 }
 
-public func cancelFreeMediaFileInteractiveFetch(account: Account, file: TelegramMediaFile) {
-    account.postbox.mediaBox.cancelInteractiveResourceFetch(file.resource)
-}
-
 private func fetchCategoryForFile(_ file: TelegramMediaFile) -> FetchManagerCategory {
     if file.isVoice || file.isInstantVideo {
         return .voice

@@ -3,7 +3,6 @@ import UIKit
 import AsyncDisplayKit
 import Display
 import SwiftSignalKit
-import Postbox
 import TelegramCore
 import TelegramPresentationData
 import AccountContext
@@ -141,11 +140,12 @@ private func chatForwardOptions(selfController: ChatControllerImpl, sourceView: 
         var items: [ContextMenuItem] = []
         
         var hasCaptions = false
-        var uniquePeerIds = Set<PeerId>()
+        var uniquePeerIds = Set<EnginePeer.Id>()
         
         var hasOther = false
         var hasNotOwnMessages = false
         var hasPaid = false
+        var hasRichMessages = false
         for message in messages {
             if let author = message.effectiveAuthor {
                 if !uniquePeerIds.contains(author.id) {
@@ -176,9 +176,12 @@ private func chatForwardOptions(selfController: ChatControllerImpl, sourceView: 
             if !isDice {
                 hasOther = true
             }
+            if message.richText != nil {
+                hasRichMessages = true
+            }
         }
         
-        var canHideNames = hasNotOwnMessages && hasOther
+        var canHideNames = hasNotOwnMessages && hasOther && !hasRichMessages
         if case let .peer(peerId) = selfController.chatLocation, peerId.namespace == Namespaces.Peer.SecretChat {
             canHideNames = false
         }
@@ -573,7 +576,7 @@ func moveReplyMessageToAnotherChat(selfController: ChatControllerImpl, replySubj
             var suggestedPeers: [EnginePeer] = []
             if let message = await selfController.context.engine.data.get(
                 TelegramEngine.EngineData.Item.Messages.Message(id: replySubject.messageId)
-            ).get(), case let .user(author) = message.author {
+            ).get(), case let .user(author) = message.author, author.id != selfController.context.account.peerId {
                 suggestedPeers.append(.user(author))
             }
             

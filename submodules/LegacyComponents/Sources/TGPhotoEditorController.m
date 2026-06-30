@@ -27,6 +27,7 @@
 #import <LegacyComponents/TGMediaVideoConverter.h>
 
 #import <LegacyComponents/TGPhotoToolbarView.h>
+#import <LegacyComponents/TGPhotoPaintStickersContext.h>
 #import "TGPhotoEditorPreviewView.h"
 
 #import <LegacyComponents/TGMenuView.h>
@@ -46,10 +47,20 @@
 #import "TGMediaPickerGalleryVideoScrubber.h"
 #import "TGMediaPickerGalleryVideoScrubberThumbnailView.h"
 
-#import <LegacyComponents/TGMenuSheetController.h>
-
 #import <LegacyComponents/AVURLAsset+TGMediaItem.h>
 #import <LegacyComponents/TGCameraCapturedVideo.h>
+
+static UIView<TGPhotoToolbarViewProtocol> *TGPhotoEditorCreatePhotoToolbarView(id<LegacyComponentsContext> context, TGPhotoEditorBackButton backButton, TGPhotoEditorDoneButton doneButton, bool solidBackground, id<TGPhotoPaintStickersContext> stickersContext)
+{
+    if (stickersContext.photoToolbarView != nil)
+    {
+        UIView<TGPhotoToolbarViewProtocol> *toolbarView = stickersContext.photoToolbarView(backButton, doneButton, solidBackground, false);
+        if (toolbarView != nil)
+            return toolbarView;
+    }
+
+    return [[TGPhotoToolbarView alloc] initWithContext:context backButton:backButton doneButton:doneButton solidBackground:solidBackground stickersContext:nil];
+}
 
 @interface TGPhotoEditorController () <TGViewControllerNavigationBarAppearance, TGMediaPickerGalleryVideoScrubberDataSource, TGMediaPickerGalleryVideoScrubberDelegate, UIDocumentInteractionControllerDelegate>
 {
@@ -64,8 +75,8 @@
     UIView *_containerView;
     UIView *_wrapperView;
     UIView *_transitionWrapperView;
-    TGPhotoToolbarView *_portraitToolbarView;
-    TGPhotoToolbarView *_landscapeToolbarView;
+    UIView<TGPhotoToolbarViewProtocol> *_portraitToolbarView;
+    UIView<TGPhotoToolbarViewProtocol> *_landscapeToolbarView;
     TGPhotoEditorPreviewView *_previewView;
     PGPhotoEditorView *_fullPreviewView;
     UIView<TGPhotoDrawingEntitiesView> *_fullEntitiesView;
@@ -285,16 +296,27 @@
                 
             case TGPhotoEditorRotateTab:
             case TGPhotoEditorMirrorTab:
-            case TGPhotoEditorAspectRatioTab:
                 if ([strongSelf->_currentTabController isKindOfClass:[TGPhotoCropController class]] || [strongSelf->_currentTabController isKindOfClass:[TGPhotoAvatarPreviewController class]])
                     [strongSelf->_currentTabController handleTabAction:tab];
+                break;
+
+            case TGPhotoEditorAspectRatioTab:
+                if ([strongSelf->_currentTabController isKindOfClass:[TGPhotoCropController class]])
+                {
+                    UIView<TGPhotoToolbarViewProtocol> *toolbarView = UIInterfaceOrientationIsPortrait(strongSelf.effectiveOrientation) ? strongSelf->_portraitToolbarView : strongSelf->_landscapeToolbarView;
+                    [(TGPhotoCropController *)strongSelf->_currentTabController aspectRatioButtonPressedWithSourceView:[toolbarView viewForTab:TGPhotoEditorAspectRatioTab]];
+                }
+                else if ([strongSelf->_currentTabController isKindOfClass:[TGPhotoAvatarPreviewController class]])
+                {
+                    [strongSelf->_currentTabController handleTabAction:tab];
+                }
                 break;
         }
     };
      
     TGPhotoEditorBackButton backButton = TGPhotoEditorBackButtonCancel;
     TGPhotoEditorDoneButton doneButton = TGPhotoEditorDoneButtonCheck;
-    _portraitToolbarView = [[TGPhotoToolbarView alloc] initWithContext:_context backButton:backButton doneButton:doneButton solidBackground:true stickersContext:nil];
+    _portraitToolbarView = TGPhotoEditorCreatePhotoToolbarView(_context, backButton, doneButton, true, _stickersContext);
     [_portraitToolbarView setToolbarTabs:_availableTabs animated:false];
     [_portraitToolbarView setActiveTab:_currentTab];
     _portraitToolbarView.cancelPressed = toolbarCancelPressed;
@@ -303,7 +325,7 @@
     _portraitToolbarView.tabPressed = toolbarTabPressed;
     [_wrapperView addSubview:_portraitToolbarView];
     
-    _landscapeToolbarView = [[TGPhotoToolbarView alloc] initWithContext:_context backButton:backButton doneButton:doneButton solidBackground:true stickersContext:nil];
+    _landscapeToolbarView = TGPhotoEditorCreatePhotoToolbarView(_context, backButton, doneButton, true, _stickersContext);
     [_landscapeToolbarView setToolbarTabs:_availableTabs animated:false];
     [_landscapeToolbarView setActiveTab:_currentTab];
     _landscapeToolbarView.cancelPressed = toolbarCancelPressed;
@@ -1974,34 +1996,12 @@
     
     if ((_initialAdjustments == nil && (![editorValues isDefaultValuesForAvatar:[self presentedForAvatarCreation]] || editorValues.cropOrientation != UIImageOrientationUp)) || (_initialAdjustments != nil && ![editorValues isEqual:_initialAdjustments]))
     {
-        TGMenuSheetController *controller = [[TGMenuSheetController alloc] initWithContext:_context dark:false];
-        controller.dismissesByOutsideTap = true;
-        controller.narrowInLandscape = true;
-        __weak TGMenuSheetController *weakController = controller;
-
-        NSArray *items = @
+        NSArray *actions = @
         [
-         [[TGMenuSheetButtonItemView alloc] initWithTitle:TGLocalized(@"PhotoEditor.DiscardChanges") type:TGMenuSheetButtonTypeDefault fontSize:20.0 action:^
-            {
-                __strong TGMenuSheetController *strongController = weakController;
-                if (strongController == nil)
-                    return;
-
-                [strongController dismissAnimated:true manual:false completion:^
-                {
-                    dismiss();
-                }];
-            }],
-            [[TGMenuSheetButtonItemView alloc] initWithTitle:TGLocalized(@"Common.Cancel") type:TGMenuSheetButtonTypeCancel fontSize:20.0 action:^
-            {
-                __strong TGMenuSheetController *strongController = weakController;
-                if (strongController != nil)
-                    [strongController dismissAnimated:true];
-            }]
+            [[LegacyComponentsActionSheetAction alloc] initWithTitle:TGLocalized(@"PhotoEditor.DiscardChanges") action:@"discard" type:LegacyComponentsActionSheetActionTypeDestructive]
         ];
 
-        [controller setItemViews:items];
-        controller.sourceRect = ^
+        [_context presentActionSheet:actions view:self.view sourceRect:^CGRect
         {
             __strong TGPhotoEditorController *strongSelf = weakSelf;
             if (strongSelf == nil)
@@ -2011,8 +2011,11 @@
                 return [strongSelf.view convertRect:strongSelf->_portraitToolbarView.cancelButtonFrame fromView:strongSelf->_portraitToolbarView];
             else
                 return [strongSelf.view convertRect:strongSelf->_landscapeToolbarView.cancelButtonFrame fromView:strongSelf->_landscapeToolbarView];
-        };
-        [controller presentInViewController:self sourceView:self.view animated:true];
+        } completion:^(LegacyComponentsActionSheetAction *selectedAction)
+        {
+            if ([selectedAction.action isEqualToString:@"discard"])
+                dismiss();
+        }];
     }
     else
     {

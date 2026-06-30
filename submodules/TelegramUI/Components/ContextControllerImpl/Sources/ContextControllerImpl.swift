@@ -152,6 +152,7 @@ final class ContextControllerNode: ViewControllerTracingNode, ASScrollViewDelega
         if #available(iOS 11.0, *) {
             self.scrollNode.view.contentInsetAdjustmentBehavior = .never
         }
+        self.scrollNode.view.scrollsToTop = false
         
         self.contentContainerNode = ContextContentContainerNode()
         

@@ -3,7 +3,6 @@ import NGCallRecorder
 //
 import Foundation
 import UIKit
-import Postbox
 import TelegramCore
 import SwiftSignalKit
 import Display

@@ -35,10 +35,6 @@ class ScrollToTopView: UIScrollView, UIScrollViewDelegate {
         
         return false
     }
-    
-    func scrollViewDidScrollToTop(_ scrollView: UIScrollView) {
-        print("scrollViewDidScrollToTop")
-    }
 }
 
 class ScrollToTopNode: ASDisplayNode {
@@ -50,5 +46,85 @@ class ScrollToTopNode: ASDisplayNode {
             view.action = action
             return view
         })
+    }
+}
+
+final class WindowScrollToTopProxyViews {
+    enum Mode {
+        case disabled
+        case flat(frame: CGRect)
+        case split(masterFrame: CGRect, detailFrame: CGRect)
+    }
+
+    private let flatView: ScrollToTopView
+    private let masterView: ScrollToTopView
+    private let detailView: ScrollToTopView
+
+    init(scrollToTop: @escaping (NavigationSplitContainerScrollToTop) -> Void) {
+        self.flatView = ScrollToTopView(frame: CGRect())
+        self.masterView = ScrollToTopView(frame: CGRect())
+        self.detailView = ScrollToTopView(frame: CGRect())
+
+        self.flatView.action = {
+            scrollToTop(.master)
+        }
+        self.masterView.action = {
+            scrollToTop(.master)
+        }
+        self.detailView.action = {
+            scrollToTop(.detail)
+        }
+    }
+
+    deinit {
+        self.disable(self.flatView)
+        self.disable(self.masterView)
+        self.disable(self.detailView)
+    }
+
+    func update(window: UIWindow?, mode: Mode, referenceView: UIView?) {
+        guard let window else {
+            self.disable(self.flatView)
+            self.disable(self.masterView)
+            self.disable(self.detailView)
+            return
+        }
+
+        switch mode {
+        case .disabled:
+            self.disable(self.flatView)
+            self.disable(self.masterView)
+            self.disable(self.detailView)
+        case let .flat(frame):
+            self.activate(self.flatView, in: window, frame: frame, referenceView: referenceView)
+            self.disable(self.masterView)
+            self.disable(self.detailView)
+        case let .split(masterFrame, detailFrame):
+            self.disable(self.flatView)
+            self.activate(self.masterView, in: window, frame: masterFrame, referenceView: referenceView)
+            self.activate(self.detailView, in: window, frame: detailFrame, referenceView: referenceView)
+        }
+    }
+
+    private func activate(_ view: ScrollToTopView, in window: UIWindow, frame: CGRect, referenceView: UIView?) {
+        if let referenceView, referenceView.superview === window {
+            if view.superview !== window {
+                view.removeFromSuperview()
+            }
+            window.insertSubview(view, aboveSubview: referenceView)
+        } else if view.superview !== window {
+            view.removeFromSuperview()
+            window.addSubview(view)
+        }
+
+        view.isHidden = false
+        view.scrollsToTop = true
+        view.frame = frame
+    }
+
+    private func disable(_ view: ScrollToTopView) {
+        view.scrollsToTop = false
+        view.isHidden = true
+        view.removeFromSuperview()
     }
 }

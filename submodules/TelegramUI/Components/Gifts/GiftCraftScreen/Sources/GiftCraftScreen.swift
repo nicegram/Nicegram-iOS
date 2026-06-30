@@ -3,7 +3,6 @@ import UIKit
 import Display
 import ComponentFlow
 import SwiftSignalKit
-import Postbox
 import TelegramCore
 import AppBundle
 import LocalMediaResources
@@ -367,7 +366,7 @@ private final class CraftGiftPageContent: Component {
                         
             let anvilPath = getAppBundle().url(forResource: "Anvil", withExtension: "tgs")?.path ?? ""
             let anvilFile = TelegramMediaFile(
-                fileId: MediaId(namespace: Namespaces.Media.CloudFile, id: -123456789),
+                fileId: EngineMedia.Id(namespace: Namespaces.Media.CloudFile, id: -123456789),
                 partialReference: nil,
                 resource: BundleResource(name: "Anvil", path: anvilPath),
                 previewRepresentations: [],

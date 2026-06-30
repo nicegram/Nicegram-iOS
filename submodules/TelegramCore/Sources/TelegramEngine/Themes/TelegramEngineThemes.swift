@@ -12,6 +12,14 @@ public extension TelegramEngine {
         public func getChatThemes(accountManager: AccountManager<TelegramAccountManagerTypes>, forceUpdate: Bool = false, onlyCached: Bool = false) -> Signal<[TelegramTheme], NoError> {
             return _internal_getChatThemes(accountManager: accountManager, network: self.account.network, forceUpdate: forceUpdate, onlyCached: onlyCached)
         }
+
+        public func themes(accountManager: AccountManager<TelegramAccountManagerTypes>, forceUpdate: Bool = false) -> Signal<[TelegramTheme], NoError> {
+            return _internal_telegramThemes(postbox: self.account.postbox, network: self.account.network, accountManager: accountManager, forceUpdate: forceUpdate)
+        }
+
+        public func wallpapers(forceUpdate: Bool = false) -> Signal<[TelegramWallpaper], NoError> {
+            return _internal_telegramWallpapers(postbox: self.account.postbox, network: self.account.network, forceUpdate: forceUpdate)
+        }
         
         public func setChatTheme(peerId: PeerId, chatTheme: ChatTheme?) -> Signal<Void, NoError> {
             return _internal_setChatTheme(account: self.account, peerId: peerId, chatTheme: chatTheme)

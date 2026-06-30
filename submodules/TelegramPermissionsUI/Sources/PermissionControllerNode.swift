@@ -195,17 +195,6 @@ final class PermissionControllerNode: ASDisplayNode {
                                     text = self.presentationData.strings.Permissions_CellularDataText_v0
                                     buttonTitle = self.presentationData.strings.Permissions_CellularDataAllowInSettings_v0
                                     hasPrivacyPolicy = false
-                                case let .nearbyLocation(status):
-                                    icon = nil
-                                    title = self.presentationData.strings.Permissions_PeopleNearbyTitle_v0
-                                    text = self.presentationData.strings.Permissions_PeopleNearbyText_v0
-                                    if status == .denied {
-                                        buttonTitle = self.presentationData.strings.Permissions_PeopleNearbyAllowInSettings_v0
-                                    } else {
-                                        // Nicegram, change buttonTitle to "Next" (app review reject fix)
-                                        buttonTitle = self.presentationData.strings.Common_Next
-                                    }
-                                    hasPrivacyPolicy = false
                             }
                             
                             let contentNode = PermissionContentNode(context: self.context, theme: self.presentationData.theme, strings: self.presentationData.strings, kind: dataState.kind.rawValue, icon: .image(icon), title: title, text: text, buttonTitle: buttonTitle, secondaryButtonTitle: nil, buttonAction: { [weak self] in

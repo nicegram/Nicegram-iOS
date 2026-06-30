@@ -1,7 +1,6 @@
 import Foundation
 import UIKit
 import SwiftSignalKit
-import Postbox
 import TelegramCore
 import AsyncDisplayKit
 import Display
@@ -169,7 +168,7 @@ extension ChatControllerImpl {
                     guard let self else {
                         return
                     }
-                    var threadMessageId: MessageId?
+                    var threadMessageId: EngineMessage.Id?
                     if case let .replyThread(replyThreadMessage) = self.presentationInterfaceState.chatLocation {
                         threadMessageId = replyThreadMessage.effectiveMessageId
                     }
@@ -232,6 +231,7 @@ extension ChatControllerImpl {
                             text: "",
                             media: .update(.standalone(media: updatedTodo)),
                             entities: nil,
+                            richText: nil,
                             inlineStickers: [:]
                         ).start()
                     })))
@@ -251,7 +251,7 @@ extension ChatControllerImpl {
                 )
             )
             
-            let messageContentSource = ChatMessageContextExtractedContentSource(chatController: self, chatNode: self.chatDisplayNode, engine: self.context.engine, message: message, selectAll: false, snapshot: true)
+            let messageContentSource = ChatMessageContextExtractedContentSource(chatController: self, chatNode: self.chatDisplayNode, engine: self.context.engine, message: EngineMessage(message), selectAll: false, snapshot: true)
             
             sources.append(
                 ContextController.Source(

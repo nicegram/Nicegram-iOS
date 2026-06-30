@@ -652,7 +652,7 @@ public final class TextSelectionNode: ASDisplayNode {
                 highlightOverlay.innerRadius = 2.0
                 highlightOverlay.outerRadius = 2.0
                 highlightOverlay.inset = 1.0
-                highlightOverlay.useModernPathCalculation = false
+                highlightOverlay.useModernPathCalculation = true
                 
                 self.highlightOverlay = highlightOverlay
                 self.highlightAreaNode.addSubnode(highlightOverlay)

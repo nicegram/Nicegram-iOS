@@ -20,7 +20,19 @@ union RichText_Value {
     RichText_Phone,
     RichText_Image,
     RichText_Anchor,
-    RichText_Formula
+    RichText_Formula,
+    RichText_CustomEmoji,
+    RichText_AutoEmail,
+    RichText_AutoPhone,
+    RichText_AutoUrl,
+    RichText_BankCard,
+    RichText_BotCommand,
+    RichText_Cashtag,
+    RichText_Hashtag,
+    RichText_Mention,
+    RichText_MentionName,
+    RichText_Spoiler,
+    RichText_Date
 }
 
 table RichText {
@@ -97,4 +109,56 @@ table RichText_Anchor {
 
 table RichText_Formula {
     latex:string (id: 0, required);
+}
+
+table RichText_CustomEmoji {
+    fileId:long (id: 0);
+    alt:string (id: 1, required);
+}
+
+table RichText_AutoEmail {
+    text:RichText (id: 0, required);
+}
+
+table RichText_AutoPhone {
+    text:RichText (id: 0, required);
+}
+
+table RichText_AutoUrl {
+    text:RichText (id: 0, required);
+}
+
+table RichText_BankCard {
+    text:RichText (id: 0, required);
+}
+
+table RichText_BotCommand {
+    text:RichText (id: 0, required);
+}
+
+table RichText_Cashtag {
+    text:RichText (id: 0, required);
+}
+
+table RichText_Hashtag {
+    text:RichText (id: 0, required);
+}
+
+table RichText_Mention {
+    text:RichText (id: 0, required);
+}
+
+table RichText_MentionName {
+    text:RichText (id: 0, required);
+    peerId:long (id: 1);
+}
+
+table RichText_Spoiler {
+    text:RichText (id: 0, required);
+}
+
+table RichText_Date {
+    text:RichText (id: 0, required);
+    date:int (id: 1);
+    format:int = -1 (id: 2);
 }

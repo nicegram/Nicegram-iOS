@@ -337,7 +337,7 @@ public class ChatMessageJoinedChannelBubbleContentNode: ChatMessageBubbleContent
                             jsonString += "}"
                             
                             if let data = jsonString.data(using: .utf8), let json = JSON(data: data) {
-                                addAppLogEvent(postbox: item.context.account.postbox, type: "channels.open_recommended_channel", data: json)
+                                item.context.engine.accountData.addAppLogEvent(type: "channels.open_recommended_channel", data: json)
                             }
                             item.controllerInteraction.openPeer(peer, .chat(textInputState: nil, subject: nil, peekData: nil), nil, .default)
                         } else {

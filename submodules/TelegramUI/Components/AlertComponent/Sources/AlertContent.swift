@@ -323,23 +323,23 @@ public final class AlertTextComponent: Component {
             }
             var size = CGSize(width: availableSize.width, height: textSize.height)
             if case .background = component.style {
-                let backgroundSize = CGSize(width: availableSize.width + 20.0, height: textSize.height + backgroundInset * 2.0)
+                let backgroundSize = CGSize(width: availableSize.width + 20.0 + component.insets.left + component.insets.right, height: textSize.height + backgroundInset * 2.0)
                 size = backgroundSize
-                textOffset = CGPoint(x: textOffset.x, y: backgroundInset)
+                textOffset = CGPoint(x: textOffset.x, y: backgroundInset + 1.0)
                 
                 let _ = self.background.update(
                     transition: transition,
                     component: AnyComponent(
                         FilledRoundedRectangleComponent(
                             color: textColor.withMultipliedAlpha(0.1),
-                            cornerRadius: .value(10.0),
+                            cornerRadius: .value(12.0),
                             smoothCorners: true
                         )
                     ),
                     environment: {},
                     containerSize: backgroundSize
                 )
-                let backgroundFrame = CGRect(origin: CGPoint(x: -10.0, y: component.insets.top), size: backgroundSize)
+                let backgroundFrame = CGRect(origin: CGPoint(x: -10.0 - component.insets.left, y: component.insets.top), size: backgroundSize)
                 if let backgroundView = self.background.view {
                     if backgroundView.superview == nil {
                         self.addSubview(backgroundView)

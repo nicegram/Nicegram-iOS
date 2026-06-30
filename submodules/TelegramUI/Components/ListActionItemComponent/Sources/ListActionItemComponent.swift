@@ -519,6 +519,8 @@ public final class ListActionItemComponent: Component {
                 case .custom:
                     contentLeftInset += 46.0
                 }
+            } else {
+                contentLeftInset += component.contentInsets.left
             }
 
             let titleSize = self.title.update(

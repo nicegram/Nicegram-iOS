@@ -30,7 +30,7 @@ private func galleryMediaForMedia(media: Media) -> Media? {
 }
 
 private func mediaForMessage(message: Message) -> Media? {
-    for media in message.media {
+    for media in message.effectiveMedia {
         if let result = galleryMediaForMedia(media: media) {
             return result
         } else if let webpage = media as? TelegramMediaWebpage {

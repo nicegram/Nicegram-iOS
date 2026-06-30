@@ -1,24 +1,28 @@
 build --action_env=ZERO_AR_DATE=1
 
-build --apple_platform_type=ios
 build --enable_platform_specific_config
-build --apple_crosstool_top=@local_config_apple_cc//:toolchain
-build --crosstool_top=@local_config_apple_cc//:toolchain
-build --host_crosstool_top=@local_config_apple_cc//:toolchain
 
-build --per_file_copt=".*\.m$","@-fno-objc-msgsend-selector-stubs"
-build --per_file_copt=".*\.mm$","@-fno-objc-msgsend-selector-stubs"
-
-build --features=debug_prefix_map_pwd_is_dot
-build --features=swift.cacheable_swiftmodules
-build --features=swift.debug_prefix_map
-build --features=swift.enable_vfsoverlays
+# macOS-specific settings (auto-applied on macOS via --enable_platform_specific_config)
+build:macos --apple_platform_type=ios
+build:macos --apple_crosstool_top=@local_config_apple_cc//:toolchain
+build:macos --crosstool_top=@local_config_apple_cc//:toolchain
+build:macos --host_crosstool_top=@local_config_apple_cc//:toolchain
+build:macos --per_file_copt=".*\.m$","@-fno-objc-msgsend-selector-stubs"
+build:macos --per_file_copt=".*\.mm$","@-fno-objc-msgsend-selector-stubs"
+build:macos --features=debug_prefix_map_pwd_is_dot
+build:macos --features=swift.cacheable_swiftmodules
+build:macos --features=swift.debug_prefix_map
+build:macos --features=swift.enable_vfsoverlays
 build:dbg --features=swift.emit_swiftsourceinfo
+
+# Linux-specific settings (auto-applied on Linux via --enable_platform_specific_config)
+build:linux --action_env=CC
+build:linux --action_env=CXX
 
 build --strategy=Genrule=standalone
 build --spawn_strategy=standalone
 
-build --strategy=SwiftCompile=worker
+build:macos --strategy=SwiftCompile=worker
 
 # Nicegram fork policy: our min-iOS bump (13 -> 15) introduced many deprecation
 # warnings in upstream-owned files that we deliberately don't fix ourselves —
@@ -45,13 +49,11 @@ build --@build_bazel_rules_swift//swift:copt=DeprecatedDeclaration
 build --per_file_copt=".*\.m$","@-Wno-error=deprecated-declarations"
 build --per_file_copt=".*\.mm$","@-Wno-error=deprecated-declarations"
 
-#common --registry=https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/
-
-# SourceKit BSP: Swift indexing features
-common --features=swift.index_while_building
-common --features=swift.use_global_index_store
-common --features=swift.use_global_module_cache
-common --features=oso_prefix_is_pwd
+# SourceKit BSP: Swift indexing features (macOS only)
+common:macos --features=swift.index_while_building
+common:macos --features=swift.use_global_index_store
+common:macos --features=swift.use_global_module_cache
+common:macos --features=oso_prefix_is_pwd
 
 # SourceKit BSP: Index build config (used for background indexing)
 common:index_build --experimental_convenience_symlinks=ignore

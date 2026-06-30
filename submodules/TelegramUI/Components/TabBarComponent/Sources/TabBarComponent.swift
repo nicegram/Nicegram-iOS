@@ -794,7 +794,11 @@ public final class TabBarComponent: Component {
                 var itemFrame = CGRect(origin: CGPoint(x: nextItemX, y: floor((tabsSize.height - itemSize.height) * 0.5)), size: itemSize)
                 nextItemX += itemSize.width
                 if isItemSelected {
-                    selectionFrame = itemFrame
+                    if itemFrame.size.width < itemFrame.size.height {
+                        selectionFrame = itemFrame.insetBy(dx: floor((itemFrame.size.height * 1.2 - itemFrame.size.width) * -0.5), dy: 0.0)
+                    } else {
+                        selectionFrame = itemFrame
+                    }
                 }
                 
                 if let itemComponentView = itemView.view as? ItemComponent.View, let selectedItemComponentView = selectedItemView.view as? ItemComponent.View {

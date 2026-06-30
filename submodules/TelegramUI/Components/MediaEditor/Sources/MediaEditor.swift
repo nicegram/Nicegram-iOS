@@ -6,7 +6,6 @@ import Vision
 import Photos
 import SwiftSignalKit
 import Display
-import Postbox
 import TelegramCore
 import TelegramPresentationData
 import FastBlur
@@ -167,7 +166,7 @@ public final class MediaEditor {
         case videoCollage([VideoCollageItem])
         case asset(PHAsset)
         case draft(MediaEditorDraft)
-        case message(MessageId)
+        case message(EngineMessage.Id)
         case gift(StarGift.UniqueGift)
         case sticker(TelegramMediaFile)
         
@@ -417,11 +416,11 @@ public final class MediaEditor {
             return (artist: artist, title: title)
         }
         
-        func playerAndThumbnails(_ signal: Signal<AVPlayer?, NoError>, mirror: Bool = false) -> Signal<(AVPlayer, [UIImage], Double)?, NoError> {
+        func playerAndThumbnails(_ signal: Signal<AVPlayer?, NoError>, mirroringChanges: [VideoMirroringChange] = []) -> Signal<(AVPlayer, [UIImage], Double)?, NoError> {
             return signal
             |> mapToSignal { player -> Signal<(AVPlayer, [UIImage], Double)?, NoError> in
                 if let player, let asset = player.currentItem?.asset {
-                    return videoFrames(asset: asset, count: framesCount, mirror: mirror)
+                    return videoFrames(asset: asset, count: framesCount, mirroringChanges: mirroringChanges)
                     |> map { framesAndUpdateTimestamp in
                         return (player, framesAndUpdateTimestamp.0, framesAndUpdateTimestamp.1)
                     }
@@ -435,7 +434,8 @@ public final class MediaEditor {
             playerAndThumbnails(self.playerPromise.get()),
             self.additionalPlayersPromise.get()
             |> mapToSignal { players in
-                return combineLatest(players.compactMap { playerAndThumbnails(.single($0), mirror: true) })
+                let mirroringChanges = self.values.additionalVideoMirroringChanges
+                return combineLatest(players.compactMap { playerAndThumbnails(.single($0), mirroringChanges: mirroringChanges) })
             },
             self.audioPlayerPromise.get(),
             self.valuesPromise.get(),
@@ -567,6 +567,7 @@ public final class MediaEditor {
                 videoVolume: 1.0,
                 additionalVideoPath: nil,
                 additionalVideoIsDual: false,
+                additionalVideoMirroringChanges: [],
                 additionalVideoPosition: nil,
                 additionalVideoScale: nil,
                 additionalVideoRotation: nil,
@@ -630,9 +631,7 @@ public final class MediaEditor {
             return
         }
         let additionalTexture = additionalImage.flatMap { loadTexture(image: $0, device: device) }
-        if mirror {
-            self.renderer.videoFinishPass.additionalTextureRotation = .rotate0DegreesMirrored
-        }
+        self.renderer.videoFinishPass.additionalTextureRotation = mirror ? .rotate0DegreesMirrored : .rotate0Degrees
         let hasTransparency = imageHasTransparency(image)
         self.renderer.consume(main: .texture(texture, time, hasTransparency, nil, 1.0, .zero), additionals: additionalTexture.flatMap { [.texture($0, time, false, nil, 1.0, .zero)] } ?? [], render: true, displayEnabled: false)
     }
@@ -1822,9 +1821,9 @@ public final class MediaEditor {
         self.updateAdditionalVideoPlaybackRange()
     }
     
-    public func setAdditionalVideo(_ path: String?, isDual: Bool = false, positionChanges: [VideoPositionChange]) {
+    public func setAdditionalVideo(_ path: String?, isDual: Bool = false, mirroringChanges: [VideoMirroringChange] = [], positionChanges: [VideoPositionChange]) {
         self.updateValues(mode: .skipRendering) { values in
-            var values = values.withUpdatedAdditionalVideo(path: path, isDual: isDual, positionChanges: positionChanges)
+            var values = values.withUpdatedAdditionalVideo(path: path, isDual: isDual, mirroringChanges: mirroringChanges, positionChanges: positionChanges)
             if path == nil {
                 values = values.withUpdatedAdditionalVideoOffset(nil).withUpdatedAdditionalVideoTrimRange(nil).withUpdatedAdditionalVideoVolume(nil)
             }
@@ -2415,7 +2414,29 @@ public final class MediaEditor {
 
 }
 
-public func videoFrames(asset: AVAsset?, count: Int, initialPlaceholder: UIImage? = nil, initialTimestamp: Double? = nil, mirror: Bool = false) -> Signal<([UIImage], Double), NoError> {
+private func videoFrameMirroring(at timestamp: Double, changes: [VideoMirroringChange]) -> Bool {
+    guard let firstChange = changes.first else {
+        return false
+    }
+    var isMirrored = firstChange.isMirrored
+    for change in changes {
+        if timestamp >= change.timestamp {
+            isMirrored = change.isMirrored
+        } else {
+            break
+        }
+    }
+    return isMirrored
+}
+
+private func mirroredVideoFrame(_ image: UIImage, mirrored: Bool) -> UIImage {
+    guard mirrored, let cgImage = image.cgImage else {
+        return image
+    }
+    return UIImage(cgImage: cgImage, scale: image.scale, orientation: .upMirrored)
+}
+
+public func videoFrames(asset: AVAsset?, count: Int, initialPlaceholder: UIImage? = nil, initialTimestamp: Double? = nil, mirroringChanges: [VideoMirroringChange] = []) -> Signal<([UIImage], Double), NoError> {
     func blurredImage(_ image: UIImage) -> UIImage? {
         guard let image = image.cgImage else {
             return nil
@@ -2482,35 +2503,46 @@ public func videoFrames(asset: AVAsset?, count: Int, initialPlaceholder: UIImage
     } else {
         firstFrame = generateSingleColorImage(size: CGSize(width: 24.0, height: 36.0), color: .black)!
     }
+    firstFrame = mirroredVideoFrame(firstFrame, mirrored: videoFrameMirroring(at: 0.0, changes: mirroringChanges))
     
     if let asset {
         return Signal { subscriber in
             subscriber.putNext((Array(repeating: firstFrame, count: count), initialTimestamp ?? CACurrentMediaTime()))
             
             var timestamps: [NSValue] = []
+            var requestedTimes: [CMTime] = []
             let duration = asset.duration.seconds
             let interval = duration / Double(count)
             for i in 0 ..< count {
-                timestamps.append(NSValue(time: CMTime(seconds: Double(i) * interval, preferredTimescale: CMTimeScale(1000))))
+                let requestedTime = CMTime(seconds: Double(i) * interval, preferredTimescale: CMTimeScale(1000))
+                requestedTimes.append(requestedTime)
+                timestamps.append(NSValue(time: requestedTime))
             }
             
-            var updatedFrames: [UIImage] = []
-            imageGenerator?.generateCGImagesAsynchronously(forTimes: timestamps) { _, image, _, _, _ in
+            var updatedFrames = Array(repeating: firstFrame, count: count)
+            var remainingFrames = count
+            imageGenerator?.generateCGImagesAsynchronously(forTimes: timestamps) { requestedTime, image, actualTime, _, _ in
+                guard let frameIndex = requestedTimes.firstIndex(where: { CMTimeCompare($0, requestedTime) == 0 }) else {
+                    return
+                }
                 if let image {
-                    updatedFrames.append(UIImage(cgImage: image, scale: 1.0, orientation: mirror ? .upMirrored : .up))
-                    if updatedFrames.count == count {
+                    let frameTimestamp = actualTime.seconds.isFinite ? actualTime.seconds : requestedTime.seconds
+                    updatedFrames[frameIndex] = mirroredVideoFrame(
+                        UIImage(cgImage: image),
+                        mirrored: videoFrameMirroring(at: frameTimestamp, changes: mirroringChanges)
+                    )
+                    remainingFrames -= 1
+                    if remainingFrames == 0 {
                         subscriber.putNext((updatedFrames, CACurrentMediaTime()))
                         subscriber.putCompletion()
                     } else {
-                        var tempFrames = updatedFrames
-                        for _ in 0 ..< count - updatedFrames.count {
-                            tempFrames.append(firstFrame)
-                        }
-                        subscriber.putNext((tempFrames, CACurrentMediaTime()))
+                        subscriber.putNext((updatedFrames, CACurrentMediaTime()))
                     }
-                } else {
-                    if let previous = updatedFrames.last {
-                        updatedFrames.append(previous)
+                } else if remainingFrames > 0 {
+                    remainingFrames -= 1
+                    if remainingFrames == 0 {
+                        subscriber.putNext((updatedFrames, CACurrentMediaTime()))
+                        subscriber.putCompletion()
                     }
                 }
             }

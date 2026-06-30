@@ -56,6 +56,13 @@ public protocol ChatSendMessageContextScreenMediaPreview: AnyObject {
     func update(containerSize: CGSize, transition: ComponentTransition) -> CGSize
 }
 
+public protocol ChatSendMessageContextScreenRichTextPreview: AnyObject {
+    var view: UIView { get }
+    // Lays out the rich content for the given bubble width and theme, returning its content
+    // size. Called every layout pass; the implementation memoizes internally.
+    func update(boundingWidth: CGFloat, presentationData: PresentationData, transition: ComponentTransition) -> CGSize
+}
+
 // Nicegram TranslateEnteredMessage
 public struct ChatSendMessageContextNicegramData {
     let canTranslate: Bool
@@ -105,6 +112,7 @@ final class ChatSendMessageContextScreenComponent: Component {
     let reactionItems: [ReactionItem]?
     let availableMessageEffects: AvailableMessageEffects?
     let isPremium: Bool
+    let richTextPreview: ChatSendMessageContextScreenRichTextPreview?
 
     init(
         // Nicegram TranslateEnteredMessage
@@ -128,7 +136,8 @@ final class ChatSendMessageContextScreenComponent: Component {
         openPremiumPaywall: @escaping (ViewController) -> Void,
         reactionItems: [ReactionItem]?,
         availableMessageEffects: AvailableMessageEffects?,
-        isPremium: Bool
+        isPremium: Bool,
+        richTextPreview: ChatSendMessageContextScreenRichTextPreview? = nil
     ) {
         // Nicegram TranslateEnteredMessage
         self.nicegramData = nicegramData
@@ -153,6 +162,7 @@ final class ChatSendMessageContextScreenComponent: Component {
         self.reactionItems = reactionItems
         self.availableMessageEffects = availableMessageEffects
         self.isPremium = isPremium
+        self.richTextPreview = richTextPreview
     }
 
     static func ==(lhs: ChatSendMessageContextScreenComponent, rhs: ChatSendMessageContextScreenComponent) -> Bool {
@@ -890,19 +900,35 @@ final class ChatSendMessageContextScreenComponent: Component {
             if case .editMessage = component.params {
                 isEditMessage = true
             }
-            
+
+            // The bubble's right edge is pinned to the send button (see readyMessageItemFrame).
+            // Constrain the rich layout to the span between that edge and a fixed left margin
+            // (independent of where the source text input sits) so it isn't laid out at the
+            // full container width.
+            let richSendButtonWidth: CGFloat
+            if component.sourceSendButton is ContextExtractedContentContainingView {
+                richSendButtonWidth = sourceSendButtonFrame.width
+            } else {
+                richSendButtonWidth = min(sourceSendButtonFrame.width, 40.0)
+            }
+            let richBubbleRightEdge = sourceSendButtonFrame.maxX - richSendButtonWidth
+            let richBubbleLeftMargin: CGFloat = 16.0
+            let maxRichBubbleWidth = max(1.0, min(messageItemViewContainerSize.width, richBubbleRightEdge - richBubbleLeftMargin))
+
             let messageItemSize = messageItemView.update(
                 context: component.context,
                 presentationData: presentationData,
                 backgroundNode: wallpaperBackgroundNode,
                 textString: textString,
+                richTextPreview: component.richTextPreview,
+                maxRichBubbleWidth: maxRichBubbleWidth,
                 sourceTextInputView: component.textInputView as? ChatInputTextView,
                 emojiViewProvider: component.emojiViewProvider,
                 sourceMediaPreview: mediaPreview,
                 mediaCaptionIsAbove: self.mediaCaptionIsAbove,
                 textInsets: messageTextInsets,
                 explicitBackgroundSize: explicitMessageBackgroundSize,
-                maxTextWidth: localSourceTextInputViewFrame.width,
+                maxTextWidth: component.richTextPreview != nil ? maxRichBubbleWidth : localSourceTextInputViewFrame.width,
                 maxTextHeight: 20000.0,
                 containerSize: messageItemViewContainerSize,
                 effect: self.presentationAnimationState.key == .animatedIn ? self.selectedMessageEffect : nil,
@@ -1587,10 +1613,11 @@ public class ChatSendMessageContextScreen: ViewControllerComponentContainer, Cha
         openPremiumPaywall: @escaping (ViewController) -> Void,
         reactionItems: [ReactionItem]?,
         availableMessageEffects: AvailableMessageEffects?,
-        isPremium: Bool
+        isPremium: Bool,
+        richTextPreview: ChatSendMessageContextScreenRichTextPreview? = nil
     ) {
         self.context = context
-        
+
         super.init(
             context: context,
             component: ChatSendMessageContextScreenComponent(
@@ -1615,7 +1642,8 @@ public class ChatSendMessageContextScreen: ViewControllerComponentContainer, Cha
                 openPremiumPaywall: openPremiumPaywall,
                 reactionItems: reactionItems,
                 availableMessageEffects: availableMessageEffects,
-                isPremium: isPremium
+                isPremium: isPremium,
+                richTextPreview: richTextPreview
             ),
             navigationBarAppearance: .none,
             statusBarStyle: .none,

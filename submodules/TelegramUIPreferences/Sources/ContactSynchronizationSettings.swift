@@ -1,5 +1,4 @@
 import Foundation
-import Postbox
 import TelegramCore
 import SwiftSignalKit
 
@@ -54,7 +53,7 @@ public func updateContactSettingsInteractively(accountManager: AccountManager<Te
             } else {
                 currentSettings = .defaultSettings
             }
-            return PreferencesEntry(f(currentSettings))
+            return EnginePreferencesEntry(f(currentSettings))
         })
     }
 }

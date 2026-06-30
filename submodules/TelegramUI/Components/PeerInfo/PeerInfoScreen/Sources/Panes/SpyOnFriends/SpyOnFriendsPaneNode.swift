@@ -243,7 +243,7 @@ final class SpyOnFriendsPaneNode: ASDisplayNode, PeerInfoPaneNode {
         self.disposable?.dispose()
     }
     
-    func ensureMessageIsVisible(id: MessageId) {
+    func ensureMessageIsVisible(id: EngineMessage.Id) {
     }
     
     func scrollToTop() -> Bool {
@@ -337,7 +337,7 @@ final class SpyOnFriendsPaneNode: ASDisplayNode, PeerInfoPaneNode {
         }
     }
 
-    func findLoadedMessage(id: MessageId) -> Message? {
+    func findLoadedMessage(id: EngineMessage.Id) -> EngineMessage? {
        nil
     }
     
@@ -346,8 +346,8 @@ final class SpyOnFriendsPaneNode: ASDisplayNode, PeerInfoPaneNode {
     func cancelPreviewGestures() {}
     
     func transitionNodeForGallery(
-        messageId: MessageId,
-        media: Media
+        messageId: EngineMessage.Id,
+        media: EngineMedia
     ) -> (ASDisplayNode, CGRect, () -> (UIView?, UIView?))? { nil }
     
     func addToTransitionSurface(view: UIView) {}

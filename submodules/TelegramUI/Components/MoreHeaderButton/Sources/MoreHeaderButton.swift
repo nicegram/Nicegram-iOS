@@ -86,7 +86,7 @@ public final class MoreHeaderButton: HighlightableButtonNode {
                 transition: .immediate,
                 component: AnyComponent(LottieComponent(
                     content: LottieComponent.AppBundleContent(
-                        name: "anim_moredots"
+                        name: "anim_morewide"
                     ),
                     color: self.color
                 )),

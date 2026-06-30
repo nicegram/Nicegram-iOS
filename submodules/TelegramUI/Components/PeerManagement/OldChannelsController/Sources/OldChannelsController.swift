@@ -307,7 +307,7 @@ public func oldChannelsController(context: AccountContext, updatedPresentationDa
         )
     )
     |> map { presentationData, state, peers, limits -> (ItemListControllerState, (ItemListNodeState, Any)) in
-        let leftNavigationButton = ItemListNavigationButton(content: .text(presentationData.strings.Common_Cancel), style: .regular, enabled: true, action: {
+        let leftNavigationButton = ItemListNavigationButton(content: .icon(.close), style: .regular, enabled: true, action: {
             dismissImpl?()
         })
         let (accountPeer, limits, premiumLimits) = limits

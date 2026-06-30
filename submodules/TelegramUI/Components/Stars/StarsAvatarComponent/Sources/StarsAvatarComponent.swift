@@ -2,7 +2,6 @@ import Foundation
 import UIKit
 import Display
 import SwiftSignalKit
-import Postbox
 import TelegramCore
 import ComponentFlow
 import TelegramPresentationData
@@ -23,7 +22,7 @@ public final class StarsAvatarComponent: Component {
     let theme: PresentationTheme
     let peer: StarsAvatarComponent.Peer?
     let photo: TelegramMediaWebFile?
-    let media: [Media]
+    let media: [EngineRawMedia]
     let gift: StarGift?
     let backgroundColor: UIColor
     let size: CGSize?
@@ -33,7 +32,7 @@ public final class StarsAvatarComponent: Component {
         theme: PresentationTheme,
         peer: StarsAvatarComponent.Peer?,
         photo: TelegramMediaWebFile?,
-        media: [Media],
+        media: [EngineRawMedia],
         gift: StarGift?,
         backgroundColor: UIColor,
         size: CGSize? = nil
@@ -61,7 +60,7 @@ public final class StarsAvatarComponent: Component {
         if lhs.photo != rhs.photo {
             return false
         }
-        if !areMediaArraysEqual(lhs.media, rhs.media) {
+        if !engineAreMediaArraysEqual(lhs.media, rhs.media) {
             return false
         }
         if lhs.gift != rhs.gift {

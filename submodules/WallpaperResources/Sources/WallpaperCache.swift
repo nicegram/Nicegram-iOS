@@ -1,7 +1,6 @@
 import Foundation
 import UIKit
 import SwiftSignalKit
-import Postbox
 import TelegramApi
 import TelegramCore
 import TelegramUIPreferences
@@ -27,10 +26,8 @@ public final class CachedWallpaper: Codable {
     }
 }
 
-public func cachedWallpaper(account: Account, slug: String, settings: WallpaperSettings?, update: Bool = false) -> Signal<CachedWallpaper?, NoError> {
-    let engine = TelegramEngine(account: account)
-    
-    let slugKey = ValueBoxKey(length: 8)
+public func cachedWallpaper(engine: TelegramEngine, network: Network, slug: String, settings: WallpaperSettings?, update: Bool = false) -> Signal<CachedWallpaper?, NoError> {
+    let slugKey = EngineDataBuffer(length: 8)
     slugKey.setInt64(0, value: Int64(bitPattern: slug.persistentHashValue))
     return engine.data.get(TelegramEngine.EngineData.Item.ItemCache.Item(collectionId: ApplicationSpecificItemCacheCollectionId.cachedWallpapers, id: slugKey))
     |> mapToSignal { entry -> Signal<CachedWallpaper?, NoError> in
@@ -41,13 +38,13 @@ public func cachedWallpaper(account: Account, slug: String, settings: WallpaperS
                 return .single(entry)
             }
         } else {
-            return getWallpaper(network: account.network, slug: slug)
+            return getWallpaper(network: network, slug: slug)
             |> map(Optional.init)
             |> `catch` { _ -> Signal<TelegramWallpaper?, NoError> in
                 return .single(nil)
             }
             |> mapToSignal { wallpaper -> Signal<CachedWallpaper?, NoError> in
-                let slugKey = ValueBoxKey(length: 8)
+                let slugKey = EngineDataBuffer(length: 8)
                 slugKey.setInt64(0, value: Int64(bitPattern: slug.persistentHashValue))
                 
                 if var wallpaper = wallpaper {
@@ -81,7 +78,7 @@ public func updateCachedWallpaper(engine: TelegramEngine, wallpaper: TelegramWal
     guard case let .file(file) = wallpaper, file.id != 0 else {
         return
     }
-    let key = ValueBoxKey(length: 8)
+    let key = EngineDataBuffer(length: 8)
     key.setInt64(0, value: Int64(bitPattern: file.slug.persistentHashValue))
     
     let _ = engine.itemCache.put(collectionId: ApplicationSpecificItemCacheCollectionId.cachedWallpapers, id: key, item: CachedWallpaper(wallpaper: wallpaper)).start()

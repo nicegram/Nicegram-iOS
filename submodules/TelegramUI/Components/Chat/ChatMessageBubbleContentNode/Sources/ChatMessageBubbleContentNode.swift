@@ -2,7 +2,6 @@ import Foundation
 import UIKit
 import AsyncDisplayKit
 import Display
-import Postbox
 import TelegramCore
 import TelegramUIPreferences
 import TelegramPresentationData
@@ -144,14 +143,14 @@ public struct ChatMessageBubbleContentTapAction {
         case url(Url)
         case phone(String)
         case textMention(String)
-        case peerMention(peerId: PeerId, mention: String, openProfile: Bool)
+        case peerMention(peerId: EnginePeer.Id, mention: String, openProfile: Bool)
         case botCommand(String)
         case hashtag(String?, String)
         case instantPage
         case wallpaper
         case theme
-        case call(peerId: PeerId, isVideo: Bool)
-        case conferenceCall(message: Message)
+        case call(peerId: EnginePeer.Id, isVideo: Bool)
+        case conferenceCall(message: EngineRawMessage)
         case openMessage
         case timecode(Double, String)
         case tooltip(String, ASDisplayNode?, CGRect?)
@@ -162,6 +161,7 @@ public struct ChatMessageBubbleContentTapAction {
         case date(Int32, String)
         case largeEmoji(String, String?, TelegramMediaFile)
         case customEmoji(TelegramMediaFile)
+        case externalInstantPage(url: Url, webpageId: EngineMedia.Id, anchor: String?)
         case custom(() -> Void)
     }
     
@@ -181,8 +181,8 @@ public struct ChatMessageBubbleContentTapAction {
 public final class ChatMessageBubbleContentItem {
     public let context: AccountContext
     public let controllerInteraction: ChatControllerInteraction
-    public let message: Message
-    public let topMessage: Message
+    public let message: EngineRawMessage
+    public let topMessage: EngineRawMessage
     public let content: ChatMessageItemContent
     public let read: Bool
     public let chatLocation: ChatLocation
@@ -192,7 +192,7 @@ public final class ChatMessageBubbleContentItem {
     public let isItemPinned: Bool
     public let isItemEdited: Bool
     
-    public init(context: AccountContext, controllerInteraction: ChatControllerInteraction, message: Message, topMessage: Message, content: ChatMessageItemContent, read: Bool, chatLocation: ChatLocation, presentationData: ChatPresentationData, associatedData: ChatMessageItemAssociatedData, attributes: ChatMessageEntryAttributes, isItemPinned: Bool, isItemEdited: Bool) {
+    public init(context: AccountContext, controllerInteraction: ChatControllerInteraction, message: EngineRawMessage, topMessage: EngineRawMessage, content: ChatMessageItemContent, read: Bool, chatLocation: ChatLocation, presentationData: ChatPresentationData, associatedData: ChatMessageItemAssociatedData, attributes: ChatMessageEntryAttributes, isItemPinned: Bool, isItemEdited: Bool) {
         self.context = context
         self.controllerInteraction = controllerInteraction
         self.message = message
@@ -225,7 +225,7 @@ open class ChatMessageBubbleContentNode: ASDisplayNode {
     
     public var updateIsTextSelectionActive: ((Bool) -> Void)?
     public var requestInlineUpdate: (() -> Void)?
-    public var requestFullUpdate: (() -> Void)?
+    public var requestFullUpdate: ((ControlledTransition?) -> Void)?
     
     open var disablesClipping: Bool {
         return false
@@ -257,15 +257,19 @@ open class ChatMessageBubbleContentNode: ASDisplayNode {
         })
     }
     
-    open func transitionNode(messageId: MessageId, media: Media, adjustRect: Bool) -> (ASDisplayNode, CGRect, () -> (UIView?, UIView?))? {
+    open func transitionNode(messageId: EngineMessage.Id, media: EngineRawMedia, adjustRect: Bool) -> (ASDisplayNode, CGRect, () -> (UIView?, UIView?))? {
         return nil
     }
-    
-    open func updateHiddenMedia(_ media: [Media]?) -> Bool {
+
+    open func getAnchorRect(anchor: String) -> CGRect? {
+        return nil
+    }
+
+    open func updateHiddenMedia(_ media: [EngineRawMedia]?) -> Bool {
         return false
     }
     
-    open func updateSearchTextHighlightState(text: String?, messages: [MessageIndex]?) {
+    open func updateSearchTextHighlightState(text: String?, messages: [EngineMessage.Index]?) {
     }
     
     open func updateAutomaticMediaDownloadSettings(_ settings: MediaAutoDownloadSettings) {
@@ -312,7 +316,7 @@ open class ChatMessageBubbleContentNode: ASDisplayNode {
         return nil
     }
     
-    open func targetForStoryTransition(id: StoryId) -> UIView? {
+    open func targetForStoryTransition(id: EngineStoryId) -> UIView? {
         return nil
     }
     

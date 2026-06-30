@@ -940,7 +940,7 @@ final class CallListControllerNode: ASDisplayNode {
         insets.top += max(navigationBarHeight, layout.insets(options: [.statusBar]).top)
         
         let inset: CGFloat
-        if layout.size.width >= 375.0 {
+        if layout.size.width >= 320.0 {
             inset = max(16.0, floor((layout.size.width - 674.0) / 2.0))
         } else {
             inset = 0.0

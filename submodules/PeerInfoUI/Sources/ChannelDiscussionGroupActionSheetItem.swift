@@ -3,7 +3,6 @@ import UIKit
 import AsyncDisplayKit
 import UIKit
 import Display
-import Postbox
 import TelegramCore
 import TelegramPresentationData
 import TelegramUIPreferences
@@ -12,12 +11,12 @@ import AccountContext
 
 final class ChannelDiscussionGroupActionSheetItem: ActionSheetItem {
     let context: AccountContext
-    let channelPeer: Peer
-    let groupPeer: Peer
+    let channelPeer: EnginePeer
+    let groupPeer: EnginePeer
     let strings: PresentationStrings
     let nameDisplayOrder: PresentationPersonNameOrder
-    
-    init(context: AccountContext, channelPeer: Peer, groupPeer: Peer, strings: PresentationStrings, nameDisplayOrder: PresentationPersonNameOrder) {
+
+    init(context: AccountContext, channelPeer: EnginePeer, groupPeer: EnginePeer, strings: PresentationStrings, nameDisplayOrder: PresentationPersonNameOrder) {
         self.context = context
         self.channelPeer = channelPeer
         self.groupPeer = groupPeer
@@ -43,7 +42,7 @@ private final class ChannelDiscussionGroupActionSheetItemNode: ActionSheetItemNo
     private let groupAvatarNode: AvatarNode
     private let textNode: ImmediateTextNode
     
-    init(theme: ActionSheetControllerTheme, context: AccountContext, channelPeer: Peer, groupPeer: Peer, strings: PresentationStrings, nameDisplayOrder: PresentationPersonNameOrder) {
+    init(theme: ActionSheetControllerTheme, context: AccountContext, channelPeer: EnginePeer, groupPeer: EnginePeer, strings: PresentationStrings, nameDisplayOrder: PresentationPersonNameOrder) {
         self.theme = theme
         
         self.channelAvatarNode = AvatarNode(font: avatarFont)
@@ -65,14 +64,14 @@ private final class ChannelDiscussionGroupActionSheetItemNode: ActionSheetItemNo
         self.addSubnode(self.channelAvatarNode)
         self.addSubnode(self.textNode)
         
-        self.channelAvatarNode.setPeer(context: context, theme: (context.sharedContext.currentPresentationData.with { $0 }).theme, peer: EnginePeer(channelPeer))
-        self.groupAvatarNode.setPeer(context: context, theme: (context.sharedContext.currentPresentationData.with { $0 }).theme, peer: EnginePeer(groupPeer))
-        
+        self.channelAvatarNode.setPeer(context: context, theme: (context.sharedContext.currentPresentationData.with { $0 }).theme, peer: channelPeer)
+        self.groupAvatarNode.setPeer(context: context, theme: (context.sharedContext.currentPresentationData.with { $0 }).theme, peer: groupPeer)
+
         let text: PresentationStrings.FormattedString
-        if let channelPeer = channelPeer as? TelegramChannel, let addressName = channelPeer.addressName, !addressName.isEmpty {
-            text = strings.Channel_DiscussionGroup_PublicChannelLink(EnginePeer(groupPeer).displayTitle(strings: strings, displayOrder: nameDisplayOrder), EnginePeer(channelPeer).displayTitle(strings: strings, displayOrder: nameDisplayOrder))
+        if case let .channel(channel) = channelPeer, let addressName = channel.addressName, !addressName.isEmpty {
+            text = strings.Channel_DiscussionGroup_PublicChannelLink(groupPeer.displayTitle(strings: strings, displayOrder: nameDisplayOrder), channelPeer.displayTitle(strings: strings, displayOrder: nameDisplayOrder))
         } else {
-            text = strings.Channel_DiscussionGroup_PrivateChannelLink(EnginePeer(groupPeer).displayTitle(strings: strings, displayOrder: nameDisplayOrder), EnginePeer(channelPeer).displayTitle(strings: strings, displayOrder: nameDisplayOrder))
+            text = strings.Channel_DiscussionGroup_PrivateChannelLink(groupPeer.displayTitle(strings: strings, displayOrder: nameDisplayOrder), channelPeer.displayTitle(strings: strings, displayOrder: nameDisplayOrder))
         }
         
         let textFont = Font.regular(floor(theme.baseFontSize * 14.0 / 17.0))

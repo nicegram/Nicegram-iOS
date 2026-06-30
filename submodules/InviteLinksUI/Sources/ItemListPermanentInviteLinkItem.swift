@@ -6,13 +6,13 @@ import SwiftSignalKit
 import AccountContext
 import TelegramPresentationData
 import ItemListUI
-import SolidRoundedButtonNode
 import AnimatedAvatarSetNode
 import ShimmerEffect
 import TelegramCore
 import Markdown
 import TextFormat
 import ComponentFlow
+import ButtonComponent
 import MultilineTextComponent
 import TextNodeWithEntities
 
@@ -143,8 +143,8 @@ public class ItemListPermanentInviteLinkItemNode: ListViewItemNode, ItemListItem
     private let addressButtonNode: HighlightTrackingButtonNode
     private let addressButtonIconNode: ASImageNode
     private var addressShimmerNode: ShimmerEffectNode?
-    private var copyButtonNode: SolidRoundedButtonNode?
-    private var shareButtonNode: SolidRoundedButtonNode?
+    private var copyButton: ComponentView<Empty>?
+    private var shareButton: ComponentView<Empty>?
     
     private let avatarsButtonNode: HighlightTrackingButtonNode
     private let avatarsContext: AnimatedAvatarSetContext
@@ -255,16 +255,6 @@ public class ItemListPermanentInviteLinkItemNode: ListViewItemNode, ItemListItem
                     strongSelf.addressButtonIconNode.alpha = 1.0
                     strongSelf.addressButtonIconNode.layer.animateAlpha(from: 0.4, to: 1.0, duration: 0.2)
                 }
-            }
-        }
-        self.copyButtonNode?.pressed = { [weak self] in
-            if let strongSelf = self, let item = strongSelf.item {
-                item.copyAction?()
-            }
-        }
-        self.shareButtonNode?.pressed = { [weak self] in
-            if let strongSelf = self, let item = strongSelf.item {
-                item.shareAction?()
             }
         }
         self.avatarsButtonNode.highligthedChanged = { [weak self] highlighted in
@@ -535,46 +525,38 @@ public class ItemListPermanentInviteLinkItemNode: ListViewItemNode, ItemListItem
                         effectiveSeparateButtons = false
                     }
                     
-                    let copyButtonNode: SolidRoundedButtonNode
-                    if let currentCopyButtonNode = strongSelf.copyButtonNode {
-                        copyButtonNode = currentCopyButtonNode
+                    let buttonBackgroundColor = item.buttonColor ?? item.presentationData.theme.list.itemCheckColors.fillColor
+                    let buttonForegroundColor = item.presentationData.theme.list.itemCheckColors.foregroundColor
+                    let buttonBackground = ButtonComponent.Background(
+                        style: item.systemStyle == .glass ? .glass : .legacy,
+                        color: buttonBackgroundColor,
+                        foreground: buttonForegroundColor,
+                        pressedColor: buttonBackgroundColor.withMultipliedAlpha(0.8),
+                        cornerRadius: item.systemStyle == .glass ? 26.0 : 11.0
+                    )
+                    
+                    let copyButtonTitle = item.presentationData.strings.InviteLink_CopyShort
+                    let copyButton: ComponentView<Empty>
+                    if let currentCopyButton = strongSelf.copyButton {
+                        copyButton = currentCopyButton
                     } else {
-                        let buttonTheme: SolidRoundedButtonTheme
-                        if let buttonColor = item.buttonColor {
-                            buttonTheme = SolidRoundedButtonTheme(backgroundColor: buttonColor, foregroundColor: item.presentationData.theme.list.itemCheckColors.foregroundColor)
-                        } else {
-                            buttonTheme = SolidRoundedButtonTheme(theme: item.presentationData.theme)
-                        }
-                        copyButtonNode = SolidRoundedButtonNode(theme: buttonTheme, glass: item.systemStyle == .glass, height: 52.0, cornerRadius: item.systemStyle == .glass ? 26.0 : 11.0)
-                        copyButtonNode.title = item.presentationData.strings.InviteLink_CopyShort
-                        copyButtonNode.pressed = { [weak self] in
-                            self?.item?.copyAction?()
-                        }
-                        strongSelf.addSubnode(copyButtonNode)
-                        strongSelf.copyButtonNode = copyButtonNode
+                        copyButton = ComponentView()
+                        strongSelf.copyButton = copyButton
                     }
                     
-                    let shareButtonNode: SolidRoundedButtonNode
-                    if let currentShareButtonNode = strongSelf.shareButtonNode {
-                        shareButtonNode = currentShareButtonNode
+                    let shareButtonTitle: String
+                    if let invite = item.invite, invitationAvailability(invite).isZero {
+                        shareButtonTitle = item.presentationData.strings.InviteLink_ReactivateLink
                     } else {
-                        let buttonTheme: SolidRoundedButtonTheme
-                        if let buttonColor = item.buttonColor {
-                            buttonTheme = SolidRoundedButtonTheme(backgroundColor: buttonColor, foregroundColor: item.presentationData.theme.list.itemCheckColors.foregroundColor)
-                        } else {
-                            buttonTheme = SolidRoundedButtonTheme(theme: item.presentationData.theme)
-                        }
-                        shareButtonNode = SolidRoundedButtonNode(theme: buttonTheme, glass: item.systemStyle == .glass, height: 52.0, cornerRadius: item.systemStyle == .glass ? 26.0 : 11.0)
-                        if let invite = item.invite, invitationAvailability(invite).isZero {
-                            shareButtonNode.title = item.presentationData.strings.InviteLink_ReactivateLink
-                        } else {
-                            shareButtonNode.title = effectiveSeparateButtons ? item.presentationData.strings.InviteLink_ShareShort : item.presentationData.strings.InviteLink_Share
-                        }
-                        shareButtonNode.pressed = { [weak self] in
-                            self?.item?.shareAction?()
-                        }
-                        strongSelf.addSubnode(shareButtonNode)
-                        strongSelf.shareButtonNode = shareButtonNode
+                        shareButtonTitle = effectiveSeparateButtons ? item.presentationData.strings.InviteLink_ShareShort : item.presentationData.strings.InviteLink_Share
+                    }
+                    
+                    let shareButton: ComponentView<Empty>
+                    if let currentShareButton = strongSelf.shareButton {
+                        shareButton = currentShareButton
+                    } else {
+                        shareButton = ComponentView()
+                        strongSelf.shareButton = shareButton
                     }
                     
                     let buttonSpacing: CGFloat = 8.0
@@ -585,11 +567,57 @@ public class ItemListPermanentInviteLinkItemNode: ListViewItemNode, ItemListItem
                         shareButtonOriginX = leftInset + buttonWidth + buttonSpacing
                     }
                     
-                    let _ = copyButtonNode.updateLayout(width: buttonWidth, transition: .immediate)
-                    copyButtonNode.frame = CGRect(x: leftInset, y: verticalInset + fieldHeight + fieldSpacing, width: buttonWidth, height: buttonHeight)
+                    let copyButtonSize = copyButton.update(
+                        transition: .immediate,
+                        component: AnyComponent(ButtonComponent(
+                            background: buttonBackground,
+                            content: AnyComponentWithIdentity(id: AnyHashable(copyButtonTitle), component: AnyComponent(Text(text: copyButtonTitle, font: Font.semibold(17.0), color: buttonForegroundColor))),
+                            isEnabled: item.invite != nil,
+                            tintWhenDisabled: false,
+                            action: { [weak self] in
+                                self?.item?.copyAction?()
+                            }
+                        )),
+                        environment: {},
+                        containerSize: CGSize(width: buttonWidth, height: buttonHeight)
+                    )
+                    if let copyButtonView = copyButton.view {
+                        if copyButtonView.superview == nil {
+                            strongSelf.view.addSubview(copyButtonView)
+                        }
+                        copyButtonView.frame = CGRect(origin: CGPoint(x: leftInset, y: verticalInset + fieldHeight + fieldSpacing), size: copyButtonSize)
+                        copyButtonView.isHidden = !item.displayButton || !effectiveSeparateButtons
+                        copyButtonView.alpha = item.invite != nil ? 1.0 : 0.4
+                        copyButtonView.isAccessibilityElement = true
+                        copyButtonView.accessibilityLabel = copyButtonTitle
+                        copyButtonView.accessibilityTraits = item.invite != nil ? [.button] : [.button, .notEnabled]
+                    }
                     
-                    let _ = shareButtonNode.updateLayout(width: buttonWidth, transition: .immediate)
-                    shareButtonNode.frame = CGRect(x: shareButtonOriginX, y: verticalInset + fieldHeight + fieldSpacing, width: buttonWidth, height: buttonHeight)
+                    let shareButtonSize = shareButton.update(
+                        transition: .immediate,
+                        component: AnyComponent(ButtonComponent(
+                            background: buttonBackground,
+                            content: AnyComponentWithIdentity(id: AnyHashable(shareButtonTitle), component: AnyComponent(Text(text: shareButtonTitle, font: Font.semibold(17.0), color: buttonForegroundColor))),
+                            isEnabled: item.invite != nil,
+                            tintWhenDisabled: false,
+                            action: { [weak self] in
+                                self?.item?.shareAction?()
+                            }
+                        )),
+                        environment: {},
+                        containerSize: CGSize(width: buttonWidth, height: buttonHeight)
+                    )
+                    if let shareButtonView = shareButton.view {
+                        if shareButtonView.superview == nil {
+                            strongSelf.view.addSubview(shareButtonView)
+                        }
+                        shareButtonView.frame = CGRect(origin: CGPoint(x: shareButtonOriginX, y: verticalInset + fieldHeight + fieldSpacing), size: shareButtonSize)
+                        shareButtonView.isHidden = !item.displayButton
+                        shareButtonView.alpha = item.invite != nil ? 1.0 : 0.4
+                        shareButtonView.isAccessibilityElement = true
+                        shareButtonView.accessibilityLabel = shareButtonTitle
+                        shareButtonView.accessibilityTraits = item.invite != nil ? [.button] : [.button, .notEnabled]
+                    }
 
                     if let justCreatedCallTextNodeLayout {
                         if let justCreatedCallTextNode = justCreatedCallTextNodeLayout.1(TextNodeWithEntities.Arguments(
@@ -608,7 +636,8 @@ public class ItemListPermanentInviteLinkItemNode: ListViewItemNode, ItemListItem
                                 justCreatedCallTextNode.textNode.view.addGestureRecognizer(UITapGestureRecognizer(target: strongSelf, action: #selector(strongSelf.justCreatedCallTextTap(_:))))
                             }
                             
-                            let justCreatedCallTextNodeFrame = CGRect(origin: CGPoint(x: floorToScreenPixels((params.width - justCreatedCallTextNodeLayout.0.size.width) / 2.0), y: shareButtonNode.frame.maxY + justCreatedCallTextSpacing), size: CGSize(width: justCreatedCallTextNodeLayout.0.size.width, height: justCreatedCallTextNodeLayout.0.size.height))
+                            let buttonMaxY = verticalInset + fieldHeight + fieldSpacing + buttonHeight
+                            let justCreatedCallTextNodeFrame = CGRect(origin: CGPoint(x: floorToScreenPixels((params.width - justCreatedCallTextNodeLayout.0.size.width) / 2.0), y: buttonMaxY + justCreatedCallTextSpacing), size: CGSize(width: justCreatedCallTextNodeLayout.0.size.width, height: justCreatedCallTextNodeLayout.0.size.height))
                             justCreatedCallTextNode.textNode.frame = justCreatedCallTextNodeFrame
 
                             let justCreatedCallSeparatorText: ComponentView<Empty>
@@ -648,7 +677,7 @@ public class ItemListPermanentInviteLinkItemNode: ListViewItemNode, ItemListItem
                                 environment: {},
                                 containerSize: CGSize(width: params.width - leftInset - rightInset, height: 100.0)
                             )
-                            let justCreatedCallSeparatorTextFrame = CGRect(origin: CGPoint(x: floor((params.width - justCreatedCallSeparatorTextSize.width) * 0.5), y: shareButtonNode.frame.maxY + justCreatedCallSeparatorSpacing), size: justCreatedCallSeparatorTextSize)
+                            let justCreatedCallSeparatorTextFrame = CGRect(origin: CGPoint(x: floor((params.width - justCreatedCallSeparatorTextSize.width) * 0.5), y: buttonMaxY + justCreatedCallSeparatorSpacing), size: justCreatedCallSeparatorTextSize)
                             if let justCreatedCallSeparatorTextView = justCreatedCallSeparatorText.view {
                                 if justCreatedCallSeparatorTextView.superview == nil {
                                     strongSelf.view.addSubview(justCreatedCallSeparatorTextView)
@@ -702,14 +731,6 @@ public class ItemListPermanentInviteLinkItemNode: ListViewItemNode, ItemListItem
                     strongSelf.fieldButtonNode.isUserInteractionEnabled = item.invite != nil
                     strongSelf.addressButtonIconNode.alpha = item.invite != nil ? 1.0 : 0.0
                     
-                    
-                    strongSelf.copyButtonNode?.isUserInteractionEnabled = item.invite != nil
-                    strongSelf.copyButtonNode?.alpha = item.invite != nil ? 1.0 : 0.4
-                    strongSelf.copyButtonNode?.isHidden = !item.displayButton || !effectiveSeparateButtons
-                    
-                    strongSelf.shareButtonNode?.isUserInteractionEnabled = item.invite != nil
-                    strongSelf.shareButtonNode?.alpha = item.invite != nil ? 1.0 : 0.4
-                    strongSelf.shareButtonNode?.isHidden = !item.displayButton
                     
                     strongSelf.avatarsButtonNode.isHidden = !item.displayImporters
                     strongSelf.avatarsNode.isHidden = !item.displayImporters || item.invite == nil

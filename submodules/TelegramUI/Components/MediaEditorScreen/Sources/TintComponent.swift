@@ -2,9 +2,9 @@ import Foundation
 import UIKit
 import Display
 import ComponentFlow
-import LegacyComponents
 import MediaEditor
 import TelegramPresentationData
+import SliderComponent
 
 private final class TintColorComponent: Component {
     typealias EnvironmentType = Empty
@@ -193,7 +193,7 @@ final class TintComponent: Component {
                         content: AnyComponent(
                             Text(
                                 text: component.strings.Story_Editor_Tint_Shadows,
-                                font: Font.regular(14.0),
+                                font: Font.bold(13.0),
                                 color: state.section == .shadows ? .white : UIColor(rgb: 0x808080)
                             )
                         ),
@@ -221,7 +221,7 @@ final class TintComponent: Component {
                         content: AnyComponent(
                             Text(
                                 text: component.strings.Story_Editor_Tint_Highlights,
-                                font: Font.regular(14.0),
+                                font: Font.bold(13.0),
                                 color: state.section == .highlights ? .white : UIColor(rgb: 0x808080)
                             )
                         ),
@@ -339,32 +339,35 @@ final class TintComponent: Component {
             let sliderSize = self.slider.update(
                 transition: transition,
                 component: AnyComponent(
-                    AdjustmentSliderComponent(
-                        title: "",
-                        value: state.section == .shadows ? component.shadowsValue.intensity : component.highlightsValue.intensity,
-                        minValue: 0.0,
-                        maxValue: 1.0,
-                        startValue: 0.0,
-                        isEnabled: currentColor != .clear,
-                        trackColor: currentColor != .clear ? currentColor : .white,
-                        displayValue: false,
-                        valueUpdated: { [weak state] value in
-                            if let state {
-                                switch state.section {
-                                case .shadows:
-                                    shadowsValueUpdated(state.shadowsValue.withUpdatedIntensity(value))
-                                case .highlights:
-                                    highlightsValueUpdated(state.highlightsValue.withUpdatedIntensity(value))
+                    SliderComponent(
+                        content: .continuous(SliderComponent.Continuous(
+                            value: CGFloat(state.section == .shadows ? component.shadowsValue.intensity : component.highlightsValue.intensity),
+                            range: 0.0 ... 1.0,
+                            startValue: 0.0,
+                            valueUpdated: { [weak state] value in
+                                if let state {
+                                    switch state.section {
+                                    case .shadows:
+                                        shadowsValueUpdated(state.shadowsValue.withUpdatedIntensity(Float(value)))
+                                    case .highlights:
+                                        highlightsValueUpdated(state.highlightsValue.withUpdatedIntensity(Float(value)))
+                                    }
                                 }
                             }
-                        },
+                        )),
+                        useNative: true,
+                        trackBackgroundColor: UIColor(rgb: 0xffffff, alpha: 0.1),
+                        trackForegroundColor: currentColor != .clear ? currentColor : .white,
+                        isEnabled: currentColor != .clear,
+                        trackHeight: 6.0,
+                        displaysBorderOnTracking: true,
                         isTrackingUpdated: { isTracking in
                             isTrackingUpdated(isTracking)
                         }
                     )
                 ),
                 environment: {},
-                containerSize: availableSize
+                containerSize: CGSize(width: max(0.0, availableSize.width - 28.0 * 2.0), height: 44.0)
             )
             
             let colorsVerticalSpacing: CGFloat = 9.0
@@ -387,7 +390,8 @@ final class TintComponent: Component {
             }
             
             let verticalSpacing: CGFloat = 3.0
-            let sliderFrame = CGRect(origin: CGPoint(x: 0.0, y: topInset + highlightsButtonSize.height + verticalSpacing + sizes.first!.height + verticalSpacing), size: sliderSize)
+            let sliderRowHeight: CGFloat = 52.0
+            let sliderFrame = CGRect(origin: CGPoint(x: 28.0, y: topInset + highlightsButtonSize.height + verticalSpacing + sizes.first!.height + verticalSpacing + 7.0), size: sliderSize)
             if let view = self.slider.view {
                 if view.superview == nil {
                     self.addSubview(view)
@@ -395,7 +399,7 @@ final class TintComponent: Component {
                 transition.setFrame(view: view, frame: sliderFrame)
             }
             
-            return CGSize(width: availableSize.width, height: topInset + highlightsButtonSize.height + colorsVerticalSpacing + sizes.first!.height + verticalSpacing + sliderSize.height)
+            return CGSize(width: availableSize.width, height: topInset + highlightsButtonSize.height + colorsVerticalSpacing + sizes.first!.height + verticalSpacing + sliderRowHeight)
         }
     }
 
@@ -407,4 +411,3 @@ final class TintComponent: Component {
         return view.update(component: self, availableSize: availableSize, state: state, environment: environment, transition: transition)
     }
 }
-

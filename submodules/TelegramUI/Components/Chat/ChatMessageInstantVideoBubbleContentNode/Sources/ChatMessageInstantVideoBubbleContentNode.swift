@@ -3,7 +3,6 @@ import UIKit
 import AsyncDisplayKit
 import Display
 import SwiftSignalKit
-import Postbox
 import TelegramCore
 import TelegramUIPreferences
 import ComponentFlow
@@ -94,7 +93,7 @@ public class ChatMessageInstantVideoBubbleContentNode: ChatMessageBubbleContentN
                 
         self.interactiveVideoNode.requestUpdateLayout = { [weak self] _ in
             if let strongSelf = self, let item = strongSelf.item {
-                let _ = item.controllerInteraction.requestMessageUpdate(item.message.id, false)
+                let _ = item.controllerInteraction.requestMessageUpdate(item.message.id, false, nil)
             }
         }
         self.interactiveVideoNode.updateTranscriptionExpanded = { [weak self] state in
@@ -102,13 +101,13 @@ public class ChatMessageInstantVideoBubbleContentNode: ChatMessageBubbleContentN
                 let previous = strongSelf.audioTranscriptionState
                 strongSelf.audioTranscriptionState = state
                 strongSelf.interactiveFileNode.audioTranscriptionState = state
-                let _ = item.controllerInteraction.requestMessageUpdate(item.message.id, state != .inProgress && previous != state)
+                let _ = item.controllerInteraction.requestMessageUpdate(item.message.id, state != .inProgress && previous != state, nil)
             }
         }
         self.interactiveVideoNode.updateTranscriptionText = { [weak self] text in
             if let strongSelf = self, let item = strongSelf.item {
                 strongSelf.interactiveFileNode.forcedAudioTranscriptionText = text
-                let _ = item.controllerInteraction.requestMessageUpdate(item.message.id, false)
+                let _ = item.controllerInteraction.requestMessageUpdate(item.message.id, false, nil)
             }
         }
         self.interactiveFileNode.updateTranscriptionExpanded = { [weak self] state in
@@ -116,7 +115,7 @@ public class ChatMessageInstantVideoBubbleContentNode: ChatMessageBubbleContentN
                 let previous = strongSelf.audioTranscriptionState
                 strongSelf.audioTranscriptionState = state
                 strongSelf.interactiveVideoNode.audioTranscriptionState = state
-                let _ = item.controllerInteraction.requestMessageUpdate(item.message.id, previous != state)
+                let _ = item.controllerInteraction.requestMessageUpdate(item.message.id, previous != state, nil)
             }
         }
         
@@ -134,7 +133,7 @@ public class ChatMessageInstantVideoBubbleContentNode: ChatMessageBubbleContentN
         
         self.interactiveFileNode.requestUpdateLayout = { [weak self] _ in
             if let strongSelf = self, let item = strongSelf.item {
-                let _ = item.controllerInteraction.requestMessageUpdate(item.message.id, false)
+                let _ = item.controllerInteraction.requestMessageUpdate(item.message.id, false, nil)
             }
         }
         
@@ -393,11 +392,11 @@ public class ChatMessageInstantVideoBubbleContentNode: ChatMessageBubbleContentN
         }
     }
     
-    override public func transitionNode(messageId: MessageId, media: Media, adjustRect: Bool) -> (ASDisplayNode, CGRect, () -> (UIView?, UIView?))? {
+    override public func transitionNode(messageId: EngineMessage.Id, media: EngineRawMedia, adjustRect: Bool) -> (ASDisplayNode, CGRect, () -> (UIView?, UIView?))? {
         return nil
     }
     
-    override public func updateHiddenMedia(_ media: [Media]?) -> Bool {
+    override public func updateHiddenMedia(_ media: [EngineRawMedia]?) -> Bool {
         return false
     }
     
@@ -465,7 +464,7 @@ public class ChatMessageInstantVideoBubbleContentNode: ChatMessageBubbleContentN
         return nil
     }
     
-    override public func targetForStoryTransition(id: StoryId) -> UIView? {
+    override public func targetForStoryTransition(id: EngineStoryId) -> UIView? {
         return self.interactiveVideoNode.targetForStoryTransition(id: id)
     }
     

@@ -1,5 +1,4 @@
 import Foundation
-import Postbox
 import TelegramCore
 import SwiftSignalKit
 
@@ -59,7 +58,7 @@ public func updateWatchPresetSettingsInteractively(accountManager: AccountManage
             } else {
                 currentSettings = WatchPresetSettings.defaultSettings
             }
-            return PreferencesEntry(f(currentSettings))
+            return EnginePreferencesEntry(f(currentSettings))
         })
     }
 }

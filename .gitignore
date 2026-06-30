@@ -94,3 +94,5 @@ xcode-files
 **/.vscode/launch.json
 /buildbox/*
 MODULE.bazel.lock
+**/node_modules/
+tools/sim-watcher/dist/

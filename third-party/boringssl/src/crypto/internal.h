@@ -1170,7 +1170,8 @@ static inline uint64_t CRYPTO_rotr_u64(uint64_t value, int shift) {
 
 // CRYPTO_addc_* returns |x + y + carry|, and sets |*out_carry| to the carry
 // bit. |carry| must be zero or one.
-#if OPENSSL_HAS_BUILTIN(__builtin_addc)
+// _Generic is C11-only and not available in C++ mode with GCC.
+#if OPENSSL_HAS_BUILTIN(__builtin_addc) && !defined(__cplusplus)
 
 #define CRYPTO_GENERIC_ADDC(x, y, carry, out_carry) \
   (_Generic((x),                                    \
@@ -1222,7 +1223,7 @@ static inline uint64_t CRYPTO_addc_u64(uint64_t x, uint64_t y, uint64_t carry,
 
 // CRYPTO_subc_* returns |x - y - borrow|, and sets |*out_borrow| to the borrow
 // bit. |borrow| must be zero or one.
-#if OPENSSL_HAS_BUILTIN(__builtin_subc)
+#if OPENSSL_HAS_BUILTIN(__builtin_subc) && !defined(__cplusplus)
 
 #define CRYPTO_GENERIC_SUBC(x, y, borrow, out_borrow) \
   (_Generic((x),                                      \

@@ -136,7 +136,7 @@ public func recentDownloadItems(postbox: Postbox) -> Signal<[RenderedRecentDownl
                 }
                 
                 var size: Int64?
-                for media in message.media {
+                for media in message.effectiveMedia {
                     if let result = findMediaResourceById(media: media, resourceId: MediaResourceId(item.resourceId)) {
                         size = result.size
                         break

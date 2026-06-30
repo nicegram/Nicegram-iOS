@@ -34,6 +34,7 @@
 
 #import "group/GroupInstanceImpl.h"
 #import "group/GroupInstanceCustomImpl.h"
+#import "group/GroupInstanceReferenceImpl.h"
 
 #import "VideoCaptureInterfaceImpl.h"
 
@@ -2415,7 +2416,8 @@ onMutedSpeechActivityDetected:(void (^ _Nullable)(bool))onMutedSpeechActivityDet
 audioDevice:(SharedCallAudioDevice * _Nullable)audioDevice
 isConference:(bool)isConference
 isActiveByDefault:(bool)isActiveByDefault
-encryptDecrypt:(NSData * _Nullable (^ _Nullable)(NSData * _Nonnull, int64_t, bool, int32_t))encryptDecrypt {
+encryptDecrypt:(NSData * _Nullable (^ _Nullable)(NSData * _Nonnull, int64_t, bool, int32_t))encryptDecrypt
+useReferenceImpl:(bool)useReferenceImpl {
     self = [super init];
     if (self != nil) {
         _queue = queue;
@@ -2498,7 +2500,7 @@ encryptDecrypt:(NSData * _Nullable (^ _Nullable)(NSData * _Nonnull, int64_t, boo
         }
 
         __weak GroupCallThreadLocalContext *weakSelf = self;
-        _instance.reset(new tgcalls::GroupInstanceCustomImpl((tgcalls::GroupInstanceDescriptor){
+        tgcalls::GroupInstanceDescriptor descriptor = (tgcalls::GroupInstanceDescriptor){
             .threads = tgcalls::StaticThreads::getThreads(),
             .config = config,
             .statsLogPath = statsLogPathValue,
@@ -2726,7 +2728,12 @@ encryptDecrypt:(NSData * _Nullable (^ _Nullable)(NSData * _Nonnull, int64_t, boo
             },
             .e2eEncryptDecrypt = mappedEncryptDecrypt,
             .isConference = isConference
-        }));
+        };
+        if (useReferenceImpl) {
+            _instance.reset(new tgcalls::GroupInstanceReferenceImpl(std::move(descriptor)));
+        } else {
+            _instance.reset(new tgcalls::GroupInstanceCustomImpl(std::move(descriptor)));
+        }
     }
     return self;
 }

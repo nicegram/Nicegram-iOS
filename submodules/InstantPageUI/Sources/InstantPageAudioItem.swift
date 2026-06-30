@@ -24,7 +24,7 @@ public final class InstantPageAudioItem: InstantPageItem {
     }
     
     public func node(context: AccountContext, strings: PresentationStrings, nameDisplayOrder: PresentationPersonNameOrder, theme: InstantPageTheme, sourceLocation: InstantPageSourceLocation, openMedia: @escaping (InstantPageMedia) -> Void, longPressMedia: @escaping (InstantPageMedia) -> Void, activatePinchPreview: ((PinchSourceContainerNode) -> Void)?, pinchPreviewFinished: ((InstantPageNode) -> Void)?, openPeer: @escaping (EnginePeer) -> Void, openUrl: @escaping (InstantPageUrlItem) -> Void, updateWebEmbedHeight: @escaping (CGFloat) -> Void, updateDetailsExpanded: @escaping (Bool) -> Void, currentExpandedDetails: [Int : Bool]?, getPreloadedResource: @escaping (String) -> Data?) -> InstantPageNode? {
-        return InstantPageAudioNode(context: context, strings: strings, theme: theme, webPage: self.webpage, media: self.media, openMedia: openMedia)
+        return InstantPageAudioNode(context: context, strings: strings, theme: theme, webPage: self.webpage, media: self.media, playlistId: .instantPage(webpageId: self.webpage.webpageId), openMedia: openMedia)
     }
     
     public func matchesAnchor(_ anchor: String) -> Bool {

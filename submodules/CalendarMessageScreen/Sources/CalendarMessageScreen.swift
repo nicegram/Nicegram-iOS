@@ -1868,7 +1868,7 @@ public final class CalendarMessageScreen: ViewController {
         self._hasGlassStyle = true
         self.navigationPresentation = .modal
 
-        self.navigationItem.setLeftBarButton(UIBarButtonItem(title: self.presentationData.strings.Common_Cancel, style: .plain, target: self, action: #selector(dismissPressed)), animated: false)
+        self.navigationItem.setLeftBarButton(UIBarButtonItem(title: "___close", style: .plain, target: self, action: #selector(dismissPressed)), animated: false)
         self.navigationItem.setTitle(self.presentationData.strings.MessageCalendar_Title, animated: false)
 
         if self.enableMessageRangeDeletion {
@@ -1894,7 +1894,7 @@ public final class CalendarMessageScreen: ViewController {
         self.node.toggleSelectionMode()
 
         if self.node.selectionState != nil {
-            self.navigationItem.setRightBarButton(UIBarButtonItem(title: self.presentationData.strings.Common_Done, style: .done, target: self, action: #selector(self.toggleSelectPressed)), animated: true)
+            self.navigationItem.setRightBarButton(UIBarButtonItem(title: "___done", style: .done, target: self, action: #selector(self.toggleSelectPressed)), animated: true)
         } else {
             self.navigationItem.setRightBarButton(UIBarButtonItem(title: self.presentationData.strings.Common_Select, style: .plain, target: self, action: #selector(self.toggleSelectPressed)), animated: true)
         }
@@ -1904,7 +1904,7 @@ public final class CalendarMessageScreen: ViewController {
         self.node.selectDay(timestamp: timestamp)
 
         if self.node.selectionState != nil {
-            self.navigationItem.setRightBarButton(UIBarButtonItem(title: self.presentationData.strings.Common_Done, style: .done, target: self, action: #selector(self.toggleSelectPressed)), animated: true)
+            self.navigationItem.setRightBarButton(UIBarButtonItem(title: "___done", style: .done, target: self, action: #selector(self.toggleSelectPressed)), animated: true)
         }
     }
 

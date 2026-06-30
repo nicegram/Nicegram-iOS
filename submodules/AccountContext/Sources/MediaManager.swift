@@ -1,5 +1,4 @@
 import Foundation
-import Postbox
 import TelegramCore
 import SwiftSignalKit
 import UIKit
@@ -9,10 +8,10 @@ import UniversalMediaPlayer
 import RangeSet
 
 public enum PeerMessagesMediaPlaylistId: Equatable, SharedMediaPlaylistId {
-    case peer(PeerId)
-    case recentActions(PeerId)
+    case peer(EnginePeer.Id)
+    case recentActions(EnginePeer.Id)
     case feed(Int32)
-    case savedMusic(PeerId)
+    case savedMusic(EnginePeer.Id)
     case custom
     
     public func isEqual(to: SharedMediaPlaylistId) -> Bool {
@@ -24,11 +23,11 @@ public enum PeerMessagesMediaPlaylistId: Equatable, SharedMediaPlaylistId {
 }
     
 public enum PeerMessagesPlaylistLocation: Equatable, SharedMediaPlaylistLocation {
-    case messages(chatLocation: ChatLocation, tagMask: MessageTags, at: MessageId)
-    case singleMessage(MessageId)
-    case recentActions(Message)
+    case messages(chatLocation: ChatLocation, tagMask: EngineMessage.Tags, at: EngineMessage.Id)
+    case singleMessage(EngineMessage.Id)
+    case recentActions(EngineRawMessage)
     case savedMusic(context: ProfileSavedMusicContext, at: Int32, canReorder: Bool)
-    case custom(messages: Signal<([Message], Int32, Bool), NoError>, canReorder: Bool, at: MessageId, loadMore: (() -> Void)?, hidePanel: Bool)
+    case custom(messages: Signal<([EngineRawMessage], Int32, Bool), NoError>, canReorder: Bool, at: EngineMessage.Id, loadMore: (() -> Void)?, hidePanel: Bool)
 
     public var playlistId: PeerMessagesMediaPlaylistId {
         switch self {
@@ -62,14 +61,14 @@ public enum PeerMessagesPlaylistLocation: Equatable, SharedMediaPlaylistLocation
                     context.engine.data.get(TelegramEngine.EngineData.Item.Peer.Peer(id: savedMusicContext.peerId))
                 )
                 |> map { state, peer in
-                    var messages: [Message] = []
-                    var peers = SimpleDictionary<PeerId, Peer>()
+                    var messages: [EngineRawMessage] = []
+                    var peers = EngineSimpleDictionary<EnginePeer.Id, EngineRawPeer>()
                     if let peer {
                         peers[peerId] = peer._asPeer()
                     }
                     for file in state.files {
                         let stableId = UInt32(clamping: file.fileId.id % Int64(Int32.max))
-                        messages.append(Message(stableId: stableId, stableVersion: 0, id: MessageId(peerId: peerId, namespace: Namespaces.Message.Local, id: Int32(stableId)), globallyUniqueId: nil, groupingKey: nil, groupInfo: nil, threadId: nil, timestamp: 0, flags: [], tags: [.music], globalTags: [], localTags: [], customTags: [], forwardInfo: nil, author: nil, text: "", attributes: [], media: [file], peers: peers, associatedMessages: SimpleDictionary(), associatedMessageIds: [], associatedMedia: [:], associatedThreadInfo: nil, associatedStories: [:]))
+                        messages.append(EngineRawMessage(stableId: stableId, stableVersion: 0, id: EngineMessage.Id(peerId: peerId, namespace: Namespaces.Message.Local, id: Int32(stableId)), globallyUniqueId: nil, groupingKey: nil, groupInfo: nil, threadId: nil, timestamp: 0, flags: [], tags: [.music], globalTags: [], localTags: [], customTags: [], forwardInfo: nil, author: nil, text: "", attributes: [], media: [file], peers: peers, associatedMessages: EngineSimpleDictionary(), associatedMessageIds: [], associatedMedia: [:], associatedThreadInfo: nil, associatedStories: [:]))
                     }
                     var canLoadMore = false
                     if case let .ready(canLoadMoreValue) = state.dataState {
@@ -78,7 +77,7 @@ public enum PeerMessagesPlaylistLocation: Equatable, SharedMediaPlaylistLocation
                     return (messages, Int32(messages.count), canLoadMore)
                 },
                 canReorder: canReorder,
-                at: MessageId(peerId: peerId, namespace: Namespaces.Message.Local, id: at),
+                at: EngineMessage.Id(peerId: peerId, namespace: Namespaces.Message.Local, id: at),
                 loadMore: { [weak savedMusicContext] in
                     guard let savedMusicContext else {
                         return
@@ -92,7 +91,7 @@ public enum PeerMessagesPlaylistLocation: Equatable, SharedMediaPlaylistLocation
         }
     }
     
-    public var messageId: MessageId? {
+    public var messageId: EngineMessage.Id? {
         switch self {
             case let .messages(_, _, messageId), let .singleMessage(messageId), let .custom(_, _, messageId, _, _):
                 return messageId
@@ -231,7 +230,7 @@ public protocol MediaManager: AnyObject {
 }
 
 public enum GalleryHiddenMediaId: Hashable {
-    case chat(AccountRecordId, MessageId, Media)
+    case chat(AccountRecordId, EngineMessage.Id, EngineRawMedia)
     
     public static func ==(lhs: GalleryHiddenMediaId, rhs: GalleryHiddenMediaId) -> Bool {
         switch lhs {
@@ -254,7 +253,7 @@ public enum GalleryHiddenMediaId: Hashable {
 }
 
 public protocol GalleryHiddenMediaTarget: AnyObject {
-    func getTransitionInfo(messageId: MessageId, media: Media) -> ((UIView) -> Void, ASDisplayNode, () -> (UIView?, UIView?))?
+    func getTransitionInfo(messageId: EngineMessage.Id, media: EngineMedia) -> ((UIView) -> Void, ASDisplayNode, () -> (UIView?, UIView?))?
 }
 
 public protocol GalleryHiddenMediaManager: AnyObject {
@@ -263,7 +262,7 @@ public protocol GalleryHiddenMediaManager: AnyObject {
     func removeSource(_ index: Int)
     func addTarget(_ target: GalleryHiddenMediaTarget)
     func removeTarget(_ target: GalleryHiddenMediaTarget)
-    func findTarget(messageId: MessageId, media: Media) -> ((UIView) -> Void, ASDisplayNode, () -> (UIView?, UIView?))?
+    func findTarget(messageId: EngineMessage.Id, media: EngineMedia) -> ((UIView) -> Void, ASDisplayNode, () -> (UIView?, UIView?))?
 }
 
 public protocol UniversalVideoManager: AnyObject {

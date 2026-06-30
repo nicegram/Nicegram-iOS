@@ -3,7 +3,6 @@ import BackgroundTasks
 import AVFAudio
 import UIKit
 import SwiftSignalKit
-import Postbox
 import TelegramCore
 import TelegramCallsUI
 import AccountContext
@@ -54,7 +53,7 @@ private let backgroundTaskSubmissionDelay: Double = 10.0
 
 private struct PendingMediaUploadKey: Hashable {
     let accountId: AccountRecordId
-    let messageId: MessageId
+    let messageId: EngineMessage.Id
 }
 
 private struct PendingStoryUploadKey: Hashable {
@@ -461,7 +460,7 @@ public final class SharedWakeupManager {
             return
         }
         
-        var messageIdsByAccount: [AccountRecordId: [MessageId]] = [:]
+        var messageIdsByAccount: [AccountRecordId: [EngineMessage.Id]] = [:]
         for key in keys {
             if messageIdsByAccount[key.accountId] == nil {
                 messageIdsByAccount[key.accountId] = []
@@ -1134,7 +1133,9 @@ public final class SharedWakeupManager {
     }
     
     private func updateAccounts(hasTasks: Bool, endTaskAfterTransactionsComplete: UIBackgroundTaskIdentifier?) {
-        if self.inForeground || self.hasActiveAudioSession || self.isInBackgroundExtension || self.backgroundProcessingTaskId != nil || self.backgroundStoryProcessingTaskId != nil || (hasTasks && self.currentExternalCompletion != nil) || self.activeExplicitExtensionTimer != nil || self.silenceAudioRenderer != nil {
+        let hasBackgroundLocationTask = self.accountsAndTasks.contains(where: { $0.2.backgroundLocation })
+        
+        if self.inForeground || self.hasActiveAudioSession || self.isInBackgroundExtension || self.backgroundProcessingTaskId != nil || self.backgroundStoryProcessingTaskId != nil || hasBackgroundLocationTask || (hasTasks && self.currentExternalCompletion != nil) || self.activeExplicitExtensionTimer != nil || self.silenceAudioRenderer != nil {
             Logger.shared.log("Wakeup", "enableBeginTransactions: true (active)")
             
             for (account, primary, tasks) in self.accountsAndTasks {
@@ -1146,7 +1147,7 @@ public final class SharedWakeupManager {
                 } else if !account.keepServiceTaskMasterActiveState {
                     account.shouldBeServiceTaskMaster.set(.single(.never))
                 }
-                account.shouldExplicitelyKeepWorkerConnections.set(.single(tasks.backgroundAudio || tasks.importantTasks.pendingStoryCount != 0 || tasks.importantTasks.pendingMessageCount != 0))
+                account.shouldExplicitelyKeepWorkerConnections.set(.single(tasks.backgroundAudio || tasks.backgroundLocation || tasks.importantTasks.pendingStoryCount != 0 || tasks.importantTasks.pendingMessageCount != 0))
                 account.shouldKeepOnlinePresence.set(.single(primary && self.inForeground))
                 account.shouldKeepBackgroundDownloadConnections.set(.single(tasks.backgroundDownloads))
             }

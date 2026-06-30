@@ -1,5 +1,4 @@
 import Foundation
-import Postbox
 import TelegramCore
 import SwiftSignalKit
 import TelegramPermissions
@@ -119,14 +118,14 @@ public final class ApplicationSpecificInt64ArrayNotice: Codable {
     }
 }
 
-private func noticeNamespace(namespace: Int32) -> ValueBoxKey {
-    let key = ValueBoxKey(length: 4)
+private func noticeNamespace(namespace: Int32) -> EngineDataBuffer {
+    let key = EngineDataBuffer(length: 4)
     key.setInt32(0, value: namespace)
     return key
 }
 
-private func noticeKey(peerId: PeerId, key: Int32) -> ValueBoxKey {
-    let v = ValueBoxKey(length: 8 + 4)
+private func noticeKey(peerId: EnginePeer.Id, key: Int32) -> EngineDataBuffer {
+    let v = EngineDataBuffer(length: 8 + 4)
     v.setInt64(0, value: peerId.toInt64())
     v.setInt32(8, value: key)
     return v
@@ -209,16 +208,17 @@ private enum ApplicationSpecificGlobalNotice: Int32 {
     case copyProtectionTips = 86
     case aiTextProcessingStyleSelectionTips = 87
     case savedMessagesChatListView = 88
+    case guestChatMessageTooltip = 89
     
-    var key: ValueBoxKey {
-        let v = ValueBoxKey(length: 4)
+    var key: EngineDataBuffer {
+        let v = EngineDataBuffer(length: 4)
         v.setInt32(0, value: self.rawValue)
         return v
     }
 }
 
 private extension PermissionKind {
-    var noticeKey: NoticeEntryKey? {
+    var noticeKey: EngineNoticeEntryKey? {
         switch self {
         case .contacts:
             return ApplicationSpecificNoticeKeys.contactsPermissionWarning()
@@ -247,365 +247,369 @@ private struct ApplicationSpecificNoticeKeys {
     private static let displayedPeerVerificationNamespace: Int32 = 11
     private static let dismissedPaidMessageWarningNamespace: Int32 = 11
     
-    static func inlineBotLocationRequestNotice(peerId: PeerId) -> NoticeEntryKey {
-        return NoticeEntryKey(namespace: noticeNamespace(namespace: inlineBotLocationRequestNamespace), key: noticeKey(peerId: peerId, key: 0))
+    static func inlineBotLocationRequestNotice(peerId: EnginePeer.Id) -> EngineNoticeEntryKey {
+        return EngineNoticeEntryKey(namespace: noticeNamespace(namespace: inlineBotLocationRequestNamespace), key: noticeKey(peerId: peerId, key: 0))
     }
     
-    static func botPaymentLiabilityNotice(peerId: PeerId) -> NoticeEntryKey {
-        return NoticeEntryKey(namespace: noticeNamespace(namespace: botPaymentLiabilityNamespace), key: noticeKey(peerId: peerId, key: 0))
+    static func botPaymentLiabilityNotice(peerId: EnginePeer.Id) -> EngineNoticeEntryKey {
+        return EngineNoticeEntryKey(namespace: noticeNamespace(namespace: botPaymentLiabilityNamespace), key: noticeKey(peerId: peerId, key: 0))
     }
     
-    static func botGameNotice(peerId: PeerId) -> NoticeEntryKey {
-        return NoticeEntryKey(namespace: noticeNamespace(namespace: botGameNoticeNamespace), key: noticeKey(peerId: peerId, key: 0))
+    static func botGameNotice(peerId: EnginePeer.Id) -> EngineNoticeEntryKey {
+        return EngineNoticeEntryKey(namespace: noticeNamespace(namespace: botGameNoticeNamespace), key: noticeKey(peerId: peerId, key: 0))
     }
     
-    static func irrelevantPeerGeoNotice(peerId: PeerId) -> NoticeEntryKey {
-        return NoticeEntryKey(namespace: noticeNamespace(namespace: peerReportNamespace), key: noticeKey(peerId: peerId, key: 0))
+    static func irrelevantPeerGeoNotice(peerId: EnginePeer.Id) -> EngineNoticeEntryKey {
+        return EngineNoticeEntryKey(namespace: noticeNamespace(namespace: peerReportNamespace), key: noticeKey(peerId: peerId, key: 0))
     }
     
-    static func dismissedPremiumGiftNotice(peerId: PeerId) -> NoticeEntryKey {
-        return NoticeEntryKey(namespace: noticeNamespace(namespace: dismissedPremiumGiftNamespace), key: noticeKey(peerId: peerId, key: 0))
+    static func dismissedPremiumGiftNotice(peerId: EnginePeer.Id) -> EngineNoticeEntryKey {
+        return EngineNoticeEntryKey(namespace: noticeNamespace(namespace: dismissedPremiumGiftNamespace), key: noticeKey(peerId: peerId, key: 0))
     }
     
-    static func groupEmojiPackNotice(peerId: PeerId) -> NoticeEntryKey {
-        return NoticeEntryKey(namespace: noticeNamespace(namespace: groupEmojiPackNamespace), key: noticeKey(peerId: peerId, key: 0))
+    static func groupEmojiPackNotice(peerId: EnginePeer.Id) -> EngineNoticeEntryKey {
+        return EngineNoticeEntryKey(namespace: noticeNamespace(namespace: groupEmojiPackNamespace), key: noticeKey(peerId: peerId, key: 0))
     }
     
-    static func forcedPasswordSetup() -> NoticeEntryKey {
-        return NoticeEntryKey(namespace: noticeNamespace(namespace: globalNamespace), key: ApplicationSpecificGlobalNotice.secretChatInlineBotUsage.key)
+    static func forcedPasswordSetup() -> EngineNoticeEntryKey {
+        return EngineNoticeEntryKey(namespace: noticeNamespace(namespace: globalNamespace), key: ApplicationSpecificGlobalNotice.secretChatInlineBotUsage.key)
     }
     
-    static func secretChatInlineBotUsage() -> NoticeEntryKey {
-        return NoticeEntryKey(namespace: noticeNamespace(namespace: globalNamespace), key: ApplicationSpecificGlobalNotice.secretChatInlineBotUsage.key)
+    static func secretChatInlineBotUsage() -> EngineNoticeEntryKey {
+        return EngineNoticeEntryKey(namespace: noticeNamespace(namespace: globalNamespace), key: ApplicationSpecificGlobalNotice.secretChatInlineBotUsage.key)
     }
     
-    static func secretChatLinkPreviews() -> NoticeEntryKey {
-        return NoticeEntryKey(namespace: noticeNamespace(namespace: globalNamespace), key: ApplicationSpecificGlobalNotice.secretChatLinkPreviews.key)
+    static func secretChatLinkPreviews() -> EngineNoticeEntryKey {
+        return EngineNoticeEntryKey(namespace: noticeNamespace(namespace: globalNamespace), key: ApplicationSpecificGlobalNotice.secretChatLinkPreviews.key)
     }
     
-    static func archiveIntroDismissed() -> NoticeEntryKey {
-        return NoticeEntryKey(namespace: noticeNamespace(namespace: globalNamespace), key: ApplicationSpecificGlobalNotice.archiveIntroDismissed.key)
+    static func archiveIntroDismissed() -> EngineNoticeEntryKey {
+        return EngineNoticeEntryKey(namespace: noticeNamespace(namespace: globalNamespace), key: ApplicationSpecificGlobalNotice.archiveIntroDismissed.key)
     }
     
-    static func chatMediaMediaRecordingTips() -> NoticeEntryKey {
-        return NoticeEntryKey(namespace: noticeNamespace(namespace: globalNamespace), key: ApplicationSpecificGlobalNotice.chatMediaMediaRecordingTips.key)
+    static func chatMediaMediaRecordingTips() -> EngineNoticeEntryKey {
+        return EngineNoticeEntryKey(namespace: noticeNamespace(namespace: globalNamespace), key: ApplicationSpecificGlobalNotice.chatMediaMediaRecordingTips.key)
     }
     
-    static func archiveChatTips() -> NoticeEntryKey {
-        return NoticeEntryKey(namespace: noticeNamespace(namespace: globalNamespace), key: ApplicationSpecificGlobalNotice.archiveChatTips.key)
+    static func archiveChatTips() -> EngineNoticeEntryKey {
+        return EngineNoticeEntryKey(namespace: noticeNamespace(namespace: globalNamespace), key: ApplicationSpecificGlobalNotice.archiveChatTips.key)
     }
     
-    static func chatFolderTips() -> NoticeEntryKey {
-        return NoticeEntryKey(namespace: noticeNamespace(namespace: globalNamespace), key: ApplicationSpecificGlobalNotice.chatFolderTips.key)
+    static func chatFolderTips() -> EngineNoticeEntryKey {
+        return EngineNoticeEntryKey(namespace: noticeNamespace(namespace: globalNamespace), key: ApplicationSpecificGlobalNotice.chatFolderTips.key)
     }
     
-    static func profileCallTips() -> NoticeEntryKey {
-        return NoticeEntryKey(namespace: noticeNamespace(namespace: globalNamespace), key: ApplicationSpecificGlobalNotice.profileCallTips.key)
+    static func profileCallTips() -> EngineNoticeEntryKey {
+        return EngineNoticeEntryKey(namespace: noticeNamespace(namespace: globalNamespace), key: ApplicationSpecificGlobalNotice.profileCallTips.key)
     }
     
-    static func proxyAdsAcknowledgment() -> NoticeEntryKey {
-        return NoticeEntryKey(namespace: noticeNamespace(namespace: globalNamespace), key: ApplicationSpecificGlobalNotice.proxyAdsAcknowledgment.key)
+    static func proxyAdsAcknowledgment() -> EngineNoticeEntryKey {
+        return EngineNoticeEntryKey(namespace: noticeNamespace(namespace: globalNamespace), key: ApplicationSpecificGlobalNotice.proxyAdsAcknowledgment.key)
     }
     
-    static func psaAdsAcknowledgment(peerId: PeerId) -> NoticeEntryKey {
-        return NoticeEntryKey(namespace: noticeNamespace(namespace: psaAcknowledgementNamespace), key: noticeKey(peerId: peerId, key: 0))
+    static func psaAdsAcknowledgment(peerId: EnginePeer.Id) -> EngineNoticeEntryKey {
+        return EngineNoticeEntryKey(namespace: noticeNamespace(namespace: psaAcknowledgementNamespace), key: noticeKey(peerId: peerId, key: 0))
     }
     
-    static func setPublicChannelLink() -> NoticeEntryKey {
-        return NoticeEntryKey(namespace: noticeNamespace(namespace: globalNamespace), key: ApplicationSpecificGlobalNotice.setPublicChannelLink.key)
+    static func setPublicChannelLink() -> EngineNoticeEntryKey {
+        return EngineNoticeEntryKey(namespace: noticeNamespace(namespace: globalNamespace), key: ApplicationSpecificGlobalNotice.setPublicChannelLink.key)
     }
     
-    static func passcodeLockTips() -> NoticeEntryKey {
-        return NoticeEntryKey(namespace: noticeNamespace(namespace: globalNamespace), key: ApplicationSpecificGlobalNotice.passcodeLockTips.key)
+    static func passcodeLockTips() -> EngineNoticeEntryKey {
+        return EngineNoticeEntryKey(namespace: noticeNamespace(namespace: globalNamespace), key: ApplicationSpecificGlobalNotice.passcodeLockTips.key)
     }
     
-    static func contactsPermissionWarning() -> NoticeEntryKey {
-        return NoticeEntryKey(namespace: noticeNamespace(namespace: permissionsNamespace), key: ApplicationSpecificGlobalNotice.contactsPermissionWarning.key)
+    static func contactsPermissionWarning() -> EngineNoticeEntryKey {
+        return EngineNoticeEntryKey(namespace: noticeNamespace(namespace: permissionsNamespace), key: ApplicationSpecificGlobalNotice.contactsPermissionWarning.key)
     }
     
-    static func notificationsPermissionWarning() -> NoticeEntryKey {
-        return NoticeEntryKey(namespace: noticeNamespace(namespace: permissionsNamespace), key: ApplicationSpecificGlobalNotice.notificationsPermissionWarning.key)
+    static func notificationsPermissionWarning() -> EngineNoticeEntryKey {
+        return EngineNoticeEntryKey(namespace: noticeNamespace(namespace: permissionsNamespace), key: ApplicationSpecificGlobalNotice.notificationsPermissionWarning.key)
     }
     
-    static func cellularDataPermissionWarning() -> NoticeEntryKey {
-        return NoticeEntryKey(namespace: noticeNamespace(namespace: permissionsNamespace), key: ApplicationSpecificGlobalNotice.cellularDataPermissionWarning.key)
+    static func cellularDataPermissionWarning() -> EngineNoticeEntryKey {
+        return EngineNoticeEntryKey(namespace: noticeNamespace(namespace: permissionsNamespace), key: ApplicationSpecificGlobalNotice.cellularDataPermissionWarning.key)
     }
     
-    static func volumeButtonToUnmuteTip() -> NoticeEntryKey {
-        return NoticeEntryKey(namespace: noticeNamespace(namespace: globalNamespace), key: ApplicationSpecificGlobalNotice.volumeButtonToUnmuteTip.key)
+    static func volumeButtonToUnmuteTip() -> EngineNoticeEntryKey {
+        return EngineNoticeEntryKey(namespace: noticeNamespace(namespace: globalNamespace), key: ApplicationSpecificGlobalNotice.volumeButtonToUnmuteTip.key)
     }
     
-    static func callsTabTip() -> NoticeEntryKey {
-        return NoticeEntryKey(namespace: noticeNamespace(namespace: globalNamespace), key: ApplicationSpecificGlobalNotice.callsTabTip.key)
+    static func callsTabTip() -> EngineNoticeEntryKey {
+        return EngineNoticeEntryKey(namespace: noticeNamespace(namespace: globalNamespace), key: ApplicationSpecificGlobalNotice.callsTabTip.key)
     }
     
-    static func chatMessageSearchResultsTip() -> NoticeEntryKey {
-        return NoticeEntryKey(namespace: noticeNamespace(namespace: globalNamespace), key: ApplicationSpecificGlobalNotice.chatMessageSearchResultsTip.key)
+    static func chatMessageSearchResultsTip() -> EngineNoticeEntryKey {
+        return EngineNoticeEntryKey(namespace: noticeNamespace(namespace: globalNamespace), key: ApplicationSpecificGlobalNotice.chatMessageSearchResultsTip.key)
     }
     
-    static func chatMessageOptionsTip() -> NoticeEntryKey {
-        return NoticeEntryKey(namespace: noticeNamespace(namespace: globalNamespace), key: ApplicationSpecificGlobalNotice.chatMessageOptionsTip.key)
+    static func chatMessageOptionsTip() -> EngineNoticeEntryKey {
+        return EngineNoticeEntryKey(namespace: noticeNamespace(namespace: globalNamespace), key: ApplicationSpecificGlobalNotice.chatMessageOptionsTip.key)
     }
     
-    static func chatTextSelectionTip() -> NoticeEntryKey {
-        return NoticeEntryKey(namespace: noticeNamespace(namespace: globalNamespace), key: ApplicationSpecificGlobalNotice.chatTextSelectionTip.key)
-    }
-
-    static func messageViewsPrivacyTips() -> NoticeEntryKey {
-        return NoticeEntryKey(namespace: noticeNamespace(namespace: globalNamespace), key: ApplicationSpecificGlobalNotice.messageViewsPrivacyTips.key)
-    }
-    
-    static func themeChangeTip() -> NoticeEntryKey {
-        return NoticeEntryKey(namespace: noticeNamespace(namespace: globalNamespace), key: ApplicationSpecificGlobalNotice.themeChangeTip.key)
-    }
-    
-    static func locationProximityAlertTip() -> NoticeEntryKey {
-        return NoticeEntryKey(namespace: noticeNamespace(namespace: globalNamespace), key: ApplicationSpecificGlobalNotice.locationProximityAlertTip.key)
+    static func chatTextSelectionTip() -> EngineNoticeEntryKey {
+        return EngineNoticeEntryKey(namespace: noticeNamespace(namespace: globalNamespace), key: ApplicationSpecificGlobalNotice.chatTextSelectionTip.key)
     }
 
-    static func nextChatSuggestionTip() -> NoticeEntryKey {
-        return NoticeEntryKey(namespace: noticeNamespace(namespace: globalNamespace), key: ApplicationSpecificGlobalNotice.nextChatSuggestionTip.key)
+    static func messageViewsPrivacyTips() -> EngineNoticeEntryKey {
+        return EngineNoticeEntryKey(namespace: noticeNamespace(namespace: globalNamespace), key: ApplicationSpecificGlobalNotice.messageViewsPrivacyTips.key)
     }
     
-    static func dismissedTrendingStickerPacks() -> NoticeEntryKey {
-        return NoticeEntryKey(namespace: noticeNamespace(namespace: globalNamespace), key: ApplicationSpecificGlobalNotice.dismissedTrendingStickerPacks.key)
+    static func themeChangeTip() -> EngineNoticeEntryKey {
+        return EngineNoticeEntryKey(namespace: noticeNamespace(namespace: globalNamespace), key: ApplicationSpecificGlobalNotice.themeChangeTip.key)
     }
     
-    static func chatSpecificThemeLightPreviewTip() -> NoticeEntryKey {
-        return NoticeEntryKey(namespace: noticeNamespace(namespace: globalNamespace), key: ApplicationSpecificGlobalNotice.chatSpecificThemeLightPreviewTip.key)
-    }
-    
-    static func chatSpecificThemeDarkPreviewTip() -> NoticeEntryKey {
-        return NoticeEntryKey(namespace: noticeNamespace(namespace: globalNamespace), key: ApplicationSpecificGlobalNotice.chatSpecificThemeDarkPreviewTip.key)
-    }
-    
-    static func chatWallpaperLightPreviewTip() -> NoticeEntryKey {
-        return NoticeEntryKey(namespace: noticeNamespace(namespace: globalNamespace), key: ApplicationSpecificGlobalNotice.chatWallpaperLightPreviewTip.key)
-    }
-    
-    static func chatWallpaperDarkPreviewTip() -> NoticeEntryKey {
-        return NoticeEntryKey(namespace: noticeNamespace(namespace: globalNamespace), key: ApplicationSpecificGlobalNotice.chatWallpaperDarkPreviewTip.key)
-    }
-    
-    static func chatForwardOptionsTip() -> NoticeEntryKey {
-        return NoticeEntryKey(namespace: noticeNamespace(namespace: globalNamespace), key: ApplicationSpecificGlobalNotice.chatForwardOptionsTip.key)
-    }
-    
-    static func chatReplyOptionsTip() -> NoticeEntryKey {
-        return NoticeEntryKey(namespace: noticeNamespace(namespace: globalNamespace), key: ApplicationSpecificGlobalNotice.chatReplyOptionsTip.key)
-    }
-    
-    static func interactiveEmojiSyncTip() -> NoticeEntryKey {
-        return NoticeEntryKey(namespace: noticeNamespace(namespace: globalNamespace), key: ApplicationSpecificGlobalNotice.interactiveEmojiSyncTip.key)
-    }
-    
-    static func dismissedInvitationRequestsNotice(peerId: PeerId) -> NoticeEntryKey {
-        return NoticeEntryKey(namespace: noticeNamespace(namespace: peerInviteRequestsNamespace), key: noticeKey(peerId: peerId, key: 0))
+    static func locationProximityAlertTip() -> EngineNoticeEntryKey {
+        return EngineNoticeEntryKey(namespace: noticeNamespace(namespace: globalNamespace), key: ApplicationSpecificGlobalNotice.locationProximityAlertTip.key)
     }
 
-    static func sharedMediaScrollingTooltip() -> NoticeEntryKey {
-        return NoticeEntryKey(namespace: noticeNamespace(namespace: globalNamespace), key: ApplicationSpecificGlobalNotice.sharedMediaScrollingTooltip.key)
+    static func nextChatSuggestionTip() -> EngineNoticeEntryKey {
+        return EngineNoticeEntryKey(namespace: noticeNamespace(namespace: globalNamespace), key: ApplicationSpecificGlobalNotice.nextChatSuggestionTip.key)
+    }
+    
+    static func dismissedTrendingStickerPacks() -> EngineNoticeEntryKey {
+        return EngineNoticeEntryKey(namespace: noticeNamespace(namespace: globalNamespace), key: ApplicationSpecificGlobalNotice.dismissedTrendingStickerPacks.key)
+    }
+    
+    static func chatSpecificThemeLightPreviewTip() -> EngineNoticeEntryKey {
+        return EngineNoticeEntryKey(namespace: noticeNamespace(namespace: globalNamespace), key: ApplicationSpecificGlobalNotice.chatSpecificThemeLightPreviewTip.key)
+    }
+    
+    static func chatSpecificThemeDarkPreviewTip() -> EngineNoticeEntryKey {
+        return EngineNoticeEntryKey(namespace: noticeNamespace(namespace: globalNamespace), key: ApplicationSpecificGlobalNotice.chatSpecificThemeDarkPreviewTip.key)
+    }
+    
+    static func chatWallpaperLightPreviewTip() -> EngineNoticeEntryKey {
+        return EngineNoticeEntryKey(namespace: noticeNamespace(namespace: globalNamespace), key: ApplicationSpecificGlobalNotice.chatWallpaperLightPreviewTip.key)
+    }
+    
+    static func chatWallpaperDarkPreviewTip() -> EngineNoticeEntryKey {
+        return EngineNoticeEntryKey(namespace: noticeNamespace(namespace: globalNamespace), key: ApplicationSpecificGlobalNotice.chatWallpaperDarkPreviewTip.key)
+    }
+    
+    static func chatForwardOptionsTip() -> EngineNoticeEntryKey {
+        return EngineNoticeEntryKey(namespace: noticeNamespace(namespace: globalNamespace), key: ApplicationSpecificGlobalNotice.chatForwardOptionsTip.key)
+    }
+    
+    static func chatReplyOptionsTip() -> EngineNoticeEntryKey {
+        return EngineNoticeEntryKey(namespace: noticeNamespace(namespace: globalNamespace), key: ApplicationSpecificGlobalNotice.chatReplyOptionsTip.key)
+    }
+    
+    static func interactiveEmojiSyncTip() -> EngineNoticeEntryKey {
+        return EngineNoticeEntryKey(namespace: noticeNamespace(namespace: globalNamespace), key: ApplicationSpecificGlobalNotice.interactiveEmojiSyncTip.key)
+    }
+    
+    static func dismissedInvitationRequestsNotice(peerId: EnginePeer.Id) -> EngineNoticeEntryKey {
+        return EngineNoticeEntryKey(namespace: noticeNamespace(namespace: peerInviteRequestsNamespace), key: noticeKey(peerId: peerId, key: 0))
     }
 
-    static func sharedMediaFastScrollingTooltip() -> NoticeEntryKey {
-        return NoticeEntryKey(namespace: noticeNamespace(namespace: globalNamespace), key: ApplicationSpecificGlobalNotice.sharedMediaFastScrollingTooltip.key)
+    static func sharedMediaScrollingTooltip() -> EngineNoticeEntryKey {
+        return EngineNoticeEntryKey(namespace: noticeNamespace(namespace: globalNamespace), key: ApplicationSpecificGlobalNotice.sharedMediaScrollingTooltip.key)
+    }
+
+    static func sharedMediaFastScrollingTooltip() -> EngineNoticeEntryKey {
+        return EngineNoticeEntryKey(namespace: noticeNamespace(namespace: globalNamespace), key: ApplicationSpecificGlobalNotice.sharedMediaFastScrollingTooltip.key)
     }
     
-    static func emojiTooltip() -> NoticeEntryKey {
-        return NoticeEntryKey(namespace: noticeNamespace(namespace: globalNamespace), key: ApplicationSpecificGlobalNotice.emojiTooltip.key)
+    static func emojiTooltip() -> EngineNoticeEntryKey {
+        return EngineNoticeEntryKey(namespace: noticeNamespace(namespace: globalNamespace), key: ApplicationSpecificGlobalNotice.emojiTooltip.key)
     }
     
-    static func audioTranscriptionSuggestion() -> NoticeEntryKey {
-        return NoticeEntryKey(namespace: noticeNamespace(namespace: globalNamespace), key: ApplicationSpecificGlobalNotice.audioTranscriptionSuggestion.key)
+    static func audioTranscriptionSuggestion() -> EngineNoticeEntryKey {
+        return EngineNoticeEntryKey(namespace: noticeNamespace(namespace: globalNamespace), key: ApplicationSpecificGlobalNotice.audioTranscriptionSuggestion.key)
     }
     
-    static func clearStorageDismissedTipSize() -> NoticeEntryKey {
-        return NoticeEntryKey(namespace: noticeNamespace(namespace: globalNamespace), key: ApplicationSpecificGlobalNotice.clearStorageDismissedTipSize.key)
+    static func clearStorageDismissedTipSize() -> EngineNoticeEntryKey {
+        return EngineNoticeEntryKey(namespace: noticeNamespace(namespace: globalNamespace), key: ApplicationSpecificGlobalNotice.clearStorageDismissedTipSize.key)
     }
     
-    static func dismissedTrendingEmojiPacks() -> NoticeEntryKey {
-        return NoticeEntryKey(namespace: noticeNamespace(namespace: globalNamespace), key: ApplicationSpecificGlobalNotice.dismissedTrendingEmojiPacks.key)
+    static func dismissedTrendingEmojiPacks() -> EngineNoticeEntryKey {
+        return EngineNoticeEntryKey(namespace: noticeNamespace(namespace: globalNamespace), key: ApplicationSpecificGlobalNotice.dismissedTrendingEmojiPacks.key)
     }
     
-    static func translationSuggestionNotice() -> NoticeEntryKey {
-        return NoticeEntryKey(namespace: noticeNamespace(namespace: globalNamespace), key: ApplicationSpecificGlobalNotice.translationSuggestion.key)
+    static func translationSuggestionNotice() -> EngineNoticeEntryKey {
+        return EngineNoticeEntryKey(namespace: noticeNamespace(namespace: globalNamespace), key: ApplicationSpecificGlobalNotice.translationSuggestion.key)
     }
     
-    static func audioRateOptionsTip() -> NoticeEntryKey {
-        return NoticeEntryKey(namespace: noticeNamespace(namespace: globalNamespace), key: ApplicationSpecificGlobalNotice.audioRateOptionsTip.key)
+    static func audioRateOptionsTip() -> EngineNoticeEntryKey {
+        return EngineNoticeEntryKey(namespace: noticeNamespace(namespace: globalNamespace), key: ApplicationSpecificGlobalNotice.audioRateOptionsTip.key)
     }
     
-    static func sendWhenOnlineTip() -> NoticeEntryKey {
-        return NoticeEntryKey(namespace: noticeNamespace(namespace: globalNamespace), key: ApplicationSpecificGlobalNotice.sendWhenOnlineTip.key)
+    static func sendWhenOnlineTip() -> EngineNoticeEntryKey {
+        return EngineNoticeEntryKey(namespace: noticeNamespace(namespace: globalNamespace), key: ApplicationSpecificGlobalNotice.sendWhenOnlineTip.key)
     }
     
-    static func displayChatListContacts() -> NoticeEntryKey {
-        return NoticeEntryKey(namespace: noticeNamespace(namespace: globalNamespace), key: ApplicationSpecificGlobalNotice.displayChatListContacts.key)
+    static func displayChatListContacts() -> EngineNoticeEntryKey {
+        return EngineNoticeEntryKey(namespace: noticeNamespace(namespace: globalNamespace), key: ApplicationSpecificGlobalNotice.displayChatListContacts.key)
     }
     
-    static func displayChatListStoriesTooltip() -> NoticeEntryKey {
-        return NoticeEntryKey(namespace: noticeNamespace(namespace: globalNamespace), key: ApplicationSpecificGlobalNotice.displayChatListStoriesTooltip.key)
+    static func displayChatListStoriesTooltip() -> EngineNoticeEntryKey {
+        return EngineNoticeEntryKey(namespace: noticeNamespace(namespace: globalNamespace), key: ApplicationSpecificGlobalNotice.displayChatListStoriesTooltip.key)
     }
     
-    static func storiesCameraTooltip() -> NoticeEntryKey {
-        return NoticeEntryKey(namespace: noticeNamespace(namespace: globalNamespace), key: ApplicationSpecificGlobalNotice.storiesCameraTooltip.key)
+    static func storiesCameraTooltip() -> EngineNoticeEntryKey {
+        return EngineNoticeEntryKey(namespace: noticeNamespace(namespace: globalNamespace), key: ApplicationSpecificGlobalNotice.storiesCameraTooltip.key)
     }
     
-    static func storiesDualCameraTooltip() -> NoticeEntryKey {
-        return NoticeEntryKey(namespace: noticeNamespace(namespace: globalNamespace), key: ApplicationSpecificGlobalNotice.storiesDualCameraTooltip.key)
+    static func storiesDualCameraTooltip() -> EngineNoticeEntryKey {
+        return EngineNoticeEntryKey(namespace: noticeNamespace(namespace: globalNamespace), key: ApplicationSpecificGlobalNotice.storiesDualCameraTooltip.key)
     }
     
-    static func displayChatListArchiveTooltip() -> NoticeEntryKey {
-        return NoticeEntryKey(namespace: noticeNamespace(namespace: globalNamespace), key: ApplicationSpecificGlobalNotice.displayChatListArchiveTooltip.key)
+    static func displayChatListArchiveTooltip() -> EngineNoticeEntryKey {
+        return EngineNoticeEntryKey(namespace: noticeNamespace(namespace: globalNamespace), key: ApplicationSpecificGlobalNotice.displayChatListArchiveTooltip.key)
     }
     
-    static func displayStoryReactionTooltip() -> NoticeEntryKey {
-        return NoticeEntryKey(namespace: noticeNamespace(namespace: globalNamespace), key: ApplicationSpecificGlobalNotice.displayStoryReactionTooltip.key)
+    static func displayStoryReactionTooltip() -> EngineNoticeEntryKey {
+        return EngineNoticeEntryKey(namespace: noticeNamespace(namespace: globalNamespace), key: ApplicationSpecificGlobalNotice.displayStoryReactionTooltip.key)
     }
     
-    static func storyStealthModeReplyCount() -> NoticeEntryKey {
-        return NoticeEntryKey(namespace: noticeNamespace(namespace: globalNamespace), key: ApplicationSpecificGlobalNotice.storyStealthModeReplyCount.key)
+    static func storyStealthModeReplyCount() -> EngineNoticeEntryKey {
+        return EngineNoticeEntryKey(namespace: noticeNamespace(namespace: globalNamespace), key: ApplicationSpecificGlobalNotice.storyStealthModeReplyCount.key)
     }
     
-    static func viewOnceTooltip() -> NoticeEntryKey {
-        return NoticeEntryKey(namespace: noticeNamespace(namespace: globalNamespace), key: ApplicationSpecificGlobalNotice.viewOnceTooltip.key)
+    static func viewOnceTooltip() -> EngineNoticeEntryKey {
+        return EngineNoticeEntryKey(namespace: noticeNamespace(namespace: globalNamespace), key: ApplicationSpecificGlobalNotice.viewOnceTooltip.key)
     }
     
-    static func displayStoryUnmuteTooltip() -> NoticeEntryKey {
-        return NoticeEntryKey(namespace: noticeNamespace(namespace: globalNamespace), key: ApplicationSpecificGlobalNotice.displayStoryUnmuteTooltip.key)
+    static func displayStoryUnmuteTooltip() -> EngineNoticeEntryKey {
+        return EngineNoticeEntryKey(namespace: noticeNamespace(namespace: globalNamespace), key: ApplicationSpecificGlobalNotice.displayStoryUnmuteTooltip.key)
     }
     
-    static func displayStoryInteractionGuide() -> NoticeEntryKey {
-        return NoticeEntryKey(namespace: noticeNamespace(namespace: globalNamespace), key: ApplicationSpecificGlobalNotice.displayStoryInteractionGuide.key)
+    static func displayStoryInteractionGuide() -> EngineNoticeEntryKey {
+        return EngineNoticeEntryKey(namespace: noticeNamespace(namespace: globalNamespace), key: ApplicationSpecificGlobalNotice.displayStoryInteractionGuide.key)
     }
     
-    static func replyQuoteTextSelectionTip() -> NoticeEntryKey {
-        return NoticeEntryKey(namespace: noticeNamespace(namespace: globalNamespace), key: ApplicationSpecificGlobalNotice.replyQuoteTextSelectionTip.key)
+    static func replyQuoteTextSelectionTip() -> EngineNoticeEntryKey {
+        return EngineNoticeEntryKey(namespace: noticeNamespace(namespace: globalNamespace), key: ApplicationSpecificGlobalNotice.replyQuoteTextSelectionTip.key)
     }
     
-    static func multipleReactionsSuggestion() -> NoticeEntryKey {
-        return NoticeEntryKey(namespace: noticeNamespace(namespace: globalNamespace), key: ApplicationSpecificGlobalNotice.multipleReactionsSuggestion.key)
+    static func multipleReactionsSuggestion() -> EngineNoticeEntryKey {
+        return EngineNoticeEntryKey(namespace: noticeNamespace(namespace: globalNamespace), key: ApplicationSpecificGlobalNotice.multipleReactionsSuggestion.key)
     }
     
-    static func savedMessagesChatsSuggestion() -> NoticeEntryKey {
-        return NoticeEntryKey(namespace: noticeNamespace(namespace: globalNamespace), key: ApplicationSpecificGlobalNotice.savedMessagesChatsSuggestion.key)
+    static func savedMessagesChatsSuggestion() -> EngineNoticeEntryKey {
+        return EngineNoticeEntryKey(namespace: noticeNamespace(namespace: globalNamespace), key: ApplicationSpecificGlobalNotice.savedMessagesChatsSuggestion.key)
     }
     
-    static func voiceMessagesPlayOnceSuggestion() -> NoticeEntryKey {
-        return NoticeEntryKey(namespace: noticeNamespace(namespace: globalNamespace), key: ApplicationSpecificGlobalNotice.voiceMessagesPlayOnceSuggestion.key)
+    static func voiceMessagesPlayOnceSuggestion() -> EngineNoticeEntryKey {
+        return EngineNoticeEntryKey(namespace: noticeNamespace(namespace: globalNamespace), key: ApplicationSpecificGlobalNotice.voiceMessagesPlayOnceSuggestion.key)
     }
     
-    static func incomingVoiceMessagePlayOnceTip() -> NoticeEntryKey {
-        return NoticeEntryKey(namespace: noticeNamespace(namespace: globalNamespace), key: ApplicationSpecificGlobalNotice.incomingVoiceMessagePlayOnceTip.key)
+    static func incomingVoiceMessagePlayOnceTip() -> EngineNoticeEntryKey {
+        return EngineNoticeEntryKey(namespace: noticeNamespace(namespace: globalNamespace), key: ApplicationSpecificGlobalNotice.incomingVoiceMessagePlayOnceTip.key)
     }
     
-    static func outgoingVoiceMessagePlayOnceTip() -> NoticeEntryKey {
-        return NoticeEntryKey(namespace: noticeNamespace(namespace: globalNamespace), key: ApplicationSpecificGlobalNotice.outgoingVoiceMessagePlayOnceTip.key)
+    static func outgoingVoiceMessagePlayOnceTip() -> EngineNoticeEntryKey {
+        return EngineNoticeEntryKey(namespace: noticeNamespace(namespace: globalNamespace), key: ApplicationSpecificGlobalNotice.outgoingVoiceMessagePlayOnceTip.key)
     }
     
-    static func videoMessagesPlayOnceSuggestion() -> NoticeEntryKey {
-        return NoticeEntryKey(namespace: noticeNamespace(namespace: globalNamespace), key: ApplicationSpecificGlobalNotice.videoMessagesPlayOnceSuggestion.key)
+    static func videoMessagesPlayOnceSuggestion() -> EngineNoticeEntryKey {
+        return EngineNoticeEntryKey(namespace: noticeNamespace(namespace: globalNamespace), key: ApplicationSpecificGlobalNotice.videoMessagesPlayOnceSuggestion.key)
     }
     
-    static func incomingVideoMessagePlayOnceTip() -> NoticeEntryKey {
-        return NoticeEntryKey(namespace: noticeNamespace(namespace: globalNamespace), key: ApplicationSpecificGlobalNotice.incomingVideoMessagePlayOnceTip.key)
+    static func incomingVideoMessagePlayOnceTip() -> EngineNoticeEntryKey {
+        return EngineNoticeEntryKey(namespace: noticeNamespace(namespace: globalNamespace), key: ApplicationSpecificGlobalNotice.incomingVideoMessagePlayOnceTip.key)
     }
     
-    static func outgoingVideoMessagePlayOnceTip() -> NoticeEntryKey {
-        return NoticeEntryKey(namespace: noticeNamespace(namespace: globalNamespace), key: ApplicationSpecificGlobalNotice.outgoingVideoMessagePlayOnceTip.key)
+    static func outgoingVideoMessagePlayOnceTip() -> EngineNoticeEntryKey {
+        return EngineNoticeEntryKey(namespace: noticeNamespace(namespace: globalNamespace), key: ApplicationSpecificGlobalNotice.outgoingVideoMessagePlayOnceTip.key)
     }
     
-    static func savedMessageTagLabelSuggestion() -> NoticeEntryKey {
-        return NoticeEntryKey(namespace: noticeNamespace(namespace: globalNamespace), key: ApplicationSpecificGlobalNotice.savedMessageTagLabelSuggestion.key)
+    static func savedMessageTagLabelSuggestion() -> EngineNoticeEntryKey {
+        return EngineNoticeEntryKey(namespace: noticeNamespace(namespace: globalNamespace), key: ApplicationSpecificGlobalNotice.savedMessageTagLabelSuggestion.key)
     }
     
-    static func dismissedBirthdayPremiumGiftTip(peerId: PeerId) -> NoticeEntryKey {
-        return NoticeEntryKey(namespace: noticeNamespace(namespace: dismissedBirthdayPremiumGiftTipNamespace), key: noticeKey(peerId: peerId, key: 0))
+    static func dismissedBirthdayPremiumGiftTip(peerId: EnginePeer.Id) -> EngineNoticeEntryKey {
+        return EngineNoticeEntryKey(namespace: noticeNamespace(namespace: dismissedBirthdayPremiumGiftTipNamespace), key: noticeKey(peerId: peerId, key: 0))
     }
     
-    static func displayedPeerVerification(peerId: PeerId) -> NoticeEntryKey {
-        return NoticeEntryKey(namespace: noticeNamespace(namespace: displayedPeerVerificationNamespace), key: noticeKey(peerId: peerId, key: 0))
+    static func displayedPeerVerification(peerId: EnginePeer.Id) -> EngineNoticeEntryKey {
+        return EngineNoticeEntryKey(namespace: noticeNamespace(namespace: displayedPeerVerificationNamespace), key: noticeKey(peerId: peerId, key: 0))
     }
     
-    static func dismissedPaidMessageWarning(peerId: PeerId) -> NoticeEntryKey {
-        return NoticeEntryKey(namespace: noticeNamespace(namespace: dismissedPaidMessageWarningNamespace), key: noticeKey(peerId: peerId, key: 0))
+    static func dismissedPaidMessageWarning(peerId: EnginePeer.Id) -> EngineNoticeEntryKey {
+        return EngineNoticeEntryKey(namespace: noticeNamespace(namespace: dismissedPaidMessageWarningNamespace), key: noticeKey(peerId: peerId, key: 0))
     }
     
-    static func monetizationIntroDismissed() -> NoticeEntryKey {
-        return NoticeEntryKey(namespace: noticeNamespace(namespace: globalNamespace), key: ApplicationSpecificGlobalNotice.monetizationIntroDismissed.key)
+    static func monetizationIntroDismissed() -> EngineNoticeEntryKey {
+        return EngineNoticeEntryKey(namespace: noticeNamespace(namespace: globalNamespace), key: ApplicationSpecificGlobalNotice.monetizationIntroDismissed.key)
     }
     
-    static func businessBotMessageTooltip() -> NoticeEntryKey {
-        return NoticeEntryKey(namespace: noticeNamespace(namespace: globalNamespace), key: ApplicationSpecificGlobalNotice.businessBotMessageTooltip.key)
+    static func businessBotMessageTooltip() -> EngineNoticeEntryKey {
+        return EngineNoticeEntryKey(namespace: noticeNamespace(namespace: globalNamespace), key: ApplicationSpecificGlobalNotice.businessBotMessageTooltip.key)
     }
     
-    static func captionAboveMediaTooltip() -> NoticeEntryKey {
-        return NoticeEntryKey(namespace: noticeNamespace(namespace: globalNamespace), key: ApplicationSpecificGlobalNotice.captionAboveMediaTooltip.key)
+    static func guestChatMessageTooltip() -> EngineNoticeEntryKey {
+        return EngineNoticeEntryKey(namespace: noticeNamespace(namespace: globalNamespace), key: ApplicationSpecificGlobalNotice.guestChatMessageTooltip.key)
     }
     
-    static func channelSendGiftTooltip() -> NoticeEntryKey {
-        return NoticeEntryKey(namespace: noticeNamespace(namespace: globalNamespace), key: ApplicationSpecificGlobalNotice.channelSendGiftTooltip.key)
+    static func captionAboveMediaTooltip() -> EngineNoticeEntryKey {
+        return EngineNoticeEntryKey(namespace: noticeNamespace(namespace: globalNamespace), key: ApplicationSpecificGlobalNotice.captionAboveMediaTooltip.key)
     }
     
-    static func starGiftWearTips() -> NoticeEntryKey {
-        return NoticeEntryKey(namespace: noticeNamespace(namespace: globalNamespace), key: ApplicationSpecificGlobalNotice.starGiftWearTips.key)
+    static func channelSendGiftTooltip() -> EngineNoticeEntryKey {
+        return EngineNoticeEntryKey(namespace: noticeNamespace(namespace: globalNamespace), key: ApplicationSpecificGlobalNotice.channelSendGiftTooltip.key)
     }
     
-    static func channelSuggestTooltip() -> NoticeEntryKey {
-        return NoticeEntryKey(namespace: noticeNamespace(namespace: globalNamespace), key: ApplicationSpecificGlobalNotice.channelSuggestTooltip.key)
+    static func starGiftWearTips() -> EngineNoticeEntryKey {
+        return EngineNoticeEntryKey(namespace: noticeNamespace(namespace: globalNamespace), key: ApplicationSpecificGlobalNotice.starGiftWearTips.key)
     }
     
-    static func multipleStoriesTooltip() -> NoticeEntryKey {
-        return NoticeEntryKey(namespace: noticeNamespace(namespace: globalNamespace), key: ApplicationSpecificGlobalNotice.multipleStoriesTooltip.key)
+    static func channelSuggestTooltip() -> EngineNoticeEntryKey {
+        return EngineNoticeEntryKey(namespace: noticeNamespace(namespace: globalNamespace), key: ApplicationSpecificGlobalNotice.channelSuggestTooltip.key)
     }
     
-    static func voiceMessagesPauseSuggestion() -> NoticeEntryKey {
-        return NoticeEntryKey(namespace: noticeNamespace(namespace: globalNamespace), key: ApplicationSpecificGlobalNotice.voiceMessagesPauseSuggestion.key)
+    static func multipleStoriesTooltip() -> EngineNoticeEntryKey {
+        return EngineNoticeEntryKey(namespace: noticeNamespace(namespace: globalNamespace), key: ApplicationSpecificGlobalNotice.multipleStoriesTooltip.key)
     }
     
-    static func videoMessagesPauseSuggestion() -> NoticeEntryKey {
-        return NoticeEntryKey(namespace: noticeNamespace(namespace: globalNamespace), key: ApplicationSpecificGlobalNotice.videoMessagesPauseSuggestion.key)
+    static func voiceMessagesPauseSuggestion() -> EngineNoticeEntryKey {
+        return EngineNoticeEntryKey(namespace: noticeNamespace(namespace: globalNamespace), key: ApplicationSpecificGlobalNotice.voiceMessagesPauseSuggestion.key)
     }
     
-    static func voiceMessagesResumeTrimWarning() -> NoticeEntryKey {
-        return NoticeEntryKey(namespace: noticeNamespace(namespace: globalNamespace), key: ApplicationSpecificGlobalNotice.voiceMessagesResumeTrimWarning.key)
+    static func videoMessagesPauseSuggestion() -> EngineNoticeEntryKey {
+        return EngineNoticeEntryKey(namespace: noticeNamespace(namespace: globalNamespace), key: ApplicationSpecificGlobalNotice.videoMessagesPauseSuggestion.key)
     }
     
-    static func globalPostsSearch() -> NoticeEntryKey {
-        return NoticeEntryKey(namespace: noticeNamespace(namespace: globalNamespace), key: ApplicationSpecificGlobalNotice.globalPostsSearch.key)
+    static func voiceMessagesResumeTrimWarning() -> EngineNoticeEntryKey {
+        return EngineNoticeEntryKey(namespace: noticeNamespace(namespace: globalNamespace), key: ApplicationSpecificGlobalNotice.voiceMessagesResumeTrimWarning.key)
     }
     
-    static func giftAuctionTips() -> NoticeEntryKey {
-        return NoticeEntryKey(namespace: noticeNamespace(namespace: globalNamespace), key: ApplicationSpecificGlobalNotice.giftAuctionTips.key)
+    static func globalPostsSearch() -> EngineNoticeEntryKey {
+        return EngineNoticeEntryKey(namespace: noticeNamespace(namespace: globalNamespace), key: ApplicationSpecificGlobalNotice.globalPostsSearch.key)
     }
     
-    static func giftCraftingTips() -> NoticeEntryKey {
-        return NoticeEntryKey(namespace: noticeNamespace(namespace: globalNamespace), key: ApplicationSpecificGlobalNotice.giftCraftingTips.key)
+    static func giftAuctionTips() -> EngineNoticeEntryKey {
+        return EngineNoticeEntryKey(namespace: noticeNamespace(namespace: globalNamespace), key: ApplicationSpecificGlobalNotice.giftAuctionTips.key)
     }
     
-    static func copyProtectionTips() -> NoticeEntryKey {
-        return NoticeEntryKey(namespace: noticeNamespace(namespace: globalNamespace), key: ApplicationSpecificGlobalNotice.copyProtectionTips.key)
+    static func giftCraftingTips() -> EngineNoticeEntryKey {
+        return EngineNoticeEntryKey(namespace: noticeNamespace(namespace: globalNamespace), key: ApplicationSpecificGlobalNotice.giftCraftingTips.key)
     }
     
-    static func aiTextProcessingStyleSelectionTips() -> NoticeEntryKey {
-        return NoticeEntryKey(namespace: noticeNamespace(namespace: globalNamespace), key: ApplicationSpecificGlobalNotice.aiTextProcessingStyleSelectionTips.key)
+    static func copyProtectionTips() -> EngineNoticeEntryKey {
+        return EngineNoticeEntryKey(namespace: noticeNamespace(namespace: globalNamespace), key: ApplicationSpecificGlobalNotice.copyProtectionTips.key)
     }
     
-    static func savedMessagesChatListView() -> NoticeEntryKey {
-        return NoticeEntryKey(namespace: noticeNamespace(namespace: globalNamespace), key: ApplicationSpecificGlobalNotice.savedMessagesChatListView.key)
+    static func aiTextProcessingStyleSelectionTips() -> EngineNoticeEntryKey {
+        return EngineNoticeEntryKey(namespace: noticeNamespace(namespace: globalNamespace), key: ApplicationSpecificGlobalNotice.aiTextProcessingStyleSelectionTips.key)
+    }
+    
+    static func savedMessagesChatListView() -> EngineNoticeEntryKey {
+        return EngineNoticeEntryKey(namespace: noticeNamespace(namespace: globalNamespace), key: ApplicationSpecificGlobalNotice.savedMessagesChatListView.key)
     }
 }
 
 public struct ApplicationSpecificNotice {
-    public static func irrelevantPeerGeoReportKey(peerId: PeerId) -> NoticeEntryKey {
+    public static func irrelevantPeerGeoReportKey(peerId: EnginePeer.Id) -> EngineNoticeEntryKey {
         return ApplicationSpecificNoticeKeys.irrelevantPeerGeoNotice(peerId: peerId)
     }
     
-    public static func setIrrelevantPeerGeoReport(engine: TelegramEngine, peerId: PeerId) -> Signal<Never, NoError> {
+    public static func setIrrelevantPeerGeoReport(engine: TelegramEngine, peerId: EnginePeer.Id) -> Signal<Never, NoError> {
         return engine.notices.set(id: ApplicationSpecificNoticeKeys.irrelevantPeerGeoNotice(peerId: peerId), item: ApplicationSpecificBoolNotice())
     }
     
-    public static func getBotPaymentLiability(accountManager: AccountManager<TelegramAccountManagerTypes>, peerId: PeerId) -> Signal<Bool, NoError> {
+    public static func getBotPaymentLiability(accountManager: AccountManager<TelegramAccountManagerTypes>, peerId: EnginePeer.Id) -> Signal<Bool, NoError> {
         return accountManager.transaction { transaction -> Bool in
             if let _ = transaction.getNotice(ApplicationSpecificNoticeKeys.botPaymentLiabilityNotice(peerId: peerId))?.get(ApplicationSpecificBoolNotice.self) {
                 return true
@@ -615,15 +619,15 @@ public struct ApplicationSpecificNotice {
         }
     }
     
-    public static func setBotPaymentLiability(accountManager: AccountManager<TelegramAccountManagerTypes>, peerId: PeerId) -> Signal<Void, NoError> {
+    public static func setBotPaymentLiability(accountManager: AccountManager<TelegramAccountManagerTypes>, peerId: EnginePeer.Id) -> Signal<Void, NoError> {
         return accountManager.transaction { transaction -> Void in
-            if let entry = CodableEntry(ApplicationSpecificBoolNotice()) {
+            if let entry = EngineCodableEntry(ApplicationSpecificBoolNotice()) {
                 transaction.setNotice(ApplicationSpecificNoticeKeys.botPaymentLiabilityNotice(peerId: peerId), entry)
             }
         }
     }
     
-    public static func getBotGameNotice(accountManager: AccountManager<TelegramAccountManagerTypes>, peerId: PeerId) -> Signal<Bool, NoError> {
+    public static func getBotGameNotice(accountManager: AccountManager<TelegramAccountManagerTypes>, peerId: EnginePeer.Id) -> Signal<Bool, NoError> {
         return accountManager.transaction { transaction -> Bool in
             if let _ = transaction.getNotice(ApplicationSpecificNoticeKeys.botGameNotice(peerId: peerId))?.get(ApplicationSpecificBoolNotice.self) {
                 return true
@@ -633,15 +637,15 @@ public struct ApplicationSpecificNotice {
         }
     }
     
-    public static func setBotGameNotice(accountManager: AccountManager<TelegramAccountManagerTypes>, peerId: PeerId) -> Signal<Void, NoError> {
+    public static func setBotGameNotice(accountManager: AccountManager<TelegramAccountManagerTypes>, peerId: EnginePeer.Id) -> Signal<Void, NoError> {
         return accountManager.transaction { transaction -> Void in
-            if let entry = CodableEntry(ApplicationSpecificBoolNotice()) {
+            if let entry = EngineCodableEntry(ApplicationSpecificBoolNotice()) {
                 transaction.setNotice(ApplicationSpecificNoticeKeys.botGameNotice(peerId: peerId), entry)
             }
         }
     }
     
-    public static func getInlineBotLocationRequest(accountManager: AccountManager<TelegramAccountManagerTypes>, peerId: PeerId) -> Signal<Int32?, NoError> {
+    public static func getInlineBotLocationRequest(accountManager: AccountManager<TelegramAccountManagerTypes>, peerId: EnginePeer.Id) -> Signal<Int32?, NoError> {
         return accountManager.transaction { transaction -> Int32? in
             if let notice = transaction.getNotice(ApplicationSpecificNoticeKeys.inlineBotLocationRequestNotice(peerId: peerId))?.get(ApplicationSpecificTimestampNotice.self) {
                 return notice.value
@@ -651,7 +655,7 @@ public struct ApplicationSpecificNotice {
         }
     }
     
-    public static func inlineBotLocationRequestStatus(accountManager: AccountManager<TelegramAccountManagerTypes>, peerId: PeerId) -> Signal<Bool, NoError> {
+    public static func inlineBotLocationRequestStatus(accountManager: AccountManager<TelegramAccountManagerTypes>, peerId: EnginePeer.Id) -> Signal<Bool, NoError> {
         return accountManager.noticeEntry(key: ApplicationSpecificNoticeKeys.inlineBotLocationRequestNotice(peerId: peerId))
         |> map { view -> Bool in
             guard let value = view.value?.get(ApplicationSpecificTimestampNotice.self) else {
@@ -665,13 +669,13 @@ public struct ApplicationSpecificNotice {
         }
     }
     
-    public static func updateInlineBotLocationRequestState(accountManager: AccountManager<TelegramAccountManagerTypes>, peerId: PeerId, timestamp: Int32) -> Signal<Bool, NoError> {
+    public static func updateInlineBotLocationRequestState(accountManager: AccountManager<TelegramAccountManagerTypes>, peerId: EnginePeer.Id, timestamp: Int32) -> Signal<Bool, NoError> {
         return accountManager.transaction { transaction -> Bool in
             if let notice = transaction.getNotice(ApplicationSpecificNoticeKeys.inlineBotLocationRequestNotice(peerId: peerId))?.get(ApplicationSpecificTimestampNotice.self), (notice.value == 0 || timestamp <= notice.value + 10 * 60) {
                 return false
             }
 
-            if let entry = CodableEntry(ApplicationSpecificTimestampNotice(value: timestamp)) {
+            if let entry = EngineCodableEntry(ApplicationSpecificTimestampNotice(value: timestamp)) {
                 transaction.setNotice(ApplicationSpecificNoticeKeys.inlineBotLocationRequestNotice(peerId: peerId), entry)
             }
             
@@ -679,9 +683,9 @@ public struct ApplicationSpecificNotice {
         }
     }
     
-    public static func setInlineBotLocationRequest(accountManager: AccountManager<TelegramAccountManagerTypes>, peerId: PeerId, value: Int32) -> Signal<Void, NoError> {
+    public static func setInlineBotLocationRequest(accountManager: AccountManager<TelegramAccountManagerTypes>, peerId: EnginePeer.Id, value: Int32) -> Signal<Void, NoError> {
         return accountManager.transaction { transaction -> Void in
-            if let entry = CodableEntry(ApplicationSpecificTimestampNotice(value: value)) {
+            if let entry = EngineCodableEntry(ApplicationSpecificTimestampNotice(value: value)) {
                 transaction.setNotice(ApplicationSpecificNoticeKeys.inlineBotLocationRequestNotice(peerId: peerId), entry)
             }
         }
@@ -699,14 +703,14 @@ public struct ApplicationSpecificNotice {
     
     public static func setSecretChatInlineBotUsage(accountManager: AccountManager<TelegramAccountManagerTypes>) -> Signal<Void, NoError> {
         return accountManager.transaction { transaction -> Void in
-            if let entry = CodableEntry(ApplicationSpecificBoolNotice()) {
+            if let entry = EngineCodableEntry(ApplicationSpecificBoolNotice()) {
                 transaction.setNotice(ApplicationSpecificNoticeKeys.secretChatInlineBotUsage(), entry)
             }
         }
     }
     
     public static func setSecretChatInlineBotUsage(transaction: AccountManagerModifier<TelegramAccountManagerTypes>) {
-        if let entry = CodableEntry(ApplicationSpecificBoolNotice()) {
+        if let entry = EngineCodableEntry(ApplicationSpecificBoolNotice()) {
             transaction.setNotice(ApplicationSpecificNoticeKeys.secretChatInlineBotUsage(), entry)
         }
     }
@@ -721,7 +725,7 @@ public struct ApplicationSpecificNotice {
         }
     }
     
-    public static func getSecretChatLinkPreviews(_ entry: CodableEntry) -> Bool? {
+    public static func getSecretChatLinkPreviews(_ entry: EngineCodableEntry) -> Bool? {
         if let value = entry.get(ApplicationSpecificVariantNotice.self) {
             return value.value
         } else {
@@ -731,19 +735,19 @@ public struct ApplicationSpecificNotice {
     
     public static func setSecretChatLinkPreviews(accountManager: AccountManager<TelegramAccountManagerTypes>, value: Bool) -> Signal<Void, NoError> {
         return accountManager.transaction { transaction -> Void in
-            if let entry = CodableEntry(ApplicationSpecificVariantNotice(value: value)) {
+            if let entry = EngineCodableEntry(ApplicationSpecificVariantNotice(value: value)) {
                 transaction.setNotice(ApplicationSpecificNoticeKeys.secretChatLinkPreviews(), entry)
             }
         }
     }
     
     public static func setSecretChatLinkPreviews(transaction: AccountManagerModifier<TelegramAccountManagerTypes>, value: Bool) {
-        if let entry = CodableEntry(ApplicationSpecificVariantNotice(value: value)) {
+        if let entry = EngineCodableEntry(ApplicationSpecificVariantNotice(value: value)) {
             transaction.setNotice(ApplicationSpecificNoticeKeys.secretChatLinkPreviews(), entry)
         }
     }
     
-    public static func secretChatLinkPreviewsKey() -> NoticeEntryKey {
+    public static func secretChatLinkPreviewsKey() -> EngineNoticeEntryKey {
         return ApplicationSpecificNoticeKeys.secretChatLinkPreviews()
     }
     
@@ -765,7 +769,7 @@ public struct ApplicationSpecificNotice {
             }
             currentValue += count
 
-            if let entry = CodableEntry(ApplicationSpecificCounterNotice(value: currentValue)) {
+            if let entry = EngineCodableEntry(ApplicationSpecificCounterNotice(value: currentValue)) {
                 transaction.setNotice(ApplicationSpecificNoticeKeys.chatMediaMediaRecordingTips(), entry)
             }
         }
@@ -790,7 +794,7 @@ public struct ApplicationSpecificNotice {
             let previousValue = currentValue
             currentValue += Int32(count)
 
-            if let entry = CodableEntry(ApplicationSpecificCounterNotice(value: currentValue)) {
+            if let entry = EngineCodableEntry(ApplicationSpecificCounterNotice(value: currentValue)) {
                 transaction.setNotice(ApplicationSpecificNoticeKeys.archiveChatTips(), entry)
             }
             
@@ -807,7 +811,7 @@ public struct ApplicationSpecificNotice {
             let previousValue = currentValue
             currentValue += Int32(count)
 
-            if let entry = CodableEntry(ApplicationSpecificCounterNotice(value: currentValue)) {
+            if let entry = EngineCodableEntry(ApplicationSpecificCounterNotice(value: currentValue)) {
                 transaction.setNotice(ApplicationSpecificNoticeKeys.chatFolderTips(), entry)
             }
             
@@ -816,12 +820,12 @@ public struct ApplicationSpecificNotice {
     }
     
     public static func setArchiveIntroDismissed(transaction: AccountManagerModifier<TelegramAccountManagerTypes>, value: Bool) {
-        if let entry = CodableEntry(ApplicationSpecificVariantNotice(value: value)) {
+        if let entry = EngineCodableEntry(ApplicationSpecificVariantNotice(value: value)) {
             transaction.setNotice(ApplicationSpecificNoticeKeys.archiveIntroDismissed(), entry)
         }
     }
     
-    public static func archiveIntroDismissedKey() -> NoticeEntryKey {
+    public static func archiveIntroDismissedKey() -> EngineNoticeEntryKey {
         return ApplicationSpecificNoticeKeys.archiveIntroDismissed()
     }
     
@@ -843,7 +847,7 @@ public struct ApplicationSpecificNotice {
             }
             currentValue += count
 
-            if let entry = CodableEntry(ApplicationSpecificCounterNotice(value: currentValue)) {
+            if let entry = EngineCodableEntry(ApplicationSpecificCounterNotice(value: currentValue)) {
                 transaction.setNotice(ApplicationSpecificNoticeKeys.profileCallTips(), entry)
             }
         }
@@ -861,7 +865,7 @@ public struct ApplicationSpecificNotice {
     
     public static func markAsSeenSetPublicChannelLink(accountManager: AccountManager<TelegramAccountManagerTypes>) -> Signal<Void, NoError> {
         return accountManager.transaction { transaction -> Void in
-            if let entry = CodableEntry(ApplicationSpecificCounterNotice(value: 1)) {
+            if let entry = EngineCodableEntry(ApplicationSpecificCounterNotice(value: 1)) {
                 transaction.setNotice(ApplicationSpecificNoticeKeys.profileCallTips(), entry)
             }
         }
@@ -879,13 +883,13 @@ public struct ApplicationSpecificNotice {
     
     public static func setProxyAdsAcknowledgment(accountManager: AccountManager<TelegramAccountManagerTypes>) -> Signal<Void, NoError> {
         return accountManager.transaction { transaction -> Void in
-            if let entry = CodableEntry(ApplicationSpecificBoolNotice()) {
+            if let entry = EngineCodableEntry(ApplicationSpecificBoolNotice()) {
                 transaction.setNotice(ApplicationSpecificNoticeKeys.proxyAdsAcknowledgment(), entry)
             }
         }
     }
     
-    public static func getPsaAcknowledgment(accountManager: AccountManager<TelegramAccountManagerTypes>, peerId: PeerId) -> Signal<Bool, NoError> {
+    public static func getPsaAcknowledgment(accountManager: AccountManager<TelegramAccountManagerTypes>, peerId: EnginePeer.Id) -> Signal<Bool, NoError> {
         return accountManager.transaction { transaction -> Bool in
             if let _ = transaction.getNotice(ApplicationSpecificNoticeKeys.psaAdsAcknowledgment(peerId: peerId))?.get(ApplicationSpecificBoolNotice.self) {
                 return true
@@ -895,9 +899,9 @@ public struct ApplicationSpecificNotice {
         }
     }
     
-    public static func setPsaAcknowledgment(accountManager: AccountManager<TelegramAccountManagerTypes>, peerId: PeerId) -> Signal<Void, NoError> {
+    public static func setPsaAcknowledgment(accountManager: AccountManager<TelegramAccountManagerTypes>, peerId: EnginePeer.Id) -> Signal<Void, NoError> {
         return accountManager.transaction { transaction -> Void in
-            if let entry = CodableEntry(ApplicationSpecificBoolNotice()) {
+            if let entry = EngineCodableEntry(ApplicationSpecificBoolNotice()) {
                 transaction.setNotice(ApplicationSpecificNoticeKeys.psaAdsAcknowledgment(peerId: peerId), entry)
             }
         }
@@ -915,13 +919,13 @@ public struct ApplicationSpecificNotice {
     
     public static func setPasscodeLockTips(accountManager: AccountManager<TelegramAccountManagerTypes>) -> Signal<Void, NoError> {
         return accountManager.transaction { transaction -> Void in
-            if let entry = CodableEntry(ApplicationSpecificBoolNotice()) {
+            if let entry = EngineCodableEntry(ApplicationSpecificBoolNotice()) {
                 transaction.setNotice(ApplicationSpecificNoticeKeys.passcodeLockTips(), entry)
             }
         }
     }
     
-    public static func permissionWarningKey(permission: PermissionKind) -> NoticeEntryKey? {
+    public static func permissionWarningKey(permission: PermissionKind) -> EngineNoticeEntryKey? {
         return permission.noticeKey
     }
     
@@ -930,13 +934,13 @@ public struct ApplicationSpecificNotice {
             return
         }
         let _ = (accountManager.transaction { transaction -> Void in
-            if let entry = CodableEntry(ApplicationSpecificTimestampNotice(value: value)) {
+            if let entry = EngineCodableEntry(ApplicationSpecificTimestampNotice(value: value)) {
                 transaction.setNotice(noticeKey, entry)
             }
         }).start()
     }
     
-    public static func getTimestampValue(_ entry: CodableEntry) -> Int32? {
+    public static func getTimestampValue(_ entry: EngineCodableEntry) -> Int32? {
         if let value = entry.get(ApplicationSpecificTimestampNotice.self) {
             return value.value
         } else {
@@ -956,7 +960,7 @@ public struct ApplicationSpecificNotice {
     
     public static func setVolumeButtonToUnmute(accountManager: AccountManager<TelegramAccountManagerTypes>) {
         let _ = accountManager.transaction { transaction -> Void in
-            if let entry = CodableEntry(ApplicationSpecificBoolNotice()) {
+            if let entry = EngineCodableEntry(ApplicationSpecificBoolNotice()) {
                 transaction.setNotice(ApplicationSpecificNoticeKeys.volumeButtonToUnmuteTip(), entry)
             }
         }.start()
@@ -981,7 +985,7 @@ public struct ApplicationSpecificNotice {
             let previousValue = currentValue
             currentValue += min(3, Int32(count))
 
-            if let entry = CodableEntry(ApplicationSpecificCounterNotice(value: currentValue)) {
+            if let entry = EngineCodableEntry(ApplicationSpecificCounterNotice(value: currentValue)) {
                 transaction.setNotice(ApplicationSpecificNoticeKeys.callsTabTip(), entry)
             }
             
@@ -991,7 +995,7 @@ public struct ApplicationSpecificNotice {
     
     public static func setCallsTabTip(accountManager: AccountManager<TelegramAccountManagerTypes>) -> Signal<Void, NoError> {
         return accountManager.transaction { transaction -> Void in
-            if let entry = CodableEntry(ApplicationSpecificBoolNotice()) {
+            if let entry = EngineCodableEntry(ApplicationSpecificBoolNotice()) {
                 transaction.setNotice(ApplicationSpecificNoticeKeys.callsTabTip(), entry)
             }
         }
@@ -1016,7 +1020,7 @@ public struct ApplicationSpecificNotice {
             }
             currentValue += count
 
-            if let entry = CodableEntry(ApplicationSpecificCounterNotice(value: currentValue)) {
+            if let entry = EngineCodableEntry(ApplicationSpecificCounterNotice(value: currentValue)) {
                 transaction.setNotice(ApplicationSpecificNoticeKeys.chatMessageSearchResultsTip(), entry)
             }
         }
@@ -1040,7 +1044,7 @@ public struct ApplicationSpecificNotice {
             }
             currentValue += count
 
-            if let entry = CodableEntry(ApplicationSpecificCounterNotice(value: currentValue)) {
+            if let entry = EngineCodableEntry(ApplicationSpecificCounterNotice(value: currentValue)) {
                 transaction.setNotice(ApplicationSpecificNoticeKeys.chatMessageOptionsTip(), entry)
             }
         }
@@ -1064,7 +1068,7 @@ public struct ApplicationSpecificNotice {
             }
             currentValue += count
 
-            if let entry = CodableEntry(ApplicationSpecificCounterNotice(value: currentValue)) {
+            if let entry = EngineCodableEntry(ApplicationSpecificCounterNotice(value: currentValue)) {
                 transaction.setNotice(ApplicationSpecificNoticeKeys.chatTextSelectionTip(), entry)
             }
         }
@@ -1088,7 +1092,7 @@ public struct ApplicationSpecificNotice {
             }
             currentValue += count
 
-            if let entry = CodableEntry(ApplicationSpecificCounterNotice(value: currentValue)) {
+            if let entry = EngineCodableEntry(ApplicationSpecificCounterNotice(value: currentValue)) {
                 transaction.setNotice(ApplicationSpecificNoticeKeys.replyQuoteTextSelectionTip(), entry)
             }
         }
@@ -1112,7 +1116,7 @@ public struct ApplicationSpecificNotice {
             }
             currentValue += count
 
-            if let entry = CodableEntry(ApplicationSpecificCounterNotice(value: currentValue)) {
+            if let entry = EngineCodableEntry(ApplicationSpecificCounterNotice(value: currentValue)) {
                 transaction.setNotice(ApplicationSpecificNoticeKeys.messageViewsPrivacyTips(), entry)
             }
         }
@@ -1130,7 +1134,7 @@ public struct ApplicationSpecificNotice {
     
     public static func markThemeChangeTipAsSeen(accountManager: AccountManager<TelegramAccountManagerTypes>) {
         let _ = accountManager.transaction { transaction -> Void in
-            if let entry = CodableEntry(ApplicationSpecificBoolNotice()) {
+            if let entry = EngineCodableEntry(ApplicationSpecificBoolNotice()) {
                 transaction.setNotice(ApplicationSpecificNoticeKeys.themeChangeTip(), entry)
             }
         }.start()
@@ -1154,7 +1158,7 @@ public struct ApplicationSpecificNotice {
             }
             currentValue += count
 
-            if let entry = CodableEntry(ApplicationSpecificCounterNotice(value: currentValue)) {
+            if let entry = EngineCodableEntry(ApplicationSpecificCounterNotice(value: currentValue)) {
                 transaction.setNotice(ApplicationSpecificNoticeKeys.chatMessageOptionsTip(), entry)
             }
         }
@@ -1178,7 +1182,7 @@ public struct ApplicationSpecificNotice {
             }
             currentValue += count
 
-            if let entry = CodableEntry(ApplicationSpecificCounterNotice(value: currentValue)) {
+            if let entry = EngineCodableEntry(ApplicationSpecificCounterNotice(value: currentValue)) {
                 transaction.setNotice(ApplicationSpecificNoticeKeys.nextChatSuggestionTip(), entry)
             }
         }
@@ -1202,7 +1206,7 @@ public struct ApplicationSpecificNotice {
             }
             currentValue += count
 
-            if let entry = CodableEntry(ApplicationSpecificCounterNotice(value: currentValue)) {
+            if let entry = EngineCodableEntry(ApplicationSpecificCounterNotice(value: currentValue)) {
                 transaction.setNotice(ApplicationSpecificNoticeKeys.sharedMediaScrollingTooltip(), entry)
             }
         }
@@ -1226,7 +1230,7 @@ public struct ApplicationSpecificNotice {
             }
             currentValue += count
 
-            if let entry = CodableEntry(ApplicationSpecificCounterNotice(value: currentValue)) {
+            if let entry = EngineCodableEntry(ApplicationSpecificCounterNotice(value: currentValue)) {
                 transaction.setNotice(ApplicationSpecificNoticeKeys.sharedMediaFastScrollingTooltip(), entry)
             }
         }
@@ -1250,7 +1254,7 @@ public struct ApplicationSpecificNotice {
             }
             currentValue += count
 
-            if let entry = CodableEntry(ApplicationSpecificCounterNotice(value: currentValue)) {
+            if let entry = EngineCodableEntry(ApplicationSpecificCounterNotice(value: currentValue)) {
                 transaction.setNotice(ApplicationSpecificNoticeKeys.emojiTooltip(), entry)
             }
         }
@@ -1269,7 +1273,7 @@ public struct ApplicationSpecificNotice {
     
     public static func setDismissedTrendingStickerPacks(accountManager: AccountManager<TelegramAccountManagerTypes>, values: [Int64]) -> Signal<Void, NoError> {
         return accountManager.transaction { transaction -> Void in
-            if let entry = CodableEntry(ApplicationSpecificInt64ArrayNotice(values: values)) {
+            if let entry = EngineCodableEntry(ApplicationSpecificInt64ArrayNotice(values: values)) {
                 transaction.setNotice(ApplicationSpecificNoticeKeys.dismissedTrendingStickerPacks(), entry)
             }
         }
@@ -1288,7 +1292,7 @@ public struct ApplicationSpecificNotice {
     
     public static func setDismissedTrendingEmojiPacks(accountManager: AccountManager<TelegramAccountManagerTypes>, values: [Int64]) -> Signal<Void, NoError> {
         return accountManager.transaction { transaction -> Void in
-            if let entry = CodableEntry(ApplicationSpecificInt64ArrayNotice(values: values)) {
+            if let entry = EngineCodableEntry(ApplicationSpecificInt64ArrayNotice(values: values)) {
                 transaction.setNotice(ApplicationSpecificNoticeKeys.dismissedTrendingEmojiPacks(), entry)
             }
         }
@@ -1313,7 +1317,7 @@ public struct ApplicationSpecificNotice {
             let previousValue = currentValue
             currentValue += Int32(count)
 
-            if let entry = CodableEntry(ApplicationSpecificTimestampAndCounterNotice(counter: currentValue, timestamp: timestamp)) {
+            if let entry = EngineCodableEntry(ApplicationSpecificTimestampAndCounterNotice(counter: currentValue, timestamp: timestamp)) {
                 transaction.setNotice(ApplicationSpecificNoticeKeys.chatSpecificThemeLightPreviewTip(), entry)
             }
             
@@ -1340,7 +1344,7 @@ public struct ApplicationSpecificNotice {
             let previousValue = currentValue
             currentValue += Int32(count)
 
-            if let entry = CodableEntry(ApplicationSpecificTimestampAndCounterNotice(counter: currentValue, timestamp: timestamp)) {
+            if let entry = EngineCodableEntry(ApplicationSpecificTimestampAndCounterNotice(counter: currentValue, timestamp: timestamp)) {
                 transaction.setNotice(ApplicationSpecificNoticeKeys.chatSpecificThemeDarkPreviewTip(), entry)
             }
             
@@ -1367,7 +1371,7 @@ public struct ApplicationSpecificNotice {
             let previousValue = currentValue
             currentValue += Int32(count)
 
-            if let entry = CodableEntry(ApplicationSpecificTimestampAndCounterNotice(counter: currentValue, timestamp: timestamp)) {
+            if let entry = EngineCodableEntry(ApplicationSpecificTimestampAndCounterNotice(counter: currentValue, timestamp: timestamp)) {
                 transaction.setNotice(ApplicationSpecificNoticeKeys.chatWallpaperLightPreviewTip(), entry)
             }
             
@@ -1394,7 +1398,7 @@ public struct ApplicationSpecificNotice {
             let previousValue = currentValue
             currentValue += Int32(count)
 
-            if let entry = CodableEntry(ApplicationSpecificTimestampAndCounterNotice(counter: currentValue, timestamp: timestamp)) {
+            if let entry = EngineCodableEntry(ApplicationSpecificTimestampAndCounterNotice(counter: currentValue, timestamp: timestamp)) {
                 transaction.setNotice(ApplicationSpecificNoticeKeys.chatWallpaperDarkPreviewTip(), entry)
             }
             
@@ -1421,7 +1425,7 @@ public struct ApplicationSpecificNotice {
             let previousValue = currentValue
             currentValue += Int32(count)
 
-            if let entry = CodableEntry(ApplicationSpecificCounterNotice(value: currentValue)) {
+            if let entry = EngineCodableEntry(ApplicationSpecificCounterNotice(value: currentValue)) {
                 transaction.setNotice(ApplicationSpecificNoticeKeys.chatForwardOptionsTip(), entry)
             }
             
@@ -1448,7 +1452,7 @@ public struct ApplicationSpecificNotice {
             let previousValue = currentValue
             currentValue += Int32(count)
 
-            if let entry = CodableEntry(ApplicationSpecificCounterNotice(value: currentValue)) {
+            if let entry = EngineCodableEntry(ApplicationSpecificCounterNotice(value: currentValue)) {
                 transaction.setNotice(ApplicationSpecificNoticeKeys.chatReplyOptionsTip(), entry)
             }
             
@@ -1468,7 +1472,7 @@ public struct ApplicationSpecificNotice {
     
     public static func setClearStorageDismissedTipSize(accountManager: AccountManager<TelegramAccountManagerTypes>, value: Int32) -> Signal<Never, NoError> {
         return accountManager.transaction { transaction -> Void in
-            if let entry = CodableEntry(ApplicationSpecificCounterNotice(value: value)) {
+            if let entry = EngineCodableEntry(ApplicationSpecificCounterNotice(value: value)) {
                 transaction.setNotice(ApplicationSpecificNoticeKeys.clearStorageDismissedTipSize(), entry)
             }
         }
@@ -1494,7 +1498,7 @@ public struct ApplicationSpecificNotice {
             let previousValue = currentValue
             currentValue += Int32(count)
 
-            if let entry = CodableEntry(ApplicationSpecificTimestampAndCounterNotice(counter: currentValue, timestamp: timestamp)) {
+            if let entry = EngineCodableEntry(ApplicationSpecificTimestampAndCounterNotice(counter: currentValue, timestamp: timestamp)) {
                 transaction.setNotice(ApplicationSpecificNoticeKeys.interactiveEmojiSyncTip(), entry)
             }
             
@@ -1502,7 +1506,7 @@ public struct ApplicationSpecificNotice {
         }
     }
     
-    public static func dismissedInvitationRequests(accountManager: AccountManager<TelegramAccountManagerTypes>, peerId: PeerId) -> Signal<[Int64]?, NoError> {
+    public static func dismissedInvitationRequests(accountManager: AccountManager<TelegramAccountManagerTypes>, peerId: EnginePeer.Id) -> Signal<[Int64]?, NoError> {
         return accountManager.noticeEntry(key: ApplicationSpecificNoticeKeys.dismissedInvitationRequestsNotice(peerId: peerId))
         |> map { view -> [Int64]? in
             if let value = view.value?.get(ApplicationSpecificInt64ArrayNotice.self) {
@@ -1513,15 +1517,15 @@ public struct ApplicationSpecificNotice {
         }
     }
     
-    public static func setDismissedInvitationRequests(accountManager: AccountManager<TelegramAccountManagerTypes>, peerId: PeerId, values: [Int64]) -> Signal<Void, NoError> {
+    public static func setDismissedInvitationRequests(accountManager: AccountManager<TelegramAccountManagerTypes>, peerId: EnginePeer.Id, values: [Int64]) -> Signal<Void, NoError> {
         return accountManager.transaction { transaction -> Void in
-            if let entry = CodableEntry(ApplicationSpecificInt64ArrayNotice(values: values)) {
+            if let entry = EngineCodableEntry(ApplicationSpecificInt64ArrayNotice(values: values)) {
                 transaction.setNotice(ApplicationSpecificNoticeKeys.dismissedInvitationRequestsNotice(peerId: peerId), entry)
             }
         }
     }
     
-    public static func forcedPasswordSetupKey() -> NoticeEntryKey {
+    public static func forcedPasswordSetupKey() -> EngineNoticeEntryKey {
         return ApplicationSpecificNoticeKeys.forcedPasswordSetup()
     }
     
@@ -1533,7 +1537,7 @@ public struct ApplicationSpecificNotice {
         return engine.notices.set(id: ApplicationSpecificNoticeKeys.forcedPasswordSetup(), item: item)
     }
     
-    public static func audioTranscriptionSuggestionKey() -> NoticeEntryKey {
+    public static func audioTranscriptionSuggestionKey() -> EngineNoticeEntryKey {
         return ApplicationSpecificNoticeKeys.audioTranscriptionSuggestion()
     }
     
@@ -1556,7 +1560,7 @@ public struct ApplicationSpecificNotice {
             let previousValue = currentValue
             currentValue += count
 
-            if let entry = CodableEntry(ApplicationSpecificCounterNotice(value: currentValue)) {
+            if let entry = EngineCodableEntry(ApplicationSpecificCounterNotice(value: currentValue)) {
                 transaction.setNotice(ApplicationSpecificNoticeKeys.audioTranscriptionSuggestion(), entry)
             }
             
@@ -1590,7 +1594,7 @@ public struct ApplicationSpecificNotice {
                 let previousValue = currentValue
                 currentValue = max(0, Int32(currentValue + count))
                 
-                if let entry = CodableEntry(ApplicationSpecificTimestampAndCounterNotice(counter: currentValue, timestamp: timestamp)) {
+                if let entry = EngineCodableEntry(ApplicationSpecificTimestampAndCounterNotice(counter: currentValue, timestamp: timestamp)) {
                     transaction.setNotice(ApplicationSpecificNoticeKeys.translationSuggestionNotice(), entry)
                 }
                 
@@ -1618,14 +1622,14 @@ public struct ApplicationSpecificNotice {
             let previousValue = currentValue
             currentValue += count
 
-            if let entry = CodableEntry(ApplicationSpecificCounterNotice(value: currentValue)) {
+            if let entry = EngineCodableEntry(ApplicationSpecificCounterNotice(value: currentValue)) {
                 transaction.setNotice(ApplicationSpecificNoticeKeys.audioRateOptionsTip(), entry)
             }
             return previousValue
         }
     }
     
-    public static func dismissedPremiumGiftSuggestion(accountManager: AccountManager<TelegramAccountManagerTypes>, peerId: PeerId) -> Signal<Int32?, NoError> {
+    public static func dismissedPremiumGiftSuggestion(accountManager: AccountManager<TelegramAccountManagerTypes>, peerId: EnginePeer.Id) -> Signal<Int32?, NoError> {
         return accountManager.noticeEntry(key: ApplicationSpecificNoticeKeys.dismissedPremiumGiftNotice(peerId: peerId))
         |> map { view -> Int32? in
             if let value = view.value?.get(ApplicationSpecificTimestampNotice.self) {
@@ -1636,16 +1640,16 @@ public struct ApplicationSpecificNotice {
         }
     }
     
-    public static func incrementDismissedPremiumGiftSuggestion(accountManager: AccountManager<TelegramAccountManagerTypes>, peerId: PeerId, timestamp: Int32) -> Signal<Never, NoError> {
+    public static func incrementDismissedPremiumGiftSuggestion(accountManager: AccountManager<TelegramAccountManagerTypes>, peerId: EnginePeer.Id, timestamp: Int32) -> Signal<Never, NoError> {
         return accountManager.transaction { transaction -> Void in
-            if let entry = CodableEntry(ApplicationSpecificTimestampNotice(value: timestamp)) {
+            if let entry = EngineCodableEntry(ApplicationSpecificTimestampNotice(value: timestamp)) {
                 transaction.setNotice(ApplicationSpecificNoticeKeys.dismissedPremiumGiftNotice(peerId: peerId), entry)
             }
         }
         |> ignoreValues
     }
     
-    public static func groupEmojiPackSuggestion(accountManager: AccountManager<TelegramAccountManagerTypes>, peerId: PeerId) -> Signal<Int32, NoError> {
+    public static func groupEmojiPackSuggestion(accountManager: AccountManager<TelegramAccountManagerTypes>, peerId: EnginePeer.Id) -> Signal<Int32, NoError> {
         return accountManager.noticeEntry(key: ApplicationSpecificNoticeKeys.groupEmojiPackNotice(peerId: peerId))
         |> map { view -> Int32 in
             if let value = view.value?.get(ApplicationSpecificCounterNotice.self) {
@@ -1656,7 +1660,7 @@ public struct ApplicationSpecificNotice {
         }
     }
     
-    public static func incrementGroupEmojiPackSuggestion(accountManager: AccountManager<TelegramAccountManagerTypes>, peerId: PeerId, count: Int32 = 1) -> Signal<Int32, NoError> {
+    public static func incrementGroupEmojiPackSuggestion(accountManager: AccountManager<TelegramAccountManagerTypes>, peerId: EnginePeer.Id, count: Int32 = 1) -> Signal<Int32, NoError> {
         return accountManager.transaction { transaction -> Int32 in
             var currentValue: Int32 = 0
             if let value = transaction.getNotice(ApplicationSpecificNoticeKeys.groupEmojiPackNotice(peerId: peerId))?.get(ApplicationSpecificCounterNotice.self) {
@@ -1665,7 +1669,7 @@ public struct ApplicationSpecificNotice {
             let previousValue = currentValue
             currentValue += count
             
-            if let entry = CodableEntry(ApplicationSpecificCounterNotice(value: currentValue)) {
+            if let entry = EngineCodableEntry(ApplicationSpecificCounterNotice(value: currentValue)) {
                 transaction.setNotice(ApplicationSpecificNoticeKeys.groupEmojiPackNotice(peerId: peerId), entry)
             }
             return previousValue
@@ -1690,7 +1694,7 @@ public struct ApplicationSpecificNotice {
             }
             currentValue += count
 
-            if let entry = CodableEntry(ApplicationSpecificCounterNotice(value: currentValue)) {
+            if let entry = EngineCodableEntry(ApplicationSpecificCounterNotice(value: currentValue)) {
                 transaction.setNotice(ApplicationSpecificNoticeKeys.sendWhenOnlineTip(), entry)
             }
         }
@@ -1709,7 +1713,7 @@ public struct ApplicationSpecificNotice {
     
     public static func setDisplayChatListContacts(accountManager: AccountManager<TelegramAccountManagerTypes>) -> Signal<Never, NoError> {
         return accountManager.transaction { transaction -> Void in
-            if let entry = CodableEntry(ApplicationSpecificBoolNotice()) {
+            if let entry = EngineCodableEntry(ApplicationSpecificBoolNotice()) {
                 transaction.setNotice(ApplicationSpecificNoticeKeys.displayChatListContacts(), entry)
             }
         }
@@ -1729,7 +1733,7 @@ public struct ApplicationSpecificNotice {
     
     public static func setDisplayChatListStoriesTooltip(accountManager: AccountManager<TelegramAccountManagerTypes>) -> Signal<Never, NoError> {
         return accountManager.transaction { transaction -> Void in
-            if let entry = CodableEntry(ApplicationSpecificBoolNotice()) {
+            if let entry = EngineCodableEntry(ApplicationSpecificBoolNotice()) {
                 transaction.setNotice(ApplicationSpecificNoticeKeys.displayChatListStoriesTooltip(), entry)
             }
         }
@@ -1745,7 +1749,7 @@ public struct ApplicationSpecificNotice {
             let previousValue = currentValue
             currentValue += Int32(count)
 
-            if let entry = CodableEntry(ApplicationSpecificCounterNotice(value: currentValue)) {
+            if let entry = EngineCodableEntry(ApplicationSpecificCounterNotice(value: currentValue)) {
                 transaction.setNotice(ApplicationSpecificNoticeKeys.storiesCameraTooltip(), entry)
             }
             
@@ -1772,7 +1776,7 @@ public struct ApplicationSpecificNotice {
             let previousValue = currentValue
             currentValue += Int32(count)
 
-            if let entry = CodableEntry(ApplicationSpecificCounterNotice(value: currentValue)) {
+            if let entry = EngineCodableEntry(ApplicationSpecificCounterNotice(value: currentValue)) {
                 transaction.setNotice(ApplicationSpecificNoticeKeys.storiesDualCameraTooltip(), entry)
             }
             
@@ -1799,7 +1803,7 @@ public struct ApplicationSpecificNotice {
     
     public static func setDisplayStoryReactionTooltip(accountManager: AccountManager<TelegramAccountManagerTypes>) -> Signal<Never, NoError> {
         return accountManager.transaction { transaction -> Void in
-            if let entry = CodableEntry(ApplicationSpecificBoolNotice()) {
+            if let entry = EngineCodableEntry(ApplicationSpecificBoolNotice()) {
                 transaction.setNotice(ApplicationSpecificNoticeKeys.displayStoryReactionTooltip(), entry)
             }
         }
@@ -1820,7 +1824,7 @@ public struct ApplicationSpecificNotice {
     
     public static func setDisplayChatListArchiveTooltip(accountManager: AccountManager<TelegramAccountManagerTypes>) -> Signal<Never, NoError> {
         return accountManager.transaction { transaction -> Void in
-            if let entry = CodableEntry(ApplicationSpecificBoolNotice()) {
+            if let entry = EngineCodableEntry(ApplicationSpecificBoolNotice()) {
                 transaction.setNotice(ApplicationSpecificNoticeKeys.displayChatListArchiveTooltip(), entry)
             }
         }
@@ -1846,7 +1850,7 @@ public struct ApplicationSpecificNotice {
                 value = item.value
             }
             
-            if let entry = CodableEntry(ApplicationSpecificCounterNotice(value: value + 1)) {
+            if let entry = EngineCodableEntry(ApplicationSpecificCounterNotice(value: value + 1)) {
                 transaction.setNotice(ApplicationSpecificNoticeKeys.storyStealthModeReplyCount(), entry)
             }
         }
@@ -1862,7 +1866,7 @@ public struct ApplicationSpecificNotice {
             let previousValue = currentValue
             currentValue += Int32(count)
 
-            if let entry = CodableEntry(ApplicationSpecificCounterNotice(value: currentValue)) {
+            if let entry = EngineCodableEntry(ApplicationSpecificCounterNotice(value: currentValue)) {
                 transaction.setNotice(ApplicationSpecificNoticeKeys.viewOnceTooltip(), entry)
             }
             
@@ -1872,7 +1876,7 @@ public struct ApplicationSpecificNotice {
     
     public static func setDisplayStoryUnmuteTooltip(accountManager: AccountManager<TelegramAccountManagerTypes>) -> Signal<Never, NoError> {
         return accountManager.transaction { transaction -> Void in
-            if let entry = CodableEntry(ApplicationSpecificBoolNotice()) {
+            if let entry = EngineCodableEntry(ApplicationSpecificBoolNotice()) {
                 transaction.setNotice(ApplicationSpecificNoticeKeys.displayStoryUnmuteTooltip(), entry)
             }
         }
@@ -1893,7 +1897,7 @@ public struct ApplicationSpecificNotice {
     
     public static func setDisplayStoryInteractionGuide(accountManager: AccountManager<TelegramAccountManagerTypes>) -> Signal<Never, NoError> {
         return accountManager.transaction { transaction -> Void in
-            if let entry = CodableEntry(ApplicationSpecificBoolNotice()) {
+            if let entry = EngineCodableEntry(ApplicationSpecificBoolNotice()) {
                 transaction.setNotice(ApplicationSpecificNoticeKeys.displayStoryInteractionGuide(), entry)
             }
         }
@@ -1931,7 +1935,7 @@ public struct ApplicationSpecificNotice {
             let previousValue = currentValue
             currentValue += Int32(count)
 
-            if let entry = CodableEntry(ApplicationSpecificCounterNotice(value: currentValue)) {
+            if let entry = EngineCodableEntry(ApplicationSpecificCounterNotice(value: currentValue)) {
                 transaction.setNotice(ApplicationSpecificNoticeKeys.multipleReactionsSuggestion(), entry)
             }
             
@@ -1958,7 +1962,7 @@ public struct ApplicationSpecificNotice {
             let previousValue = currentValue
             currentValue += Int32(count)
 
-            if let entry = CodableEntry(ApplicationSpecificCounterNotice(value: currentValue)) {
+            if let entry = EngineCodableEntry(ApplicationSpecificCounterNotice(value: currentValue)) {
                 transaction.setNotice(ApplicationSpecificNoticeKeys.savedMessagesChatsSuggestion(), entry)
             }
             
@@ -1985,7 +1989,7 @@ public struct ApplicationSpecificNotice {
             let previousValue = currentValue
             currentValue += Int32(count)
 
-            if let entry = CodableEntry(ApplicationSpecificCounterNotice(value: currentValue)) {
+            if let entry = EngineCodableEntry(ApplicationSpecificCounterNotice(value: currentValue)) {
                 transaction.setNotice(ApplicationSpecificNoticeKeys.voiceMessagesPlayOnceSuggestion(), entry)
             }
             
@@ -2012,7 +2016,7 @@ public struct ApplicationSpecificNotice {
             let previousValue = currentValue
             currentValue += Int32(count)
 
-            if let entry = CodableEntry(ApplicationSpecificCounterNotice(value: currentValue)) {
+            if let entry = EngineCodableEntry(ApplicationSpecificCounterNotice(value: currentValue)) {
                 transaction.setNotice(ApplicationSpecificNoticeKeys.incomingVoiceMessagePlayOnceTip(), entry)
             }
             
@@ -2039,7 +2043,7 @@ public struct ApplicationSpecificNotice {
             let previousValue = currentValue
             currentValue += Int32(count)
 
-            if let entry = CodableEntry(ApplicationSpecificCounterNotice(value: currentValue)) {
+            if let entry = EngineCodableEntry(ApplicationSpecificCounterNotice(value: currentValue)) {
                 transaction.setNotice(ApplicationSpecificNoticeKeys.outgoingVoiceMessagePlayOnceTip(), entry)
             }
             
@@ -2066,7 +2070,7 @@ public struct ApplicationSpecificNotice {
             let previousValue = currentValue
             currentValue += Int32(count)
 
-            if let entry = CodableEntry(ApplicationSpecificCounterNotice(value: currentValue)) {
+            if let entry = EngineCodableEntry(ApplicationSpecificCounterNotice(value: currentValue)) {
                 transaction.setNotice(ApplicationSpecificNoticeKeys.videoMessagesPlayOnceSuggestion(), entry)
             }
             
@@ -2093,7 +2097,7 @@ public struct ApplicationSpecificNotice {
             let previousValue = currentValue
             currentValue += Int32(count)
 
-            if let entry = CodableEntry(ApplicationSpecificCounterNotice(value: currentValue)) {
+            if let entry = EngineCodableEntry(ApplicationSpecificCounterNotice(value: currentValue)) {
                 transaction.setNotice(ApplicationSpecificNoticeKeys.incomingVideoMessagePlayOnceTip(), entry)
             }
             
@@ -2120,7 +2124,7 @@ public struct ApplicationSpecificNotice {
             let previousValue = currentValue
             currentValue += Int32(count)
 
-            if let entry = CodableEntry(ApplicationSpecificCounterNotice(value: currentValue)) {
+            if let entry = EngineCodableEntry(ApplicationSpecificCounterNotice(value: currentValue)) {
                 transaction.setNotice(ApplicationSpecificNoticeKeys.outgoingVideoMessagePlayOnceTip(), entry)
             }
             
@@ -2147,7 +2151,7 @@ public struct ApplicationSpecificNotice {
             let previousValue = currentValue
             currentValue += Int32(count)
             
-            if let entry = CodableEntry(ApplicationSpecificCounterNotice(value: currentValue)) {
+            if let entry = EngineCodableEntry(ApplicationSpecificCounterNotice(value: currentValue)) {
                 transaction.setNotice(ApplicationSpecificNoticeKeys.savedMessageTagLabelSuggestion(), entry)
             }
             
@@ -2155,7 +2159,7 @@ public struct ApplicationSpecificNotice {
         }
     }
     
-    public static func dismissedBirthdayPremiumGiftTip(accountManager: AccountManager<TelegramAccountManagerTypes>, peerId: PeerId) -> Signal<Int32?, NoError> {
+    public static func dismissedBirthdayPremiumGiftTip(accountManager: AccountManager<TelegramAccountManagerTypes>, peerId: EnginePeer.Id) -> Signal<Int32?, NoError> {
         return accountManager.noticeEntry(key: ApplicationSpecificNoticeKeys.dismissedBirthdayPremiumGiftTip(peerId: peerId))
         |> map { view -> Int32? in
             if let value = view.value?.get(ApplicationSpecificTimestampNotice.self) {
@@ -2166,16 +2170,16 @@ public struct ApplicationSpecificNotice {
         }
     }
     
-    public static func incrementDismissedBirthdayPremiumGiftTip(accountManager: AccountManager<TelegramAccountManagerTypes>, peerId: PeerId, timestamp: Int32) -> Signal<Never, NoError> {
+    public static func incrementDismissedBirthdayPremiumGiftTip(accountManager: AccountManager<TelegramAccountManagerTypes>, peerId: EnginePeer.Id, timestamp: Int32) -> Signal<Never, NoError> {
         return accountManager.transaction { transaction -> Void in
-            if let entry = CodableEntry(ApplicationSpecificTimestampNotice(value: timestamp)) {
+            if let entry = EngineCodableEntry(ApplicationSpecificTimestampNotice(value: timestamp)) {
                 transaction.setNotice(ApplicationSpecificNoticeKeys.dismissedBirthdayPremiumGiftTip(peerId: peerId), entry)
             }
         }
         |> ignoreValues
     }
     
-    public static func displayedPeerVerification(accountManager: AccountManager<TelegramAccountManagerTypes>, peerId: PeerId) -> Signal<Bool, NoError> {
+    public static func displayedPeerVerification(accountManager: AccountManager<TelegramAccountManagerTypes>, peerId: EnginePeer.Id) -> Signal<Bool, NoError> {
         return accountManager.noticeEntry(key: ApplicationSpecificNoticeKeys.displayedPeerVerification(peerId: peerId))
         |> map { view -> Bool in
             if let _ = view.value?.get(ApplicationSpecificBoolNotice.self) {
@@ -2186,16 +2190,16 @@ public struct ApplicationSpecificNotice {
         }
     }
     
-    public static func setDisplayedPeerVerification(accountManager: AccountManager<TelegramAccountManagerTypes>, peerId: PeerId) -> Signal<Never, NoError> {
+    public static func setDisplayedPeerVerification(accountManager: AccountManager<TelegramAccountManagerTypes>, peerId: EnginePeer.Id) -> Signal<Never, NoError> {
         return accountManager.transaction { transaction -> Void in
-            if let entry = CodableEntry(ApplicationSpecificBoolNotice()) {
+            if let entry = EngineCodableEntry(ApplicationSpecificBoolNotice()) {
                 transaction.setNotice(ApplicationSpecificNoticeKeys.displayedPeerVerification(peerId: peerId), entry)
             }
         }
         |> ignoreValues
     }
     
-    public static func dismissedPaidMessageWarningNamespace(accountManager: AccountManager<TelegramAccountManagerTypes>, peerId: PeerId) -> Signal<Int64?, NoError> {
+    public static func dismissedPaidMessageWarningNamespace(accountManager: AccountManager<TelegramAccountManagerTypes>, peerId: EnginePeer.Id) -> Signal<Int64?, NoError> {
         return accountManager.noticeEntry(key: ApplicationSpecificNoticeKeys.dismissedPaidMessageWarning(peerId: peerId))
         |> map { view -> Int64? in
             if let counter = view.value?.get(ApplicationSpecificCounterNotice.self) {
@@ -2206,9 +2210,9 @@ public struct ApplicationSpecificNotice {
         }
     }
     
-    public static func setDismissedPaidMessageWarningNamespace(accountManager: AccountManager<TelegramAccountManagerTypes>, peerId: PeerId, amount: Int64?) -> Signal<Never, NoError> {
+    public static func setDismissedPaidMessageWarningNamespace(accountManager: AccountManager<TelegramAccountManagerTypes>, peerId: EnginePeer.Id, amount: Int64?) -> Signal<Never, NoError> {
         return accountManager.transaction { transaction -> Void in
-            if let amount, let entry = CodableEntry(ApplicationSpecificCounterNotice(value: Int32(amount))) {
+            if let amount, let entry = EngineCodableEntry(ApplicationSpecificCounterNotice(value: Int32(amount))) {
                 transaction.setNotice(ApplicationSpecificNoticeKeys.dismissedPaidMessageWarning(peerId: peerId), entry)
             } else {
                 transaction.setNotice(ApplicationSpecificNoticeKeys.dismissedPaidMessageWarning(peerId: peerId), nil)
@@ -2219,7 +2223,7 @@ public struct ApplicationSpecificNotice {
     
     public static func setMonetizationIntroDismissed(accountManager: AccountManager<TelegramAccountManagerTypes>) -> Signal<Never, NoError> {
         return accountManager.transaction { transaction -> Void in
-            if let entry = CodableEntry(ApplicationSpecificBoolNotice()) {
+            if let entry = EngineCodableEntry(ApplicationSpecificBoolNotice()) {
                 transaction.setNotice(ApplicationSpecificNoticeKeys.monetizationIntroDismissed(), entry)
             }
         }
@@ -2257,8 +2261,35 @@ public struct ApplicationSpecificNotice {
             let previousValue = currentValue
             currentValue += Int32(count)
 
-            if let entry = CodableEntry(ApplicationSpecificCounterNotice(value: currentValue)) {
+            if let entry = EngineCodableEntry(ApplicationSpecificCounterNotice(value: currentValue)) {
                 transaction.setNotice(ApplicationSpecificNoticeKeys.businessBotMessageTooltip(), entry)
+            }
+            
+            return Int(previousValue)
+        }
+    }
+    
+    public static func getGuestChatMessageTooltip(accountManager: AccountManager<TelegramAccountManagerTypes>) -> Signal<Int32, NoError> {
+        return accountManager.transaction { transaction -> Int32 in
+            if let value = transaction.getNotice(ApplicationSpecificNoticeKeys.guestChatMessageTooltip())?.get(ApplicationSpecificCounterNotice.self) {
+                return value.value
+            } else {
+                return 0
+            }
+        }
+    }
+    
+    public static func incrementGuestChatMessageTooltip(accountManager: AccountManager<TelegramAccountManagerTypes>, count: Int = 1) -> Signal<Int, NoError> {
+        return accountManager.transaction { transaction -> Int in
+            var currentValue: Int32 = 0
+            if let value = transaction.getNotice(ApplicationSpecificNoticeKeys.guestChatMessageTooltip())?.get(ApplicationSpecificCounterNotice.self) {
+                currentValue = value.value
+            }
+            let previousValue = currentValue
+            currentValue += Int32(count)
+            
+            if let entry = EngineCodableEntry(ApplicationSpecificCounterNotice(value: currentValue)) {
+                transaction.setNotice(ApplicationSpecificNoticeKeys.guestChatMessageTooltip(), entry)
             }
             
             return Int(previousValue)
@@ -2284,7 +2315,7 @@ public struct ApplicationSpecificNotice {
             let previousValue = currentValue
             currentValue += Int32(count)
 
-            if let entry = CodableEntry(ApplicationSpecificCounterNotice(value: currentValue)) {
+            if let entry = EngineCodableEntry(ApplicationSpecificCounterNotice(value: currentValue)) {
                 transaction.setNotice(ApplicationSpecificNoticeKeys.captionAboveMediaTooltip(), entry)
             }
             
@@ -2311,7 +2342,7 @@ public struct ApplicationSpecificNotice {
             let previousValue = currentValue
             currentValue += Int32(count)
 
-            if let entry = CodableEntry(ApplicationSpecificCounterNotice(value: currentValue)) {
+            if let entry = EngineCodableEntry(ApplicationSpecificCounterNotice(value: currentValue)) {
                 transaction.setNotice(ApplicationSpecificNoticeKeys.channelSendGiftTooltip(), entry)
             }
             
@@ -2338,7 +2369,7 @@ public struct ApplicationSpecificNotice {
             let previousValue = currentValue
             currentValue += Int32(count)
 
-            if let entry = CodableEntry(ApplicationSpecificCounterNotice(value: currentValue)) {
+            if let entry = EngineCodableEntry(ApplicationSpecificCounterNotice(value: currentValue)) {
                 transaction.setNotice(ApplicationSpecificNoticeKeys.channelSuggestTooltip(), entry)
             }
             
@@ -2365,7 +2396,7 @@ public struct ApplicationSpecificNotice {
             let previousValue = currentValue
             currentValue += Int32(count)
 
-            if let entry = CodableEntry(ApplicationSpecificCounterNotice(value: currentValue)) {
+            if let entry = EngineCodableEntry(ApplicationSpecificCounterNotice(value: currentValue)) {
                 transaction.setNotice(ApplicationSpecificNoticeKeys.starGiftWearTips(), entry)
             }
             
@@ -2392,7 +2423,7 @@ public struct ApplicationSpecificNotice {
             let previousValue = currentValue
             currentValue += Int32(count)
 
-            if let entry = CodableEntry(ApplicationSpecificCounterNotice(value: currentValue)) {
+            if let entry = EngineCodableEntry(ApplicationSpecificCounterNotice(value: currentValue)) {
                 transaction.setNotice(ApplicationSpecificNoticeKeys.multipleStoriesTooltip(), entry)
             }
             
@@ -2419,7 +2450,7 @@ public struct ApplicationSpecificNotice {
             let previousValue = currentValue
             currentValue += Int32(count)
 
-            if let entry = CodableEntry(ApplicationSpecificCounterNotice(value: currentValue)) {
+            if let entry = EngineCodableEntry(ApplicationSpecificCounterNotice(value: currentValue)) {
                 transaction.setNotice(ApplicationSpecificNoticeKeys.voiceMessagesPauseSuggestion(), entry)
             }
             
@@ -2446,7 +2477,7 @@ public struct ApplicationSpecificNotice {
             let previousValue = currentValue
             currentValue += Int32(count)
 
-            if let entry = CodableEntry(ApplicationSpecificCounterNotice(value: currentValue)) {
+            if let entry = EngineCodableEntry(ApplicationSpecificCounterNotice(value: currentValue)) {
                 transaction.setNotice(ApplicationSpecificNoticeKeys.videoMessagesPauseSuggestion(), entry)
             }
             
@@ -2473,7 +2504,7 @@ public struct ApplicationSpecificNotice {
             let previousValue = currentValue
             currentValue += Int32(count)
 
-            if let entry = CodableEntry(ApplicationSpecificCounterNotice(value: currentValue)) {
+            if let entry = EngineCodableEntry(ApplicationSpecificCounterNotice(value: currentValue)) {
                 transaction.setNotice(ApplicationSpecificNoticeKeys.voiceMessagesResumeTrimWarning(), entry)
             }
             
@@ -2500,7 +2531,7 @@ public struct ApplicationSpecificNotice {
             let previousValue = currentValue
             currentValue += Int32(count)
 
-            if let entry = CodableEntry(ApplicationSpecificCounterNotice(value: currentValue)) {
+            if let entry = EngineCodableEntry(ApplicationSpecificCounterNotice(value: currentValue)) {
                 transaction.setNotice(ApplicationSpecificNoticeKeys.globalPostsSearch(), entry)
             }
             
@@ -2527,7 +2558,7 @@ public struct ApplicationSpecificNotice {
             let previousValue = currentValue
             currentValue += Int32(count)
 
-            if let entry = CodableEntry(ApplicationSpecificCounterNotice(value: currentValue)) {
+            if let entry = EngineCodableEntry(ApplicationSpecificCounterNotice(value: currentValue)) {
                 transaction.setNotice(ApplicationSpecificNoticeKeys.giftAuctionTips(), entry)
             }
             
@@ -2554,7 +2585,7 @@ public struct ApplicationSpecificNotice {
             let previousValue = currentValue
             currentValue += Int32(count)
 
-            if let entry = CodableEntry(ApplicationSpecificCounterNotice(value: currentValue)) {
+            if let entry = EngineCodableEntry(ApplicationSpecificCounterNotice(value: currentValue)) {
                 transaction.setNotice(ApplicationSpecificNoticeKeys.giftCraftingTips(), entry)
             }
             
@@ -2581,7 +2612,7 @@ public struct ApplicationSpecificNotice {
             let previousValue = currentValue
             currentValue += Int32(count)
 
-            if let entry = CodableEntry(ApplicationSpecificCounterNotice(value: currentValue)) {
+            if let entry = EngineCodableEntry(ApplicationSpecificCounterNotice(value: currentValue)) {
                 transaction.setNotice(ApplicationSpecificNoticeKeys.copyProtectionTips(), entry)
             }
             
@@ -2608,7 +2639,7 @@ public struct ApplicationSpecificNotice {
             let previousValue = currentValue
             currentValue += Int32(count)
 
-            if let entry = CodableEntry(ApplicationSpecificCounterNotice(value: currentValue)) {
+            if let entry = EngineCodableEntry(ApplicationSpecificCounterNotice(value: currentValue)) {
                 transaction.setNotice(ApplicationSpecificNoticeKeys.aiTextProcessingStyleSelectionTips(), entry)
             }
             
@@ -2635,7 +2666,7 @@ public struct ApplicationSpecificNotice {
             let previousValue = currentValue
             currentValue += Int32(count)
 
-            if let entry = CodableEntry(ApplicationSpecificCounterNotice(value: currentValue)) {
+            if let entry = EngineCodableEntry(ApplicationSpecificCounterNotice(value: currentValue)) {
                 transaction.setNotice(ApplicationSpecificNoticeKeys.savedMessagesChatListView(), entry)
             }
             

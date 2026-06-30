@@ -3,7 +3,6 @@ import UIKit
 import AsyncDisplayKit
 import Display
 import SwiftSignalKit
-import Postbox
 import TelegramCore
 import AccountContext
 import ConfettiEffect
@@ -179,7 +178,7 @@ final class PeerInfoBirthdayOverlay: ASDisplayNode {
             context.engine.stickers.loadedStickerPack(reference: .name("FestiveFontEmoji"), forceActualized: false)
         )
         |> mapToSignal { animatedEmoji, numbers -> Signal<Never, NoError> in
-            var signals: [Signal<FetchResourceSourceType, FetchResourceError>] = []
+            var signals: [Signal<EngineFetchResourceSourceType, EngineFetchResourceError>] = []
             if case let .result(_, items, _) = animatedEmoji {
                 for item in items {
                     let indexKeys = item.getStringRepresentationsOfIndexKeys()

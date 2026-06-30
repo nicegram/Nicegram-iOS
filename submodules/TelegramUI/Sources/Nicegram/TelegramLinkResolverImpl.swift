@@ -74,7 +74,8 @@ extension TelegramLinkResolverImpl: TelegramLinkResolver {
 private extension TelegramLinkResolverImpl {
     func resolve(telegramUrl: String) async throws -> ResolvedUrl {
         let context = try contextProvider.context().unwrap()
-        return try await context.sharedContext
+        
+        let url = try await context.sharedContext
             .resolveUrl(
                 context: context,
                 peerId: nil,
@@ -82,6 +83,13 @@ private extension TelegramLinkResolverImpl {
                 skipUrlAuth: true
             )
             .awaitForFirstValue()
+        
+        if case let .nicegram(nicegram) = url,
+           case let .autoJoin(autoJoin) = nicegram {
+            return autoJoin.underlyingUrl
+        } else {
+            return url
+        }
     }
 }
 

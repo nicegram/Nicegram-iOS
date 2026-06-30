@@ -4,7 +4,6 @@ import AsyncDisplayKit
 import Display
 import ComponentFlow
 import SwiftSignalKit
-import Postbox
 import TelegramCore
 import TextFormat
 import TelegramPresentationData
@@ -218,19 +217,13 @@ private final class QuickShareScreenComponent: Component {
                     if case let .peers(peers) = recentPeers, !peers.isEmpty {
                         return .single(peers.map(EnginePeer.init))
                     } else {
-                        return component.context.account.stateManager.postbox.tailChatListView(
-                            groupId: .root,
-                            count: 20,
-                            summaryComponents: ChatListEntrySummaryComponents()
-                        )
+                        return component.context.engine.messages.chatList(group: .root, count: 20)
                         |> take(1)
-                        |> map { view -> [EnginePeer] in
+                        |> map { chatList -> [EnginePeer] in
                             var peers: [EnginePeer] = []
-                            for entry in view.0.entries.reversed() {
-                                if case let .MessageEntry(entryData) = entry {
-                                    if let user = entryData.renderedPeer.chatMainPeer as? TelegramUser, user.isGenericUser && user.id != component.context.account.peerId && !user.id.isSecretChat {
-                                        peers.append(EnginePeer(user))
-                                    }
+                            for item in chatList.items.reversed() {
+                                if case let .user(user) = item.renderedPeer.chatMainPeer, user.isGenericUser && user.id != component.context.account.peerId && !user.id.isSecretChat {
+                                    peers.append(.user(user))
                                 }
                             }
                             return peers

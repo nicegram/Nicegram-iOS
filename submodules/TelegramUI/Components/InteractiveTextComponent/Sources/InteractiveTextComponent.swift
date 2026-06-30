@@ -3246,8 +3246,11 @@ final class TextContentItemLayer: SimpleLayer {
             }
         }
         
-        animation.animator.updateFrame(layer: self.renderNodeContainer, frame: effectiveContentFrame, completion: nil)
-        animation.animator.updateFrame(layer: self.renderNode.layer, frame: CGRect(origin: CGPoint(), size: effectiveContentFrame.size), completion: nil)
+        animation.animator.updatePosition(layer: self.renderNodeContainer, position: effectiveContentFrame.center, completion: nil)
+        animation.animator.updateBounds(layer: self.renderNodeContainer, bounds: CGRect(origin: CGPoint(), size: effectiveContentFrame.size), completion: nil)
+        
+        animation.animator.updatePosition(layer: self.renderNode.layer, position: effectiveContentFrame.center, completion: nil)
+        animation.animator.updateBounds(layer: self.renderNode.layer, bounds: CGRect(origin: CGPoint(), size: effectiveContentFrame.size), completion: nil)
         
         var staticContentMask = contentMask
         if let contentMask, self.isAnimating {

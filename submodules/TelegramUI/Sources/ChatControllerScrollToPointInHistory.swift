@@ -4,7 +4,6 @@ import AccountContext
 import Display
 import SwiftSignalKit
 import TelegramCore
-import Postbox
 import UIKit
 import OverlayStatusController
 import PresentationDataUtils
@@ -15,7 +14,7 @@ extension ChatControllerImpl {
         
         let historyView = preloadedChatHistoryViewForLocation(locationInput, context: self.context, chatLocation: self.chatLocation, subject: self.subject, chatLocationContextHolder: self.chatLocationContextHolder, fixedCombinedReadStates: nil, tag: nil, additionalData: [])
         let signal = historyView
-        |> mapToSignal { historyView -> Signal<(MessageIndex?, Bool), NoError> in
+        |> mapToSignal { historyView -> Signal<(EngineMessage.Index?, Bool), NoError> in
             switch historyView {
             case .Loading:
                 return .single((nil, true))
@@ -79,7 +78,7 @@ extension ChatControllerImpl {
         
         let historyView = preloadedChatHistoryViewForLocation(locationInput, context: self.context, chatLocation: self.chatLocation, subject: self.subject, chatLocationContextHolder: self.chatLocationContextHolder, fixedCombinedReadStates: nil, tag: nil, additionalData: [])
         let signal = historyView
-        |> mapToSignal { historyView -> Signal<(MessageIndex?, Bool), NoError> in
+        |> mapToSignal { historyView -> Signal<(EngineMessage.Index?, Bool), NoError> in
             switch historyView {
             case .Loading:
                 return .single((nil, true))
@@ -146,9 +145,9 @@ extension ChatControllerImpl {
         }
         
         var kind: PeerInfoControllerMode.PeerInfoMediaKind?
-        if message.tags.contains(MessageTags.photoOrVideo) {
+        if message.tags.contains(EngineMessage.Tags.photoOrVideo) {
             kind = .photoVideo
-        } else if message.tags.contains(MessageTags.file) {
+        } else if message.tags.contains(EngineMessage.Tags.file) {
             kind = .file
         }
         

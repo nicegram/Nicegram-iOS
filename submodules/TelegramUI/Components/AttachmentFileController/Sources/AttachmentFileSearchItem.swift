@@ -2,7 +2,6 @@ import Foundation
 import UIKit
 import Display
 import AsyncDisplayKit
-import Postbox
 import TelegramCore
 import SwiftSignalKit
 import ItemListUI
@@ -30,7 +29,7 @@ final class AttachmentFileSearchItem: ItemListControllerSearch {
     let presentationData: PresentationData
     let focus: () -> Void
     let cancel: () -> Void
-    let send: (Message) -> Void
+    let send: (EngineRawMessage) -> Void
     let dismissInput: () -> Void
     let didPreviewAudio: () -> Void
     
@@ -38,7 +37,7 @@ final class AttachmentFileSearchItem: ItemListControllerSearch {
     private var activity: ValuePromise<Bool> = ValuePromise(ignoreRepeated: false)
     private let activityDisposable = MetaDisposable()
     
-    init(context: AccountContext, mode: AttachmentFileControllerMode, presentationData: PresentationData, focus: @escaping () -> Void, cancel: @escaping () -> Void, send: @escaping (Message) -> Void, dismissInput: @escaping () -> Void, didPreviewAudio: @escaping () -> Void) {
+    init(context: AccountContext, mode: AttachmentFileControllerMode, presentationData: PresentationData, focus: @escaping () -> Void, cancel: @escaping () -> Void, send: @escaping (EngineRawMessage) -> Void, dismissInput: @escaping () -> Void, didPreviewAudio: @escaping () -> Void) {
         self.context = context
         self.mode = mode
         self.presentationData = presentationData
@@ -108,7 +107,7 @@ private final class AttachmentFileSearchItemNode: ItemListControllerSearchNode {
     
     private var validLayout: ContainerViewLayout?
     
-    init(context: AccountContext, mode: AttachmentFileControllerMode, presentationData: PresentationData, focus: @escaping () -> Void, send: @escaping (Message) -> Void, cancel: @escaping () -> Void, updateActivity: @escaping(Bool) -> Void, dismissInput: @escaping () -> Void, didPreviewAudio: @escaping () -> Void) {
+    init(context: AccountContext, mode: AttachmentFileControllerMode, presentationData: PresentationData, focus: @escaping () -> Void, send: @escaping (EngineRawMessage) -> Void, cancel: @escaping () -> Void, updateActivity: @escaping(Bool) -> Void, dismissInput: @escaping () -> Void, didPreviewAudio: @escaping () -> Void) {
         self.context = context
         self.mode = mode
         self.presentationData = presentationData
@@ -217,11 +216,11 @@ private final class AttachmentFileSearchItemNode: ItemListControllerSearchNode {
 
 private final class AttachmentFileSearchContainerInteraction {
     let context: AccountContext
-    let send: (Message) -> Void
-    let toggleMediaPlayback: (Message) -> Void
+    let send: (EngineRawMessage) -> Void
+    let toggleMediaPlayback: (EngineRawMessage) -> Void
     let expandSection: (Int32) -> Void
     
-    init(context: AccountContext, send: @escaping (Message) -> Void, toggleMediaPlayback: @escaping (Message) -> Void, expandSection: @escaping (Int32) -> Void) {
+    init(context: AccountContext, send: @escaping (EngineRawMessage) -> Void, toggleMediaPlayback: @escaping (EngineRawMessage) -> Void, expandSection: @escaping (Int32) -> Void) {
         self.context = context
         self.send = send
         self.toggleMediaPlayback = toggleMediaPlayback
@@ -232,11 +231,11 @@ private final class AttachmentFileSearchContainerInteraction {
 private enum AttachmentFileSearchEntryId: Hashable {
     case header(Int32)
     case placeholder(Int32, Int32)
-    case message(Int32, MessageId)
+    case message(Int32, EngineMessage.Id)
     case showMore(Int32)
 }
 
-private func areMessagesEqual(_ lhsMessage: Message?, _ rhsMessage: Message?) -> Bool {
+private func areMessagesEqual(_ lhsMessage: EngineRawMessage?, _ rhsMessage: EngineRawMessage?) -> Bool {
     guard let lhsMessage = lhsMessage, let rhsMessage = rhsMessage else {
         return lhsMessage == nil && rhsMessage == nil
     }
@@ -251,7 +250,7 @@ private func areMessagesEqual(_ lhsMessage: Message?, _ rhsMessage: Message?) ->
 
 private enum AttachmentFileSearchEntry: Comparable, Identifiable {
     case header(title: String, section: Int32)
-    case file(index: Int32, message: Message?, section: Int32)
+    case file(index: Int32, message: EngineRawMessage?, section: Int32)
     case showMore(text: String, section: Int32)
     
     var section: ItemListSectionId {
@@ -334,7 +333,7 @@ private enum AttachmentFileSearchEntry: Comparable, Identifiable {
             let isStoryMusic = mode.isAudio
             let isDownloadList = mode.isAudio
             
-            return ListMessageItem(presentationData: ChatPresentationData(presentationData: presentationData), systemStyle: .glass, context: interaction.context, chatLocation: .peer(id: PeerId(0)), interaction: itemInteraction, message: message, selection: .none, displayHeader: false, isDownloadList: isDownloadList, isStoryMusic: isStoryMusic, isAttachMusic: true, displayFileInfo: displayFileInfo, displayBackground: true, style: .blocks, sectionId: section)
+            return ListMessageItem(presentationData: ChatPresentationData(presentationData: presentationData), systemStyle: .glass, context: interaction.context, chatLocation: .peer(id: EnginePeer.Id(0)), interaction: itemInteraction, message: message, selection: .none, displayHeader: false, isDownloadList: isDownloadList, isStoryMusic: isStoryMusic, isAttachMusic: true, displayFileInfo: displayFileInfo, displayBackground: true, style: .blocks, sectionId: section)
         case let .showMore(text, section):
             return ItemListPeerActionItem(presentationData: ItemListPresentationData(presentationData), style: .blocks, systemStyle: .glass, icon: PresentationResourcesItemList.downArrowImage(presentationData.theme), title: text, sectionId: section, editing: false, action: {
                 interaction.expandSection(section)
@@ -379,7 +378,7 @@ private func attachmentFileSearchContainerPreparedRecentTransition(
 
 public final class AttachmentFileSearchContainerNode: SearchDisplayControllerContentNode {
     private let context: AccountContext
-    private let send: (Message) -> Void
+    private let send: (EngineRawMessage) -> Void
     
     private let dimNode: ASDisplayNode
     private let backgroundNode: ASDisplayNode
@@ -415,7 +414,7 @@ public final class AttachmentFileSearchContainerNode: SearchDisplayControllerCon
         return _hasDim
     }
         
-    public init(context: AccountContext, mode: AttachmentFileControllerMode, presentationData: PresentationData, send: @escaping (Message) -> Void, updateActivity: @escaping (Bool) -> Void, didPreviewAudio: @escaping () -> Void) {
+    public init(context: AccountContext, mode: AttachmentFileControllerMode, presentationData: PresentationData, send: @escaping (EngineRawMessage) -> Void, updateActivity: @escaping (Bool) -> Void, didPreviewAudio: @escaping () -> Void) {
         self.context = context
         self.send = send
         
@@ -512,16 +511,16 @@ public final class AttachmentFileSearchContainerNode: SearchDisplayControllerCon
             
             let queryTokens = stringTokens(query.lowercased())
             
-            let shared: Signal<[Message]?, NoError>
-            let savedMusic: Signal<[Message]?, NoError>
-            let globalMusic: Signal<[Message]?, NoError>
+            let shared: Signal<[EngineRawMessage]?, NoError>
+            let savedMusic: Signal<[EngineRawMessage]?, NoError>
+            let globalMusic: Signal<[EngineRawMessage]?, NoError>
             switch mode {
             case .recent:
                 shared = .single(nil)
                 |> then(
                     context.engine.messages.searchMessages(location: .sentMedia(tags: [.file]), query: query, state: nil)
                     |> delay(0.6, queue: Queue.mainQueue())
-                    |> map { result -> [Message]? in
+                    |> map { result -> [EngineRawMessage]? in
                         return result.0.messages
                     }
                 )
@@ -532,7 +531,7 @@ public final class AttachmentFileSearchContainerNode: SearchDisplayControllerCon
                 |> then(
                     context.engine.messages.searchMessages(location: .general(scope: .everywhere, groupId: nil, tags: [.music], minDate: nil, maxDate: nil, folderId: nil), query: query, state: nil)
                     |> delay(0.6, queue: Queue.mainQueue())
-                    |> map { result -> [Message]? in
+                    |> map { result -> [EngineRawMessage]? in
                         return result.0.messages.filter { !$0.isRestricted(platform: "ios", contentSettings: context.currentContentSettings.with { $0 }) }
                     }
                 )
@@ -542,8 +541,8 @@ public final class AttachmentFileSearchContainerNode: SearchDisplayControllerCon
                     |> delay(0.6, queue: Queue.mainQueue())
                     |> map { state in
                         let peerId = context.account.peerId
-                        var messages: [Message] = []
-                        let peers = SimpleDictionary<PeerId, Peer>()
+                        var messages: [EngineRawMessage] = []
+                        let peers = EngineSimpleDictionary<EnginePeer.Id, EngineRawPeer>()
                         for file in state.files {
                             var indexString = ""
                             for attribute in file.attributes {
@@ -564,7 +563,7 @@ public final class AttachmentFileSearchContainerNode: SearchDisplayControllerCon
                                 continue
                             }
                             let stableId = UInt32(clamping: file.fileId.id % Int64(Int32.max))
-                            messages.append(Message(stableId: stableId, stableVersion: 0, id: MessageId(peerId: peerId, namespace: Namespaces.Message.Local, id: Int32(stableId)), globallyUniqueId: nil, groupingKey: nil, groupInfo: nil, threadId: nil, timestamp: 0, flags: [], tags: [.music], globalTags: [], localTags: [], customTags: [], forwardInfo: nil, author: nil, text: "", attributes: [], media: [file], peers: peers, associatedMessages: SimpleDictionary(), associatedMessageIds: [], associatedMedia: [:], associatedThreadInfo: nil, associatedStories: [:]))
+                            messages.append(EngineRawMessage(stableId: stableId, stableVersion: 0, id: EngineMessage.Id(peerId: peerId, namespace: Namespaces.Message.Local, id: Int32(stableId)), globallyUniqueId: nil, groupingKey: nil, groupInfo: nil, threadId: nil, timestamp: 0, flags: [], tags: [.music], globalTags: [], localTags: [], customTags: [], forwardInfo: nil, author: nil, text: "", attributes: [], media: [file], peers: peers, associatedMessages: EngineSimpleDictionary(), associatedMessageIds: [], associatedMedia: [:], associatedThreadInfo: nil, associatedStories: [:]))
                         }
                         return messages
                     }
@@ -598,14 +597,14 @@ public final class AttachmentFileSearchContainerNode: SearchDisplayControllerCon
                                 return []
                             }
                             let peerId = context.account.peerId
-                            var messages: [Message] = []
-                            let peers = SimpleDictionary<PeerId, Peer>()
+                            var messages: [EngineRawMessage] = []
+                            let peers = EngineSimpleDictionary<EnginePeer.Id, EngineRawPeer>()
                             for result in results {
                                 switch result {
                                 case let .internalReference(internalReference):
                                     if let file = internalReference.file {
                                         let stableId = UInt32(clamping: file.fileId.id % Int64(Int32.max))
-                                        messages.append(Message(stableId: stableId, stableVersion: 0, id: MessageId(peerId: peerId, namespace: Namespaces.Message.Local, id: Int32(stableId)), globallyUniqueId: nil, groupingKey: nil, groupInfo: nil, threadId: nil, timestamp: 0, flags: [], tags: [.music], globalTags: [], localTags: [], customTags: [], forwardInfo: nil, author: nil, text: "", attributes: [], media: [file], peers: peers, associatedMessages: SimpleDictionary(), associatedMessageIds: [], associatedMedia: [:], associatedThreadInfo: nil, associatedStories: [:]))
+                                        messages.append(EngineRawMessage(stableId: stableId, stableVersion: 0, id: EngineMessage.Id(peerId: peerId, namespace: Namespaces.Message.Local, id: Int32(stableId)), globallyUniqueId: nil, groupingKey: nil, groupInfo: nil, threadId: nil, timestamp: 0, flags: [], tags: [.music], globalTags: [], localTags: [], customTags: [], forwardInfo: nil, author: nil, text: "", attributes: [], media: [file], peers: peers, associatedMessages: EngineSimpleDictionary(), associatedMessageIds: [], associatedMedia: [:], associatedThreadInfo: nil, associatedStories: [:]))
                                     }
                                 default:
                                     break
@@ -837,7 +836,7 @@ public final class AttachmentFileSearchContainerNode: SearchDisplayControllerCon
         insets.bottom += 60.0
         
         let inset = max(16.0, floor((layout.size.width - 674.0) / 2.0))
-        if layout.size.width >= 375.0 {
+        if layout.size.width >= 320.0 {
             insets.left += inset
             insets.right += inset
         }
@@ -900,20 +899,20 @@ public final class AttachmentFileSearchContainerNode: SearchDisplayControllerCon
     }
 }
 
-private func stringTokens(_ string: String) -> [ValueBoxKey] {
+private func stringTokens(_ string: String) -> [EngineRawValueBoxKey] {
     let nsString = string.folding(options: .diacriticInsensitive, locale: .current).lowercased() as NSString
     
     let flag = UInt(kCFStringTokenizerUnitWord)
     let tokenizer = CFStringTokenizerCreate(kCFAllocatorDefault, nsString, CFRangeMake(0, nsString.length), flag, CFLocaleCopyCurrent())
     var tokenType = CFStringTokenizerAdvanceToNextToken(tokenizer)
-    var tokens: [ValueBoxKey] = []
+    var tokens: [EngineRawValueBoxKey] = []
     
-    var addedTokens = Set<ValueBoxKey>()
+    var addedTokens = Set<EngineRawValueBoxKey>()
     while tokenType != [] {
         let currentTokenRange = CFStringTokenizerGetCurrentTokenRange(tokenizer)
         
         if currentTokenRange.location >= 0 && currentTokenRange.length != 0 {
-            let token = ValueBoxKey(length: currentTokenRange.length * 2)
+            let token = EngineRawValueBoxKey(length: currentTokenRange.length * 2)
             nsString.getCharacters(token.memory.assumingMemoryBound(to: unichar.self), range: NSMakeRange(currentTokenRange.location, currentTokenRange.length))
             if !addedTokens.contains(token) {
                 tokens.append(token)
@@ -926,7 +925,7 @@ private func stringTokens(_ string: String) -> [ValueBoxKey] {
     return tokens
 }
 
-private func matchStringTokens(_ tokens: [ValueBoxKey], with other: [ValueBoxKey]) -> Bool {
+private func matchStringTokens(_ tokens: [EngineRawValueBoxKey], with other: [EngineRawValueBoxKey]) -> Bool {
     if other.isEmpty {
         return false
     } else if other.count == 1 {

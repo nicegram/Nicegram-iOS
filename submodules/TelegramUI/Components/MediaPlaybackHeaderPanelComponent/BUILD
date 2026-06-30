@@ -28,7 +28,6 @@ swift_library(
         "//submodules/TelegramUI/Components/GlobalControlPanelsContext",
         "//submodules/UndoUI",
         "//submodules/OverlayStatusController",
-        "//submodules/Postbox",
         "//submodules/PresentationDataUtils",
     ],
     visibility = [

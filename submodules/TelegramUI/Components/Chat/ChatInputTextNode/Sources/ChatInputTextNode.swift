@@ -1115,6 +1115,7 @@ public final class ChatInputTextView: ChatInputTextViewImpl, UITextViewDelegate,
         super.init(frame: CGRect(), textContainer: self.displayInternal.textContainer, disableTiling: disableTiling)
         
         self.delegate = self
+        self.scrollsToTop = false
         
         if #available(iOS 18.0, *) {
             self.supportsAdaptiveImageGlyph = false

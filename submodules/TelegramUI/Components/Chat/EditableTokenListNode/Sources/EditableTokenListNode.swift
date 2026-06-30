@@ -229,6 +229,7 @@ public final class EditableTokenListNode: ASDisplayNode, UITextFieldDelegate {
         self.scrollNode = ASScrollNode()
         self.scrollNode.view.alwaysBounceVertical = false
         self.scrollNode.clipsToBounds = true
+        self.scrollNode.view.scrollsToTop = false
         
         self.placeholderNode = ASTextNode()
         self.placeholderNode.isUserInteractionEnabled = false
@@ -236,6 +237,7 @@ public final class EditableTokenListNode: ASDisplayNode, UITextFieldDelegate {
         self.placeholderNode.attributedText = NSAttributedString(string: placeholder, font: Font.regular(15.0), textColor: theme.list.itemPlaceholderTextColor)
         
         self.textFieldScrollNode = ASScrollNode()
+        self.textFieldScrollNode.view.scrollsToTop = false
         
         self.textFieldNode = TextFieldNode()
         self.textFieldNode.textField.font = Font.regular(15.0)

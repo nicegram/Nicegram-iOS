@@ -2,7 +2,6 @@ import Foundation
 import CoreMedia
 import UIKit
 import SwiftSignalKit
-import Postbox
 import Display
 import TelegramCore
 import Compression
@@ -17,7 +16,7 @@ import ManagedFile
 import UniversalMediaPlayer
 import SoftwareVideo
 
-public func fetchCompressedLottieFirstFrameAJpeg(data: Data, size: CGSize, fitzModifier: EmojiFitzModifier? = nil, cacheKey: String) -> Signal<TempBoxFile, NoError> {
+public func fetchCompressedLottieFirstFrameAJpeg(data: Data, size: CGSize, fitzModifier: EmojiFitzModifier? = nil, cacheKey: String) -> Signal<EngineTempBoxFile, NoError> {
     return Signal({ subscriber in
         let queue = Queue()
         
@@ -97,7 +96,7 @@ public func fetchCompressedLottieFirstFrameAJpeg(data: Data, size: CGSize, fitzM
                                 finalData.append(&alphaSize, length: 4)
                                 finalData.append(alphaData as Data)
                                 
-                                let tempFile = TempBox.shared.tempFile(fileName: "image.ajpg")
+                                let tempFile = EngineTempBox.shared.tempFile(fileName: "image.ajpg")
                                 let _ = try? finalData.write(to: URL(fileURLWithPath: tempFile.path), options: [])
                                 subscriber.putNext(tempFile)
                                 subscriber.putCompletion()
@@ -117,7 +116,7 @@ private let threadPool: ThreadPool = {
     return ThreadPool(threadCount: 3, threadPriority: 0.5)
 }()
 
-public func cacheAnimatedStickerFrames(data: Data, size: CGSize, fitzModifier: EmojiFitzModifier? = nil, cacheKey: String) -> Signal<CachedMediaResourceRepresentationResult, NoError> {
+public func cacheAnimatedStickerFrames(data: Data, size: CGSize, fitzModifier: EmojiFitzModifier? = nil, cacheKey: String) -> Signal<EngineCachedMediaResourceRepresentationResult, NoError> {
     return Signal({ subscriber in
         let cancelled = Atomic<Bool>(value: false)
         
@@ -144,7 +143,7 @@ public func cacheAnimatedStickerFrames(data: Data, size: CGSize, fitzModifier: E
                     
                     var currentFrame: Int32 = 0
                     
-                    let tempFile = TempBox.shared.tempFile(fileName: "result.asticker")
+                    let tempFile = EngineTempBox.shared.tempFile(fileName: "result.asticker")
                     guard let file = ManagedFile(queue: nil, path: tempFile.path, mode: .readwrite) else {
                         return
                     }
@@ -258,7 +257,7 @@ public func cacheAnimatedStickerFrames(data: Data, size: CGSize, fitzModifier: E
     })
 }
 
-public func cacheVideoStickerFrames(path: String, size: CGSize, cacheKey: String) -> Signal<CachedMediaResourceRepresentationResult, NoError> {
+public func cacheVideoStickerFrames(path: String, size: CGSize, cacheKey: String) -> Signal<EngineCachedMediaResourceRepresentationResult, NoError> {
     return Signal { subscriber in
         let cancelled = Atomic<Bool>(value: false)
 
@@ -278,7 +277,7 @@ public func cacheVideoStickerFrames(path: String, size: CGSize, cacheKey: String
             
             var currentFrame: Int32 = 0
             
-            let tempFile = TempBox.shared.tempFile(fileName: "result.vsticker")
+            let tempFile = EngineTempBox.shared.tempFile(fileName: "result.vsticker")
             guard let file = ManagedFile(queue: nil, path: tempFile.path, mode: .readwrite) else {
                 return
             }

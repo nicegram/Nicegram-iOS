@@ -263,13 +263,13 @@ private func categorySignal(context: AccountContext, peerId: EnginePeer.Id, cate
         }
         switch category {
             case .admins:
-                disposableAndLoadMoreControl = context.peerChannelMemberCategoriesContextsManager.admins(engine: context.engine, postbox: context.account.postbox, network: context.account.network, accountPeerId: context.account.peerId, peerId: peerId, searchQuery: nil, updated: processListState)
+                disposableAndLoadMoreControl = context.peerChannelMemberCategoriesContextsManager.admins(engine: context.engine, accountPeerId: context.account.peerId, peerId: peerId, searchQuery: nil, updated: processListState)
             case .contacts:
-                disposableAndLoadMoreControl = context.peerChannelMemberCategoriesContextsManager.contacts(engine: context.engine, postbox: context.account.postbox, network: context.account.network, accountPeerId: context.account.peerId, peerId: peerId, searchQuery: nil, updated: processListState)
+                disposableAndLoadMoreControl = context.peerChannelMemberCategoriesContextsManager.contacts(engine: context.engine, accountPeerId: context.account.peerId, peerId: peerId, searchQuery: nil, updated: processListState)
             case .bots:
-                disposableAndLoadMoreControl = context.peerChannelMemberCategoriesContextsManager.bots(engine: context.engine, postbox: context.account.postbox, network: context.account.network, accountPeerId: context.account.peerId, peerId: peerId, searchQuery: nil, updated: processListState)
+                disposableAndLoadMoreControl = context.peerChannelMemberCategoriesContextsManager.bots(engine: context.engine, accountPeerId: context.account.peerId, peerId: peerId, searchQuery: nil, updated: processListState)
             case .members:
-                disposableAndLoadMoreControl = context.peerChannelMemberCategoriesContextsManager.recent(engine: context.engine, postbox: context.account.postbox, network: context.account.network, accountPeerId: context.account.peerId, peerId: peerId, searchQuery: nil, updated: processListState)
+                disposableAndLoadMoreControl = context.peerChannelMemberCategoriesContextsManager.recent(engine: context.engine, accountPeerId: context.account.peerId, peerId: peerId, searchQuery: nil, updated: processListState)
         }
         
         let (disposable, _) = disposableAndLoadMoreControl
@@ -637,7 +637,7 @@ public final class ChannelMembersSearchContainerNode: SearchDisplayControllerCon
                 switch mode {
                     case .searchMembers, .banAndPromoteActions:
                         foundGroupMembers = Signal { subscriber in
-                            let (disposable, _) = context.peerChannelMemberCategoriesContextsManager.recent(engine: context.engine, postbox: context.account.postbox, network: context.account.network, accountPeerId: context.account.peerId, peerId: peerId, searchQuery: query, updated: { state in
+                            let (disposable, _) = context.peerChannelMemberCategoriesContextsManager.recent(engine: context.engine, accountPeerId: context.account.peerId, peerId: peerId, searchQuery: query, updated: { state in
                                 if case .ready = state.loadingState {
                                     subscriber.putNext(state.list)
                                 }
@@ -652,7 +652,7 @@ public final class ChannelMembersSearchContainerNode: SearchDisplayControllerCon
                         |> map { $0 ?? [] }
                 case .searchAdmins:
                     foundGroupMembers = Signal { subscriber in
-                        let (disposable, _) = context.peerChannelMemberCategoriesContextsManager.admins(engine: context.engine, postbox: context.account.postbox, network: context.account.network, accountPeerId: context.account.peerId, peerId: peerId, searchQuery: query, updated: { state in
+                        let (disposable, _) = context.peerChannelMemberCategoriesContextsManager.admins(engine: context.engine, accountPeerId: context.account.peerId, peerId: peerId, searchQuery: query, updated: { state in
                             if case .ready = state.loadingState {
                                 subscriber.putNext(state.list)
                             }
@@ -662,7 +662,7 @@ public final class ChannelMembersSearchContainerNode: SearchDisplayControllerCon
                     foundMembers = .single([])
                 case .searchBanned:
                     foundGroupMembers = Signal { subscriber in
-                        let (disposable, _) = context.peerChannelMemberCategoriesContextsManager.restricted(engine: context.engine, postbox: context.account.postbox, network: context.account.network, accountPeerId: context.account.peerId, peerId: peerId, searchQuery: query, updated: { state in
+                        let (disposable, _) = context.peerChannelMemberCategoriesContextsManager.restricted(engine: context.engine, accountPeerId: context.account.peerId, peerId: peerId, searchQuery: query, updated: { state in
                             if case .ready = state.loadingState {
                                 subscriber.putNext(state.list)
                                 subscriber.putCompletion()
@@ -672,7 +672,7 @@ public final class ChannelMembersSearchContainerNode: SearchDisplayControllerCon
                     }
                     |> runOn(Queue.mainQueue())
                     foundMembers = Signal { subscriber in
-                        let (disposable, _) = context.peerChannelMemberCategoriesContextsManager.recent(engine: context.engine, postbox: context.account.postbox, network: context.account.network, accountPeerId: context.account.peerId, peerId: peerId, searchQuery: query, updated: { state in
+                        let (disposable, _) = context.peerChannelMemberCategoriesContextsManager.recent(engine: context.engine, accountPeerId: context.account.peerId, peerId: peerId, searchQuery: query, updated: { state in
                             if case .ready = state.loadingState {
                                 subscriber.putNext(state.list.filter({ participant in
                                     return participant.peer.id != context.account.peerId
@@ -684,7 +684,7 @@ public final class ChannelMembersSearchContainerNode: SearchDisplayControllerCon
                     |> runOn(Queue.mainQueue())
                 case .searchKicked:
                     foundGroupMembers = Signal { subscriber in
-                        let (disposable, _) = context.peerChannelMemberCategoriesContextsManager.banned(engine: context.engine, postbox: context.account.postbox, network: context.account.network, accountPeerId: context.account.peerId, peerId: peerId, searchQuery: query, updated: { state in
+                        let (disposable, _) = context.peerChannelMemberCategoriesContextsManager.banned(engine: context.engine, accountPeerId: context.account.peerId, peerId: peerId, searchQuery: query, updated: { state in
                             if case .ready = state.loadingState {
                                 subscriber.putNext(state.list)
                                 subscriber.putCompletion()

@@ -407,7 +407,7 @@ public final class ChatTextInputPanelComponent: Component {
                     },
                     cancelMessageSelection: { _ in
                     },
-                    deleteSelectedMessages: {
+                    deleteSelectedMessages: { _ in
                     },
                     reportSelectedMessages: {
                     },
@@ -663,8 +663,6 @@ public final class ChatTextInputPanelComponent: Component {
                         component.sendContextAction?(node.view, gesture)
                     },
                     openScheduledMessages: {
-                    },
-                    openPeersNearby: {
                     },
                     displaySearchResultsTooltip: { _, _ in
                     },

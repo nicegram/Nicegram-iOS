@@ -73,6 +73,8 @@ final class SecretChatKeyControllerNode: ViewControllerTracingNode {
     override func didLoad() {
         super.didLoad()
         
+        self.scrollNode.view.scrollsToTop = false
+        
         self.infoNode.view.addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(self.infoTap(_:))))
     }
     

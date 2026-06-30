@@ -232,7 +232,7 @@ public final class SettingsThemeWallpaperNode: ASDisplayNode {
             switch wallpaper {
                 case .builtin:
                     self.imageNode.alpha = 1.0
-                    self.imageNode.setSignal(settingsBuiltinWallpaperImage(account: context.account, thumbnail: true))
+                    self.imageNode.setSignal(settingsBuiltinWallpaperImage(thumbnail: true))
                     let apply = self.imageNode.asyncLayout()(TransformImageArguments(corners: corners, imageSize: CGSize(), boundingSize: size, intrinsicInsets: UIEdgeInsets()))
                     apply()
                     self.isLoadedDisposable.set(nil)

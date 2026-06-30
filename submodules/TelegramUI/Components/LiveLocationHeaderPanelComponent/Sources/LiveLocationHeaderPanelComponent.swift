@@ -8,10 +8,9 @@ import AccountContext
 import TelegramCore
 import GlobalControlPanelsContext
 import SwiftSignalKit
-import Postbox
 import PresentationDataUtils
 
-private func presentLiveLocationController(context: AccountContext, peerId: PeerId, controller: ViewController) {
+private func presentLiveLocationController(context: AccountContext, peerId: EnginePeer.Id, controller: ViewController) {
     let presentImpl: (EngineMessage?) -> Void = { [weak controller] message in
         if let message = message, let strongController = controller {
             let _ = context.sharedContext.openChatMessage(OpenChatMessageParams(context: context, chatLocation: nil, chatFilterTag: nil, chatLocationContextHolder: nil, message: message._asMessage(), standalone: false, reverseMessageGalleryOrder: false, navigationController: strongController.navigationController as? NavigationController, modal: true, dismissInput: {
@@ -142,7 +141,7 @@ public final class LiveLocationHeaderPanelComponent: Component {
                                             }
                                             
                                             if let beginTimeAndTimeout {
-                                                items.append(LocationBroadcastActionSheetItem(context: component.context, peer: peer, title: EnginePeer(peer).displayTitle(strings: presentationData.strings, displayOrder: presentationData.nameDisplayOrder), beginTimestamp: beginTimeAndTimeout.0, timeout: beginTimeAndTimeout.1, strings: presentationData.strings, action: { [weak self] in
+                                                items.append(LocationBroadcastActionSheetItem(context: component.context, peer: EnginePeer(peer), title: EnginePeer(peer).displayTitle(strings: presentationData.strings, displayOrder: presentationData.nameDisplayOrder), beginTimestamp: beginTimeAndTimeout.0, timeout: beginTimeAndTimeout.1, strings: presentationData.strings, action: { [weak self] in
                                                     dismissAction()
                                                     
                                                     guard let self, let component = self.component, let controller = component.controller() else {
@@ -175,7 +174,7 @@ public final class LiveLocationHeaderPanelComponent: Component {
                             presentLiveLocationController(context: component.context, peerId: peerId, controller: controller)
                         }
                     },
-                    close: { [weak self] in
+                    close: { [weak self] _ in
                         guard let self, let component = self.component, let controller = component.controller() else {
                             return
                         }

@@ -4,7 +4,6 @@ import Photos
 import Display
 import AsyncDisplayKit
 import SwiftSignalKit
-import Postbox
 import TelegramCore
 import TelegramPresentationData
 import TelegramUIPreferences
@@ -24,11 +23,10 @@ import Markdown
 import PeerListItemComponent
 import AvatarNode
 import ListItemSliderSelectorComponent
-import DateSelectionUI
 import PlainButtonComponent
 import TelegramStringFormatting
 import TextFormat
-import TimeSelectionActionSheet
+import ChatTimerScreen
 
 private let checkIcon: UIImage = {
     return generateImage(CGSize(width: 12.0, height: 10.0), rotatedContext: { size, context in
@@ -506,14 +504,19 @@ final class AutomaticBusinessMessageSetupScreenComponent: Component {
                     return
                 }
                 
-                let controller = DateSelectionActionSheetController(
+                let controller = ChatTimerScreen(
                     context: component.context,
-                    title: nil,
-                    currentValue: Int32(clippedDate.timeIntervalSince1970),
-                    minimumDate: nil,
-                    maximumDate: nil,
-                    emptyTitle: nil,
-                    applyValue: { [weak self] value in
+                    configuration: ChatTimerScreen.Configuration(
+                        style: .default,
+                        title: { strings in return isStartTime ? strings.BusinessMessageSetup_ScheduleStartTime : strings.BusinessMessageSetup_ScheduleEndTime },
+                        picker: .date,
+                        currentValue: Int32(clippedDate.timeIntervalSince1970),
+                        pickerValueMapping: .roundDateToDaysUTC,
+                        primaryActionTitle: { strings, _, _ in
+                            strings.Wallpaper_Set
+                        }
+                    ),
+                    completion: { [weak self] value in
                         guard let self else {
                             return
                         }
@@ -545,33 +548,44 @@ final class AutomaticBusinessMessageSetupScreenComponent: Component {
                 let hour = components.hour ?? 0
                 let minute = components.minute ?? 0
                 
-                let controller = TimeSelectionActionSheet(context: component.context, currentValue: Int32(hour * 60 * 60 + minute * 60), applyValue: { [weak self] value in
-                    guard let self else {
-                        return
-                    }
-                    guard let value else {
-                        return
-                    }
-                    
-                    let updatedHour = value / (60 * 60)
-                    let updatedMinute = (value % (60 * 60)) / 60
-                    
-                    let calendar = Calendar.current
-                    var updatedComponents = calendar.dateComponents([.year, .month, .day], from: currentValue)
-                    updatedComponents.hour = Int(updatedHour)
-                    updatedComponents.minute = Int(updatedMinute)
-                    
-                    guard let updatedClippedDate = calendar.date(from: updatedComponents) else {
-                        return
-                    }
-                    
-                    if isStartTime {
-                        self.customScheduleStart = updatedClippedDate
-                    } else {
-                        self.customScheduleEnd = updatedClippedDate
-                    }
-                    self.state?.updated(transition: .immediate)
-                })
+                let controller = ChatTimerScreen(
+                    context: component.context,
+                    configuration: ChatTimerScreen.Configuration(
+                        style: .default,
+                        picker: .timeOfDay,
+                        currentValue: Int32(hour * 60 * 60 + minute * 60),
+                        pickerValueMapping: .secondsFromMidnightGMT,
+                        primaryActionTitle: { strings, _, _ in
+                            strings.Wallpaper_Set
+                        }
+                    ),
+                    completion: { [weak self] value in
+                        guard let self else {
+                            return
+                        }
+                        guard let value else {
+                            return
+                        }
+
+                        let updatedHour = value / (60 * 60)
+                        let updatedMinute = (value % (60 * 60)) / 60
+
+                        let calendar = Calendar.current
+                        var updatedComponents = calendar.dateComponents([.year, .month, .day], from: currentValue)
+                        updatedComponents.hour = Int(updatedHour)
+                        updatedComponents.minute = Int(updatedMinute)
+
+                        guard let updatedClippedDate = calendar.date(from: updatedComponents) else {
+                            return
+                        }
+
+                        if isStartTime {
+                            self.customScheduleStart = updatedClippedDate
+                        } else {
+                            self.customScheduleEnd = updatedClippedDate
+                        }
+                        self.state?.updated(transition: .immediate)
+                    })
                 self.environment?.controller()?.present(controller, in: .window(.root))
             }
         }

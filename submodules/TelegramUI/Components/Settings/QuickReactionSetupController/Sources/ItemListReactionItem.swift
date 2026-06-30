@@ -331,7 +331,7 @@ public class ItemListReactionItemNode: ListViewItemNode, ItemListItemNode {
                         strongSelf.bottomStripeNode.frame = CGRect(origin: CGPoint(x: bottomStripeInset, y: contentSize.height - separatorHeight), size: CGSize(width: params.width - bottomStripeInset - params.rightInset - separatorRightInset, height: separatorHeight))
                     }
                     
-                    let titleFrame = CGRect(origin: CGPoint(x: leftInset, y: verticalInset), size: titleLayout.size)
+                    let titleFrame = CGRect(origin: CGPoint(x: leftInset, y: verticalInset + 1.0), size: titleLayout.size)
                     strongSelf.titleNode.frame = titleFrame
                     
                     var animationContent: EmojiStatusComponent.AnimationContent?

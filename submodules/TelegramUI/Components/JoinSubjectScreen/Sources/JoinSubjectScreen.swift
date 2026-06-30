@@ -12,7 +12,6 @@ import BalancedTextComponent
 import ButtonComponent
 import BundleIconComponent
 import Markdown
-import Postbox
 import TelegramCore
 import AvatarNode
 import TelegramStringFormatting
@@ -351,19 +350,31 @@ private final class JoinSubjectScreenComponent: Component {
                 }
 
                 self.joinDisposable = (component.context.engine.peers.joinChatInteractively(with: group.link)
-                |> deliverOnMainQueue).start(next: { [weak self] peer in
+                |> deliverOnMainQueue).start(next: { [weak self] result in
                     guard let self, let component = self.component else {
                         return
                     }
-                    if group.isRequest {
+                    switch result {
+                    case let .joined(peer):
+                        if group.isRequest {
+                            let presentationData = component.context.sharedContext.currentPresentationData.with { $0 }
+                            self.environment?.controller()?.present(UndoOverlayController(presentationData: presentationData, content: .inviteRequestSent(title: presentationData.strings.MemberRequests_RequestToJoinSent, text: group.isGroup ? presentationData.strings.MemberRequests_RequestToJoinSentDescriptionGroup : presentationData.strings.MemberRequests_RequestToJoinSentDescriptionChannel ), elevatedLayout: true, animateInAsReplacement: false, action: { _ in return false }), in: .window(.root))
+                        } else {
+                            if let peer {
+                                self.navigateToPeer(peer: peer)
+                            }
+                        }
+                        self.environment?.controller()?.dismiss()
+                    case let .webView(webView):
                         let presentationData = component.context.sharedContext.currentPresentationData.with { $0 }
-                        self.environment?.controller()?.present(UndoOverlayController(presentationData: presentationData, content: .inviteRequestSent(title: presentationData.strings.MemberRequests_RequestToJoinSent, text: group.isGroup ? presentationData.strings.MemberRequests_RequestToJoinSentDescriptionGroup : presentationData.strings.MemberRequests_RequestToJoinSentDescriptionChannel ), elevatedLayout: true, animateInAsReplacement: false, action: { _ in return false }), in: .window(.root))
-                    } else {
-                        if let peer {
-                            self.navigateToPeer(peer: peer)
+                        if let controller = self.environment?.controller() {
+                            component.context.sharedContext.openJoinChatWebView(context: component.context, parentController: controller, updatedPresentationData: (initial: presentationData, signal: component.context.sharedContext.presentationData), webView: webView)
+                        }
+                        self.isJoining = false
+                        if !self.isUpdating {
+                            self.state?.updated(transition: .immediate)
                         }
                     }
-                    self.environment?.controller()?.dismiss()
                 }, error: { [weak self] error in
                     guard let self, let component = self.component else {
                         return
@@ -894,7 +905,7 @@ private final class JoinSubjectScreenComponent: Component {
                                 |> deliverOnMainQueue).startStandalone(next: { value in
                                     var value: PresentationGroupCallPersistentSettings = value?.get(PresentationGroupCallPersistentSettings.self) ?? PresentationGroupCallPersistentSettings.default
                                     value.isMicrophoneEnabledByDefault = callMicrophoneIsEnabled
-                                    if let entry = CodableEntry(value) {
+                                    if let entry = EngineCodableEntry(value) {
                                         context.engine.calls.setGroupCallPersistentSettings(callId: groupCall.id, value: entry)
                                     }
                                 })

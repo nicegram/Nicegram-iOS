@@ -141,9 +141,10 @@ public final class BotCheckoutController: ViewController {
         
         self.presentationData = context.sharedContext.currentPresentationData.with { $0 }
         
-        super.init(navigationBarPresentationData: NavigationBarPresentationData(presentationData: self.presentationData))
+        super.init(navigationBarPresentationData: NavigationBarPresentationData(presentationData: self.presentationData, style: .glass))
         
         self.statusBar.statusBarStyle = self.presentationData.theme.rootController.statusBarStyle.style
+        self._hasGlassStyle = true
         
         var title = self.presentationData.strings.Checkout_Title
         if invoice.flags.contains(.isTest) {
@@ -151,7 +152,7 @@ public final class BotCheckoutController: ViewController {
         }
         self.title = title
         
-        self.navigationItem.leftBarButtonItem = UIBarButtonItem(title: self.presentationData.strings.Common_Cancel, style: .plain, target: self, action: #selector(self.cancelPressed))
+        self.navigationItem.leftBarButtonItem = UIBarButtonItem(title: "___close", style: .plain, target: self, action: #selector(self.cancelPressed))
     }
     
     required public init(coder aDecoder: NSCoder) {

@@ -5,6 +5,8 @@ import AsyncDisplayKit
 import SwiftSignalKit
 import CheckNode
 import AnimationUI
+import ComponentFlow
+import GlassBackgroundComponent
 
 public enum WallpaperOptionButtonValue {
     case check(Bool)
@@ -68,31 +70,43 @@ final class WallpaperLightButtonBackgroundNode: ASDisplayNode {
 }
 
 final class WallpaperOptionBackgroundNode: ASDisplayNode {
-    private let backgroundNode: NavigationBackgroundNode
-    
     var enableSaturation: Bool {
         didSet {
-            self.backgroundNode.updateColor(color: UIColor(rgb: 0x333333, alpha: 0.35), enableBlur: true, enableSaturation: self.enableSaturation, transition: .immediate)
         }
     }
     
-    init(enableSaturation: Bool = false) {
+    var isDark: Bool {
+        didSet {
+            if self.isDark != oldValue, let validSize = self.validSize {
+                self.updateLayout(size: validSize)
+            }
+        }
+    }
+
+    private var validSize: CGSize?
+
+    init(enableSaturation: Bool = false, isDark: Bool = true) {
         self.enableSaturation = enableSaturation
-        self.backgroundNode = NavigationBackgroundNode(color: UIColor(rgb: 0x333333, alpha: 0.35), enableBlur: true, enableSaturation: enableSaturation)
+        self.isDark = isDark
 
         super.init()
-        
-        self.clipsToBounds = true
-        self.isUserInteractionEnabled = false
-        
-        self.addSubnode(self.backgroundNode)
+
+        self.setViewBlock({
+            return GlassBackgroundView()
+        })
+    }
+
+    private var glassView: GlassBackgroundView {
+        return self.view as! GlassBackgroundView
     }
     
-    func updateLayout(size: CGSize) {
-        let frame = CGRect(origin: .zero, size: size)
-        self.backgroundNode.frame = frame
-        
-        self.backgroundNode.update(size: size, transition: .immediate)
+    var contentView: UIView {
+        return self.glassView.contentView
+    }
+
+    func updateLayout(size: CGSize, transition: ContainedViewLayoutTransition = .immediate) {
+        self.validSize = size
+        self.glassView.update(size: size, cornerRadius: size.height * 0.5, isDark: self.isDark, tintColor: .init(kind: .panel), isInteractive: true, transition: ComponentTransition(transition))
     }
 }
 
@@ -105,9 +119,7 @@ final class WallpaperNavigationButtonNode: HighlightTrackingButtonNode {
     
     var enableSaturation: Bool = false {
         didSet {
-            if let backgroundNode = self.backgroundNode as? WallpaperOptionBackgroundNode {
-                backgroundNode.enableSaturation = self.enableSaturation
-            }
+            self.backgroundNode.enableSaturation = self.enableSaturation
         }
     }
     
@@ -117,37 +129,35 @@ final class WallpaperNavigationButtonNode: HighlightTrackingButtonNode {
             if self.dark != oldValue {
                 self.backgroundNode.removeFromSupernode()
                 if self.dark {
-                    self.backgroundNode = WallpaperOptionBackgroundNode(enableSaturation: self.enableSaturation)
+                    self.backgroundNode = WallpaperOptionBackgroundNode(enableSaturation: self.enableSaturation, isDark: true)
                 } else {
-                    self.backgroundNode = WallpaperLightButtonBackgroundNode()
+                    self.backgroundNode = WallpaperOptionBackgroundNode(enableSaturation: self.enableSaturation, isDark: false)
                 }
                 self.insertSubnode(self.backgroundNode, at: 0)
             }
         }
     }
     
-    private var backgroundNode: ASDisplayNode
+    private var backgroundNode: WallpaperOptionBackgroundNode
     private let iconNode: ASImageNode
     private let textNode: ImmediateTextNode
     private var animationNode: AnimationNode?
     
     func setIcon(_ image: UIImage?) {
-        self.iconNode.image = generateTintedImage(image: image, color: .white)
+        self.iconNode.image = generateTintedImage(image: image, color: self.dark ? .white : .black)
     }
     
     init(content: Content, dark: Bool) {
         self.content = content
         self.dark = dark
         
-        if dark {
-            self.backgroundNode = WallpaperOptionBackgroundNode(enableSaturation: self.enableSaturation)
-        } else {
-            self.backgroundNode = WallpaperLightButtonBackgroundNode()
-        }
+        self.backgroundNode = WallpaperOptionBackgroundNode(enableSaturation: self.enableSaturation, isDark: dark)
         
         self.iconNode = ASImageNode()
         self.iconNode.displaysAsynchronously = false
         self.iconNode.contentMode = .center
+        
+        let iconColor: UIColor = dark ? .white : .black
         
         var title: String
         switch content {
@@ -155,78 +165,40 @@ final class WallpaperNavigationButtonNode: HighlightTrackingButtonNode {
             title = text
         case let .icon(icon, _):
             title = ""
-            self.iconNode.image = generateTintedImage(image: icon, color: .white)
+            self.iconNode.image = generateTintedImage(image: icon, color: .black)
         case let .dayNight(isNight):
             title = ""
-            let animationNode = AnimationNode(animation: isNight ? "anim_sun_reverse" : "anim_sun", colors: [:], scale: 1.0)
+            let animationNode = AnimationNode(animation: isNight ? "anim_sun_reverse" : "anim_sun", colors: ["__allcolors__": iconColor], scale: 1.0)
             animationNode.speed = 1.66
             animationNode.isUserInteractionEnabled = false
             self.animationNode = animationNode
         }
         
         self.textNode = ImmediateTextNode()
-        self.textNode.attributedText = NSAttributedString(string: title, font: Font.semibold(15.0), textColor: .white)
+        self.textNode.attributedText = NSAttributedString(string: title, font: Font.semibold(15.0), textColor: iconColor)
         
         super.init()
         
         self.isExclusiveTouch = true
         
         self.addSubnode(self.backgroundNode)
-        self.addSubnode(self.iconNode)
-        self.addSubnode(self.textNode)
+        self.backgroundNode.contentView.addSubnode(self.iconNode)
+        self.backgroundNode.contentView.addSubnode(self.textNode)
         
         if let animationNode = self.animationNode {
-            self.addSubnode(animationNode)
-        }
-        
-        self.highligthedChanged = { [weak self] highlighted in
-            if let strongSelf = self {
-                if highlighted {
-                    strongSelf.backgroundNode.layer.removeAnimation(forKey: "opacity")
-                    strongSelf.backgroundNode.alpha = 0.4
-                    
-                    strongSelf.iconNode.layer.removeAnimation(forKey: "opacity")
-                    strongSelf.iconNode.alpha = 0.4
-                    
-                    strongSelf.textNode.layer.removeAnimation(forKey: "opacity")
-                    strongSelf.textNode.alpha = 0.4
-                    
-//                    if let animationNode = strongSelf.animationNode {
-//                        animationNode.layer.removeAnimation(forKey: "opacity")
-//                        animationNode.alpha = 0.4
-//                    }
-                } else {
-                    strongSelf.backgroundNode.alpha = 1.0
-                    strongSelf.backgroundNode.layer.animateAlpha(from: 0.4, to: 1.0, duration: 0.2)
-                    
-                    strongSelf.iconNode.alpha = 1.0
-                    strongSelf.iconNode.layer.animateAlpha(from: 0.4, to: 1.0, duration: 0.2)
-                    
-                    strongSelf.textNode.alpha = 1.0
-                    strongSelf.textNode.layer.animateAlpha(from: 0.4, to: 1.0, duration: 0.2)
-                    
-//                    if let animationNode = strongSelf.animationNode {
-//                        animationNode.alpha = 1.0
-//                        animationNode.layer.animateAlpha(from: 0.4, to: 1.0, duration: 0.2)
-//                    }
-                }
-            }
+            self.backgroundNode.contentView.addSubnode(animationNode)
         }
     }
     
     func setIsNight(_ isNight: Bool) {
-        self.animationNode?.setAnimation(name: !isNight ? "anim_sun_reverse" : "anim_sun", colors: [:])
+        let iconColor: UIColor = self.dark ? .white : .black
+        self.animationNode?.setAnimation(name: !isNight ? "anim_sun_reverse" : "anim_sun", colors: ["__allcolors__": iconColor])
         self.animationNode?.speed = 1.66
         self.animationNode?.playOnce()
         
         self.isUserInteractionEnabled = false
         Queue.mainQueue().after(0.4) {
             self.isUserInteractionEnabled = true
-        }
-    }
-    
-    var buttonColor: UIColor = UIColor(rgb: 0x000000, alpha: 0.3) {
-        didSet {
         }
     }
     
@@ -249,11 +221,7 @@ final class WallpaperNavigationButtonNode: HighlightTrackingButtonNode {
 
         let size = self.bounds.size
         self.backgroundNode.frame = self.bounds
-        if let backgroundNode = self.backgroundNode as? WallpaperOptionBackgroundNode {
-            backgroundNode.updateLayout(size: self.backgroundNode.bounds.size)
-        } else if let backgroundNode = self.backgroundNode as? WallpaperLightButtonBackgroundNode {
-            backgroundNode.updateLayout(size: self.backgroundNode.bounds.size)
-        }
+        self.backgroundNode.updateLayout(size: self.backgroundNode.bounds.size)
         self.backgroundNode.cornerRadius = size.height / 2.0
         
         self.iconNode.frame = self.bounds
@@ -303,7 +271,16 @@ public final class WallpaperOptionButtonNode: HighlightTrackingButtonNode {
     
     public var title: String {
         didSet {
-            self.textNode.attributedText = NSAttributedString(string: title, font: Font.medium(13), textColor: .white)
+            self.textNode.attributedText = NSAttributedString(string: title, font: Font.medium(13), textColor: self.dark ? .white : .black)
+        }
+    }
+    
+    public var dark: Bool = false {
+        didSet {
+            let color: UIColor = self.dark ? .white : .black
+            self.checkNode.theme = CheckNodeTheme(backgroundColor: color, strokeColor: .clear, borderColor: color, overlayBorder: false, hasInset: false, hasShadow: false, borderWidth: 1.5)
+            self.textNode.attributedText = NSAttributedString(string: self.title, font: Font.medium(13), textColor: self.dark ? .white : .black)
+            let _ = self.textNode.updateLayout(CGSize(width: 160.0, height: 40.0))
         }
     }
     
@@ -324,8 +301,6 @@ public final class WallpaperOptionButtonNode: HighlightTrackingButtonNode {
 
         super.init()
         
-        self.clipsToBounds = true
-        self.cornerRadius = 14.0
         self.isExclusiveTouch = true
         
         switch value {
@@ -345,32 +320,9 @@ public final class WallpaperOptionButtonNode: HighlightTrackingButtonNode {
         
         self.addSubnode(self.backgroundNode)
         
-        self.addSubnode(self.checkNode)
-        self.addSubnode(self.textNode)
-        self.addSubnode(self.colorNode)
-        
-        self.highligthedChanged = { [weak self] highlighted in
-            if let strongSelf = self {
-                if highlighted {
-                    strongSelf.backgroundNode.layer.removeAnimation(forKey: "opacity")
-                    strongSelf.backgroundNode.alpha = 0.4
-                    
-                    strongSelf.colorNode.layer.removeAnimation(forKey: "opacity")
-                    strongSelf.colorNode.alpha = 0.4
-                } else {
-                    strongSelf.backgroundNode.alpha = 1.0
-                    strongSelf.backgroundNode.layer.animateAlpha(from: 0.4, to: 1.0, duration: 0.2)
-                    
-                    strongSelf.colorNode.alpha = 1.0
-                    strongSelf.colorNode.layer.animateAlpha(from: 0.4, to: 1.0, duration: 0.2)
-                }
-            }
-        }
-    }
-    
-    public var buttonColor: UIColor = UIColor(rgb: 0x000000, alpha: 0.3) {
-        didSet {
-        }
+        self.backgroundNode.contentView.addSubnode(self.checkNode)
+        self.backgroundNode.contentView.addSubnode(self.textNode)
+        self.backgroundNode.contentView.addSubnode(self.colorNode)
     }
     
     public var color: UIColor? {

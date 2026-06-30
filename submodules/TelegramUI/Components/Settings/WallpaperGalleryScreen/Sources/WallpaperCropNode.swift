@@ -41,6 +41,7 @@ final class WallpaperCropNode: ASDisplayNode, ASScrollViewDelegate {
         self.scrollNode.view.scrollsToTop = false
         self.scrollNode.view.delaysContentTouches = false
         self.scrollNode.view.decelerationRate = UIScrollView.DecelerationRate.fast
+        self.scrollNode.view.scrollsToTop = false
         
         self.addSubnode(self.scrollNode)
     }

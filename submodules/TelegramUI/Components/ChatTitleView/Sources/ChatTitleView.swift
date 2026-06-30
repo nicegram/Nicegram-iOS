@@ -2,7 +2,6 @@ import Foundation
 import UIKit
 import AsyncDisplayKit
 import Display
-import Postbox
 import TelegramCore
 import SwiftSignalKit
 import LegacyComponents
@@ -29,15 +28,15 @@ private let subtitleFont = Font.regular(13.0)
 
 public enum ChatTitleContent: Equatable {
     public struct PeerData: Equatable {
-        public var peerId: PeerId
-        public var peer: Peer?
+        public var peerId: EnginePeer.Id
+        public var peer: EngineRawPeer?
         public var isContact: Bool
         public var isSavedMessages: Bool
         public var notificationSettings: TelegramPeerNotificationSettings?
-        public var peerPresences: [PeerId: PeerPresence]
-        public var cachedData: CachedPeerData?
-        
-        public init(peerId: PeerId, peer: Peer?, isContact: Bool, isSavedMessages: Bool, notificationSettings: TelegramPeerNotificationSettings?, peerPresences: [PeerId: PeerPresence], cachedData: CachedPeerData?) {
+        public var peerPresences: [EnginePeer.Id: EngineRawPeerPresence]
+        public var cachedData: EngineCachedPeerData?
+
+        public init(peerId: EnginePeer.Id, peer: EngineRawPeer?, isContact: Bool, isSavedMessages: Bool, notificationSettings: TelegramPeerNotificationSettings?, peerPresences: [EnginePeer.Id: EngineRawPeerPresence], cachedData: EngineCachedPeerData?) {
             self.peerId = peerId
             self.peer = peer
             self.isContact = isContact
@@ -47,7 +46,7 @@ public enum ChatTitleContent: Equatable {
             self.cachedData = cachedData
         }
         
-        public init(peerView: PeerView) {
+        public init(peerView: EngineRawPeerView) {
             self.init(peerId: peerView.peerId, peer: peerViewMainPeer(peerView), isContact: peerView.peerIsContact, isSavedMessages: false, notificationSettings: peerView.notificationSettings as? TelegramPeerNotificationSettings, peerPresences: peerView.peerPresences, cachedData: peerView.cachedData)
         }
         

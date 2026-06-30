@@ -260,6 +260,7 @@ public final class TranslationLanguagesContextMenuContent: ContextControllerItem
                 self.scrollNode.view.contentInsetAdjustmentBehavior = .never
             }
             self.scrollNode.clipsToBounds = false
+            self.scrollNode.view.scrollsToTop = false
 
             super.init()
 

@@ -20,7 +20,6 @@ swift_library(
         "//submodules/TelegramPresentationData:TelegramPresentationData",
         "//submodules/TelegramUIPreferences:TelegramUIPreferences",
         "//submodules/PresentationDataUtils:PresentationDataUtils",
-        "//submodules/PeersNearbyIconNode:PeersNearbyIconNode",
         "//submodules/TelegramPermissionsUI:TelegramPermissionsUI",
         "//submodules/TranslateUI:TranslateUI",
         "//submodules/UndoUI:UndoUI",

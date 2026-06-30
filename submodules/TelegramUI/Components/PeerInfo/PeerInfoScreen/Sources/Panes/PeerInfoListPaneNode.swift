@@ -3,7 +3,6 @@ import AsyncDisplayKit
 import Display
 import TelegramCore
 import SwiftSignalKit
-import Postbox
 import TelegramPresentationData
 import PresentationDataUtils
 import AccountContext
@@ -23,7 +22,7 @@ import PeerInfoPaneNode
 
 final class PeerInfoListPaneNode: ASDisplayNode, PeerInfoPaneNode {
     private let context: AccountContext
-    private let peerId: PeerId
+    private let peerId: EnginePeer.Id
     private let chatLocation: ChatLocation
     private let chatLocationContextHolder: Atomic<ChatLocationContextHolder?>
     private let chatControllerInteraction: ChatControllerInteraction
@@ -40,8 +39,8 @@ final class PeerInfoListPaneNode: ASDisplayNode, PeerInfoPaneNode {
         return self.ready.get()
     }
     
-    private let selectedMessagesPromise = Promise<Set<MessageId>?>(nil)
-    private var selectedMessages: Set<MessageId>? {
+    private let selectedMessagesPromise = Promise<Set<EngineMessage.Id>?>(nil)
+    private var selectedMessages: Set<EngineMessage.Id>? {
         didSet {
             if self.selectedMessages != oldValue {
                 self.selectedMessagesPromise.set(.single(self.selectedMessages))
@@ -69,7 +68,7 @@ final class PeerInfoListPaneNode: ASDisplayNode, PeerInfoPaneNode {
         return 0.0
     }
     
-    init(context: AccountContext, updatedPresentationData: (initial: PresentationData, signal: Signal<PresentationData, NoError>)? = nil, chatControllerInteraction: ChatControllerInteraction, peerId: PeerId, chatLocation: ChatLocation, chatLocationContextHolder: Atomic<ChatLocationContextHolder?>, tagMask: MessageTags) {
+    init(context: AccountContext, updatedPresentationData: (initial: PresentationData, signal: Signal<PresentationData, NoError>)? = nil, chatControllerInteraction: ChatControllerInteraction, peerId: EnginePeer.Id, chatLocation: ChatLocation, chatLocationContextHolder: Atomic<ChatLocationContextHolder?>, tagMask: EngineMessage.Tags) {
         self.context = context
         self.peerId = peerId
         self.chatLocation = chatLocation
@@ -166,15 +165,15 @@ final class PeerInfoListPaneNode: ASDisplayNode, PeerInfoPaneNode {
             let presentationData = context.sharedContext.currentPresentationData.with { $0 }
 
             switch tagMask {
-            case MessageTags.file:
+            case EngineMessage.Tags.file:
                 return PeerInfoStatusData(text: presentationData.strings.SharedMedia_FileCount(Int32(count)), isActivity: false, key: .files)
-            case MessageTags.music:
+            case EngineMessage.Tags.music:
                 return PeerInfoStatusData(text: presentationData.strings.SharedMedia_MusicCount(Int32(count)), isActivity: false, key: .music)
-            case MessageTags.voiceOrInstantVideo:
+            case EngineMessage.Tags.voiceOrInstantVideo:
                 return PeerInfoStatusData(text: presentationData.strings.SharedMedia_VoiceMessageCount(Int32(count)), isActivity: false, key: .voice)
-            case MessageTags.webPage:
+            case EngineMessage.Tags.webPage:
                 return PeerInfoStatusData(text: presentationData.strings.SharedMedia_LinkCount(Int32(count)), isActivity: false, key: .links)
-            case MessageTags.polls:
+            case EngineMessage.Tags.polls:
                 return PeerInfoStatusData(text: presentationData.strings.SharedMedia_PollCount(Int32(count)), isActivity: false, key: .links)
             default:
                 return nil
@@ -188,7 +187,7 @@ final class PeerInfoListPaneNode: ASDisplayNode, PeerInfoPaneNode {
         self.playlistPreloadDisposable?.dispose()
     }
     
-    func ensureMessageIsVisible(id: MessageId) {
+    func ensureMessageIsVisible(id: EngineMessage.Id) {
         
     }
     
@@ -276,7 +275,7 @@ final class PeerInfoListPaneNode: ASDisplayNode, PeerInfoPaneNode {
                         let settings = transaction.getSharedData(ApplicationSpecificSharedDataKeys.musicPlaybackSettings)?.get(MusicPlaybackSettings.self) ?? MusicPlaybackSettings.defaultSettings
                         
                         transaction.updateSharedData(ApplicationSpecificSharedDataKeys.musicPlaybackSettings, { _ in
-                            return PreferencesEntry(settings.withUpdatedVoicePlaybackRate(rate))
+                            return EnginePreferencesEntry(settings.withUpdatedVoicePlaybackRate(rate))
                         })
                         return rate
                     }
@@ -371,7 +370,7 @@ final class PeerInfoListPaneNode: ASDisplayNode, PeerInfoPaneNode {
                     }
                     if let id = state.id as? PeerMessagesMediaPlaylistItemId, let playlistLocation = strongSelf.playlistLocation as? PeerMessagesPlaylistLocation, case let .messages(chatLocation, _, _) = playlistLocation {
                         if type == .music {
-                            let signal = strongSelf.context.sharedContext.messageFromPreloadedChatHistoryViewForLocation(id: id.messageId, location: ChatHistoryLocationInput(content: .InitialSearch(subject: MessageHistoryInitialSearchSubject(location: .id(id.messageId)), count: 60, highlight: true, setupReply: false), id: 0), context: strongSelf.context, chatLocation: .peer(id: id.messageId.peerId), subject: nil, chatLocationContextHolder: Atomic<ChatLocationContextHolder?>(value: nil), tag: .tag(MessageTags.music))
+                            let signal = strongSelf.context.sharedContext.messageFromPreloadedChatHistoryViewForLocation(id: id.messageId, location: ChatHistoryLocationInput(content: .InitialSearch(subject: MessageHistoryInitialSearchSubject(location: .id(id.messageId)), count: 60, highlight: true, setupReply: false), id: 0), context: strongSelf.context, chatLocation: .peer(id: id.messageId.peerId), subject: nil, chatLocationContextHolder: Atomic<ChatLocationContextHolder?>(value: nil), tag: .tag(EngineMessage.Tags.music))
                             
                             var cancelImpl: (() -> Void)?
                             let presentationData = strongSelf.context.sharedContext.currentPresentationData.with { $0 }
@@ -482,7 +481,7 @@ final class PeerInfoListPaneNode: ASDisplayNode, PeerInfoPaneNode {
         self.listNode.scrollEnabled = !isScrollingLockedAtTop
     }
     
-    func findLoadedMessage(id: MessageId) -> Message? {
+    func findLoadedMessage(id: EngineMessage.Id) -> EngineMessage? {
         self.listNode.messageInCurrentHistoryView(id)
     }
     
@@ -503,11 +502,12 @@ final class PeerInfoListPaneNode: ASDisplayNode, PeerInfoPaneNode {
     func cancelPreviewGestures() {
     }
     
-    func transitionNodeForGallery(messageId: MessageId, media: Media) -> (ASDisplayNode, CGRect, () -> (UIView?, UIView?))? {
+    func transitionNodeForGallery(messageId: EngineMessage.Id, media: EngineMedia) -> (ASDisplayNode, CGRect, () -> (UIView?, UIView?))? {
         var transitionNode: (ASDisplayNode, CGRect, () -> (UIView?, UIView?))?
+        let rawMedia = media._asMedia()
         self.listNode.forEachItemNode { itemNode in
             if let itemNode = itemNode as? ListMessageNode {
-                if let result = itemNode.transitionNode(id: messageId, media: media, adjustRect: false) {
+                if let result = itemNode.transitionNode(id: messageId, media: rawMedia, adjustRect: false) {
                     transitionNode = result
                 }
             }

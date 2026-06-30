@@ -3,7 +3,6 @@ import UIKit
 import Display
 import AccountContext
 import SwiftSignalKit
-import Postbox
 import TelegramCore
 import OpenInExternalAppUI
 import PresentationDataUtils
@@ -53,7 +52,7 @@ extension PeerInfoScreenNode {
     }
     
     func openUrl(url: String, concealed: Bool, external: Bool, forceExternal: Bool = false, commit: @escaping () -> Void = {}) {
-        let _ = openUserGeneratedUrl(context: self.context, peerId: self.peerId, url: url, concealed: concealed, present: { [weak self] c in
+        let _ = self.context.sharedContext.openUserGeneratedUrl(context: self.context, peerId: self.peerId, url: url, webpage: nil, concealed: concealed, forceConcealed: false, skipUrlAuth: false, skipConcealedAlert: false, forceDark: false, present: { [weak self] c in
             self?.controller?.present(c, in: .window(.root))
         }, openResolved: { [weak self] tempResolved in
             guard let strongSelf = self else {
@@ -77,17 +76,17 @@ extension PeerInfoScreenNode {
             }, dismissInput: {
                 self?.view.endEditing(true)
             }, contentContext: nil, progress: nil, completion: nil)
-        })
+        }, progress: nil, alertDisplayUpdated: nil, concealedAlertOption: nil)
     }
     
     func openUrlIn(_ url: String) {
-        let actionSheet = OpenInActionSheetController(context: self.context, updatedPresentationData: self.controller?.updatedPresentationData, item: .url(url: url), openUrl: { [weak self] url in
+        let actionSheet = OpenInOptionsScreen(context: self.context, updatedPresentationData: self.controller?.updatedPresentationData, item: .url(url: url), openUrl: { [weak self] url in
             if let strongSelf = self, let navigationController = strongSelf.controller?.navigationController as? NavigationController {
                 strongSelf.context.sharedContext.openExternalUrl(context: strongSelf.context, urlContext: .generic, url: url, forceExternal: true, presentationData: strongSelf.presentationData, navigationController: navigationController, dismissInput: {
                 })
             }
         })
-        self.controller?.present(actionSheet, in: .window(.root))
+        self.controller?.push(actionSheet)
     }
 
     func openPeerMention(_ name: String, navigation: ChatControllerInteractionNavigateToPeer = .default) {
@@ -134,19 +133,16 @@ extension PeerInfoScreenNode {
         }
         disposable.set((resolveSignal
         |> take(1)
-        |> mapToSignal { peer -> Signal<Peer?, NoError> in
-            return .single(peer?._asPeer())
-        }
         |> deliverOnMainQueue).start(next: { [weak self] peer in
             if let strongSelf = self {
                 if let peer = peer {
                     var navigation = navigation
                     if case .default = navigation {
-                        if let peer = peer as? TelegramUser, peer.botInfo != nil {
+                        if case let .user(user) = peer, user.botInfo != nil {
                             navigation = .chat(textInputState: nil, subject: nil, peekData: nil)
                         }
                     }
-                    strongSelf.openResolved(.peer(peer, navigation))
+                    strongSelf.openResolved(.peer(peer._asPeer(), navigation))
                 } else {
                     strongSelf.controller?.present(textAlertController(context: strongSelf.context, updatedPresentationData: strongSelf.controller?.updatedPresentationData, title: nil, text: strongSelf.presentationData.strings.Resolve_ErrorNotFound, actions: [TextAlertAction(type: .defaultAction, title: strongSelf.presentationData.strings.Common_OK, action: {})]), in: .window(.root))
                 }

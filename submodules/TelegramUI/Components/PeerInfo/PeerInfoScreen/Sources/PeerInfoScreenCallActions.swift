@@ -3,7 +3,6 @@ import UIKit
 import Display
 import AccountContext
 import SwiftSignalKit
-import Postbox
 import TelegramCore
 import AsyncDisplayKit
 import ContextUI
@@ -20,7 +19,7 @@ extension PeerInfoScreenNode {
             return
         }
         let peerId = self.peerId
-        let requestCall: (PeerId?, EngineGroupCallDescription?) -> Void = { [weak self] defaultJoinAsPeerId, activeCall in
+        let requestCall: (EnginePeer.Id?, EngineGroupCallDescription?) -> Void = { [weak self] defaultJoinAsPeerId, activeCall in
             if let activeCall = activeCall {
                 self?.context.joinGroupCall(peerId: peerId, invite: nil, requestJoinAsPeerId: { completion in
                     if let defaultJoinAsPeerId = defaultJoinAsPeerId {
@@ -74,7 +73,7 @@ extension PeerInfoScreenNode {
         self.controller?.push(CreateExternalMediaStreamScreen(context: self.context, peerId: self.peerId, credentialsPromise: credentialsPromise, mode: .create(liveStream: false)))
     }
     
-    func createAndJoinGroupCall(peerId: PeerId, joinAsPeerId: PeerId?) {
+    func createAndJoinGroupCall(peerId: EnginePeer.Id, joinAsPeerId: EnginePeer.Id?) {
         guard let controller = self.controller, !controller.presentAccountFrozenInfoIfNeeded() else {
             return
         }
@@ -142,7 +141,7 @@ extension PeerInfoScreenNode {
         }
     }
 
-    func openVoiceChatDisplayAsPeerSelection(completion: @escaping (PeerId) -> Void, gesture: ContextGesture? = nil, contextController: ContextControllerProtocol? = nil, result: ((ContextMenuActionResult) -> Void)? = nil, backAction: ((ContextControllerProtocol) -> Void)? = nil) {
+    func openVoiceChatDisplayAsPeerSelection(completion: @escaping (EnginePeer.Id) -> Void, gesture: ContextGesture? = nil, contextController: ContextControllerProtocol? = nil, result: ((ContextMenuActionResult) -> Void)? = nil, backAction: ((ContextControllerProtocol) -> Void)? = nil) {
         let dismissOnSelection = contextController == nil
         let currentAccountPeer = self.context.engine.data.get(TelegramEngine.EngineData.Item.Peer.Peer(id: context.account.peerId))
         |> mapToSignal { peer -> Signal<EnginePeer, NoError> in
@@ -246,7 +245,7 @@ extension PeerInfoScreenNode {
         })
     }
 
-    func openVoiceChatOptions(defaultJoinAsPeerId: PeerId?, gesture: ContextGesture? = nil, contextController: ContextControllerProtocol? = nil) {
+    func openVoiceChatOptions(defaultJoinAsPeerId: EnginePeer.Id?, gesture: ContextGesture? = nil, contextController: ContextControllerProtocol? = nil) {
         guard let chatPeer = self.data?.peer else {
             return
         }

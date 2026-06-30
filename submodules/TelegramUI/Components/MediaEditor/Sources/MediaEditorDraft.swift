@@ -5,7 +5,6 @@ import CoreLocation
 import TelegramCore
 import TelegramUIPreferences
 import PersistentStringHash
-import Postbox
 import AccountContext
 
 public struct MediaEditorResultPrivacy: Codable, Equatable {
@@ -98,12 +97,12 @@ public final class MediaEditorDraft: Codable, Equatable {
     public let values: MediaEditorValues
     public let caption: NSAttributedString
     public let privacy: MediaEditorResultPrivacy?
-    public let forwardInfo: StoryId?
+    public let forwardInfo: EngineStoryId?
     public let timestamp: Int32
     public let location: CLLocationCoordinate2D?
     public let expiresOn: Int32?
         
-    public init(path: String, isVideo: Bool, thumbnail: UIImage, dimensions: PixelDimensions, duration: Double?, values: MediaEditorValues, caption: NSAttributedString, privacy: MediaEditorResultPrivacy?, forwardInfo: StoryId?, timestamp: Int32, location: CLLocationCoordinate2D?, expiresOn: Int32?) {
+    public init(path: String, isVideo: Bool, thumbnail: UIImage, dimensions: PixelDimensions, duration: Double?, values: MediaEditorValues, caption: NSAttributedString, privacy: MediaEditorResultPrivacy?, forwardInfo: EngineStoryId?, timestamp: Int32, location: CLLocationCoordinate2D?, expiresOn: Int32?) {
         self.path = path
         self.isVideo = isVideo
         self.thumbnail = thumbnail
@@ -148,7 +147,7 @@ public final class MediaEditorDraft: Codable, Equatable {
             self.privacy = nil
         }
         
-        self.forwardInfo = try container.decodeIfPresent(StoryId.self, forKey: .forwardInfo)
+        self.forwardInfo = try container.decodeIfPresent(EngineStoryId.self, forKey: .forwardInfo)
         
         self.timestamp = try container.decodeIfPresent(Int32.self, forKey: .timestamp) ?? 1688909663
         
@@ -203,7 +202,7 @@ public final class MediaEditorDraft: Codable, Equatable {
 }
 
 private struct MediaEditorDraftItemId {
-    public let rawValue: MemoryBuffer
+    public let rawValue: EngineMemoryBuffer
     
     var value: Int64 {
         return self.rawValue.makeData().withUnsafeBytes { buffer -> Int64 in
@@ -214,18 +213,18 @@ private struct MediaEditorDraftItemId {
         }
     }
     
-    init(_ rawValue: MemoryBuffer) {
+    init(_ rawValue: EngineMemoryBuffer) {
         self.rawValue = rawValue
     }
     
     init(_ value: Int64) {
         var value = value
-        self.rawValue = MemoryBuffer(data: Data(bytes: &value, count: MemoryLayout.size(ofValue: value)))
+        self.rawValue = EngineMemoryBuffer(data: Data(bytes: &value, count: MemoryLayout.size(ofValue: value)))
     }
     
     init(_ value: UInt64) {
         var value = Int64(bitPattern: value)
-        self.rawValue = MemoryBuffer(data: Data(bytes: &value, count: MemoryLayout.size(ofValue: value)))
+        self.rawValue = EngineMemoryBuffer(data: Data(bytes: &value, count: MemoryLayout.size(ofValue: value)))
     }
 }
 

@@ -425,7 +425,7 @@ final class AuthorizationSequencePaymentScreenComponent: Component {
                 containerSize: CGSize(width: availableSize.width - sideInset * 2.0, height: availableSize.height)
             )
             
-            let buttonHeight: CGFloat = 50.0
+            let buttonHeight: CGFloat = 52.0
             let bottomPanelPadding: CGFloat = 12.0
             let titleSpacing: CGFloat = -24.0
             let listSpacing: CGFloat = 12.0
@@ -455,7 +455,7 @@ final class AuthorizationSequencePaymentScreenComponent: Component {
                 listView.frame = CGRect(origin: CGPoint(x: floor((availableSize.width - listSize.width) / 2.0), y: originY), size: listSize)
             }
         
-            let bottomInset: CGFloat = environment.safeInsets.bottom > 0.0 ? environment.safeInsets.bottom + 5.0 : bottomPanelPadding
+            let bottomInset: CGFloat = environment.safeInsets.bottom > 0.0 ? environment.safeInsets.bottom + 10.0 : bottomPanelPadding
             let bottomPanelHeight = bottomPanelPadding + buttonHeight + bottomInset
                                     
             let priceString: String
@@ -502,7 +502,7 @@ final class AuthorizationSequencePaymentScreenComponent: Component {
                     }
                 )),
                 environment: {},
-                containerSize: CGSize(width: availableSize.width - sideInset * 2.0, height: buttonHeight)
+                containerSize: CGSize(width: availableSize.width - 30.0 * 2.0, height: buttonHeight)
             )
             if let buttonView = self.button.view {
                 if buttonView.superview == nil {

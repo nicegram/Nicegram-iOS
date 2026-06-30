@@ -1924,8 +1924,15 @@ public func universalServiceMessageString(presentationData: (PresentationTheme, 
             attributedString = addAttributesToStringWithRanges(resultTitleString._tuple, body: bodyAttributes, argumentAttributes: [0: boldAttributes])
         } else if let dice = media as? TelegramMediaDice, let gameOutcome = dice.gameOutcome {
             if let value = dice.value {
+                let isAccountPeerOutcome: Bool
+                if let forwardInfo = message.forwardInfo {
+                    isAccountPeerOutcome = forwardInfo.author?.id == accountPeerId
+                } else {
+                    isAccountPeerOutcome = message.author?.id == accountPeerId
+                }
+
                 let rawString: String
-                if message.author?.id == accountPeerId {
+                if isAccountPeerOutcome {
                     if value == 1, let tonAmount = dice.tonAmount {
                         let value = formatTonAmountText(tonAmount, dateTimeFormat: dateTimeFormat)
                         rawString = strings.Conversation_EmojiStake_LostYou(value).string

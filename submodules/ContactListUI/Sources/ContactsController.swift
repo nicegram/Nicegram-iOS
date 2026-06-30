@@ -375,49 +375,6 @@ public class ContactsController: ViewController {
             }
         }
         
-        self.contactsNode.openPeopleNearby = { [weak self] in
-            let _ = (DeviceAccess.authorizationStatus(subject: .location(.tracking))
-            |> take(1)
-            |> deliverOnMainQueue).start(next: { [weak self] status in
-                guard let strongSelf = self else {
-                    return
-                }
-                let presentPeersNearby = {
-                    let controller = strongSelf.context.sharedContext.makePeersNearbyController(context: strongSelf.context)
-                    controller.navigationPresentation = .master
-                    if let navigationController = strongSelf.context.sharedContext.mainWindow?.viewController as? NavigationController {
-                        var controllers = navigationController.viewControllers.filter { !($0 is PermissionController) }
-                        controllers.append(controller)
-                        navigationController.setViewControllers(controllers, animated: true)
-                        strongSelf.contactsNode.contactListNode.listNode.clearHighlightAnimated(true)
-                    }
-                }
-                
-                switch status {
-                    case .allowed:
-                        presentPeersNearby()
-                    default:
-                        let controller = PermissionController(context: strongSelf.context, splashScreen: false)
-                        controller.setState(.permission(.nearbyLocation(status: PermissionRequestStatus(accessType: status))), animated: false)
-                        controller.navigationPresentation = .master
-                        controller.proceed = { result in
-                            if result {
-                                presentPeersNearby()
-                            } else {
-                                let _ = (strongSelf.navigationController as? NavigationController)?.popViewController(animated: true)
-                            }
-                        }
-                        if let navigationController = strongSelf.context.sharedContext.mainWindow?.viewController as? NavigationController {
-                            navigationController.pushViewController(controller, completion: { [weak self] in
-                                if let strongSelf = self {
-                                    strongSelf.contactsNode.contactListNode.listNode.clearHighlightAnimated(true)
-                                }
-                            })
-                        }
-                }
-            })
-        }
-        
         self.contactsNode.openInvite = { [weak self] in
             let _ = (DeviceAccess.authorizationStatus(subject: .contacts)
             |> take(1)

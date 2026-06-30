@@ -5,6 +5,7 @@ import Display
 import TelegramPresentationData
 import ComponentFlow
 import ButtonComponent
+import AnimatedTextComponent
 import EdgeEffect
 
 final class InviteContactsCountPanelNode: ASDisplayNode {
@@ -69,15 +70,11 @@ final class InviteContactsCountPanelNode: ASDisplayNode {
                     ),
                     content: AnyComponentWithIdentity(
                         id: AnyHashable(0),
-                        component: AnyComponent(ButtonTextContentComponent(
-                            text: self.strings.Contacts_InviteContacts(Int32(self.count)),
-                            badge: 0,
-                            textColor: self.theme.list.itemCheckColors.foregroundColor,
-                            badgeBackground: self.theme.list.itemCheckColors.foregroundColor,
-                            badgeForeground: self.theme.list.itemCheckColors.fillColor,
-                            badgeStyle: .roundedRectangle,
-                            badgeIconName: nil,
-                            combinedAlignment: true
+                        component: AnyComponent(AnimatedTextComponent(
+                            font: Font.with(size: 17.0, weight: .semibold, traits: .monospacedNumbers),
+                            color: self.theme.list.itemCheckColors.foregroundColor,
+                            items: [AnimatedTextComponent.Item(id: "text", content: .text(self.strings.Contacts_InviteContacts(Int32(max(1, self.count)))))],
+                            noDelay: true
                         ))
                     ),
                     isEnabled: true,
