@@ -12,7 +12,7 @@ NGDEPS = [
     "@swiftpkg_nicegram_assistant_ios//:FeatCalls",
     "@swiftpkg_nicegram_assistant_ios//:FeatGodsEye",
     "@swiftpkg_nicegram_assistant_ios//:FeatNftSticker",
-    "@swiftpkg_nicegram_assistant_ios//:FeatPremiumUI",
+    "@swiftpkg_nicegram_assistant_ios//:FeatPaywall",
     "@swiftpkg_nicegram_assistant_ios//:FeatSpyOnFriends",
     "@swiftpkg_nicegram_assistant_ios//:FeatTgAccountShop",
     "@swiftpkg_nicegram_assistant_ios//:FeatTgUserNotes",

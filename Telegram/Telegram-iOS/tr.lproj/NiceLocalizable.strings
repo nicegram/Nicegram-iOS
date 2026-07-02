@@ -257,3 +257,11 @@
 "whitebridge.profile.button" = "WhiteBridge";
 "whitebridge.profile.hint" = "Çevrimiçi bulunan herkese açık bilgilerin yapılandırılmış bir özetini alın — profiller, geçmiş, sosyal etkinlik ve daha fazlası!";
 "whitebridge.chats.quick.action" = "WhiteBridge Raporunu Görüntüle";
+
+/*AI Reply*/
+"aiReply.contextMenu.title" = "Yanıt Taslağı Oluşturun";
+"aiReply.hint" = "Saniyeler içinde yanıtınızı taslaklayın ✨\nGelişmiş yapay zekânın anlık yardımıyla düşüncelerinizi özenle hazırlanmış, göndermeye hazır mesajlara dönüştürün.";
+
+/*Voice Typing*/
+"voiceTyping.hint.title" = "Yazmak yerine konuşun";
+"voiceTyping.hint.subtitle" = "Konuştuğunuz anda sözleriniz metne dönüşür, böylece fikirlerinize odaklanabilirsiniz.";
