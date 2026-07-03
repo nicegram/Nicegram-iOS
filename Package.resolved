@@ -275,8 +275,8 @@
       "kind" : "remoteSourceControl",
       "location" : "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
       "state" : {
-        "branch" : "feat/remove-ai-voice-assistant",
-        "revision" : "178b5d7981f4238e7aaea501cecfa0fd99d4e89d"
+        "branch" : "develop",
+        "revision" : "ddf0f699c97ae2bff1803dd67a3423a4d5988526"
       }
     },
     {
