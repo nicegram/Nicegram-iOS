@@ -256,3 +256,11 @@
 "whitebridge.profile.button" = "WhiteBridge";
 "whitebridge.profile.hint" = "Obtén una visión estructurada de la información pública encontrada en línea — perfiles, antecedentes, actividad social y más!";
 "whitebridge.chats.quick.action" = "Ver Informe de WhiteBridge";
+
+/*AI Reply*/
+"aiReply.contextMenu.title" = "Redactar una respuesta";
+"aiReply.hint" = "Redacta tu respuesta en segundos ✨\nConvierte tus ideas en mensajes pulidos, listos para enviar, con ayuda instantánea de una IA avanzada.";
+
+/*Voice Typing*/
+"voiceTyping.hint.title" = "Habla en lugar de escribir";
+"voiceTyping.hint.subtitle" = "Tus palabras se convertirán en texto en cuanto hables, para que puedas concentrarte en tus ideas.";
