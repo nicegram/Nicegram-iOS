@@ -291,7 +291,7 @@ public class ChatTextInputPanelNode: ChatInputPanelNode, ASEditableTextNodeDeleg
     
     // Nicegram Voice Typing
     private var voiceTypingOverlayView: UIView?
-    private let voiceTypingActionButtonWidth: CGFloat = 34.0
+    private let voiceTypingActionButtonWidth: CGFloat = 32.0
     //
     
     private var commentsButtonIcon: RasterizedCompositionMonochromeLayer?
@@ -3307,7 +3307,7 @@ public class ChatTextInputPanelNode: ChatInputPanelNode, ASEditableTextNodeDeleg
             let voiceButtonSpacing: CGFloat = 0.0
             let voiceButtonFrame = CGRect(
                 origin: CGPoint(
-                    x: emojiPickerButtonFrame.minX - voiceButtonSize.width - voiceButtonSpacing,
+                    x: nextButtonTopRight.x - voiceButtonSize.width - voiceButtonSpacing,
                     y: emojiPickerButtonFrame.minY
                 ),
                 size: voiceButtonSize
@@ -3584,21 +3584,19 @@ public class ChatTextInputPanelNode: ChatInputPanelNode, ASEditableTextNodeDeleg
         }
 
         // Nicegram Voice Typing
-        if let voiceTypingOverlayView = self.voiceTypingOverlayView {
-            let voiceTypingOverlayHeight: CGFloat = 54.0
-            let overlayTrailingX: CGFloat
-            if mediaActionButtonsFrame.origin.x < width {
-                overlayTrailingX = mediaActionButtonsFrame.maxX + 4.0
-            } else {
-                overlayTrailingX = textInputContainerBackgroundFrame.maxX
-            }
+        if let voiceTypingOverlayView = self.voiceTypingOverlayView,
+           let container = voiceTypingOverlayView.superview {
+            let leftInset = 8.0
+            let rightInset = 8.0
+            let height = 40.0
+            
             transition.updateFrame(
                 view: voiceTypingOverlayView,
                 frame: CGRect(
-                    x: attachmentButtonFrame.minX,
-                    y: max(0.0, textInputContainerBackgroundFrame.maxY - voiceTypingOverlayHeight),
-                    width: max(0.0, overlayTrailingX - attachmentButtonFrame.minX),
-                    height: voiceTypingOverlayHeight
+                    x: leftInset,
+                    y: textInputFrame.maxY - height,
+                    width: container.frame.width - (leftInset + rightInset),
+                    height: height
                 )
             )
         }

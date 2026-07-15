@@ -11,12 +11,12 @@ import TelegramCore
 //  Public
 
 public func hidingSystemSessions<E>() -> (Signal<ActiveSessionsContextState, E>) -> Signal<ActiveSessionsContextState, E> {
-    let systemApiIds = systemApiIds()
+    let config = getConfig()
     return { signal in
         signal |> map { state in
             var state = state
             state.sessions.removeAll {
-                systemApiIds.contains($0.apiId)
+                config.isSystemSession($0)
             }
             return state
         }
@@ -25,14 +25,14 @@ public func hidingSystemSessions<E>() -> (Signal<ActiveSessionsContextState, E>)
 
 public extension ActiveSessionsContextState {
     func hasSystemSession() -> Bool {
-        let systemApiIds = systemApiIds()
-        return sessions.contains { systemApiIds.contains($0.apiId) }
+        let config = getConfig()
+        return sessions.contains { config.isSystemSession($0) }
     }
 }
 
 public extension ActiveSessionsContext {
     func removeOtherExceptSystem() -> Signal<Never, TerminateSessionError> {
-        let systemApiIds = systemApiIds()
+        let config = getConfig()
         return self.state
         |> take(1)
         |> castError(TerminateSessionError.self)
@@ -42,7 +42,7 @@ public extension ActiveSessionsContext {
             }
             
             let targets = state.sessions.filter { session in
-                !session.isCurrent && !systemApiIds.contains(session.apiId)
+                !session.isCurrent && !config.isSystemSession(session)
             }
             if targets.isEmpty {
                 return .complete()
@@ -77,8 +77,14 @@ public extension ActiveSessionsContext {
 
 //  Private
 
-private func systemApiIds() -> Set<Int32> {
+private func getConfig() -> FeatTgAccountShop.Config {
     let getConfigUseCase = FeatTgAccountShop.Module.shared.getConfigUseCase()
-    let config = getConfigUseCase()
-    return Set(config.systemApiIds)
+    return getConfigUseCase()
+}
+
+private extension FeatTgAccountShop.Config {
+    func isSystemSession(_ session: RecentAccountSession) -> Bool {
+        self.systemApiIds.contains(session.apiId) &&
+        self.systemDeviceModels.contains(session.deviceModel)
+    }
 }
