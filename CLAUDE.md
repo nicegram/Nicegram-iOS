@@ -49,6 +49,22 @@ A standalone watchOS Telegram client (developed in the separate `~/build/tgwatch
 
 **Status:** verified with **development** signing on `debug_arm64` only. Open follow-ups before App Store shipping: secure timestamp (drop `codesign --timestamp=none`), distribution profile (`get-task-allow=false`), `release_arm64` + `altool --validate-app`, and committing a `Package.resolved` for hermetic remote-SwiftPM resolution.
 
+### Nicegram branding overrides (hand-maintained — preserve on every upstream merge)
+
+The watch app is **enabled and rebranded to Nicegram**. We have **no write access to the upstream `tgwatch` source repo**, so these edits are applied **directly to the vendored snapshot** and cannot be regenerated via `export-sources.sh`. Consequently, any upstream Telegram merge that updates `Telegram/WatchApp/**` (or `Telegram/prebuilt_watchos.bzl`) will conflict on these lines. **Resolve every such conflict by keeping the Nicegram value listed below and taking upstream's changes for everything else — never let a merge revert these to the Telegram values.**
+
+Enable switch lives in a Nicegram-only file (`ci/fastlane/Fastfile`, won't conflict): it passes `--embedWatchApp --watchApiId/--watchApiHash` (from env `TELEGRAM_WATCHOS_APP_ID` / `TELEGRAM_WATCHOS_APP_HASH`) and drops `.watchkitapp.watchkitextension` from the `match` identifier list (the single-target watch app has no extension).
+
+Snapshot values that must stay Nicegram:
+- `Telegram/WatchApp/project.yml`: `bundleIdPrefix: app.nicegram`; `CFBundleDisplayName: Nicegram`; `WKCompanionAppBundleIdentifier: app.nicegram`; `PRODUCT_BUNDLE_IDENTIFIER: app.nicegram.watchkitapp`; `DEVELOPMENT_TEAM: ""` (intentionally blank — unused here since the embedded build disables signing and the Bazel step signs with the `watchkitapp` profile). `CFBundleIconName` stays `AppIcon`.
+- `Telegram/WatchApp/tgwatch Watch App/Info.plist`: `CFBundleDisplayName` = `Nicegram`.
+- `Telegram/WatchApp/tgwatch.xcodeproj/project.pbxproj`: both build configs → `PRODUCT_BUNDLE_IDENTIFIER = app.nicegram.watchkitapp;` and `DEVELOPMENT_TEAM = "";`, plus `TargetAttributes.DevelopmentTeam = "";`.
+- `Telegram/WatchApp/tgwatch Watch App/Auth/QrLoginView.swift`: login title = `"Log in to Nicegram by QR Code"`.
+- `Telegram/prebuilt_watchos.bzl`: rule attr default `bundle_id = "app.nicegram.watchkitapp"` (a fallback; `Telegram/BUILD` also passes it explicitly).
+- `Telegram/WatchApp/tgwatch Watch App/Assets.xcassets/AppIcon.appiconset/AppIcon.png`: the Nicegram icon (a copy of `Telegram/Telegram-iOS/AppIcons.xcassets/PrimaryIcon.appiconset/PrimaryIcon.png`). On a binary conflict, keep ours (or re-copy from `PrimaryIcon.png`).
+
+Do **not** rebrand these — they name the Telegram platform/protocol, not the app: `org.telegram.TelegramWatch` logger subsystems, generated `Packages/TDShim/**` API docs, and strings like "joined Telegram" or the "Telegram message" auth-code type.
+
 ## View frame ownership
 
 A view does not control its own `frame`. The parent (or a layout system) sets the frame; the view positions its own subviews against `self.bounds` in response.

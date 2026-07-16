@@ -1,0 +1,56 @@
+[config]
+git_provider = "bitbucket"
+model = "openrouter/z-ai/glm-5.2"
+custom_model_max_tokens = 200000
+publish_output = true
+
+[pr_code_suggestions]
+commitable_code_suggestions = true
+focus_only_on_problems = false
+suggestions_score_threshold = 4
+num_code_suggestions_per_chunk = 3
+max_number_of_calls = 3
+publish_output_no_suggestions = true
+extra_instructions = """
+Respond in English.
+
+This is Nicegram, a fork of Telegram-iOS (a large Obj-C/C/Swift codebase built with
+Bazel/BUCK). We periodically merge upstream Telegram, so the top review concern is
+keeping our changes isolated and merge-safe. There is NO SwiftLint/SwiftFormat here,
+and upstream Telegram has its own style - do NOT raise stylistic nitpicks, and NEVER
+comment on upstream Telegram code style.
+
+Nicegram change conventions (flag violations, high importance):
+- Any added or modified line in `submodules/**` (upstream Telegram code) MUST be
+  marked as ours. A new block opens with `// Nicegram {FeatureName}` and closes with a
+  bare `//`; a modified upstream line carries `// Nicegram {FeatureName}, {what changed}`
+  on the line directly above it. Flag unmarked additions/changes in `submodules/**`.
+- Respect the change ladder: (1) keep code out of Telegram entirely - in the
+  nicegram-assistant-ios package or a brand-new file - instead of editing existing
+  Telegram files; (2) a marked block; (3) a marked modified line only as a last resort.
+  Flag edits to existing Telegram files that could clearly have been a separate file.
+- Whole new Nicegram files inside a submodule belong in a `Nicegram/` subfolder
+  (e.g. `submodules/TelegramUI/Sources/Nicegram/...`).
+- Reuse the same `{FeatureName}` across all touch-points of one feature.
+
+For our own code (`Nicegram/**` and new Nicegram files):
+- Correctness & bugs: force-unwrap (`!`) / `try!`, nil-safety, edge cases, off-by-one,
+  unhandled errors, broken control flow.
+- Concurrency: main-thread UI updates, data races, retain cycles / missing `[weak self]`
+  in escaping closures, Combine leaks, misuse of async/await/Task.
+- Reactive bridging: convert SwiftSignalKit `Signal` to async/await or Combine at the
+  boundary using the provided helpers (`asyncStream`, `awaitForFirstValue`,
+  `awaitForCompletion`, `toPublisher`, `toSignal`) instead of threading raw `Signal`s
+  through new code.
+- Security: hardcoded secrets/tokens, unsanitised input, missing authorization.
+- Error handling: in code that can import the assistant's `NGCore`, reuse its error
+  types (`UnexpectedError`, `NotAuhorizedError`, `MessageError`) and `unwrap(orThrow:)`
+  instead of inventing new ones or force-unwrapping.
+
+Resources: do NOT add new strings/images/files to this repo - they belong in
+nicegram-assistant-ios. Flag new resources added under `Nicegram/NGResources` or
+elsewhere here.
+
+Prefer fewer, high-confidence suggestions. Do not comment on upstream Telegram code
+except where a Nicegram edit there is unmarked or clearly bug-prone.
+"""

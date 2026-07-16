@@ -1,5 +1,14 @@
 image: 'atlassian/default-image:3'
 pipelines:
+  pull-requests:
+    '**':
+      - step:
+          name: PR Agent Improve
+          image: pragent/pr-agent:latest
+          clone:
+            depth: 1
+          script:
+            - pr-agent --pr_url="https://bitbucket.org/$BITBUCKET_WORKSPACE/$BITBUCKET_REPO_SLUG/pull-requests/$BITBUCKET_PR_ID" improve
   custom:
     push-to-github-repo:
       - variables:

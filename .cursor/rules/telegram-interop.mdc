@@ -1,0 +1,51 @@
+---
+description: Editing Telegram submodule code — Nicegram markers and SSignalKit bridges
+globs: submodules/**/*.swift
+alwaysApply: false
+---
+
+# Editing Telegram code (`submodules/**`)
+
+Upstream Telegram-iOS code that we periodically re-merge. Follow the change
+ladder in `AGENTS.md` (prefer not editing Telegram code at all). When you must
+add or change code here, mark it so it survives the next merge.
+
+## Nicegram markers
+
+- Open every Nicegram addition with `// Nicegram {FeatureName}`; close a
+  multi-line block with a bare `//` on its own line:
+
+```swift
+// Nicegram Voice Typing
+private var voiceTypingHostingController: UIViewController?
+//
+```
+
+- To modify an existing upstream line, put a marker directly above it describing
+  the change:
+
+```swift
+// Nicegram downloading feature, 'accountContext, shouldSave' params added
+return fetchManager.interactivelyFetched(/* ... */, accountContext: accountContext, shouldSave: false)
+```
+
+- Reuse the SAME `{FeatureName}` across every touch-point of one feature (e.g.
+  `AiChat`, `Voice Typing`, `SensitiveContentAccess`, `downloading feature`) so
+  they are greppable together.
+- Never leave an unmarked diff in `submodules/**`.
+- Put whole new Nicegram files under a `Nicegram/` subfolder of the submodule
+  (e.g. `submodules/TelegramUI/Sources/Nicegram/...`), not loose beside upstream
+  files, and update the module's `BUILD`/`BUCK` target.
+
+## Reactive: bridge SSignalKit, don't spread it
+
+Telegram uses `SwiftSignalKit.Signal`. Convert at the boundary and keep new logic
+in `async`/`await` + Combine (helpers in
+`submodules/SSignalKit/SwiftSignalKit/Source/`):
+
+- Signal → async: `signal.awaitForFirstValue()`, `signal.awaitForCompletion()`,
+  `signal.asyncStream(_:)`.
+- async → Signal: `Signal.awaitThrowingOperation { ... }`,
+  `Signal.awaitOperation { ... }`.
+- Signal ↔ Combine: `signal.toPublisher()`, `publisher.toSignal()`,
+  `signal.skipError()`, `AnyCancellable(disposable)`.

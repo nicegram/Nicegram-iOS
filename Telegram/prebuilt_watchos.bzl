@@ -119,7 +119,7 @@ def _apple_prebuilt_watchos_application_impl(ctx):
 apple_prebuilt_watchos_application = rule(
     implementation = _apple_prebuilt_watchos_application_impl,
     attrs = {
-        "bundle_id": attr.string(default = "ph.telegra.Telegraph.watchkitapp"),
+        "bundle_id": attr.string(default = "app.nicegram.watchkitapp"),
         "bundle_name": attr.string(default = "tgwatch Watch App"),
         "minimum_os_version": attr.string(default = "26.0"),
         "srcs": attr.label(
