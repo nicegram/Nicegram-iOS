@@ -467,7 +467,7 @@
 				LastUpgradeCheck = 1430;
 				TargetAttributes = {
 					F8E880AF01A492CCA4C21162 = {
-						DevelopmentTeam = C67CF9S4VU;
+						DevelopmentTeam = "";
 					};
 				};
 			};
@@ -631,11 +631,11 @@
 				CODE_SIGNING_ALLOWED = NO;
 				CODE_SIGNING_REQUIRED = NO;
 				CODE_SIGN_IDENTITY = "";
-				DEVELOPMENT_TEAM = C67CF9S4VU;
+				DEVELOPMENT_TEAM = "";
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = "tgwatch Watch App/Info.plist";
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
-				PRODUCT_BUNDLE_IDENTIFIER = ph.telegra.Telegraph.watchkitapp;
+				PRODUCT_BUNDLE_IDENTIFIER = app.nicegram.watchkitapp;
 				SDKROOT = watchos;
 				SKIP_INSTALL = YES;
 				TARGETED_DEVICE_FAMILY = 4;
@@ -653,11 +653,11 @@
 				CODE_SIGN_IDENTITY = "";
 				DEAD_CODE_STRIPPING = YES;
 				DEPLOYMENT_POSTPROCESSING = YES;
-				DEVELOPMENT_TEAM = C67CF9S4VU;
+				DEVELOPMENT_TEAM = "";
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = "tgwatch Watch App/Info.plist";
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
-				PRODUCT_BUNDLE_IDENTIFIER = ph.telegra.Telegraph.watchkitapp;
+				PRODUCT_BUNDLE_IDENTIFIER = app.nicegram.watchkitapp;
 				SDKROOT = watchos;
 				SKIP_INSTALL = YES;
 				STRIP_INSTALLED_PRODUCT = YES;
