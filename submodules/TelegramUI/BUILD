@@ -1,23 +1,25 @@
 load("@build_bazel_rules_swift//swift:swift.bzl", "swift_library")
 
 NGDEPS = [
-    "//Nicegram/NGLogging:NGLogging",
-    "//Nicegram/NGData:NGData",
-    "//Nicegram/NGUI:NGUI",
-    "//Nicegram/NGStrings:NGStrings",
-    "//Nicegram/NGUtils:NGUtils",
-    "//Nicegram/NGTranslate:NGTranslate",
-    "//Nicegram/NGLab:NGLab",
     "//Nicegram/NGAppCache:NGAppCache",
-    "//Nicegram/NGEnv:NGEnv",
-    "//Nicegram/NGQuickReplies:NGQuickReplies",
+    "//Nicegram/NGData:NGData",
     "//Nicegram/NGDataSharing:NGDataSharing",
-    "//Nicegram/NGModels:NGModels",
+    "//Nicegram/NGEnv:NGEnv",
     "//Nicegram/NGKeywords:NGKeywords",
+    "//Nicegram/NGLab:NGLab",
+    "//Nicegram/NGLogging:NGLogging",
+    "//Nicegram/NGModels:NGModels",
+    "//Nicegram/NGQuickReplies:NGQuickReplies",
+    "//Nicegram/NGStrings:NGStrings",
+    "//Nicegram/NGTranslate:NGTranslate",
+    "//Nicegram/NGUI:NGUI",
+    "//Nicegram/NGUtils:NGUtils",
+    "//Nicegram/NGWebDomains:NGWebDomains",
     "@swiftpkg_nicegram_assistant_ios//:FeatAccountBackup",
     "@swiftpkg_nicegram_assistant_ios//:FeatAiShortcuts",
     "@swiftpkg_nicegram_assistant_ios//:FeatAssistant",
     "@swiftpkg_nicegram_assistant_ios//:FeatAuth",
+    "@swiftpkg_nicegram_assistant_ios//:FeatCallRecorder",
     "@swiftpkg_nicegram_assistant_ios//:FeatChatBanner",
     "@swiftpkg_nicegram_assistant_ios//:FeatDockWidget",
     "@swiftpkg_nicegram_assistant_ios//:FeatGodsEye",
@@ -30,7 +32,6 @@ NGDEPS = [
     "@swiftpkg_nicegram_assistant_ios//:FeatTgChatButton",
     "@swiftpkg_nicegram_assistant_ios//:FeatWhitebridge",
     "@swiftpkg_nicegram_assistant_ios//:NGEntryPoint",
-    "//Nicegram/NGWebDomains:NGWebDomains",
 ]
 
 load(

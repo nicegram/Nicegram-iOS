@@ -604,7 +604,7 @@ one owned by a single skill and producing a fixed set of artifacts:
 | stage | skill | artifacts |
 |---|---|---|
 | start | `start-feature` | worktree + branch in both repos, change record stub, spec, plan whose last task completes the change record, ticket → IN PROGRESS |
-| implement | `superpowers:executing-plans` | code, `docs/changes/<date>-<slug>.md` |
+| implement | `superpowers:subagent-driven-development`, in a fresh session started from the prompt `start-feature` prints | code, `docs/changes/<date>-<slug>.md` |
 | refresh | `sync-from-develop` | merge commits in both repos |
 | ship to QA | `build-to-testflight` | `build/{N}`, a TestFlight build, a change-record comment on each ticket, tickets → READY FOR QA, a Confluence row |
 | bug round | `fix-qa-bugs` | fix commits on the feature branch, a change-record delta, bug linked and → DEV COMPLETED |
@@ -718,7 +718,7 @@ viewer**, which is why the procedure also calls `change_directory`; without that
 second call every file link written during feature work comes back "Couldn't
 find this file".
 
-So: **`start-feature`, `superpowers:executing-plans`, `sync-from-develop` and
+So: **`start-feature`, `superpowers:subagent-driven-development`, `sync-from-develop` and
 `merge-to-develop` run inside the feature worktree; `build-to-testflight` and
 `fix-qa-bugs` run from the main clone, in a session that has not entered one.**
 Those two are written throughout in the variable `-C` form — deliberately, so
