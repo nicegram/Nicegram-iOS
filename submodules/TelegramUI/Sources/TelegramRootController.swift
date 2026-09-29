@@ -380,7 +380,7 @@ public final class TelegramRootController: NavigationController, TelegramRootCon
             
             assistantController.tabBarItem = tabBarItem(
                 title: "Nicegram",
-                image: NGCoreUI.images.logoNicegram()
+                image: NGCoreUI.images.nicegram()
             )
             
             assistantController.updateTabBarSearchState(ViewController.TabBarSearchState(isActive: false), transition: .immediate)

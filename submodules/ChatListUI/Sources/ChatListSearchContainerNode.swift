@@ -1893,6 +1893,7 @@ public final class ChatListSearchContainerNode: SearchDisplayControllerContentNo
                 )
             }
             
+            sendKeywordsAnalytics(with: .added)
             sendKeywordsAnalytics(with: .addedFromSearch)
         }
     }

@@ -444,7 +444,7 @@ func chatContextMenuItems(context: AccountContext, peerId: EnginePeer.Id, promoI
                                     text: FeatAiChatAnalysis.strings.aiChatAnalysis(),
                                     icon: { theme in
                                         generateTintedImage(
-                                            image: NGCoreUI.images.aiChatAnalysis(),
+                                            image: NGCoreUI.images.chatAi(),
                                             color: theme.contextMenu.primaryColor
                                         )
                                     },

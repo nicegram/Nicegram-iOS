@@ -44,7 +44,7 @@ private struct ContentView: View {
         badgeView(
             backgroundColor: isRecording ? .red : .white.opacity(0.3),
             image: Image(
-                isRecording ? NGCoreUI.images.recordStop : NGCoreUI.images.recordStart
+                isRecording ? NGCoreUI.images.recordStop : NGCoreUI.images.recording
             ),
             text: {
                 if let startDate = callRecorder.state.recording?.startDate {

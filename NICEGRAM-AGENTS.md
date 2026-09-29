@@ -987,24 +987,55 @@ them", in a preamble bullet, above tasks whose code blocks already held invented
 numbers. Nobody opened the frame: an implementer executes tasks, and a sentence
 that names no tool, produces no artifact and fails nothing when skipped is not a
 task. If a value is needed to write the code, the planning session fetches it and
-writes it in.
+writes it in. For a design, that is `read-figma-design`'s extraction: every UI
+task cites the frames it implements and carries every visual value in its code,
+and the skill's design-inputs check fails a plan that defers one to "take it from
+Figma".
 
 **Every feature plan ends with a change-record task.** The document is
 `docs/changes/YYYY-MM-DD-<slug>.md`, in English, following
 `docs/changes/TEMPLATE.md`, and it is written during implementation — not at
 planning time — because it describes what was actually built. `start-feature`
-may already have created it as a stub when a ticket key was known, in which case
-the task **completes** that file rather than creating one; either way it ends
-with this feature's key in the `## Delivery` table's `pending` row, and with the
-template's instruction comment deleted — a record that still carries it halts
-the next build under halt (l). It must carry a
-`Tickets:` header line and meet the five obligations `start-feature` states in
+may already have created it as a stub when a ticket key or a design artifact was
+given — or `read-figma-design` may have, when a design arrived later — in which
+case the task **completes** that file rather than creating one; either way it
+ends with this feature's key, when there is one, in the `## Delivery` table's
+`pending` row, and with the template's instruction comment deleted — a record
+that still carries it halts the next build under halt (l). It carries a
+`Tickets:` header line naming a real ticket, or none at all when there is no
+ticket — never a placeholder — keeps an existing `## Design` section byte for
+byte, and meets the five obligations `start-feature` states in
 full: orientation, sufficiency for both another platform and the full test
 spectrum, reachability (the gates in evaluation order), known-and-intentional
 behaviour, and reference-don't-duplicate. This requirement lives here, and in
 `start-feature`, deliberately: a `.claude/rules/` file keyed on
 `docs/changes/**` would never attach while a plan is being written, which is
 the same failure this section already documents.
+
+## Designs (Figma)
+
+A **design artifact** is whatever Figma links are handed over for a feature — a
+page, a section, a frame, several of them — at any stage, including after the
+logic has shipped. It is recorded in the feature's change record under
+`## Design` the moment it arrives, so no later session has to ask for it again.
+
+The `read-figma-design` skill owns everything from there: intake and recording,
+extraction with read-only scripts, the design-inputs check on a plan, the
+fidelity check on code, and what to do when a Figma call fails. The mapping from
+Figma names to our code — colours, text styles, icons, geometry — lives beside
+that code, in `packages/nicegram-assistant-ios/.claude/reference/figma-to-code.md`.
+A prompt hook names the skill whenever a message carries a Figma link.
+
+Two rules bind all new and changed UI code, with a design or without one:
+**design system only** — text styles and colours the design system defines,
+nothing else — and **no value without a source** — nothing by eye, nothing from a
+screenshot. Both are written out in the package's `swiftui-views.md`.
+
+**With no design yet** — logic first, the design as a later iteration — the UI
+uses only existing components and design-system tokens and styles, and any new
+visual value is a human decision recorded in the spec as "interim, no design". No
+link exists then, so the skill never loads; this paragraph is what carries the
+rule.
 
 ## Newer APIs beat older deployment targets
 
