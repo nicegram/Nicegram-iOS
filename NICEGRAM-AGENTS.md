@@ -673,9 +673,10 @@ A feature spanning both repos uses **one worktree and two same-named branches**:
 ### Starting a feature
 
 **Use the `start-feature` skill.** It runs
-`.claude/scripts/new-feature-worktree.sh <slug>`, which creates that pair of
-worktree and branches in one step and prints the worktree path on stdout (all
-git chatter goes to stderr, so `WT="$(…)"` captures the path alone).
+`.claude/scripts/new-feature-worktree.sh [--base <branch>] <slug>`, which
+creates that pair of worktree and branches in one step — from `develop` unless
+`--base` names another branch — and prints the worktree's absolute path on
+stdout (all git chatter goes to stderr, so `WT="$(…)"` captures the path alone).
 
 **The branch name is load-bearing — the rest of the toolchain keys on it.**
 `build-to-testflight` resolves `origin/feat/<slug>` for every feature it
@@ -744,13 +745,16 @@ to `git worktree add -b`, so it does not depend on `.claude/settings.json`'s
 changelog shows it shipping in v2.1.133 with values `fresh` | `head`, and the
 CLI installed here is newer). What the assertion catches is a different, real
 failure: the main clone sitting on the wrong branch when the worktree was
-created.
+created. The base is `develop` unless `--base` names another branch.
 
-    git -C "$MAIN" log --oneline -1 develop     # want
+    git -C "$MAIN" log --oneline -1 <base>      # want
     git -C "$WT"   log --oneline -1             # got
 
-On a mismatch the script exits 1 and tells you to branch the worktree onto
-`develop` before continuing.
+On a mismatch the script exits 1 and tells you to branch the worktree onto the
+base before continuing. It cuts from `HEAD` rather than from the base ref
+because the submodules are cloned from the main clone's gitdirs (next
+paragraph), which only reliably hold what the main clone has checked out — so a
+feature cut from an epic needs the main clone at the epic's tip.
 
 **Submodules are cloned from the main clone's own gitdirs, not the network** —
 measured at ~4 s for all 14, versus refetching ~550 MB. That needs
