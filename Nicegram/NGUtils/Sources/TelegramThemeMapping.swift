@@ -1,7 +1,6 @@
 import Display
 import Foundation
 import ItemListUI
-import NicegramWallet
 import TelegramBridge
 import TelegramPresentationData
 
@@ -26,11 +25,5 @@ public extension TelegramBridge.TelegramTheme {
                 itemPrimaryTextColor: list.itemPrimaryTextColor
             )
         )
-    }
-}
-
-public extension WalletTelegramTheme {
-    init(_ presentationData: PresentationData) {
-        self.init(TelegramBridge.TelegramTheme(presentationData))
     }
 }

@@ -1,5 +1,6 @@
 // Nicegram
-import ChatMessageNicegramWalletTxNode
+import FeatAiShortcuts
+import FeatChatBanner
 import NGAiChatUI
 import NGData
 //
@@ -238,22 +239,11 @@ private func mappedInsertEntries(context: AccountContext, chatLocation: ChatLoca
     return entries.map { entry -> ListViewInsertItem in
         switch entry.entry {
             case let .MessageEntry(message, presentationData, read, location, selection, attributes):
-                // Nicegram, changed to 'var'
-                var item: ListViewItem
+                let item: ListViewItem
                 switch mode {
                     case .bubbles:
                         // Nicegram, wantTrButton
                         item = ChatMessageItemImpl(presentationData: presentationData, context: context, chatLocation: chatLocation, associatedData: associatedData, controllerInteraction: controllerInteraction, content: .message(message: message, read: read, selection: selection, attributes: attributes, location: location), disableDate: disableFloatingDateHeaders || message.timestamp < 10, wantTrButton: wantTrButton)
-                    
-                        // Nicegram Wallet
-                        if #available(iOS 16.0, *), let tx = attributes.walletTx {
-                            item = ChatMessageNicegramWalletTxItem(
-                                controllerInteraction: controllerInteraction,
-                                incoming: message.flags.contains(.Incoming),
-                                presentationData: presentationData,
-                                tx: tx
-                            )
-                        }
                     case let .list(_, _, displayHeaders, hintLinks, isGlobalSearch, _):
                         let displayHeader: Bool
                         switch displayHeaders {
@@ -306,23 +296,11 @@ private func mappedUpdateEntries(context: AccountContext, chatLocation: ChatLoca
     return entries.map { entry -> ListViewUpdateItem in
         switch entry.entry {
             case let .MessageEntry(message, presentationData, read, location, selection, attributes):
-                // Nicegram, changed to 'var'
-                var item: ListViewItem
+                let item: ListViewItem
                 switch mode {
                     case .bubbles:
                         // Nicegram, wantTrButton
                         item = ChatMessageItemImpl(presentationData: presentationData, context: context, chatLocation: chatLocation, associatedData: associatedData, controllerInteraction: controllerInteraction, content: .message(message: message, read: read, selection: selection, attributes: attributes, location: location), disableDate: disableFloatingDateHeaders || message.timestamp < 10, wantTrButton: wantTrButton)
-                    
-                        // Nicegram Wallet
-                        if #available(iOS 16.0, *), let tx = attributes.walletTx {
-                            item = ChatMessageNicegramWalletTxItem(
-                                controllerInteraction: controllerInteraction,
-                                incoming: message.flags.contains(.Incoming),
-                                presentationData: presentationData,
-                                tx: tx
-                            )
-                        }
-                        //
                     case let .list(_, _, displayHeaders, hintLinks, isGlobalSearch, _):
                         let displayHeader: Bool
                         switch displayHeaders {
@@ -514,7 +492,12 @@ private var nextClientId: Int32 = 1
 
 public final class ChatHistoryListNodeImpl: ASDisplayNode, ChatHistoryNode, ChatHistoryListNode {
     static let fixedAdMessageStableId: UInt32 = UInt32.max - 5000
-    
+
+    // Nicegram ChatBanner
+    let aiShortcutsViewModel: AiShortcutsViewModel?
+    let chatBannerViewModel: BannerViewModel?
+    //
+
     // Nicegram
     let nicegramContext: ChatNicegramContext?
     //
@@ -829,6 +812,10 @@ public final class ChatHistoryListNodeImpl: ASDisplayNode, ChatHistoryNode, Chat
         // Nicegram
         nicegramContext: ChatNicegramContext? = nil,
         //
+        // Nicegram ChatBanner
+        aiShortcutsViewModel: AiShortcutsViewModel? = nil,
+        chatBannerViewModel: BannerViewModel? = nil,
+        //
         context: AccountContext,
         updatedPresentationData: (initial: PresentationData, signal: Signal<PresentationData, NoError>),
         systemStyle: ItemListSystemStyle = .legacy,
@@ -857,6 +844,10 @@ public final class ChatHistoryListNodeImpl: ASDisplayNode, ChatHistoryNode, Chat
         
         // Nicegram
         self.nicegramContext = nicegramContext
+        // Nicegram ChatBanner
+        self.aiShortcutsViewModel = aiShortcutsViewModel
+        self.chatBannerViewModel = chatBannerViewModel
+        //
         //
         self.context = context
         self.systemStyle = systemStyle
@@ -2269,8 +2260,7 @@ public final class ChatHistoryListNodeImpl: ASDisplayNode, ChatHistoryNode, Chat
                 }
                                 
                 let previousChatHistoryEntriesForViewState = chatHistoryEntriesForViewState.with({ $0 })
-                // Nicegram ATT, changed 'let' to 'var'
-                var (filteredEntries, updatedChatHistoryEntriesForViewState) = chatHistoryEntriesForView(
+                let (filteredEntries, updatedChatHistoryEntriesForViewState) = chatHistoryEntriesForView(
                     currentState: previousChatHistoryEntriesForViewState,
                     context: context,
                     location: chatLocation,
@@ -2299,12 +2289,6 @@ public final class ChatHistoryListNodeImpl: ASDisplayNode, ChatHistoryNode, Chat
                     isMusicPlaylist: isMusicPlaylist,
                     pinToTopStableId: pinToTopStableId
                 )
-                // Nicegram
-                filteredEntries = nicegramMapChatHistoryEntries(
-                    entries: filteredEntries
-                )
-                //
-                
                 let lastHeaderId = filteredEntries.last.flatMap { listMessageDateHeaderId(timestamp: $0.index.timestamp) } ?? 0
                 let processedView = ChatHistoryView(originalView: view, filteredEntries: filteredEntries, associatedData: associatedData, lastHeaderId: lastHeaderId, id: id, locationInput: update.2, ignoreMessagesInTimestampRange: update.3, ignoreMessageIds: update.4)
                 let previousValueAndVersion = previousView.swap((processedView, update.1, selectedMessages, allAdMessages.version))
@@ -4728,6 +4712,16 @@ public final class ChatHistoryListNodeImpl: ASDisplayNode, ChatHistoryNode, Chat
         if #available(iOS 15.0, *), NGSettings.showNicegramButtonInChat {
             additionalBotInset = max(additionalBotInset, 44)
         }
+        // Nicegram ChatBanner
+        // The banner and the AI shortcuts panel stack, so their heights add:
+        // when both are up the banner is pushed above the panel, and reserving
+        // only the taller of the two would leave the banner over a message.
+        var ngFloatingHeight = chatBannerViewModel?.viewState.height ?? 0
+        if aiShortcutsViewModel?.viewState.isVisible == true {
+            ngFloatingHeight += AiShortcutsConstants.height
+        }
+        additionalBotInset = max(additionalBotInset, ngFloatingHeight)
+        //
         insets.top += additionalBotInset
         let updateSizeAndInsets = updateSizeAndInsets.with(insets: insets)
         //

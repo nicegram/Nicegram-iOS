@@ -8,10 +8,7 @@
 
 import Foundation
 import SwiftSignalKit
-import UIKit
-import NGData
 import NGLogging
-import TelegramCore
 import TelegramPresentationData
 
 fileprivate let LOGTAG = extractNameFromPath(#file)
@@ -26,37 +23,30 @@ public func setPreferredTranslationTargetLanguage(code: String) {
     setSavedTranslationTargetLanguage(code: code)
 }
 
-public func getTranslateUrl(_ message: String,_ toLang: String) -> String {
-    let sanitizedMessage = message.replacingOccurrences(of: "\n", with: "<br>")
-    
-    var queryCharSet = NSCharacterSet.urlQueryAllowed
-    queryCharSet.remove(charactersIn: "+&")
-    return "https://translate.google.com/m?hl=en&tl=\(toLang)&sl=auto&q=\(sanitizedMessage.addingPercentEncoding(withAllowedCharacters: queryCharSet) ?? "")"
+// Only RFC 3986 unreserved characters survive unescaped. `urlQueryAllowed` keeps `&`, `+` and `=`,
+// which the endpoint would then read as query syntax instead of as part of the text.
+private let translateQueryAllowed = CharacterSet.alphanumerics.union(CharacterSet(charactersIn: "-._~"))
+
+private func escapeForQuery(_ value: String) -> String {
+    return value.addingPercentEncoding(withAllowedCharacters: translateQueryAllowed) ?? ""
 }
 
-func prepareResultString(_ str: String) -> String {
-    str
-        .htmlDecoded
-        .replacingOccurrences(of: "<br>", with: "\n")
+public func getTranslateUrl(_ message: String, _ toLang: String) -> String {
+    return "https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=\(escapeForQuery(toLang))&dt=t&q=\(escapeForQuery(message))"
 }
 
-public func parseTranslateResponse(_ data: String) -> String {
-    for rule in VarGNGSettings.translate_rules {
-        if data.contains(rule.data_check) {
-            do {
-                let regexp = try NSRegularExpression(pattern: rule.pattern)
-                if let match = regexp.firstMatch(in: data, options: [], range: NSRange(location: 0, length: data.utf16.count)) {
-                    if let translatedString = Range(match.range(at: rule.match_group), in: data) {
-                        return prepareResultString(String(data[translatedString]))
-                    }
-                }
-            } catch let error as NSError {
-                ngLog("Error processing '\(rule.name)' regexp \(error.localizedDescription)", LOGTAG)
-                continue
-            }
-        }
+public func parseTranslateResponse(_ data: Data) -> String {
+    // Shape: [[["translated", "source", …], …], …]. Longer input comes back split into one chunk
+    // per sentence, so every chunk has to be joined back together.
+    guard let root = (try? JSONSerialization.jsonObject(with: data)) as? [Any],
+          let chunks = root.first as? [Any] else {
+        ngLog("Unexpected translate response format", LOGTAG)
+        return ""
     }
-    return ""
+
+    return chunks
+        .compactMap { ($0 as? [Any])?.first as? String }
+        .joined()
 }
 
 public func getGoogleLang(_ userLang: String) -> String {
@@ -91,34 +81,21 @@ public enum TranslateFetchError {
 }
 
 
-public func requestTranslateUrl(url: URL) -> Signal<String, TranslateFetchError> {
+public func requestTranslateUrl(url: URL) -> Signal<Data, TranslateFetchError> {
     return Signal { subscriber in
         let completed = Atomic<Bool>(value: false)
         var request = URLRequest(url: url)
         request.httpMethod = "GET"
-        // Set headers
-        request.setValue("Mozilla/4.0 (compatible;MSIE 6.0;Windows NT 5.1;SV1;.NET CLR 1.1.4322;.NET CLR 2.0.50727;.NET CLR 3.0.04506.30)", forHTTPHeaderField: "User-Agent")
-        HTTPCookieStorage.shared.cookies?.forEach(HTTPCookieStorage.shared.deleteCookie)
-        let downloadTask = URLSession.shared.dataTask(with: request, completionHandler: { data, response, error in
+        let downloadTask = URLSession.shared.dataTask(with: request, completionHandler: { data, response, _ in
             let _ = completed.swap(true)
-            if let response = response as? HTTPURLResponse {
-                if response.statusCode == 200 {
-                    if let data = data {
-                        if let result = String(data: data, encoding: .utf8) {
-                            subscriber.putNext(result)
-                            subscriber.putCompletion()
-                        } else {
-                            subscriber.putError(.network)
-                        }
-                    } else {
-                        subscriber.putError(.network)
-                    }
-                } else {
-                    subscriber.putError(.network)
-                }
-            } else {
+            guard let response = response as? HTTPURLResponse,
+                  response.statusCode == 200,
+                  let data else {
                 subscriber.putError(.network)
+                return
             }
+            subscriber.putNext(data)
+            subscriber.putCompletion()
         })
         downloadTask.resume()
         
@@ -132,43 +109,16 @@ public func requestTranslateUrl(url: URL) -> Signal<String, TranslateFetchError>
 
 
 public func gtranslate(_ text: String, _ toLang: String) -> Signal<String, TranslateFetchError> {
-    return Signal { subscriber in
-        let urlString = getTranslateUrl(text, getGoogleLang(toLang))
-        let url = URL(string: urlString)!
-        let translateSignal = requestTranslateUrl(url: url)
-        
-        let _ = (translateSignal |> deliverOnMainQueue).start(next: {
-            translatedHtml in
-            let result = parseTranslateResponse(translatedHtml)
-            if result.isEmpty {
-                subscriber.putError(.network) // Fake
-            } else {
-                subscriber.putNext(result)
-                subscriber.putCompletion()
-            }
-            
-        }, error: { _ in
-            subscriber.putError(.network)
-        })
-        
-        return ActionDisposable {
-        }
-    }
-}
-
-
-extension String {
-    var htmlDecoded: String {
-        let attributedOptions: [NSAttributedString.DocumentReadingOptionKey : Any] = [
-            NSAttributedString.DocumentReadingOptionKey.documentType : NSAttributedString.DocumentType.html,
-            NSAttributedString.DocumentReadingOptionKey.characterEncoding : String.Encoding.utf8.rawValue
-        ]
-        
-        let decoded = try? NSAttributedString(data: Data(utf8), options: attributedOptions, documentAttributes: nil).string
-        return decoded ?? self
+    guard let url = URL(string: getTranslateUrl(text, getGoogleLang(toLang))) else {
+        return .fail(.network)
     }
     
-    func replaceCharactersFromSet(characterSet: CharacterSet, replacementString: String = "") -> String {
-        return components(separatedBy: characterSet).joined(separator: replacementString)
+    return requestTranslateUrl(url: url)
+    |> mapToSignal { data -> Signal<String, TranslateFetchError> in
+        let result = parseTranslateResponse(data)
+        if result.isEmpty {
+            return .fail(.network)
+        }
+        return .single(result)
     }
 }

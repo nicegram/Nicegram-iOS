@@ -1,8 +1,5 @@
 "AppName" = "Nicegram";
 
-"ViewAuditReport" = "Voir le rapport CertiK";
-"Wallet" = "Portefeuille";
-
 /*Common*/
 "Nicegram.PrivacyPolicy" = "Politique de confidentialité";
 "Nicegram.EULA" = "CLUF";

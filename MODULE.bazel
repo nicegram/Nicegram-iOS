@@ -104,17 +104,6 @@ bazel_dep(
     version = "1.23.0",
 )
 
-# See the patch file for the rationale. Remove this override together with the
-# patch once https://github.com/cgrindel/rules_swift_package_manager/issues/2216
-# lands upstream.
-single_version_override(
-    module_name = "rules_swift_package_manager",
-    patch_strip = 1,
-    patches = [
-        "//spm-patches/rules_swift_package_manager:0001-drop-static-xcframework-alwayslink.patch",
-    ],
-)
-
 swift_deps = use_extension(
     "@rules_swift_package_manager//:extensions.bzl",
     "swift_deps",
@@ -125,18 +114,9 @@ swift_deps.from_package(
     swift = "//:Package.swift",
 )
 
-swift_deps.configure_package(
-    name = "tweetnacl-swiftwrap",
-    patch_args = ["-p1"],
-    patches = [
-        "//spm-patches/tweetnacl-swiftwrap:0001-rename-modulemap-file.patch",
-    ],
-)
-
 use_repo(
     swift_deps,
     "swiftpkg_firebase_ios_sdk",
     "swiftpkg_nicegram_assistant_ios",
-    "swiftpkg_nicegram_wallet_ios",
 )
 #

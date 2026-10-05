@@ -82,7 +82,8 @@ private extension ChatControllerImpl {
     }
 }
 
-private extension EnginePeer {
+// internal, not private: ChatControllerObserveChatBanner.swift shares it.
+extension EnginePeer {
     func restrictionInfo() -> PeerAccessRestrictionInfo? {
         switch self {
         case let .user(user):

@@ -3,6 +3,7 @@ import class Combine.AnyCancellable
 import struct Combine.Just
 import EntityKeyboard
 import FeatAiShortcuts
+import FeatChatBanner
 import FeatSensitiveContentAccess
 import FeatTgChatButton
 import FeatWhitebridge
@@ -12,7 +13,6 @@ import NGData
 import NGStrings
 import NGUI
 import NGUtils
-import NicegramWallet
 import UndoUI
 //
 import Foundation
@@ -254,6 +254,11 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
     // Nicegram SensitiveContentAccess
     let restrictedChatSupplementViewModel: RestrictedChatSupplementViewModel
     let restrictedChatSupplementView: ASDisplayNode
+    //
+
+    // Nicegram ChatBanner
+    let chatBannerViewModel: BannerViewModel
+    let chatBannerView: ASDisplayNode
     //
     
     private(set) var validLayout: (ContainerViewLayout, CGFloat)?
@@ -583,6 +588,18 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
         }
         self.restrictedChatSupplementViewModel = restrictedChatSupplementViewModel
         //
+
+        // Nicegram ChatBanner
+        let chatBannerViewModel = BannerViewModel()
+        self.chatBannerView = ASDisplayNode {
+            if #available(iOS 16.0, *) {
+                makeChatBannerView(viewModel: chatBannerViewModel)
+            } else {
+                UIView()
+            }
+        }
+        self.chatBannerViewModel = chatBannerViewModel
+        //
         
         var source: ChatHistoryListSource
         if case let .messageOptions(_, messageIds, info) = subject {
@@ -866,7 +883,7 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
 
         var getMessageTransitionNode: (() -> ChatMessageTransitionNodeImpl?)?
         // Nicegram, add nicegramContext
-        self.historyNode = ChatHistoryListNodeImpl(nicegramContext: nicegramContext, context: context, updatedPresentationData: controller?.updatedPresentationData ?? (context.sharedContext.currentPresentationData.with({ $0 }), context.sharedContext.presentationData), chatLocation: chatLocation, chatLocationContextHolder: chatLocationContextHolder, adMessagesContext: self.adMessagesContext, tag: tag.flatMap { .tag($0) }, source: source, subject: subject, controllerInteraction: controllerInteraction, selectedMessages: self.selectedMessagesPromise.get(), rotated: historyNodeRotated, isChatPreview: isChatPreview, messageTransitionNode: {
+        self.historyNode = ChatHistoryListNodeImpl(nicegramContext: nicegramContext, aiShortcutsViewModel: aiShortcutsModel, chatBannerViewModel: chatBannerViewModel, context: context, updatedPresentationData: controller?.updatedPresentationData ?? (context.sharedContext.currentPresentationData.with({ $0 }), context.sharedContext.presentationData), chatLocation: chatLocation, chatLocationContextHolder: chatLocationContextHolder, adMessagesContext: self.adMessagesContext, tag: tag.flatMap { .tag($0) }, source: source, subject: subject, controllerInteraction: controllerInteraction, selectedMessages: self.selectedMessagesPromise.get(), rotated: historyNodeRotated, isChatPreview: isChatPreview, messageTransitionNode: {
             return getMessageTransitionNode?()
         })
 
@@ -1000,6 +1017,12 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
         self.inputPanelContainerNode.addSubnode(self.inputPanelOverlayNode)
         self.inputPanelClippingNode.addSubnode(self.inputPanelBackgroundNode)
         
+        // Nicegram ChatBanner
+        if #available(iOS 16.0, *) {
+            self.contentContainerNode.contentNode.addSubnode(self.chatBannerView)
+        }
+        //
+
         // Nicegram AiShortcuts
         if #available(iOS 16.0, *) {
             self.contentContainerNode.contentNode.addSubnode(self.aiShortcutsNode)
@@ -1031,7 +1054,11 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
         
         restrictedChatSupplementViewModel.$viewState
             .combineLatestThreadSafe(
-                headerAdHeightPublisher
+                headerAdHeightPublisher,
+                // Nicegram ChatBanner
+                chatBannerViewModel.$viewState.map(\.height),
+                aiShortcutsModel.$viewState.map(\.isVisible)
+                //
             )
             .removeDuplicates(by: ==)
             .receive(on: DispatchQueue.main)
@@ -1058,9 +1085,6 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
                 AiChatAnalysisHelper(context: self.context).presentFromChat(
                     peerId: chatLocation.peerId
                 )
-            }
-            nicegramOverlayView.openWallet = { [weak self] in
-                self?.openNicegramWallet()
             }
             
             if NGSettings.showNicegramButtonInChat {
@@ -1332,25 +1356,6 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
         overlay.view.removeFromSuperview()
     }
     //
-    
-    @available(iOS 15.0, *)
-    @objc private func openNicegramWallet() {
-        Task {
-            guard let peerId = chatLocation.peerId else {
-                return
-            }
-            guard let contact = await WalletTgUtils.peerToWalletContact(
-                id: peerId,
-                context: context
-            ) else {
-                return
-            }
-            
-            await WalletEntryPoints.openInChatWidget(
-                contact: contact
-            )
-        }
-    }
     
     private func setInput(text: String?, image: UIImage?) {
         if let image {
@@ -3228,7 +3233,28 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
             )
         )
         //
-        
+
+        // Nicegram ChatBanner
+        let chatBannerHeight = chatBannerViewModel.viewState.height
+        let aiShortcutsVisible = aiShortcutsModel.viewState.isVisible
+
+        transition.updateFrame(
+            node: self.chatBannerView,
+            frame: CGRect(
+                origin: CGPoint(
+                    x: 0,
+                    y: apparentNavigateButtonsFrame.maxY
+                        - chatBannerHeight
+                        - (aiShortcutsVisible ? aiShortcutsHeight : 0)
+                ),
+                size: CGSize(
+                    width: layout.size.width,
+                    height: chatBannerHeight
+                )
+            )
+        )
+        //
+
         if let secondaryInputPanelNode = self.secondaryInputPanelNode, let apparentSecondaryInputPanelFrame = apparentSecondaryInputPanelFrame, !secondaryInputPanelNode.frame.equalTo(apparentSecondaryInputPanelFrame) {
             if immediatelyLayoutSecondaryInputPanelAndAnimateAppearance {
                 secondaryInputPanelNode.frame = apparentSecondaryInputPanelFrame.offsetBy(dx: 0.0, dy: apparentSecondaryInputPanelFrame.height + previousInputPanelBackgroundFrame.maxY - apparentSecondaryInputPanelFrame.maxY)
@@ -6161,6 +6187,10 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
         let historyNode = ChatHistoryListNodeImpl(
             // Nicegram
             nicegramContext: self.nicegramContext,
+            //
+            // Nicegram ChatBanner
+            aiShortcutsViewModel: self.aiShortcutsModel,
+            chatBannerViewModel: self.chatBannerViewModel,
             //
             context: self.context,
             updatedPresentationData: self.controller?.updatedPresentationData ?? (self.context.sharedContext.currentPresentationData.with({ $0 }), self.context.sharedContext.presentationData),

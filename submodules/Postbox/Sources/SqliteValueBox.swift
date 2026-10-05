@@ -501,11 +501,15 @@ public final class SqliteValueBox: ValueBox {
         
         if result < 3 {
             resultCode = database.execute("CREATE TABLE __meta_fulltext_tables (name INTEGER)")
+            // Nicegram PostboxFailureReporting
+            if !resultCode { database.reportWriteFailure(.metaFulltextTables) }
             assert(resultCode)
         }
         
         if result < 4 {
             resultCode = database.execute("PRAGMA user_version=4")
+            // Nicegram PostboxFailureReporting
+            if !resultCode { database.reportWriteFailure(.userVersion) }
             assert(resultCode)
         }
         
@@ -730,9 +734,13 @@ public final class SqliteValueBox: ValueBox {
                     createStatement += " WITHOUT ROWID"
                 }
                 resultCode = database.execute(createStatement)
+                // Nicegram PostboxFailureReporting
+                if !resultCode { database.reportWriteFailure(.createTableBinary(id: table.id)) }
                 assert(resultCode)
             case .int64:
                 let resultCode = database.execute("CREATE TABLE IF NOT EXISTS t\(table.id) (key INTEGER PRIMARY KEY, value BLOB)")
+                // Nicegram PostboxFailureReporting
+                if !resultCode { database.reportWriteFailure(.createTableInt64(id: table.id)) }
                 assert(resultCode)
         }
     }

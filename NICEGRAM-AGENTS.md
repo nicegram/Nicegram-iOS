@@ -603,13 +603,14 @@ one owned by a single skill and producing a fixed set of artifacts:
 
 | stage | skill | artifacts |
 |---|---|---|
-| start | `start-feature` | worktree + branch in both repos, spec, plan whose last task is the change record, ticket → IN PROGRESS |
-| implement | `superpowers:executing-plans` | code, `docs/changes/<date>-<slug>.md` |
+| start | `start-feature` | worktree + branch in both repos, change record stub, spec, plan whose last task completes the change record, ticket → IN PROGRESS |
+| implement | `superpowers:subagent-driven-development`, in a fresh session started from the prompt `start-feature` prints | code, `docs/changes/<date>-<slug>.md` |
 | refresh | `sync-from-develop` | merge commits in both repos |
 | ship to QA | `build-to-testflight` | `build/{N}`, a TestFlight build, a change-record comment on each ticket, tickets → READY FOR QA, a Confluence row |
 | bug round | `fix-qa-bugs` | fix commits on the feature branch, a change-record delta, bug linked and → DEV COMPLETED |
 | land | `merge-to-develop` | squash on develop in both repos, the change record re-posted at the freeze point, branches and worktree removed |
 | upstream | `tg-merge` | its own branch + worktree, and a `docs/changes` record it writes but does not deliver |
+| crashes | `triage-crashes` → `diagnose-crash` | records in `docs/crashes/`; an approved fix then enters this table at "start" |
 
 Ship to QA and bug round form a loop, not a line: a build surfaces bugs, a bug
 round fixes them, the next build ships the fixes, and QA may bounce it back
@@ -629,6 +630,35 @@ the key on the change record's own `Tickets:` line. Only after that build does
 would route around the only skill that delivers the change record, leaving it
 written and unread.
 
+## Crashes
+
+Production crashes are triaged through two skills and one registry, so that the
+analysis accumulates instead of being redone. `triage-crashes` runs a round —
+verify what we shipped, pick the live version, rank and triage its top crashes;
+`diagnose-crash` takes one crash in its own session and finds the root cause.
+Several diagnoses run in parallel.
+
+**`docs/crashes/` is the single source of truth** — one markdown file per
+Crashlytics issue, keyed by issue id, with a flat frontmatter header over mostly
+prose. `README.md` there is generated and must never be hand-edited; on a
+conflict, discard both sides and regenerate. The tree is stripped from the
+public mirror.
+
+**A diagnosis never writes app code.** It reports, drafts a patch, and stops for
+a human decision. An approved fix is an ordinary feature via `start-feature`,
+one per crash — which is why the lifecycle table above has a row for this. Two
+rules bind every diagnosis: never remove a `fatalError` or `assert` to make a
+crash go away (that trades a visible crash for silent data corruption), and
+"upstream race — do not touch it" counts as a successful diagnosis, because a
+session under pressure to produce a patch will patch someone else's engine on a
+theory.
+
+The status chain has one owner per transition: `triage-crashes` opens a record,
+`diagnose-crash` decides it, a fix feature's **first** plan task sets `fixing`,
+`merge-to-develop` sets `shipped` when it lands, and the next round's verify
+pass closes it as `verified` or reopens it as `regressed`. `tg-merge` also reads
+the registry, reporting where an upstream change touches an open crash's files.
+
 ## Cross-repo feature workflow
 
 `nicegram-assistant-ios` is vendored as a git submodule at
@@ -643,9 +673,10 @@ A feature spanning both repos uses **one worktree and two same-named branches**:
 ### Starting a feature
 
 **Use the `start-feature` skill.** It runs
-`.claude/scripts/new-feature-worktree.sh <slug>`, which creates that pair of
-worktree and branches in one step and prints the worktree path on stdout (all
-git chatter goes to stderr, so `WT="$(…)"` captures the path alone).
+`.claude/scripts/new-feature-worktree.sh [--base <branch>] <slug>`, which
+creates that pair of worktree and branches in one step — from `develop` unless
+`--base` names another branch — and prints the worktree's absolute path on
+stdout (all git chatter goes to stderr, so `WT="$(…)"` captures the path alone).
 
 **The branch name is load-bearing — the rest of the toolchain keys on it.**
 `build-to-testflight` resolves `origin/feat/<slug>` for every feature it
@@ -688,7 +719,7 @@ viewer**, which is why the procedure also calls `change_directory`; without that
 second call every file link written during feature work comes back "Couldn't
 find this file".
 
-So: **`start-feature`, `superpowers:executing-plans`, `sync-from-develop` and
+So: **`start-feature`, `superpowers:subagent-driven-development`, `sync-from-develop` and
 `merge-to-develop` run inside the feature worktree; `build-to-testflight` and
 `fix-qa-bugs` run from the main clone, in a session that has not entered one.**
 Those two are written throughout in the variable `-C` form — deliberately, so
@@ -714,13 +745,16 @@ to `git worktree add -b`, so it does not depend on `.claude/settings.json`'s
 changelog shows it shipping in v2.1.133 with values `fresh` | `head`, and the
 CLI installed here is newer). What the assertion catches is a different, real
 failure: the main clone sitting on the wrong branch when the worktree was
-created.
+created. The base is `develop` unless `--base` names another branch.
 
-    git -C "$MAIN" log --oneline -1 develop     # want
+    git -C "$MAIN" log --oneline -1 <base>      # want
     git -C "$WT"   log --oneline -1             # got
 
-On a mismatch the script exits 1 and tells you to branch the worktree onto
-`develop` before continuing.
+On a mismatch the script exits 1 and tells you to branch the worktree onto the
+base before continuing. It cuts from `HEAD` rather than from the base ref
+because the submodules are cloned from the main clone's gitdirs (next
+paragraph), which only reliably hold what the main clone has checked out — so a
+feature cut from an epic needs the main clone at the epic's tip.
 
 **Submodules are cloned from the main clone's own gitdirs, not the network** —
 measured at ~4 s for all 14, versus refetching ~550 MB. That needs
@@ -792,6 +826,11 @@ main clone's copy automatically — see "Build" above. No manual sourcing needed
     wrong base silently produces a plausible merge against the wrong upstream.
     Both this file and `docs/tg-merge/reports/` are stripped from the public
     mirror by `bitbucket-pipelines.yml`.
+  - `bitbucket-pipelines.yml`'s strip lists — `docs/crashes` must stay in
+    **both** of them (the `rm -rf` and the staged-path guard), exactly like the
+    four trees beside it. `ci/tests/test-mirror-strip.sh` catches a tree dropped
+    from one list but not a tree dropped from both, which is what an upstream
+    merge that rewrites this file would do.
 
 ### Building for QA
 
@@ -808,10 +847,11 @@ The script pushes the current host branch, then triggers the Bitbucket
 An assistant commit that exists only locally fails at that checkout, so both
 preconditions are about making the SHA fetchable — not about merging.
 
-The mirror step also strips four trees before pushing — `.claude/`,
-`docs/superpowers/`, `docs/tg-merge/` and `docs/changes/` — so fork-internal
-tooling, process docs, the upstream-merge state and the change records never
-reach the public GitHub repo; all four stay fully tracked in Bitbucket. Keep
+The mirror step also strips five trees before pushing — `.claude/`,
+`docs/superpowers/`, `docs/tg-merge/`, `docs/changes/` and `docs/crashes/` — so
+fork-internal tooling, process docs, the upstream-merge state, the change
+records and the crash registry never reach the public GitHub repo; all five stay
+fully tracked in Bitbucket. Keep
 this list in step with `bitbucket-pipelines.yml`, which names each tree
 **twice**: once in the `rm -rf` and once in the staged-path assertion right
 after it. `ci/tests/test-mirror-strip.sh` asserts the two lists cannot drift
@@ -820,10 +860,11 @@ leaking quietly. It also asserts the old `docs/qa` name survives nowhere in
 that file, which is what covers the third mention — the comment explaining
 why the tree is stripped, which no list-parsing check can see.
 
-`docs/changes/` is stripped for the same reason as the rest, and it is the
-newest member: the first `build-to-testflight` run carrying a change record is
-exactly what would have published one. Change records describe gating and
-remote-config behaviour in terms only the team should read.
+`docs/changes/` is stripped for the same reason as the rest: change records
+describe gating and remote-config behaviour in terms only the team should read.
+`docs/crashes/` is the newest member — the crash registry states crash volumes,
+affected-user counts, and our written judgement that specific upstream Telegram
+bugs are abandoned, which reads differently in public than inside the team.
 
 This only stops **future** disclosure —
 `docs/superpowers/` predates this exclusion, so if the mirror was pushed while
@@ -858,10 +899,6 @@ referencing a commit nobody else can resolve.
 - Assistant only: the `Demo/` app inside the submodule — a plain SwiftPM build,
   no Bazel. See its `README.md`.
 
-`nicegram-wallet-ios` is still a **remote** dependency of the assistant, so
-features touching the wallet still need the old push-and-re-pin loop. It is the
-next candidate for `packages/`.
-
 ## Delegating to subagents
 
 The rules in `.claude/rules/` auto-attach by path for *your* session. A subagent
@@ -880,10 +917,18 @@ The same applies to reviewers — a reviewer never asked to check against
 `swift-conventions.md` will not check against it. Give every reviewer the rules
 files that match the paths in its diff as a named check.
 
-**When a reviewer flags a convention violation, do not triage it away as
-"pre-existing pattern".** That adjudication has already been wrong once: it let
-a hand-written initializer ship in a package whose rules say to use
-`@MemberwiseInit`, and the human caught it in review instead.
+**Consistency with the surrounding code never outranks a written convention —
+in either direction.** Do not triage a reviewer's finding away as "pre-existing
+pattern", and do not *introduce* a violation because the neighbouring files
+already have it. If the neighbours are wrong, follow the rule and say so.
+
+Both directions have already failed once. Dismissing a finding as pre-existing
+let a hand-written initializer ship in a package whose rules say to use
+`@MemberwiseInit`. In the other direction, an implementer added a redundant
+`@available(iOS 15.0, *)` "to match the four sibling formatters", disclosed it
+honestly as a judgment call — and the task reviewer **approved** it, because the
+siblings really did look like that. 471 files in the package carry the same
+redundant attribute. A majority is not a convention.
 
 ## A plan is where conventions are won or lost
 
@@ -919,22 +964,82 @@ blocks **or names any type, file or module**:
    handling are examples, not the set: both rules missed on the speech-to-text
    design (`Polymorphism`, "keep a type's public surface uniform") were in a file
    already read but absent from an earlier version of this list.
-4. Then dispatch a **plan conventions reviewer**: a subagent given the plan and
-   those rules files, asked only "which code blocks or names violate these?" Self-review
-   does not catch your own blind spots — the self-review on that same plan
-   passed while all eight violations sat in it.
+4. Then ask what the rule-by-rule pass cannot: **for every type the plan invents,
+   does the codebase already provide the shape it should take?** A hand-written
+   storage type breaks no style rule and is still wrong where `data-layer.md`
+   names `UDRepository` and `{Name}Repository`. `public` is the same trap: it is
+   correct only with a consumer outside the package — a fact about the tree, not
+   about the block.
+5. Then dispatch a **plan conventions reviewer**: a subagent given the plan and
+   those rules files, asked 3 and 4 as a named checklist rather than open prose —
+   which code blocks *or names* violate these? Self-review does not catch your
+   own blind spots — the self-review on that same plan passed while all eight
+   violations sat in it.
+
+**This gate has failed four times, each differently** — not run because a rule
+could not attach, not run at all, run but scoped to style while a hand-rolled
+`UserDefaults` store and 77 unjustified `public` symbols passed, and run against
+`.claude/rules/` alone while the naming rule it needed sat in `AGENTS.md`. If it
+fails again, mechanise the checklist instead of rewording it.
+
+**A plan carries its inputs; it does not tell the implementer to go and get
+them.** This is a separate axis from the gate above, which checks conventions —
+design values are inputs, so it would not have caught this even had it run. The
+`remove-crypto-wallet-ui` plan said "spacing, padding, corner radii and exact
+shades come from the Figma frames — open the named frame rather than inventing
+them", in a preamble bullet, above tasks whose code blocks already held invented
+numbers. Nobody opened the frame: an implementer executes tasks, and a sentence
+that names no tool, produces no artifact and fails nothing when skipped is not a
+task. If a value is needed to write the code, the planning session fetches it and
+writes it in. For a design, that is `read-figma-design`'s extraction: every UI
+task cites the frames it implements and carries every visual value in its code,
+and the skill's design-inputs check fails a plan that defers one to "take it from
+Figma".
 
 **Every feature plan ends with a change-record task.** The document is
 `docs/changes/YYYY-MM-DD-<slug>.md`, in English, following
 `docs/changes/TEMPLATE.md`, and it is written during implementation — not at
-planning time — because it describes what was actually built. It must carry a
-`Tickets:` header line and meet the five obligations `start-feature` states in
+planning time — because it describes what was actually built. `start-feature`
+may already have created it as a stub when a ticket key or a design artifact was
+given — or `read-figma-design` may have, when a design arrived later — in which
+case the task **completes** that file rather than creating one; either way it
+ends with this feature's key, when there is one, in the `## Delivery` table's
+`pending` row, and with the template's instruction comment deleted — a record
+that still carries it halts the next build under halt (l). It carries a
+`Tickets:` header line naming a real ticket, or none at all when there is no
+ticket — never a placeholder — keeps an existing `## Design` section byte for
+byte, and meets the five obligations `start-feature` states in
 full: orientation, sufficiency for both another platform and the full test
 spectrum, reachability (the gates in evaluation order), known-and-intentional
 behaviour, and reference-don't-duplicate. This requirement lives here, and in
 `start-feature`, deliberately: a `.claude/rules/` file keyed on
 `docs/changes/**` would never attach while a plan is being written, which is
 the same failure this section already documents.
+
+## Designs (Figma)
+
+A **design artifact** is whatever Figma links are handed over for a feature — a
+page, a section, a frame, several of them — at any stage, including after the
+logic has shipped. It is recorded in the feature's change record under
+`## Design` the moment it arrives, so no later session has to ask for it again.
+
+The `read-figma-design` skill owns everything from there: intake and recording,
+extraction with read-only scripts, the design-inputs check on a plan, the
+fidelity check on code, and what to do when a Figma call fails. The mapping from
+Figma names to our code — colours, text styles, icons, geometry — lives beside
+that code, in `packages/nicegram-assistant-ios/.claude/reference/figma-to-code.md`.
+A prompt hook names the skill whenever a message carries a Figma link.
+
+Two rules bind all new and changed UI code, with a design or without one:
+**design system only** — text styles and colours the design system defines,
+nothing else — and **no value without a source** — nothing by eye, nothing from a
+screenshot. Both are written out in the package's `swiftui-views.md`.
+
+**With no design yet** — logic first, the design as a later iteration — the UI
+uses only existing components and design-system tokens and styles, and any new
+visual value is a human decision recorded in the spec as "interim, no design". No
+link exists then, so the skill never loads; this paragraph is what carries the
+rule.
 
 ## Newer APIs beat older deployment targets
 
@@ -969,6 +1074,23 @@ test target. `Tests/AllTests` already fails to build (it references a dangling
 and a plan that adds one here is adding infrastructure with no consumer. Host
 changes are verified by `ci/verify-build.sh` and by reading the build's own
 output — a generated entitlement, a generated source.
+
+## Simplicity outranks completeness
+
+Prefer the simple, clean implementation. When a requirement can only be met by
+building something intricate — a bespoke mechanism, a workaround for a platform
+limit, state threaded through several layers — **stop and propose the
+trade-off** rather than building it quietly. We are often willing to give up the
+requirement to keep the code simple: a reduced version of the affordance, the
+affordance only where it is cheap to provide, or not shipping it at all.
+
+Gating a feature behind `@available(iOS N, *)` because the newer API is the
+clean one is a standard instance of this, and so is showing a nicety only on the
+OS versions where it costs nothing.
+
+"The design says so" does not exempt a requirement from that conversation. A
+mockup is a proposal about what the user sees, not a budget for how much
+machinery we build to show it.
 
 ## Learning from review feedback
 

@@ -19,48 +19,12 @@
       }
     },
     {
-      "identity" : "bigdecimal",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/Zollerboy1/BigDecimal.git",
-      "state" : {
-        "revision" : "04d17040e4615fbfda3a882b9881f6841f4bf557",
-        "version" : "1.0.2"
-      }
-    },
-    {
-      "identity" : "bigint",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/attaswift/BigInt",
-      "state" : {
-        "revision" : "0ed110f7555c34ff468e72e1686e59721f2b0da6",
-        "version" : "5.3.0"
-      }
-    },
-    {
-      "identity" : "core-swift",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/denis15yo/core-swift.git",
-      "state" : {
-        "branch" : "release/1.0.0",
-        "revision" : "5e67f8746a35d47b4537b9dbba87791630999085"
-      }
-    },
-    {
       "identity" : "cryptoswift",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/krzyzanowskim/CryptoSwift.git",
       "state" : {
         "revision" : "f2a627b84c1ff96f21ac2fcb623ab36142dd5512",
         "version" : "1.10.0"
-      }
-    },
-    {
-      "identity" : "curvelib.swift",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/tkey/curvelib.swift",
-      "state" : {
-        "revision" : "432bf1abe7ff505fc2ac9fcf697341ff5b2dc6d0",
-        "version" : "2.0.0"
       }
     },
     {
@@ -88,15 +52,6 @@
       "state" : {
         "revision" : "ccc898f21992ebc130bc04cc197460a5ae230bcf",
         "version" : "2.5.3"
-      }
-    },
-    {
-      "identity" : "fetch-node-details-swift",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/torusresearch/fetch-node-details-swift",
-      "state" : {
-        "revision" : "5b42dd1675f8a51ffe64feb688db7b1d764d5fc0",
-        "version" : "8.0.1"
       }
     },
     {
@@ -199,24 +154,6 @@
       }
     },
     {
-      "identity" : "jwtdecode.swift",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/auth0/JWTDecode.swift.git",
-      "state" : {
-        "revision" : "36a5ce735a61c4bc119593f43ce2c027b4ca7392",
-        "version" : "3.3.0"
-      }
-    },
-    {
-      "identity" : "keychain-swift",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/evgenyneu/keychain-swift.git",
-      "state" : {
-        "revision" : "d108a1fa6189e661f91560548ef48651ed8d93b9",
-        "version" : "20.0.0"
-      }
-    },
-    {
       "identity" : "leveldb",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/firebase/leveldb.git",
@@ -253,15 +190,6 @@
       }
     },
     {
-      "identity" : "nicegram-wallet-ios",
-      "kind" : "remoteSourceControl",
-      "location" : "git@bitbucket.org:mobyrix/nicegram-wallet-ios.git",
-      "state" : {
-        "branch" : "develop",
-        "revision" : "ca6a71abecb4c0fdf70b62ff8b2fb47723a6d154"
-      }
-    },
-    {
       "identity" : "promises",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/google/promises.git",
@@ -280,30 +208,12 @@
       }
     },
     {
-      "identity" : "qrcode",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/WalletConnect/QRCode.git",
-      "state" : {
-        "revision" : "263f280d2c8144adfb0b6676109846cfc8dd552b",
-        "version" : "14.3.1"
-      }
-    },
-    {
       "identity" : "r.swift",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/denis15yo/R.swift.git",
       "state" : {
         "branch" : "main",
         "revision" : "64a8b8e147c0f2a668f57917fbee535a99e73558"
-      }
-    },
-    {
-      "identity" : "reown-swift",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/reown-com/reown-swift.git",
-      "state" : {
-        "revision" : "eb3e428165b8e807386dc535fb1d7da193599a5c",
-        "version" : "2.0.0"
       }
     },
     {
@@ -340,24 +250,6 @@
       "state" : {
         "revision" : "cd213f98af160e6497eeff0707bc3f6a205b159c",
         "version" : "9.26.0"
-      }
-    },
-    {
-      "identity" : "session-manager-swift",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/Web3Auth/session-manager-swift.git",
-      "state" : {
-        "revision" : "de18a6b3d98f67b3c77f84ebab73f7a51807a503",
-        "version" : "6.1.0"
-      }
-    },
-    {
-      "identity" : "single-factor-auth-swift",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/Web3Auth/single-factor-auth-swift.git",
-      "state" : {
-        "revision" : "b1da4f048dc77771e806e8fe09b5d8cca5d3049a",
-        "version" : "9.1.0"
       }
     },
     {
@@ -460,15 +352,6 @@
       }
     },
     {
-      "identity" : "swift-numerics",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/apple/swift-numerics.git",
-      "state" : {
-        "revision" : "0c0290ff6b24942dadb83a929ffaaa1481df04a2",
-        "version" : "1.1.1"
-      }
-    },
-    {
       "identity" : "swift-openapi-runtime",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/apple/swift-openapi-runtime",
@@ -487,21 +370,12 @@
       }
     },
     {
-      "identity" : "swift-qrcode-generator",
+      "identity" : "swift-secp256k1",
       "kind" : "remoteSourceControl",
-      "location" : "https://github.com/dagronf/swift-qrcode-generator",
+      "location" : "https://github.com/21-DOT-DEV/swift-secp256k1",
       "state" : {
-        "revision" : "5ca09b6a2ad190f94aa3d6ddef45b187f8c0343b",
-        "version" : "1.0.3"
-      }
-    },
-    {
-      "identity" : "swift-sodium",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/jedisct1/swift-sodium",
-      "state" : {
-        "revision" : "4f9164a0a2c9a6a7ff53a2833d54a5c79c957342",
-        "version" : "0.9.1"
+        "revision" : "6c50e65ec9959d9ab0039df9ffc31707ad19c01b",
+        "version" : "0.18.1"
       }
     },
     {
@@ -511,15 +385,6 @@
       "state" : {
         "revision" : "f99ae8aa18f0cf0d53481901f88a0991dc3bd4a2",
         "version" : "601.0.1"
-      }
-    },
-    {
-      "identity" : "swiftimagereadwrite",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/dagronf/SwiftImageReadWrite",
-      "state" : {
-        "revision" : "5596407d1cf61b953b8e658fa8636a471df3c509",
-        "version" : "1.1.6"
       }
     },
     {
@@ -541,69 +406,6 @@
       }
     },
     {
-      "identity" : "tkey-ios",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/tkey/tkey-ios.git",
-      "state" : {
-        "revision" : "384f5d911dbb4d28aadbcd4f20f16dcf0fede27d",
-        "version" : "2.0.0"
-      }
-    },
-    {
-      "identity" : "ton-api-swift",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/tonkeeper/ton-api-swift",
-      "state" : {
-        "revision" : "d57d457cbaea081467ae65648e92fc6094ea342b",
-        "version" : "0.1.7"
-      }
-    },
-    {
-      "identity" : "ton-swift",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/tonkeeper/ton-swift",
-      "state" : {
-        "revision" : "aacae64c40f40500a9485b6b2d8d060a4777cf72",
-        "version" : "1.0.36"
-      }
-    },
-    {
-      "identity" : "torus-utils-swift",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/torusresearch/torus-utils-swift.git",
-      "state" : {
-        "revision" : "235a70839d3ff5723402df95d665b15b8c551ad8",
-        "version" : "10.0.1"
-      }
-    },
-    {
-      "identity" : "tweetnacl-swiftwrap",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/bitmark-inc/tweetnacl-swiftwrap",
-      "state" : {
-        "revision" : "f8fd111642bf2336b11ef9ea828510693106e954",
-        "version" : "1.1.0"
-      }
-    },
-    {
-      "identity" : "wallet-core",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/trustwallet/wallet-core.git",
-      "state" : {
-        "revision" : "cf4d0ad2344bdb4412004bbdcedf502d4c4d4f17",
-        "version" : "4.7.3"
-      }
-    },
-    {
-      "identity" : "wallet-mobile-sdk",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/MobileWalletProtocol/wallet-mobile-sdk",
-      "state" : {
-        "revision" : "4293df51d3500b8e876ca4bf0d7548adf097569a",
-        "version" : "1.1.2"
-      }
-    },
-    {
       "identity" : "xcodeedit",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/tomlokhorst/XcodeEdit",
@@ -619,15 +421,6 @@
       "state" : {
         "revision" : "8f6abcf4c8950e2679d5b2fee4ca284fd7c34886",
         "version" : "1.11.0"
-      }
-    },
-    {
-      "identity" : "yttrium",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/reown-com/yttrium",
-      "state" : {
-        "revision" : "3c8222684e5164af98027494226071d720e6e1d1",
-        "version" : "0.9.75"
       }
     }
   ],

@@ -1,6 +1,3 @@
-// Nicegram
-import NicegramWallet
-//
 import TelegramCore
 import TelegramPresentationData
 import MergeLists
@@ -14,9 +11,6 @@ public enum ChatMessageEntryContentType {
 }
 
 public struct ChatMessageEntryAttributes: Equatable {
-    // Nicegram Wallet
-    public var walletTx: ChatMessageTx?
-    //
     public var rank: CachedChannelAdminRank?
     public var isContact: Bool
     public var contentTypeHint: ChatMessageEntryContentType

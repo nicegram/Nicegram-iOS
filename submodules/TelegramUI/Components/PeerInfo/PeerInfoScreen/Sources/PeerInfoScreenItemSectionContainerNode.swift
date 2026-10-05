@@ -107,7 +107,7 @@ final class PeerInfoScreenItemSectionContainerNode: ASDisplayNode {
             }
             
             // Nicegram, hide section background (like PeerInfoScreenHeaderItem)
-            if #available(iOS 16.0, *), (item is PeerInfoScreenWalletItem || item is PeerInfoScreenNicegramCallsItem) {
+            if #available(iOS 16.0, *), item is PeerInfoScreenNicegramCallsItem {
                 contentWithBackgroundOffset = contentHeight
             }
             //

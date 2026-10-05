@@ -1,8 +1,5 @@
 "AppName" = "Nicegram";
 
-"ViewAuditReport" = "Xem Báo cáo CertiK";
-"Wallet" = "Ví";
-
 /*Common*/
 "Nicegram.PrivacyPolicy" = "Chính sách bảo mật";
 "Nicegram.EULA" = "Thỏa thuận giấy phép người dùng cuối";

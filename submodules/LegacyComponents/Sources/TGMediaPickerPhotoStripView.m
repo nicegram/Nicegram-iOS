@@ -118,9 +118,49 @@
     [self setNeedsLayout];
 }
 
+// Nicegram MediaPickerStripConsistency
+- (bool)_canApplyItemCountDelta:(NSInteger)delta
+{
+    // The selected-items model mutates before it notifies this view, and
+    // TGMediaPickerGalleryModel lays out in the gap -- so the collection view
+    // can already have re-read and cached the new count. This is the same
+    // precondition performBatchUpdates: asserts, and failing it is what UIKit
+    // raises "Invalid batch updates" for.
+    return [_collectionView numberOfItemsInSection:0] + delta == [self collectionView:_collectionView numberOfItemsInSection:0];
+}
+//
+
 - (void)insertItemAtIndex:(NSInteger)index
 {
     NSIndexPath *indexPath = [NSIndexPath indexPathForRow:index inSection:0];
+    
+    // Nicegram MediaPickerStripConsistency, completion body hoisted so the guard below can run it after a reload
+    void (^completionBlock)(void) = ^
+    {
+        [UIView animateWithDuration:0.3f
+                         animations:^
+        {
+            [self _layoutCollectionViewForOrientation:self.interfaceOrientation];
+        }];
+        
+        if (_collectionViewLayout.scrollDirection == UICollectionViewScrollDirectionHorizontal)
+        {
+            [_collectionView setContentOffset:CGPointMake(_collectionView.contentSize.width - _collectionView.frame.size.width + _collectionView.contentInset.left, _collectionView.contentOffset.y) animated:true];
+        }
+        else
+        {
+            [_collectionView setContentOffset:CGPointMake(_collectionView.contentOffset.x, _collectionView.contentSize.height - _collectionView.frame.size.height + _collectionView.contentInset.top) animated:true];
+        }
+    };
+    
+    if (![self _canApplyItemCountDelta:1])
+    {
+        [_collectionView reloadData];
+        [_collectionView layoutIfNeeded];
+        completionBlock();
+        return;
+    }
+    //
     
     [UIView performWithoutAnimation:^
     {
@@ -129,30 +169,28 @@
             [_collectionView insertItemsAtIndexPaths:@[ indexPath ]];
         } completion:^(__unused BOOL finished)
         {
-            [UIView animateWithDuration:0.3f
-                             animations:^
-            {
-                [self _layoutCollectionViewForOrientation:self.interfaceOrientation];
-            }];
-            
-            if (_collectionViewLayout.scrollDirection == UICollectionViewScrollDirectionHorizontal)
-            {
-                [_collectionView setContentOffset:CGPointMake(_collectionView.contentSize.width - _collectionView.frame.size.width + _collectionView.contentInset.left, _collectionView.contentOffset.y) animated:true];
-            }
-            else
-            {
-                [_collectionView setContentOffset:CGPointMake(_collectionView.contentOffset.x, _collectionView.contentSize.height - _collectionView.frame.size.height + _collectionView.contentInset.top) animated:true];
-            }
+            // Nicegram MediaPickerStripConsistency, body hoisted into completionBlock
+            completionBlock();
         }];
     }];
 }
 
 - (void)deleteItemAtIndex:(NSInteger)index
 {
-    [_collectionView performBatchUpdates:^
+    // Nicegram MediaPickerStripConsistency
+    if ([self _canApplyItemCountDelta:-1])
     {
-        [_collectionView deleteItemsAtIndexPaths:@[ [NSIndexPath indexPathForRow:index inSection:0] ]];
-    } completion:nil];
+        [_collectionView performBatchUpdates:^
+        {
+            [_collectionView deleteItemsAtIndexPaths:@[ [NSIndexPath indexPathForRow:index inSection:0] ]];
+        } completion:nil];
+    }
+    else
+    {
+        [_collectionView reloadData];
+        [_collectionView layoutIfNeeded];
+    }
+    //
     
     [UIView animateWithDuration:0.3f
                      animations:^

@@ -10,17 +10,6 @@ public struct NGEnvObj: Decodable {
     public let tapjoy_api_key: String
     public let telegram_auth_bot: String
     public let websocket_url: URL
-    
-    public let wallet: Wallet
-    public struct Wallet: Decodable {
-        public let keychainGroupIdentifier: String
-        public let walletConnectProjectId: String
-        public let web3AuthBackupQuestion: String
-        public let web3AuthClientId: String
-        public let web3AuthVerifier: String
-        public let stonfiApiUrl: String
-        public let stonfiNicegramApiUrl: String
-    }
 }
 
 func parseNGEnv() -> NGEnvObj {

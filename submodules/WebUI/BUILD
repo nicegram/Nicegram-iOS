@@ -1,8 +1,9 @@
 load("@build_bazel_rules_swift//swift:swift.bzl", "swift_library")
 
 NGDEPS = [
+    # Also the only route by which this module's `import NGCore` resolves - do not remove
+    # just because WebAppController.swift's own `import TelegramBridge` looks unused.
     "@swiftpkg_nicegram_assistant_ios//:TelegramBridge",
-    "@swiftpkg_nicegram_wallet_ios//:NicegramWallet",
 ]
 
 swift_library(

@@ -118,3 +118,4 @@ tools/sim-watcher/dist/
 # real directory of Bazel patch files, not a convenience symlink.
 !/bazel-patches
 .mcp.json
+.l10n-config.json

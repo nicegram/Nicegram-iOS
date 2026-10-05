@@ -97,20 +97,15 @@ private extension CallRecorder {
         partNumber: Int
     ) async throws -> String {
         let title = try await call.unwrap().callTitle()
-        
-        let dateFormatter = DateFormatter()
-        dateFormatter.dateFormat = "dd-MM-yyyy"
-        let date = dateFormatter.string(from: Date())
-        
-        var text = "\(title)-\(date)"
-        if let peerId = call?.peerId?.ng_toInt64() {
-            text = "\(peerId)-\(text)"
-        }
-        if partNumber > 1 {
-            text += "-part-\(partNumber)"
-        }
-        
-        return text
+        return RecordingCaption(
+            date: Date(),
+            partNumber: partNumber,
+            peerId: call?.peerId?.ng_toInt64(),
+            title: title
+        ).toString(
+            locale: .current,
+            timeZone: .current
+        )
     }
     
     func send(

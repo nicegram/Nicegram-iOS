@@ -12,7 +12,6 @@ import PeerInfoPaneNode
 import FeatSpyOnFriends
 import TelegramApi
 import TelegramStringFormatting
-import NicegramWallet
 import NGUtils
 import NGData
 import LocalizedPeerData

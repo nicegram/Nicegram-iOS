@@ -1,14 +1,10 @@
 // Nicegram
-import CoreRemoteConfig
 import FeatTgAccountShop
 import FeatTgAppsCenter
-import FeatWallet
 import NGAiChatUI
-import class NGCore.CoreContainer
 import NGData
 import NGEnv
 import NGStrings
-import NicegramWallet
 //
 import Foundation
 import UIKit
@@ -33,7 +29,6 @@ enum SettingsSection: Int, CaseIterable {
     case proxy
     // Nicegram
     case nicegram
-    case nicegramWallet
     //
     case apps
     case shortcuts
@@ -235,31 +230,6 @@ func settingsItems(data: PeerInfoScreenData?, context: AccountContext, presentat
     }
     //
 
-    // Nicegram Wallet
-    let getWalletAvailabilityUseCase = WalletContainer.shared.getWalletAvailabilityUseCase()
-    let getAuditConfigUseCase = RemoteConfigContainer.shared.getAuditConfigUseCase()
-    let urlOpener = CoreContainer.shared.urlOpener()
-    if #available(iOS 15.0, *), getWalletAvailabilityUseCase() {
-        let sectionTitle = "Non-custodial"
-        let buttonText = "Nicegram Wallet"
-        
-        items[.nicegramWallet]?.append(PeerInfoScreenHeaderItem(id: 0, text: sectionTitle))
-        items[.nicegramWallet]!.append(PeerInfoScreenDisclosureItem(id: 1, text: buttonText, icon: PresentationResourcesSettings.ngWalletIcon, action: {
-            Task { @MainActor in
-                WalletEntryPoints.openHome()
-            }
-        }))
-        
-        if let auditConfig = getAuditConfigUseCase() {
-            items[.nicegramWallet]!.append(PeerInfoScreenDisclosureItem(id: 2, text: l("ViewAuditReport"), icon: PresentationResourcesSettings.ngAuditIcon, action: {
-                Task { @MainActor in
-                    urlOpener.open(auditConfig.reportLink)
-                }
-            }))
-        }
-    }
-    //
-    
     var appIndex = 1000
     if let settings = data.globalSettings {
         for bot in settings.bots {
@@ -280,25 +250,7 @@ func settingsItems(data: PeerInfoScreenData?, context: AccountContext, presentat
                 iconSignal = .single(UIImage())
             }
             let label: PeerInfoScreenDisclosureItem.Label = bot.flags.contains(.notActivated) || bot.flags.contains(.showInSettingsDisclaimer) ? .titleBadge(presentationData.strings.Settings_New, presentationData.theme.list.itemAccentColor) : .none
-            
-            // Nicegram Wallet
-            let isTonWalletBot = (bot.peer.id.id._internalGetInt64Value() == 1985737506)
-            
-            let inReview = RemoteConfigContainer.shared.getReviewStatusUseCase().inReview()
-            if isTonWalletBot, inReview {
-                continue
-            }
-            
-            let text: String
-            if isTonWalletBot {
-                text = "TON Wallet Bot"
-            } else {
-                text = bot.shortName
-            }
-            //
-            
-            // Nicegram Wallet, change "text: bot.shortName" to "text: text"
-            items[.apps]!.append(PeerInfoScreenDisclosureItem(id: bot.peer.id.id._internalGetInt64Value(), label: label, text: text, icon: nil, iconSignal: iconSignal, action: {
+            items[.apps]!.append(PeerInfoScreenDisclosureItem(id: bot.peer.id.id._internalGetInt64Value(), label: label, text: bot.shortName, icon: nil, iconSignal: iconSignal, action: {
                 interaction.openBotApp(bot)
             }))
             appIndex += 1

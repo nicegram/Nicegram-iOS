@@ -31,7 +31,6 @@ private let enabledPrivateBioEntities: EnabledEntityTypes = [.allUrl, .mention, 
 enum InfoSection: Int, CaseIterable {
     // Nicegram
     case nicegramCall
-    case nicegramWallet
     case nicegram
     //
     case unofficial
@@ -945,13 +944,6 @@ func infoItems(
         items[.nicegramCall]?.append(
             PeerInfoScreenNicegramCallsItem(peer: user)
         )
-    }
-    //
-    
-    // Nicegram Wallet
-    if #available(iOS 16.0, *) {
-        items[.nicegramWallet]!.append(PeerInfoScreenHeaderItem(id: 0, text: l("Wallet").uppercased()))
-        items[.nicegramWallet]!.append(PeerInfoScreenWalletItem(peer: data.peer?._asPeer()))
     }
     //
     

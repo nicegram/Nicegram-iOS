@@ -119,11 +119,9 @@ let colorViolet = UIColor(rgb: 0x5E5CE6)
 public struct PresentationResourcesSettings {
     // Nicegram
     public static let ngAiChatIcon = renderSettingsIcon(name: "ng-settings/ai-chatbot")
-    public static let ngAuditIcon = renderSettingsIcon(name: "ng-settings/audit")
     public static let ngPremiumIcon = renderSettingsIcon(name: "ng-settings/premium")
     public static let ngSettingsIcon = renderSettingsIcon(name: "ng-settings/settings")
     public static let ngTgAccountShopIcon = renderSettingsIcon(name: "ng-settings/tg-account-shop")
-    public static let ngWalletIcon = renderSettingsIcon(name: "ng-settings/wallet")
     //
     
     public static let proxy = renderSettingsIcon(name: "Item List/Icons/Proxy", backgroundColors: [colorGreen])

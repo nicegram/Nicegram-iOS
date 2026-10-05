@@ -2,7 +2,6 @@
 import NGAppCache
 import class NGCoreUI.LogsUI
 import NGData
-import NicegramWallet
 //
 import Foundation
 import UIKit
@@ -67,7 +66,6 @@ private enum DebugControllerSection: Int32 {
 private enum DebugControllerEntry: ItemListNodeEntry {
     // Nicegram DebugMenu
     case showOnboarding(Bool)
-    case multichainEnabled(Bool)
     //
     case testStickerImport(PresentationTheme)
     case sendLogs(PresentationTheme)
@@ -144,7 +142,7 @@ private enum DebugControllerEntry: ItemListNodeEntry {
     var section: ItemListSectionId {
         switch self {
         // Nicegram DebugMenu
-        case .showOnboarding, .multichainEnabled:
+        case .showOnboarding:
             return DebugControllerSection.nicegram.rawValue
         //
         case .testStickerImport:
@@ -179,8 +177,6 @@ private enum DebugControllerEntry: ItemListNodeEntry {
         // Nicegram DebugMenu
         case .showOnboarding:
             return -20
-        case .multichainEnabled:
-            return -10
         //
         case .sendNGLogs:
             return -2
@@ -336,13 +332,6 @@ private enum DebugControllerEntry: ItemListNodeEntry {
         case let .showOnboarding(value):
             return ItemListSwitchItem(presentationData: presentationData, title: "Show onboarding", value: value, sectionId: self.section, style: .blocks, updated: { value in
                 AppCache.wasOnboardingShown = !value
-            })
-        case let .multichainEnabled(value):
-            return ItemListSwitchItem(presentationData: presentationData, title: "Enable Multichain Wallet", value: value, sectionId: self.section, style: .blocks, updated: { value in
-                Task {
-                    let updateUserBlockchainsUseCase = WalletSettingsModule.shared.updateUserBlockchainsUseCase()
-                    await updateUserBlockchainsUseCase.set(multichainEnabled: value)
-                }
             })
         //
         case .testStickerImport:
@@ -1678,12 +1667,10 @@ private enum DebugControllerEntry: ItemListNodeEntry {
     }
 }
 
-// Nicegram Wallet, added multichainEnabled
-private func debugControllerEntries(context: AccountContext?, sharedContext: SharedAccountContext, presentationData: PresentationData, loggingSettings: LoggingSettings, mediaInputSettings: MediaInputSettings, experimentalSettings: ExperimentalUISettings, networkSettings: NetworkSettings?, hasLegacyAppData: Bool, useBetaFeatures: Bool, multichainEnabled: Bool) -> [DebugControllerEntry] {
+private func debugControllerEntries(context: AccountContext?, sharedContext: SharedAccountContext, presentationData: PresentationData, loggingSettings: LoggingSettings, mediaInputSettings: MediaInputSettings, experimentalSettings: ExperimentalUISettings, networkSettings: NetworkSettings?, hasLegacyAppData: Bool, useBetaFeatures: Bool) -> [DebugControllerEntry] {
     var entries: [DebugControllerEntry] = []
     // Nicegram DebugMenu
     entries.append(.showOnboarding(!AppCache.wasOnboardingShown))
-    entries.append(.multichainEnabled(multichainEnabled))
     //
     entries.append(.sendNGLogs(presentationData.theme))
 // Nicegram NCG-5828 call recording
@@ -1838,16 +1825,8 @@ public func debugController(sharedContext: SharedAccountContext, context: Accoun
         preferencesSignal = .single(nil)
     }
     
-    // Nicegram Wallet
-    let multichainEnabledSignal = WalletSettingsModule.shared.getUserBlockchainsUseCase()
-        .multichainEnabledPublisher()
-        .toSignal()
-        .skipError()
-    //
-    
-    // Nicegram Wallet, added multichainEnabled
-    let signal = combineLatest(sharedContext.presentationData, sharedContext.accountManager.sharedData(keys: Set([SharedDataKeys.loggingSettings, ApplicationSpecificSharedDataKeys.mediaInputSettings, ApplicationSpecificSharedDataKeys.experimentalUISettings])), preferencesSignal, multichainEnabledSignal)
-    |> map { presentationData, sharedData, preferences, multichainEnabled -> (ItemListControllerState, (ItemListNodeState, Any)) in
+    let signal = combineLatest(sharedContext.presentationData, sharedContext.accountManager.sharedData(keys: Set([SharedDataKeys.loggingSettings, ApplicationSpecificSharedDataKeys.mediaInputSettings, ApplicationSpecificSharedDataKeys.experimentalUISettings])), preferencesSignal)
+    |> map { presentationData, sharedData, preferences -> (ItemListControllerState, (ItemListNodeState, Any)) in
         let loggingSettings: LoggingSettings
         if let value = sharedData.entries[SharedDataKeys.loggingSettings]?.get(LoggingSettings.self) {
             loggingSettings = value
@@ -1879,8 +1858,7 @@ public func debugController(sharedContext: SharedAccountContext, context: Accoun
         }
         
         let controllerState = ItemListControllerState(presentationData: ItemListPresentationData(presentationData), title: .text("Debug"), leftNavigationButton: leftNavigationButton, rightNavigationButton: nil, backNavigationButton: ItemListBackButton(title: presentationData.strings.Common_Back))
-        // Nicegram Wallet, added multichainEnabled
-        let listState = ItemListNodeState(presentationData: ItemListPresentationData(presentationData), entries: debugControllerEntries(context: context, sharedContext: sharedContext, presentationData: presentationData, loggingSettings: loggingSettings, mediaInputSettings: mediaInputSettings, experimentalSettings: experimentalSettings, networkSettings: networkSettings, hasLegacyAppData: hasLegacyAppData, useBetaFeatures: useBetaFeatures, multichainEnabled: multichainEnabled), style: .blocks)
+        let listState = ItemListNodeState(presentationData: ItemListPresentationData(presentationData), entries: debugControllerEntries(context: context, sharedContext: sharedContext, presentationData: presentationData, loggingSettings: loggingSettings, mediaInputSettings: mediaInputSettings, experimentalSettings: experimentalSettings, networkSettings: networkSettings, hasLegacyAppData: hasLegacyAppData, useBetaFeatures: useBetaFeatures), style: .blocks)
         
         return (controllerState, (listState, arguments))
     }

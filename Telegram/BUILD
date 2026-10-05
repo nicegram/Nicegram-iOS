@@ -617,17 +617,6 @@ official_background_gpu_fragment = """
 """
 background_gpu_fragment = official_background_gpu_fragment if telegram_bundle_id == "ph.telegra.Telegraph" else ""
 
-# Nicegram, keychain_access_groups_fragment
-keychain_access_groups_fragment = """
-    <key>keychain-access-groups</key>
-    <array>
-        <string>{telegram_team_id}.{telegram_bundle_id}</string>
-    </array>
-""".format(
-    telegram_team_id=telegram_team_id,
-    telegram_bundle_id=telegram_bundle_id
-)
-
 plist_fragment(
     name = "TelegramEntitlements",
     extension = "entitlements",
@@ -644,8 +633,6 @@ plist_fragment(
         notification_filtering_fragment,
         signin_fragment,
         background_gpu_fragment,
-        # Nicegram, keychain_access_groups_fragment
-        keychain_access_groups_fragment
     ])
 )
 

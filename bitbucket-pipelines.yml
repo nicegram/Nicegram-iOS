@@ -56,10 +56,13 @@ pipelines:
             - cd $GH_REPO_PATH
             # Fork-internal tooling and process docs stay out of the public mirror.
             # docs/changes is in this set too: change records describe gating,
-            # remote-config keys and unreleased behaviour. Safe to delete here
+            # remote-config keys and unreleased behaviour. So is docs/crashes:
+            # the crash registry states crash volumes, affected-user counts and
+            # our written judgement that specific upstream Telegram bugs are
+            # abandoned. Safe to delete here
             # (unlike packages/, which Package.swift and MODULE.bazel require
             # present): nothing in the build reads any of these paths.
-            - rm -rf .claude docs/superpowers docs/tg-merge docs/changes
+            - rm -rf .claude docs/superpowers docs/tg-merge docs/changes docs/crashes
             # Assert the private package is recorded as a gitlink, never as
             # files. The mirror must keep packages/ as a submodule reference —
             # Package.swift and MODULE.bazel require it present for the release
@@ -72,7 +75,7 @@ pipelines:
                 echo "ERROR: packages/ has an entry that is not a gitlink ($n entries staged; non-160000 rows: $bad)"; exit 1
               fi
             - |
-              if git diff --cached --name-only --diff-filter=d | grep -qE '^(\.claude|docs/superpowers|docs/tg-merge|docs/changes)/'; then
+              if git diff --cached --name-only --diff-filter=d | grep -qE '^(\.claude|docs/superpowers|docs/tg-merge|docs/changes|docs/crashes)/'; then
                 echo "ERROR: fork-internal docs staged for the public mirror"; exit 1
               fi
             - git config user.email "denis.shilovichhh@gmail.com"

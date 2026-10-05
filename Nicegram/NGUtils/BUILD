@@ -28,7 +28,6 @@ swift_library(
         "@swiftpkg_nicegram_assistant_ios//:FeatWhitebridge",
         "@swiftpkg_nicegram_assistant_ios//:NGCore",
         "@swiftpkg_nicegram_assistant_ios//:PaywallCore",
-        "@swiftpkg_nicegram_wallet_ios//:NicegramWallet",
     ],
     visibility = [
         "//visibility:public",

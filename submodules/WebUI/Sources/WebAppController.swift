@@ -1,6 +1,5 @@
 // Nicegram
 import NGCore
-import NicegramWallet
 import TelegramBridge
 //
 import Foundation
@@ -176,10 +175,6 @@ private let registeredProtocols: Void = {
 #endif
 
 public final class WebAppController: ViewController, AttachmentContainable {
-    // Nicegram
-    let customization: TelegramWebAppCustomization?
-    //
-    
     public var requestAttachmentMenuExpansion: () -> Void = { }
     public var updateNavigationStack: (@escaping ([AttachmentContainable]) -> ([AttachmentContainable], AttachmentMediaPickerContext?)) -> Void = { _ in }
     public var parentController: () -> ViewController? = {
@@ -194,12 +189,6 @@ public final class WebAppController: ViewController, AttachmentContainable {
     static var activeDownloads: [FileDownload] = []
     
     fileprivate class Node: ViewControllerTracingNode, WKNavigationDelegate, WKUIDelegate, WKDownloadDelegate, ASScrollViewDelegate {
-        // Nicegram
-        var customization: TelegramWebAppCustomization? {
-            controller?.customization
-        }
-        //
-        
         private weak var controller: WebAppController?
         
         private let backgroundNode: ASDisplayNode
@@ -248,10 +237,6 @@ public final class WebAppController: ViewController, AttachmentContainable {
         
         private var validLayout: (ContainerViewLayout, CGFloat)?
         
-        // Nicegram Wallet
-        private let nicegramWalletJsInjector = WalletJsInjector()
-        //
-        
         init(context: AccountContext, controller: WebAppController) {
             #if DEBUG
             let _ = registeredProtocols
@@ -298,10 +283,6 @@ public final class WebAppController: ViewController, AttachmentContainable {
             } else {
                 webView.overrideUserInterfaceStyle = .unspecified
             }
-
-            // Nicegram
-            customization?.configureWebView(webView)
-            //
 
             self.webView = webView
             
@@ -455,14 +436,6 @@ public final class WebAppController: ViewController, AttachmentContainable {
                 }
                 self.icon = icon
             })
-            
-            // Nicegram Wallet
-            nicegramWalletJsInjector.inject(
-                in: webView,
-                injectTonJs: false,
-                currentChain: { nil }
-            )
-            //
         }
         
         deinit {
@@ -745,13 +718,6 @@ public final class WebAppController: ViewController, AttachmentContainable {
         
         func webView(_ webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction, decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
             if let url = navigationAction.request.url?.absoluteString {
-                // Nicegram Wallet
-                if nicegramWalletJsInjector.handle(url: url) {
-                    decisionHandler(.cancel)
-                    return
-                }
-                //
-                
                 // Nicegram
                 let isNicegramDeeplink = NGCore.UrlUtils.refersToNicegramApplication(url)
                 //
@@ -770,12 +736,6 @@ public final class WebAppController: ViewController, AttachmentContainable {
         
         func webView(_ webView: WKWebView, createWebViewWith configuration: WKWebViewConfiguration, for navigationAction: WKNavigationAction, windowFeatures: WKWindowFeatures) -> WKWebView? {
             if navigationAction.targetFrame == nil, let url = navigationAction.request.url {
-                // Nicegram Wallet
-                if nicegramWalletJsInjector.handle(url: url.absoluteString) {
-                    return nil
-                }
-                //
-                
                 self.controller?.openUrl(url.absoluteString, true, false, {})
             }
             return nil
@@ -967,9 +927,6 @@ public final class WebAppController: ViewController, AttachmentContainable {
                             insets: UIEdgeInsets(top: 0.0, left: layout.safeInsets.left, bottom: 0.0, right: layout.safeInsets.right),
                             statusBarStyle: self.fullScreenStatusBarStyle,
                             hasBack: self.hasBackButton,
-                            // Nicegram
-                            hideControls: customization?.shouldHideControls() ?? false,
-                            //
                             backPressed: { [weak self] in
                                 guard let self else {
                                     return
@@ -3620,11 +3577,7 @@ public final class WebAppController: ViewController, AttachmentContainable {
     
     public var verifyAgeCompletion: ((Int) -> Void)?
     
-    // Nicegram, add customization
-    public init(context: AccountContext, updatedPresentationData: (initial: PresentationData, signal: Signal<PresentationData, NoError>)? = nil, params: WebAppParameters, replyToMessageId: EngineMessage.Id?, threadId: Int64?, customization: TelegramWebAppCustomization? = nil) {
-        // Nicegram
-        self.customization = customization
-        //
+    public init(context: AccountContext, updatedPresentationData: (initial: PresentationData, signal: Signal<PresentationData, NoError>)? = nil, params: WebAppParameters, replyToMessageId: EngineMessage.Id?, threadId: Int64?) {
         self.context = context
         self.source = params.source
         self.peerId = params.peerId
@@ -4238,24 +4191,9 @@ public final class WebAppController: ViewController, AttachmentContainable {
             guard let self else {
                 return true
             }
-            // Nicegram
-            if let customization, !customization.canCloseWebApp() {
-                return false
-            }
-            //
             return self._isPanGestureEnabled
         }
     }
-
-    // Nicegram
-    public var isPanGestureEnabled: (() -> Bool)? {
-        if let customization {
-            return customization.canCloseWebApp
-        } else {
-            return nil
-        }
-    }
-    //
     
     fileprivate var canMinimize: Bool {
         return self.controllerNode.canMinimize
@@ -4334,9 +4272,6 @@ public func standaloneWebAppController(
     updatedPresentationData: (initial: PresentationData, signal: Signal<PresentationData, NoError>)? = nil,
     params: WebAppParameters,
     threadId: Int64?,
-    // Nicegram
-    customization: TelegramWebAppCustomization? = nil,
-    //
     openUrl: @escaping (String, Bool, Bool, @escaping () -> Void) -> Void,
     requestSwitchInline: @escaping (String, [ReplyMarkupButtonRequestPeerType]?, @escaping () -> Void) -> Void = { _, _, _ in },
     getInputContainerNode: @escaping () -> (CGFloat, ASDisplayNode, () -> AttachmentController.InputPanelTransition?)? = { return nil },
@@ -4361,8 +4296,7 @@ public func standaloneWebAppController(
         return nil
     })
     controller.requestController = { _, present in
-        // Nicegram, add customization
-        let webAppController = WebAppController(context: context, updatedPresentationData: updatedPresentationData, params: params, replyToMessageId: nil, threadId: threadId, customization: customization)
+        let webAppController = WebAppController(context: context, updatedPresentationData: updatedPresentationData, params: params, replyToMessageId: nil, threadId: threadId)
         webAppController.openUrl = openUrl
         webAppController.completion = completion
         webAppController.getNavigationController = getNavigationController

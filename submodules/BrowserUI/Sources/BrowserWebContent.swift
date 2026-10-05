@@ -1,9 +1,6 @@
 // Nicegram
 import NGCore
 //
-// Nicegram Wallet
-import NicegramWallet
-//
 import Foundation
 import UIKit
 import Display
@@ -244,10 +241,6 @@ final class BrowserWebContent: UIView, BrowserContent, WKNavigationDelegate, WKU
     private var tempFile: EngineTempBoxFile?
     private var disposeTrustedDomain: (() -> Void)?
     
-    // Nicegram Wallet
-    private let nicegramWalletJsInjector = WalletJsInjector()
-    //
-    
     init(context: AccountContext, presentationData: PresentationData, url: String, preferredConfiguration: WKWebViewConfiguration? = nil) {
         self.context = context
         self.uuid = UUID()
@@ -394,14 +387,6 @@ final class BrowserWebContent: UIView, BrowserContent, WKNavigationDelegate, WKU
         handleScriptMessageImpl = { [weak self] message in
             self?.handleScriptMessage(message)
         }
-        
-        // Nicegram Wallet
-        nicegramWalletJsInjector.inject(
-            in: self.webView,
-            injectTonJs: false,
-            currentChain: { nil }
-        )
-        //
         
         handleContentMessageImpl = { [weak self] message in
             self?.handleContentRequest(message)
@@ -956,13 +941,6 @@ final class BrowserWebContent: UIView, BrowserContent, WKNavigationDelegate, WKU
             }
         } else {
             if let url = navigationAction.request.url?.absoluteString {
-                // Nicegram Wallet
-                if nicegramWalletJsInjector.handle(url: url) {
-                    decisionHandler(.cancel, preferences)
-                    return
-                }
-                //
-                
                 // Nicegram
                 let isNicegramDeeplink = NGCore.UrlUtils.refersToNicegramApplication(url)
                 //
@@ -1411,12 +1389,6 @@ final class BrowserWebContent: UIView, BrowserContent, WKNavigationDelegate, WKU
     func webView(_ webView: WKWebView, createWebViewWith configuration: WKWebViewConfiguration, for navigationAction: WKNavigationAction, windowFeatures: WKWindowFeatures) -> WKWebView? {
         if navigationAction.targetFrame == nil {
             if let url = navigationAction.request.url?.absoluteString {
-                // Nicegram Wallet
-                if nicegramWalletJsInjector.handle(url: url) {
-                    return nil
-                }
-                //
-                
                 // Nicegram
                 let isNicegramDeeplink = NGCore.UrlUtils.refersToNicegramApplication(url)
                 //

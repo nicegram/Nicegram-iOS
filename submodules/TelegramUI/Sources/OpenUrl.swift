@@ -1,6 +1,5 @@
 // Nicegram Deeplink
 import NGCore
-import NicegramWallet
 import SafariServices
 //
 import Foundation
@@ -393,11 +392,6 @@ func openExternalUrlImpl(context: AccountContext, urlContext: OpenURLContext, ur
         }
         
         Task { @MainActor in
-            let walletDeeplinksManager = NicegramWallet.DeeplinksModule.shared.deeplinksManager()
-            if walletDeeplinksManager.handle(url) {
-                return
-            }
-            
             let nicegramHandler = NGDeeplinkHandler(
                 tgAccountContext: context,
                 navigationController: navigationController

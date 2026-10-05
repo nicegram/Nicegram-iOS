@@ -1,6 +1,5 @@
 import AccountContext
 import CoreAnalytics
-import FirebaseAnalytics
 import Postbox
 import SwiftSignalKit
 import TelegramCore
@@ -10,21 +9,46 @@ public func trackChatOpen(peerId: PeerId, context: AccountContext) {
     |> take(1))
     .start(next: { peerView in
         guard let peer = peerView.peers[peerView.peerId],
-              let channel = peer as? TelegramChannel else {
+              let chat = openedChat(
+                  peer: EnginePeer(peer),
+                  cachedData: peerView.cachedData as? CachedChannelData
+              ) else {
             return
         }
-        
-        trackChatOpen(
-            channel: channel,
-            cachedData: peerView.cachedData as? CachedChannelData
-        )
+
+        track(chat)
     })
 }
 
-private func trackChatOpen(
+private struct OpenedChat {
+    let memberCount: Int
+    let restricted: Bool
+    let role: Role
+    let type: GroupType
+    let visibility: Visibility
+}
+
+private func openedChat(
+    peer: EnginePeer,
+    cachedData: CachedChannelData?
+) -> OpenedChat? {
+    switch peer {
+    case let .channel(channel):
+        openedChat(
+            channel: channel,
+            cachedData: cachedData
+        )
+    case let .legacyGroup(group):
+        openedChat(group: group)
+    case .community, .secretChat, .user:
+        nil
+    }
+}
+
+private func openedChat(
     channel: TelegramChannel,
     cachedData: CachedChannelData?
-) {
+) -> OpenedChat {
     let role: Role
     if channel.flags.contains(.isCreator) {
         role = .owner
@@ -33,7 +57,7 @@ private func trackChatOpen(
     } else {
         role = .user
     }
-    
+
     let type: GroupType
     switch channel.info {
     case .broadcast:
@@ -45,34 +69,55 @@ private func trackChatOpen(
             type = .supergroup
         }
     }
-    
-    let memberCount = cachedData?.participantsSummary.memberCount ?? 0
-    let roundedMemberCount: Int32
-    if memberCount < 50 {
-        roundedMemberCount = 50
-    } else {
-        roundedMemberCount = ((memberCount / 1000) + 1) * 1000
+
+    return OpenedChat(
+        memberCount: Int(cachedData?.participantsSummary.memberCount ?? 0),
+        restricted: !(channel.restrictionInfo?.rules.isEmpty ?? true),
+        role: role,
+        type: type,
+        visibility: channel.addressName != nil ? .public : .private
+    )
+}
+
+private func openedChat(group: TelegramGroup) -> OpenedChat {
+    let role: Role
+    switch group.role {
+    case .creator:
+        role = .owner
+    case .admin:
+        role = .admin
+    case .member:
+        role = .user
     }
-    
-    let hasRestrictions = !(channel.restrictionInfo?.rules.isEmpty ?? true)
-    
-    let isPublic = (channel.addressName != nil)
-    let visibility = isPublic ? Visibility.public : .private
-    
-    let eventName = "group_open_by_\(role.rawValue)"
-    let params: AnalyticsEvent.Parameters = [
-        .type: type.rawValue,
-        "participantsCount": roundedMemberCount,
-        "hasRestrictions": hasRestrictions,
-        "visibility": visibility.rawValue,
-        AnalyticsParameterValue: memberCount
-    ]
-    
+
+    return OpenedChat(
+        memberCount: group.participantCount,
+        restricted: false,
+        role: role,
+        type: .group,
+        visibility: .private
+    )
+}
+
+private func track(_ chat: OpenedChat) {
     let analyticsManager = AnalyticsContainer.shared.analyticsManager()
     analyticsManager.trackEvent(
-        eventName,
-        params: params
+        "group_open_by_\(chat.role.rawValue)",
+        params: [
+            "participants_count": roundedMemberCount(chat.memberCount),
+            "restricted": chat.restricted,
+            .type: chat.type.rawValue,
+            "visibility": chat.visibility.rawValue
+        ]
     )
+}
+
+private func roundedMemberCount(_ count: Int) -> Int {
+    if count < 50 {
+        50
+    } else {
+        ((count / 1000) + 1) * 1000
+    }
 }
 
 private enum Role: String {
@@ -83,8 +128,9 @@ private enum Role: String {
 
 private enum GroupType: String {
     case channel
-    case supergroup
     case gigagroup
+    case group
+    case supergroup
 }
 
 private enum Visibility: String {

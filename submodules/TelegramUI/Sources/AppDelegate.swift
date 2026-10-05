@@ -15,7 +15,6 @@ import NGRepoUser
 import NGStrings
 import NGUtils
 import NGWebDomains
-import NicegramWallet
 //
 import UIKit
 import SwiftSignalKit
@@ -473,6 +472,9 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
             telegramChatInviteChecker: {
                 TelegramChatInviteCheckerImpl(contextProvider: contextProvider)
             },
+            telegramContactsProvider: {
+                TelegramContactsProviderImpl(contextProvider: contextProvider)
+            },
             telegramIdProvider: {
                 TelegramIdProviderImpl(contextProvider: contextProvider)
             },
@@ -509,9 +511,6 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
             telegramTokenLoginHandler: {
                 TelegramTokenLoginHandlerImpl(sharedContextProvider: sharedContextProvider)
             },
-            telegramWebAppOpener: {
-                TelegramWebAppOpenerImpl(contextProvider: contextProvider)
-            },
             userMessagesHistoryProvider: {
                 UserMessagesHistoryProviderImpl(contextProvider: contextProvider)
             },
@@ -531,33 +530,10 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
                         )
                     }
                 )
-            },
-            walletData: .init(
-                env: {
-                    .init(
-                        // Nicegram Domain
-                        appUniversalLinkDomain: NicegramWebDomains.primary,
-                        appUrlScheme: buildConfig.appSpecificUrlScheme,
-                        enableLogging: ngEnableLogging,
-                        keychainGroupIdentifier: NGENV.wallet.keychainGroupIdentifier,
-                        nicegramApiBaseUrl: URL(string: NGENV.ng_api_url)!
-                            .appendingPathComponent("v7/"),
-                        walletConnectProjectId: NGENV.wallet.walletConnectProjectId,
-                        web3AuthBackupQuestion: NGENV.wallet.web3AuthBackupQuestion,
-                        web3AuthClientId: NGENV.wallet.web3AuthClientId,
-                        web3AuthVerifier: NGENV.wallet.web3AuthVerifier,
-                        stonfiApiUrl: NGENV.wallet.stonfiApiUrl,
-                        stonfiNicegramApiUrl: NGENV.wallet.stonfiNicegramApiUrl
-                    )
-                },
-                telegramContactsProvider: {
-                    TelegramContactsProviderImpl(contextProvider: contextProvider)
-                },
-                walletVerificationInterceptor: {
-                    WalletVerificationInterceptorImpl(sharedContextProvider: sharedContextProvider)
-                }
-            )
+            }
         )
+        // Nicegram PostboxFailureReporting
+        setPostboxFailureReporter(sendPostboxFailureAnalytics)
         accountManagerCallbacks = AccountManagerCallbacks(
             onRemoteLogout: { id in
                 Task {

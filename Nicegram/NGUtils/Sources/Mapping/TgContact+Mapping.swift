@@ -1,10 +1,10 @@
 import Foundation
-import NicegramWallet
+import TelegramBridge
 import TelegramCore
 import TelegramPresentationData
 import TelegramStringFormatting
 
-public extension TgContact {
+public extension TelegramContact {
     init(
         peer: EnginePeer,
         presence: EnginePeer.Presence?,
@@ -16,15 +16,15 @@ public extension TgContact {
         } else {
             username = ""
         }
-        
+
         let canSendMessage = canSendMessagesToPeer(peer)
-        
+
         self.init(
-            id: .init(peer.id),
             canSendMessage: canSendMessage,
+            id: .init(peer.id),
             name: peer.debugDisplayTitle,
             presence: presence.flatMap { presence in
-                TgContact.Presence(
+                TelegramContact.Presence(
                     presence: presence,
                     presentationData: presentationData
                 )
@@ -34,7 +34,7 @@ public extension TgContact {
     }
 }
 
-public extension TgContact.Presence {
+public extension TelegramContact.Presence {
     init(
         presence: EnginePeer.Presence,
         presentationData: PresentationData

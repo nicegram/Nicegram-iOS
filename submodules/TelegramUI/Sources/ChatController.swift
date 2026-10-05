@@ -6396,6 +6396,10 @@ public final class ChatControllerImpl: TelegramBaseController, ChatController, G
         // Nicegram SensitiveContentAccess
         observeRestrictionInfo()
         //
+
+        // Nicegram ChatBanner
+        observeChatBanner()
+        //
         
         self.accountPeerDisposable = (context.account.postbox.peerView(id: context.account.peerId)
         |> deliverOnMainQueue).startStrict(next: { [weak self] peerView in

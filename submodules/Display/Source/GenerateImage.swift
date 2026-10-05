@@ -645,6 +645,16 @@ public class DrawingContext {
 
         self.imageBuffer = ASCGImageBuffer(length: UInt(self.length))
 
+        // Nicegram DrawingContextAllocGuard, ASCGImageBuffer does not check malloc, and its
+        // header is NS_ASSUME_NONNULL, so mutableBytes imports as non-optional while it can
+        // really be NULL. CGContext(data:) documents NULL as "allocate it yourself" and returns
+        // a valid context, so the guard below cannot see this; without this check the memset at
+        // the end of init writes to address 0 (Crashlytics 4366e666).
+        if Int(bitPattern: self.imageBuffer.mutableBytes) == 0 {
+            return nil
+        }
+        //
+
         if opaque {
             self.bitmapInfo = DeviceGraphicsContextSettings.shared.opaqueBitmapInfo
         } else {

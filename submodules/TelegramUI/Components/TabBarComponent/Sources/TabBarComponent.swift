@@ -662,6 +662,14 @@ public final class TabBarComponent: Component {
             self.component = component
             self.state = state
             
+            // Nicegram
+            // A tap pins overrideSelectedItemId and nothing upstream ever clears it, so
+            // every later programmatic tab change moves the content but not the indicator.
+            if let previousComponent, previousComponent.selectedId != component.selectedId {
+                self.overrideSelectedItemId = nil
+            }
+            //
+            
             self.overrideUserInterfaceStyle = component.theme.overallDarkAppearance ? .dark : .light
 
             let barHeight: CGFloat = 56.0 + innerInset * 2.0

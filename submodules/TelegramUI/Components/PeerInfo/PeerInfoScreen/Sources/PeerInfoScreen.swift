@@ -53,7 +53,6 @@ import FeatWhitebridge
 import struct FeatPaywall.PremiumUITgHelper
 import FeatTgAppsCenter
 import FeatTgUserNotes
-import FeatWallet
 import NGAiChatUI
 import NGAppCache
 import NGCore
@@ -65,7 +64,6 @@ import NGRepoUser
 import NGStrings
 import NGUI
 import NGUtils
-import NicegramWallet
 import TextProcessingScreen
 import UndoUI
 //

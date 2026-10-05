@@ -2,9 +2,9 @@ import AccountContext
 import Combine
 import MemberwiseInit
 import NGUtils
-import NicegramWallet
 import Postbox
 import SwiftSignalKit
+import TelegramBridge
 import TelegramCore
 
 @MemberwiseInit
@@ -52,7 +52,7 @@ extension TelegramContactsProviderImpl: TelegramContactsProvider {
             let contactList = contacts.peers
                 .filter { $0.id != context.account.peerId }
                 .map { peer in
-                    TgContact(
+                    TelegramContact(
                         peer: peer,
                         presence: contacts.presences[peer.id],
                         presentationData: presentationData

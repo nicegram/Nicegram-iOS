@@ -2,7 +2,6 @@ load("@build_bazel_rules_swift//swift:swift.bzl", "swift_library")
 
 NGDEPS = [
     "@swiftpkg_nicegram_assistant_ios//:NGCore",
-    "@swiftpkg_nicegram_wallet_ios//:NicegramWallet",
 ]
 
 swift_library(
