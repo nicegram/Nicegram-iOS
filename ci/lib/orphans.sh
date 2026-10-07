@@ -62,3 +62,20 @@ ng_orphan_status() { # $1=kind  $2=dir
     printf 'orphan\t%s\n' "$recorded"
   fi
 }
+
+# Succeeds when a recorded path is the scope itself or lies inside it. A sibling
+# that merely shares the prefix is outside (/w/foo does not cover /w/foo-bar),
+# and an empty or relative scope covers nothing -- an empty one would otherwise
+# cover every absolute path on the machine.
+ng_orphan_in_scope() { # $1=recorded path  $2=absolute scope, no trailing slash
+  local recorded="$1" scope="$2"
+
+  case "$scope" in
+    /?*) ;;
+    *) return 1 ;;
+  esac
+  case "$recorded" in
+    "$scope"|"$scope"/*) return 0 ;;
+  esac
+  return 1
+}

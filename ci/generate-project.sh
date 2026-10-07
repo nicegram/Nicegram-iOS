@@ -1,14 +1,34 @@
 #!/bin/bash
 #
-# Generates the Xcode project. It does not open it, and -- contrary to what
-# this comment used to claim -- nothing here runs `killall Xcode`: there is no
-# such call anywhere in this repo (grep for it) and rules_xcodeproj's installer
-# neither kills nor opens Xcode. Generation is headless, which is what lets
-# ci/verify-build.sh run it itself when xcodeproj.bazelrc is missing.
+# Generates the Xcode project without touching Xcode: the generate_project lane
+# passes --headless, without which upstream's Make.py runs `killall Xcode` and
+# opens the project. ci/verify-build.sh runs this on its first run in every
+# fresh worktree.
+#
+# --open then opens this checkout's project, for a human. It closes nothing; if
+# Xcode already has the project open, Xcode reloads it.
 #
 # Keep the #!/bin/bash line -- see the comment in ci/verify-build.sh.
 
 cd "$(dirname "$0")" || exit 1
+
+# Parsed before bootstrap-submodules.sh so --help and a typo answer at once.
+OPEN_PROJECT=0
+for arg in "$@"; do
+  case "$arg" in
+    --open) OPEN_PROJECT=1 ;;
+    -h|--help)
+      echo "usage: ci/generate-project.sh [--open]"
+      echo "  Generates Telegram/Telegram.xcodeproj without closing or opening Xcode."
+      echo "  --open  then open it in Xcode (closes nothing)"
+      exit 0
+      ;;
+    *)
+      echo "generate-project: unknown argument: $arg" >&2
+      exit 2
+      ;;
+  esac
+done
 
 ./bootstrap-submodules.sh || exit 1
 . ./_env.sh
@@ -40,5 +60,9 @@ status=$?
 # Generation runs inside the nested base (rules_xcodeproj's runner points it
 # there), so the outer base is the wrong one to report.
 ng_report_from_log generate_project "$log" "$(ng_bazel_nested_output_base "$SOURCE_PATH")"
+
+if [ "$status" -eq 0 ] && [ "$OPEN_PROJECT" -eq 1 ]; then
+  open "$SOURCE_PATH/Telegram/Telegram.xcodeproj" || status=$?
+fi
 
 exit "$status"

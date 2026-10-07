@@ -125,14 +125,6 @@ For _fastlane_ installation instructions, see [Installing _fastlane_](https://do
 
 
 
-### upload_dsyms_to_sentry
-
-```sh
-[bundle exec] fastlane upload_dsyms_to_sentry
-```
-
-
-
 ### generate_app_store_connect_api_key
 
 ```sh

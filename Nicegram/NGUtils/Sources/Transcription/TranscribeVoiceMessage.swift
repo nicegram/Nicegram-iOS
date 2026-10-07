@@ -21,9 +21,23 @@ public func ngTranscribeVoiceMessage(
         .first { $0.isVoice }
         .unwrap()
 
-    let data = try await context.account.postbox.mediaBox
-        .resourceData(file.resource)
-        .awaitForFirstValue()
+    // Nothing guarantees the voice message was downloaded: a long one comes here
+    // instead of to Telegram's transcription. Read from the media box alone, a
+    // missing file is an empty partial one, which converts into an m4a that
+    // AVFoundation cannot open. The timeout leaves room for an hour-long message
+    // on a slow connection.
+    let voiceFile = try await MediaFetcher(context: context).getResourceFile(
+        mediaResourceReference: AnyMediaReference.message(
+            message: MessageReference(message),
+            media: file
+        ).resourceReference(file.resource),
+        userLocation: .peer(message.id.peerId),
+        userContentType: MediaResourceUserContentType(file: file),
+        options: MediaFetcher.Options(
+            fetchIfMissing: true,
+            fetchTimeout: 120
+        )
+    )
 
     // A Telegram voice message is Ogg/Opus, and the media box stores it under a
     // hash name with no extension at all. Both matter: the transcription request
@@ -33,7 +47,7 @@ public func ngTranscribeVoiceMessage(
     // `Provider returned 400`. So convert to the same AAC/m4a the microphone
     // recorder produces, which is the format this pipeline is known to accept.
     let audioPath = try await convertOpusToAAC(
-        sourcePath: data.path,
+        sourcePath: voiceFile.path,
         allocateTempFile: { EngineTempBox.shared.tempFile(fileName: "audio.m4a").path }
     )
     .awaitForFirstValue()

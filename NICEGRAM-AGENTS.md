@@ -13,7 +13,8 @@ physically live inside the Telegram app.
 The assistant is **vendored as a git submodule** at
 `packages/nicegram-assistant-ios`, so its sources sit in this working
 tree and local edits build immediately. Commits there belong to the assistant
-repo and land through its own PR **before** this repo bumps the pointer. See
+repo and land through its own PR — or, from `extract-to-develop`, a direct
+fast-forward push — **before** this repo bumps the pointer. See
 "Cross-repo feature workflow" below.
 
 Two independent directions — don't conflate them:
@@ -91,7 +92,8 @@ directly — the fastlane lanes resolve the configuration, cache directory, and
 codesigning repository for you, and a hand-written `Make.py` command will use the
 wrong ones.
 
-    cd ci && ./generate-project.sh                    # generate the Xcode project
+    cd ci && ./generate-project.sh                    # generate the Xcode project (headless)
+    cd ci && ./generate-project.sh --open             # ...then open it in Xcode (a human's step)
     cd ci && ./verify-build.sh                        # compile check (arm64 device by default; --sim for the simulator)
     cd ci && ./build-to-testflight.sh "1.2.3 (456)"   # QA / TestFlight build
 
@@ -152,8 +154,8 @@ system itself; for normal work, use the wrappers.
 
 `./verify-build.sh` is the supported way to answer "does this still compile" —
 for any change, not just an upstream merge. It passes bazel's `--keep_going` so
-one pass reports every broken module, and refuses to start while Xcode is
-running — see "One build at a time" below. It builds **through
+one pass reports every broken module, and runs whether or not Xcode is open —
+see "Building alongside Xcode" below. It builds **through
 rules_xcodeproj's command-line API**, which is what makes it share cache with
 an Xcode build, and there is no second build path. Read the script's own header
 before changing it: it records what each step exists to prevent, including one
@@ -385,8 +387,8 @@ collect. `ci/clean-caches.sh`'s report prints the disk cache's current size so
 that's at least visible.
 
 **Where bazel flags come from**, in the order they're read. Exactly one of the
-five is ours (`Make.py` is upstream's structure with one marked fork edit, not
-ours):
+five is ours (`Make.py` is upstream's structure with a few marked fork edits —
+build cache, remote downloader, XcodeParse, headless generation — not ours):
 
 1. `.bazelrc` — upstream's own file.
 2. `ci/nicegram.bazelrc` — **ours**, reached from `.bazelrc` through one
@@ -445,7 +447,7 @@ fastlane's own doc generation never lists them. They are documented here and
 every time any fastlane lane runs, so anything hand-written in it is silently
 erased — as happened once already.
 
-- **`ci/clean-caches.sh [--yes]`** — reports every Bazel output base
+- **`ci/clean-caches.sh [--yes] [--only <path>]`** — reports every Bazel output base
   (`/private/var/tmp/_bazel_$USER/*`) and Xcode DerivedData directory on the
   machine with its size and whether it is orphaned, and with `--yes` deletes
   the orphans. With no arguments it only reports; nothing is deleted. Run it
@@ -455,7 +457,13 @@ erased — as happened once already.
   *generated* `<worktree>/Telegram/Telegram.xcodeproj`; a live worktree that has
   never run `ci/generate-project.sh` therefore reads as orphaned. The
   consequence is mild (DerivedData is rebuildable) but check the table before
-  passing `--yes`.
+  passing `--yes`. `--only <path>` narrows deletion to orphans recorded at or
+  under that path and reports the rest as kept; it is what lets
+  `merge-to-develop` prune the worktree it just removed without asking. An
+  unscoped `--yes` stays a human's call: "orphan" only means the path is absent
+  *now*, and build-to-testflight's persistent `.claude/worktrees/testflight-build`
+  is absent between builds yet recreated at the same path, so its output base
+  is meant to survive.
 - **Build logs are not kept.** Both wrappers capture their bazel output to a
   scratch directory under `$TMPDIR` and delete it on the way out (`trap ... EXIT`,
   plus `INT`/`TERM` so a Ctrl-C cleans up too). They capture at all only because
@@ -526,49 +534,50 @@ erased — as happened once already.
   fallback invites reaching for it instead of fixing the shared cache, which is
   the thing actually worth keeping working.
 
-### One build at a time
+### Building alongside Xcode
 
-`ci/verify-build.sh` refuses to start while Xcode is running (`pgrep -x
-Xcode`). Since 2026-08-28 the guard is about **predictability, not safety**, and
-the distinction is measured. Two bazel clients on one output base are perfectly
-safe: on a throwaway workspace, a second client hitting a busy server printed
+`ci/verify-build.sh` runs whether or not Xcode is open. It used to refuse while
+any Xcode was running (`pgrep -x Xcode`). That was removed on 2026-10-01: the
+check was machine-wide, while the contention it was meant to prevent happens
+only within one worktree.
 
-    Another command (pid=N) is running. Waiting for it to complete on the
-    server (server_pid=M)...
+Bazel names its output base after the workspace path, so every worktree has its
+own outer and nested bazel servers:
 
-then waited 25s for the first to finish and exited 0. Nothing is corrupted. But
-the gate and Xcode now share that one base and one server, and Xcode re-runs a
-background **Index Build** on its own whenever a project is open — observed
-directly: opening Xcode mid-session produced thousands of fresh `.o`,
-`.swiftconstvalues` and indexstore writes in the nested base's simulator debug
-configuration with no build requested by hand. So without the guard the gate
-would sometimes sit on that one waiting line for an unbounded time and read as
-hung. Refusing with an explanation is better than that.
+- **Xcode on another checkout** shares no server and no command lock with the
+  gate. They share only the content-addressed disk cache and the repository
+  cache, and bazel locks both itself.
+- **Xcode on this checkout** does share the nested server, and so does its
+  background **Index Build** (`separate_index_build_output_base` is off). Bazel
+  then queues the gate:
 
-The mechanism this rule *used* to be justified by — a shared global module
-cache via `--features=swift.use_global_module_cache` in `xcodeproj.bazelrc` —
-is **provably wrong**: rules_swift passes `-module-cache-path
-<bin_dir>/_swift_module_cache`, which is execroot-relative, and at the time the
-two flows ran in different output bases entirely, so they never shared that
-path.
+      Another command (pid=N) is running. Waiting for it to complete on the
+      server (server_pid=M)...
 
-The claimed effect didn't reproduce either. An Xcode simulator build and a CLI
-device build were run concurrently, both doing real Swift compilation,
-monitored every 20s for 12 minutes. **Both succeeded:** the CLI build exited 0
-in 845.1s (902 processes); Xcode reported `** BUILD SUCCEEDED **` in 943.0s
-(2,935 processes). Peak swap across the run was 5040.56 MB, and it *fell* to
-4999.69 MB by the end — no thrashing. Only 5 of the 36 samples showed any
-compiler momentarily at 0% CPU, and none of those was a sustained stall.
-Concurrency cost about 1.4x wall clock (845s concurrent vs. 606s for the same
-CLI build run alone) — ordinary resource contention, not a wedge.
+  It runs the gate when Xcode's command finishes. That is safe, as measured
+  on a throwaway workspace: the second client waited 25s for the first and
+  exited 0, and nothing was corrupted. Xcode re-runs an Index Build on its
+  own after edits while a project is open, so on that checkout the wait has
+  no fixed bound. The waiting line, which names the pid of the bazel client
+  Xcode started, is the explanation, not a hang.
 
-So: **the old mechanism is disproved and the wedge itself did not reproduce
-under the conditions it was said to occur in. The true cause of any wedge, if
-one exists under conditions that measurement didn't hit, is unknown.** None of
-that argues against the guard — it now prevents a real, mundane thing (two
-clients contending for one bazel server, plus roughly double the peak memory
-demand). Do not re-assert the module-cache explanation as fact; if a wedge does
-turn up, treat the cause as open.
+Concurrency itself is ordinary contention, measured back when the two flows
+used separate output bases — today's cross-checkout case. An Xcode simulator
+build and a CLI device build were run concurrently, both doing real Swift
+compilation, monitored every 20s for 12 minutes. **Both succeeded:** the CLI
+build exited 0 in 845.1s (902 processes); Xcode reported
+`** BUILD SUCCEEDED **` in 943.0s (2,935 processes). Peak swap across the run
+was 5040.56 MB, and it *fell* to 4999.69 MB by the end — no thrashing. Only 5
+of the 36 samples showed any compiler momentarily at 0% CPU, and none of those
+was a sustained stall. Concurrency cost about 1.4x wall clock (845s concurrent
+vs. 606s for the same CLI build run alone).
+
+A shared global module cache (`--features=swift.use_global_module_cache`) was
+once said to make concurrent builds wedge. That is **provably wrong**:
+rules_swift passes `-module-cache-path <bin_dir>/_swift_module_cache`, which is
+execroot-relative, so separate output bases never share it. Older plans still
+state it as fact. Do not repeat it. If a wedge does turn up, treat the cause as
+open.
 
 Diagnosing a suspected wedge — check all three:
 
@@ -606,6 +615,7 @@ one owned by a single skill and producing a fixed set of artifacts:
 | start | `start-feature` | worktree + branch in both repos, change record stub, spec, plan whose last task completes the change record, ticket → IN PROGRESS |
 | implement | `superpowers:subagent-driven-development`, in a fresh session started from the prompt `start-feature` prints | code, `docs/changes/<date>-<slug>.md` |
 | refresh | `sync-from-develop` | merge commits in both repos |
+| share early | `extract-to-develop` | the approved part of the feature as one commit per repo on develop, pushed directly; the feature branch re-synced |
 | ship to QA | `build-to-testflight` | `build/{N}`, a TestFlight build, a change-record comment on each ticket, tickets → READY FOR QA, a Confluence row |
 | bug round | `fix-qa-bugs` | fix commits on the feature branch, a change-record delta, bug linked and → DEV COMPLETED |
 | land | `merge-to-develop` | squash on develop in both repos, the change record re-posted at the freeze point, branches and worktree removed |
@@ -616,6 +626,13 @@ Ship to QA and bug round form a loop, not a line: a build surfaces bugs, a bug
 round fixes them, the next build ships the fixes, and QA may bounce it back
 again. Only `merge-to-develop` exits that loop — nothing else marks a feature
 done, so don't treat a green TestFlight build as the finish line by itself.
+
+**Share early sits outside that loop, at any point between start and land.**
+`extract-to-develop` lands the part of a feature that is useful on its own —
+tooling, a shared component, a fix in code the feature passed through — on
+`develop` ahead of the rest, after one approval, and merges `develop` back into
+the feature. The feature itself carries on through the loop unchanged; only
+`merge-to-develop` still marks it done.
 
 **An upstream merge joins that loop; it does not skip it.** `tg-merge` writes
 the change record and stops — it posts nothing to Jira and edits no
@@ -719,9 +736,10 @@ viewer**, which is why the procedure also calls `change_directory`; without that
 second call every file link written during feature work comes back "Couldn't
 find this file".
 
-So: **`start-feature`, `superpowers:subagent-driven-development`, `sync-from-develop` and
-`merge-to-develop` run inside the feature worktree; `build-to-testflight` and
-`fix-qa-bugs` run from the main clone, in a session that has not entered one.**
+So: **`start-feature`, `superpowers:subagent-driven-development`, `sync-from-develop`,
+`extract-to-develop` and `merge-to-develop` run inside the feature worktree;
+`build-to-testflight` and `fix-qa-bugs` run from the main clone, in a session
+that has not entered one.**
 Those two are written throughout in the variable `-C` form — deliberately, so
 that a failed `cd` cannot silently leave a command operating on the wrong
 repository — and that form does not survive the clamp. The worktree skills are
@@ -810,8 +828,8 @@ main clone's copy automatically — see "Build" above. No manual sourcing needed
   `Package.resolved` (`swift package resolve`) and commit it with the feature.
   This is the only case left that touches `Package.resolved`; ordinary code edits
   never do.
-- **Merge-watch files** — an upstream merge can clobber either of these; check
-  both after every upstream merge:
+- **Merge-watch files** — an upstream merge can clobber any of these; check
+  all of them after every upstream merge:
   - `.gitmodules` — carries a `# MARK:` comment marking the private submodule
     stanza; re-add the stanza if a merge drops it. Note that any future
     `git submodule add` / `git submodule deinit` rewrites this file from
@@ -831,6 +849,14 @@ main clone's copy automatically — see "Build" above. No manual sourcing needed
     four trees beside it. `ci/tests/test-mirror-strip.sh` catches a tree dropped
     from one list but not a tree dropped from both, which is what an upstream
     merge that rewrites this file would do.
+  - `build-system/Make/Make.py`'s `generate_project` — upstream's
+    `killall Xcode` and `open` must both stay behind
+    `if not arguments.headless:`, and `--headless` must stay an argument.
+    Dropping the argument fails loudly, since the `generate_project` lane
+    passes it. Dropping a guard is silent, and the first `ci/verify-build.sh`
+    in a fresh worktree then closes every Xcode window on the machine.
+    tg-merge's merge-watch counts the guards and rejects any unguarded
+    `killall`/`open`.
 
 ### Building for QA
 
@@ -889,13 +915,17 @@ referencing a commit nobody else can resolve.
 
 ### Verifying
 
-- Full app: `cd ci && ./generate-project.sh` in the worktree, then Xcode.
-  (An earlier version of this document said project generation runs `killall
-  Xcode`. It does not: `grep -rln "killall Xcode"` over every `*.sh`, `*.swift`,
-  `*.py` and `*.bzl` in this repo finds exactly one hit — that claim's own
-  comment — and rules_xcodeproj's installer neither kills nor opens Xcode.
-  Generation is headless, which is why `ci/verify-build.sh` can run it itself
-  when `xcodeproj.bazelrc` is missing.)
+- Full app: `cd ci && ./generate-project.sh --open` in the worktree generates
+  the project and opens it in Xcode, without closing any Xcode window. This is
+  a human's step. An agent never opens Xcode; its compile check is
+  `ci/verify-build.sh`.
+  Without `--open`, generation is headless, because the `generate_project` lane
+  passes `--headless`. That is why `ci/verify-build.sh` can run it itself when
+  `xcodeproj.bazelrc` is missing. Upstream's `generateProject` without that
+  flag runs `killall Xcode`, closing every window of every checkout, and then
+  opens the project. An earlier version of this document denied that on the
+  strength of `grep -rln "killall Xcode"`, which cannot match: `Make.py` passes
+  argv as a list, `['killall', 'Xcode']`.
 - Assistant only: the `Demo/` app inside the submodule — a plain SwiftPM build,
   no Bazel. See its `README.md`.
 
@@ -976,11 +1006,13 @@ blocks **or names any type, file or module**:
    own blind spots — the self-review on that same plan passed while all eight
    violations sat in it.
 
-**This gate has failed four times, each differently** — not run because a rule
+**This gate has failed five times, each differently** — not run because a rule
 could not attach, not run at all, run but scoped to style while a hand-rolled
-`UserDefaults` store and 77 unjustified `public` symbols passed, and run against
-`.claude/rules/` alone while the naming rule it needed sat in `AGENTS.md`. If it
-fails again, mechanise the checklist instead of rewording it.
+`UserDefaults` store and 77 unjustified `public` symbols passed, run against
+`.claude/rules/` alone while the naming rule it needed sat in `AGENTS.md`, and
+run with a reviewer that still passed three existing rules. A mechanical check
+was proposed after the fifth and declined — the human's review is the backstop;
+keep running the gate as written.
 
 **A plan carries its inputs; it does not tell the implementer to go and get
 them.** This is a separate axis from the gate above, which checks conventions —
@@ -1028,7 +1060,8 @@ extraction with read-only scripts, the design-inputs check on a plan, the
 fidelity check on code, and what to do when a Figma call fails. The mapping from
 Figma names to our code — colours, text styles, icons, geometry — lives beside
 that code, in `packages/nicegram-assistant-ios/.claude/reference/figma-to-code.md`.
-A prompt hook names the skill whenever a message carries a Figma link.
+Creating or changing mockups in our file is the `edit-figma-design` skill's job,
+and the prompt hook that fires on a Figma link names both skills.
 
 Two rules bind all new and changed UI code, with a design or without one:
 **design system only** — text styles and colours the design system defines,
@@ -1084,6 +1117,12 @@ trade-off** rather than building it quietly. We are often willing to give up the
 requirement to keep the code simple: a reduced version of the affordance, the
 affordance only where it is cheap to provide, or not shipping it at all.
 
+The same goes for an edge case nobody asked about. A rare path — a second link
+while the first is mid-flow, a repeat of something already under way — handled
+with types, references or state of its own is a trade-off to put to the human,
+not a default to build; the plain answer, doing what the first time did, is
+often enough.
+
 Gating a feature behind `@available(iOS N, *)` because the newer API is the
 clean one is a standard instance of this, and so is showing a nicety only on the
 OS versions where it costs nothing.
@@ -1104,6 +1143,10 @@ corrections during brainstorming are the design converging, not a rule failing.
 The human decides. The skill never commits an instruction change without
 showing it for approval first.
 
+Feedback on mockups in our Figma file is the exception: `edit-figma-design`
+runs its own learning step, which offers after each approved round and writes
+nothing without approval.
+
 ## Comments in our code
 
 Comment only what the code cannot say — a non-obvious constraint, or a decision
@@ -1111,6 +1154,12 @@ a reader would otherwise undo. Do not restate the code, and do not doc-comment a
 member whose name already says it. This holds for **every file we write**, in
 both repositories and whatever the language: Swift, `BUILD`, `.bzl`, the
 Fastfile, shell.
+
+The second half is the one that gets skipped. A hook that looks redundant with
+another carries its reason beside it: nb-delegation-client's
+`continue userActivity` hook runs ahead of `openUrl` because `openUrl` drops a
+link when no account is signed in. That reason sat only in the spec, so review
+asked to delete the hook — no reader of the code opens the spec.
 
 It **overrides** `CLAUDE.md`'s "Document public APIs with comments", which is
 upstream Telegram's convention and stays in force for upstream code. Do not

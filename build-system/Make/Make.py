@@ -608,7 +608,8 @@ def generate_project(bazel, arguments):
     if arguments.target is not None:
         target_name = arguments.target
     
-    call_executable(['killall', 'Xcode'], check_result=False)
+    # Nicegram Headless generation, skipped under --headless
+    if not arguments.headless: call_executable(['killall', 'Xcode'], check_result=False)
 
     xcodeproj_path = generate(
         build_environment=bazel_command_line.build_environment,
@@ -622,7 +623,8 @@ def generate_project(bazel, arguments):
 
     # MARK: Don't run XcodeParse
 
-    call_executable(['open', xcodeproj_path])
+    # Nicegram Headless generation, skipped under --headless
+    if not arguments.headless: call_executable(['open', xcodeproj_path])
 
 
 def resolve_watch_provisioning_profile(arguments, base_path):
@@ -1045,6 +1047,17 @@ if __name__ == '__main__':
         help='A custom bazel target name to build.',
         metavar='target_name'
     )
+
+    # Nicegram Headless generation
+    generateProjectParser.add_argument(
+        '--headless',
+        action='store_true',
+        default=False,
+        help='''
+            Generate the project without closing or opening Xcode.
+            '''
+    )
+    #
 
     buildParser = subparsers.add_parser('build', help='Build the app')
     buildParser.add_argument(

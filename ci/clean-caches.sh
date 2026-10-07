@@ -44,6 +44,14 @@
 # non-zero at the end if that happens, so a partial prune is never reported as
 # success.
 #
+# --only <path> narrows what --yes may delete to orphans recorded at or under
+# that path, leaving every other orphan reported and kept. It exists so that
+# merge-to-develop can prune the worktree it just removed without asking: an
+# unscoped prune also deletes stores whose checkout is only temporarily absent
+# -- build-to-testflight's persistent .claude/worktrees/testflight-build is
+# recreated at the same path, so its output base is meant to survive between
+# builds -- and stores of other projects on this machine.
+#
 # Not touched here: the Bazel disk cache and repository cache. The disk cache is
 # bounded by Bazel's own GC (see ci/nicegram.bazelrc); wiping it by hand throws
 # away the cross-worktree reuse this whole effort exists to get.
@@ -56,20 +64,40 @@ HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 . "$HERE/lib/orphans.sh"
 
 DO_DELETE=0
-for arg in "$@"; do
-  case "$arg" in
+SCOPE=""
+while [ $# -gt 0 ]; do
+  case "$1" in
     --yes) DO_DELETE=1 ;;
+    --only)
+      if [ $# -lt 2 ]; then
+        echo "clean-caches: --only needs a path" >&2
+        exit 2
+      fi
+      SCOPE="$2"
+      while [ "$SCOPE" != "${SCOPE%/}" ]; do SCOPE="${SCOPE%/}"; done
+      case "$SCOPE" in
+        /?*) ;;
+        *)
+          echo "clean-caches: --only needs an absolute path below /, got: $2" >&2
+          exit 2
+          ;;
+      esac
+      shift
+      ;;
     -h|--help)
-      echo "usage: ci/clean-caches.sh [--yes]"
-      echo "  (no args) report only -- nothing is deleted"
-      echo "  --yes     delete every store classified orphan (see the report above)"
+      echo "usage: ci/clean-caches.sh [--yes] [--only <path>]"
+      echo "  (no args)      report only -- nothing is deleted"
+      echo "  --yes          delete every store classified orphan (see the report above)"
+      echo "  --only <path>  count and delete only orphans recorded at or under <path>;"
+      echo "                 other orphans are reported and kept"
       exit 0
       ;;
     *)
-      echo "clean-caches: unknown argument: $arg" >&2
+      echo "clean-caches: unknown argument: $1" >&2
       exit 2
       ;;
   esac
+  shift
 done
 
 BAZEL_ROOT="/private/var/tmp/_bazel_$USER"
@@ -80,6 +108,8 @@ DERIVED_DATA="$HOME/Library/Developer/Xcode/DerivedData"
 # the ${arr[@]+"${arr[@]}"} guard rather than assuming bash 4 semantics.
 orphans=()
 total_orphan_kb=0
+kept_count=0
+kept_kb=0
 
 report_group() { # $1=kind  $2=parent dir  $3=human label
   local kind="$1" parent="$2" label="$3" dir status recorded size kb
@@ -99,9 +129,14 @@ report_group() { # $1=kind  $2=parent dir  $3=human label
       printf '                     -> %s\n' "$recorded"
     fi
     if [ "$status" = "orphan" ]; then
-      orphans+=("$dir")
       kb="$(du -sk "$dir" 2>/dev/null | cut -f1)"
-      total_orphan_kb=$((total_orphan_kb + ${kb:-0}))
+      if [ -z "$SCOPE" ] || ng_orphan_in_scope "$recorded" "$SCOPE"; then
+        orphans+=("$dir")
+        total_orphan_kb=$((total_orphan_kb + ${kb:-0}))
+      else
+        kept_count=$((kept_count + 1))
+        kept_kb=$((kept_kb + ${kb:-0}))
+      fi
     fi
   done
 }
@@ -116,24 +151,42 @@ for p in "${BAZEL_LOCAL_CACHE:-$HOME/work/nicegram-bazel-cache}" "$BAZEL_ROOT/ca
   [ -d "$p" ] && printf '   %-8s %s\n' "$(du -sh "$p" 2>/dev/null | cut -f1)" "$p"
 done
 
-echo ""
-if [ "${#orphans[@]}" -eq 0 ]; then
-  echo "Nothing to reclaim -- every store belongs to a checkout that still exists."
-  exit 0
-fi
-
-# GiB, not GB: total_orphan_kb comes from `du -sk` (KiB) and this divides by
-# 1024^2. It used to print "GB", which understated nothing but named the wrong
-# unit -- and the sizes in the table above come from `du -sh`, which is also
-# GiB, so the whole report is consistent in GiB now that the label says so.
+# GiB, not GB: the totals come from `du -sk` (KiB) and this divides by 1024^2.
+# It used to print "GB", which understated nothing but named the wrong unit --
+# and the sizes in the table above come from `du -sh`, which is also GiB, so the
+# whole report is consistent in GiB now that the label says so.
 #
 # Expect the free space you actually get back to be somewhat less than this.
 # Measured 2026-08-28: a prune this reported as 80.8 GiB moved `df` by 71 GiB.
 # `du` counts what the files claim; APFS frees what is no longer shared, and on
 # a machine where anything else is writing (an open Xcode indexes in the
 # background) the two are taken at different moments.
-printf 'Reclaimable: %s across %d orphaned store(s)\n' \
-  "$(echo "$total_orphan_kb" | awk '{printf "%.1f GiB", $1/1048576}')" "${#orphans[@]}"
+gib() { echo "$1" | awk '{printf "%.1f GiB", $1/1048576}'; }
+
+echo ""
+if [ -n "$SCOPE" ]; then
+  # Without a human reading the table, this line is the only thing that turns
+  # "the removed worktree's stores still read live" from a silent no-op into
+  # something visible.
+  if [ -e "$SCOPE" ]; then
+    echo "WARNING: $SCOPE still exists, so nothing recorded under it can classify orphan -- see this script's header for the two usual reasons."
+  fi
+  if [ "$kept_count" -gt 0 ]; then
+    printf 'Kept, outside --only: %s across %d orphaned store(s) -- run ci/clean-caches.sh to review them.\n' \
+      "$(gib "$kept_kb")" "$kept_count"
+  fi
+fi
+
+if [ "${#orphans[@]}" -eq 0 ]; then
+  if [ -n "$SCOPE" ]; then
+    echo "Nothing to reclaim under $SCOPE."
+  else
+    echo "Nothing to reclaim -- every store belongs to a checkout that still exists."
+  fi
+  exit 0
+fi
+
+printf 'Reclaimable: %s across %d orphaned store(s)\n' "$(gib "$total_orphan_kb")" "${#orphans[@]}"
 
 if [ "$DO_DELETE" -ne 1 ]; then
   echo "Re-run with --yes to delete them. Nothing was deleted."

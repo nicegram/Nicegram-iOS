@@ -1,8 +1,8 @@
 #!/bin/bash
 #
 # Local compile gate. Used by hand and by the tg-merge / sync-from-develop
-# skills, so it must work headless with no Xcode running and with no Xcode
-# project checked out.
+# skills, so it must work headless, with or without Xcode running, and with no
+# Xcode project checked out.
 #
 # Keep the #!/bin/bash line: ci/_env.sh's worktree credential fallback depends
 # on it (under /bin/sh a failed `.` on a missing file kills the shell before the
@@ -110,32 +110,10 @@ for arg in "$@"; do
 done
 #
 
-# Placed after argument parsing on purpose: --help and a typo'd flag have to
-# answer even while Xcode is open. (They did not before -- this guard used to
-# run first and swallowed both.)
-# The guard is about predictability, not safety. Measured 2026-08-28 on a
-# throwaway workspace: a second bazel client on a busy output base prints
-#   Another command (pid=N) is running. Waiting for it to complete on the
-#   server (server_pid=M)...
-# then waits and succeeds -- benign and self-explaining. But this gate and
-# Xcode now share one output base and one server, and Xcode re-runs a
-# background Index Build on its own after edits, so without this guard the gate
-# would sometimes sit on that one line for an unbounded time and read as hung.
-# Refusing with an explanation beats that. (Concurrency also roughly doubles
-# peak memory demand, and the historical wedge -- swift-frontend at 0% CPU,
-# never finishing -- has never been explained; it did not reproduce under
-# measurement.)
-if pgrep -x Xcode >/dev/null; then
-  echo "ERROR: Xcode is running. This gate builds in the SAME bazel output base"
-  echo "and the same server Xcode uses -- that is what makes it share Xcode's"
-  echo "cache. A concurrent Xcode build, including the background Index Build"
-  echo "Xcode starts by itself, does not corrupt anything: bazel prints"
-  echo "\"Another command is running. Waiting for it to complete...\" and waits."
-  echo "But it can wait an unbounded time and look hung, and concurrency roughly"
-  echo "doubles peak memory demand."
-  echo "Quit Xcode, then re-run."
-  exit 1
-fi
+# No Xcode guard, deliberately. Output bases are per worktree, so Xcode on
+# another checkout shares no bazel server with this run. Xcode on this checkout
+# makes bazel print "Another command (pid=N) is running. Waiting for it to
+# complete on the server" and wait its turn.
 
 ./bootstrap-submodules.sh || exit 1
 . ./_env.sh
@@ -337,11 +315,11 @@ fi
 # the transition path and not the flags. Measured 2026-08-28. So absence has to
 # be handled here; it cannot be detected downstream.
 #
-# Generation is the supported way to write it and is headless: nothing in this
-# repo calls `killall Xcode` (a comment in ci/generate-project.sh used to say
-# generation did; it does not), and rules_xcodeproj's installer neither kills
-# nor opens Xcode. Measured 52.7s warm, and the rc it produced was
-# byte-identical to the one already there.
+# Generation is the supported way to write it. It is headless only because the
+# generate_project lane passes --headless; without that, Make.py would run
+# `killall Xcode` and open the project here, on every fresh worktree. Measured
+# 52.7s warm, and the rc it produced was byte-identical to the one already
+# there.
 if [ ! -f "$SOURCE_PATH/xcodeproj.bazelrc" ]; then
   echo "verify-build: no xcodeproj.bazelrc yet -- generating the Xcode project"
   echo "verify-build: once to create it (this is what pins this gate's bazel"
