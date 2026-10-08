@@ -315,16 +315,16 @@ fi
 # the transition path and not the flags. Measured 2026-08-28. So absence has to
 # be handled here; it cannot be detected downstream.
 #
-# Generation is the supported way to write it. It is headless only because the
-# generate_project lane passes --headless; without that, Make.py would run
-# `killall Xcode` and open the project here, on every fresh worktree. Measured
-# 52.7s warm, and the rc it produced was byte-identical to the one already
-# there.
+# Generation is the supported way to write it. It stays headless for two
+# reasons: the generate_project lane passes --headless (without it, Make.py
+# would run `killall Xcode` and open the project here, on every fresh
+# worktree), and --no-open skips the script's own `open`. Measured 52.7s warm,
+# and the rc it produced was byte-identical to the one already there.
 if [ ! -f "$SOURCE_PATH/xcodeproj.bazelrc" ]; then
   echo "verify-build: no xcodeproj.bazelrc yet -- generating the Xcode project"
   echo "verify-build: once to create it (this is what pins this gate's bazel"
   echo "verify-build: configuration to Xcode's)."
-  ./generate-project.sh 2>&1
+  ./generate-project.sh --no-open 2>&1
   status=$?
   if [ "$status" -ne 0 ]; then
     echo "verify-build: project generation failed (exit $status)." >&2
@@ -491,7 +491,7 @@ if [ -n "$divergence" ]; then
   echo "!! is the first run after changing ng_dev, Make.py's flag lists, or"
   echo "!! ng-env.txt, that is expected once. Regenerate the project so both"
   echo "!! flows agree again:"
-  echo "!!   cd ci && ./generate-project.sh"
+  echo "!!   cd ci && ./generate-project.sh --no-open"
   echo "!! If it keeps happening, the two flows have drifted apart for real."
   echo "!! ================================================================"
 fi

@@ -1,26 +1,28 @@
 #!/bin/bash
 #
-# Generates the Xcode project without touching Xcode: the generate_project lane
-# passes --headless, without which upstream's Make.py runs `killall Xcode` and
-# opens the project. ci/verify-build.sh runs this on its first run in every
-# fresh worktree.
+# Generates the Xcode project and opens it -- the command a human runs before
+# running the app. Generation itself never touches Xcode: the generate_project
+# lane passes --headless, without which upstream's Make.py runs `killall Xcode`
+# and opens the project. The `open` at the end closes nothing; if Xcode already
+# has the project open, Xcode reloads it.
 #
-# --open then opens this checkout's project, for a human. It closes nothing; if
-# Xcode already has the project open, Xcode reloads it.
+# --no-open stops after generation. Every caller that is not a human passes it:
+# ci/verify-build.sh runs this on its first run in every fresh worktree, and an
+# agent never opens Xcode.
 #
 # Keep the #!/bin/bash line -- see the comment in ci/verify-build.sh.
 
 cd "$(dirname "$0")" || exit 1
 
 # Parsed before bootstrap-submodules.sh so --help and a typo answer at once.
-OPEN_PROJECT=0
+OPEN_PROJECT=1
 for arg in "$@"; do
   case "$arg" in
-    --open) OPEN_PROJECT=1 ;;
+    --no-open) OPEN_PROJECT=0 ;;
     -h|--help)
-      echo "usage: ci/generate-project.sh [--open]"
-      echo "  Generates Telegram/Telegram.xcodeproj without closing or opening Xcode."
-      echo "  --open  then open it in Xcode (closes nothing)"
+      echo "usage: ci/generate-project.sh [--no-open]"
+      echo "  Generates Telegram/Telegram.xcodeproj and opens it in Xcode (closes nothing)."
+      echo "  --no-open  generate only, for scripts and agents"
       exit 0
       ;;
     *)

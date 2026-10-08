@@ -92,8 +92,8 @@ directly — the fastlane lanes resolve the configuration, cache directory, and
 codesigning repository for you, and a hand-written `Make.py` command will use the
 wrong ones.
 
-    cd ci && ./generate-project.sh                    # generate the Xcode project (headless)
-    cd ci && ./generate-project.sh --open             # ...then open it in Xcode (a human's step)
+    cd ci && ./generate-project.sh                    # generate the Xcode project and open it (a human's step)
+    cd ci && ./generate-project.sh --no-open          # ...generate only (scripts and agents)
     cd ci && ./verify-build.sh                        # compile check (arm64 device by default; --sim for the simulator)
     cd ci && ./build-to-testflight.sh "1.2.3 (456)"   # QA / TestFlight build
 
@@ -320,8 +320,8 @@ by `get_project_generation_arguments()` **at generation time**, so changing
 that file describing the previous configuration. Both flows read the same file,
 so they stay consistent *with each other* and keep sharing; what goes stale is
 the match between the configuration they build and the one `Make.py` would
-produce today. Regenerate (`cd ci && ./generate-project.sh`) after any such
-change.
+produce today. Regenerate (`cd ci && ./generate-project.sh`; an agent adds
+`--no-open`) after any such change.
 
 **The gate now tells you when it stopped sharing.** A build that reuses nothing
 still succeeds — the only symptom is that it took twenty minutes instead of
@@ -616,7 +616,7 @@ one owned by a single skill and producing a fixed set of artifacts:
 | implement | `superpowers:subagent-driven-development`, in a fresh session started from the prompt `start-feature` prints | code, `docs/changes/<date>-<slug>.md` |
 | refresh | `sync-from-develop` | merge commits in both repos |
 | share early | `extract-to-develop` | the approved part of the feature as one commit per repo on develop, pushed directly; the feature branch re-synced |
-| ship to QA | `build-to-testflight` | `build/{N}`, a TestFlight build, a change-record comment on each ticket, tickets → READY FOR QA, a Confluence row |
+| ship to QA | `build-to-testflight` | `build/{N}`, a TestFlight build, a change-record comment on each ticket, tickets → READY FOR QA, a Confluence row; for named develop tickets, a stamp commit on develop, pushed directly |
 | bug round | `fix-qa-bugs` | fix commits on the feature branch, a change-record delta, bug linked and → DEV COMPLETED |
 | land | `merge-to-develop` | squash on develop in both repos, the change record re-posted at the freeze point, branches and worktree removed |
 | upstream | `tg-merge` | its own branch + worktree, and a `docs/changes` record it writes but does not deliver |
@@ -915,13 +915,14 @@ referencing a commit nobody else can resolve.
 
 ### Verifying
 
-- Full app: `cd ci && ./generate-project.sh --open` in the worktree generates
-  the project and opens it in Xcode, without closing any Xcode window. This is
-  a human's step. An agent never opens Xcode; its compile check is
-  `ci/verify-build.sh`.
-  Without `--open`, generation is headless, because the `generate_project` lane
-  passes `--headless`. That is why `ci/verify-build.sh` can run it itself when
-  `xcodeproj.bazelrc` is missing. Upstream's `generateProject` without that
+- Full app: `cd ci && ./generate-project.sh` in the worktree generates the
+  project and opens it in Xcode, without closing any Xcode window. This is a
+  human's step. An agent never opens Xcode: it passes `--no-open` when it needs
+  the project regenerated, and its compile check is `ci/verify-build.sh`.
+  Generation itself is always headless, because the `generate_project` lane
+  passes `--headless`, and `--no-open` stops the script right there. That is
+  why `ci/verify-build.sh` can run it itself when `xcodeproj.bazelrc` is
+  missing. Upstream's `generateProject` without that
   flag runs `killall Xcode`, closing every window of every checkout, and then
   opens the project. An earlier version of this document denied that on the
   strength of `grep -rln "killall Xcode"`, which cannot match: `Make.py` passes

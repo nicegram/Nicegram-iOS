@@ -2225,11 +2225,17 @@ public final class ChatListNode: ListViewImpl {
                             ))
                         }
                         result.sort(by: { lhs, rhs in
-                            if lhs.presence.status != rhs.presence.status {
-                                return lhs.presence.status < rhs.presence.status
+                            // Nicegram ChatListContactsOrder, `!=` replaced: Status's synthesized `!=` sees isHidden
+                            // but its `<` does not, so .recently(isHidden: true/false) tied here in dictionary order.
+                            // Must match ChatListNodeEntrySortIndex's .contact comparison.
+                            if lhs.presence.status < rhs.presence.status {
+                                return true
+                            } else if rhs.presence.status < lhs.presence.status {
+                                return false
                             } else {
                                 return lhs.peer.id < rhs.peer.id
                             }
+                            //
                         })
                         return result
                     }
