@@ -97,6 +97,32 @@ mkdir -p "$tmp/ob_newline"
 printf '%s\n' "$tmp/live-worktree" > "$tmp/ob_newline/DO_NOT_BUILD_HERE"
 check "trailing newline"   "$tmp/live-worktree" "$(path_of output_base "$tmp/ob_newline")"
 
+# The scope rule is what lets merge-to-develop delete without asking: it must
+# cover the removed worktree's stores and nothing else on the machine.
+in_scope() { ng_orphan_in_scope "$1" "$2" && echo yes || echo no; }
+
+echo "test_scope_covers_the_path_itself"
+check "output base records the root" "yes" "$(in_scope /w/.claude/worktrees/foo /w/.claude/worktrees/foo)"
+
+echo "test_scope_covers_paths_inside_it"
+check "DerivedData records the xcodeproj" "yes" \
+  "$(in_scope /w/.claude/worktrees/foo/Telegram/Telegram.xcodeproj /w/.claude/worktrees/foo)"
+
+echo "test_scope_does_not_cover_a_sibling_sharing_its_prefix"
+check "foo does not cover foo-bar" "no" "$(in_scope /w/.claude/worktrees/foo-bar /w/.claude/worktrees/foo)"
+check "foo does not cover inside foo-bar" "no" \
+  "$(in_scope /w/.claude/worktrees/foo-bar/Telegram/Telegram.xcodeproj /w/.claude/worktrees/foo)"
+
+echo "test_scope_does_not_cover_its_parent"
+check "worktree does not cover the main clone" "no" "$(in_scope /w /w/.claude/worktrees/foo)"
+
+echo "test_empty_or_relative_scope_covers_nothing"
+check "empty scope"    "no" "$(in_scope /w/.claude/worktrees/foo "")"
+check "relative scope" "no" "$(in_scope worktrees/foo worktrees/foo)"
+
+echo "test_scope_with_spaces"
+check "spaces in scope" "yes" "$(in_scope "/w/a b/c d/x" "/w/a b/c d")"
+
 if [ "$failures" -ne 0 ]; then
   echo "test-orphans: $failures failure(s)"
   exit 1

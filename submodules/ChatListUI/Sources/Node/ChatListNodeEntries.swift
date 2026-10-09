@@ -85,11 +85,17 @@ enum ChatListNodeEntrySortIndex: Comparable {
             case .sectionHeader:
                 return false
             case let .contact(rhsId, rhsPresense):
-                if lhsPresense != rhsPresense {
-                    return rhsPresense.status > rhsPresense.status
+                // Nicegram ChatListContactsOrder, was `rhsPresense.status > rhsPresense.status` (always false).
+                // Must stay the same total order as the contacts sort in ChatListNode, or the chat-list
+                // diff overshoots and ListView traps on a negative insert index.
+                if lhsPresense.status < rhsPresense.status {
+                    return true
+                } else if rhsPresense.status < lhsPresense.status {
+                    return false
                 } else {
                     return lhsId < rhsId
                 }
+                //
             default:
                 return false
             }

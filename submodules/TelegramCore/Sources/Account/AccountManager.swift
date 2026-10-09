@@ -602,6 +602,8 @@ public func managedCleanupAccounts(networkArguments: NetworkInitializationArgume
                     for url in files {
                         if url.lastPathComponent.hasPrefix("account-") {
                             if !validPaths.contains(url.lastPathComponent) {
+                                // Nicegram PostboxFailureReporting
+                                notePostboxFolderRemoval(url.lastPathComponent)
                                 try? FileManager.default.removeItem(at: url)
                             }
                         }

@@ -164,8 +164,10 @@ final class AccountManagerImpl<Types: AccountManagerTypes> {
             self.currentAtomicState.accessChallengeData = tableAccessChallengeData
             self.syncAtomicStateToFile()
         }
-        // Nicegram DB Changes
-        self.unlockedHiddenAccountRecordIdDisposable = hiddenAccountManager.accountManagerRecordIdPromise.get().start(next: { [weak self] id in
+        // Nicegram DB Changes, deliverOn(queue): the promise is set on the main thread,
+        // and recordsViews and its views may only be touched on this queue
+        self.unlockedHiddenAccountRecordIdDisposable = (hiddenAccountManager.accountManagerRecordIdPromise.get()
+        |> deliverOn(queue)).start(next: { [weak self] id in
             guard let strongSelf = self else { return }
             
             var metadataOperations = [AccountManagerMetadataOperation<Types.Attribute>]()
