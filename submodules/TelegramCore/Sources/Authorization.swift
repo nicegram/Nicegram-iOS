@@ -24,21 +24,6 @@ func switchToAuthorizedAccount(transaction: AccountManagerModifier<TelegramAccou
         }
         return 0
     }).max() ?? 0) + 1
-    // Nicegram DB Changes
-    var attributes: [TelegramAccountRecordAttribute] = [
-        .environment(AccountEnvironmentAttribute(environment: account.testingEnvironment ? .test : .production)),
-        .sortOrder(AccountSortOrderAttribute(order: nextSortOrder))
-    ]
-    if let currentAuthAttribues = transaction.getCurrentAuth()?.attributes {
-        for attribute in currentAuthAttribues {
-            switch attribute {
-            case .hiddenDoubleBottom:
-                attributes.append(attribute)
-            default:
-                continue
-            }
-        }
-    }
     transaction.updateRecord(account.id, { _ in
         var attributes: [TelegramAccountManagerTypes.Attribute] = [
             .environment(AccountEnvironmentAttribute(environment: account.testingEnvironment ? .test : .production)),
@@ -1412,7 +1397,7 @@ func _internal_performPasswordRecovery(network: Network, code: String, updatedPa
                 flags |= (1 << 1)
             }
 
-            guard let (updatedPasswordHash, updatedPasswordDerivation) = passwordUpdateKDF(encryptionProvider: network.encryptionProvider, password: password, derivation: authData.nextPasswordDerivation) else {
+            guard let (updatedPasswordHash, updatedPasswordDerivation) = passwordUpdateKDF(encryptionProvider: network.encryptionProvider, keychain: network.context.keychain, password: password, derivation: authData.nextPasswordDerivation) else {
                 return .fail(.invalidCode)
             }
 

@@ -1277,6 +1277,7 @@ public class MinimizedContainerImpl: ASDisplayNode, MinimizedContainer, ASScroll
     }
     
     public func collapsedHeight(layout: ContainerViewLayout) -> CGFloat {
+        // Nicegram DockWidget, 'return' to 'var result'
         var result = minimizedNavigationHeight + minimizedTopMargin + layout.intrinsicInsets.bottom + 3.0
         
         // Nicegram DockWidget
@@ -1284,8 +1285,8 @@ public class MinimizedContainerImpl: ASDisplayNode, MinimizedContainer, ASScroll
             result = minimizedTopMargin + layout.intrinsicInsets.bottom
         }
         result += nicegramWidgetHeight
-        //
         
         return result
+        //
     }
 }

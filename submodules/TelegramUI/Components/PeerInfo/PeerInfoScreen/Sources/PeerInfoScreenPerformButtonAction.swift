@@ -1,4 +1,4 @@
-// Nicegram
+// Nicegram ConfirmCall
 import NGStrings
 import PresentationDataUtils
 //
@@ -16,6 +16,8 @@ import NotificationExceptionsScreen
 import TranslateUI
 import TelegramNotices
 import AlertComponent
+import WalletContext
+import WalletSendScreen
 
 extension PeerInfoScreenNode {
     func performButtonAction(key: PeerInfoHeaderButtonKey, buttonNode: PeerInfoHeaderButtonNode?, gesture: ContextGesture?) {
@@ -58,16 +60,19 @@ extension PeerInfoScreenNode {
             requestCallConfirmation { [weak self] in
                 self?.requestCall(isVideo: false)
             }
+            //
         case .videoCall:
             // Nicegram ConfirmCall, wrap in requestCallConfirmation
             requestCallConfirmation { [weak self] in
                 self?.requestCall(isVideo: true)
             }
+            //
         case .voiceChat:
             // Nicegram ConfirmCall, wrap in requestCallConfirmation
             requestCallConfirmation { [weak self] in
                 self?.requestCall(isVideo: false, gesture: gesture)
             }
+            //
         case .mute:
             var displayCustomNotificationSettings = false
                         
@@ -657,6 +662,28 @@ extension PeerInfoScreenNode {
                                 }
                             })))
                         }
+                    }
+
+                    if WalletConfiguration.with(appConfiguration: strongSelf.context.currentAppConfiguration.with { $0 }).isAvailable, strongSelf.peerId.namespace == Namespaces.Peer.CloudUser, user.id != strongSelf.context.account.peerId, !user.isDeleted, user.botInfo == nil, !user.flags.contains(.isSupport) {
+                        items.append(.action(ContextMenuActionItem(text: "Send Money", icon: { theme in
+                            generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Ton"), color: theme.contextMenu.primaryColor)
+                        }, action: { [weak self] _, f in
+                            f(.dismissWithoutContent)
+
+                            guard let self, let controller = self.controller, let peer = self.data?.peer, let walletContext = self.context.walletContext else {
+                                return
+                            }
+                            let sendController = WalletSendScreen(context: self.context, updatedPresentationData: controller.updatedPresentationData, useDefaultAccent: false, peer: peer, walletContext: walletContext, allowOpenRecipientChat: false, completed: { [weak self] in
+                                guard let self, let navigationController = self.controller?.navigationController as? NavigationController else {
+                                    return
+                                }
+                                self.context.sharedContext.navigateToChatController(NavigateToChatControllerParams(navigationController: navigationController, context: self.context, chatLocation: .peer(peer), keepStack: .default, useExisting: true, completion: { chatController in
+                                    chatController.scrollToEndOfHistory()
+                                }))
+                            })
+                            sendController.navigationPresentation = .modal
+                            controller.push(sendController)
+                        })))
                     }
                     
                     if let cachedData = data.cachedData as? CachedUserData, canTranslateChats(context: strongSelf.context), cachedData.flags.contains(.translationHidden) {

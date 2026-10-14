@@ -111,8 +111,7 @@ public enum ShareControllerSubject {
     case quote(text: String, url: String)
     case messages([EngineRawMessage])
     case image([ImageRepresentationWithReference])
-    // Nicegram, text added
-    case media(AnyMediaReference, MediaParameters?, text: String = "")
+    case media(AnyMediaReference, MediaParameters?)
     case mapMedia(TelegramMediaMap)
     case fromExternal(Int, ([EnginePeer.Id], [EnginePeer.Id: Int64], [EnginePeer.Id: StarsAmount], String, ShareControllerAccountContext, Bool) -> Signal<ShareControllerExternalStatus, ShareControllerError>)
 }

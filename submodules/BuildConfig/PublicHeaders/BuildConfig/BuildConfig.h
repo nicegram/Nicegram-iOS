@@ -18,9 +18,12 @@
 @property (nonatomic, readonly) bool isAppStoreBuild;
 @property (nonatomic, readonly) int64_t appStoreId;
 @property (nonatomic, strong, readonly) NSString * _Nonnull appSpecificUrlScheme;
+// Nicegram NGEnv
 @property (nonatomic, strong, readonly) NSString * _Nonnull ngEnv;
 @property (nonatomic, readonly) bool isICloudEnabled;
 @property (nonatomic, readonly) bool isSiriEnabled;
+
++ (NSString * _Nullable)keychainAccessGroupForBaseAppBundleId:(NSString * _Nonnull)baseAppBundleId NS_SWIFT_NAME(keychainAccessGroup(baseAppBundleId:));
 
 + (DeviceSpecificEncryptionParameters * _Nonnull)deviceSpecificEncryptionParameters:(NSString * _Nonnull)rootPath baseAppBundleId:(NSString * _Nonnull)baseAppBundleId;
 - (NSData * _Nullable)bundleDataWithAppToken:(NSData * _Nullable)appToken tokenType:(NSString * _Nullable)tokenType tokenEnvironment:(NSString * _Nullable)tokenEnvironment signatureDict:(NSDictionary * _Nullable)signatureDict;

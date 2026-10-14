@@ -91,7 +91,7 @@ public extension TelegramEngine {
     }
 }
 
-// Nicegram, apply recommended settings
+// Nicegram RecommendedPrivacy, apply recommended settings
 public extension TelegramEngine.Privacy {
     func updatePrivacyToRecommended() async throws {
         _ = try await combineLatest([
@@ -112,3 +112,4 @@ public extension TelegramEngine.Privacy {
         .awaitForFirstValue()
     }
 }
+//

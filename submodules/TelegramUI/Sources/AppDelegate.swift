@@ -64,6 +64,15 @@ import NavigationBarImpl
 import ContextUI
 import ContextControllerImpl
 import ProxyServerPreviewScreen
+import WalletContext
+import WalletSendScreen
+import PasscodeCore
+import LiquidGlassShapes
+import MTProtoRustEngine
+
+#if DEBUG
+import AlertComponent
+#endif
 
 #if canImport(AppCenter)
 import AppCenter
@@ -71,6 +80,11 @@ import AppCenterCrashes
 #endif
 
 private let handleVoipNotifications = false
+
+private func isTonTransferUrl(_ url: URL) -> Bool {
+    return url.scheme?.lowercased() == "ton" && url.host?.lowercased() == "transfer"
+        && WalletContext.transferAddress(from: url.absoluteString) != nil
+}
 
 private var testIsLaunched = false
 
@@ -93,6 +107,9 @@ private func isKeyboardView(view: NSObject) -> Bool {
     if typeName.hasPrefix("UI") && typeName.hasSuffix("InputSetHostView") {
         return true
     }
+    if typeName.hasPrefix("UI") && typeName.hasSuffix("KeyboardItemContainerView") {
+        return true
+    }
     return false
 }
 
@@ -101,11 +118,14 @@ private func isKeyboardViewContainer(view: NSObject) -> Bool {
     if typeName.hasPrefix("UI") && typeName.hasSuffix("InputSetContainerView") {
         return true
     }
+    if typeName.hasPrefix("UI") && typeName.hasSuffix("TrackingWindowView") {
+        return true
+    }
     return false
 }
 
 private class ApplicationStatusBarHost: StatusBarHost {
-    private weak var scene: UIWindowScene?
+    weak var scene: UIWindowScene?
     
     init(scene: UIWindowScene?) {
         self.scene = scene
@@ -137,11 +157,15 @@ private class ApplicationStatusBarHost: StatusBarHost {
     }
     
     var keyboardWindow: UIWindow? {
-        if #available(iOS 16.0, *) {
-            return UIApplication.shared.internalGetKeyboard()
+        // The keyboard window belongs to an internal keyboard scene, so it is not enumerable through
+        // any public API; it is reached through our own window scene's keyboard scene delegate.
+        if let window = UIApplication.shared.internalGetKeyboard(for: self.scene) {
+            return window
         }
-        
-        for window in UIApplication.shared.windows {
+
+        // Pre-iOS-16 the keyboard window was not flagged as internal and did show up in the scene's
+        // window list, so this remains as a fallback for those releases.
+        for window in UIApplication.shared.allWindowSceneWindows {
             if isKeyboardWindow(window: window) {
                 return window
             }
@@ -237,10 +261,8 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
     override func traitCollectionDidChange(_ previousTraitCollection: UITraitCollection?) {
         super.traitCollectionDidChange(previousTraitCollection)
         
-        if #available(iOS 12.0, *) {
-            if let root = UIApplication.findKeyWindow()?.rootViewController as? NGWindowRootViewController {
-                root.setSystemUserInterfaceStyle(traitCollection.userInterfaceStyle)
-            }
+        if let root = UIApplication.findKeyWindow()?.rootViewController as? NGWindowRootViewController {
+            root.setSystemUserInterfaceStyle(traitCollection.userInterfaceStyle)
         }
     }
 }
@@ -250,10 +272,15 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
     // Nicegram Themes
     private let userInterfaceStyleObserverWindow = UserInterfaceStyleObserverWindow()
     //
-    
+
+    // Nicegram Onboarding
+    private var presentNicegramOnboarding: (() -> Void)?
+    //
+
     @objc var window: UIWindow?
     var nativeWindow: (UIWindow & WindowHost)?
     var mainWindow: Window1!
+    private var statusBarHost: ApplicationStatusBarHost?
     private var dataImportSplash: LegacyDataImportSplash?
     private var memoryUsageOverlayView: UILabel?
     
@@ -284,6 +311,7 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
     private let authContext = Promise<UnauthorizedApplicationContext?>()
     private let authContextDisposable = MetaDisposable()
     
+    // Nicegram new account privacy settings
     private let loginDisposable = MetaDisposable()
     private let logoutDisposable = MetaDisposable()
     
@@ -368,6 +396,7 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil) -> Bool {
         precondition(!testIsLaunched)
         testIsLaunched = true
+        // Nicegram AppLaunchCount
         AppCache.appLaunchCount += 1
         
         let _ = voipTokenPromise.get().start(next: { token in
@@ -377,6 +406,7 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
             self.regularDeviceToken.set(.single(token))
         })
         
+        // Nicegram NGEntryPoint, moved up from below 'PasscodeEnvironment.configure': the NGEntryPoint block needs 'buildConfig'
         let appVersion = (Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String) ?? "unknown"
         
         let baseAppBundleId = Bundle.main.bundleIdentifier!
@@ -386,8 +416,9 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
         let buildConfig = BuildConfig(baseAppBundleId: baseAppBundleId)
         self.buildConfig = buildConfig
         let signatureDict = BuildConfigExtra.signatureDict()
+        //
 
-         // Nicegram, moved 'isDebugConfiguration' definition here
+        // Nicegram NGEntryPoint, moved 'isDebugConfiguration' definition here
         var isDebugConfiguration = false
         #if DEBUG
         isDebugConfiguration = true
@@ -398,6 +429,7 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
         }
         //
         
+        // Nicegram NGEntryPoint
         let contextProvider = ContextProvider(
             context: { [self] in
                 contextValue?.context
@@ -429,6 +461,12 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
         )
         
         let ngEnableLogging = isDebugConfiguration
+        //
+        // Nicegram Calls, read only when a bridge call starts on the main queue; ContextProvider
+        // is not Sendable, and webRtcBridge's factory is @Sendable
+        nonisolated(unsafe) let callAudioContextProvider = contextProvider
+        //
+        // Nicegram NGEntryPoint
         NGEntryPoint.onAppLaunch(
             env: Env(
                 apiBaseUrl: URL(string: NGENV.ng_api_url)!,
@@ -525,15 +563,23 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
                                 SharedCallAudioContext.get(
                                     audioSession: sharedAudioSession,
                                     callKitIntegration: .shared,
-                                    defaultToSpeaker: false
+                                    // Nicegram Calls, the bridge honours upstream's call-audio killswitch instead of overriding it
+                                    defaultToSpeaker: false,
+                                    legacyBehavior: callAudioContextProvider.context().map {
+                                        SharedCallAudioContext.isLegacyBehaviorEnabled(appConfiguration: $0.currentAppConfiguration.with { $0 })
+                                    } ?? false
+                                    //
                                 )
                         )
                     }
                 )
             }
         )
+        //
         // Nicegram PostboxFailureReporting
         setPostboxFailureReporter(sendPostboxFailureAnalytics)
+        //
+        // Nicegram AccountBackup
         accountManagerCallbacks = AccountManagerCallbacks(
             onRemoteLogout: { id in
                 Task {
@@ -542,6 +588,7 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
                 }
             }
         )
+        //
         
         let launchStartTime = CFAbsoluteTimeGetCurrent()
         
@@ -607,6 +654,7 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
         
         let (window, hostView) = nativeWindowHostView()
         let statusBarHost = ApplicationStatusBarHost(scene: window.windowScene)
+        self.statusBarHost = statusBarHost
         self.mainWindow = Window1(hostView: hostView, statusBarHost: statusBarHost)
         if let traitCollection = window.rootViewController?.traitCollection {
             if #available(iOS 13.0, *) {
@@ -626,6 +674,10 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
         self.nativeWindow = window
         
         hostView.containerView.layer.addSublayer(MetalEngine.shared.rootLayer)
+        // On the first start after an update, compile the pipelines that would otherwise stall their first use.
+        if MetalEngine.shared.pipelineCache.isFresh {
+            prewarmLiquidGlassShapes([.crest], qos: .utility)
+        }
         
         if !UIDevice.current.isBatteryMonitoringEnabled {
             UIDevice.current.isBatteryMonitoringEnabled = true
@@ -736,6 +788,12 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
         })
         self.clearNotificationsManager = clearNotificationsManager
         
+        // Nicegram NGEntryPoint, 'appVersion', 'baseAppBundleId' and 'appGroupName' moved up
+        try! PasscodeEnvironment.shared.configure(PasscodeConfiguration(appGroupIdentifier: appGroupName, processRole: .mainApp, biometricKeychainService: walletBiometricKeychainService), privateAccessGroup: {
+            BuildConfig.keychainAccessGroup(baseAppBundleId: baseAppBundleId)
+        })
+        // Nicegram NGEntryPoint, 'maybeAppGroupUrl', 'buildConfig' and 'signatureDict' moved up
+        
         let apiId: Int32 = buildConfig.apiId
         let apiHash: String = buildConfig.apiHash
         let languagesCategory = "ios"
@@ -780,7 +838,14 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
             externalRequestVerificationStream: self.firebaseRequestVerificationSecretStream.get(),
             externalRecaptchaRequestVerification: { method, siteKey in
                 return Signal<String?, NoError> { subscriber in
-                    let recaptchaClient: Promise<RecaptchaClient>
+                    // Recaptcha.fetchClient's completion is @Sendable, so it does not inherit this
+                    // closure's inferred main-actor isolation: from inside it neither the Promise (a
+                    // lock-based pre-concurrency class, so not Sendable) nor self's mutable state may
+                    // be touched. Both spellings are diagnosed, and Xcode 26's compiler raises them to
+                    // errors under -warnings-as-errors (Xcode 27's leaves them as warnings). The
+                    // promise is in fact only ever set on the main queue, which Queue.mainQueue()
+                    // guarantees and the compiler cannot see - hence the explicit opt-out.
+                    nonisolated(unsafe) let recaptchaClient: Promise<RecaptchaClient>
                     if let current = self.recaptchaClientsBySiteKey[siteKey] {
                         recaptchaClient = current
                     } else {
@@ -839,15 +904,19 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
             encryptionProvider: OpenSSLEncryptionProvider(),
             deviceModelName: nil,
             useBetaFeatures: !buildConfig.isAppStoreBuild,
-            isICloudEnabled: buildConfig.isICloudEnabled
+            isICloudEnabled: buildConfig.isICloudEnabled,
+            // Only the main app passes a factory: extensions stay on MtProtoKit. Whether the Rust
+            // engine runs is decided per account by resolveNetworkEngine (Debug Settings switch,
+            // mtproto_engine_rust_disabled, the factory's own declines).
+            networkEngineFactory: RustNetworkEngineFactory()
         )
         
         guard let appGroupUrl = maybeAppGroupUrl else {
             self.mainWindow?.presentNative(UIAlertController(title: nil, message: "Error 2", preferredStyle: .alert))
             return true
         }
-
-        // Nicegram, moved 'isDebugConfiguration' definition up
+        
+        // Nicegram NGEntryPoint, moved 'isDebugConfiguration' definition up
         
         if isDebugConfiguration || buildConfig.isInternalBuild {
             LoggingSettings.defaultSettings = LoggingSettings(logToFile: true, logToConsole: false, redactSensitiveData: true)
@@ -971,8 +1040,6 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
         GlobalExperimentalSettings.isAppStoreBuild = buildConfig.isAppStoreBuild
         GlobalExperimentalSettings.enableFeed = false
         
-        self.window?.makeKeyAndVisible()
-        
         var hasActiveCalls: Signal<Bool, NoError> = .single(false)
         if CallKitIntegration.isAvailable, let callKitIntegration = CallKitIntegration.shared {
             hasActiveCalls = callKitIntegration.hasActiveCalls
@@ -1042,12 +1109,12 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
                 return false
             }
         }, getTopWindow: {
-            for window in application.windows.reversed() {
+            for window in application.allWindowSceneWindows.reversed() {
                 if window === self.window || window === statusBarHost.keyboardWindow {
                     return window
                 }
             }
-            return application.windows.last
+            return application.allWindowSceneWindows.last
         }, displayNotification: { text in
         }, applicationInForeground: self.isInForegroundPromise.get(),
            applicationIsActive: self.isActivePromise.get(),
@@ -1087,7 +1154,7 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
             }
         }, openSubscriptions: {
             if #available(iOS 15, *), let scene = UIApplication.shared.connectedScenes.first as? UIWindowScene {
-                Task {
+                let _ = Task {
                     try await AppStore.showManageSubscriptions(in: scene)
                 }
             } else if let url = URL(string: "https://apps.apple.com/account/subscriptions") {
@@ -1143,7 +1210,7 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
         }, getAvailableAlternateIcons: {
             if #available(iOS 10.3, *) {
                 var icons = [
-                    // Nicegram, default AppIcon changed
+                    // Nicegram AppIcons, Nicegram icon list: default AppIcon changed, upstream's Classic icons commented out
                     PresentationAppIcon(name: "PaperPlane", imageName: "PaperPlane", isDefault: buildConfig.isAppStoreBuild),
                     PresentationAppIcon(name: "NewBlack", imageName: "NewBlack"),
                     PresentationAppIcon(name: "NewWhite", imageName: "NewWhite"),
@@ -1161,6 +1228,7 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
                     PresentationAppIcon(name: "CommunityOnyx", imageName: "CommunityOnyx"),
                     PresentationAppIcon(name: "CommunityRuby", imageName: "CommunityRuby"),
                     PresentationAppIcon(name: "CommunityWatercolor", imageName: "CommunityWatercolor"),
+                    //
                 ]
                 if buildConfig.isInternalBuild {
                     icons.append(PresentationAppIcon(name: "WhiteFilledIcon", imageName: "WhiteFilledIcon"))
@@ -1212,18 +1280,20 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
                 UINavigationController.attemptRotationToDeviceOrientation()
             }
         })
-        // Nicegram DB Changes
-        let hiddenAccountManager = HiddenAccountManagerImpl()
-        let accountManager = AccountManager<TelegramAccountManagerTypes>(basePath: rootPath + "/accounts-metadata", isTemporary: false, isReadOnly: false, useCaches: true, removeDatabaseOnError: true, hiddenAccountManager: hiddenAccountManager)
-
+        
+        let accountManager: AccountManager<TelegramAccountManagerTypes> = setupAccountManager(basePath: rootPath + "/accounts-metadata", isTemporary: false, isReadOnly: false, useCaches: true, removeDatabaseOnError: true, resetLocalSecrets: {
+            try resetWalletLocalSecrets()
+        })
         self.accountManager = accountManager
         
+        // Nicegram Analytics
         _ = (accountManager.accountRecords()
         |> take(1))
         .start(next: { view in
             let profilesCount = view.records.count
             AnalyticsTgHelper.trackProfilesCount(profilesCount)
         })
+        //
 
         telegramUIDeclareEncodables()
         initializeAccountManagement()
@@ -1241,7 +1311,6 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
             let phoneCode = String(repeating: dcDigit, count: 5)
 
             let window = self.window!
-            window.makeKeyAndVisible()
 
             NSLog("[DeleteAccount] starting for +\(digits)")
             let _ = test_loginAndDeleteAccount(
@@ -1289,7 +1358,7 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
             return (accountManager, initialPresentationDataAndSettings)
         }
         |> deliverOnMainQueue
-        |> mapToSignal { accountManager, initialPresentationDataAndSettings -> Signal<(SharedApplicationContext, LoggingSettings), NoError> in
+        |> mapToSignal { [self] accountManager, initialPresentationDataAndSettings -> Signal<(SharedApplicationContext, LoggingSettings), NoError> in
             self.mainWindow?.hostView.containerView.backgroundColor =  initialPresentationDataAndSettings.presentationData.theme.chatList.backgroundColor
             
             let legacyBasePath = appGroupUrl.path
@@ -1304,9 +1373,9 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
                     self?.unlockedAndReady.putNext(())
                 }
             
-            _ = appLockContext.isCurrentlyLocked
-                .start { [weak self] isCurrentlyLocked in
-                    self?.isCurrentlyLocked = isCurrentlyLocked
+            _ = appLockContext.isPasscodeLocked
+                .start { [weak self] isPasscodeLocked in
+                    self?.isCurrentlyLocked = isPasscodeLocked
                 }
             
             var setPresentationCall: ((PresentationCall?) -> Void)?
@@ -1336,6 +1405,13 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
             }, appDelegate: self, testingEnvironment: isUITest)
             
             presentationDataPromise.set(sharedContext.presentationData)
+            #if targetEnvironment(simulator)
+            if CommandLine.arguments.contains("--context-menu-morph-gallery") {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) { [weak self] in
+                    self?.mainWindow.present(ContextMenuMorphDebugController(), on: .root)
+                }
+            }
+            #endif
             
             sharedContext.presentGlobalController = { [weak self] c, a in
                 guard let strongSelf = self else {
@@ -1491,23 +1567,23 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
         })
         //
         
+        // Nicegram Themes
         let presentationDataSignal = self.sharedContextPromise.get()
         |> mapToSignal { sharedContext in
             sharedContext.sharedContext.presentationData
         }
         
-        if #available(iOS 13.0, *) {
-            let darkAppearanceSignal = presentationDataSignal
-            |> map {
-                $0.theme.overallDarkAppearance
-            }
-            |> distinctUntilChanged
-            |> deliverOnMainQueue
-            
-            let _ = darkAppearanceSignal.start(next: { isDark in
-                UIApplication.findKeyWindow()?.overrideUserInterfaceStyle = isDark ? .dark : .light
-            })
+        let darkAppearanceSignal = presentationDataSignal
+        |> map {
+            $0.theme.overallDarkAppearance
         }
+        |> distinctUntilChanged
+        |> deliverOnMainQueue
+        
+        let _ = darkAppearanceSignal.start(next: { isDark in
+            // self.window rather than the key window: under the scene life cycle it becomes key only in attach(scene:), possibly after this fires
+            self.window?.overrideUserInterfaceStyle = isDark ? .dark : .light
+        })
         //
         
         self.authContext.set(self.sharedContextPromise.get()
@@ -1517,8 +1593,6 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
             |> map { primary, accounts, auth -> (AccountContext?, UnauthorizedAccount, [AccountContext])? in
                 if let auth = auth {
                     return (primary, auth, Array(accounts.map({ $0.1 })))
-                    // Nicegram DB Changes
-                    //return (primary, auth, Array(accounts.filter { !$0.1.account.isHidden }.map({ $0.1 })))
                 } else {
                     return nil
                 }
@@ -1569,9 +1643,11 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
         // Nicegram Onboarding (we put the telegram start navigation code in a closure that we will call when we are done with processing our onboarding)
         let onNicegramOnboardingComplete = {
         //
+        // Nicegram Localization
         let _ = presentationDataSignal.start(next: { presentationData in
             ng_setTgLangCode(presentationData.strings.baseLanguageCode)
         })
+        //
             
         let contextReadyDisposable = MetaDisposable()
         
@@ -1584,6 +1660,7 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
             if let context = context {
                 network = context.context.account.network
 
+                // Nicegram DbReset
                 if VarSystemNGSettings.dbReset {
                     let alert = UIAlertController(
                         title: "Resetting database. Please wait...",
@@ -1621,10 +1698,9 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
                         
                         let isSandbox = Bundle.main.appStoreReceiptURL?.lastPathComponent == "sandboxReceipt"
                         if isSandbox {
-                            // Reset password, double bottom
-                            let _ = context.context.sharedContext.accountManager.transaction({ transaction -> Void in
-                                transaction.setAccessChallengeData(.none)
-                                
+                            // Double Bottom only: the passcode lives in PasscodeCredentialStore, which
+                            // only an authenticated session (or a wallet-wiping reset) can clear.
+                            let _ = (context.context.sharedContext.accountManager.transaction({ transaction -> Void in
                                 for record in transaction.getRecords() {
                                     transaction.updateRecord(record.id) { record in
                                         guard let record = record else { return nil }
@@ -1633,10 +1709,10 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
                                         return AccountRecord(id: record.id, attributes: attributes, temporarySessionId: record.temporarySessionId)
                                     }
                                 }
-                                
+                            })
+                            |> deliverOnMainQueue).start(completed: {
                                 showSuccessResult()
-                            }).start()
-                            //
+                            })
                         } else {
                             showSuccessResult()
                         }
@@ -1645,6 +1721,7 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
                     }
                     VarSystemNGSettings.dbReset = false
                 }
+                //
             }
             
             Logger.shared.log("App \(self.episodeId)", "received context \(String(describing: context)) account \(String(describing: context?.context.account.id)) network \(String(describing: network))")
@@ -1701,7 +1778,11 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
         let authContextReadyDisposable = MetaDisposable()
         
         self.authContextDisposable.set((self.authContext.get()
-        |> deliverOnMainQueue).start(next: { context in 
+        |> deliverOnMainQueue).start(next: { [weak self] context in
+            guard let self else {
+                return
+            }
+
             var network: Network?
             if let context = context {
                 network = context.account.network
@@ -1764,8 +1845,7 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
         if AppCache.wasOnboardingShown {
             onNicegramOnboardingComplete()
         } else {
-            if #available(iOS 15.0, *),
-               let rootController = window.rootViewController {
+            if let rootController = window.rootViewController {
                 let controller = OnboardingRoot().makeController(
                     onFinish: { [weak rootController] in
                         AppCache.wasOnboardingShown = true
@@ -1776,14 +1856,17 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
                 )
                 
                 controller.modalPresentationStyle = .fullScreen
-                rootController.present(controller, animated: false)
+                // The window gets its scene, and can present, only in attach(scene:), which runs this
+                self.presentNicegramOnboarding = { [weak rootController] in
+                    rootController?.present(controller, animated: false)
+                }
             } else {
                 onNicegramOnboardingComplete()
             }
         }
         //
         
-        // Nicegram, new account privacy settings
+        // Nicegram new account privacy settings
         let loginDataSignal: Signal<[any AccountContext], NoError> =
             self.sharedContextPromise.get()
             |> take(1)
@@ -1915,9 +1998,9 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
         })
         
         if let url = launchOptions?[.url] {
-            if let url = url as? URL, url.scheme == "tg" || url.scheme == buildConfig.appSpecificUrlScheme {
+            if let url = url as? URL, url.scheme == "tg" || url.scheme == "ton" || url.scheme == buildConfig.appSpecificUrlScheme || WalletContext.isTonConnectUrl(url.absoluteString) {
                 self.openUrlWhenReady(url: url, external: true)
-            } else if let urlString = url as? String, urlString.lowercased().hasPrefix("tg:") || urlString.lowercased().hasPrefix("\(buildConfig.appSpecificUrlScheme):"), let url = URL(string: urlString) {
+            } else if let urlString = url as? String, urlString.lowercased().hasPrefix("tg:") || urlString.lowercased().hasPrefix("ton:") || urlString.lowercased().hasPrefix("\(buildConfig.appSpecificUrlScheme):") || WalletContext.isTonConnectUrl(urlString), let url = URL(string: urlString) {
                 self.openUrlWhenReady(url: url, external: true)
             }
         }
@@ -2092,6 +2175,70 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
         })
                 
         return true
+    }
+    
+    func application(_ application: UIApplication, configurationForConnecting connectingSceneSession: UISceneSession, options: UIScene.ConnectionOptions) -> UISceneConfiguration {
+        let configuration = UISceneConfiguration(name: "Default Configuration", sessionRole: connectingSceneSession.role)
+        // Only the application-role scene owns the app's window and drives app-wide life-cycle
+        // state. Other roles (e.g. an external display) get no delegate at all, so they cannot
+        // take the account offline or dismiss overlays while the app is foreground on the phone.
+        if connectingSceneSession.role == .windowApplication {
+            configuration.delegateClass = SceneDelegate.self
+        }
+        return configuration
+    }
+
+    func attach(scene: UIWindowScene, connectionOptions: UIScene.ConnectionOptions) {
+        self.statusBarHost?.scene = scene
+        self.window?.windowScene = scene
+
+        // UIKit registers a window's root view controller as that window's rotation client inside
+        // -[UIWindow setRootViewController:], and only if the window already belongs to a scene. This
+        // window is built in didFinishLaunching, before any scene exists, so the registration never
+        // happened and the window never runs -[UIWindow _rotateWindowToOrientation:...]: it still
+        // resizes on rotation, through the scene-geometry path, so the app itself looks correct, but
+        // it never posts UIWindowWillRotateNotification / UIWindowDidRotateNotification.
+        //
+        // UIRemoteKeyboardWindow is a UIApplicationRotationFollowingWindow and rotates ONLY by
+        // following those two notifications, so without this the keyboard keeps its launch
+        // orientation and bounds: it stays pinned to the pre-rotation bottom edge, and the
+        // keyboardWillChangeFrame the app then receives carries the stale portrait height.
+        // Re-assign the controller now that the scene is bound. It must be a real value change --
+        // re-assigning the same object early-returns in UIKit's setter and registers nothing.
+        // (Measured on iOS 26.5; iOS 27 sources the keyboard geometry elsewhere and is unaffected,
+        // so it cannot be used to verify this.)
+        if let window = self.window, let rootViewController = window.rootViewController {
+            window.rootViewController = nil
+            window.rootViewController = rootViewController
+        }
+
+        self.mainWindow?.updateDeviceMetrics()
+        self.window?.makeKeyAndVisible()
+
+        // Nicegram Themes, the observer window predates the scene too, and receives no trait changes until bound to it
+        self.userInterfaceStyleObserverWindow.windowScene = scene
+        //
+        // Nicegram Onboarding
+        self.presentNicegramOnboarding?()
+        self.presentNicegramOnboarding = nil
+        //
+
+        for context in connectionOptions.urlContexts {
+            let url = context.url
+            if let buildConfig = self.buildConfig, url.scheme == "tg" || url.scheme == "ton" || url.scheme == buildConfig.appSpecificUrlScheme || WalletContext.isTonConnectUrl(url.absoluteString) {
+                self.openUrlWhenReady(url: url, external: true)
+            } else {
+                self.handleOpenURL(url)
+            }
+        }
+
+        for userActivity in connectionOptions.userActivities {
+            self.handleUserActivity(userActivity)
+        }
+
+        if let shortcutItem = connectionOptions.shortcutItem {
+            self.handleShortcutItem(shortcutItem, completionHandler: { _ in })
+        }
     }
     
     private var backgroundSessionSourceDataDisposables: [String: Disposable] = [:]
@@ -2298,7 +2445,7 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
         }))
     }
 
-    func applicationWillResignActive(_ application: UIApplication) {
+    func handleWillResignActive() {
         self.isActiveValue = false
         self.isActivePromise.set(false)
         self.clearNotificationsManager?.commitNow()
@@ -2325,9 +2472,7 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
         })
     }
 
-    func applicationDidEnterBackground(_ application: UIApplication) {
-        // Nicegram DB Changes
-        
+    func handleDidEnterBackground() {
         let _ = (self.sharedContextPromise.get()
         |> take(1)
         |> deliverOnMainQueue).start(next: { sharedApplicationContext in
@@ -2362,7 +2507,7 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
         
         let taskIdHolder = TaskIdHolder()
         
-        taskIdHolder.taskId = application.beginBackgroundTask(withName: "lock", expirationHandler: {
+        taskIdHolder.taskId = UIApplication.shared.beginBackgroundTask(withName: "lock", expirationHandler: {
             if let taskId = taskIdHolder.taskId {
                 UIApplication.shared.endBackgroundTask(taskId)
             }
@@ -2374,7 +2519,7 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
         })
     }
 
-    func applicationWillEnterForeground(_ application: UIApplication) {
+    func handleWillEnterForeground() {
         if self.isActiveValue {
             self.isInForegroundValue = true
             self.isInForegroundPromise.set(true)
@@ -2406,7 +2551,7 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
         })
     }
 
-    func applicationDidBecomeActive(_ application: UIApplication) {
+    func handleDidBecomeActive() {
         self.isInForegroundValue = true
         self.isInForegroundPromise.set(true)
         self.isActiveValue = true
@@ -2414,12 +2559,11 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
 
         self.resetBadge()
         
-//        self.maybeCheckForUpdates()
+        self.maybeCheckForUpdates()
         
         // Nicegram fetch
         Queue().async {
-        	self.fetchGlobalNGSettings()
-		    //self.fetchPremium()
+            self.fetchGlobalNGSettings()
         }
         //
         
@@ -2443,7 +2587,6 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
     }
     
     func applicationWillTerminate(_ application: UIApplication) {
-        // Nicegram DB Changes
         Logger.shared.log("App \(self.episodeId)", "terminating")
     }
     
@@ -2515,17 +2658,24 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
         // Nicegram DB Changes
         let _ = (combineLatest(queue: .mainQueue(), self.sharedContextPromise.get(), accountIdFromNotification(userInfo, sharedContext: self.sharedContextPromise.get()))
                  |> take(1)).start(next: { sharedApplicationContext, accountId in
-            
-            let _ = (sharedApplicationContext.sharedContext.accountManager.transaction({ [weak sharedApplicationContext] transaction in
-                if let sharedApplicationContext = sharedApplicationContext, let record = transaction.getRecords().first(where: { $0.id == accountId }),
-                   !record.attributes.contains(where: { $0.isHiddenAccountAttribute }) {
-                    sharedApplicationContext.wakeupManager.replaceCurrentExtensionWithExternalTime(completion: {
-                        completionHandler(.newData)
-                    }, timeout: 29.0)
-                    sharedApplicationContext.notificationManager.addNotification(userInfo)
+            let _ = (sharedApplicationContext.sharedContext.accountManager.transaction { transaction -> Bool in
+                guard let record = transaction.getRecords().first(where: { $0.id == accountId }) else {
+                    return false
                 }
-            }) |> deliverOnMainQueue).start()
+                return !record.attributes.contains(where: { $0.isHiddenAccountAttribute })
+            }
+            |> deliverOnMainQueue).start(next: { isPublicAccount in
+                guard isPublicAccount else {
+                    completionHandler(.noData)
+                    return
+                }
+                sharedApplicationContext.wakeupManager.replaceCurrentExtensionWithExternalTime(completion: {
+                    completionHandler(.newData)
+                }, timeout: 29.0)
+                sharedApplicationContext.notificationManager.addNotification(userInfo)
+            })
         })
+        //
     }
 
     public func pushRegistry(_ registry: PKPushRegistry, didUpdate credentials: PKPushCredentials, for type: PKPushType) {
@@ -2566,7 +2716,7 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
         }
         //
         
-        var decryptedPayloadAndAccountId: ([AnyHashable: Any], AccountRecordId)?
+        let decryptedPayloadAndAccountId: ([AnyHashable: Any], AccountRecordId)?
         
         if let accountIdString = payload.dictionaryPayload["accountId"] as? String, let accountId = Int64(accountIdString) {
             decryptedPayloadAndAccountId = (payload.dictionaryPayload, AccountRecordId(rawValue: accountId))
@@ -2906,19 +3056,12 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
         }
     }
     
-    func application(_ application: UIApplication, open url: URL, sourceApplication: String?) -> Bool {
-        self.openUrl(url: url)
-        return true
-    }
-    
-    func application(_ application: UIApplication, open url: URL, sourceApplication: String?, annotation: Any) -> Bool {
-        self.openUrl(url: url)
-        return true
-    }
-    // Nicegram DB Changes
-    func application(_ app: UIApplication, open url: URL, options: [UIApplication.OpenURLOptionsKey : Any] = [:]) -> Bool {
+    func handleOpenURL(_ url: URL) {
+        guard self.openUrlInProgress != url else {
+            return
+        }
+        // Nicegram DB Changes, the open waits for the passcode lock to be dismissed
         self.handleUniversalLink(url)
-        return true
     }
     // Nicegram DB Changes
     private func handleUniversalLink(_ url: URL) {
@@ -2939,12 +3082,12 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
             self?.openUrl(url: url)
         })
     }
-    
-    func application(_ application: UIApplication, handleOpen url: URL) -> Bool {
-        self.openUrl(url: url)
-        return true
+
+    private func presentWalletUnavailable(in context: AuthorizedApplicationContext) {
+        let presentationData = context.context.sharedContext.currentPresentationData.with { $0 }
+        context.context.sharedContext.presentGlobalController(UndoOverlayController(presentationData: presentationData, content: .info(title: nil, text: presentationData.strings.Wallet_Unavailable, timeout: nil, customUndoText: nil), action: { _ in return false }), nil)
     }
-    
+
     private func openUrl(url: URL) {
         let _ = (self.sharedContextPromise.get()
         |> take(1)
@@ -2960,7 +3103,21 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
             if let authContext = authContext, let confirmationCode = parseConfirmationCodeUrl(sharedContext: sharedContext, url: url) {
                 authContext.rootController.applyConfirmationCode(confirmationCode)
             } else if let context = context {
-                context.openUrl(url, external: true)
+                if (WalletContext.isTonConnectUrl(url.absoluteString) || url.scheme?.lowercased() == "ton"), !WalletConfiguration.with(appConfiguration: context.context.currentAppConfiguration.with { $0 }).isAvailable {
+                    self.presentWalletUnavailable(in: context)
+                } else if WalletContext.isTonConnectUrl(url.absoluteString) {
+                    context.context.walletContext?.processTonConnectUrl(url.absoluteString)
+                } else if url.scheme?.lowercased() == "ton" {
+                    if isTonTransferUrl(url), let walletContext = context.context.walletContext {
+                        context.rootController.pushViewController(WalletSendScreen(
+                            context: context.context,
+                            walletContext: walletContext,
+                            address: url.absoluteString
+                        ))
+                    }
+                } else {
+                    context.openUrl(url, external: true)
+                }
             } else if let authContext = authContext {
                 if let proxyData = parseProxyUrl(sharedContext: sharedContext, url: url) {
                     authContext.rootController.view.endEditing(true)
@@ -2989,7 +3146,7 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
         })
     }
     
-    func application(_ application: UIApplication, continue userActivity: NSUserActivity, restorationHandler: @escaping ([UIUserActivityRestoring]?) -> Void) -> Bool {
+    @discardableResult func handleUserActivity(_ userActivity: NSUserActivity) -> Bool {
         if #available(iOS 10.0, *) {
             var startCallContacts: [INPerson]?
             var isVideo = false
@@ -3156,8 +3313,7 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
         return true
     }
     
-    @available(iOS 9.0, *)
-    func application(_ application: UIApplication, performActionFor shortcutItem: UIApplicationShortcutItem, completionHandler: @escaping (Bool) -> Void) {
+    func handleShortcutItem(_ shortcutItem: UIApplicationShortcutItem, completionHandler: @escaping (Bool) -> Void) {
         let _ = (self.sharedContextPromise.get()
         |> take(1)
         |> deliverOnMainQueue).start(next: { sharedContext in
@@ -3243,6 +3399,14 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
     }
     
     private func openChatWhenReady(accountId: AccountRecordId?, peerId: PeerId, threadId: Int64?, messageId: MessageId? = nil, activateInput: Bool = false, storyId: StoryId?, openAppIfAny: Bool = false, alwaysKeepMessageId: Bool = false) {
+        if let messageId, messageId.namespace == Namespaces.Message.Cloud,
+           peerId == PeerId(namespace: Namespaces.Peer.CloudUser, id: PeerId.Id._internalFromInt64Value(777000)) {
+            if self.walletTonConnectNotifications.enqueue(accountId: accountId, messageId: messageId, alwaysKeepMessageId: alwaysKeepMessageId) {
+                self.openNextWalletTonConnectNotification()
+            }
+            return
+        }
+
         let signal = self.sharedContextPromise.get()
         |> take(1)
         |> deliverOnMainQueue
@@ -3265,6 +3429,43 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
         }))
     }
     
+    private var walletTonConnectNotifications = WalletTonConnectNotificationQueue<AccountRecordId, MessageId>()
+    private let walletTonConnectNotificationDisposable = MetaDisposable()
+
+    private func openNextWalletTonConnectNotification() {
+        guard let route = self.walletTonConnectNotifications.next() else { return }
+        let signal = self.sharedContextPromise.get()
+        |> take(1)
+        |> deliverOnMainQueue
+        |> mapToSignal { sharedContext -> Signal<AuthorizedApplicationContext, NoError> in
+            if let id = route.accountId {
+                sharedContext.sharedContext.switchToAccount(id: id)
+                return self.authorizedContext() |> filter { $0.context.account.id == id } |> take(1)
+            }
+            return self.authorizedContext() |> take(1)
+        }
+        |> mapToSignal { context -> Signal<(AuthorizedApplicationContext, EngineMessage?), NoError> in
+            context.context.engine.messages.downloadMessage(messageId: route.messageId)
+            |> map { (context, $0) }
+        }
+        |> deliverOnMainQueue
+        self.walletTonConnectNotificationDisposable.set(signal.start(next: { [weak self] context, message in
+            guard let self else { return }
+            let isWalletAvailable = WalletConfiguration.with(appConfiguration: context.context.currentAppConfiguration.with { $0 }).isAvailable
+            if isWalletAvailable, let message, let request = walletTonConnectRequestRoute(message: message._asMessage(), accountPeerId: context.context.account.peerId) {
+                context.context.walletContext?.openTonConnectRequest(sessionId: request.sessionId, messageId: request.messageId)
+            } else {
+                context.openChatWithPeerId(peerId: route.messageId.peerId, threadId: nil, messageId: route.messageId,
+                    activateInput: false, storyId: nil, openAppIfAny: false, alwaysKeepMessageId: route.alwaysKeepMessageId)
+                if !isWalletAvailable {
+                    self.presentWalletUnavailable(in: context)
+                }
+            }
+            self.walletTonConnectNotifications.complete()
+            Queue.mainQueue().async { [weak self] in self?.openNextWalletTonConnectNotification() }
+        }))
+    }
+
     private var openUrlInProgress: URL?
     private func openUrlWhenReady(accountId: AccountRecordId? = nil, url: URL, external: Bool = false) {
         self.openUrlInProgress = url
@@ -3287,7 +3488,21 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
         }
         self.openUrlWhenReadyDisposable.set((signal
         |> deliverOnMainQueue).start(next: { [weak self] context in
-            context.openUrl(url, external: external)
+            if (WalletContext.isTonConnectUrl(url.absoluteString) || url.scheme?.lowercased() == "ton"), !WalletConfiguration.with(appConfiguration: context.context.currentAppConfiguration.with { $0 }).isAvailable {
+                self?.presentWalletUnavailable(in: context)
+            } else if WalletContext.isTonConnectUrl(url.absoluteString) {
+                context.context.walletContext?.processTonConnectUrl(url.absoluteString)
+            } else if url.scheme?.lowercased() == "ton" {
+                if isTonTransferUrl(url), let walletContext = context.context.walletContext {
+                    context.rootController.pushViewController(WalletSendScreen(
+                        context: context.context,
+                        walletContext: walletContext,
+                        address: url.absoluteString
+                    ))
+                }
+            } else {
+                context.openUrl(url, external: external)
+            }
             
             Queue.mainQueue().after(1.0, {
                 self?.openUrlInProgress = nil
@@ -3383,7 +3598,7 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
                     |> deliverOnMainQueue
                     |> mapToSignal { account -> Signal<Void, NoError> in
                         if let messageId = messageIdFromNotification(peerId: peerId, notification: response.notification) {
-                            let _ = TelegramEngine(account: account).messages.applyMaxReadIndexInteractively(index: MessageIndex(id: messageId, timestamp: 0)).start()
+                            let _ = TelegramEngine(account: account).messages.applyMaxReadMessageIdInteractively(messageId: messageId).start()
                         }
                         var replyToMessageId: MessageId?
                         if let threadId {
@@ -3462,9 +3677,6 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
                     if #available(iOS 12.0, *) {
                         authorizationOptions.insert(.providesAppNotificationSettings)
                     }
-                    if #available(iOS 13.0, *) {
-                        authorizationOptions.insert(.announcement)
-                    }
                     Logger.shared.log("App \(self.episodeId)", "register for notifications: request authorization")
                     notificationCenter.requestAuthorization(options: authorizationOptions, completionHandler: { result, _ in
                         Logger.shared.log("App \(self.episodeId)", "register for notifications: received authorization: \(result)")
@@ -3490,15 +3702,12 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
                                 
                                 var carPlayOptions = options
                                 carPlayOptions.insert(.allowInCarPlay)
-                                if #available(iOS 13.2, *) {
-                                    carPlayOptions.insert(.allowAnnouncement)
-                                }
                                 
                                 unknownMessageCategory = UNNotificationCategory(identifier: "unknown", actions: [], intentIdentifiers: [], hiddenPreviewsBodyPlaceholder: hiddenContentString, options: options)
                                 repliableMessageCategory = UNNotificationCategory(identifier: "r", actions: [reply], intentIdentifiers: [INSearchForMessagesIntentIdentifier], hiddenPreviewsBodyPlaceholder: hiddenContentString, options: carPlayOptions)
                                 repliableMediaMessageCategory = UNNotificationCategory(identifier: "m", actions: [reply], intentIdentifiers: [], hiddenPreviewsBodyPlaceholder: hiddenContentString, options: carPlayOptions)
-                                groupRepliableMessageCategory = UNNotificationCategory(identifier: "gr", actions: [reply], intentIdentifiers: [INSearchForMessagesIntentIdentifier], hiddenPreviewsBodyPlaceholder: hiddenContentString, options: options)
-                                groupRepliableMediaMessageCategory = UNNotificationCategory(identifier: "gm", actions: [reply], intentIdentifiers: [], hiddenPreviewsBodyPlaceholder: hiddenContentString, options: options)
+                                groupRepliableMessageCategory = UNNotificationCategory(identifier: "gr", actions: [reply], intentIdentifiers: [INSearchForMessagesIntentIdentifier], hiddenPreviewsBodyPlaceholder: hiddenContentString, options: carPlayOptions)
+                                groupRepliableMediaMessageCategory = UNNotificationCategory(identifier: "gm", actions: [reply], intentIdentifiers: [], hiddenPreviewsBodyPlaceholder: hiddenContentString, options: carPlayOptions)
                                 channelMessageCategory = UNNotificationCategory(identifier: "c", actions: [], intentIdentifiers: [], hiddenPreviewsBodyPlaceholder: hiddenContentString, options: options)
                                 reactionMessageCategory = UNNotificationCategory(identifier: "t", actions: [], intentIdentifiers: [], hiddenPreviewsBodyPlaceholder: hiddenReactionContentString, options: options)
                                 storyCategory = UNNotificationCategory(identifier: "st", actions: [], intentIdentifiers: [], hiddenPreviewsBodyPlaceholder: hiddenStoryContentString, options: options)
@@ -3537,9 +3746,10 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
                     let _ = context.context.sharedContext.accountManager.transaction { transaction in
                         if let record = transaction.getRecords().first(where: { $0.id == accountId }),
                            !record.attributes.contains(where: { $0.isHiddenAccountAttribute }) {
-                            completionHandler([.alert])
+                            completionHandler([.banner, .list])
                         }
                     }.start()
+                    //
                 }
             }
         })
@@ -3558,9 +3768,11 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
     private var lastCheckForUpdatesTimestamp: Double?
     private let currentCheckForUpdatesDisposable = MetaDisposable()
     
+    // Nicegram fetch
     private func fetchGlobalNGSettings() {
         updateGlobalNGSettings()
     }
+    //
     
     private func maybeCheckForUpdates() {
         #if targetEnvironment(simulator)
@@ -3885,7 +4097,6 @@ final class DoubleBottomFlowContext {
     private let accountContext: SharedAccountContext
     private let context: AuthorizedApplicationContext
     
-    var mainPasscode: (String, Bool)?
     var secretPasscode: (String, Bool)?
     
     var flowIsReady: Bool = false
@@ -3968,40 +4179,111 @@ final class DoubleBottomFlow {
     }
     
     func start() {
-        let _ = (context.sharedApplicationContext.sharedContext.accountManager.transaction { transaction -> DoubleBottomFlowContext?  in
-            self.doubleBottomContext = DoubleBottomFlowContext(accountContext: self.accountContext, context: self.context)
-            
-            let accessChallengeData = transaction.getAccessChallengeData()
-            self.doubleBottomContext?.mainPasscode = accessChallengeData.convert()
-            
-            return self.doubleBottomContext
-        } |> deliverOnMainQueue).start(next: { [weak self] _ in
-            guard let self = self else { return }
-            let passcodeType: PasscodeEntryFieldType
-            if self.doubleBottomContext!.mainPasscode!.1 {
-                passcodeType = self.doubleBottomContext!.mainPasscode!.0.count == 6 ? .digits6 : .digits4
-            } else {
-                passcodeType = .alphanumeric
+        let _ = (context.sharedApplicationContext.sharedContext.accountManager.transaction { transaction -> PostboxAccessChallengeData in
+            return transaction.getAccessChallengeData()
+        } |> deliverOnMainQueue).start(next: { [weak self] challenge in
+            guard let self else { return }
+            self.doubleBottomContext = DoubleBottomFlowContext(
+                accountContext: self.accountContext,
+                context: self.context
+            )
+            switch challenge {
+            case .none:
+                self.finish()
+            // Until upstream migrates the passcode into the Keychain, which can be unavailable, it is still readable
+            case let .numericalPassword(mainPasscode):
+                self.setUpSecretPasscode(
+                    mainPasscode: mainPasscode,
+                    type: mainPasscode.count == 6 ? .digits6 : .digits4,
+                    verificationController: nil
+                )
+            case let .plaintextPassword(mainPasscode):
+                self.setUpSecretPasscode(
+                    mainPasscode: mainPasscode,
+                    type: .alphanumeric,
+                    verificationController: nil
+                )
+            case let .secured(_, kind):
+                self.verifyMainPasscode(type: kind.entryFieldType)
             }
-            
-            let secretPasscodeSetupController = PasscodeSetupController(context: self.accountContext, mode: .setup(change: false, passcodeType), isChangeModeAllowed: false, isOpaqueNavigationBar: true)
-            secretPasscodeSetupController.checkSetupPasscode = { passcode in
-                return self.doubleBottomContext!.mainPasscode?.0 != passcode
-            }
-            secretPasscodeSetupController.complete = { [weak self] passcode, numerical in
-                guard let strongSelf = self else { return }
-                strongSelf.doubleBottomContext?.secretPasscode = (passcode, numerical)
-                let root = strongSelf.context.rootController
-                root.setViewControllers(Array(root.viewControllers.dropLast(3)), animated: false)
-                strongSelf.hideCurrentAccount()
-
-                let alert = UIAlertController(title: l("DoubleBottom.Enabled.Title"), message: l("DoubleBottom.Enabled.Description"), preferredStyle: .alert)
-                alert.addAction(UIAlertAction(title: l("DoubleBottom.Enabled.OK"), style: .default, handler: { _ in }))
-                strongSelf.context.mainWindow.presentNative(alert)
-                VarSystemNGSettings.isDoubleBottomOn = true
-            }
-            self.context.rootController.pushViewController(secretPasscodeSetupController, animated: true)
         })
+    }
+
+    // The Keychain store keeps no readable main passcode for the secret one to differ from, so the user enters it first
+    private func verifyMainPasscode(type: PasscodeEntryFieldType) {
+        var verifiedPasscode: String?
+        weak var verificationController: ViewController?
+        let controller = settingsPasscodeSessionController(
+            context: self.context.context,
+            completion: { [weak self] result in
+                let mainPasscode = verifiedPasscode
+                verifiedPasscode = nil
+                guard case let .success(session) = result else {
+                    self?.finish()
+                    return
+                }
+                session.invalidate()
+                guard let self, let mainPasscode, let verificationController else {
+                    return
+                }
+                self.setUpSecretPasscode(
+                    mainPasscode: mainPasscode,
+                    type: type,
+                    verificationController: verificationController
+                )
+            }
+        )
+        guard let controller = controller as? PasscodeSetupController else {
+            return
+        }
+        controller.passcodeVerified = { passcode in
+            verifiedPasscode = passcode
+        }
+        verificationController = controller
+        self.context.rootController.pushViewController(
+            controller,
+            animated: true
+        )
+    }
+
+    private func setUpSecretPasscode(
+        mainPasscode: String,
+        type: PasscodeEntryFieldType,
+        verificationController: ViewController?
+    ) {
+        let secretPasscodeSetupController = PasscodeSetupController(
+            context: self.context.context,
+            mode: .setup(change: false, type),
+            isChangeModeAllowed: false,
+            isOpaqueNavigationBar: true
+        )
+        // Only this screen holds the main passcode, which is stored nowhere in plaintext
+        secretPasscodeSetupController.checkSetupPasscode = { passcode in
+            return passcode != mainPasscode
+        }
+        secretPasscodeSetupController.complete = { [weak self] passcode, numerical in
+            guard let strongSelf = self else { return }
+            strongSelf.doubleBottomContext?.secretPasscode = (passcode, numerical)
+            let root = strongSelf.context.rootController
+            root.setViewControllers(Array(root.viewControllers.dropLast(3)), animated: false)
+            strongSelf.hideCurrentAccount()
+
+            let alert = UIAlertController(title: l("DoubleBottom.Enabled.Title"), message: l("DoubleBottom.Enabled.Description"), preferredStyle: .alert)
+            alert.addAction(UIAlertAction(title: l("DoubleBottom.Enabled.OK"), style: .default, handler: { _ in }))
+            strongSelf.context.mainWindow.presentNative(alert)
+            VarSystemNGSettings.isDoubleBottomOn = true
+        }
+        if let navigation = verificationController?.navigationController as? NavigationController {
+            navigation.replaceTopController(
+                secretPasscodeSetupController,
+                animated: true
+            )
+        } else {
+            self.context.rootController.pushViewController(
+                secretPasscodeSetupController,
+                animated: true
+            )
+        }
     }
 }
 
@@ -4021,18 +4303,17 @@ fileprivate extension AccountRecord {
     }
 }
 
-fileprivate extension PostboxAccessChallengeData {
-    func convert() -> (String, Bool)? {
+fileprivate extension PostboxAccessChallengeData.Kind {
+    var entryFieldType: PasscodeEntryFieldType {
         switch self {
-        case .none: return nil
-            
-        case .numericalPassword(let value): return (value, true)
-            
-        case .plaintextPassword(let value): return (value, false)
+        case .digits4: return .digits4
+        case .digits6: return .digits6
+        case .alphanumeric: return .alphanumeric
         }
     }
 }
-    
+//
+
 private func getMemoryConsumption() -> Int {
     guard let memory_offset = MemoryLayout.offset(of: \task_vm_info_data_t.min_address) else {
         return 0

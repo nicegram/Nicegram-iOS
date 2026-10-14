@@ -16,6 +16,7 @@ swift_library(
     ],
     deps = NGDEPS + [
         "//submodules/SSignalKit/SwiftSignalKit:SwiftSignalKit",
+        "//submodules/LottieSettings:LottieSettings",
         "//submodules/AsyncDisplayKit:AsyncDisplayKit",
         "//submodules/Display:Display",
         "//submodules/TelegramCore:TelegramCore",
@@ -36,7 +37,6 @@ swift_library(
         "//submodules/WallpaperBackgroundNode",
         "//submodules/Components/MultilineTextWithEntitiesComponent",
         "//submodules/Components/MultilineTextComponent",
-        "//submodules/TelegramUI/Components/LottieMetal",
         "//submodules/AnimatedStickerNode",
         "//submodules/TelegramAnimatedStickerNode",
         "//submodules/ActivityIndicator",

@@ -21,6 +21,18 @@
 # `-c protocol.file.allow=always` because git blocks file-protocol submodule
 # transports by default (CVE-2022-39253 mitigation).
 #
+# That gitdir holds only what the main clone has fetched, so it can lack a
+# pin pushed from another worktree. git then exits 128 and leaves the clone
+# at the gitdir's own HEAD with an empty working tree, so a local clone that
+# missed its pin fetches it from the real url.
+#
+# A run fails unless every submodule it initialized ends at its pinned
+# commit, and one that does not is emptied so the next run retries it
+# instead of taking the fast path. Submodules a run did not initialize are
+# never checked, here or on the fast path: one off its pin is the normal
+# state during feature work, and build-to-testflight checks the assistant
+# out away from the host's pin on purpose.
+#
 # Do NOT construct "$MAIN/.git/modules/<path>" by hand: it is wrong for at
 # least one submodule. packages/nicegram-assistant-ios stores its gitdir at
 # .git/modules/Nicegram/packages/nicegram-assistant-ios (a legacy path with
@@ -39,6 +51,14 @@ cd "$(git rev-parse --show-toplevel)" || exit 1
 # whitespace split silently truncates any of those to its first word.
 list_uninitialized() {
   git submodule status | sed -n 's/^-[0-9a-fA-F]* //p'
+}
+
+# " " at the pinned commit, "+" checked out elsewhere, "-" uninitialized,
+# "U" in a merge conflict. Status compares with the index's gitlink, which is
+# what `submodule update` checks out; `git ls-tree HEAD` would misread a
+# staged one.
+status_prefix() {
+  git submodule status -- "$1" | cut -c1
 }
 
 missing="$(list_uninitialized)"
@@ -89,16 +109,39 @@ echo "$missing" | while IFS= read -r path; do
   # persisted; a harmless no-op after the network branch, which already
   # wrote the right url itself.
   git submodule sync -- "$path" >/dev/null
+
+  # After the sync, which is what points origin at the real url. Only for a
+  # clone that exists ("+"): on a "-" path `git -C` would walk up and fetch
+  # the superproject instead. A network clone already came from that url.
+  if [ -n "$gitdir" ] && [ "$(status_prefix "$path")" = "+" ]; then
+    echo "  $path -> pinned commit missing from local gitdir, fetching from origin"
+    git -C "$path" fetch origin
+    git submodule update -- "$path"
+  fi
 done
 
-still_missing="$(list_uninitialized)"
-if [ -n "$still_missing" ]; then
+not_at_pin="$(echo "$missing" | while IFS= read -r path; do
+  [ -n "$path" ] && [ "$(status_prefix "$path")" != " " ] && echo "$path"
+done)"
+if [ -n "$not_at_pin" ]; then
   echo "" >&2
-  echo "bootstrap-submodules: FAILED -- still uninitialized:" >&2
-  echo "$still_missing" | while IFS= read -r path; do
-    [ -n "$path" ] && echo "  - $path" >&2
+  echo "bootstrap-submodules: FAILED -- not at the pinned commit:" >&2
+  echo "$not_at_pin" | while IFS= read -r path; do
+    pin="$(git rev-parse --short ":$path")"
+    if [ "$(status_prefix "$path")" = "-" ]; then
+      echo "  - $path: uninitialized, pinned $pin" >&2
+    else
+      echo "  - $path: checked out $(git -C "$path" rev-parse --short HEAD), pinned $pin" >&2
+      # Usually just this run's clone, but not always: git also reattaches a
+      # module gitdir an earlier reset kept, or re-activates a submodule set
+      # inactive by hand, into a directory that is not empty, and that content
+      # goes too. Skipping such a path would leave it at "+" for the next run's
+      # fast path to pass. A "-" path is left alone: it may hold files git
+      # refused to clone over, and the next run retries it anyway.
+      rm -rf "$path" && mkdir -p "$path"
+    fi
   done
-  if echo "$still_missing" | grep -qx 'packages/nicegram-assistant-ios'; then
+  if echo "$not_at_pin" | grep -qx 'packages/nicegram-assistant-ios'; then
     echo "" >&2
     echo "packages/nicegram-assistant-ios is a private Bitbucket repo" >&2
     echo "(git@bitbucket.org:mobyrix/nicegram-assistant-ios.git). It needs your" >&2

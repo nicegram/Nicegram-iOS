@@ -5,7 +5,6 @@ import TelegramCore
 import SwiftSignalKit
 import TelegramAudio
 import Display
-import Postbox
 
 public enum CallAlreadyInProgressType {
     case peer(EnginePeer.Id?)

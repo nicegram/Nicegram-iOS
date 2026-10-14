@@ -111,7 +111,10 @@ gitdirs over the network (see "Starting a feature" below for why), and if it
 still can't fully initialize everything — most likely
 `packages/nicegram-assistant-ios`, which needs Bitbucket SSH access — it
 prints exactly which paths failed and exits non-zero rather than letting the
-build proceed into the confusing Bazel error above. `build-to-testflight.sh`
+build proceed into the confusing Bazel error above. The same holds for a
+submodule it initialized that does not end at its pinned commit (the script's
+header says how it fetches a pin the main clone's gitdir lacks, and what it
+does with a checkout that still misses it). `build-to-testflight.sh`
 skips this step: it doesn't build locally, it just pushes the branch and
 triggers the Bitbucket pipeline, which does its own recursive submodule
 checkout.
@@ -162,6 +165,15 @@ before changing it: it records what each step exists to prevent, including one
 bazel behaviour that silently turns a naive version of this gate permanently
 green.
 
+Before any bazel work the gate also checks the selected Xcode for the two
+components a fresh install can lack and a build only reaches minutes in — an
+iOS Simulator runtime for its iphonesimulator SDK (actool needs one even for a
+device build) and the Metal Toolchain — and fails in seconds with the fix:
+`xcodebuild -downloadPlatform iOS` or `xcodebuild -downloadComponent
+MetalToolchain`, run against the same Xcode. Both were missing from a new
+Xcode 26.6 during the 13.0 merge; the check is `ci/lib/xcode-preflight.sh`, and
+`ci/generate-project.sh` runs it too.
+
 **The destination is decided in exactly one place**, `ci/verify-build.sh`, in
 this order: `--device`/`--sim` on the command line, then
 `$NG_BUILD_DESTINATION` (`device`|`sim`), then `device`. Everything downstream —
@@ -177,16 +189,20 @@ treated as one of them.
 
 ### Build cache
 
-Bazel's cache has four layers here, each with a different scope:
+Bazel's cache has four layers here, each with a different scope. The first two
+live under Bazel's output user root, which is
+`~/Library/Caches/bazel/_bazel_$USER` since the 13.0 merge took Bazel 9.2.0;
+8.x used `/private/var/tmp/_bazel_$USER`, and a checkout still on 8.x builds
+there.
 
-1. **Repository cache**, `/private/var/tmp/_bazel_$USER/cache` — fetched
-   external dependencies. Global: shared by every workspace and every worktree
-   on the machine.
-2. **The output base**, `/private/var/tmp/_bazel_$USER/<md5-of-workspace-path>/`
-   — execroot, the `bazel-out` tree, the action cache, the analysis graph.
-   Bazel names this directory by hashing the workspace's filesystem path, so
-   it is **per workspace path — one per worktree**; a worktree shares none of
-   another worktree's output base.
+1. **Repository cache**, `<user root>/cache` — fetched external dependencies.
+   Global to its user root: shared by every workspace and every worktree on
+   the machine that builds under that root.
+2. **The output base**, `<user root>/<md5-of-workspace-path>/` — execroot, the
+   `bazel-out` tree, the action cache, the analysis graph. Bazel names this
+   directory by hashing the workspace's filesystem path, so it is **per
+   workspace path — one per worktree**; a worktree shares none of another
+   worktree's output base.
 3. **The disk cache**, `~/work/nicegram-bazel-cache` (`BAZEL_LOCAL_CACHE`,
    reaching bazel through `Make.py`'s command line and through the generated
    `xcodeproj.bazelrc`). Content-addressed, keyed by action key, and **the only
@@ -259,7 +275,7 @@ targets, and minimally versions that have different cache keys." The answer is
 to run bazel *through* the generator so it inherits the same output base,
 configs and transition:
 
-    ./build-input/bazel-8.4.2-darwin-arm64 run //Telegram:Telegram_xcodeproj -- \
+    ./build-input/bazel-9.2.0-darwin-arm64 run //Telegram:Telegram_xcodeproj -- \
         --generator_output_groups=<group> 'build --keep_going'
 
 Two corrections to what an earlier pass of this document claimed here, both
@@ -349,9 +365,10 @@ the id is not a witness that the configuration matches: nothing downstream can
 detect the missing file, which is why `ci/verify-build.sh` guarantees it exists
 before it starts.
 
-**Reclaiming disk:** `ci/clean-caches.sh` reports every Bazel output base and
-Xcode DerivedData directory on the machine and, with `--yes`, deletes the ones
-whose checkout no longer exists. Deleting a worktree removes neither on its
+**Reclaiming disk:** `ci/clean-caches.sh` reports every Bazel output base —
+under both user roots, so the bases 8.x left behind stay reclaimable — and
+every Xcode DerivedData directory on the machine and, with `--yes`, deletes the
+ones whose checkout no longer exists. Deleting a worktree removes neither on its
 own — and deleting a worktree does not, by itself, make its caches
 reclaimable. Two things keep the recorded path alive, both measured
 2026-08-28: its **bazel servers idle for three hours** (two per worktree, the
@@ -392,7 +409,7 @@ build cache, remote downloader, XcodeParse, headless generation — not ours):
 
 1. `.bazelrc` — upstream's own file.
 2. `ci/nicegram.bazelrc` — **ours**, reached from `.bazelrc` through one
-   `try-import` at the end. Deprecation demotion, the disk-cache GC bounds,
+   `try-import` at the end. The disk-cache GC bounds
    and `ng_dev`.
 3. `Make.py`'s Python argument lists (`common_debug_args`,
    `common_release_args`, `configuration_args`) — upstream's structure, with
@@ -408,7 +425,8 @@ build cache, remote downloader, XcodeParse, headless generation — not ours):
 There used to be a sixth, `user.bazelrc`, generated per machine by
 `ci/write-user-bazelrc.sh` to give a hand-run `bazel` the disk cache. It was
 removed on 2026-08-28: sourcekit-bsp is not configured on this machine (no
-`buildServer.json` or `.bsp` anywhere), `tgcalls_cli` has never been built, and
+`buildServer.json` or `.bsp` anywhere, and upstream dropped its
+sourcekit-bazel-bsp submodule in 13.0), `tgcalls_cli` has never been built, and
 the disk cache reaches every flow that exists through `Make.py`'s command line
 and the generated `xcodeproj.bazelrc`. If you do start running `bazel` by hand
 and want the cache, pass `--disk_cache=$HOME/work/nicegram-bazel-cache`
@@ -448,7 +466,8 @@ every time any fastlane lane runs, so anything hand-written in it is silently
 erased — as happened once already.
 
 - **`ci/clean-caches.sh [--yes] [--only <path>]`** — reports every Bazel output base
-  (`/private/var/tmp/_bazel_$USER/*`) and Xcode DerivedData directory on the
+  (`~/Library/Caches/bazel/_bazel_$USER/*` for Bazel 9,
+  `/private/var/tmp/_bazel_$USER/*` for 8.x) and Xcode DerivedData directory on the
   machine with its size and whether it is orphaned, and with `--yes` deletes
   the orphans. With no arguments it only reports; nothing is deleted. Run it
   after deleting a worktree — that is the case it exists for, since removing a
@@ -582,7 +601,7 @@ open.
 Diagnosing a suspected wedge — check all three:
 
     ps -eo pid,etime,%cpu,command | grep -E "[s]wift-frontend|[s]wiftc"
-    find -L /private/var/tmp/_bazel_*/ -mmin -1 -type f | head
+    find -L ~/Library/Caches/bazel/_bazel_*/ -mmin -1 -type f | head    # 8.x: /private/var/tmp/_bazel_*/
     # and whether progress lines are still advancing in the build output
 
 The `find` used to read `-newermt '-60 seconds'`. `-mmin -1` is used instead
@@ -613,14 +632,20 @@ one owned by a single skill and producing a fixed set of artifacts:
 | stage | skill | artifacts |
 |---|---|---|
 | start | `start-feature` | worktree + branch in both repos, change record stub, spec, plan whose last task completes the change record, ticket → IN PROGRESS |
-| implement | `superpowers:subagent-driven-development`, in a fresh session started from the prompt `start-feature` prints | code, `docs/changes/<date>-<slug>.md` |
+| implement | `superpowers:subagent-driven-development`, in a fresh session started from the prompt `start-feature` prints | code, `docs/changes/<date>-<slug>.md`, a self-test checklist the human runs on a device |
 | refresh | `sync-from-develop` | merge commits in both repos |
 | share early | `extract-to-develop` | the approved part of the feature as one commit per repo on develop, pushed directly; the feature branch re-synced |
-| ship to QA | `build-to-testflight` | `build/{N}`, a TestFlight build, a change-record comment on each ticket, tickets → READY FOR QA, a Confluence row; for named develop tickets, a stamp commit on develop, pushed directly |
+| ship to QA | `build-to-testflight` | `build/{N}`, a TestFlight build, a change-record comment on each ticket, tickets → READY FOR QA, a Confluence row; for develop tickets never in a QA build, a stamp commit on develop, pushed directly |
 | bug round | `fix-qa-bugs` | fix commits on the feature branch, a change-record delta, bug linked and → DEV COMPLETED |
 | land | `merge-to-develop` | squash on develop in both repos, the change record re-posted at the freeze point, branches and worktree removed |
-| upstream | `tg-merge` | its own branch + worktree, and a `docs/changes` record it writes but does not deliver |
+| upstream | `tg-merge` | its own branch + worktree, a `docs/changes` record it writes but does not deliver, and a self-test checklist for its 🔴 features |
 | crashes | `triage-crashes` → `diagnose-crash` | records in `docs/crashes/`; an approved fix then enters this table at "start" |
+
+**Between implement and ship to QA, the human runs a self-test.** The
+implementation session, and `tg-merge` at handover, end with a short checklist
+the human runs on a real device: the main paths only, so that a broken task
+never reaches QA and the human sees what changed for the user. How it is written
+is owned by `.claude/reference/self-test-checklist.md`.
 
 Ship to QA and bug round form a loop, not a line: a build surfaces bugs, a bug
 round fixes them, the next build ships the fixes, and QA may bounce it back

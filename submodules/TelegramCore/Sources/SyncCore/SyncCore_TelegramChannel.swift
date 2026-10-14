@@ -170,10 +170,6 @@ public struct TelegramChannelFlags: OptionSet {
         self.rawValue = rawValue
     }
     
-    // Nicegram NCG-6554 channels info
-    public static let isMegagroup = TelegramChannelFlags(rawValue: 1 << 256)
-    //
-    
     public static let isVerified = TelegramChannelFlags(rawValue: 1 << 0)
     public static let isCreator = TelegramChannelFlags(rawValue: 1 << 1)
     public static let isScam = TelegramChannelFlags(rawValue: 1 << 2)

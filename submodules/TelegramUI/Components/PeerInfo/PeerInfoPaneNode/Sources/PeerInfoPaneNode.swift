@@ -11,7 +11,6 @@ public enum PeerInfoPaneKey: Int32 {
     case nftSticker
     //
     // Nicegram NCG-7303 Spy on friends
-    @available(iOS 15.0, *)
     case spyOnFriends
     //
     case botPreview

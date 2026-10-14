@@ -1,13 +1,15 @@
 import Foundation
-
-// Nicegram Translate
+import TelegramPresentationData
 
 private let savedTranslationTargetLanguageKey = "ng:savedTranslationTargetLanguage"
 
-func getSavedTranslationTargetLanguage() -> String? {
-    return UserDefaults.standard.string(forKey: savedTranslationTargetLanguageKey)
+public func getPreferredTranslationTargetLanguage(_ presentationData: PresentationData) -> String {
+    UserDefaults.standard.string(forKey: savedTranslationTargetLanguageKey) ?? presentationData.strings.baseLanguageCode
 }
 
-func setSavedTranslationTargetLanguage(code: String) {
-    UserDefaults.standard.set(code, forKey: savedTranslationTargetLanguageKey)
+public func setPreferredTranslationTargetLanguage(code: String) {
+    UserDefaults.standard.set(
+        code,
+        forKey: savedTranslationTargetLanguageKey
+    )
 }

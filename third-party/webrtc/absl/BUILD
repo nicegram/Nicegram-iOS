@@ -1,4 +1,6 @@
 
+load("@rules_cc//cc:cc_library.bzl", "cc_library")
+
 absl_headers = [
     "absl/container/internal/layout.h",
     "absl/container/internal/hashtable_debug_hooks.h",
@@ -353,7 +355,10 @@ absl_sources = [
     "absl/types/bad_any_cast.cc",
     "absl/types/bad_optional_access.cc",
     "absl/types/bad_variant_access.cc",
-    # Nicegram, manually added source files to solve the linking problem. Temporary solution, we should try to remove it the next time we merge with telegram source code.
+    # Nicegram, absl sources upstream's list omits. Still needed at 13.0 (removal tried 2026-10-12):
+    # without them TelegramUIFramework fails to link, because absl's own flag/parse/usage/program_name/
+    # usage_config members in libabsl.a reference ForEachFlag, FinalizeRegistry, absl::Mutex and
+    # CappedDamerauLevenshteinDistance, which live here.
     "absl/flags/commandlineflag.cc",
     "absl/flags/internal/private_handle_accessor.cc",
     "absl/flags/reflection.cc",

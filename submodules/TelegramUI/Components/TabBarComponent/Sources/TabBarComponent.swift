@@ -1,7 +1,5 @@
-// Nicegram
-import NGData
-//
 import Foundation
+import LottieSettings
 import UIKit
 import Display
 import TelegramPresentationData
@@ -662,7 +660,7 @@ public final class TabBarComponent: Component {
             self.component = component
             self.state = state
             
-            // Nicegram
+            // Nicegram TabBarIndicatorReset
             // A tap pins overrideSelectedItemId and nothing upstream ever clears it, so
             // every later programmatic tab change moves the content but not the indicator.
             if let previousComponent, previousComponent.selectedId != component.selectedId {
@@ -1057,7 +1055,7 @@ private final class ItemComponent: Component {
 
             let previousComponent = self.component
             
-            // Nicegram
+            // Nicegram NCG-10151
             self.accessibilityIdentifier = switch component.item.content {
             case let .tabBarItem(tabBarItem): tabBarItem.title
             case let .customItem(customItem): customItem.title
@@ -1081,7 +1079,7 @@ private final class ItemComponent: Component {
             if previousTabBarItem !== currentTabBarItem {
                 if let previousTabBarItem {
                     if let setImageListener = self.setImageListener {
-                        previousTabBarItem.removeSetImageListener(setImageListener) 
+                        previousTabBarItem.removeSetImageListener(setImageListener)
                     }
                     if let setSelectedImageListener = self.setSelectedImageListener {
                         previousTabBarItem.removeSetSelectedImageListener(setSelectedImageListener)
@@ -1154,7 +1152,8 @@ private final class ItemComponent: Component {
                             placeholderColor: nil,
                             startingPosition: .end,
                             size: CGSize(width: 48.0, height: 48.0),
-                            loop: false
+                            loop: false,
+                            lottieSettings: .noAccountFallback
                         )),
                         environment: {},
                         containerSize: CGSize(width: 48.0, height: 48.0)
@@ -1239,7 +1238,8 @@ private final class ItemComponent: Component {
                             placeholderColor: nil,
                             startingPosition: .end,
                             size: CGSize(width: 48.0, height: 48.0),
-                            loop: false
+                            loop: false,
+                            lottieSettings: .noAccountFallback
                         )),
                         environment: {},
                         containerSize: CGSize(width: 48.0, height: 48.0)

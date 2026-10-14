@@ -92,10 +92,6 @@ public final class TelegramRootController: NavigationController, TelegramRootCon
     public var assistantController: ViewController?
     //
     
-    // Nicegram, NCG-11054: assistant tab search handling
-    private var isSearchActivatedFromAssistantTab: Bool = false
-    //
-    
     private let context: AccountContext
     
     public var rootTabController: TabBarController?
@@ -249,7 +245,7 @@ public final class TelegramRootController: NavigationController, TelegramRootCon
     override public func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
         
-        if #available(iOS 15.0, *), !didAppear {
+        if !didAppear {
             let canPresent = { [weak self] in
                 guard let window = self?.context.sharedContext.mainWindow else {
                     return false
@@ -289,10 +285,6 @@ public final class TelegramRootController: NavigationController, TelegramRootCon
     
     public func getPrivacySettings() -> Promise<AccountPrivacySettings?>? {
         return self.accountSettingsController?.privacySettings
-    }
-    
-    public func getTwoStepAuthData() -> Promise<TwoStepAuthData?>? {
-        return self.accountSettingsController?.twoStepAuthData
     }
     
     public func getNotificationExceptions() -> Promise<NotificationExceptionsList?>? {
@@ -340,7 +332,7 @@ public final class TelegramRootController: NavigationController, TelegramRootCon
         contactsController.switchToChatsController = {  [weak self] in
             self?.openChatsController(activateSearch: false)
         }
-        // Nicegram
+        // Nicegram showContactsTab
         if NGSettings.showContactsTab {
             controllers.append(contactsController)
         }
@@ -353,75 +345,52 @@ public final class TelegramRootController: NavigationController, TelegramRootCon
         controllers.append(chatListController)
         
         // Nicegram Assistant
-        if #available(iOS 15.0, *) {
-            let assistantController = NativeControllerWrapper(
-                controller: AssistantTgHelper.assistantTab(),
-                accountContext: self.context
-            )
-            
-            assistantController.onTabBarSearchActivated = { [weak self] in
-                guard let rootTabController = self?.rootTabController,
-                      let index = rootTabController.controllers.firstIndex(where: { $0 is PeerInfoScreenImpl }) else {
-                    return
-                }
-                
-                rootTabController.selectedIndex = index
-                let settingsController = rootTabController.controllers[index]
-                
-                _ = (settingsController.ready.get()
-                 |> filter { $0 }
-                 |> take(1)
-                 |> ignoreValues)
-                .start(completed: {
-                    settingsController.tabBarActivateSearch()
-                    self?.isSearchActivatedFromAssistantTab = true
-                })
+        let assistantController = NativeControllerWrapper(
+            controller: AssistantTgHelper.assistantTab(),
+            accountContext: self.context
+        )
+        
+        assistantController.tabBarItem = tabBarItem(
+            title: "Nicegram",
+            image: NGCoreUI.images.nicegram()
+        )
+        
+        self.assistantController = assistantController
+        
+        controllers.append(assistantController)
+        
+        AssistantTgHelper.routeToAssistantImpl = { [weak self] source in
+            guard let self, let rootTabController else {
+                return
             }
             
-            assistantController.tabBarItem = tabBarItem(
-                title: "Nicegram",
-                image: NGCoreUI.images.nicegram()
-            )
-            
-            assistantController.updateTabBarSearchState(ViewController.TabBarSearchState(isActive: false), transition: .immediate)
-            
-            self.assistantController = assistantController
-            
-            controllers.append(assistantController)
-            
-            AssistantTgHelper.routeToAssistantImpl = { [weak self] source in
-                guard let self, let rootTabController else {
-                    return
-                }
-                
-                let assistantIndex = rootTabController.controllers.firstIndex {
-                    $0 === assistantController
-                }
-                
-                if let assistantIndex {
-                    AssistantTgHelper.assistantSource = source
-                    
-                    popToRoot(animated: true)
-                    rootTabController.selectedIndex = assistantIndex
-                } else {
-                    AssistantTgHelper.presentAssistantModally(
-                        source: source
-                    )
-                }
+            let assistantIndex = rootTabController.controllers.firstIndex {
+                $0 === assistantController
             }
             
-            tabBarController.willSelect = { [weak self] index in
-                guard let self, let rootTabController else {
-                    return
-                }
+            if let assistantIndex {
+                AssistantTgHelper.assistantSource = source
                 
-                let assistantIndex = rootTabController.controllers.firstIndex {
-                    $0 === assistantController
-                }
-                
-                if index == assistantIndex {
-                    AssistantTgHelper.assistantSource = .tabBar
-                }
+                popToRoot(animated: true)
+                rootTabController.selectedIndex = assistantIndex
+            } else {
+                AssistantTgHelper.presentAssistantModally(
+                    source: source
+                )
+            }
+        }
+        
+        tabBarController.willSelect = { [weak self] index in
+            guard let self, let rootTabController else {
+                return
+            }
+            
+            let assistantIndex = rootTabController.controllers.firstIndex {
+                $0 === assistantController
+            }
+            
+            if index == assistantIndex {
+                AssistantTgHelper.assistantSource = .tabBar
             }
         }
         //
@@ -454,21 +423,6 @@ public final class TelegramRootController: NavigationController, TelegramRootCon
         accountSettingsController.parentController = self
         controllers.append(accountSettingsController)
         
-        // Nicegram, NCG-11054: assistant tab search handling
-        accountSettingsController.onTabBarSearchDeactivated = { [weak self] in
-            guard let self else {
-                return
-            }
-            
-            if self.isSearchActivatedFromAssistantTab {
-                isSearchActivatedFromAssistantTab = false
-                if let index = self.rootTabController?.controllers.firstIndex(where: { $0 === self.assistantController }) {
-                    self.rootTabController?.selectedIndex = index
-                }
-            }
-        }
-        //
-                
         // Nicegram Assistant
         // calculate chatListControllerIndex (instead of (controllers.count - 2))
         let selectedControllerIndex = controllers.firstIndex {
@@ -484,7 +438,7 @@ public final class TelegramRootController: NavigationController, TelegramRootCon
         self.pushViewController(tabBarController, animated: false)
     }
     
-    // Nicegram
+    // Nicegram Assistant
     private func tabBarItem(
         title: String,
         image: UIImage?,
@@ -514,7 +468,7 @@ public final class TelegramRootController: NavigationController, TelegramRootCon
             return
         }
         var controllers: [ViewController] = []
-        // Nicegram
+        // Nicegram showContactsTab
         if NGSettings.showContactsTab {
             controllers.append(self.contactsController!)
         }
@@ -621,6 +575,7 @@ public final class TelegramRootController: NavigationController, TelegramRootCon
         
         var presentImpl: ((ViewController) -> Void)?
         var returnToCameraImpl: (() -> Void)?
+        var resetCollageImpl: (() -> Void)?
         var dismissCameraImpl: (() -> Void)?
         var showDraftTooltipImpl: (() -> Void)?
         let cameraController = CameraScreenImpl(
@@ -653,7 +608,7 @@ public final class TelegramRootController: NavigationController, TelegramRootCon
                     return nil
                 }
             },
-            completion: { result, resultTransition, storyRemainingCount, dismissed in
+            completion: { [weak self] result, resultTransition, storyRemainingCount, dismissed in
                 let subject: Signal<MediaEditorScreenImpl.Subject?, NoError> = result
                 |> map { value -> MediaEditorScreenImpl.Subject? in
                     func editorPIPPosition(_ position: CameraScreenImpl.PIPPosition) -> MediaEditorScreenImpl.PIPPosition {
@@ -694,6 +649,8 @@ public final class TelegramRootController: NavigationController, TelegramRootCon
                             )
                         }
                         return .videoCollage(items: collage.items.map { editorCollageItem($0) })
+                    case let .collage(collage):
+                        return .collage(collage)
                     case let .asset(asset):
                         return .asset(asset)
                     case let .draft(draft):
@@ -789,6 +746,9 @@ public final class TelegramRootController: NavigationController, TelegramRootCon
                         }
                     } as ([MediaEditorScreenImpl.Result], @escaping (@escaping () -> Void) -> Void) -> Void
                 )
+                controller.collageDraftSaved = {
+                    resetCollageImpl?()
+                }
                 controller.cancelled = { showDraftTooltip in
                     if showDraftTooltip {
                         showDraftTooltipImpl?()
@@ -817,6 +777,9 @@ public final class TelegramRootController: NavigationController, TelegramRootCon
             if let cameraController {
                 cameraController.returnFromEditor()
             }
+        }
+        resetCollageImpl = { [weak cameraController] in
+            cameraController?.resetCollage()
         }
         showDraftTooltipImpl = { [weak cameraController] in
             if let cameraController {

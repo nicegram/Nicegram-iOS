@@ -751,7 +751,7 @@ private final class PeerInfoScreenLabeledValueItemNode: PeerInfoScreenItemNode {
             let iconFrame =  CGRect(origin: CGPoint(x: width - safeInsets.right - sideInset - iconSize.width + 5.0, y: floorToScreenPixels((height - iconSize.height) / 2.0)), size: iconSize)
             transition.updateFrame(node: self.iconNode, frame: iconFrame)
             
-            // Nicegram TranslateBio, identical frames for iconNode and iconButtonNode
+            // identical frames for iconNode and iconButtonNode
             transition.updateFrame(node: self.iconButtonNode, frame: iconFrame)
             //
         }

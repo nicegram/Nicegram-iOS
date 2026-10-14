@@ -669,6 +669,7 @@ public final class ChatMessageSelectionInputPanelNode: ChatInputPanelNode {
             }
         }
         
+        // Nicegram SelectedMessagesMenu
         let forwardButtonIndex = buttons.firstIndex(of: self.forwardButton)
         let nicegramButtonsIndex = forwardButtonIndex ?? buttons.startIndex
         let nicegramButtons = [
@@ -680,6 +681,7 @@ public final class ChatMessageSelectionInputPanelNode: ChatInputPanelNode {
             contentsOf: nicegramButtons,
             at: nicegramButtonsIndex
         )
+        //
         
         let buttonSize = CGSize(width: 40.0, height: 40.0)
         

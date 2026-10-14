@@ -1,7 +1,13 @@
 
+load("@rules_cc//cc:objc_library.bzl", "objc_library")
+
 public_headers = glob([
     "PublicHeaders/**/*.h",
-])
+# Nicegram, sqlite3ext.h kept out of the module: SQLite 3.53's sqlite3_api_routines differs
+# from the iOS SDK's, and NGUtils sees both (Postbox, and the SDK's SQLite3 via GRDB), which
+# Clang rejects. The amalgamation inlines the header and nothing else includes it.
+], exclude = ["PublicHeaders/sqlcipher/sqlite3ext.h"])
+#
 
 objc_library(
     name = "sqlcipher",
@@ -16,12 +22,12 @@ objc_library(
         "PublicHeaders",
     ],
     copts = [
-        # Nicegram
-        "-DSQLITE_EXTRA_INIT=sqlcipher_extra_init",
-        "-DSQLITE_EXTRA_SHUTDOWN=sqlcipher_extra_shutdown",
-        #
         "-DSQLITE_HAS_CODEC=1",
         "-DSQLCIPHER_CRYPTO_CC=1",
+        # Required since SQLCipher 4.6: sqlcipher.c #errors without these.
+        "-DSQLITE_EXTRA_INIT=sqlcipher_extra_init",
+        "-DSQLITE_EXTRA_SHUTDOWN=sqlcipher_extra_shutdown",
+        "-DSQLITE_THREADSAFE=1",
         "-DSQLITE_TEMP_STORE=2",
         "-DSQLITE_ENABLE_FTS5",
         "-DHAVE_USLEEP=1",
@@ -34,6 +40,11 @@ objc_library(
         "-DSQLITE_MAX_MMAP_SIZE=0",
         "-Wno-all",
         "-Wno-#warnings",
+        # sqlite3.c defines MIN/MAX itself; with modules on, Foundation pulls in
+        # <sys/param.h>'s textually different MIN/MAX, and clang warns at every
+        # use. The pristine amalgamation is kept unpatched (the 2021 copy had a
+        # hand edit normalising these macros); suppress the warning instead.
+        "-Wno-ambiguous-macro",
     ],
     sdk_frameworks = [
       "Foundation",

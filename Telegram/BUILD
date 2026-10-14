@@ -1,3 +1,5 @@
+load("@rules_cc//cc:objc_library.bzl", "objc_library")
+
 load("@bazel_skylib//rules:common_settings.bzl",
     "bool_flag",
 )
@@ -10,6 +12,7 @@ load("@build_bazel_rules_apple//apple:ios.bzl",
     "ios_framework",
     "ios_ui_test",
     "ios_ui_test_suite",
+    "ios_unit_test",
 )
 
 load(
@@ -24,6 +27,8 @@ load("@build_bazel_rules_apple//apple:resources.bzl",
 load("@build_bazel_rules_swift//swift:swift.bzl",
     "swift_library",
 )
+
+load("@rules_shell//shell:sh_binary.bzl", "sh_binary")
 
 load(
     "@rules_xcodeproj//xcodeproj:defs.bzl",
@@ -55,7 +60,8 @@ load(
     "telegram_team_id",
     "telegram_enable_icloud",
     "telegram_enable_siri",
-    "google_client_scheme", 
+    # Nicegram URL schemes, google_client_scheme added
+    "google_client_scheme",
 )
 
 load("@build_bazel_rules_apple//apple:resources.bzl",
@@ -275,6 +281,7 @@ filegroup(
         "Telegram-iOS/en.lproj/Localizable.strings",
     ] + [
         "{}.lproj/Localizable.strings".format(language) for language in empty_languages
+    # Nicegram NGStrings, NiceLocalizable.strings added
     ] + glob(
         [
             "Telegram-iOS/*.lproj/NiceLocalizable.strings",
@@ -370,12 +377,14 @@ objc_library(
     ],
 )
 
+# Nicegram NGResources
 NGRESOURCES = [
     ":FirebaseRemoteConfigDefaults",
     ":GoogleService-Info",
     "//Nicegram/NGResources:NGImagesAssets"
 ]
 
+# Nicegram NGResources
 NGRESOURCES_DEPS = [
     "//Nicegram/NGResources:NGResources"
 ]
@@ -402,10 +411,12 @@ swift_library(
         "//submodules/TelegramUI:TelegramUIAssets",
         "//submodules/TelegramUI/Components/Calls/CallScreen:Assets",
         ":GeneratedPresentationStrings/Resources/PresentationStrings.data",
+    # Nicegram NGResources, '+ NGRESOURCES' added
     ] + NGRESOURCES,
     deps = [
         "//submodules/TelegramUI:TelegramUI",
         "//third-party/boringssl:crypto",
+    # Nicegram NGResources, '+ NGRESOURCES_DEPS' added
     ] + NGRESOURCES_DEPS
 )
 
@@ -435,6 +446,7 @@ plist_fragment(
             <key>CFBundleURLSchemes</key>
             <array>
                 <string>telegram</string>
+                <!-- Nicegram URL schemes -->
                 <string>nicegram</string>
             </array>
         </dict>
@@ -447,10 +459,12 @@ plist_fragment(
             <array>
                 <string>tg</string>
                 <string>tonsite</string>
+                <string>ton</string>
+                <string>tc</string>
+                <!-- Nicegram URL schemes -->
                 <string>ng</string>
                 <string>ngcn</string>
                 <string>ncg</string>
-                <string>tc</string>
                 <string>nicegram-tc</string>
                 <string>wc</string>
                 <string>{google_client_scheme}</string>
@@ -459,6 +473,7 @@ plist_fragment(
     </array>
     """.format(
         telegram_bundle_id = telegram_bundle_id,
+        # Nicegram URL schemes
         google_client_scheme = google_client_scheme,
     )
 )
@@ -490,6 +505,7 @@ official_bundle_ids = [
     "org.telegram.Telegram-iOS",
 ]
 
+# Nicegram BundleIds, our bundle id gets the official entitlements
 nicegram_bundle_ids = [
     "ph.telegra.Telegraph",
     "org.telegram.Telegram-iOS",
@@ -497,6 +513,7 @@ nicegram_bundle_ids = [
 ]
 
 store_bundle_ids = [
+    # Nicegram BundleIds, 'app.nicegram' added
     "app.nicegram",
     "ph.telegra.Telegraph",
 ]
@@ -534,6 +551,7 @@ icloud_fragment = "" if not telegram_enable_icloud else """
 <array>
     <string>iCloud.{telegram_bundle_id}</string>
 </array>
+<!-- Nicegram AccountBackup (NCG-7665): iCloud Drive container for account backups -->
 <key>com.apple.developer.ubiquity-container-identifiers</key>
 <array>
     <string>iCloud.{telegram_bundle_id}</string>
@@ -561,7 +579,6 @@ associated_domains_fragment = "" if telegram_bundle_id not in nicegram_bundle_id
     <string>applinks:telegram.me</string>
     <string>applinks:t.me</string>
 {nicegram_applinks}
-    <string>applinks:yfqcuhfv.xyz</string>
     <string>applinks:*.t.me</string>
     <string>webcredentials:t.me</string>
     <string>webcredentials:telegram.org</string>
@@ -673,11 +690,12 @@ plist_fragment(
     template =
     """
     <key>CFBundleDisplayName</key>
+    <!-- Nicegram Rebrand: 'Telegram' changed to 'Nicegram' -->
     <string>Nicegram</string>
     """
 )
 
-plist_fragment( 
+plist_fragment(
     name = "MtProtoKitInfoPlist",
     extension = "plist",
     template =
@@ -922,6 +940,9 @@ genrule(
     ]
 )
 
+# Nicegram AppIcons, GenerateAddAlternateIcons and AddAlternateIcons removed: nothing uses them,
+# and their three Telegram-iOS/ inputs were deleted with our single icon catalog
+
 plist_fragment(
     name = "TelegramUIInfoPlist",
     extension = "plist",
@@ -942,6 +963,9 @@ plist_fragment(
 
 ios_framework(
     name = "TelegramUIFramework",
+    additional_linker_inputs = [
+        "//third-party/boringssl:crypto",
+    ],
     bundle_id = "{telegram_bundle_id}.TelegramUI".format(
         telegram_bundle_id = telegram_bundle_id,
     ),
@@ -964,6 +988,9 @@ ios_framework(
     minimum_os_version = minimum_os_version,
     extension_safe = True,
     ipa_post_processor = strip_framework,
+    linkopts = [
+        "$(location //third-party/boringssl:crypto)",
+    ],
     deps = [
         "//submodules/TelegramUI:TelegramUI",
     ] + debug_deps,
@@ -979,6 +1006,7 @@ plist_fragment(
     <key>CFBundleIdentifier</key>
     <string>{telegram_bundle_id}.Share</string>
     <key>CFBundleName</key>
+    <!-- Nicegram Rebrand: 'Telegram' changed to 'Nicegram' -->
     <string>Nicegram</string>
     <key>CFBundlePackageType</key>
     <string>XPC!</string>
@@ -1030,6 +1058,7 @@ swift_library(
     ],
     deps = [
         "//submodules/TelegramUI",
+        "//submodules/PasscodeCore",
         "//submodules/TelegramUI/Components/ShareExtensionContext"
     ],
 )
@@ -1071,6 +1100,7 @@ plist_fragment(
     <key>CFBundleIdentifier</key>
     <string>{telegram_bundle_id}.NotificationContent</string>
     <key>CFBundleName</key>
+    <!-- Nicegram Rebrand: 'Telegram' changed to 'Nicegram' -->
     <string>Nicegram</string>
     <key>CFBundlePackageType</key>
     <string>XPC!</string>
@@ -1117,9 +1147,29 @@ swift_library(
     ],
     deps = [
         "//submodules/TelegramUI:TelegramUI",
+        "//submodules/PasscodeCore",
         ":NotificationContentExtensionLink",
     ],
 )
+
+'''genrule(
+    name = "SetMinOsVersionNotificationContentExtension",
+    cmd_bash =
+"""
+    name=NotificationContentExtension.appex
+    cat $(location PatchMinOSVersion.source.sh) | sed -e "s/<<<MIN_OS_VERSION>>>/10\\.0/g" | sed -e "s/<<<NAME>>>/$$name/g" > $(location SetMinOsVersionNotificationContentExtension.sh)
+""",
+    srcs = [
+        "PatchMinOSVersion.source.sh",
+    ],
+    outs = [
+        "SetMinOsVersionNotificationContentExtension.sh",
+    ],
+    executable = True,
+    visibility = [
+        "//visibility:public",
+    ]
+)'''
 
 ios_extension(
     name = "NotificationContentExtension",
@@ -1138,6 +1188,7 @@ ios_extension(
         ":AppNameInfoPlist",
     ],
     minimum_os_version = minimum_os_version, # maintain the same minimum OS version across extensions
+    #ipa_post_processor = ":SetMinOsVersionNotificationContentExtension",
     provisioning_profile = select({
         ":disableProvisioningProfilesSetting": None,
         "//conditions:default": "@build_configuration//provisioning:NotificationContent.mobileprovision",
@@ -1158,6 +1209,7 @@ plist_fragment(
     <key>CFBundleIdentifier</key>
     <string>{telegram_bundle_id}.Widget</string>
     <key>CFBundleName</key>
+    <!-- Nicegram Rebrand: 'Telegram' changed to 'Nicegram' -->
     <string>Nicegram</string>
     <key>CFBundlePackageType</key>
     <string>XPC!</string>
@@ -1201,9 +1253,29 @@ swift_library(
         "//submodules/SSignalKit/SwiftSignalKit:SwiftSignalKit",
         "//submodules/Postbox:Postbox",
         "//submodules/TelegramCore:TelegramCore",
+        "//submodules/PasscodeCore",
         "//submodules/OpenSSLEncryptionProvider:OpenSSLEncryptionProvider",
         "//Telegram:GeneratedSources",
     ],
+)
+
+genrule(
+    name = "SetMinOsVersionWidgetExtension",
+    cmd_bash =
+"""
+    name=WidgetExtension.appex
+    cat $(location PatchMinOSVersion.source.sh) | sed -e "s/<<<MIN_OS_VERSION>>>/14\\.0/g" | sed -e "s/<<<NAME>>>/$$name/g" > $(location SetMinOsVersionWidgetExtension.sh)
+""",
+    srcs = [
+        "PatchMinOSVersion.source.sh",
+    ],
+    outs = [
+        "SetMinOsVersionWidgetExtension.sh",
+    ],
+    executable = True,
+    visibility = [
+        "//visibility:public",
+    ]
 )
 
 ios_extension(
@@ -1223,6 +1295,11 @@ ios_extension(
         ":AppNameInfoPlist",
     ],
     minimum_os_version = minimum_os_version, # maintain the same minimum OS version across extensions
+    # Deliberately NOT patched down: this used to stamp MinimumOSVersion=14.0 so a WidgetKit
+    # extension could ship while the app min was 13.0. Now that the app min is >= 14, stamping
+    # a plist minimum *below* the binary's minos makes App Store validation reject the bundle
+    # (error 90208). Same reason the other extensions' patches are commented out.
+    #ipa_post_processor = ":SetMinOsVersionWidgetExtension",
     #provides_main = True,
     provisioning_profile = select({
         ":disableProvisioningProfilesSetting": None,
@@ -1251,6 +1328,7 @@ plist_fragment(
     <key>CFBundleIdentifier</key>
     <string>{telegram_bundle_id}.SiriIntents</string>
     <key>CFBundleName</key>
+    <!-- Nicegram Rebrand: 'Telegram' changed to 'Nicegram' -->
     <string>Nicegram</string>
     <key>CFBundlePackageType</key>
     <string>XPC!</string>
@@ -1318,10 +1396,62 @@ swift_library(
         "//submodules/BuildConfig:BuildConfig",
         "//submodules/OpenSSLEncryptionProvider:OpenSSLEncryptionProvider",
         "//submodules/AppLockState:AppLockState",
+        "//submodules/PasscodeCore",
         "//Telegram:GeneratedSources",
         "//submodules/WidgetItems:WidgetItems",
     ],
 )
+
+swift_library(
+    name = "IntentsExtensionTestsLib",
+    testonly = True,
+    srcs = glob([
+        "SiriIntentsTests/**/*.swift",
+    ]),
+    deps = [
+        ":IntentsExtensionLib",
+        "//submodules/Postbox:Postbox",
+        "//submodules/TelegramCore:TelegramCore",
+        "//submodules/SSignalKit/SwiftSignalKit:SwiftSignalKit",
+    ],
+)
+
+ios_test_runner(
+    name = "IntentsExtensionTestRunner",
+    device_type = "iPhone 17",
+    os_version = "26.5",
+)
+
+ios_unit_test(
+    name = "IntentsExtensionTests",
+    minimum_os_version = minimum_os_version,
+    runner = ":IntentsExtensionTestRunner",
+    deps = [
+        ":IntentsExtensionTestsLib",
+    ],
+    visibility = [
+        "//visibility:public",
+    ],
+)
+
+'''genrule(
+    name = "SetMinOsVersionIntentsExtension",
+    cmd_bash =
+"""
+    name=IntentsExtension.appex
+    cat $(location PatchMinOSVersion.source.sh) | sed -e "s/<<<MIN_OS_VERSION>>>/10\\.0/g" | sed -e "s/<<<NAME>>>/$$name/g" > $(location SetMinOsVersionIntentsExtension.sh)
+""",
+    srcs = [
+        "PatchMinOSVersion.source.sh",
+    ],
+    outs = [
+        "SetMinOsVersionIntentsExtension.sh",
+    ],
+    executable = True,
+    visibility = [
+        "//visibility:public",
+    ]
+)'''
 
 ios_extension(
     name = "IntentsExtension",
@@ -1340,6 +1470,7 @@ ios_extension(
         ":AppNameInfoPlist",
     ],
     minimum_os_version = minimum_os_version, # maintain the same minimum OS version across extensions
+    #ipa_post_processor = ":SetMinOsVersionIntentsExtension",
     provisioning_profile = select({
         ":disableProvisioningProfilesSetting": None,
         "//conditions:default": "@build_configuration//provisioning:Intents.mobileprovision",
@@ -1398,6 +1529,25 @@ swift_library(
     ],
 )
 
+'''genrule(
+    name = "SetMinOsVersionBroadcastUploadExtension",
+    cmd_bash =
+"""
+    name=BroadcastUploadExtension.appex
+    cat $(location PatchMinOSVersion.source.sh) | sed -e "s/<<<MIN_OS_VERSION>>>/11\\.0/g" | sed -e "s/<<<NAME>>>/$$name/g" > $(location SetMinOsVersionBroadcastUploadExtension.sh)
+""",
+    srcs = [
+        "PatchMinOSVersion.source.sh",
+    ],
+    outs = [
+        "SetMinOsVersionBroadcastUploadExtension.sh",
+    ],
+    executable = True,
+    visibility = [
+        "//visibility:public",
+    ]
+)'''
+
 ios_extension(
     name = "BroadcastUploadExtension",
     bundle_id = "{telegram_bundle_id}.BroadcastUpload".format(
@@ -1415,6 +1565,7 @@ ios_extension(
         ":AppNameInfoPlist",
     ],
     minimum_os_version = minimum_os_version, # maintain the same minimum OS version across extensions
+    #ipa_post_processor = ":SetMinOsVersionBroadcastUploadExtension",
     provisioning_profile = select({
         ":disableProvisioningProfilesSetting": None,
         "//conditions:default": "@build_configuration//provisioning:BroadcastUpload.mobileprovision",
@@ -1436,6 +1587,7 @@ plist_fragment(
     <key>CFBundleIdentifier</key>
     <string>{telegram_bundle_id}.NotificationService</string>
     <key>CFBundleName</key>
+    <!-- Nicegram Rebrand: 'Telegram' changed to 'Nicegram' -->
     <string>Nicegram</string>
     <key>CFBundlePackageType</key>
     <string>XPC!</string>
@@ -1488,14 +1640,6 @@ ios_extension(
         ":TelegramUIFramework",
     ],
 )
-
-# Nicegram
-nicegram_queries_schemes = """
-<string>appesim</string>
-<string>com.sticker.studio</string>
-<string>inlab</string>
-<string>plnt</string>
-"""
 
 # Nicegram
 nicegram_skad_network_items = """
@@ -1893,10 +2037,12 @@ plist_fragment(
     <key>CFBundleDevelopmentRegion</key>
     <string>en</string>
     <key>CFBundleDisplayName</key>
+    <!-- Nicegram Rebrand: 'Telegram' changed to 'Nicegram' -->
     <string>Nicegram</string>
     <key>CFBundleIdentifier</key>
     <string>{telegram_bundle_id}</string>
     <key>CFBundleName</key>
+    <!-- Nicegram Rebrand: 'Telegram' changed to 'Nicegram' -->
     <string>Nicegram</string>
     <key>CFBundlePackageType</key>
     <string>APPL</string>
@@ -1906,7 +2052,6 @@ plist_fragment(
     <false/>
     <key>LSApplicationQueriesSchemes</key>
     <array>
-        {nicegram_queries_schemes}
         <string>instagram</string>
         <string>comgooglemaps-x-callback</string>
         <string>foursquare</string>
@@ -1956,25 +2101,32 @@ plist_fragment(
     <key>NSCameraUsageDescription</key>
     <string>We need this so that you can take and share photos and videos.</string>
     <key>NSContactsUsageDescription</key>
+    <!-- Nicegram Rebrand: 'Telegram' changed to 'Nicegram' -->
     <string>Nicegram stores your contacts heavily encrypted in the cloud to let you connect with your friends across all your devices.</string>
     <key>NSFaceIDUsageDescription</key>
     <string>You can use Face ID to unlock the app.</string>
     <key>NSLocationAlwaysUsageDescription</key>
+    <!-- Nicegram Rebrand: 'Telegram' changed to 'Nicegram' -->
     <string>When you send your location to your friends, Nicegram needs access to show them a map. You also need this to send locations from an Apple Watch.</string>
     <key>NSLocationWhenInUseUsageDescription</key>
+    <!-- Nicegram Rebrand: 'Telegram' changed to 'Nicegram' -->
     <string>When you send your location to your friends, Nicegram needs access to show them a map.</string>
     <key>NSMicrophoneUsageDescription</key>
     <string>We need this so that you can record and share voice messages and videos with sound.</string>
     <key>NSMotionUsageDescription</key>
+    <!-- Nicegram Rebrand: 'Telegram' changed to 'Nicegram' -->
     <string>When you send your location to your friends, Nicegram needs access to show them a map.</string>
     <key>NSPhotoLibraryAddUsageDescription</key>
+    <!-- Nicegram UsageDescriptions: photo library text reworded -->
     <string>We use access to your photo library so you can attach and send photos and videos from your device in chats.</string>
     <key>NSPhotoLibraryUsageDescription</key>
+    <!-- Nicegram UsageDescriptions: photo library text reworded -->
     <string>We use access to your photo library so you can attach and send photos and videos from your device in chats.</string>
     <key>NSSiriUsageDescription</key>
     <string>You can use Siri to send messages.</string>
     <key>NSSpeechRecognitionUsageDescription</key>
     <string>We need this to transcribe audio messages on your request.</string>
+    <!-- Nicegram Analytics: App Tracking Transparency prompt text -->
     <key>NSUserTrackingUsageDescription</key>
     <string>We would like to access your advertising ID in order to accurately identify the source of app installation and provide you with a high quality service</string>
     <key>NSUserActivityTypes</key>
@@ -1982,6 +2134,24 @@ plist_fragment(
         <string>INSendMessageIntent</string>
         <string>RemindAboutChatIntent</string>
     </array>
+    <!-- Nicegram: UIAppFonts removed together with the licensed AremacFS fonts (4d67dc6ae60) -->
+    <key>UIApplicationSceneManifest</key>
+    <dict>
+        <key>UIApplicationSupportsMultipleScenes</key>
+        <false/>
+        <key>UISceneConfigurations</key>
+        <dict>
+            <key>UIWindowSceneSessionRoleApplication</key>
+            <array>
+                <dict>
+                    <key>UISceneConfigurationName</key>
+                    <string>Default Configuration</string>
+                    <key>UISceneDelegateClassName</key>
+                    <string>SceneDelegate</string>
+                </dict>
+            </array>
+        </dict>
+    </dict>
     <key>UIBackgroundModes</key>
     <array>
         <string>audio</string>
@@ -2034,6 +2204,7 @@ plist_fragment(
             <string>Telegram iOS Color Theme File</string>
             <key>UTTypeIconFiles</key>
             <array>
+                <!-- Nicegram AppIcons: 'BlueIcon@3x.png' changed to the name in our icon catalog -->
                 <string>BlueIcon60x60@3x.png</string>
             </array>
             <key>UTTypeIdentifier</key>
@@ -2051,6 +2222,7 @@ plist_fragment(
     <true/>
     <key>UIApplicationSupportsIndirectInputEvents</key>
     <true/>
+    <!-- Nicegram Analytics: Firebase Analytics consent defaults -->
     <key>GOOGLE_ANALYTICS_DEFAULT_ALLOW_ANALYTICS_STORAGE</key>
     <true/>
     <key>GOOGLE_ANALYTICS_DEFAULT_ALLOW_AD_STORAGE</key>
@@ -2059,6 +2231,7 @@ plist_fragment(
     <true/>
     <key>GOOGLE_ANALYTICS_DEFAULT_ALLOW_AD_PERSONALIZATION_SIGNALS</key>
     <true/>
+    <!-- Nicegram AccountBackup (NCG-7665): iCloud Drive container for account backups -->
     <key>NSUbiquitousContainers</key>
     <dict>
         <key>iCloud.{telegram_bundle_id}</key>
@@ -2070,7 +2243,6 @@ plist_fragment(
         </dict>
     </dict>
     """.format(
-        nicegram_queries_schemes = nicegram_queries_schemes,
         nicegram_skad_network_items = nicegram_skad_network_items,
         telegram_bundle_id = telegram_bundle_id,
     )
@@ -2101,16 +2273,15 @@ apple_prebuilt_watchos_application(
     tags = ["manual"],
 )
 
-# Nicegram, required for Adjust SDK
+# Nicegram Analytics, GoogleAppMeasurement looks AAAttribution up at runtime (Apple Search Ads
+# attribution) and nothing else links AdServices; AdSupport, ATT and StoreKit arrive via TelegramUIFramework.
 objc_library(
     name = "OptionalSystemFrameworks",
     weak_sdk_frameworks = [
         "AdServices",
-        "AdSupport",
-        "AppTrackingTransparency",
-        "StoreKit",
     ]
 )
+#
 
 ios_application(
     name = "Telegram",
@@ -2131,11 +2302,14 @@ ios_application(
         ":RequiredDeviceCapabilitiesPlist",
         ":UrlTypesInfoPlist",
     ],
+    # Nicegram AppIcons, upstream's Icon Composer app_icons and alternate_icons replaced by one catalog
     app_icons = [":AppIcons"],
     primary_app_icon = "PrimaryIcon",
     resources = [
+        # Nicegram AppIcons, icon preview imagesets added
         ":AppIconImagesets",
         ":LaunchScreen",
+        #":DefaultAppIcon",
     ],
     frameworks = [
         ":MtProtoKitFramework",
@@ -2144,6 +2318,7 @@ ios_application(
         ":TelegramCoreFramework",
         ":TelegramUIFramework",
     ],
+    # Nicegram NGSettingsBundle
     settings_bundle = "//Nicegram/NGSettingsBundle:NGSettingsBundle",
     strings = [
         ":AppStringResources",
@@ -2169,7 +2344,7 @@ ios_application(
     deps = [
         ":Main",
         ":Lib",
-        # Nicegram
+        # Nicegram Analytics
         ":OptionalSystemFrameworks",
     ],
     visibility = ["//visibility:public"],
@@ -2320,4 +2495,15 @@ ios_application(
     deps = [
         "//third-party/libvpx:vpx",
     ],
+)
+
+# Actual generated localization resources for unhosted preview integration tests.
+filegroup(
+    name = "InstantPagePreviewTestStrings",
+    testonly = True,
+    srcs = [
+        ":GeneratedPresentationStrings/Resources/PresentationStrings.data",
+        "Telegram-iOS/en.lproj/Localizable.strings",
+    ],
+    visibility = ["//submodules/ChatListUI:__pkg__"],
 )

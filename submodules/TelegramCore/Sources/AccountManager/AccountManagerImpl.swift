@@ -8,6 +8,36 @@ public protocol AccountManagerTypes {
 
 public typealias SharedPreferencesEntry = PreferencesEntry
 
+private enum AccountManagerPasscodeMigrationTestError: LocalizedError {
+    case unsupportedAccountManager
+    case invalidAccessChallenge
+
+    var errorDescription: String? {
+        switch self {
+        case .unsupportedAccountManager:
+            return "Passcode migration tests require a writable, persistent account manager."
+        case .invalidAccessChallenge:
+            return "Passcode migration tests require a legacy passcode."
+        }
+    }
+}
+
+public struct AccountManagerAccessChallenge {
+    public let prepare: (Bool) throws -> Void
+    public let resolve: (PostboxAccessChallengeData?, Bool) throws -> PostboxAccessChallengeData?
+    public let finishInitialization: () throws -> Void
+
+    public init(
+        prepare: @escaping (Bool) throws -> Void,
+        resolve: @escaping (PostboxAccessChallengeData?, Bool) throws -> PostboxAccessChallengeData?,
+        finishInitialization: @escaping () throws -> Void
+    ) {
+        self.prepare = prepare
+        self.resolve = resolve
+        self.finishInitialization = finishInitialization
+    }
+}
+
 public struct AccountManagerModifier<Types: AccountManagerTypes> {
     public let getRecords: () -> [AccountRecord<Types.Attribute>]
     public let updateRecord: (AccountRecordId, (AccountRecord<Types.Attribute>?) -> (AccountRecord<Types.Attribute>?)) -> Void
@@ -38,6 +68,8 @@ final class AccountManagerImpl<Types: AccountManagerTypes> {
     private let temporarySessionId: Int64
     private let guardValueBox: ValueBox?
     private let valueBox: ValueBox
+    private let canCleanPasscodeMetadata: Bool
+    private let resolveAccessChallenge: (PostboxAccessChallengeData?, Bool) throws -> PostboxAccessChallengeData?
     
     private var tables: [Table] = []
     
@@ -76,13 +108,11 @@ final class AccountManagerImpl<Types: AccountManagerTypes> {
         } catch let e {
             postboxLog("decode atomic state error: \(e)")
             postboxLogSync()
-            // Nicegram, possible crash fix
-            return ([], nil)
-//            preconditionFailure()
+            preconditionFailure()
         }
     }
     // Nicegram DB Changes
-    fileprivate init?(queue: Queue, basePath: String, isTemporary: Bool, isReadOnly: Bool, useCaches: Bool, removeDatabaseOnError: Bool, temporarySessionId: Int64, hiddenAccountManager: HiddenAccountManager) {
+    fileprivate init?(queue: Queue, basePath: String, isTemporary: Bool, isReadOnly: Bool, useCaches: Bool, removeDatabaseOnError: Bool, temporarySessionId: Int64, accessChallenge: AccountManagerAccessChallenge, hiddenAccountManager: HiddenAccountManager) {
         let startTime = CFAbsoluteTimeGetCurrent()
         
         self.queue = queue
@@ -92,6 +122,8 @@ final class AccountManagerImpl<Types: AccountManagerTypes> {
         // Nicegram DB Changes
         self.hiddenAccountManager = hiddenAccountManager
         self.temporarySessionId = temporarySessionId
+        self.canCleanPasscodeMetadata = !isReadOnly && !isTemporary
+        self.resolveAccessChallenge = accessChallenge.resolve
         let _ = try? FileManager.default.createDirectory(atPath: basePath, withIntermediateDirectories: true, attributes: nil)
         guard let guardValueBox = SqliteValueBox(basePath: basePath + "/guard_db", queue: queue, isTemporary: isTemporary, isReadOnly: false, useCaches: useCaches, removeDatabaseOnError: removeDatabaseOnError, encryptionParameters: nil, upgradeProgress: { _ in }) else {
             postboxLog("Could not open guard value box at \(basePath + "/guard_db")")
@@ -124,6 +156,15 @@ final class AccountManagerImpl<Types: AccountManagerTypes> {
         self.legacyRecordTable = AccountManagerRecordTable<Types.Attribute>(valueBox: self.valueBox, table: AccountManagerRecordTable<Types.Attribute>.tableSpec(1), useCaches: useCaches)
         self.sharedDataTable = AccountManagerSharedDataTable(valueBox: self.valueBox, table: AccountManagerSharedDataTable.tableSpec(2), useCaches: useCaches)
         self.noticeTable = NoticeTable(valueBox: self.valueBox, table: NoticeTable.tableSpec(3), useCaches: useCaches)
+
+        let isFreshInstallation = !FileManager.default.fileExists(atPath: self.atomicStatePath)
+            && self.legacyRecordTable.getRecords().isEmpty
+            && self.legacyMetadataTable.getAccessChallengeData() == .none
+        do {
+            try accessChallenge.prepare(isFreshInstallation)
+        } catch {
+            postboxLog("Access challenge installation initialization deferred")
+        }
         
         do {
             let data = try Data(contentsOf: URL(fileURLWithPath: self.atomicStatePath))
@@ -164,8 +205,10 @@ final class AccountManagerImpl<Types: AccountManagerTypes> {
             self.currentAtomicState.accessChallengeData = tableAccessChallengeData
             self.syncAtomicStateToFile()
         }
-        // Nicegram DB Changes
-        self.unlockedHiddenAccountRecordIdDisposable = hiddenAccountManager.accountManagerRecordIdPromise.get().start(next: { [weak self] id in
+        // Nicegram DB Changes, deliverOn(queue): the promise is set on the main thread,
+        // and recordsViews and its views may only be touched on this queue
+        self.unlockedHiddenAccountRecordIdDisposable = (hiddenAccountManager.accountManagerRecordIdPromise.get()
+        |> deliverOn(queue)).start(next: { [weak self] id in
             guard let strongSelf = self else { return }
             
             var metadataOperations = [AccountManagerMetadataOperation<Types.Attribute>]()
@@ -183,6 +226,25 @@ final class AccountManagerImpl<Types: AccountManagerTypes> {
             }
         })
         
+        do {
+            let allowMigration = !isReadOnly && !isTemporary
+            let migrated = try self.resolveAccessChallenge(self.currentAtomicState.accessChallengeData, allowMigration)
+            if allowMigration {
+                if let migrated, migrated != self.currentAtomicState.accessChallengeData || migrated != self.legacyMetadataTable.getAccessChallengeData() {
+                    self.valueBox.begin()
+                    self.legacyMetadataTable.setAccessChallengeData(migrated)
+                    self.valueBox.commit()
+                    self.currentAtomicState.accessChallengeData = migrated
+                    self.syncAtomicStateToFile()
+                }
+                self.cleanPasscodeMetadataIfNeeded()
+                try accessChallenge.finishInitialization()
+            }
+        } catch {
+            // An unavailable credential must not remove the existing lock.
+            postboxLog("AccountManager: access challenge credential migration deferred")
+        }
+
         postboxLog("AccountManager: currentAccountId = \(String(describing: currentAtomicState.currentRecordId))")
         
         self.tables.append(self.legacyMetadataTable)
@@ -257,8 +319,22 @@ final class AccountManagerImpl<Types: AccountManagerTypes> {
             let updated = f(self.sharedDataTable.get(key: key))
             self.sharedDataTable.set(key: key, value: updated, updatedKeys: &self.currentUpdatedSharedDataKeys)
         }, getAccessChallengeData: {
-            return self.legacyMetadataTable.getAccessChallengeData()
-        }, setAccessChallengeData: { data in
+            let current = self.legacyMetadataTable.getAccessChallengeData()
+            if let migrated = try? self.resolveAccessChallenge(current, true), migrated != current {
+                self.legacyMetadataTable.setAccessChallengeData(migrated)
+                self.currentAtomicState.accessChallengeData = migrated
+                self.currentAtomicStateUpdated = true
+                self.currentUpdatedAccessChallengeData = migrated
+                return migrated
+            }
+            return current
+        }, setAccessChallengeData: { proposed in
+            guard let data = try? self.resolveAccessChallenge(nil, false) else {
+                return
+            }
+            guard data == proposed else {
+                return
+            }
             self.currentUpdatedAccessChallengeData = data
             self.currentAtomicStateUpdated = true
             self.legacyMetadataTable.setAccessChallengeData(data)
@@ -300,7 +376,76 @@ final class AccountManagerImpl<Types: AccountManagerTypes> {
             return EmptyDisposable
         }
     }
+
+    fileprivate func testPasscodeMigration(
+        _ legacy: PostboxAccessChallengeData,
+        prepare: (_ commitAndCrash: () throws -> Never) throws -> Never,
+        crash: @escaping () throws -> Never
+    ) throws -> Never {
+        assert(self.queue.isCurrent())
+        guard self.canCleanPasscodeMetadata else {
+            throw AccountManagerPasscodeMigrationTestError.unsupportedAccountManager
+        }
+        switch legacy {
+        case .numericalPassword, .plaintextPassword:
+            break
+        case .none, .secured:
+            throw AccountManagerPasscodeMigrationTestError.invalidAccessChallenge
+        }
+
+        let atomicState = AccountManagerAtomicState<Types>(
+            records: self.currentAtomicState.records,
+            currentRecordId: self.currentAtomicState.currentRecordId,
+            currentAuthRecord: self.currentAtomicState.currentAuthRecord,
+            accessChallengeData: legacy
+        )
+        let atomicStateData = try JSONEncoder().encode(atomicState)
+
+        self.valueBox.begin()
+        var transactionOpen = true
+        defer {
+            if transactionOpen {
+                self.valueBox.commit()
+            }
+        }
+
+        return try prepare {
+            precondition(transactionOpen)
+            do {
+                try FileManager.default.removeItem(atPath: self.basePath + "/passcode-v1-metadata-clean")
+            } catch let error as NSError where error.domain == NSCocoaErrorDomain && error.code == NSFileNoSuchFileError {
+            }
+
+            try atomicStateData.write(to: URL(fileURLWithPath: self.atomicStatePath), options: .atomic)
+            self.legacyMetadataTable.setAccessChallengeData(legacy)
+            self.currentAtomicState = atomicState
+            self.valueBox.commit()
+            transactionOpen = false
+
+            return try crash()
+        }
+    }
     
+    private func cleanPasscodeMetadataIfNeeded() {
+        guard self.canCleanPasscodeMetadata else { return }
+        let marker = self.basePath + "/passcode-v1-metadata-clean"
+        guard !FileManager.default.fileExists(atPath: marker) else {
+            return
+        }
+        switch self.currentAtomicState.accessChallengeData {
+        case .numericalPassword, .plaintextPassword:
+            return
+        case .none, .secured:
+            break
+        }
+        guard let _ = try? self.resolveAccessChallenge(nil, false) else {
+            return
+        }
+
+        (self.valueBox as? SqliteValueBox)?.vacuum()
+        try? Data([1]).write(to: URL(fileURLWithPath: marker), options: .atomic)
+    }
+
     private func syncAtomicStateToFile() {
         if let data = try? JSONEncoder().encode(self.currentAtomicState) {
             if let _ = try? data.write(to: URL(fileURLWithPath: self.atomicStatePath), options: [.atomic]) {
@@ -421,18 +566,27 @@ final class AccountManagerImpl<Types: AccountManagerTypes> {
             return self.currentAtomicState.records.map { $0.1 }
             // Nicegram DB Changes
         }, currentId: currentRecordId ?? self.currentAtomicState.currentRecordId, currentAuth: self.currentAtomicState.currentAuthRecord)
-        let pipe = ValuePipe<AccountRecordsView<Types>>()
-        let index = self.recordsViews.add((mutableView, pipe))
         
         let queue = self.queue
-        return (.single(AccountRecordsView<Types>(mutableView))
-        |> then(pipe.signal()))
-        |> `catch` { _ -> Signal<AccountRecordsView<Types>, NoError> in
-        }
-        |> afterDisposed { [weak self] in
-            queue.async {
-                if let strongSelf = self {
-                    strongSelf.recordsViews.remove(index)
+        return Signal { [weak self] subscriber in
+            guard let strongSelf = self else {
+                subscriber.putCompletion()
+                return EmptyDisposable
+            }
+            let pipe = ValuePipe<AccountRecordsView<Types>>()
+            let index = strongSelf.recordsViews.add((mutableView, pipe))
+            
+            subscriber.putNext(AccountRecordsView<Types>(mutableView))
+            let pipeDisposable = pipe.signal().start(next: { next in
+                subscriber.putNext(next)
+            })
+            
+            return ActionDisposable {
+                pipeDisposable.dispose()
+                queue.async {
+                    if let strongSelf = self {
+                        strongSelf.recordsViews.remove(index)
+                    }
                 }
             }
         }
@@ -440,18 +594,27 @@ final class AccountManagerImpl<Types: AccountManagerTypes> {
     
     private func sharedDataInternal(transaction: AccountManagerModifier<Types>, keys: Set<ValueBoxKey>) -> Signal<AccountSharedDataView<Types>, NoError> {
         let mutableView = MutableAccountSharedDataView<Types>(accountManagerImpl: self, keys: keys)
-        let pipe = ValuePipe<AccountSharedDataView<Types>>()
-        let index = self.sharedDataViews.add((mutableView, pipe))
-        
+
         let queue = self.queue
-        return (.single(AccountSharedDataView<Types>(mutableView))
-        |> then(pipe.signal()))
-        |> `catch` { _ -> Signal<AccountSharedDataView<Types>, NoError> in
-        }
-        |> afterDisposed { [weak self] in
-            queue.async {
-                if let strongSelf = self {
-                    strongSelf.sharedDataViews.remove(index)
+        return Signal { [weak self] subscriber in
+            guard let strongSelf = self else {
+                subscriber.putCompletion()
+                return EmptyDisposable
+            }
+            let pipe = ValuePipe<AccountSharedDataView<Types>>()
+            let index = strongSelf.sharedDataViews.add((mutableView, pipe))
+
+            subscriber.putNext(AccountSharedDataView<Types>(mutableView))
+            let pipeDisposable = pipe.signal().start(next: { next in
+                subscriber.putNext(next)
+            })
+
+            return ActionDisposable {
+                pipeDisposable.dispose()
+                queue.async {
+                    if let strongSelf = self {
+                        strongSelf.sharedDataViews.remove(index)
+                    }
                 }
             }
         }
@@ -459,18 +622,27 @@ final class AccountManagerImpl<Types: AccountManagerTypes> {
     
     private func noticeEntryInternal(transaction: AccountManagerModifier<Types>, key: NoticeEntryKey) -> Signal<NoticeEntryView<Types>, NoError> {
         let mutableView = MutableNoticeEntryView<Types>(accountManagerImpl: self, key: key)
-        let pipe = ValuePipe<NoticeEntryView<Types>>()
-        let index = self.noticeEntryViews.add((mutableView, pipe))
         
         let queue = self.queue
-        return (.single(NoticeEntryView(mutableView))
-        |> then(pipe.signal()))
-        |> `catch` { _ -> Signal<NoticeEntryView<Types>, NoError> in
-        }
-        |> afterDisposed { [weak self] in
-            queue.async {
-                if let strongSelf = self {
-                    strongSelf.noticeEntryViews.remove(index)
+        return Signal { [weak self] subscriber in
+            guard let strongSelf = self else {
+                subscriber.putCompletion()
+                return EmptyDisposable
+            }
+            let pipe = ValuePipe<NoticeEntryView<Types>>()
+            let index = strongSelf.noticeEntryViews.add((mutableView, pipe))
+            
+            subscriber.putNext(NoticeEntryView(mutableView))
+            let pipeDisposable = pipe.signal().start(next: { next in
+                subscriber.putNext(next)
+            })
+            
+            return ActionDisposable {
+                pipeDisposable.dispose()
+                queue.async {
+                    if let strongSelf = self {
+                        strongSelf.noticeEntryViews.remove(index)
+                    }
                 }
             }
         }
@@ -478,18 +650,27 @@ final class AccountManagerImpl<Types: AccountManagerTypes> {
     
     private func accessChallengeDataInternal(transaction: AccountManagerModifier<Types>) -> Signal<AccessChallengeDataView, NoError> {
         let mutableView = MutableAccessChallengeDataView(data: transaction.getAccessChallengeData())
-        let pipe = ValuePipe<AccessChallengeDataView>()
-        let index = self.accessChallengeDataViews.add((mutableView, pipe))
         
         let queue = self.queue
-        return (.single(AccessChallengeDataView(mutableView))
-        |> then(pipe.signal()))
-        |> `catch` { _ -> Signal<AccessChallengeDataView, NoError> in
-        }
-        |> afterDisposed { [weak self] in
-            queue.async {
-                if let strongSelf = self {
-                    strongSelf.accessChallengeDataViews.remove(index)
+        return Signal { [weak self] subscriber in
+            guard let strongSelf = self else {
+                subscriber.putCompletion()
+                return EmptyDisposable
+            }
+            let pipe = ValuePipe<AccessChallengeDataView>()
+            let index = strongSelf.accessChallengeDataViews.add((mutableView, pipe))
+            
+            subscriber.putNext(AccessChallengeDataView(mutableView))
+            let pipeDisposable = pipe.signal().start(next: { next in
+                subscriber.putNext(next)
+            })
+            
+            return ActionDisposable {
+                pipeDisposable.dispose()
+                queue.async {
+                    if let strongSelf = self {
+                        strongSelf.accessChallengeDataViews.remove(index)
+                    }
                 }
             }
         }
@@ -575,8 +756,8 @@ public final class AccountManager<Types: AccountManagerTypes> {
     public static func getCurrentRecords(basePath: String) -> (records: [AccountRecord<Types.Attribute>], currentId: AccountRecordId?) {
         return AccountManagerImpl<Types>.getCurrentRecords(basePath: basePath)
     }
-    // Nicegram DB Changes
-    public init(basePath: String, isTemporary: Bool, isReadOnly: Bool, useCaches: Bool, removeDatabaseOnError: Bool, hiddenAccountManager: HiddenAccountManager) {
+    // Nicegram DB Changes, hiddenAccountManager added, defaulted so upstream's setupAccountManager(...) constructs it unchanged
+    public init(basePath: String, isTemporary: Bool, isReadOnly: Bool, useCaches: Bool, removeDatabaseOnError: Bool, accessChallenge: AccountManagerAccessChallenge, hiddenAccountManager: HiddenAccountManager = HiddenAccountManagerImpl()) {
         self.queue = sharedQueue
         self.basePath = basePath
         var temporarySessionId: Int64 = 0
@@ -585,7 +766,7 @@ public final class AccountManager<Types: AccountManagerTypes> {
         let queue = self.queue
         self.impl = QueueLocalObject(queue: queue, generate: {
             // Nicegram DB Changes
-            if let value = AccountManagerImpl<Types>(queue: queue, basePath: basePath, isTemporary: isTemporary, isReadOnly: isReadOnly, useCaches: useCaches, removeDatabaseOnError: removeDatabaseOnError, temporarySessionId: temporarySessionId, hiddenAccountManager: hiddenAccountManager) {
+            if let value = AccountManagerImpl<Types>(queue: queue, basePath: basePath, isTemporary: isTemporary, isReadOnly: isReadOnly, useCaches: useCaches, removeDatabaseOnError: removeDatabaseOnError, temporarySessionId: temporarySessionId, accessChallenge: accessChallenge, hiddenAccountManager: hiddenAccountManager) {
                 return value
             } else {
                 postboxLogSync()
@@ -609,6 +790,23 @@ public final class AccountManager<Types: AccountManagerTypes> {
                 }))
             }
             return disposable
+        }
+    }
+
+    public func _internalTestPasscodeMigration(
+        _ legacy: PostboxAccessChallengeData,
+        prepare: @escaping (_ commitAndCrash: () throws -> Never) throws -> Never,
+        crash: @escaping () throws -> Never
+    ) -> Signal<Never, Error> {
+        return Signal { subscriber in
+            self.impl.with { impl in
+                do {
+                    try impl.testPasscodeMigration(legacy, prepare: prepare, crash: crash)
+                } catch {
+                    subscriber.putError(error)
+                }
+            }
+            return EmptyDisposable
         }
     }
     
@@ -783,7 +981,7 @@ public final class HiddenAccountManagerImpl: HiddenAccountManager {
             return transaction.getRecords().first(where: {
                 !$0.attributes.contains(where: {
                     guard let attribute = $0 as? TelegramAccountRecordAttribute else { return false }
-                    return attribute.isHiddenAccountAttribute && attribute.isLoggedOutAccountAttribute
+                    return attribute.isHiddenAccountAttribute || attribute.isLoggedOutAccountAttribute
                 })
             }) != nil
         }

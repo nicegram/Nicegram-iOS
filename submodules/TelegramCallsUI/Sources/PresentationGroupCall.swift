@@ -22,6 +22,7 @@ import UndoUI
 import TemporaryCachedPeerDataManager
 import CallsEmoji
 import TdBinding
+import LiquidGlassShapes
 
 private extension PresentationGroupCallState {
     static func initialValue(myPeerId: PeerId, title: String?, scheduleTimestamp: Int32?, subscribedToScheduled: Bool, isChannel: Bool) -> PresentationGroupCallState {
@@ -875,6 +876,8 @@ public final class PresentationGroupCallImpl: PresentationGroupCall {
         sharedAudioContext: SharedCallAudioContext?,
         unmuteByDefault: Bool? = nil
     ) {
+        prewarmLiquidGlassShapes([.crest])
+        
         // Nicegram NCG-5828 call recording
         self.callRecorder = callRecorder
         //
@@ -972,6 +975,9 @@ public final class PresentationGroupCallImpl: PresentationGroupCall {
         if sharedAudioContext == nil {
             var useSharedAudio = true
             var canReuseCurrent = !isStream
+            // Also covers the device GroupCallContext creates itself when shared audio is off.
+            let legacyAudioDeviceBehavior = SharedCallAudioContext.isLegacyBehaviorEnabled(appConfiguration: self.accountContext.currentAppConfiguration.with({ $0 }))
+            OngoingCallContext.AudioDevice.setLegacyBehaviorEnabled(legacyAudioDeviceBehavior)
             if let data = self.accountContext.currentAppConfiguration.with({ $0 }).data {
                 if data["ios_killswitch_group_shared_audio"] != nil {
                     useSharedAudio = false
@@ -986,7 +992,7 @@ public final class PresentationGroupCallImpl: PresentationGroupCall {
             }
             
             if useSharedAudio {
-                let sharedAudioContextValue = SharedCallAudioContext.get(audioSession: audioSession, callKitIntegration: callKitIntegration, defaultToSpeaker: true, reuseCurrent: canReuseCurrent && callKitIntegration == nil, enableMicrophone: !isStream)
+                let sharedAudioContextValue = SharedCallAudioContext.get(audioSession: audioSession, callKitIntegration: callKitIntegration, defaultToSpeaker: true, reuseCurrent: canReuseCurrent && callKitIntegration == nil, enableMicrophone: !isStream, legacyBehavior: legacyAudioDeviceBehavior)
                 sharedAudioContext = sharedAudioContextValue
             }
         }
@@ -1874,12 +1880,19 @@ public final class PresentationGroupCallImpl: PresentationGroupCall {
                         prioritizeVP8 = value != 0.0
                     }
                     
-                    var useReferenceImpl = false
-                    #if DEBUG && true
-                    useReferenceImpl = "".isEmpty
-                    #endif
-                    if let data = self.accountContext.currentAppConfiguration.with({ $0 }).data, let value = data["ios_calls_group_reference_impl"] as? Double {
-                        useReferenceImpl = value != 0.0
+                    // The PeerConnection-based GroupInstanceReferenceImpl is opt-in through
+                    // Debug Settings ▸ "Group calls: reference engine" (any build); the
+                    // ios_calls_group_reference_impl app-config flag can turn it on as well.
+                    var useReferenceImpl = self.accountContext.sharedContext.immediateExperimentalUISettings.groupCallReferenceEngine
+                    if let data = self.accountContext.currentAppConfiguration.with({ $0 }).data, let value = data["ios_calls_group_reference_impl"] as? Double, value != 0.0 {
+                        useReferenceImpl = true
+                    }
+                    // The reference engine has no broadcast mode (its setConnectionMode is a no-op and it
+                    // never requests broadcast parts), so a live stream routed through it builds a
+                    // PeerConnection and waits forever for an RTC answer. Streams must use the custom engine
+                    // regardless of the debug default above or the server flag.
+                    if self.isStream {
+                        useReferenceImpl = false
                     }
 
                     genericCallContext = .call(OngoingGroupCallContext(audioSessionActive: contextAudioSessionActive, video: self.videoCapturer, requestMediaChannelDescriptions: { [weak self] ssrcs, completion in

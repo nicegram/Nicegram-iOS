@@ -85,8 +85,8 @@ private enum DebugAccountsControllerEntry: ItemListNodeEntry {
         }
     }
 }
-// Nicegram DB Changes
-private func debugAccountsControllerEntries(view: AccountRecordsView<TelegramAccountManagerTypes>, presentationData: PresentationData, currentHiddenId: AccountRecordId?) -> [DebugAccountsControllerEntry] {
+
+private func debugAccountsControllerEntries(view: AccountRecordsView<TelegramAccountManagerTypes>, presentationData: PresentationData) -> [DebugAccountsControllerEntry] {
     var entries: [DebugAccountsControllerEntry] = []
     
     for entry in view.records.sorted(by: {
@@ -137,12 +137,11 @@ public func debugAccountsController(context: AccountContext, accountManager: Acc
         ])
         presentControllerImpl?(controller, ViewControllerPresentationArguments(presentationAnimation: .modalSheet))
     })
-    // Nicegram DB Changes
-    let signal = combineLatest(context.sharedContext.presentationData, accountManager.accountRecords(), accountManager.hiddenAccountManager.unlockedAccountRecordIdPromise.get())
-        |> map { presentationData, view, currentHiddenId -> (ItemListControllerState, (ItemListNodeState, Any)) in
+    
+    let signal = combineLatest(context.sharedContext.presentationData, accountManager.accountRecords())
+        |> map { presentationData, view -> (ItemListControllerState, (ItemListNodeState, Any)) in
             let controllerState = ItemListControllerState(presentationData: ItemListPresentationData(presentationData), title: .text("Accounts"), leftNavigationButton: nil, rightNavigationButton: nil, backNavigationButton: ItemListBackButton(title: presentationData.strings.Common_Back))
-            // Nicegram DB Changes
-            let listState = ItemListNodeState(presentationData: ItemListPresentationData(presentationData), entries: debugAccountsControllerEntries(view: view, presentationData: presentationData, currentHiddenId: currentHiddenId), style: .blocks)
+            let listState = ItemListNodeState(presentationData: ItemListPresentationData(presentationData), entries: debugAccountsControllerEntries(view: view, presentationData: presentationData), style: .blocks)
             
             return (controllerState, (listState, arguments))
     }

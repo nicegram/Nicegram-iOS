@@ -24,7 +24,9 @@ final class ButtonGroupView: OverlayMaskContainerView {
             case video(isActive: Bool)
             case microphone(isMuted: Bool)
             case end
+// Nicegram NCG-5828 call recording
             case record(isRecord: Bool)
+//
             
             var key: Key {
                 switch self {

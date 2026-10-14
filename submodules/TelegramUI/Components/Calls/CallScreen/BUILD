@@ -65,7 +65,6 @@ swift_library(
     ],
     data = [
         ":CallScreenMetalSourcesBundle",
-        ":Assets",
     ],
     deps = NGDEPS + [
         "//submodules/Display",

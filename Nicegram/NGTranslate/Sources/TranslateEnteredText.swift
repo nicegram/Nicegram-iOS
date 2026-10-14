@@ -39,7 +39,10 @@ public func translateEnteredText(text: String, chatId: PeerId?, context: Account
         guard let code = code else {
             return .fail(.toLanguageNotFound)
         }
-        return gtranslate(text, code)
+        return nicegramTranslate(
+            text,
+            toLang: code
+        )
         |> mapError {_ in .translate}
     }
 }

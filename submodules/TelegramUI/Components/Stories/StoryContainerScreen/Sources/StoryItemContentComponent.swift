@@ -1,4 +1,4 @@
-// Nicegram
+// Nicegram NCG-5828 call recording
 import NGCallRecorder
 //
 import Foundation
@@ -453,6 +453,7 @@ final class StoryItemContentComponent: Component {
                     )
                     let presentationData = component.context.sharedContext.currentPresentationData.with({ $0 })
                     mediaStreamCall = PresentationGroupCallImpl(
+                        // Nicegram NCG-5828 call recording
                         callRecorder: CallRecorder(),
                         accountContext: component.context,
                         audioSession: component.context.sharedContext.mediaManager.audioSession,

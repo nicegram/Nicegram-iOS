@@ -1,4 +1,4 @@
-// Nicegram Importns
+// Nicegram Imports
 import NGQuickReplies
 //
 import Foundation

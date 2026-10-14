@@ -10,8 +10,6 @@ import SwiftSignalKit
 import TelegramCore
 import TelegramPresentationData
 import TelegramUIPreferences
-import PasscodeUI
-import TelegramStringFormatting
 import UIKit
 import NGEnv
 import NGAppCache
@@ -90,17 +88,7 @@ private enum DoubleBottomControllerEntry: ItemListNodeEntry {
                     VarSystemNGSettings.isDoubleBottomOn = false
                     
                     let _ = arguments.context.sharedContext.accountManager.transaction({ transaction -> Void in
-                        let challengeData = transaction.getAccessChallengeData()
-                        let challenge: PostboxAccessChallengeData
-                        switch challengeData {
-                        case .numericalPassword(let value):
-                            challenge = .numericalPassword(value: value)
-                        case .plaintextPassword(let value):
-                            challenge = .plaintextPassword(value: value)
-                        case .none:
-                            challenge = .none
-                        }
-                        transaction.setAccessChallengeData(challenge)
+                        transaction.setAccessChallengeData(transaction.getAccessChallengeData())
                         for record in transaction.getRecords() {
                             transaction.updateRecord(record.id) { record in
                                 guard let record = record else { return nil }
@@ -172,30 +160,5 @@ fileprivate extension AccountRecord {
             guard let attribute = $0 as? TelegramAccountRecordAttribute else { return false }
             return attribute.isHiddenAccountAttribute || attribute.isLoggedOutAccountAttribute
         })
-    }
-}
-
-func check(passcode: String, challengeData: PostboxAccessChallengeData) -> Bool {
-    let passcodeType: PasscodeEntryFieldType
-    switch challengeData {
-        case let .numericalPassword(value):
-            passcodeType = value.count == 6 ? .digits6 : .digits4
-        default:
-            passcodeType = .alphanumeric
-    }
-    
-    switch challengeData {
-    case .none:
-        return true
-    case let .numericalPassword(code):
-        if passcodeType == .alphanumeric {
-            return false
-        }
-        return passcode == normalizeArabicNumeralString(code, type: .western)
-    case let .plaintextPassword(code):
-        if passcodeType != .alphanumeric {
-            return false
-        }
-        return passcode == code
     }
 }

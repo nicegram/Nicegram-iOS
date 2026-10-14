@@ -2092,7 +2092,8 @@ public final class ContactListNode: ASDisplayNode {
                     
                     let authorizationPreviousHidden = strongSelf.authorizationNode.isHidden
                     strongSelf.authorizationNode.removeFromSupernode()
-                    strongSelf.authorizationNode = PermissionContentNode(context: strongSelf.context, theme: strongSelf.presentationData.theme, strings: strongSelf.presentationData.strings, kind: PermissionKind.contacts.rawValue, icon: .image(UIImage(bundleImageName: "Settings/Permissions/Contacts")), title: strongSelf.presentationData.strings.Contacts_PermissionsTitle, text: strongSelf.presentationData.strings.Contacts_PermissionsText, buttonTitle: strongSelf.presentationData.strings.Contacts_PermissionsAllow, buttonAction: {
+                    // Nicegram, change buttonTitle to "Next" (app review reject fix)
+                    strongSelf.authorizationNode = PermissionContentNode(context: strongSelf.context, theme: strongSelf.presentationData.theme, strings: strongSelf.presentationData.strings, kind: PermissionKind.contacts.rawValue, icon: .image(UIImage(bundleImageName: "Settings/Permissions/Contacts")), title: strongSelf.presentationData.strings.Contacts_PermissionsTitle, text: strongSelf.presentationData.strings.Contacts_PermissionsText, buttonTitle: strongSelf.presentationData.strings.Common_Next, buttonAction: {
                         authorizeImpl?()
                     }, openPrivacyPolicy: {
                         openPrivacyPolicyImpl?()

@@ -495,8 +495,7 @@ public final class ShareController: ViewController {
                         self?.actionCompleted?()
                     })
                 }
-            // Nicegram, text added
-            case let .media(mediaReference, _, _):
+            case let .media(mediaReference, _):
                 var canSave = false
                 var isVideo = false
                 if mediaReference.media is TelegramMediaImage {
@@ -652,7 +651,7 @@ public final class ShareController: ViewController {
         }
         
         var mediaParameters: ShareControllerSubject.MediaParameters?
-        if case let .media(_, parameters, _) = self.subject {
+        if case let .media(_, parameters) = self.subject {
             mediaParameters = parameters
         }
         
@@ -785,8 +784,7 @@ public final class ShareController: ViewController {
                         return false
                     }
                 }
-            // Nicegram, text added
-            case let .media(mediaReference, _, _):
+            case let .media(mediaReference, _):
                 var sendTextAsCaption = false
                 if mediaReference.media is TelegramMediaImage || mediaReference.media is TelegramMediaFile {
                     sendTextAsCaption = true
@@ -1002,9 +1000,8 @@ public final class ShareController: ViewController {
                     case let .image(representations):
                         let media = TelegramMediaImage(imageId: MediaId(namespace: Namespaces.Media.LocalImage, id: Int64.random(in: Int64.min ... Int64.max)), representations: representations.map({ $0.representation }), immediateThumbnailData: nil, reference: nil, partialReference: nil, flags: [])
                         collectableItems.append(CollectableExternalShareItem(url: "", text: "", author: nil, timestamp: nil, mediaReference: .standalone(media: media)))
-                    // Nicegram, text added
-                    case let .media(mediaReference, _, text):
-                        collectableItems.append(CollectableExternalShareItem(url: "", text: text, author: nil, timestamp: nil, mediaReference: mediaReference))
+                    case let .media(mediaReference, _):
+                        collectableItems.append(CollectableExternalShareItem(url: "", text: "", author: nil, timestamp: nil, mediaReference: mediaReference))
                     case let .mapMedia(media):
                         let latLong = "\(media.latitude),\(media.longitude)"
                         collectableItems.append(CollectableExternalShareItem(url: "https://maps.apple.com/maps?ll=\(latLong)&q=\(latLong)&t=m", text: "", author: nil, timestamp: nil, mediaReference: nil))
@@ -1556,10 +1553,7 @@ public final class ShareController: ViewController {
                         messages: messages
                     ))
                 }
-            // Nicegram, text added
-            case let .media(mediaReference, _, string):
-                let text = "\(text)\n\n\(string)".trimmingCharacters(in: .whitespacesAndNewlines)
-                
+            case let .media(mediaReference, _):
                 var sendTextAsCaption = false
                 if mediaReference.media is TelegramMediaImage || mediaReference.media is TelegramMediaFile {
                     sendTextAsCaption = true
@@ -2107,10 +2101,7 @@ public final class ShareController: ViewController {
                     messages = transformMessages(messages, showNames: showNames, silently: silently, sendPaidMessageStars: requiresStars[peerId])
                     shareSignals.append(enqueueMessages(account: currentContext.context.account, peerId: peerId, messages: messages))
                 }
-            // Nicegram, text added
-            case let .media(mediaReference, mediaParameters, string):
-                let text = "\(text)\n\n\(string)".trimmingCharacters(in: .whitespacesAndNewlines)
-                
+            case let .media(mediaReference, mediaParameters):
                 var forwardSourceMessageId: EngineMessage.Id?
                 if case let .message(message, _) = mediaReference, let sourceMessageId = message.id, (sourceMessageId.peerId.namespace == Namespaces.Peer.CloudUser || sourceMessageId.peerId.namespace == Namespaces.Peer.CloudGroup || sourceMessageId.peerId.namespace == Namespaces.Peer.CloudChannel) {
                     forwardSourceMessageId = sourceMessageId

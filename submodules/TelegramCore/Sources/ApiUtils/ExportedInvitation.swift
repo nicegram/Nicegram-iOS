@@ -3,6 +3,7 @@ import Postbox
 import TelegramApi
 
 
+// Nicegram NGDataSharing, 'public'
 public extension ExportedInvitation {
     init(apiExportedInvite: Api.ExportedChatInvite) {
         switch apiExportedInvite {

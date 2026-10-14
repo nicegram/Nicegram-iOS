@@ -1,6 +1,5 @@
 // Nicegram
 import class Combine.AnyCancellable
-import struct Combine.Just
 import EntityKeyboard
 import FeatAiShortcuts
 import FeatChatBanner
@@ -247,7 +246,7 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
     private var validEmptyNodeLayout: (CGSize, UIEdgeInsets, CGFloat, CGFloat)?
     var restrictedNode: ChatRecentActionsEmptyNode?
 
-    // Nicegram
+    // Nicegram ChatNicegramContext
     let nicegramContext: ChatNicegramContext
     //
     
@@ -292,7 +291,10 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
     
     private let titleAccessoryPanelContainer: ChatControllerTitlePanelNodeContainer
     private var currentTitleAccessoryPanelNode: ChatTitleAccessoryPanelNode?
+    private var currentManagingBotTitlePanelNode: ChatManagingBotTitlePanelNode?
+    // Nicegram Whitebridge
     private var currentWhitebridgeBannerPanelNode: ChatTitleAccessoryPanelNode?
+    //
     
     private var floatingTopicsPanelContainer: ChatControllerTitlePanelNodeContainer
     private var floatingTopicsPanel: (view: ComponentView<ChatSidePanelEnvironment>, component: ChatFloatingTopicsPanel)?
@@ -322,7 +324,7 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
     private var inputMediaNodeDataDisposable: Disposable?
     private var inputMediaNodeStateContext = ChatEntityKeyboardInputNode.StateContext()
     
-    // Nicegram
+    // Nicegram TgChatButton
     private let nicegramOverlayView = TgChatOverlayView()
     lazy var nicegramOverlayNode = ASDisplayNode { [nicegramOverlayView] in
         nicegramOverlayView
@@ -331,7 +333,7 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
     private var cancellables = Set<AnyCancellable>()
     //
     
-    // Nicegram Transcription
+    // Nicegram Voice Typing
     private var voiceTypingOverlay: VoiceRecordingOverlay?
     //
     
@@ -422,6 +424,11 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
     private var upperInputPositionBound: CGFloat?
     private var keyboardGestureBeginLocation: CGPoint?
     private var keyboardGestureAccessoryHeight: CGFloat?
+    // The entity-keyboard half of `dismissedInputByCurrentGesture` (the system-keyboard half lives on
+    // `WindowHost`, because `Window1` owns that gesture). Written only from the WindowPanRecognizer
+    // touch-delivery closures below: cleared when a touch sequence begins, set when that sequence's
+    // release dismisses the input node.
+    private var dismissedInputNodeByCurrentGestureValue = false
     
     private var derivedLayoutState: ChatControllerNodeDerivedLayoutState?
     
@@ -530,9 +537,9 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
     
     private var onLayoutCompletions: [(ContainedViewLayoutTransition) -> Void] = []
 
-    // Nicegram, add nicegramContext
+    // Nicegram ChatNicegramContext, 'nicegramContext' param added
     init(nicegramContext: ChatNicegramContext, context: AccountContext, chatLocation: ChatLocation, chatLocationContextHolder: Atomic<ChatLocationContextHolder?>, subject: ChatControllerSubject?, controllerInteraction: ChatControllerInteraction, chatPresentationInterfaceState: ChatPresentationInterfaceState, automaticMediaDownloadSettings: MediaAutoDownloadSettings, navigationBar: NavigationBar?, statusBar: StatusBar?, backgroundNode: WallpaperBackgroundNode, controller: ChatControllerImpl?) {
-        // Nicegram
+        // Nicegram ChatNicegramContext
         self.nicegramContext = nicegramContext
         //
         self.context = context
@@ -661,7 +668,7 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
                             }
                             return true
                         })
-                        
+
                         var messageText = message.text
                         var messageMedia = message.media
                         var hasDice = false
@@ -684,13 +691,23 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
                                 }
                             }
                         }
+
+                        let ephemeralParams = ephemeralForwardParams(message)
+                        if ephemeralParams != nil {
+                            if message.id.namespace == Namespaces.Message.EphemeralLocal || (hideNames && !hasDice) {
+                                attributes.removeAll(where: { $0 is InlineBotMessageAttribute })
+                            } else if let inlineBotPeerId = ephemeralParams?.inlineBotPeerId, !attributes.contains(where: { $0 is InlineBotMessageAttribute }) {
+                                attributes.append(InlineBotMessageAttribute(peerId: inlineBotPeerId, title: nil))
+                            }
+                        }
                         
                         var forwardInfo: MessageForwardInfo?
-                        if let existingForwardInfo = message.forwardInfo {
-                            forwardInfo = MessageForwardInfo(author: existingForwardInfo.author, source: existingForwardInfo.source, sourceMessageId: nil, date: 0, authorSignature: nil, psaType: nil, flags: [])
-                        }
-                        else {
-                            forwardInfo = MessageForwardInfo(author: message.author, source: nil, sourceMessageId: nil, date: 0, authorSignature: nil, psaType: nil, flags: [])
+                        if let ephemeralParams {
+                            forwardInfo = MessageForwardInfo(author: ephemeralParams.authorId.flatMap { message.peers[$0] }, source: ephemeralParams.sourceId.flatMap { message.peers[$0] }, sourceMessageId: nil, date: message.timestamp, authorSignature: nil, psaType: nil, flags: [])
+                        } else if let existingForwardInfo = message.forwardInfo {
+                            forwardInfo = MessageForwardInfo(author: existingForwardInfo.author, source: existingForwardInfo.source, sourceMessageId: nil, date: existingForwardInfo.date, authorSignature: existingForwardInfo.authorSignature, psaType: nil, flags: [])
+                        } else {
+                            forwardInfo = MessageForwardInfo(author: message.author, source: nil, sourceMessageId: nil, date: message.timestamp, authorSignature: nil, psaType: nil, flags: [])
                         }
                         if hideNames && !hasDice {
                             forwardInfo = nil
@@ -701,7 +718,7 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
                     
                     return (messages, Int32(messages.count), false)
                 }
-                source = .custom(messages: messages, messageId: MessageId(peerId: PeerId(0), namespace: 0, id: 0), quote: nil, isSavedMusic: false, canReorder: false, loadMore: nil)
+                source = .custom(messages: messages, messageId: MessageId(peerId: PeerId(0), namespace: 0, id: 0), quote: nil, isSavedMusic: false, canReorder: false, richMessageId: nil, loadMore: nil)
             case let .reply(reply):
                 let replyAccountPeerSignal = context.engine.data.get(TelegramEngine.EngineData.Item.Peer.Peer(id: context.account.peerId))
                 |> mapToSignal { peer -> Signal<EnginePeer, NoError> in
@@ -724,7 +741,7 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
                     
                     return (messages, Int32(messages.count), false)
                 }
-                source = .custom(messages: messages, messageId: messageIds.first ?? MessageId(peerId: PeerId(0), namespace: 0, id: 0), quote: reply.quote.flatMap { quote in ChatHistoryListSource.Quote(text: quote.text, offset: quote.offset) }, isSavedMusic: false, canReorder: false, loadMore: nil)
+                source = .custom(messages: messages, messageId: messageIds.first ?? MessageId(peerId: PeerId(0), namespace: 0, id: 0), quote: reply.quote.flatMap { quote in ChatHistoryListSource.Quote(text: quote.text, offset: quote.offset) }, isSavedMusic: false, canReorder: false, richMessageId: nil, loadMore: nil)
             case let .link(link):
                 let messages = link.options
                 |> mapToSignal { options -> Signal<(ChatControllerSubject.LinkOptions, Peer, Message?, [StoryId: CodableEntry]), NoError> in
@@ -834,13 +851,13 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
                     
                     return ([message], 1, false)
                 }
-                source = .custom(messages: messages, messageId: MessageId(peerId: PeerId(0), namespace: 0, id: 0), quote: nil, isSavedMusic: false, canReorder: false, loadMore: nil)
+                source = .custom(messages: messages, messageId: MessageId(peerId: PeerId(0), namespace: 0, id: 0), quote: nil, isSavedMusic: false, canReorder: false, richMessageId: nil, loadMore: nil)
             }
         } else if case .customChatContents = chatLocation {
             if case let .customChatContents(customChatContents) = subject {
                 source = .customView(historyView: customChatContents.historyView)
             } else {
-                source = .custom(messages: .single(([], 0, false)), messageId: nil, quote: nil, isSavedMusic: false, canReorder: false, loadMore: nil)
+                source = .custom(messages: .single(([], 0, false)), messageId: nil, quote: nil, isSavedMusic: false, canReorder: false, richMessageId: nil, loadMore: nil)
             }
         } else {
             source = .default
@@ -996,6 +1013,7 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
         if let navigationBar = self.navigationBar {
             self.contentContainerNode.contentNode.addSubnode(navigationBar)
         }
+        self.updateNavigationBarPassthroughTouches()
         
         self.inputPanelContainerNode.expansionUpdated = { [weak self] transition in
             guard let strongSelf = self else {
@@ -1017,6 +1035,8 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
         self.inputPanelContainerNode.addSubnode(self.inputPanelOverlayNode)
         self.inputPanelClippingNode.addSubnode(self.inputPanelBackgroundNode)
         
+        self.wrappingNode.contentNode.addSubnode(self.messageTransitionNode.overlayContainerNode)
+
         // Nicegram ChatBanner
         if #available(iOS 16.0, *) {
             self.contentContainerNode.contentNode.addSubnode(self.chatBannerView)
@@ -1068,28 +1088,26 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
             .store(in: &cancellables)
         //
 
-        // Nicegram
-        if #available(iOS 15.0, *) {
-            nicegramOverlayView.openAiChat = { [weak self] in
-                guard let self else { return }
-                Task { @MainActor in
-                    AiChatUITgHelper.tryRouteToAiChatWidget(
-                        useAnswer: { [weak self] text, image in
-                            self?.setInput(text: text, image: image)
-                        }
-                    )
-                }
-            }
-            nicegramOverlayView.openAiChatAnalysis = { [weak self] in
-                guard let self else { return }
-                AiChatAnalysisHelper(context: self.context).presentFromChat(
-                    peerId: chatLocation.peerId
+        // Nicegram TgChatButton
+        nicegramOverlayView.openAiChat = { [weak self] in
+            guard let self else { return }
+            Task { @MainActor in
+                AiChatUITgHelper.tryRouteToAiChatWidget(
+                    useAnswer: { [weak self] text, image in
+                        self?.setInput(text: text, image: image)
+                    }
                 )
             }
-            
-            if NGSettings.showNicegramButtonInChat {
-                self.contentContainerNode.contentNode.addSubnode(self.nicegramOverlayNode)
-            }
+        }
+        nicegramOverlayView.openAiChatAnalysis = { [weak self] in
+            guard let self else { return }
+            AiChatAnalysisHelper(context: self.context).presentFromChat(
+                peerId: chatLocation.peerId
+            )
+        }
+        
+        if NGSettings.showNicegramButtonInChat {
+            self.contentContainerNode.contentNode.addSubnode(self.nicegramOverlayNode)
         }
         //
         
@@ -1097,17 +1115,15 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
         tgChatAiViewModel.initialize()
         //
         
-        self.wrappingNode.contentNode.addSubnode(self.messageTransitionNode.overlayContainerNode)
- 
         self.contentContainerNode.contentNode.addSubnode(self.navigateButtons)
         self.wrappingNode.contentNode.addSubnode(self.presentationContextMarker)
         self.contentContainerNode.contentNode.addSubnode(self.contentDimNode)
         
         self.navigationBar?.additionalContentNode.addSubnode(self.titleAccessoryPanelContainer)
         
-        // Nicegram (sendWithKb)
         self.textInputPanelNode = ChatTextInputPanelNode(context: context, presentationInterfaceState: chatPresentationInterfaceState, presentationContext: ChatPresentationContext(context: context, backgroundNode: backgroundNode), presentController: { [weak self] controller in
             self?.interfaceInteraction?.presentController(controller, nil)
+        // Nicegram Send with Enter, 'sendWithKb' param added
         }, sendWithKb: NGSettings.sendWithEnter)
         self.textInputPanelNode?.mediaItemViewFactory = { items, existing in
             // In-place update: reuse the existing container (surviving photo/video cells keep their bound fetch,
@@ -1184,6 +1200,9 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
         self.textInputPanelNode?.paste = { [weak self] data in
             self?.paste(data)
         }
+        self.textInputPanelNode?.pastedMarkdownParser = { context, text in
+            return chatInputContentFromPastedMarkdown(context: context, plainText: text)
+        }
         self.textInputPanelNode?.displayAttachmentMenu = { [weak self] in
             self?.displayAttachmentMenu()
         }
@@ -1222,7 +1241,7 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
         }
         //
         
-        // Nicegram Transcription
+        // Nicegram Voice Typing
         self.textInputPanelNode?.displayVoiceTypingFlow = { [weak self] in
             guard let self else {
                 return
@@ -1288,14 +1307,14 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
         self.inlineSearchResultsReadyDisposable?.dispose()
         self.loadMoreSearchResultsDisposable?.dispose()
         
-        // Nicegram Transcription
+        // Nicegram Voice Typing
         if #available(iOS 16.0, *) {
             self.hideVoiceTypingOverlay()
         }
         //
     }
     
-    // Nicegram Transcription
+    // Nicegram Voice Typing
     @available(iOS 16.0, *)
     private func showVoiceTypingOverlay() {
         guard voiceTypingOverlay == nil else {
@@ -1343,8 +1362,9 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
         voiceTypingOverlay = overlay
         self.textInputPanelNode?.setVoiceTypingOverlayView(overlay.view)
     }
+    //
     
-    // Nicegram Transcription
+    // Nicegram Voice Typing
     @available(iOS 16.0, *)
     private func hideVoiceTypingOverlay() {
         guard let overlay = voiceTypingOverlay else {
@@ -1357,6 +1377,7 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
     }
     //
     
+    // Nicegram AiChat
     private func setInput(text: String?, image: UIImage?) {
         if let image {
             paste(.images([image]))
@@ -1877,7 +1898,7 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
                 }
             }
         }
-        // Nicegram
+        // Nicegram Ads
         self.nicegramContext.update(hasTelegramHeaderAd: displayAdPanel)
 
         let ngHeaderAdViewModel = nicegramContext.ads.headerAdViewModel
@@ -1936,7 +1957,7 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
             )
         }
         
-        // Nicegram, Whitebridge
+        // Nicegram Whitebridge
         if #available(iOS 16.0, *) {
             let isWhitebridgeEnabled = WhitebridgeModule.shared.getWhitebridgeConfigUseCase()().enabled
             let isSelfChat: Bool
@@ -1999,9 +2020,29 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
         }
         //
         
-        if !hideTopPanels, let titleAccessoryPanelNode = titlePanelForChatPresentationInterfaceState(self.chatPresentationInterfaceState, context: self.context, currentPanel: self.currentTitleAccessoryPanelNode, controllerInteraction: self.controllerInteraction, interfaceInteraction: self.interfaceInteraction, force: false) {
+        var titleAccessoryPanelNode: ChatTitleAccessoryPanelNode?
+        if !hideTopPanels {
+            titleAccessoryPanelNode = titlePanelForChatPresentationInterfaceState(self.chatPresentationInterfaceState, context: self.context, currentPanel: self.currentTitleAccessoryPanelNode, controllerInteraction: self.controllerInteraction, interfaceInteraction: self.interfaceInteraction, force: false)
+        }
+        
+        // The container lays panels out in append order (`orderIndex` only takes part in `Panel ==`),
+        // so appending the bot bar before the title accessory panel is what puts it above the pinned bar.
+        if !hideTopPanels, let managingBotPanelNode = managingBotTitlePanelForChatPresentationInterfaceState(self.chatPresentationInterfaceState, context: self.context, displayedTitlePanel: titleAccessoryPanelNode, currentPanel: self.currentManagingBotTitlePanelNode, interfaceInteraction: self.interfaceInteraction) {
+            self.currentManagingBotTitlePanelNode = managingBotPanelNode
+            headerPanels.append(HeaderPanelContainerComponent.Panel(
+                key: "managingBot",
+                orderIndex: 3,
+                component: AnyComponent(LegacyChatHeaderPanelComponent(
+                    panelNode: managingBotPanelNode,
+                    interfaceState: self.chatPresentationInterfaceState
+                )))
+            )
+        } else {
+            self.currentManagingBotTitlePanelNode = nil
+        }
+        
+        if let titleAccessoryPanelNode {
             self.currentTitleAccessoryPanelNode = titleAccessoryPanelNode
-            
             let panelKey = "\(type(of: titleAccessoryPanelNode))"
             headerPanels.append(HeaderPanelContainerComponent.Panel(
                 key: panelKey,
@@ -2455,24 +2496,13 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
             transition.updateFrame(node: backgroundEffectNode, frame: CGRect(origin: CGPoint(), size: layout.size))
         }
         
-        var wallpaperBounds = CGRect(x: 0.0, y: 0.0, width: layout.size.width - wrappingInsets.left - wrappingInsets.right, height: layout.size.height)
+        let wallpaperBounds = CGRect(x: 0.0, y: 0.0, width: layout.size.width - wrappingInsets.left - wrappingInsets.right, height: layout.size.height)
         
         transition.updateFrame(node: self.backgroundNode, frame: wallpaperBounds)
         
         var displayMode: WallpaperDisplayMode = .aspectFill
-        if case .regular = layout.metrics.widthClass, layout.size.height == layout.deviceMetrics.screenSize.width {
+        if case .regular = layout.metrics.widthClass, let windowSize = layout.metrics.windowSize, windowSize.width > windowSize.height, layout.size.height == windowSize.height {
             displayMode = .aspectFit
-        } else if case .compact = layout.metrics.widthClass {
-            if layout.inSplitView {
-                displayMode = .aspectFit
-            } else if layout.inSlideOver {
-                switch layout.actualOrientation {
-                case .portrait:
-                    wallpaperBounds.size = CGSize(width: layout.size.width, height: layout.deviceMetrics.screenSize.height)
-                case .landscape:
-                    wallpaperBounds.size = CGSize(width: layout.size.width, height: layout.deviceMetrics.screenSize.width)
-                }
-            }
         }
         self.backgroundNode.updateLayout(size: wallpaperBounds.size, displayMode: displayMode, transition: transition)
 
@@ -3203,7 +3233,7 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
         transition.updateFrame(node: self.navigateButtons, frame: apparentNavigateButtonsFrame)
         self.navigateButtons.update(rect: apparentNavigateButtonsFrame, within: layout.size, transition: transition)
         
-        // Nicegram
+        // Nicegram TgChatButton
         transition.updateFrame(
             node: self.nicegramOverlayNode,
             frame: CGRect(
@@ -4033,7 +4063,24 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
                 if (self.context.sharedContext.currentPresentationData.with({ $0 })).reduceMotion {
                     return
                 }
-                if self.context.sharedContext.energyUsageSettings.fullTranslucency {
+                // A swipe-dismissal is the one inset jump that must NOT drive the wallpaper. The event is
+                // expensive at its start — it synthesizes the gradient tween and recomposes the pattern —
+                // and here that lands in the very runloop turn that commits the dismissal, so the chat
+                // lurches behind the keyboard.
+                //
+                // Only CoreList reaches this at all. `ListViewImpl` installs its insets one
+                // `Queue.mainQueue().async` hop later (ListView.swift, the `.LowLatency`/`.Synchronous`
+                // branch feeding `replayOperations`), so `listBottomInset` still reads the pre-pass value
+                // here and the delta is exactly zero; `CoreListChatHistoryBackend` installs them inline.
+                // Hence the backend gate: this suppresses a behavior that only exists under CoreList
+                // rather than removing one ListViewImpl has.
+                //
+                // `dismissedInputByDragging` (computed at the top of this pass) is the right question and
+                // is already settled by now: it means the PREVIOUS layout was interactively changing the
+                // input height and this one is not — i.e. this is the release pass, the same pass that
+                // carries the >80pt jump. Tap-to-dismiss and keyboard-open still animate.
+                let isSwipeDismissal = self.historyNode.usesCoreListBackend && dismissedInputByDragging
+                if self.context.sharedContext.energyUsageSettings.fullTranslucency && !isSwipeDismissal {
                     self.backgroundNode.animateEvent(transition: transition, extendAnimation: false)
                 }
             }
@@ -4094,7 +4141,16 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
         }
     }
         
-    private let emptyInputView = EmptyInputView()
+    // `EmptyInputView` is exported publicly by both ChatEntityKeyboardInputNode and
+    // TextFieldComponent, and both module names are also type names here, so neither can be used as
+    // a disambiguating qualifier. The class is trivial, so keep a private one.
+    private final class EmptyKeyboardInputView: UIView, UIInputViewAudioFeedback {
+        var enableInputClicksWhenVisible: Bool {
+            return true
+        }
+    }
+
+    private let emptyInputView = EmptyKeyboardInputView()
     private func chatPresentationInterfaceStateInputView(_ state: ChatPresentationInterfaceState) -> UIView? {
         switch state.inputMode {
         case .text:
@@ -4130,7 +4186,7 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
         //
         self.selectedMessages = chatPresentationInterfaceState.interfaceState.selectionState?.selectedIds
         
-        // Nicegram Transcription
+        // Nicegram Voice Typing
         // Selecting messages swaps the text input panel out for the selection
         // panel, and the recording overlay is a subview of the text panel -- so
         // the recorder is pulled out of the window with nowhere to show itself.
@@ -4185,6 +4241,9 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
             
             let updateInputTextState = self.chatPresentationInterfaceState.interfaceState.effectiveInputState != chatPresentationInterfaceState.interfaceState.effectiveInputState
             self.chatPresentationInterfaceState = chatPresentationInterfaceState
+            self.updateNavigationBarPassthroughTouches()
+
+            self.updateRichMediaPreuploadNeeds()
             
             self.navigateButtons.update(theme: chatPresentationInterfaceState.theme, preferClearGlass: chatPresentationInterfaceState.preferredGlassType == .clear, dateTimeFormat: chatPresentationInterfaceState.dateTimeFormat, backgroundNode: self.backgroundNode)
             
@@ -4821,6 +4880,27 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
         }
     }
         
+    private func updateNavigationBarPassthroughTouches() {
+        guard let navigationBar = self.navigationBar else {
+            return
+        }
+        // The chat's navigation bar is drawn in the glass style: apart from the button pills it is
+        // transparent, and the history scrolls underneath it. Letting it pass touches through would
+        // deliver taps and long presses made on that visually empty header to the message behind it,
+        // opening media or showing a context menu. Make the bar absorb them, matching the system bars.
+        //
+        // Only the standard chat opts in. Previewing must keep the passthrough, because hitTest(_:with:)
+        // below routes those touches to the preview's own scroll host. The remaining modes have no
+        // visible bar to absorb with - .inline and .standard(.embedded) are built without one, .overlay
+        // hides it - but that is their business, so state the opt-in positively rather than inheriting
+        // it by default.
+        if case .standard(.default) = self.chatPresentationInterfaceState.mode {
+            navigationBar.passthroughTouches = false
+        } else {
+            navigationBar.passthroughTouches = true
+        }
+    }
+    
     override func hitTest(_ point: CGPoint, with event: UIEvent?) -> UIView? {
         switch self.chatPresentationInterfaceState.mode {
         case .standard(.previewing):
@@ -4864,7 +4944,7 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
                 return result
             }
             if self.bounds.contains(point) {
-                return self.historyNode.scrollableContentView
+                return self.historyNode.scrollGestureHostView
             }
         default:
             break
@@ -4975,6 +5055,11 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
     }
     
     private func panGestureBegan(location: CGPoint) {
+        // A new touch sequence: whatever the previous one did to the input node is no longer "current".
+        // Cleared BEFORE the guards below, so a sequence that never becomes an input-node drag still
+        // clears a `true` left by the one before it.
+        self.dismissedInputNodeByCurrentGestureValue = false
+        
         guard let derivedLayoutState = self.derivedLayoutState, let (validLayout, _) = self.validLayout else {
             return
         }
@@ -5040,6 +5125,10 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
         }
         
         if canDismiss, let inputHeight = derivedLayoutState.inputNodeHeight, currentLocation.y + (self.keyboardGestureAccessoryHeight ?? 0.0) > validLayout.size.height - inputHeight {
+            // This release spent the finger's downward motion on the entity keyboard. Published for the
+            // rest of the touch sequence so the history list — dragged by the SAME finger, and told of
+            // its own release later, in gesture action dispatch — can decline to also fling.
+            self.dismissedInputNodeByCurrentGestureValue = true
             self.upperInputPositionBound = nil
             self.dismissInput()
         } else {
@@ -5048,7 +5137,23 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
         }
     }
     
+    /// Whether the touch sequence currently being delivered has already had its downward motion claimed
+    /// by an interactive input dismissal — the entity keyboard (this node's own `WindowPanRecognizer`)
+    /// or the system keyboard (`Window1`'s).
+    ///
+    /// Both dismissals are decided in touch DELIVERY, which precedes the gesture action dispatch where a
+    /// scroll backend reports its release, so this is already settled by the time the history list asks.
+    /// It is NOT the same question as `dismissedInputByDragging` in `containerLayoutUpdated`: that one is
+    /// derived from a completed layout pass, which happens after the release and would answer too late.
+    var dismissedInputByCurrentGesture: Bool {
+        if self.dismissedInputNodeByCurrentGestureValue {
+            return true
+        }
+        return self.view.windowHost?.dismissedKeyboardByCurrentGesture ?? false
+    }
+    
     func cancelInteractiveKeyboardGestures() {
+        self.dismissedInputNodeByCurrentGestureValue = false
         self.panRecognizer?.isEnabled = false
         self.panRecognizer?.isEnabled = true
         
@@ -5139,22 +5244,99 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
                         }
                     })
                 },
-                presentAttachmentMenu: { [weak self] photoVideoOnly, completion in
+                sendContextActions: (self.chatPresentationInterfaceState.interfaceState.editMessage == nil ? self.chatLocation.peerId.flatMap { peerId in
+                    return RichTextAttachmentScreenSendContextActions(
+                        peerId: peerId,
+                        send: { [weak self] document, media, emojiFiles, sendWithoutFormatting, mode, parameters in
+                            guard let self else {
+                                return
+                            }
+                            let content = chatInputContent(fromDocument: document, media: media, emojiFiles: emojiFiles)
+                            self.controller?.updateChatPresentationInterfaceState(animated: true, interactive: true, { state in
+                                return state.updatedInterfaceState { interfaceState in
+                                    return interfaceState.withUpdatedEffectiveInputState(ChatTextInputState(content: content, selectionRange: content.length ..< content.length))
+                                }
+                            }, completion: { [weak self] _ in
+                                guard let self else {
+                                    return
+                                }
+                                let messageEffect = parameters?.effect.flatMap(ChatSendMessageEffect.init)
+                                switch mode {
+                                case .generic:
+                                    self.sendCurrentMessage(messageEffect: messageEffect, sendWithoutFormatting: sendWithoutFormatting)
+                                case .silently:
+                                    self.sendCurrentMessage(silentPosting: true, messageEffect: messageEffect, sendWithoutFormatting: sendWithoutFormatting)
+                                case .whenOnline:
+                                    self.sendCurrentMessage(scheduleTime: scheduleWhenOnlineTimestamp, messageEffect: messageEffect, sendWithoutFormatting: sendWithoutFormatting, completion: { [weak self] in
+                                        guard let self, let controller = self.controller else {
+                                            return
+                                        }
+                                        controller.updateChatPresentationInterfaceState(animated: true, interactive: false, saveInterfaceState: controller.presentationInterfaceState.subject != .scheduledMessages, {
+                                            $0.updatedInterfaceState { $0.withUpdatedReplyMessageSubject(nil).withUpdatedSendMessageEffect(nil).withUpdatedPostSuggestionState(nil).withUpdatedForwardMessageIds(nil).withUpdatedForwardOptionsState(nil).withUpdatedComposeInputState(ChatTextInputState(inputText: NSAttributedString(string: ""))) }
+                                        })
+                                        controller.openScheduledMessages()
+                                    })
+                                }
+                            })
+                        },
+                        schedule: { [weak self] document, media, emojiFiles, _, parameters in
+                            guard let self else {
+                                return
+                            }
+                            let content = chatInputContent(fromDocument: document, media: media, emojiFiles: emojiFiles)
+                            self.controller?.updateChatPresentationInterfaceState(animated: true, interactive: true, { state in
+                                return state.updatedInterfaceState { interfaceState in
+                                    return interfaceState.withUpdatedEffectiveInputState(ChatTextInputState(content: content, selectionRange: content.length ..< content.length))
+                                }
+                            })
+                            self.controller?.controllerInteraction?.scheduleCurrentMessage(parameters)
+                        }
+                    )
+                } : nil),
+                preuploadPeerId: self.chatLocation.peerId,
+                presentAttachmentMenu: { [weak self] request, completion in
                     guard let self else {
                         return
                     }
-                    self.controller?.presentRichTextAttachmentMenu(photoVideoOnly: photoVideoOnly, completion: completion)
+                    self.controller?.presentRichTextAttachmentMenu(request: request, completion: completion)
                 },
                 presentFormulaEditor: { [weak self] initialValue, completion in
                     guard let self else {
                         return
                     }
                     self.controller?.presentFormulaEditor(initialValue: initialValue, completion: completion)
+                },
+                pastedMarkdownParser: { context, text in
+                    return chatInputContentFromPastedMarkdown(context: context, plainText: text)
                 }
             )
             editorScreen.navigationPresentation = .modal
             self.controller?.push(editorScreen)
         }
+    }
+
+    /// Keeps rich-draft media uploading across the gap between the expanded editor closing and the
+    /// draft-sync operation picking the draft up. The DURABLE holder is the persisted draft
+    /// (ManagedSynchronizeChatInputStateOperations); this only covers the handoff.
+    private var richMediaPreuploadNeeds: MediaPreuploadNeeds?
+
+    private func updateRichMediaPreuploadNeeds() {
+        guard let peerId = self.chatLocation.peerId else {
+            return
+        }
+        let media = self.chatPresentationInterfaceState.interfaceState.composeInputState.content.allMedia
+        // Keeps a plain-text chat, which never touches rich media, from allocating anything.
+        if media.isEmpty && self.richMediaPreuploadNeeds == nil {
+            return
+        }
+        let needs: MediaPreuploadNeeds
+        if let existing = self.richMediaPreuploadNeeds {
+            needs = existing
+        } else {
+            needs = self.context.engine.messages.makeMediaPreuploadNeeds()
+            self.richMediaPreuploadNeeds = needs
+        }
+        needs.update(peerId: peerId, media: media)
     }
 
     func openAICompose() {
@@ -5661,6 +5843,8 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
                 case .hashTagSearch:
                     break
                 case .quickReplyMessageInput:
+                    break
+                case .welcomeMessages:
                     break
                 case .businessLinkSetup:
                     postEmptyMessages = true
@@ -6183,9 +6367,12 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
         return leftIndex < rightIndex
     }
     
-    func createHistoryNodeForChatLocation(chatLocation: ChatLocation, chatLocationContextHolder: Atomic<ChatLocationContextHolder?>) -> ChatHistoryListNodeImpl {
+    // `subject` is the history node's own initial subject (e.g. `.message` opens the history at that message
+    // with the highlight, exactly as a freshly pushed `ChatControllerImpl` with that subject would). It is NOT
+    // the controller's `subject`, which stays as it was so that a later in-place thread switch still matches.
+    func createHistoryNodeForChatLocation(chatLocation: ChatLocation, chatLocationContextHolder: Atomic<ChatLocationContextHolder?>, subject: ChatControllerSubject? = nil) -> ChatHistoryListNodeImpl {
         let historyNode = ChatHistoryListNodeImpl(
-            // Nicegram
+            // Nicegram ChatNicegramContext
             nicegramContext: self.nicegramContext,
             //
             // Nicegram ChatBanner
@@ -6199,7 +6386,7 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
             adMessagesContext: self.adMessagesContext,
             tag: nil,
             source: .default,
-            subject: nil,
+            subject: subject,
             controllerInteraction: self.controllerInteraction,
             selectedMessages: self.selectedMessagesPromise.get(),
             rotated: self.controllerInteraction.chatIsRotated,

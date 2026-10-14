@@ -63,7 +63,7 @@ private func parseTelegramCommunity(communityData: Api.Chat.Cons_community) -> T
         defaultBannedRights: defaultBannedRights.flatMap(TelegramChatBannedRights.init)
     )
 }
-// Nicegram
+// Nicegram NGDataSharing
 public func peer(with chat: Api.Chat?) -> Peer? {
     guard let chat else { return nil }
     

@@ -794,11 +794,6 @@ public final class ChatListFilterTabContainerNode: ASDisplayNode {
                         strongSelf.contextGesture?(nil, sourceNode, gesture, isDisabled)
                     }
                 })
-                
-                // Nicegram, accessibility ids added
-                itemNode.accessibilityIdentifier = "folder_\(filter.shortTitle(strings: presentationData.strings).text)"
-                //
-                
                 self.itemNodes[filter.id] = itemNode
             }
             let unreadCount: Int

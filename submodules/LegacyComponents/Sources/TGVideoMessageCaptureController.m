@@ -177,7 +177,7 @@ typedef enum
         _queue = [[SQueue alloc] init];
         
         _previousDuration = 0.0;
-        // Nicegram
+        // Nicegram (useRearCamTelescopy)
         if (useRearCamTelescopy) {
             _preferredPosition = AVCaptureDevicePositionBack;
         } else {

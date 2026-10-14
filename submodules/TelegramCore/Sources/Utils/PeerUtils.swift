@@ -3,7 +3,7 @@ import Postbox
 
 public let anonymousSavedMessagesId: Int64 = 2666000
 
-// Nicegram
+// Nicegram AiChatAnalysis
 public extension CachedPeerData {
     var aboutText: String {
         let text: String? = switch self {
@@ -80,7 +80,7 @@ public extension Peer {
         }
     }
     
-    // Nicegram
+    // Nicegram AiChatAnalysis
     var usernameWithAtSign: String {
         addressName.flatMap { "@\($0)" } ?? ""
     }

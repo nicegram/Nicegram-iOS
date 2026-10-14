@@ -70,7 +70,7 @@ public final class ChatPanelInterfaceInteraction {
         case editPrice
     }
     
-    // Nicegram
+    // Nicegram SaveToCloud, ForwardAsCopy, CopySelectedMessages, ReplyPrivately
     public let cloudMessages: ([EngineRawMessage]?) -> Void
     public let copyForwardMessages:  ([EngineRawMessage]?) -> Void
     public let copySelectedMessages: () -> Void
@@ -120,6 +120,7 @@ public final class ChatPanelInterfaceInteraction {
     public let beginMediaRecording: (Bool) -> Void
     public let finishMediaRecording: (ChatFinishMediaRecordingAction) -> Void
     public let stopMediaRecording: () -> Void
+    public let stopIncomingStreamingMessage: () -> Void
     public let lockMediaRecording: () -> Void
     public let resumeMediaRecording: () -> Void
     public let deleteRecordedMedia: () -> Void
@@ -210,7 +211,7 @@ public final class ChatPanelInterfaceInteraction {
     public let statuses: ChatPanelInterfaceInteractionStatuses?
         
     public init(
-        // Nicegram
+        // Nicegram SaveToCloud, ForwardAsCopy, CopySelectedMessages, ReplyPrivately
         cloudMessages: @escaping ([EngineRawMessage]?) -> Void = { _ in },
         copyForwardMessages: @escaping ([EngineRawMessage]?) -> Void = { _ in },
         copySelectedMessages: @escaping () -> Void = {},
@@ -259,6 +260,7 @@ public final class ChatPanelInterfaceInteraction {
         beginMediaRecording: @escaping (Bool) -> Void,
         finishMediaRecording: @escaping (ChatFinishMediaRecordingAction) -> Void,
         stopMediaRecording: @escaping () -> Void,
+        stopIncomingStreamingMessage: @escaping () -> Void,
         lockMediaRecording: @escaping () -> Void,
         resumeMediaRecording: @escaping () -> Void,
         deleteRecordedMedia: @escaping () -> Void,
@@ -348,7 +350,7 @@ public final class ChatPanelInterfaceInteraction {
         chatController: @escaping () -> ViewController?,
         statuses: ChatPanelInterfaceInteractionStatuses?
     ) {
-        // Nicegram
+        // Nicegram SaveToCloud, ForwardAsCopy, CopySelectedMessages, ReplyPrivately
         self.cloudMessages = cloudMessages
         self.copyForwardMessages = copyForwardMessages
         self.copySelectedMessages = copySelectedMessages
@@ -397,6 +399,7 @@ public final class ChatPanelInterfaceInteraction {
         self.beginMediaRecording = beginMediaRecording
         self.finishMediaRecording = finishMediaRecording
         self.stopMediaRecording = stopMediaRecording
+        self.stopIncomingStreamingMessage = stopIncomingStreamingMessage
         self.lockMediaRecording = lockMediaRecording
         self.resumeMediaRecording = resumeMediaRecording
         self.deleteRecordedMedia = deleteRecordedMedia
@@ -536,6 +539,7 @@ public final class ChatPanelInterfaceInteraction {
         }, beginMediaRecording: { _ in
         }, finishMediaRecording: { _ in
         }, stopMediaRecording: {
+        }, stopIncomingStreamingMessage: {
         }, lockMediaRecording: {
         }, resumeMediaRecording: {
         }, deleteRecordedMedia: {

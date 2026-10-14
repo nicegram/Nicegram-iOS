@@ -1,6 +1,9 @@
 [submodule "submodules/rlottie/rlottie"]
 	path = submodules/rlottie/rlottie
 	url = https://github.com/TelegramMessenger/rlottie.git
+[submodule "build-system/bazel-rules/rules_apple"]
+	path = build-system/bazel-rules/rules_apple
+	url = https://github.com/ali-fareed/rules_apple.git
 [submodule "build-system/bazel-rules/rules_swift"]
 	path = build-system/bazel-rules/rules_swift
         url = https://github.com/bazelbuild/rules_swift.git
@@ -13,32 +16,28 @@
 [submodule "third-party/libvpx/libvpx"]
 	path = third-party/libvpx/libvpx
 	url = https://github.com/webmproject/libvpx.git
-# We use fork because of video call crash
-# https://github.com/denis15yo/webrtc/commit/c75f2a397ec3c7db12677b39b52d2b3f8ee9161e
-# When merging with the telegram code, we can try using the original repository 
-# and check if the crash (pressing the video button during the call) is fixed.
-# Perhaps the crash is related to the minimum version of iOS (we have iOS 14, telegram has iOS 12).
+# MARK: Nicegram NCG-5828 call recording, our webrtc fork (branch NCG-5940-implement-call-recording) carries the recording seams in modules/audio_device.
 [submodule "third-party/webrtc/webrtc"]
 	path = third-party/webrtc/webrtc
 	url = https://github.com/nicegram/webrtc.git
 [submodule "build-system/bazel-rules/rules_xcodeproj"]
 	path = build-system/bazel-rules/rules_xcodeproj
 	url = https://github.com/MobileNativeFoundation/rules_xcodeproj.git
-[submodule "submodules/LottieCpp/lottiecpp"]
-	path = submodules/LottieCpp/lottiecpp
-	url = https://github.com/ali-fareed/lottiecpp.git
 [submodule "third-party/dav1d/dav1d"]
 	path = third-party/dav1d/dav1d
 	url = https://github.com/ali-fareed/dav1d.git
 [submodule "third-party/td/td"]
 	path = third-party/td/td
 	url = https://github.com/tdlib/td
-[submodule "third-party/XcodeGen"]
-	path = third-party/XcodeGen
-	url = https://github.com/yonaskolb/XcodeGen.git
-[submodule "build-system/bazel-rules/sourcekit-bazel-bsp"]
-	path = build-system/bazel-rules/sourcekit-bazel-bsp
-	url = https://github.com/spotify/sourcekit-bazel-bsp.git
+[submodule "third-party/wallet-engine"]
+	path = third-party/wallet-engine/wallet-engine
+	url = https://github.com/i582/wallet-engine.git
+[submodule "submodules/tlottie/tlottie"]
+	path = submodules/tlottie/tlottie
+	url = https://github.com/dkaraush/tlottie.git
+[submodule "third-party/mtproto-engine"]
+	path = third-party/mtproto-engine
+	url = https://github.com/macosswift/mtproto-engine.git
 # MARK: Nicegram, assistant package vendored as a submodule.
 # See docs/superpowers/specs/2026-08-19-assistant-submodule-workflow-design.md
 [submodule "packages/nicegram-assistant-ios"]

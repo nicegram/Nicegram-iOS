@@ -4,7 +4,9 @@
 #
 # The fixture log lines are verbatim bazel 8.4.2 output captured on 2026-08-27
 # from a throwaway workspace -- including the singular "1 process:" form, which
-# a naive parser written against the plural form silently misses.
+# a naive parser written against the plural form silently misses -- plus
+# verbatim bazel 9.2.0 lines from the 13.0 upstream merge's gate logs
+# (2026-10-12), whose analysis line can end in ", N aspect applications".
 
 set -uo pipefail
 
@@ -69,6 +71,36 @@ cat > "$tmp/fastlane.log" <<LOG
 [15:00:42]: ${marker} ${esc}[35mINFO: Analyzed target //Telegram:Telegram (956 packages loaded, 48876 targets configured).${esc}[0m
 LOG
 
+# bazel 9.2.0, ci/generate-project.sh: the outer `bazel run` analyses the runner
+# (no aspects), then the inner generator analysis reports aspect applications.
+# Both numbers must come from that last line, not one from each.
+cat > "$tmp/bazel9-generate.log" <<LOG
+[13:54:39]: ${marker} ${esc}[35mINFO: Analyzed target //Telegram:Telegram_xcodeproj (3 packages loaded, 12 targets configured).${esc}[0m
+[13:54:40]: ${marker} ${esc}[35mINFO: 11 processes: 10 internal, 1 local.${esc}[0m
+[14:01:46]: ${marker} ${esc}[35mINFO: Analyzed target @@rules_xcodeproj++rules_repos+rules_xcodeproj_generated//generator/Telegram/Telegram_xcodeproj:Telegram_xcodeproj (1463 packages loaded, 193415 targets configured, 39414 aspect applications).${esc}[0m
+[14:01:52]: ${marker} ${esc}[35mINFO: Elapsed time: 431.979s, Critical Path: 6.58s${esc}[0m
+[14:01:52]: ${marker} ${esc}[35mINFO: 439 processes: 402 internal, 37 local.${esc}[0m
+LOG
+
+# bazel 9.2.0, ci/verify-build.sh's build step (raw, not fastlane-wrapped): the
+# action cache hits are no longer part of the process count.
+cat > "$tmp/bazel9-build.log" <<'LOG'
+INFO: Elapsed time: 222.082s, Critical Path: 196.46s
+INFO: 1567 processes: 6431 action cache hit, 2 internal, 1369 local, 196 worker.
+LOG
+
+# bazel 9.2.0, a fresh worktree's project generation fed from the disk cache.
+cat > "$tmp/bazel9-disk.log" <<LOG
+[15:42:08]: ${marker} ${esc}[35mINFO: 6018 processes: 5612 disk cache hit, 401 internal, 5 local.${esc}[0m
+LOG
+
+# bazel 8.4.2, the gate's build step after the target-ids step had analysed
+# everything: the singular "target configured".
+cat > "$tmp/singular-target.log" <<'LOG'
+INFO: Analyzed target @@rules_xcodeproj++rules_repos+rules_xcodeproj_generated//generator/Telegram/Telegram_xcodeproj:Telegram_xcodeproj (6 packages loaded, 9939 targets configured).
+INFO: Analyzed target @@rules_xcodeproj++rules_repos+rules_xcodeproj_generated//generator/Telegram/Telegram_xcodeproj:Telegram_xcodeproj (1 packages loaded, 1 target configured).
+LOG
+
 echo "test_warm_build_fields"
 check "elapsed"        "128.451" "$(ng_report_field "$tmp/warm.log" elapsed)"
 check "disk hits"      "9877"    "$(ng_report_field "$tmp/warm.log" disk_cache_hits)"
@@ -84,6 +116,22 @@ check "fastlane disk hits"   "2805"   "$(ng_report_field "$tmp/fastlane.log" dis
 check "fastlane action hits" "0"      "$(ng_report_field "$tmp/fastlane.log" action_cache_hits)"
 check "fastlane pkgs loaded" "956"    "$(ng_report_field "$tmp/fastlane.log" packages_loaded)"
 check "fastlane targets cfg" "48876"  "$(ng_report_field "$tmp/fastlane.log" targets_configured)"
+
+echo "test_bazel9_analysis_with_aspect_applications"
+check "bazel9 pkgs loaded" "1463"   "$(ng_report_field "$tmp/bazel9-generate.log" packages_loaded)"
+check "bazel9 targets cfg" "193415" "$(ng_report_field "$tmp/bazel9-generate.log" targets_configured)"
+check "bazel9 processes"   "439"    "$(ng_report_field "$tmp/bazel9-generate.log" processes)"
+check "bazel9 elapsed"     "431.979" "$(ng_report_field "$tmp/bazel9-generate.log" elapsed)"
+
+echo "test_bazel9_cache_counters"
+check "bazel9 processes"   "1567" "$(ng_report_field "$tmp/bazel9-build.log" processes)"
+check "bazel9 action hits" "6431" "$(ng_report_field "$tmp/bazel9-build.log" action_cache_hits)"
+check "bazel9 disk hits"   "0"    "$(ng_report_field "$tmp/bazel9-build.log" disk_cache_hits)"
+check "bazel9 disk hits, fed" "5612" "$(ng_report_field "$tmp/bazel9-disk.log" disk_cache_hits)"
+
+echo "test_singular_target_configured_is_parsed"
+check "singular pkgs loaded" "1" "$(ng_report_field "$tmp/singular-target.log" packages_loaded)"
+check "singular targets cfg" "1" "$(ng_report_field "$tmp/singular-target.log" targets_configured)"
 
 echo "test_singular_process_line_is_parsed"
 check "singular procs" "1" "$(ng_report_field "$tmp/singular.log" processes)"

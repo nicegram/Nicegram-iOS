@@ -57,7 +57,10 @@ final class NGManagedFile {
     
     func readData(count: Int) -> Data {
         var result = Data(count: count)
-        result.withUnsafeMutableBytes { (bytes: UnsafeMutablePointer<Int8>) -> Void in
+        result.withUnsafeMutableBytes { (buffer: UnsafeMutableRawBufferPointer) -> Void in
+            guard let bytes = buffer.baseAddress else {
+                return
+            }
             let readCount = self.read(bytes, count)
             assert(readCount == count)
         }
@@ -216,7 +219,10 @@ public final class NGLogger {
             
             if let currentFile = currentFile {
                 if let data = content.data(using: .utf8) {
-                    data.withUnsafeBytes { (bytes: UnsafePointer<UInt8>) -> Void in
+                    data.withUnsafeBytes { (buffer: UnsafeRawBufferPointer) -> Void in
+                        guard let bytes = buffer.baseAddress else {
+                            return
+                        }
                         let _ = currentFile.write(bytes, count: data.count)
                     }
                     var newline: UInt8 = 0x0a

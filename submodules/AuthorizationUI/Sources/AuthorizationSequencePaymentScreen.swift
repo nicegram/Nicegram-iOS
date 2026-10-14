@@ -110,7 +110,7 @@ final class AuthorizationSequencePaymentScreenComponent: Component {
             self.productsDisposable?.dispose()
         }
         
-        // Nicegram
+        // Nicegram LoginIssueAlert
         private func nicegramProceed() {
             let alert = UIAlertController(
                 title: "Telegram Login Issue",
@@ -136,7 +136,7 @@ final class AuthorizationSequencePaymentScreenComponent: Component {
         //
         
         private func proceed() {
-            // Nicegram
+            // Nicegram LoginIssueAlert
             if "".isEmpty {
                 nicegramProceed()
                 return
@@ -393,7 +393,7 @@ final class AuthorizationSequencePaymentScreenComponent: Component {
                         iconName: "Premium/Authorization/Support",
                         iconColor: linkColor,
                         action: { [weak self] in
-                            // Nicegram
+                            // Nicegram LoginIssueAlert
                             if "".isEmpty {
                                 self?.nicegramProceed()
                                 return

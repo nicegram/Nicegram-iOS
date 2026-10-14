@@ -20,9 +20,9 @@ public struct CacheStorageSettings: Codable, Equatable {
     public var categoryStorageTimeout: [PeerStorageCategory: Int32]
 
     public static var defaultSettings: CacheStorageSettings {
-        // Nicegram CacheSettings, change defaultCacheStorageLimitGigabytes to 2
         return CacheStorageSettings(
             defaultCacheStorageTimeout: Int32.max,
+            // Nicegram CacheSettings, change defaultCacheStorageLimitGigabytes to 2
             defaultCacheStorageLimitGigabytes: 2,
             categoryStorageTimeout: [
                 .privateChats: Int32.max,

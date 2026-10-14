@@ -350,7 +350,7 @@ final class FullscreenControlsComponent: Component {
                 self.timer = timer
                 RunLoop.main.add(timer, forMode: .common)
             }
-            
+
             return CGSize(width: availableSize.width, height: leftBackgroundSize.height)
         }
         
