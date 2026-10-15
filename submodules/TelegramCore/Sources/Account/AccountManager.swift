@@ -610,8 +610,19 @@ public func managedCleanupAccounts(networkArguments: NetworkInitializationArgume
             
             DispatchQueue.global(qos: .utility).async {
                 if let files = try? FileManager.default.contentsOfDirectory(at: URL(fileURLWithPath: rootPath), includingPropertiesForKeys: [], options: []) {
+                    // Nicegram AccountCleanupLiveCheck
+                    let pathsInUse = accountPathsInUse(
+                        accountManager: accountManager,
+                        currentTemporarySessionId: currentTemporarySessionId
+                    )
+                    //
                     for url in files {
                         if url.lastPathComponent.hasPrefix("account-") {
+                            // Nicegram AccountCleanupLiveCheck
+                            if pathsInUse.contains(url.lastPathComponent) {
+                                continue
+                            }
+                            //
                             if !validPaths.contains(url.lastPathComponent) {
                                 // Nicegram PostboxFailureReporting
                                 notePostboxFolderRemoval(url.lastPathComponent)
