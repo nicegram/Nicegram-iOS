@@ -195,9 +195,7 @@ public final class StorageBox {
             guard let valueBox = valueBox else {
                 postboxLog("Giving up on opening value box at \(basePath + "/db")")
                 postboxLogSync()
-                // Nicegram, crash log
-                fatalError("Giving up on opening value box at \(basePath + "/db")")
-//                preconditionFailure()
+                preconditionFailure()
             }
             self.valueBox = valueBox
             
@@ -403,16 +401,23 @@ public final class StorageBox {
                             self.internalAddSize(peerId: peerId, contentType: contentType, delta: updatedSize)
                         }
                     }
-                } else if deltaSize != 0 {
-                    self.internalAddSize(contentType: contentType, delta: deltaSize)
-                    
+                } else {
                     let referencingPeers = self.peerIdsReferencing(hashId: hashId)
                     
-                    for peerId in referencingPeers {
-                        self.internalAddSize(peerId: peerId, contentType: previousContentType, delta: deltaSize)
+                    if deltaSize != 0 {
+                        self.internalAddSize(contentType: contentType, delta: deltaSize)
+                        
+                        for peerId in referencingPeers {
+                            self.internalAddSize(peerId: peerId, contentType: contentType, delta: deltaSize)
+                        }
                     }
-                    if !referencingPeers.contains(reference.peerId) {
-                        self.internalAddSize(peerId: reference.peerId, contentType: previousContentType, delta: updatedSize)
+                    
+                    // A peer referencing this item for the first time is credited with the
+                    // whole current size, whether or not the size changed in this call:
+                    // `internalRemove` debits every referencing peer by the item's size, so
+                    // every referencing peer must have been credited exactly once.
+                    if updatedSize != 0 && !referencingPeers.contains(reference.peerId) {
+                        self.internalAddSize(peerId: reference.peerId, contentType: contentType, delta: updatedSize)
                     }
                 }
             } else if updatedSize != 0 {

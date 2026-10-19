@@ -106,7 +106,7 @@ public class ChatMessageShareButton: ASDisplayNode {
         self.morePressed?()
     }
     
-    // Nicegram (translateButton)
+    // Nicegram Translate, 'translateButton' param added
     public func update(presentationData: ChatPresentationData, controllerInteraction: ChatControllerInteraction, chatLocation: ChatLocation, subject: ChatControllerSubject?, message: EngineMessage, accountPeerId: EnginePeer.Id, disableComments: Bool = false, isSummarize: Bool = false, translateButton: Bool = false) -> CGSize {
         var isReplies = false
         var isNavigate = false
@@ -152,10 +152,11 @@ public class ChatMessageShareButton: ASDisplayNode {
             var updatedIconImage: UIImage?
             var updatedBottomIconImage: UIImage?
             var updatedIconOffset = CGPoint()
-            // Nicegram  (if translateButton)
+            // Nicegram Translate, 'translateButton' branch added before 'isSummarize'
             if translateButton {
                 updatedIconImage = PresentationResourcesChat.chatTranslateButtonIcon(presentationData.theme.theme, wallpaper: presentationData.theme.wallpaper)
             } else if isSummarize {
+            //
                 if isExpand {
                     updatedIconImage = PresentationResourcesChat.chatFreeExpandButtonIcon(presentationData.theme.theme, wallpaper: presentationData.theme.wallpaper)
                 } else {
@@ -328,12 +329,6 @@ public class ChatMessageShareButton: ASDisplayNode {
             self.backgroundBlurView?.view.isHidden = true
             backgroundContent.cornerRadius = min(size.width, size.height) / 2.0
             backgroundContent.frame = CGRect(origin: CGPoint(), size: size)
-            if let (rect, containerSize) = self.absolutePosition {
-                var backgroundFrame = backgroundContent.frame
-                backgroundFrame.origin.x += rect.minX
-                backgroundFrame.origin.y += rect.minY
-                backgroundContent.update(rect: backgroundFrame, within: containerSize, transition: .immediate)
-            }
         } else {
             //self.backgroundNode.isHidden = false
             self.backgroundBlurView?.view.isHidden = false
@@ -360,12 +355,6 @@ public class ChatMessageShareButton: ASDisplayNode {
     
     public func updateAbsoluteRect(_ rect: CGRect, within containerSize: CGSize) {
         self.absolutePosition = (rect, containerSize)
-        if let backgroundContent = self.backgroundContent {
-            var backgroundFrame = backgroundContent.frame
-            backgroundFrame.origin.x += rect.minX
-            backgroundFrame.origin.y += rect.minY
-            backgroundContent.update(rect: backgroundFrame, within: containerSize, transition: .immediate)
-        }
     }
 }
 

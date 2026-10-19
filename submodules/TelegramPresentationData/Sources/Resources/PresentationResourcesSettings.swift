@@ -117,7 +117,7 @@ let colorGray = UIColor(rgb: 0x8E8E93)
 let colorViolet = UIColor(rgb: 0x5E5CE6)
 
 public struct PresentationResourcesSettings {
-    // Nicegram
+    // Nicegram NicegramSection
     public static let ngAiChatIcon = renderSettingsIcon(name: "ng-settings/ai-chatbot")
     public static let ngPremiumIcon = renderSettingsIcon(name: "ng-settings/premium")
     public static let ngSettingsIcon = renderSettingsIcon(name: "ng-settings/settings")
@@ -224,6 +224,9 @@ public struct PresentationResourcesSettings {
     })
     
     public static let ton = renderSettingsIcon(name: "Item List/Icons/Gram", backgroundColors: [colorBlue])
+    public static let gramEarnings = renderSettingsIcon(name: "Item List/Icons/Earnings", backgroundColors: [colorBlue])
+    
+    public static let money = UIImage(bundleImageName: "Settings/Gram")
  
     public static let stars = generateImage(CGSize(width: 30.0, height: 30.0), contextGenerator: { size, context in
         let bounds = CGRect(origin: CGPoint(), size: size)
@@ -358,4 +361,6 @@ public struct PresentationResourcesSettings {
     public static let voices = renderSettingsIcon(name: "Item List/Icons/Microphone", backgroundColors: [colorPurple])
     public static let upload = renderSettingsIcon(name: "Item List/Icons/Upload", backgroundColors: [colorBlue])
     public static let download = renderSettingsIcon(name: "Item List/Icons/Download", backgroundColors: [colorGreen])
+    
+    public static let welcome = renderSettingsIcon(name: "Item List/Icons/Hand", backgroundColors: [colorViolet])
 }

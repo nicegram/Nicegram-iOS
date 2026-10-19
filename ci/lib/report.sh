@@ -18,8 +18,17 @@
 # Note "1 process:" versus "12043 processes:" -- bazel switches to the singular,
 # so every pattern here accepts both.
 #
+# Re-verified against bazel 9.2.0, the 13.0 merge's gate logs of 2026-10-12.
+# Two shapes are new, both covered by ci/tests/test-report.sh:
+#
+#   INFO: Analyzed target @@rules_xcodeproj++...:Telegram_xcodeproj (1463 packages loaded, 193415 targets configured, 39414 aspect applications).
+#   INFO: 1567 processes: 6431 action cache hit, 2 internal, 1369 local, 196 worker.
+#
+# The second is new in meaning only: action cache hits are no longer part of
+# the process count, which the parsing below never assumed.
+#
 # There is deliberately no "did this build reconfigure?" field here, and not
-# because bazel stays quiet about it: 8.4.2 does print
+# because bazel stays quiet about it: 8.4.2 and 9.2.0 both print
 #   WARNING: Build options --//Telegram:disableStripping, ... have changed,
 #   discarding analysis cache
 # whenever a configuration-affecting flag changes against a warm server. (An
@@ -118,10 +127,13 @@ ng_report_field() { # $1=log path  $2=field
       [ -n "$v" ] || v=0
       ;;
     packages_loaded)
-      v="$(printf '%s\n' "$normalized" | sed -nE 's/^INFO: Analyzed targets?.*\(([0-9]+) packages loaded.*/\1/p' | tail -1)"
+      v="$(printf '%s\n' "$normalized" | sed -nE 's/^INFO: Analyzed targets?.*\(([0-9]+) packages? loaded.*/\1/p' | tail -1)"
       ;;
     targets_configured)
-      v="$(printf '%s\n' "$normalized" | sed -nE 's/^INFO: Analyzed targets?.*, ([0-9]+) targets configured\).*/\1/p' | tail -1)"
+      # `[,)]`, not `\)`: 9.2.0 can follow the count with ", N aspect
+      # applications". A pattern that rejects the line silently falls back to an
+      # earlier line's count, so the two analysis fields disagree.
+      v="$(printf '%s\n' "$normalized" | sed -nE 's/^INFO: Analyzed targets?.*, ([0-9]+) targets? configured[,)].*/\1/p' | tail -1)"
       ;;
     error_lines)
       v="$(printf '%s\n' "$normalized" | grep -c '^ERROR: ')"

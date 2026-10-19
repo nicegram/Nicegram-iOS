@@ -14,7 +14,7 @@ swift_library(
         "//submodules/Display",
         "//submodules/LegacyComponents",
         "//submodules/MetalEngine",
-        # Nicegram, removed 'submodules/TelegramUI/Components/Calls/CallScreen'
+        # Nicegram NCG-5828 call recording, removed '//submodules/TelegramUI/Components/Calls/CallScreen' (unused here): it closes a cycle CallScreen -> NGCallRecorder -> UndoUI -> AnimatedAvatarSetNode -> AudioBlob -> CallScreen
         "//submodules/TelegramUI/Components/GlassBackgroundComponent",
     ],
     visibility = [

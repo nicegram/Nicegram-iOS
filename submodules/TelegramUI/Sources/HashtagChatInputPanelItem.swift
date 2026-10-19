@@ -11,6 +11,10 @@ import AvatarNode
 import AccountContext
 
 final class HashtagChatInputPanelItem: ListViewItem {
+    var neighborDescriptor: AnyEquatable {
+        return AnyEquatable.noNeighborInfluence
+    }
+
     fileprivate let context: AccountContext
     fileprivate let presentationData: ItemListPresentationData
     fileprivate let peer: EnginePeer?
@@ -48,12 +52,12 @@ final class HashtagChatInputPanelItem: ListViewItem {
         self.removeRequested = removeRequested
     }
     
-    public func nodeConfiguredForParams(async: @escaping (@escaping () -> Void) -> Void, params: ListViewItemLayoutParams, synchronousLoads: Bool, previousItem: ListViewItem?, nextItem: ListViewItem?, completion: @escaping (ListViewItemNode, @escaping () -> (Signal<Void, NoError>?, (ListViewItemApply) -> Void)) -> Void) {
+    public func nodeConfiguredForParams(async: @escaping (@escaping () -> Void) -> Void, params: ListViewItemLayoutParams, synchronousLoads: Bool, neighbors: ListViewItemNeighbors, completion: @escaping (ListViewItemNode, @escaping () -> (Signal<Void, NoError>?, (ListViewItemApply) -> Void)) -> Void) {
         let configure = { () -> Void in
             let node = HashtagChatInputPanelItemNode()
             
             let nodeLayout = node.asyncLayout()
-            let (top, bottom) = (previousItem != nil, nextItem != nil)
+            let (top, bottom) = (neighbors.previous != nil, neighbors.next != nil)
             let (layout, apply) = nodeLayout(self, params, top, bottom)
             
             node.contentSize = layout.contentSize
@@ -74,13 +78,13 @@ final class HashtagChatInputPanelItem: ListViewItem {
         }
     }
     
-    public func updateNode(async: @escaping (@escaping () -> Void) -> Void, node: @escaping () -> ListViewItemNode, params: ListViewItemLayoutParams, previousItem: ListViewItem?, nextItem: ListViewItem?, animation: ListViewItemUpdateAnimation, completion: @escaping (ListViewItemNodeLayout, @escaping (ListViewItemApply) -> Void) -> Void) {
+    public func updateNode(async: @escaping (@escaping () -> Void) -> Void, node: @escaping () -> ListViewItemNode, params: ListViewItemLayoutParams, neighbors: ListViewItemNeighbors, animation: ListViewItemUpdateAnimation, completion: @escaping (ListViewItemNodeLayout, @escaping (ListViewItemApply) -> Void) -> Void) {
         Queue.mainQueue().async {
             if let nodeValue = node() as? HashtagChatInputPanelItemNode {
                 let nodeLayout = nodeValue.asyncLayout()
                 
                 async {
-                    let (top, bottom) = (previousItem != nil, nextItem != nil)
+                    let (top, bottom) = (neighbors.previous != nil, neighbors.next != nil)
                     
                     let (layout, apply) = nodeLayout(self, params, top, bottom)
                     Queue.mainQueue().async {
@@ -179,10 +183,10 @@ final class HashtagChatInputPanelItemNode: ListViewItemNode {
         self.view.addGestureRecognizer(recognizer)
     }
     
-    override public func layoutForParams(_ params: ListViewItemLayoutParams, item: ListViewItem, previousItem: ListViewItem?, nextItem: ListViewItem?) {
+    override public func layoutForParams(_ params: ListViewItemLayoutParams, item: ListViewItem, neighbors: ListViewItemNeighbors) {
         if let item = item as? HashtagChatInputPanelItem {
             let doLayout = self.asyncLayout()
-            let merged = (top: previousItem != nil, bottom: nextItem != nil)
+            let merged = (top: neighbors.previous != nil, bottom: neighbors.next != nil)
             let (layout, apply) = doLayout(item, params, merged.top, merged.bottom)
             self.contentSize = layout.contentSize
             self.insets = layout.insets
@@ -203,7 +207,7 @@ final class HashtagChatInputPanelItemNode: ListViewItemNode {
             let leftInset: CGFloat = 15.0 + params.leftInset
             let textLeftInset: CGFloat = 40.0
             // Nicegram QuickReplies, baseWidth fix
-            let baseWidth = params.width - leftInset - params.rightInset
+            let baseWidth = params.width - leftInset - textLeftInset - params.rightInset
             
             let (badgeLayout, badgeApply) = makeBadgeLayout(TextNodeLayoutArguments(attributedString: NSAttributedString(string: item.badge ?? "", font: badgeFont, textColor: item.presentationData.theme.list.itemCheckColors.foregroundColor), backgroundColor: nil, maximumNumberOfLines: 1, truncationType: .end, constrainedSize: CGSize(width: baseWidth, height: 100.0), alignment: .natural, cutout: nil, insets: UIEdgeInsets()))
             

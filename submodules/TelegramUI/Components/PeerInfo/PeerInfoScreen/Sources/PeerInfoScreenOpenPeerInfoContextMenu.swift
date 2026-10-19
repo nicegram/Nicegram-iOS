@@ -1,4 +1,4 @@
-// Nicegram
+// Nicegram RegDate
 import NGStrings
 import PresentationDataUtils
 //
@@ -60,7 +60,7 @@ extension PeerInfoScreenNode {
                 let presentationData = context.sharedContext.currentPresentationData.with { $0 }
                 let _ = (self.context.sharedContext.accountManager.sharedData(keys: [ApplicationSpecificSharedDataKeys.translationSettings])
                 |> take(1)
-                |> deliverOnMainQueue).startStandalone(next: { [weak self] sharedData in
+                |> deliverOnMainQueue).startStandalone(next: { [weak self, sourceNode] sharedData in
                     let translationSettings: TranslationSettings
                     if let current = sharedData.entries[ApplicationSpecificSharedDataKeys.translationSettings]?.get(TranslationSettings.self) {
                         translationSettings = current
@@ -164,6 +164,7 @@ extension PeerInfoScreenNode {
                     return nil
                 }
             }))
+        // Nicegram ID
         case let .ngId(peerId):
             let contextMenuController = makeContextMenuController(actions: [ContextMenuAction(content: .text(title: self.presentationData.strings.Conversation_ContextMenuCopy, accessibilityLabel: self.presentationData.strings.Conversation_ContextMenuCopy), action: {
                 UIPasteboard.general.string = peerId
@@ -175,6 +176,8 @@ extension PeerInfoScreenNode {
                     return nil
                 }
             }))
+        //
+        // Nicegram RegDate
         case let .regDate(registeredString):
             let contextMenuController = makeContextMenuController(actions: [
                 ContextMenuAction(content: .text(title: self.presentationData.strings.Conversation_ContextMenuCopy, accessibilityLabel: self.presentationData.strings.Conversation_ContextMenuCopy), action: {
@@ -193,6 +196,7 @@ extension PeerInfoScreenNode {
                     return nil
                 }
             }))
+        //
         case .businessHours(let text), .businessLocation(let text):
             let presentationData = context.sharedContext.currentPresentationData.with { $0 }
                 

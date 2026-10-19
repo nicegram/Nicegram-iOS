@@ -1,6 +1,7 @@
 import UIKit
 import AsyncDisplayKit
 import SwiftSignalKit
+
 private var backArrowImageCache: [Int32: UIImage] = [:]
 
 public final class NavigationBarTheme {

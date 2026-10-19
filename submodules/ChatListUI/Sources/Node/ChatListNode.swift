@@ -11,6 +11,7 @@ import NGUI
 import FeatHiddenChats
 //
 import Foundation
+import LottieSettings
 import UIKit
 import Display
 import AsyncDisplayKit
@@ -95,7 +96,6 @@ public final class ChatListNodeInteraction {
     let activateSearch: () -> Void
     
     // Nicegram PinnedChats
-    let getController: () -> ChatListControllerImpl?
     let clearHighlightAnimated: (Bool) -> Void
     let isChatListVisible: () -> Bool
     //
@@ -163,7 +163,6 @@ public final class ChatListNodeInteraction {
         animationRenderer: MultiAnimationRenderer,
         activateSearch: @escaping () -> Void,
         // Nicegram PinnedChats
-        getController: @escaping () -> ChatListControllerImpl? = { nil },
         clearHighlightAnimated: @escaping (Bool) -> Void = { _ in },
         isChatListVisible: @escaping () -> Bool = { false },
         //
@@ -216,7 +215,6 @@ public final class ChatListNodeInteraction {
     ) {
         self.activateSearch = activateSearch
         // Nicegram PinnedChats
-        self.getController = getController
         self.clearHighlightAnimated = clearHighlightAnimated
         self.isChatListVisible = isChatListVisible
         //
@@ -680,7 +678,12 @@ private func mappedInsertEntries(context: AccountContext, nodeInteraction: ChatL
                     var isCommunity = false
                     if let peer = chatPeer, case let .channel(channel) = peer, channel.isForumOrMonoForum {
                         isForum = true
-                        if editing {
+                        // A forum can only be selected via one of its topics in pickers that forward
+                        // INTO a chat (isSelecting == false, e.g. forward/share). Pickers that merely
+                        // collect peer ids (isSelecting == true: privacy exceptions, folder include /
+                        // exclude, auto-delete, paid-message fees) need no topic, so the forum itself
+                        // stays selectable there.
+                        if editing && !isSelecting {
                             enabled = false
                         }
                     } else if isIncludedCommunityContainer(chatPeer, filter: filter) {
@@ -691,7 +694,7 @@ private func mappedInsertEntries(context: AccountContext, nodeInteraction: ChatL
                     }
                 
                     var selectable = editing
-                    if isForum || isCommunity {
+                    if (isForum && !isSelecting) || isCommunity {
                         selectable = false
                     }
 
@@ -717,7 +720,7 @@ private func mappedInsertEntries(context: AccountContext, nodeInteraction: ChatL
                                     nodeInteraction.peerSelected(chatPeer, nil, threadId, nil, false)
                                 }
                             }
-                        }, disabledAction: ((isForum || isCommunity) && editing) && !peerEntry.requiresPremiumForMessaging ? nil : { _ in
+                        }, disabledAction: (((isForum && !isSelecting) || isCommunity) && editing) && !peerEntry.requiresPremiumForMessaging ? nil : { _ in
                             if let chatPeer = chatPeer {
                                 nodeInteraction.disabledPeerSelected(chatPeer, threadId, peerEntry.requiresPremiumForMessaging ? .premiumRequired : .generic)
                             }
@@ -830,7 +833,7 @@ private func mappedInsertEntries(context: AccountContext, nodeInteraction: ChatL
         case let .ArchiveIntro(presentationData):
             return ListViewInsertItem(index: entry.index, previousIndex: entry.previousIndex, item: ChatListArchiveInfoItem(theme: presentationData.theme, strings: presentationData.strings), directionHint: entry.directionHint)
         case let .EmptyIntro(presentationData):
-            return ListViewInsertItem(index: entry.index, previousIndex: entry.previousIndex, item: ChatListEmptyInfoItem(theme: presentationData.theme, strings: presentationData.strings), directionHint: entry.directionHint)
+            return ListViewInsertItem(index: entry.index, previousIndex: entry.previousIndex, item: ChatListEmptyInfoItem(theme: presentationData.theme, strings: presentationData.strings, lottieSettings: context.lottieRenderingSettings), directionHint: entry.directionHint)
         case let .SectionHeader(presentationData, displayHide):
             return ListViewInsertItem(index: entry.index, previousIndex: entry.previousIndex, item: ChatListSectionHeaderItem(theme: presentationData.theme, strings: presentationData.strings, hide: displayHide ? {
                 hideChatListContacts(context: context)
@@ -1005,20 +1008,26 @@ private func mappedUpdateEntries(context: AccountContext, nodeInteraction: ChatL
                         }
                         
                         var isForum = false
+                        var isCommunity = false
                         if let peer = chatPeer, case let .channel(channel) = peer, channel.isForumOrMonoForum {
                             isForum = true
-                            if editing {
+                            // A forum can only be selected via one of its topics in pickers that forward
+                            // INTO a chat (isSelecting == false, e.g. forward/share). Pickers that merely
+                            // collect peer ids (isSelecting == true: privacy exceptions, folder include /
+                            // exclude, auto-delete, paid-message fees) need no topic, so the forum itself
+                            // stays selectable there.
+                            if editing && !isSelecting {
                                 enabled = false
                             }
                         } else if isIncludedCommunityContainer(chatPeer, filter: filter) {
-                            isForum = true
+                            isCommunity = true
                             if editing {
                                 enabled = false
                             }
                         }
                     
                         var selectable = editing
-                        if isForum {
+                        if (isForum && !isSelecting) || isCommunity {
                             selectable = false
                         }
                     
@@ -1044,7 +1053,7 @@ private func mappedUpdateEntries(context: AccountContext, nodeInteraction: ChatL
                                         nodeInteraction.peerSelected(chatPeer, nil, threadId, nil, false)
                                     }
                                 }
-                            }, disabledAction: (isForum && editing) && !peerEntry.requiresPremiumForMessaging ? nil : { _ in
+                            }, disabledAction: (((isForum && !isSelecting) || isCommunity) && editing) && !peerEntry.requiresPremiumForMessaging ? nil : { _ in
                                 if let chatPeer = chatPeer {
                                     nodeInteraction.disabledPeerSelected(chatPeer, threadId, peerEntry.requiresPremiumForMessaging ? .premiumRequired : .generic)
                                 }
@@ -1157,7 +1166,7 @@ private func mappedUpdateEntries(context: AccountContext, nodeInteraction: ChatL
             case let .ArchiveIntro(presentationData):
                 return ListViewUpdateItem(index: entry.index, previousIndex: entry.previousIndex, item: ChatListArchiveInfoItem(theme: presentationData.theme, strings: presentationData.strings), directionHint: entry.directionHint)
             case let .EmptyIntro(presentationData):
-                return ListViewUpdateItem(index: entry.index, previousIndex: entry.previousIndex, item: ChatListEmptyInfoItem(theme: presentationData.theme, strings: presentationData.strings), directionHint: entry.directionHint)
+                return ListViewUpdateItem(index: entry.index, previousIndex: entry.previousIndex, item: ChatListEmptyInfoItem(theme: presentationData.theme, strings: presentationData.strings, lottieSettings: context.lottieRenderingSettings), directionHint: entry.directionHint)
             case let .SectionHeader(presentationData, displayHide):
                 return ListViewUpdateItem(index: entry.index, previousIndex: entry.previousIndex, item: ChatListSectionHeaderItem(theme: presentationData.theme, strings: presentationData.strings, hide: displayHide ? {
                     hideChatListContacts(context: context)
@@ -1258,7 +1267,6 @@ public enum ChatListNodeEmptyState: Equatable {
 
 // Nicegram PinnedChats
 public struct ChatListNicegramData {
-    let controller: () -> ChatListControllerImpl?
     let currentFolder: () -> ChatListFilter?
     let isChatListVisible: CurrentValueSubject<Bool, Never>
     let pinnedChats: AnyPublisher<[PinnedChatToDisplay], Never>
@@ -1477,7 +1485,6 @@ public final class ChatListNode: ListViewImpl {
         self.autoSetReady = autoSetReady
         // Nicegram PinnedChats
         self.nicegramData = nicegramData ?? ChatListNicegramData(
-            controller: { nil },
             currentFolder: { nil },
             isChatListVisible: .init(false),
             pinnedChats: Just([]).eraseToAnyPublisher()
@@ -1508,6 +1515,7 @@ public final class ChatListNode: ListViewImpl {
         
         self.verticalScrollIndicatorColor = theme.list.scrollIndicatorColor
         self.verticalScrollIndicatorFollowsOverscroll = true
+        self.verticalScrollIndicatorRespectsSideInsets = true
         
         self.keepMinimalScrollHeightWithTopInset = self.scrollHeightTopInset
         
@@ -1516,8 +1524,6 @@ public final class ChatListNode: ListViewImpl {
                 activateSearch()
             }
             // Nicegram PinnedChats
-        }, getController: { [weak self] in
-            self?.nicegramData.controller()
         }, clearHighlightAnimated: { [weak self] flag in
             self?.clearHighlightAnimated(flag)
         }, isChatListVisible: { [weak self] in
@@ -2254,15 +2260,10 @@ public final class ChatListNode: ListViewImpl {
         //
         
         // Nicegram HiddenChats
-        let hiddenChatsSignal: Signal<[HiddenChat], NoError>
-        if #available(iOS 13.0, *) {
-            hiddenChatsSignal = HiddenChatsContainer.shared.getChatsToHideUseCase()
-                .publisher()
-                .toSignal()
-                .skipError()
-        } else {
-            hiddenChatsSignal = .single([])
-        }
+        let hiddenChatsSignal: Signal<[HiddenChat], NoError> = HiddenChatsContainer.shared.getChatsToHideUseCase()
+            .publisher()
+            .toSignal()
+            .skipError()
         //
         
         // Nicegram ChatListWidget
@@ -2316,7 +2317,7 @@ public final class ChatListNode: ListViewImpl {
             chatListViewUpdate,
             // Nicegram PinnedChats
             nicegramItemsSignal,
-            //,
+            //
             // Nicegram HiddenChats
             hiddenChatsSignal,
             //

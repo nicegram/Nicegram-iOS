@@ -1,9 +1,7 @@
-// Nicegram
+// Nicegram Imports
 import class CoreSwiftUI.DailyLoginLimitPopupPresenter
 import FeatAccountBackup
 import FeatAppReview
-import FeatAuth
-import FeatOnboardingCore
 import FeatPhoneEntryBanner
 //
 import Foundation
@@ -210,12 +208,10 @@ public final class AuthorizationSequencePhoneEntryController: ViewController, MF
         }
         
         // Nicegram PhoneEntryBanner
-        if #available(iOS 15.0, *) {
-            setupPhoneEntryBanner(
-                view: self.controllerNode.ngBannerNode.view,
-                controller: self
-            )
-        }
+        setupPhoneEntryBanner(
+            view: self.controllerNode.ngBannerNode.view,
+            controller: self
+        )
         //
         
         self.loadAndPresentPasskey(force: false)
@@ -331,11 +327,12 @@ public final class AuthorizationSequencePhoneEntryController: ViewController, MF
     }
     
     public func presentationAnchor(for controller: ASAuthorizationController) -> ASPresentationAnchor {
-        // Nicegram, fallback to UIApplication.findKeyWindow()
+        // Nicegram PasskeyAnchor, fallback to UIApplication.findKeyWindow()
         let window = self.view.window ?? UIApplication.findKeyWindow()
         guard let windowScene = window?.windowScene else {
             preconditionFailure()
         }
+        //
         return ASPresentationAnchor(windowScene: windowScene)
     }
     
@@ -376,8 +373,7 @@ public final class AuthorizationSequencePhoneEntryController: ViewController, MF
         }
         
         // Nicegram AccountBackup
-        if #available(iOS 15.0, *),
-           !self.sawImportAccounts,
+        if !self.sawImportAccounts,
            self.otherAccountPhoneNumbers.1.isEmpty {
             self.sawImportAccounts = true
             ImportAccountsPresenter().presentImportFromBackupOnAddingAccount()
@@ -385,13 +381,11 @@ public final class AuthorizationSequencePhoneEntryController: ViewController, MF
         //
         
         // Nicegram DailyLoginLimit
-        if #available(iOS 15.0, *) {
-            if self.otherAccountPhoneNumbers.1.count >= 3, !self.sawDailyLoginLimitPopup {
-                self.sawDailyLoginLimitPopup = true
-                Task {
-                    try? await Task.sleep(seconds: 0.5)
-                    await DailyLoginLimitPopupPresenter().presentIfNeeded()
-                }
+        if self.otherAccountPhoneNumbers.1.count >= 3, !self.sawDailyLoginLimitPopup {
+            self.sawDailyLoginLimitPopup = true
+            Task {
+                try? await Task.sleep(seconds: 0.5)
+                await DailyLoginLimitPopupPresenter().presentIfNeeded()
             }
         }
         //
@@ -482,6 +476,7 @@ public final class AuthorizationSequencePhoneEntryController: ViewController, MF
                     confirmationController.proceed = {
                         tryLoginWithNumber()
                     }
+                    //
                     (self.navigationController as? NavigationController)?.presentOverlay(controller: confirmationController, inGlobal: true, blockInteraction: true)
                     self.confirmationController = confirmationController
                 } else {
@@ -491,6 +486,7 @@ public final class AuthorizationSequencePhoneEntryController: ViewController, MF
                     actions.append(TextAlertAction(type: .defaultAction, title: self.presentationData.strings.Login_Yes, action: {
                         tryLoginWithNumber()
                     }))
+                    //
                     self.present(textAlertController(sharedContext: self.sharedContext, title: logInNumber, text: self.presentationData.strings.Login_PhoneNumberConfirmation, actions: actions), in: .window(.root))
                 }
             }

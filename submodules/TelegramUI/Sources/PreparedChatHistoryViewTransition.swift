@@ -15,6 +15,15 @@ func preparedChatHistoryViewTransition(from fromView: ChatHistoryView?, to toVie
         mergeResult = mergeListsStableWithUpdatesReversed(leftList: fromView?.filteredEntries ?? [], rightList: toView.filteredEntries, allUpdated: allUpdated)
     } else {
         mergeResult = mergeListsStableWithUpdates(leftList: fromView?.filteredEntries ?? [], rightList: toView.filteredEntries, allUpdated: allUpdated)
+        // Nicegram ChatHistoryMergeGuard
+        mergeResult = guardedChatHistoryMergeResult(
+            mergeResult,
+            chatLocation: chatLocation,
+            leftList: fromView?.filteredEntries ?? [],
+            reason: reason,
+            rightList: toView.filteredEntries
+        )
+        //
     }
 
     if let messageTransitionNode = messageTransitionNode, messageTransitionNode.hasOngoingTransitions, let previousEntries = fromView?.filteredEntries {
@@ -141,7 +150,7 @@ func preparedChatHistoryViewTransition(from fromView: ChatHistoryView?, to toVie
     let curve: ListViewAnimationCurve = scrollAnimationCurve ?? .Default(duration: nil)
     
     var isSavedMusic = false
-    if case let .custom(_, _, _, isSavedMusicValue, _, _) = source {
+    if case let .custom(_, _, _, isSavedMusicValue, _, _, _) = source {
         isSavedMusic = isSavedMusicValue
     }
     

@@ -67,6 +67,7 @@ final class PeerInfoInteraction {
     let openAddMember: () -> Void
     let openQrCode: () -> Void
     let editingOpenReactionsSetup: () -> Void
+    let editingOpenWelcomeMessages: () -> Void
     let dismissInput: () -> Void
     let openForumSettings: () -> Void
     let displayTopicsLimited: (TopicsLimitedReason) -> Void
@@ -153,6 +154,7 @@ final class PeerInfoInteraction {
         openAddMember: @escaping () -> Void,
         openQrCode: @escaping () -> Void,
         editingOpenReactionsSetup: @escaping () -> Void,
+        editingOpenWelcomeMessages: @escaping () -> Void,
         dismissInput: @escaping () -> Void,
         openForumSettings: @escaping () -> Void,
         displayTopicsLimited: @escaping (TopicsLimitedReason) -> Void,
@@ -238,6 +240,7 @@ final class PeerInfoInteraction {
         self.openAddMember = openAddMember
         self.openQrCode = openQrCode
         self.editingOpenReactionsSetup = editingOpenReactionsSetup
+        self.editingOpenWelcomeMessages = editingOpenWelcomeMessages
         self.dismissInput = dismissInput
         self.openForumSettings = openForumSettings
         self.displayTopicsLimited = displayTopicsLimited

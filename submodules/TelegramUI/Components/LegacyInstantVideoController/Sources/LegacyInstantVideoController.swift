@@ -158,6 +158,7 @@ public func legacyInstantVideoController(theme: PresentationTheme, forStory: Boo
                 slowmodeValidUntil = timestamp
             }
             
+            // Nicegram (useRearCamTelescopy), 'useRearCamTelescopy' param added
             let controller = TGVideoMessageCaptureController(context: legacyController.context, forStory: forStory, assets: TGVideoMessageCaptureControllerAssets(send: PresentationResourcesChat.chatInputPanelSendButtonImage(theme)!, slideToCancel: PresentationResourcesChat.chatInputPanelMediaRecordingCancelArrowImage(theme)!, actionDelete: generateTintedImage(image: UIImage(bundleImageName: "Chat/Input/Accessory Panels/MessageSelectionTrash"), color: theme.chat.inputPanel.panelControlAccentColor))!, transitionInView: {
                 return nil
             }, parentController: baseController, controlsFrame: panelFrame, isAlreadyLocked: {
@@ -167,7 +168,6 @@ public func legacyInstantVideoController(theme: PresentationTheme, forStory: Boo
                 node.slowmodeState = slowmodeState
                 return node
             }, canSendSilently: !isSecretChat, canSchedule: hasSchedule, reminder: peerId == context.account.peerId, useRearCamTelescopy: NGSettings.useRearCamTelescopy)!
-            // Nicegram useRearCamTelescopy
             controller.presentScheduleController = { done in
                 presentSchedulePicker { time, silentPosting in
                     done?(time, silentPosting)

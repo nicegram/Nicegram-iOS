@@ -536,7 +536,7 @@ public final class PeerSelectionControllerImpl: ViewController, PeerSelectionCon
             }
             
             let resolvedItems = filterItems
-            
+        
             var wasEmpty = false
             if let tabContainerData = strongSelf.tabContainerData {
                 wasEmpty = tabContainerData.0.count <= 1 || tabContainerData.1

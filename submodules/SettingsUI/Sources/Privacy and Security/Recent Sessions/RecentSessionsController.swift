@@ -1,4 +1,4 @@
-// Nicegram
+// Nicegram TgAccountShop
 import NGUtils
 //
 import Foundation
@@ -37,12 +37,13 @@ private final class RecentSessionsControllerArguments {
     let addDevice: () -> Void
     
     let openOtherAppsUrl: () -> Void
-    // Nicegram, async
+    // Nicegram TgAccountShop, async
     let setupAuthorizationTTL: () async -> Void
     
     let openDesktopLink: () -> Void
     let openWebLink: () -> Void
     
+    // Nicegram TgAccountShop, setupAuthorizationTTL made async
     init(context: AccountContext, setSessionIdWithRevealedOptions: @escaping (Int64?, Int64?) -> Void, removeSession: @escaping (Int64) -> Void, terminateOtherSessions: @escaping () -> Void, openSession: @escaping (RecentAccountSession) -> Void, openConnectedBotSession: @escaping (TelegramAccountConnectedBot) -> Void, openWebSession: @escaping (WebAuthorization, EnginePeer?) -> Void, removeWebSession: @escaping (Int64) -> Void, terminateAllWebSessions: @escaping () -> Void, addDevice: @escaping () -> Void, openOtherAppsUrl: @escaping () -> Void, setupAuthorizationTTL: @escaping () async -> Void, openDesktopLink: @escaping () -> Void, openWebLink: @escaping () -> Void) {
         self.context = context
         self.setSessionIdWithRevealedOptions = setSessionIdWithRevealedOptions
@@ -453,10 +454,11 @@ private enum RecentSessionsEntry: ItemListNodeEntry {
             return ItemListSectionHeaderItem(presentationData: presentationData, text: text, sectionId: self.section)
         case let .ttlTimeout(_, text, value):
             return ItemListDisclosureItem(presentationData: presentationData, systemStyle: .glass, title: text, label: value, sectionId: self.section, style: .blocks, action: {
-                // Nicegram, wrap async call in Task
+                // Nicegram TgAccountShop, wrap async call in Task
                 Task {
                     await arguments.setupAuthorizationTTL()
                 }
+                //
             }, tag: RecentSessionsEntryTag.autoTerminate)
         }
     }
@@ -761,11 +763,11 @@ public func recentSessionsController(context: AccountContext, activeSessionsCont
             
             let signal: Signal<Never, TerminateSessionError>
             if terminateBot {
-                // Nicegram, removeOtherExceptSystem
+                // Nicegram TgAccountShop, removeOtherExceptSystem
                 signal = activeSessionsContext.removeOtherExceptSystem()
                 |> then(context.engine.accountData.setAccountConnectedBot(bot: nil) |> castError(TerminateSessionError.self))
             } else {
-                // Nicegram, removeOtherExceptSystem
+                // Nicegram TgAccountShop, removeOtherExceptSystem
                 signal = activeSessionsContext.removeOtherExceptSystem()
             }
             
@@ -917,12 +919,13 @@ public func recentSessionsController(context: AccountContext, activeSessionsCont
         })
     }, openOtherAppsUrl: {
         context.sharedContext.openExternalUrl(context: context, urlContext: .generic, url: "https://telegram.org/apps", forceExternal: true, presentationData: context.sharedContext.currentPresentationData.with { $0 }, navigationController: nil, dismissInput: {})
+    // Nicegram TgAccountShop, @MainActor added
     }, setupAuthorizationTTL: { @MainActor in
         let presentationData = context.sharedContext.currentPresentationData.with { $0 }
         let ttlAction: (Int32) -> Void = { ttl in
             updateAuthorizationTTLDisposable.set(activeSessionsContext.updateAuthorizationTTL(days: ttl).start())
         }
-        // Nicegram, change 'let' to 'var'
+        // Nicegram TgAccountShop, change 'let' to 'var'
         var timeoutValues: [Int32] = [
             7,
             30,
@@ -930,7 +933,7 @@ public func recentSessionsController(context: AccountContext, activeSessionsCont
             180
         ]
         
-        // Nicegram, a purchased account must keep its system session alive, so we
+        // Nicegram TgAccountShop, a purchased account must keep its system session alive, so we
         // only offer the long windows (180d / 365d) and hide the shorter options
         // that would let Telegram auto-terminate it.
         do {
@@ -1005,16 +1008,11 @@ public func recentSessionsController(context: AccountContext, activeSessionsCont
         let _ = connectedBotAndPeerValue.swap(value)
     }
     
-    let signal = combineLatest(
-        context.sharedContext.presentationData,
-        mode.get(),
-        statePromise.get(),
-        // Nicegram, hidingSystemSessions
-        activeSessionsContext.state |> hidingSystemSessions(),
-        webSessionsContext.state,
-        enableQRLogin,
-        connectedBotAndPeer
-    )
+    // Nicegram TgAccountShop
+    let sessionsState = activeSessionsContext.state |> hidingSystemSessions()
+    //
+    // Nicegram TgAccountShop, sessionsState instead of activeSessionsContext.state
+    let signal = combineLatest(context.sharedContext.presentationData, mode.get(), statePromise.get(), sessionsState, webSessionsContext.state, enableQRLogin, connectedBotAndPeer)
     |> deliverOnMainQueue
     |> map { presentationData, mode, state, sessionsState, websitesAndPeers, enableQRLogin, connectedBotAndPeer -> (ItemListControllerState, (ItemListNodeState, Any)) in
         currentAuthorizationTTLDays = sessionsState.ttlDays

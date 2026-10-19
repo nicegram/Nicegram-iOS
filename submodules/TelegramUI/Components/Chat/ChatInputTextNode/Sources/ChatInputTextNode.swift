@@ -1040,8 +1040,7 @@ public final class ChatInputTextView: ChatInputTextViewImpl, UITextViewDelegate,
     }
     
     fileprivate var isPreservingSelection: Bool = false
-    // Nicegram AiShortcuts, make 'public'
-    public var isPreservingText: Bool = false
+    fileprivate var isPreservingText: Bool = false
     
     public weak var customDelegate: ChatInputTextNodeDelegate?
     

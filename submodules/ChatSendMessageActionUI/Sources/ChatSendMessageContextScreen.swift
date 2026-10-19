@@ -6,6 +6,7 @@ import NGStrings
 import NGTranslate
 //
 import Foundation
+import LottieSettings
 import UIKit
 import Display
 import AsyncDisplayKit
@@ -22,7 +23,6 @@ import ComponentDisplayAdapters
 import WallpaperBackgroundNode
 import ReactionSelectionNode
 import EntityKeyboard
-import LottieMetal
 import TelegramAnimatedStickerNode
 import AnimatedStickerNode
 import ChatInputTextNode
@@ -1188,17 +1188,11 @@ final class ChatSendMessageContextScreenComponent: Component {
                                 let standaloneReactionAnimation: AnimatedStickerNode
                                 var effectiveScale: CGFloat = 1.0
                                 #if targetEnvironment(simulator)
-                                standaloneReactionAnimation = DirectAnimatedStickerNode()
+                                standaloneReactionAnimation = DirectAnimatedStickerNode(lottieSettings: component.context.lottieRenderingSettings)
                                 effectiveScale = 1.4
                                 #else
-                                standaloneReactionAnimation = DirectAnimatedStickerNode()
+                                standaloneReactionAnimation = DirectAnimatedStickerNode(lottieSettings: component.context.lottieRenderingSettings)
                                 effectiveScale = 1.4
-                                /*if "".isEmpty {
-                                    standaloneReactionAnimation = DirectAnimatedStickerNode()
-                                    effectiveScale = 1.4
-                                } else {
-                                    standaloneReactionAnimation = LottieMetalAnimatedStickerNode()
-                                }*/
                                 #endif
                                 
                                 standaloneReactionAnimation.isUserInteractionEnabled = false
@@ -1449,7 +1443,9 @@ final class ChatSendMessageContextScreenComponent: Component {
                 let reactionContextY = environment.statusBarHeight
                 let size = availableSize
                 var reactionsAnchorRect = messageItemFrame
-                if let mediaPreview {
+                if !isMessageVisible {
+                    reactionsAnchorRect.origin.y = actionsStackFrame.minY
+                } else if let mediaPreview {
                     switch mediaPreview.layoutType {
                     case .message, .media:
                         reactionsAnchorRect.size.width += 100.0

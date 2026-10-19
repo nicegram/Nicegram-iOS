@@ -237,9 +237,8 @@ private extension Peer {
     }
 }
 
-private class UpdateMessageService: NSObject, MTMessageService {
+private class UpdateMessageService: NSObject, NetworkEngineUpdateSink {
     var peerId: PeerId!
-    var mtProto: MTProto?
     let pipe: ValuePipe<[Api.Message]> = ValuePipe()
     
     override init() {
@@ -251,17 +250,11 @@ private class UpdateMessageService: NSObject, MTMessageService {
         self.peerId = peerId
     }
     
-    func mtProtoWillAdd(_ mtProto: MTProto!) {
-        self.mtProto = mtProto
+    func networkSessionDidReset() {
     }
     
-    func mtProto(
-        _ mtProto: MTProto!,
-        receivedMessage message: MTIncomingMessage!,
-        authInfoSelector: MTDatacenterAuthInfoSelector,
-        networkType: Int32
-    ) {
-        if let updates = (message.body as? BoxedMessage)?.body as? Api.Updates {
+    func networkSessionDidReceive(message: Any) {
+        if let updates = (message as? BoxedMessage)?.body as? Api.Updates {
             self.addUpdates(updates)
         }
     }

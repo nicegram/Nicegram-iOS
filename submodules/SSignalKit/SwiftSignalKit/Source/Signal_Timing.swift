@@ -130,7 +130,7 @@ public func timeout<T, E>(_ timeout: Double, queue: Queue, alternate: Signal<T, 
     }
 }
 
-// Nicegram
+// Nicegram ChatExport
 public func timeout<T, E>(_ timeoutValue: Double?, queue: Queue, alternate: Signal<T, E>) -> (Signal<T, E>) -> Signal<T, E> {
     if let timeoutValue {
         timeout(timeoutValue, queue: queue, alternate: alternate)

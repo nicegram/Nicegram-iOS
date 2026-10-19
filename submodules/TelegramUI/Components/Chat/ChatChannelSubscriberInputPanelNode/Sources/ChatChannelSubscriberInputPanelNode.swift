@@ -1,5 +1,4 @@
 // Nicegram
-import class Combine.AnyCancellable
 import FeatAttentionEconomy
 import NGUtils
 //
@@ -508,7 +507,9 @@ public final class ChatChannelSubscriberInputPanelNode: ChatInputPanelNode {
                     }
                 )],
                 background: centerAction.isAccent ? .activeTint(inset: true) : .panel,
-                keepWide: true
+                keepWide: true,
+                minWidth: centerAction.isAccent ? 166.0 : nil,
+                textHorizontalInset: centerAction.isAccent ? 19.0 : 10.0
             )
         }
         
@@ -555,20 +556,9 @@ public final class ChatChannelSubscriberInputPanelNode: ChatInputPanelNode {
             transition.updateFrame(view: self.panelContainer, frame: panelFrame)
             transition.updateFrame(view: panelView, frame: CGRect(origin: CGPoint(), size: panelFrame.size))
         }
-         
+        
         return panelHeight
     }
-    
-    // Nicegram ATT
-    private func requestLayout(transition: ContainedViewLayoutTransition) {
-        guard let (width, leftInset, rightInset, bottomInset, additionalSideInsets, maxHeight, maxOverlayHeight, isSecondary, metrics, deviceMetrics) = layoutData else {
-            return
-        }
-        guard let presentationInterfaceState else { return }
-        
-        _ = updateLayout(width: width, leftInset: leftInset, rightInset: rightInset, bottomInset: bottomInset, additionalSideInsets: additionalSideInsets, maxHeight: maxHeight, maxOverlayHeight: maxOverlayHeight, isSecondary: isSecondary, transition: transition, interfaceState: presentationInterfaceState, metrics: metrics, deviceMetrics: deviceMetrics, force: true)
-    }
-    //
     
     override public func minimalHeight(interfaceState: ChatPresentationInterfaceState, metrics: LayoutMetrics) -> CGFloat {
         return defaultHeight(metrics: metrics)

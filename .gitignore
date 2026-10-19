@@ -82,17 +82,12 @@ submodules/FFMpegBinding/SharedHeaders/*
 submodules/OpenSSLEncryptionProvider/SharedHeaders/*
 *.storekit
 submodules/TelegramCore/FlatSerialization/Sources/*
-buildServer.json
 .build/**
-Telegram.LSP.json
 **/.build/**
 spm-files
 xcode-files
-.bsp/**
-.sourcekit-lsp/**
 /.claude/
 **/.claude/settings.local.json
-**/.vscode/launch.json
 /buildbox/*
 MODULE.bazel.lock
 **/node_modules/

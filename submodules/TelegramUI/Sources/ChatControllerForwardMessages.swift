@@ -15,7 +15,7 @@ import TopMessageReactions
 import ChatMessagePaymentAlertController
 
 extension ChatControllerImpl {
-        // Nicegram (cloud + asCopy)
+    // Nicegram SaveToCloud, ForwardAsCopy, 'cloud' and 'asCopy' params added
     func forwardMessages(messageIds: [EngineMessage.Id], options: ChatInterfaceForwardOptionsState? = nil, resetCurrent: Bool = false, cloud: Bool = false, asCopy: Bool = false) {
         let _ = (self.context.engine.data.get(EngineDataMap(
             messageIds.map(TelegramEngine.EngineData.Item.Messages.Message.init)
@@ -24,16 +24,19 @@ extension ChatControllerImpl {
             let sortedMessages = messages.values.compactMap { $0?._asMessage() }.sorted { lhs, rhs in
                 return lhs.id < rhs.id
             }
-            // Nicegram (cloud + asCopy)
+            // Nicegram SaveToCloud, ForwardAsCopy, 'cloud' and 'asCopy' passed on
             self?.forwardMessages(messages: sortedMessages, options: options, resetCurrent: resetCurrent, cloud: cloud, asCopy: asCopy)
         })
     }
 
-    // Nicegram (cloud + asCopy)
+    // Nicegram SaveToCloud, ForwardAsCopy, 'cloud' and 'asCopy' params added
     func forwardMessages(messages: [EngineRawMessage], options: ChatInterfaceForwardOptionsState? = nil, resetCurrent: Bool, cloud: Bool = false, asCopy: Bool = false) {
-        let _ = self.presentVoiceMessageDiscardAlert(action: {
-            
-            // Nicegram
+        let _ = self.presentVoiceMessageDiscardAlert(action: { [weak self] in
+            guard let self else {
+                return
+            }
+
+            // Nicegram SaveToCloud
             if (cloud) {
                 let _ = (enqueueMessages(account: self.context.account, peerId: self.context.account.peerId, messages: messages.map { message -> EnqueueMessage in
                     return .forward(source: message.id, threadId: nil, grouping: .auto, attributes: [], correlationId: nil)
@@ -407,7 +410,7 @@ extension ChatControllerImpl {
                 let accountPeerId = strongSelf.context.account.peerId
                 
                 if resetCurrent {
-                    // Nicegram (withUpdatedForwardAsCopy(asCopy))
+                    // Nicegram ForwardAsCopy, withUpdatedForwardAsCopy(asCopy) added
                     strongSelf.updateChatPresentationInterfaceState(animated: false, interactive: true, { $0.updatedInterfaceState({ $0.withUpdatedForwardMessageIds(nil).withUpdatedForwardOptionsState(nil).withUpdatedForwardAsCopy(asCopy) }) })
                 }
                 
@@ -425,7 +428,7 @@ extension ChatControllerImpl {
                 }
                 
                 if case .peer(peerId) = strongSelf.chatLocation, strongSelf.parentController == nil, !isPinnedMessages {
-                    // Nicegram (withUpdatedForwardAsCopy(asCopy))
+                    // Nicegram ForwardAsCopy, withUpdatedForwardAsCopy(asCopy) added
                     strongSelf.updateChatPresentationInterfaceState(animated: false, interactive: true, { $0.updatedInterfaceState({ $0.withUpdatedForwardMessageIds(messages.map { $0.id }).withUpdatedForwardOptionsState(ChatInterfaceForwardOptionsState(hideNames: !hasNotOwnMessages, hideCaptions: false, unhideNamesOnCaptionChange: false)).withUpdatedForwardAsCopy(asCopy).withoutSelectionState() }).updatedSearch(nil) })
                     strongSelf.updateItemNodesSearchTextHighlightStates()
                     strongSelf.searchResultsController = nil
@@ -508,7 +511,7 @@ extension ChatControllerImpl {
                                         isChatPinnedMessages = true
                                     }
                                     if !isChatPinnedMessages {
-                                        // Nicegram (withUpdatedForwardAsCopy(asCopy))
+                                        // Nicegram ForwardAsCopy, withUpdatedForwardAsCopy(asCopy) added
                                         maybeChat.updateChatPresentationInterfaceState(animated: false, interactive: true, { $0.updatedInterfaceState({ $0.withUpdatedForwardMessageIds(messages.map { $0.id }).withUpdatedForwardAsCopy(asCopy).withoutSelectionState() }) })
                                         strongSelf.dismiss()
                                         strongController.dismiss()
@@ -520,7 +523,7 @@ extension ChatControllerImpl {
                     }
 
                     let _ = (ChatInterfaceState.update(engine: strongSelf.context.engine, peerId: peerId, threadId: threadId, { currentState in
-                        // Nicegram (withUpdatedForwardAsCopy(asCopy))
+                        // Nicegram ForwardAsCopy, withUpdatedForwardAsCopy(asCopy) added
                         return currentState.withUpdatedForwardMessageIds(messages.map { $0.id }).withUpdatedForwardOptionsState(ChatInterfaceForwardOptionsState(hideNames: !hasNotOwnMessages, hideCaptions: false, unhideNamesOnCaptionChange: false)).withUpdatedForwardAsCopy(asCopy)
                     })
                     |> deliverOnMainQueue).startStandalone(completed: {

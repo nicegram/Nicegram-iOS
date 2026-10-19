@@ -1,5 +1,8 @@
 
 
+load("@rules_cc//cc:cc_library.bzl", "cc_library")
+load("@rules_cc//cc:objc_library.bzl", "objc_library")
+
 config_setting(
     name = "debug_build",
     values = {
@@ -2740,7 +2743,7 @@ ios_objcpp_sources = [
     "objc/base/RTCSSLCertificateVerifier.h",
     "objc/native/api/objc_audio_device_module.h",
     "objc/components/audio/RTCAudioDevice.h",
-    # Nicegram
+    # Nicegram Calls
     "objc/api/peerconnection/RTCMediaConstraints.mm",
     "objc/api/peerconnection/RTCPeerConnectionFactory.mm",
     "objc/api/peerconnection/RTCRtpCapabilities.mm",
@@ -3117,7 +3120,7 @@ objc_library(
         "webrtc/sdk/" + path for path in ios_objcpp_sources ] + [
         "webrtc/rtc_base/system/gcd_helpers.m",
     ],
-    # Nicegram
+    # Nicegram Calls
     hdrs = glob([
         "webrtc/sdk/objc/api/peerconnection/RTCAudioSource.h",
         "webrtc/sdk/objc/api/peerconnection/RTCAudioTrack.h",

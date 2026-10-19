@@ -300,12 +300,12 @@ public func generateSmallHorizontalStretchableFilledCircleImage(diameter: CGFloa
 }
 
 // Nicegram (customSize)
-public func generateTintedImage(image: UIImage?, color: UIColor, backgroundColor: UIColor? = nil, customSize: CGSize? = nil) -> UIImage? {
+public func generateTintedImage(image: UIImage?, color: UIColor, backgroundColor: UIColor? = nil, flipHorizontally: Bool = false, customSize: CGSize? = nil) -> UIImage? {
     guard let image = image else {
         return nil
     }
     
-    // Nicegram
+    // Nicegram (customSize)
     var imageSize = image.size
     if let strongCustomSize = customSize {
         imageSize = strongCustomSize
@@ -322,7 +322,7 @@ public func generateTintedImage(image: UIImage?, color: UIColor, backgroundColor
         let imageRect = CGRect(origin: CGPoint(), size: imageSize)
         context.saveGState()
         context.translateBy(x: imageRect.midX, y: imageRect.midY)
-        context.scaleBy(x: 1.0, y: -1.0)
+        context.scaleBy(x: flipHorizontally ? -1.0 : 1.0, y: -1.0)
         context.translateBy(x: -imageRect.midX, y: -imageRect.midY)
         context.clip(to: imageRect, mask: image.cgImage!)
         context.setFillColor(color.cgColor)
@@ -643,17 +643,10 @@ public class DrawingContext {
         self.bytesPerRow = bytesPerRow ?? DeviceGraphicsContextSettings.shared.bytesPerRow(forWidth: Int(scaledSize.width))
         self.length = self.bytesPerRow * Int(scaledSize.height)
 
-        self.imageBuffer = ASCGImageBuffer(length: UInt(self.length))
-
-        // Nicegram DrawingContextAllocGuard, ASCGImageBuffer does not check malloc, and its
-        // header is NS_ASSUME_NONNULL, so mutableBytes imports as non-optional while it can
-        // really be NULL. CGContext(data:) documents NULL as "allocate it yourself" and returns
-        // a valid context, so the guard below cannot see this; without this check the memset at
-        // the end of init writes to address 0 (Crashlytics 4366e666).
-        if Int(bitPattern: self.imageBuffer.mutableBytes) == 0 {
+        guard let imageBuffer = ASCGImageBuffer(length: UInt(self.length)) else {
             return nil
         }
-        //
+        self.imageBuffer = imageBuffer
 
         if opaque {
             self.bitmapInfo = DeviceGraphicsContextSettings.shared.opaqueBitmapInfo

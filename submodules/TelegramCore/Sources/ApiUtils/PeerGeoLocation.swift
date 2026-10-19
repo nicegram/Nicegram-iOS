@@ -3,6 +3,7 @@ import Postbox
 import TelegramApi
 
 
+// Nicegram NGDataSharing, 'public'
 public extension PeerGeoLocation {
     init?(apiLocation: Api.ChannelLocation) {
         switch apiLocation {

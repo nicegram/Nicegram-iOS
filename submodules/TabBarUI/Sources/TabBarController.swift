@@ -95,7 +95,7 @@ open class TabBarControllerImpl: ViewController, TabBarController {
     private var theme: PresentationTheme
     private var strings: PresentationStrings
     
-    // Nicegram
+    // Nicegram Assistant
     public var willSelect: ((Int) -> Void)?
     //
     
@@ -225,7 +225,7 @@ open class TabBarControllerImpl: ViewController, TabBarController {
                                 }
                             }
                         } else {
-                            // Nicegram
+                            // Nicegram Assistant
                             strongSelf.willSelect?(index)
                             //
                             strongSelf.selectedIndex = index
@@ -317,7 +317,7 @@ open class TabBarControllerImpl: ViewController, TabBarController {
             currentController.removeFromParent()
             currentController.didMove(toParent: nil)
             
-            // Nicegram
+            // Nicegram VisibilityTracking
             currentController.isInFocus = false
             //
             
@@ -347,7 +347,7 @@ open class TabBarControllerImpl: ViewController, TabBarController {
             }
             currentController.didMove(toParent: self)
             
-            // Nicegram
+            // Nicegram VisibilityTracking
             currentController.isInFocus = isInFocus
             //
 
@@ -450,7 +450,7 @@ open class TabBarControllerImpl: ViewController, TabBarController {
     }
     
     override open func viewDidAppear(_ animated: Bool) {
-        // Nicegram
+        // Nicegram VisibilityTracking
         super.viewDidAppear(animated)
         //
         
@@ -460,7 +460,7 @@ open class TabBarControllerImpl: ViewController, TabBarController {
     }
     
     override open func viewDidDisappear(_ animated: Bool) {
-        // Nicegram
+        // Nicegram VisibilityTracking
         super.viewDidDisappear(animated)
         //
         
@@ -469,7 +469,7 @@ open class TabBarControllerImpl: ViewController, TabBarController {
         }
     }
     
-    // Nicegram
+    // Nicegram VisibilityTracking
     override public func inFocusUpdated(isInFocus: Bool) {
         currentController?.isInFocus = isInFocus
     }

@@ -1,7 +1,5 @@
 load("@build_bazel_rules_swift//swift:swift.bzl", "swift_library")
 
-NGDEPS = ["//Nicegram/NGModels:NGModels"]
-
 swift_library(
     name = "AccountContext",
     module_name = "AccountContext",
@@ -11,7 +9,7 @@ swift_library(
     copts = [
         "-warnings-as-errors",
     ],
-    deps = NGDEPS + [
+    deps = [
         "//submodules/TelegramAudio:TelegramAudio",
         "//submodules/AsyncDisplayKit:AsyncDisplayKit",
         "//submodules/TemporaryCachedPeerDataManager:TemporaryCachedPeerDataManager",
@@ -27,6 +25,8 @@ swift_library(
         "//submodules/TextFormat:TextFormat",
         "//submodules/TelegramUI/Components/AnimationCache:AnimationCache",
         "//submodules/TelegramUI/Components/MultiAnimationRenderer:MultiAnimationRenderer",
+        "//submodules/WalletContext",
+        "//submodules/LottieSettings:LottieSettings",
         "//submodules/TelegramCore/FlatBuffers",
         "//submodules/TelegramCore/FlatSerialization",
     ],

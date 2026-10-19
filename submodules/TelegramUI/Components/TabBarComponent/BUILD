@@ -1,9 +1,5 @@
 load("@build_bazel_rules_swift//swift:swift.bzl", "swift_library")
 
-NGDEPS = [
-    "//Nicegram/NGData",
-]
-
 swift_library(
     name = "TabBarComponent",
     module_name = "TabBarComponent",
@@ -13,8 +9,9 @@ swift_library(
     copts = [
         "-warnings-as-errors",
     ],
-    deps = NGDEPS + [
+    deps = [
         "//submodules/Display",
+        "//submodules/LottieSettings:LottieSettings",
         "//submodules/TelegramPresentationData",
         "//submodules/ComponentFlow",
         "//submodules/Components/ComponentDisplayAdapters",

@@ -160,6 +160,14 @@ case "$CONFIGURATION" in
 esac
 #
 
+# The Simulator runtime and the Metal Toolchain: both destinations need them,
+# and without them the build fails minutes in rather than here, in seconds.
+# After `. ./_env.sh`, in case this machine's fastlane-env.sh exports
+# DEVELOPER_DIR.
+# shellcheck source=lib/xcode-preflight.sh
+. ./lib/xcode-preflight.sh
+ng_xcode_preflight || exit 1
+
 # Nicegram Build cache
 # A device build signs the app and its six extensions, so it needs a
 # development identity in a keychain. Check now: without this the failure lands
@@ -464,6 +472,17 @@ ng_report_from_log "verify-build $CONFIGURATION" "$build_log" "$nested_base"
 # real Xcode build followed by the gate, an Xcode Index Build (--config=indexbuild
 # in the same base) followed by the gate, and a cold fresh worktree. Zero inner
 # discards in all five.
+#
+# Re-verified on bazel 9.2.0 against the 13.0 merge's eight gate logs, plus one
+# from a fresh worktree of that branch (2026-10-12). The line now ends
+# `discarding analysis cache (this can be expensive, see
+# https://bazel.build/advanced/performance/iteration-speed).`, a single flag
+# reads `Build option --X has changed`, and the inner anchor reads
+# `INFO: Running command line: ../bazel-bin/Telegram/Telegram_xcodeproj-runner.sh
+# <args omitted>` -- all three still match. Across the merge's eight it fired
+# once, on the run right after ci/nicegram.bazelrc dropped its deprecation
+# demotion (`--@@rules_swift+//swift:copt and --per_file_copt have changed`, in
+# the target-ids step), and stayed silent on the five runs after it.
 #
 # A warning, not a failure: a discard is legitimate the first time after someone
 # changes ng_dev or Make.py's flag lists, and the build itself is still valid.

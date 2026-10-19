@@ -1,5 +1,4 @@
 // Nicegram SaveAvatar
-import ShareController
 import UndoUI
 //
 import Foundation
@@ -1168,12 +1167,11 @@ public final class PeerInfoAvatarListContainerNode: ASDisplayNode {
                 forceTheme = defaultDarkColorPresentationTheme
             }
             
-            let shareController = ShareController(context: self.context, subject: subject, preferredAction: .saveToCameraRoll, forceTheme: forceTheme)
-            shareController.actionCompleted = { [weak self] in
+            let shareController = self.context.sharedContext.makeShareController(context: self.context, params: ShareControllerParams(subject: subject, preferredAction: .saveToCameraRoll, forceTheme: forceTheme, actionCompleted: { [weak self] in
                 if let self = self, let actionCompletionText = actionCompletionText {
                     self.presentController?(UndoOverlayController(presentationData: presentationData, content: .mediaSaved(text: actionCompletionText), elevatedLayout: true, animateInAsReplacement: false, action: { _ in return true }))
                 }
-            }
+            }))
             self.presentController?(shareController)
         }
         self.view.addGestureRecognizer(avatarListLongTapGesture)

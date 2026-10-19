@@ -31,6 +31,10 @@ public func avatarPlaceholderFont(size: CGFloat) -> UIFont {
     return Font.with(size: size, design: .round, weight: .bold)
 }
 
+public func generateDeletedAccountAvatarImage(size: CGSize) -> UIImage? {
+    return generateAvatarImage(size: size, icon: deletedIcon, iconScale: size.width / 60.0, color: .blue, customColors: AvatarNode.grayscaleColors)
+}
+
 public enum AvatarNodeClipStyle {
     case none
     case round
@@ -561,7 +565,7 @@ public final class AvatarNode: ASDisplayNode {
             if var size = animationNode.preferredSize() {
                 size = CGSize(width: ceil(size.width), height: ceil(size.height))
                 animationNode.frame = CGRect(x: floor((self.bounds.width - size.width) / 2.0) + 1.0, y: floor((self.bounds.height - size.height) / 2.0), width: size.width, height: size.height)
-                Queue.mainQueue().after(0.15, {
+                Queue.mainQueue().after(0.15, { [animationBackgroundNode, animationNode] in
                     animationNode.play()
                     animationNode.completion = { [weak animationNode, weak animationBackgroundNode] in
                         animationNode?.removeFromSupernode()
@@ -780,6 +784,7 @@ public final class AvatarNode: ASDisplayNode {
             }
         }
         
+        // Nicegram PinnedChats, nicegramImage added
         public func setPeer(
             context genericContext: AccountContext,
             account: Account? = nil,
@@ -881,9 +886,8 @@ public final class AvatarNode: ASDisplayNode {
                     }
                     
                     parameters = AvatarNodeParameters(theme: theme, accountPeerId: account.peerId, peerId: peer.id, colors: calculateAvatarColors(context: genericContext, explicitColorIndex: nil, peerId: peer.id, nameColor: peer.nameColor, icon: icon, theme: theme), letters: peer.displayLetters, font: self.font, icon: icon, explicitColorIndex: nil, hasImage: true, clipStyle: clipStyle, cutoutRect: cutoutRect)
-                }
-                // Nicegram changes
-                else if let signal = nicegramAvatarImage(nicegramImage: nicegramImage) {
+                // Nicegram PinnedChats
+                } else if let signal = nicegramAvatarImage(nicegramImage: nicegramImage) {
                     self.contents = nil
                     self.displaySuspended = true
                     self.imageReady.set(self.imageNode.contentReady)
@@ -897,6 +901,7 @@ public final class AvatarNode: ASDisplayNode {
                     })
                     
                     parameters = AvatarNodeParameters(theme: theme, accountPeerId: account.peerId, peerId: peer?.id ?? EnginePeer.Id(0), colors: calculateAvatarColors(context: genericContext, explicitColorIndex: nil, peerId: peer?.id ?? EnginePeer.Id(0), nameColor: peer?.nameColor, icon: icon, theme: theme), letters: peer?.displayLetters ?? [], font: self.font, icon: icon, explicitColorIndex: nil, hasImage: true, clipStyle: clipStyle, cutoutRect: cutoutRect)
+                //
                 } else {
                     self.imageReady.set(.single(true))
                     self.displaySuspended = false
@@ -1356,7 +1361,7 @@ public final class AvatarNode: ASDisplayNode {
         )
     }
     
-    // Nicegram, nicegramImage added
+    // Nicegram PinnedChats, nicegramImage added
     public func setPeer(
         context: AccountContext,
         account: Account? = nil,

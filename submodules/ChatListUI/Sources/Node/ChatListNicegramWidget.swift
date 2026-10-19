@@ -16,7 +16,11 @@ class ChatListNicegramWidget: ListViewItem {
         self.theme = theme
     }
     
-    func nodeConfiguredForParams(async: @escaping (@escaping () -> Void) -> Void, params: ListViewItemLayoutParams, synchronousLoads: Bool, previousItem: ListViewItem?, nextItem: ListViewItem?, completion: @escaping (ListViewItemNode, @escaping () -> (Signal<Void, NoError>?, (ListViewItemApply) -> Void)) -> Void) {
+    var neighborDescriptor: AnyEquatable {
+        return .noNeighborInfluence
+    }
+    
+    func nodeConfiguredForParams(async: @escaping (@escaping () -> Void) -> Void, params: ListViewItemLayoutParams, synchronousLoads: Bool, neighbors: ListViewItemNeighbors, completion: @escaping (ListViewItemNode, @escaping () -> (Signal<Void, NoError>?, (ListViewItemApply) -> Void)) -> Void) {
         MainActor.runSyncOrAsync {
             let node = ChatListNicegramWidgetNode()
             
@@ -31,12 +35,12 @@ class ChatListNicegramWidget: ListViewItem {
         }
     }
     
-    func updateNode(async: @escaping (@escaping () -> Void) -> Void, node: @escaping () -> ListViewItemNode, params: ListViewItemLayoutParams, previousItem: ListViewItem?, nextItem: ListViewItem?, animation: ListViewItemUpdateAnimation, completion: @escaping (ListViewItemNodeLayout, @escaping (ListViewItemApply) -> Void) -> Void) {
+    func updateNode(async: @escaping (@escaping () -> Void) -> Void, node: @escaping () -> ListViewItemNode, params: ListViewItemLayoutParams, neighbors: ListViewItemNeighbors, animation: ListViewItemUpdateAnimation, completion: @escaping (ListViewItemNodeLayout, @escaping (ListViewItemApply) -> Void) -> Void) {
         MainActor.runSyncOrAsync {
             if let nodeValue = node() as? ChatListNicegramWidgetNode {
                 let nodeLayout = nodeValue.asyncLayout()
                 
-                let (layout, apply) = nodeLayout(self, params, nextItem == nil)
+                let (layout, apply) = nodeLayout(self, params, neighbors.next == nil)
                 
                 completion(layout, { _ in
                     apply()
@@ -73,9 +77,9 @@ final class ChatListNicegramWidgetNode: ListViewItemNode {
         self.addSubnode(widgetNode)
     }
     
-    override func layoutForParams(_ params: ListViewItemLayoutParams, item: ListViewItem, previousItem: ListViewItem?, nextItem: ListViewItem?) {
+    override func layoutForParams(_ params: ListViewItemLayoutParams, item: ListViewItem, neighbors: ListViewItemNeighbors) {
         let layout = self.asyncLayout()
-        let (_, apply) = layout(item as! ChatListNicegramWidget, params, nextItem == nil)
+        let (_, apply) = layout(item as! ChatListNicegramWidget, params, neighbors.next == nil)
         apply()
     }
     

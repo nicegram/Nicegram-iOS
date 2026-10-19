@@ -1,13 +1,7 @@
 load("@build_bazel_rules_swift//swift:swift.bzl", "swift_library")
 
 NGDEPS = [
-    "//Nicegram/NGStrings:NGStrings",
-    "//Nicegram/NGTelegramIntegration:NGTelegramIntegration",
-    "//Nicegram/NGTranslate:NGTranslate",
-    "//Nicegram/NGUI:NGUI",
     "//Nicegram/NGUtils:NGUtils",
-    "@swiftpkg_nicegram_assistant_ios//:FeatPaywall",
-    "@swiftpkg_nicegram_assistant_ios//:FeatTranscription",
 ]
 
 swift_library(

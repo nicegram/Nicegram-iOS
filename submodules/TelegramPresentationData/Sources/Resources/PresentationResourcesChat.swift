@@ -238,7 +238,7 @@ public struct PresentationResourcesChat {
     
     public static func chatInputPanelEncircledCloseIconImage(_ theme: PresentationTheme) -> UIImage? {
         return theme.image(PresentationResourceKey.chatInputPanelEncircledCloseIconImage.rawValue, { theme in
-            return generateTintedImage(image: UIImage(bundleImageName: "Chat/Input/Accessory Panels/EncircledCloseButton"), color: theme.chat.inputPanel.panelControlAccentColor)
+            return generateTintedImage(image: UIImage(bundleImageName: "Chat/Input/Accessory Panels/EncircledCloseButton"), color: theme.chat.inputPanel.panelControlColor)
         })
     }
     
@@ -1148,7 +1148,7 @@ public struct PresentationResourcesChat {
         })
     }
     
-    // Nicegram
+    // Nicegram Translate
     public static func chatTranslateButtonIcon(_ theme: PresentationTheme, wallpaper: TelegramWallpaper) -> UIImage? {
         return theme.image(PresentationResourceKey.chatTranslateButtonIcon.rawValue, { _ in
             return generateTintedImage(image: UIImage(bundleImageName: "NGTranslateIcon"), color: bubbleVariableColor(variableColor: theme.chat.message.shareButtonForegroundColor, wallpaper: wallpaper), customSize: CGSize(width: 18.0, height: 18.0))

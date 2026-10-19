@@ -173,7 +173,7 @@ private func mergeReactions(reactions: [MessageReaction], recentPeers: [Reaction
     return (result, recentPeers)
 }
 
-public func mergedMessageReactions(attributes: [MessageAttribute], isTags: Bool) -> ReactionsMessageAttribute? { 
+public func mergedMessageReactions(attributes: [MessageAttribute], isTags: Bool) -> ReactionsMessageAttribute? {
     var current: ReactionsMessageAttribute?
     var pending: PendingReactionsMessageAttribute?
     var pendingStars: PendingStarsReactionsMessageAttribute?
@@ -259,6 +259,7 @@ public func mergedMessageReactions(attributes: [MessageAttribute], isTags: Bool)
     }
 }
 
+// Nicegram NGDataSharing, 'public'
 public extension ReactionsMessageAttribute {
     convenience init(apiReactions: Api.MessageReactions) {
         switch apiReactions {

@@ -6,6 +6,7 @@ import NGData
 import NGUtils
 //
 import Foundation
+import LottieSettings
 import UIKit
 import AsyncDisplayKit
 import Display
@@ -758,7 +759,7 @@ public final class ChatListSearchContainerNode: SearchDisplayControllerContentNo
         updateAddKeywordButton(isEnabledState: isEnabledState)
         //
     }
-
+    
     private func currentPaneUpdated(_ key: ChatListSearchPaneKey, transitionFraction: CGFloat = 0.0, transition: ContainedViewLayoutTransition) {
         var filterKey: ChatListSearchFilter
         switch key {
@@ -1203,8 +1204,8 @@ public final class ChatListSearchContainerNode: SearchDisplayControllerContentNo
                             f(.default)
                         })))
                     }
-   
                 }
+                //
                 
                 if isCachedValue {
                     items.append(.action(ContextMenuActionItem(text: strongSelf.presentationData.strings.DownloadList_DeleteFromCache, textColor: .primary, icon: { theme in
@@ -2022,7 +2023,7 @@ final class ActionSheetAnimationAndTextItemNode: ActionSheetItemNode {
         self.theme = theme
         self.defaultFont = Font.regular(floor(theme.baseFontSize * 13.0 / 17.0))
         
-        self.animationNode = DefaultAnimatedStickerNodeImpl()
+        self.animationNode = DefaultAnimatedStickerNodeImpl(lottieSettings: .noAccountFallback)
         self.animationNode.setup(source: AnimatedStickerNodeLocalFileSource(name: "ClearDownloadList"), width: 256, height: 256, playbackMode: .loop, mode: .direct(cachePathPrefix: nil))
         self.animationNode.visibility = true
         

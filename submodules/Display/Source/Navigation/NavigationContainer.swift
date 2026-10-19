@@ -200,7 +200,7 @@ public final class NavigationContainer: ASDisplayNode, ASGestureRecognizerDelega
     }
     
     public func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer, shouldBeRequiredToFailBy otherGestureRecognizer: UIGestureRecognizer) -> Bool {
-        // Nicegram
+        // Nicegram AiShortcuts
         if otherGestureRecognizer.isNicegramExclusiveGesture() {
             return false
         }
@@ -214,7 +214,7 @@ public final class NavigationContainer: ASDisplayNode, ASGestureRecognizerDelega
         return false
     }
     
-    // Nicegram
+    // Nicegram AiShortcuts
     public func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer, shouldRequireFailureOf otherGestureRecognizer: UIGestureRecognizer) -> Bool {
         if otherGestureRecognizer.isNicegramExclusiveGesture() {
             return true
@@ -663,6 +663,10 @@ public final class NavigationContainer: ASDisplayNode, ASGestureRecognizerDelega
         }
     }
     
+    var isTransitioning: Bool {
+        return self.state.transition != nil
+    }
+
     public override func hitTest(_ point: CGPoint, with event: UIEvent?) -> UIView? {
         if !self.bounds.contains(point) {
             return nil

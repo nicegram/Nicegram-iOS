@@ -1,5 +1,8 @@
+load("@rules_cc//cc:objc_library.bzl", "objc_library")
+
 load(
     "@build_configuration//:variables.bzl",
+    # Nicegram NGEnv
     "ng_env",
     "telegram_api_id",
     "telegram_api_hash",
@@ -20,13 +23,15 @@ objc_library(
         "Sources/*.m",
     ]),
     copts = [
+        # Nicegram NGEnv
         "-DNG_ENV=\\\"{}\\\"".format(ng_env),
         "-Werror",
         "-DAPP_CONFIG_API_ID={}".format(telegram_api_id),
         "-DAPP_CONFIG_API_HASH=\\\"{}\\\"".format(telegram_api_hash),
         "-DAPP_CONFIG_APP_CENTER_ID=\\\"{}\\\"".format(telegram_app_center_id),
         "-DAPP_CONFIG_IS_INTERNAL_BUILD={}".format(telegram_is_internal_build),
-        "-DAPP_CONFIG_IS_APPSTORE_BUILD={}".format("true" if telegram_is_appstore_build else "false"),
+        # Nicegram NGEnv, isAppStoreBuild from a "True"/"False" string
+        "-DAPP_CONFIG_IS_APPSTORE_BUILD={}".format("true" if telegram_is_appstore_build.lower() == "true" else "false"),
         "-DAPP_CONFIG_APPSTORE_ID={}".format(telegram_appstore_id),
         "-DAPP_SPECIFIC_URL_SCHEME=\\\"{}\\\"".format(telegram_app_specific_url_scheme),
         "-DAPP_CONFIG_IS_ICLOUD_ENABLED={}".format("true" if telegram_enable_icloud else "false"),

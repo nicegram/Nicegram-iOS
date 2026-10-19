@@ -1,9 +1,5 @@
 load("@build_bazel_rules_swift//swift:swift.bzl", "swift_library")
 
-NGDEPS = [
-    "@swiftpkg_nicegram_assistant_ios//:NGAiChatUI",
-]
-
 swift_library(
     name = "ChatListHeaderComponent",
     module_name = "ChatListHeaderComponent",
@@ -13,7 +9,7 @@ swift_library(
     copts = [
         "-warnings-as-errors",
     ],
-    deps = NGDEPS + [
+    deps = [
         "//submodules/SSignalKit/SwiftSignalKit",
         "//submodules/Display",
         "//submodules/ComponentFlow",

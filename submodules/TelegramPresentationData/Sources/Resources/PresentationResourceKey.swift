@@ -319,7 +319,7 @@ public enum PresentationResourceKey: Int32 {
     case chatFreeCommentButtonIcon
     case chatFreeNavigateButtonIcon
     case chatFreeShareButtonIcon
-    // Nicegram
+    // Nicegram Translate
     case chatTranslateButtonIcon
     //
     case chatFreeCloseButtonIcon
@@ -407,6 +407,7 @@ public enum PresentationResourceParameterKey: Hashable {
     case chatListBadgeBackgroundMention(CGFloat)
     case badgeBackgroundReactions(CGFloat)
     case badgeBackgroundInactiveReactions(CGFloat)
+    case badgeBackgroundGram(CGFloat, Bool)
     case badgeBackgroundPollVotes(CGFloat)
     case badgeBackgroundInactivePollVotes(CGFloat)
     case chatListBadgeBackgroundInactiveMention(CGFloat)

@@ -1,4 +1,5 @@
 import Foundation
+import LottieSettings
 import UIKit
 import AsyncDisplayKit
 import Postbox
@@ -667,8 +668,6 @@ public final class ChatMessageInteractiveMediaNode: ASDisplayNode, GalleryItemTr
         self.imageNode.view.addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(self.imageTap(_:))))
     }
     
-    // Nicegram downloading feature
-    private var shouldDownload = false
     private func progressPressed(canActivate: Bool) {
         if let _ = self.attributes?.updatingMedia {
             if let message = self.message {
@@ -728,8 +727,6 @@ public final class ChatMessageInteractiveMediaNode: ASDisplayNode, GalleryItemTr
                     }
                 case .Remote, .Paused:
                     if let fetch = self.fetchControls.with({ return $0?.fetch }) {
-                        // Nicegram downloading feature
-                        shouldDownload = true
                         fetch(true)
                     }
                 case .Local:
@@ -1877,7 +1874,7 @@ public final class ChatMessageInteractiveMediaNode: ASDisplayNode, GalleryItemTr
                     
                     let imageApply = imageLayout(arguments)
                     
-                    return (boundingSize, { transition, synchronousLoads in
+                    return (boundingSize, { [context] transition, synchronousLoads in
                         if let strongSelf = self {
                             strongSelf.context = context
                             strongSelf.message = message
@@ -2125,7 +2122,7 @@ public final class ChatMessageInteractiveMediaNode: ASDisplayNode, GalleryItemTr
                                         allowSticker = true
                                     }
                                     
-                                    let animatedStickerNode = DefaultAnimatedStickerNodeImpl()
+                                    let animatedStickerNode = DefaultAnimatedStickerNodeImpl(lottieSettings: context.lottieRenderingSettings)
                                     animatedStickerNode.isUserInteractionEnabled = false
                                     animatedStickerNode.started = {
                                         guard let strongSelf = self else {

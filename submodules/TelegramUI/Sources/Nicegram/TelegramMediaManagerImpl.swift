@@ -14,20 +14,6 @@ class TelegramMediaManagerImpl {
 }
 
 extension TelegramMediaManagerImpl: TelegramMediaManager {
-    func holdAudioSession() async throws {
-        let context = try contextProvider.context().unwrap()
-        
-        let stream = AsyncStream<Void> { continuation in
-            let disposable = context.sharedContext.mediaManager.audioSession.pushExternalHolder()
-            
-            continuation.onTermination = { _ in
-                disposable.dispose()
-            }
-        }
-        
-        for await _ in stream {}
-    }
-    
     func playAudio(_ messageId: TelegramMessageId) {
         Task { @MainActor in
             let context = try contextProvider.context().unwrap()

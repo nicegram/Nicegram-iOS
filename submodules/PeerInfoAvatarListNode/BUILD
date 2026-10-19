@@ -29,6 +29,8 @@ swift_library(
         "//submodules/Components/ComponentDisplayAdapters",
         "//submodules/TelegramUI/Components/Stories/StorySetIndicatorComponent",
         "//submodules/Components/HierarchyTrackingLayer",
+        # Nicegram SaveAvatar
+        "//submodules/UndoUI:UndoUI",
     ],
     visibility = [
         "//visibility:public",

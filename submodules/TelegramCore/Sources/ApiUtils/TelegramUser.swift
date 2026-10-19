@@ -24,6 +24,7 @@ func parsedTelegramProfilePhoto(_ photo: Api.UserProfilePhoto) -> [TelegramMedia
     return representations
 }
 
+// Nicegram NGDataSharing, 'public'
 public extension TelegramPeerUsername {
     init(apiUsername: Api.Username) {
         switch apiUsername {
@@ -39,16 +40,24 @@ extension PeerVerification {
         switch apiBotVerification {
         case let .botVerification(botVerificationData):
             let (botId, icon, description) = (botVerificationData.botId, botVerificationData.icon, botVerificationData.description)
+            var text: String = ""
+            var entities: [MessageTextEntity] = []
+            if case let .textWithEntities(textWithEntitiesData) = description {
+                text = textWithEntitiesData.text
+                entities = messageTextEntitiesFromApiEntities(textWithEntitiesData.entities)
+            }
             self.init(
                 botId: PeerId(namespace: Namespaces.Peer.CloudUser, id: PeerId.Id._internalFromInt64Value(botId)),
                 iconFileId: icon,
-                description: description
+                description: text,
+                descriptionEntities: entities
             )
         }
     }
 }
 
 
+// Nicegram NGDataSharing, 'public'
 public extension TelegramUser {
     convenience init(user: Api.User) {
         switch user {

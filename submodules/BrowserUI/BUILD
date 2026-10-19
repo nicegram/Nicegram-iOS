@@ -15,6 +15,7 @@ swift_library(
     ],
     deps = NGDEPS + [
         "//submodules/SSignalKit/SwiftSignalKit",
+        "//submodules/LottieSettings:LottieSettings",
         "//submodules/AsyncDisplayKit",
         "//submodules/Display",
         "//submodules/Postbox",

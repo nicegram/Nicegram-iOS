@@ -24,7 +24,6 @@ prepare_build_variables () {
 	fi
 
 	local EXPECTED_VARIABLES=(\
-		NG_ENV \
 		BUILD_NUMBER \
 		APP_VERSION \
 		BUNDLE_ID \
@@ -57,7 +56,6 @@ prepare_build_variables () {
 	local VARIABLES_PATH="$VARIABLES_DIRECTORY/variables.bzl"
 	rm -f "$VARIABLES_PATH"
 
-	echo "ng_env = \"$NG_ENV\"" >> "$VARIABLES_PATH"
 	echo "telegram_build_number = \"$BUILD_NUMBER\"" >> "$VARIABLES_PATH"
 	echo "telegram_version = \"$APP_VERSION\"" >> "$VARIABLES_PATH"
 	echo "telegram_bundle_id = \"$BUNDLE_ID\"" >> "$VARIABLES_PATH"	

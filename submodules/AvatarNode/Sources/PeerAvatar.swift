@@ -166,13 +166,14 @@ public func peerAvatarCompleteImage(postbox: Postbox, peer: EnginePeer, forcePro
     return iconSignal
 }
 
-// Nicegram changes
+// Nicegram PinnedChats
 public func nicegramAvatarImage(nicegramImage: UIImage?) -> Signal<(UIImage, UIImage)?, NoError>? {
     if let nicegramImage = nicegramImage {
         return .single((nicegramImage, nicegramImage))
     }
     return nil
 }
+//
 
 public func peerAvatarImage(account: Account, peerReference: PeerReference?, authorOfMessage: MessageReference?, representation: TelegramMediaImageRepresentation?, displayDimensions: CGSize = CGSize(width: 60.0, height: 60.0), clipStyle: AvatarNodeClipStyle = .round, blurred: Bool = false, inset: CGFloat = 0.0, emptyColor: UIColor? = nil, synchronousLoad: Bool = false, provideUnrounded: Bool = false, cutoutRect: CGRect? = nil) -> Signal<(UIImage, UIImage)?, NoError>? {
     return peerAvatarImage(

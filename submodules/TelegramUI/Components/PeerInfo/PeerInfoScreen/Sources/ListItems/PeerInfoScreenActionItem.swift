@@ -25,22 +25,15 @@ final class PeerInfoScreenActionItem: PeerInfoScreenItem {
     let icon: UIImage?
     let iconSignal: Signal<UIImage?, NoError>?
     let alignment: PeerInfoScreenActionAligmnent
-    // Nicegram
-    let spacing: CGFloat?
-    //
     let action: (() -> Void)?
     
-    // Nicegram, spacing added
-    init(id: AnyHashable, text: String, color: PeerInfoScreenActionColor = .accent, icon: UIImage? = nil, iconSignal: Signal<UIImage?, NoError>? = nil, alignment: PeerInfoScreenActionAligmnent = .natural, spacing: CGFloat? = nil, action: (() -> Void)?) {
+    init(id: AnyHashable, text: String, color: PeerInfoScreenActionColor = .accent, icon: UIImage? = nil, iconSignal: Signal<UIImage?, NoError>? = nil, alignment: PeerInfoScreenActionAligmnent = .natural, action: (() -> Void)?) {
         self.id = id
         self.text = text
         self.color = color
         self.icon = icon
         self.iconSignal = iconSignal
         self.alignment = alignment
-        // Nicegram
-        self.spacing = spacing
-        //
         self.action = action
     }
     
@@ -109,9 +102,7 @@ private final class PeerInfoScreenActionItemNode: PeerInfoScreenItemNode {
         self.selectionNode.pressed = item.action
         
         let sideInset: CGFloat = 16.0 + safeInsets.left
-        // Nicegram, spacing added
-        let spacing = item.spacing ?? 16.0
-        var leftInset = (item.icon == nil && item.iconSignal == nil ? sideInset : sideInset + 29.0 + spacing)
+        var leftInset = (item.icon == nil && item.iconSignal == nil ? sideInset : sideInset + 29.0 + 16.0)
         var iconInset = sideInset
         if case .peerList = item.alignment {
             leftInset += 5.0

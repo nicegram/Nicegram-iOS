@@ -166,8 +166,8 @@ final class HashtagChatInputContextPanelNode: ChatInputContextPanelNode {
                     badge: nil,
                     hashtag: query,
                     revealed: false,
+                    // Nicegram QuickReplies, 'canDelete' added
                     isAdditionalRecent: false,
-                    // Nicegram QuickReplies
                     canDelete: canDelete
                     //
                 )
@@ -187,8 +187,8 @@ final class HashtagChatInputContextPanelNode: ChatInputContextPanelNode {
                     badge: nil,
                     hashtag: "\(query)@\(addressName)",
                     revealed: false,
+                    // Nicegram QuickReplies, 'canDelete' added
                     isAdditionalRecent: false,
-                    // Nicegram QuickReplies
                     canDelete: canDelete
                     //
                 )
@@ -215,8 +215,8 @@ final class HashtagChatInputContextPanelNode: ChatInputContextPanelNode {
                 badge: nil,
                 hashtag: hashtag,
                 revealed: hashtag == self.revealedHashtag,
+                // Nicegram QuickReplies, 'canDelete' added
                 isAdditionalRecent: isAdditionalRecent && !hashtag.contains("@"),
-                // Nicegram QuickReplies
                 canDelete: canDelete
                 //
             )
@@ -265,14 +265,7 @@ final class HashtagChatInputContextPanelNode: ChatInputContextPanelNode {
                     }
                     
                     if let range = hashtagQueryRange {
-                        let inputText = NSMutableAttributedString(attributedString: textInputState.inputText)
-                        
-                        let replacementText = text
-                        inputText.replaceCharacters(in: range, with: replacementText)
-                        
-                        let selectionPosition = range.lowerBound + (replacementText as NSString).length
-                        
-                        return (ChatTextInputState(inputText: inputText, selectionRange: selectionPosition ..< selectionPosition), inputMode)
+                        return (textInputState.replacingFlatRange(range, with: text), inputMode)
                     }
                     return (textInputState, inputMode)
                 }

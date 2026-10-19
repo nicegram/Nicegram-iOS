@@ -1,4 +1,4 @@
-// Nicegram
+// Nicegram Imports
 import FeatPaywall
 import NGCore
 import NGData
@@ -22,6 +22,8 @@ import TelegramPresentationData
 import PresentationDataUtils
 import PasswordSetupUI
 import InstantPageCache
+import WalletContext
+import UndoUI
 
 extension PeerInfoScreenNode {
     func openSettings(section: PeerInfoSettingsSection) {
@@ -45,7 +47,12 @@ extension PeerInfoScreenNode {
                 
                 var animated = true
                 if let validLayout = strongSelf.validLayout?.0, case .regular = validLayout.metrics.widthClass {
-                    animated = false
+                    switch c.navigationPresentation {
+                    case .default, .master:
+                        animated = false
+                    case .modal, .flatModal, .standaloneModal, .standaloneFlatModal, .modalInLargeLayout, .modalInCompactLayout:
+                        break
+                    }
                 }
                 navigationController.setViewControllers(updatedControllers, animated: animated)
             }
@@ -179,16 +186,14 @@ extension PeerInfoScreenNode {
         case .watch:
             push(watchSettingsController(context: self.context))
         case .support:
-            let supportPeer = Promise<EnginePeer.Id?>()
-            supportPeer.set(context.engine.peers.supportPeerId())
-            
+            // Nicegram SupportUrls, alert text names Nicegram; the unused supportPeer request removed
             self.controller?.present(textAlertController(context: self.context, updatedPresentationData: self.controller?.updatedPresentationData, title: nil, text: self.presentationData.strings.Settings_FAQ_Intro.replacingTelegramWithNicegram, actions: [
                 TextAlertAction(type: .genericAction, title: presentationData.strings.Settings_FAQ_Button, action: { [weak self] in
-                    // Nicegram, open nicegram FAQ
+                    // Nicegram SupportUrls, open nicegram FAQ
                     self?.openNicegramFaq()
                     //
                 }), TextAlertAction(type: .defaultAction, title: presentationData.strings.Common_OK, action: { [weak self] in
-                    // Nicegram, open nicegram support bot
+                    // Nicegram SupportUrls, open nicegram support bot
                     self?.openNicegramSupportBot()
                     //
                 })]), in: .window(.root))
@@ -262,6 +267,7 @@ extension PeerInfoScreenNode {
                     self.controller?.push(logoutOptionsController(context: self.context, navigationController: navigationController, canAddAccounts: true, phoneNumber: phoneNumber))
                 }
             }
+        // Nicegram NicegramSettings
         case .nicegram:
             // Nicegram DB Changes
             var accountsContexts: [(AccountContext, EnginePeer)] = []
@@ -275,13 +281,13 @@ extension PeerInfoScreenNode {
                 }
             }
             self.controller?.push(nicegramSettingsController(context: self.context, accountsContexts: accountsContexts))
+        // Nicegram Premium
         case .nicegramPremium:
             self.processPremiumControllerOpen()
+        //
         // Nicegram AiChat
         case .nicegramAiChatBot:
-            if #available(iOS 13.0, *) {
-                self.controller?.push(aiChatSettingsController(context: self.context))
-            }
+            self.controller?.push(aiChatSettingsController(context: self.context))
         //
         case .rememberPassword:
             let context = self.context
@@ -323,6 +329,12 @@ extension PeerInfoScreenNode {
             if let tonContext = self.controller?.tonContext {
                 push(self.context.sharedContext.makeStarsTransactionsScreen(context: self.context, starsContext: tonContext))
             }
+        case .wallet:
+            guard WalletConfiguration.with(appConfiguration: self.context.currentAppConfiguration.with { $0 }).isAvailable else {
+                self.controller?.present(UndoOverlayController(presentationData: self.presentationData, content: .info(title: nil, text: self.presentationData.strings.Wallet_Unavailable, timeout: nil, customUndoText: nil), action: { _ in return false }), in: .window(.root))
+                return
+            }
+            push(self.context.sharedContext.makeWalletScreen(context: self.context))
         }
     }
     
@@ -345,7 +357,7 @@ extension PeerInfoScreenNode {
         }
     }
     
-    // Nicegram, support URLs
+    // Nicegram SupportUrls
     private func openNicegramSupportBot() {
         let nicegramSupportBotUrl = ResolvedUrl.externalUrl(NGCore.links.helperBot.absoluteString)
         openURL(nicegramSupportBotUrl)

@@ -100,7 +100,10 @@ while [ $# -gt 0 ]; do
   shift
 done
 
-BAZEL_ROOT="/private/var/tmp/_bazel_$USER"
+# Bazel 9 moved the default output user root from /private/var/tmp to
+# ~/Library/Caches/bazel (observed 2026-10-12, 9.2.0). Both are scanned, so the
+# output bases that 8.x left under the old root stay reclaimable.
+BAZEL_ROOTS=("$HOME/Library/Caches/bazel/_bazel_$USER" "/private/var/tmp/_bazel_$USER")
 DERIVED_DATA="$HOME/Library/Developer/Xcode/DerivedData"
 
 # macOS ships bash 3.2 as /bin/bash, where "${arr[@]}" on an EMPTY array is an
@@ -142,12 +145,14 @@ report_group() { # $1=kind  $2=parent dir  $3=human label
 }
 
 echo "Build state on this machine"
-report_group output_base  "$BAZEL_ROOT"   "Bazel output bases ($BAZEL_ROOT)"
+for root in "${BAZEL_ROOTS[@]}"; do
+  report_group output_base "$root" "Bazel output bases ($root)"
+done
 report_group derived_data "$DERIVED_DATA" "Xcode DerivedData ($DERIVED_DATA)"
 
 echo ""
 echo "== Bounded elsewhere, not pruned here"
-for p in "${BAZEL_LOCAL_CACHE:-$HOME/work/nicegram-bazel-cache}" "$BAZEL_ROOT/cache" "$HOME/Library/Caches/org.swift.swiftpm"; do
+for p in "${BAZEL_LOCAL_CACHE:-$HOME/work/nicegram-bazel-cache}" "${BAZEL_ROOTS[0]}/cache" "${BAZEL_ROOTS[1]}/cache" "$HOME/Library/Caches/org.swift.swiftpm"; do
   [ -d "$p" ] && printf '   %-8s %s\n' "$(du -sh "$p" 2>/dev/null | cut -f1)" "$p"
 done
 
@@ -195,14 +200,18 @@ fi
 
 delete_failures=0
 for dir in ${orphans[@]+"${orphans[@]}"}; do
-  # Belt and braces: refuse anything that is not under one of the two roots we
+  # Belt and braces: refuse anything that is not under one of the roots we
   # manage, and -- cheaply -- re-confirm the classification right before
   # deleting rather than trusting the report printed a moment earlier.
-  case "$dir" in
-    "$BAZEL_ROOT"/*)   kind=output_base ;;
-    "$DERIVED_DATA"/*) kind=derived_data ;;
-    *) echo "refusing to delete outside managed roots: $dir" >&2; exit 1 ;;
-  esac
+  kind=""
+  for root in "${BAZEL_ROOTS[@]}"; do
+    case "$dir" in "$root"/*) kind=output_base ;; esac
+  done
+  case "$dir" in "$DERIVED_DATA"/*) kind=derived_data ;; esac
+  if [ -z "$kind" ]; then
+    echo "refusing to delete outside managed roots: $dir" >&2
+    exit 1
+  fi
   recheck="$(ng_orphan_status "$kind" "$dir" | cut -f1)"
   if [ "$recheck" != "orphan" ]; then
     echo "skipping $dir: reclassified as $recheck since the report above was printed" >&2

@@ -4,9 +4,7 @@ NGDEPS = [
     "@swiftpkg_nicegram_assistant_ios//:CoreRemoteConfig",
     "@swiftpkg_nicegram_assistant_ios//:FeatAccountBackup",
     "@swiftpkg_nicegram_assistant_ios//:FeatAppReview",
-    "@swiftpkg_nicegram_assistant_ios//:FeatAuth",
-    "@swiftpkg_nicegram_assistant_ios//:FeatPhoneEntryBanner",
-    "@swiftpkg_nicegram_assistant_ios//:FeatOnboarding"
+    "@swiftpkg_nicegram_assistant_ios//:FeatPhoneEntryBanner"
 ]
 
 swift_library(
@@ -20,6 +18,7 @@ swift_library(
     ],
     deps = NGDEPS + [
         "//submodules/AsyncDisplayKit:AsyncDisplayKit",
+        "//submodules/LottieSettings:LottieSettings",
         "//submodules/TelegramCore:TelegramCore",
         "//submodules/Display:Display",
         "//submodules/SSignalKit/SSignalKit",

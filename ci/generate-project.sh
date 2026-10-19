@@ -35,6 +35,13 @@ done
 ./bootstrap-submodules.sh || exit 1
 . ./_env.sh
 
+# Generation compiles asset catalogs, so a missing Simulator runtime fails it
+# minutes in; see ci/lib/xcode-preflight.sh. ci/verify-build.sh has already run
+# this when it calls us, which costs about a second.
+# shellcheck source=lib/xcode-preflight.sh
+. ./lib/xcode-preflight.sh
+ng_xcode_preflight || exit 1
+
 # shellcheck source=lib/report.sh
 . ./lib/report.sh
 

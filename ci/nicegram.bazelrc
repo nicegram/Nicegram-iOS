@@ -16,40 +16,15 @@
 # `Config value 'ng_dev' is not defined in any .rc file`.
 
 # ---------------------------------------------------------------------------
-# Deprecation demotion (moved verbatim out of .bazelrc, 2026-08)
-# ---------------------------------------------------------------------------
-# Our min-iOS bump (13 -> 15) introduced many deprecation warnings in
-# upstream-owned files that we deliberately don't fix ourselves -- upstream
-# Telegram will clean them up when they bump min-iOS. To keep strict-warnings
-# policy (`-warnings-as-errors` for Swift, `-Werror` for Clang) intact
-# everywhere else, we demote only deprecation diagnostics back to warning.
-#
-# Swift: `-Wwarning DeprecatedDeclaration` re-classifies the diagnostic group
-# back to warning even under `-warnings-as-errors`. rules_swift appends
-# `--@//swift:copt` flags AFTER per-target `copts`, so this override wins.
-# Requires Swift 5.10+ / Xcode 15.3+ (older toolchains reject `-Wwarning`).
-#
-# Clang: `-Wno-error=deprecated-declarations` via --per_file_copt does the
-# same for `.m`/`.mm` sources. Per-file copts are appended AFTER target-level
-# `copts`, so the override wins over `-Werror`. Scoped to ObjC because the
-# affected APIs are iOS-SDK constants like UTTypeConformsTo / kUTTypeGIF;
-# pure C/C++ targets (boringssl, td, brotli, libphonenumber, libjxl) don't
-# touch them and stay strict.
-#
-# TODO: remove these four lines once upstream Telegram bumps its min-iOS to
-# >= 15 and the deprecation warnings are gone.
-build --@build_bazel_rules_swift//swift:copt=-Wwarning
-build --@build_bazel_rules_swift//swift:copt=DeprecatedDeclaration
-build --per_file_copt=".*\.m$","@-Wno-error=deprecated-declarations"
-build --per_file_copt=".*\.mm$","@-Wno-error=deprecated-declarations"
-
-# ---------------------------------------------------------------------------
 # Disk cache bounds
 # ---------------------------------------------------------------------------
-# The disk cache had no bound and had reached 42 GB. Bazel 8.4.2 collects it
-# itself; both defaults are 0, meaning never. Values verified to parse with
-# `bazel canonicalize-flags` on our vendored 8.4.2 -- re-verify if you change
-# the syntax.
+# The disk cache had no bound and had reached 42 GB. Bazel collects it itself;
+# both defaults are 0, meaning never. Values verified to parse with
+# `bazel canonicalize-flags` on our vendored 8.4.2 and again on 9.2.0
+# (2026-10-12: same names, still experimental, same defaults, and a bogus
+# `100Q` is rejected) -- re-verify if you change the syntax or bump bazel. 9.x
+# computes the main repository mapping even for canonicalize-flags, so run it
+# in an empty workspace (a blank MODULE.bazel) unless build-input/ is resolved.
 #
 # Collection runs in the *idle* bazel server after
 # --experimental_disk_cache_gc_idle_delay (default 5m), so it happens between

@@ -8,11 +8,12 @@ import UniversalMediaPlayer
 import RangeSet
 
 // Nicegram downloading feature
-import UIKit
-import SaveToCameraRoll
 import NGCore
 import NGCoreUI
 import NGData
+import SaveToCameraRoll
+import UIKit
+//
 
 public struct FetchManagerLocationEntryId: Hashable {
     public let location: FetchManagerLocation
@@ -440,6 +441,7 @@ private final class FetchManagerCategoryContext {
                             if filterDownloadStatsEntry(entry: entry), case let .message(message, _) = entry.mediaReference, let messageId = message.id, case .remote = type {
                                 let _ = addRecentDownloadItem(postbox: postbox, item: RecentDownloadItem(messageId: messageId, resourceId: entry.resourceReference.resource.id.stringRepresentation, timestamp: Int32(Date().timeIntervalSince1970), isSeen: false)).start()
                             }
+                            
                             if let storeManager = storeManager, let mediaReference = entry.mediaReference, case .remote = type, let peerId = entry.storeToDownloadsPeerId {
                                 return storeDownloadedMedia(storeManager: storeManager, media: mediaReference, peerId: peerId)
                                 |> castError(FetchResourceError.self)
@@ -447,20 +449,20 @@ private final class FetchManagerCategoryContext {
                                 }
                                 |> then(.single(type))
                             }
+                            // Nicegram downloading feature
                             if let mediaReference = entry.mediaReference,
                                 let context = accountContext,
                                 NGSettings.shouldDownloadVideo,
                                 shouldSave {
                                 let _ = (saveToCameraRoll(context: context, userLocation: userLocation, mediaReference: mediaReference)
                                          |> deliverOnMainQueue).start(completed: {
-                                    if #available(iOS 13.0, *) {
-                                        Task { @MainActor in
-                                            try? await Task.sleep(seconds: 0.2)
-                                            Toasts.show(.success(title: "The video is downloaded to your phone gallery"))
-                                        }
+                                    Task { @MainActor in
+                                        try? await Task.sleep(seconds: 0.2)
+                                        Toasts.show(.success(title: "The video is downloaded to your phone gallery"))
                                     }
                                 })
                             }
+                            //
                             return .single(type)
                         }
                         |> deliverOnMainQueue).start(next: { _ in
