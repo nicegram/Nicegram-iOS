@@ -576,9 +576,6 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
             }
         )
         //
-        // Nicegram PostboxFailureReporting
-        setPostboxFailureReporter(sendPostboxFailureAnalytics)
-        //
         // Nicegram AccountBackup
         accountManagerCallbacks = AccountManagerCallbacks(
             onRemoteLogout: { id in

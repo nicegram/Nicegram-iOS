@@ -92,10 +92,18 @@ directly — the fastlane lanes resolve the configuration, cache directory, and
 codesigning repository for you, and a hand-written `Make.py` command will use the
 wrong ones.
 
-    cd ci && ./generate-project.sh                    # generate the Xcode project and open it (a human's step)
-    cd ci && ./generate-project.sh --no-open          # ...generate only (scripts and agents)
-    cd ci && ./verify-build.sh                        # compile check (arm64 device by default; --sim for the simulator)
-    cd ci && ./build-to-testflight.sh "1.2.3 (456)"   # QA / TestFlight build
+    ci/generate-project.sh                              # generate the Xcode project and open it (a human's step)
+    ci/generate-project.sh --no-open                    # ...generate only (scripts and agents)
+    ci/verify-build.sh                                  # compile check (arm64 device by default; --sim for the simulator)
+    (cd ci && ./build-to-testflight.sh "1.2.3 (456)")   # QA / TestFlight build
+
+Run them from the repository root as written. The first three move to `ci/`
+themselves. `build-to-testflight.sh` sources `./_env.sh`, so it needs `ci/` as
+its working directory, and the subshell keeps that `cd` from outliving the
+call: in Claude Code a `cd` inside the session's folder carries into every
+later Bash call (`.claude/reference/entering-a-worktree.md`, step 2). A cold
+build runs past the Bash tool's 10-minute foreground limit, so an agent runs
+the gate in the background.
 
 `verify-build.sh` and `generate-project.sh` both run `ci/bootstrap-submodules.sh`
 first and abort if it fails. This matters because a freshly created worktree
@@ -155,7 +163,7 @@ The target environment comes from `ng-env.txt` (`test` or `prod`), which
 Add `--continueOnError` to a `Make.py` call only if you are debugging the build
 system itself; for normal work, use the wrappers.
 
-`./verify-build.sh` is the supported way to answer "does this still compile" —
+`ci/verify-build.sh` is the supported way to answer "does this still compile" —
 for any change, not just an upstream merge. It passes bazel's `--keep_going` so
 one pass reports every broken module, and runs whether or not Xcode is open —
 see "Building alongside Xcode" below. It builds **through
@@ -326,7 +334,7 @@ Development identity is installed" proves nothing (verified on 2026-08-27: two
 personal-team identities were installed and the build still failed at
 `IntentsExtension`). It is the same requirement an Xcode build for "Any iOS
 Device (arm64)" already satisfies, so if that works, the gate works. Install it
-with `cd ci && ./nicegram-match.sh development`; the certificate in use here
+with `ci/nicegram-match.sh development`; the certificate in use here
 expires 2027-04-01.
 
 **The operational trap, and what it now costs.** `xcodeproj.bazelrc` is written
@@ -336,7 +344,7 @@ by `get_project_generation_arguments()` **at generation time**, so changing
 that file describing the previous configuration. Both flows read the same file,
 so they stay consistent *with each other* and keep sharing; what goes stale is
 the match between the configuration they build and the one `Make.py` would
-produce today. Regenerate (`cd ci && ./generate-project.sh`; an agent adds
+produce today. Regenerate (`ci/generate-project.sh`; an agent adds
 `--no-open`) after any such change.
 
 **The gate now tells you when it stopped sharing.** A build that reuses nothing
@@ -454,8 +462,8 @@ safe to delete by hand. Every `.sh` file under `ci/` now carries
 marker for editors and `shellcheck`, since their **644 mode**, not the absence
 of a shebang, is what stops them being executed. And the three scripts a human
 runs by hand — `verify-build.sh`, `generate-project.sh`, `nicegram-match.sh` —
-`cd` to `ci/` themselves, so none of them depends on the reader having noticed a
-`cd ci &&` in a doc first.
+`cd` to `ci/` themselves, so each runs from the repository root as
+`ci/<script>` and none depends on the caller's working directory.
 
 ### The `ci/` tooling
 
@@ -490,11 +498,12 @@ erased — as happened once already.
   the positive output-group assertion, the report, the divergence check — and
   every one of those reads happens inside the run. Nothing outside a run ever
   read those files: `tee` puts every line on stdout, so an interactive run has
-  the whole thing in the terminal, and `tg-merge` / `sync-from-develop`
-  redirect the gate into their own scratch file and read that. An earlier pass
+  the whole thing in the terminal, `tg-merge` / `fix-crash` redirect the gate
+  into their own scratch file and read that, and the other skills read the
+  background call's output. An earlier pass
   wrote three timestamped files per run into `ci/working_dir/logs/` and kept
   them forever — one of the three was never read by anything at all. If you want
-  a copy, redirect: `./verify-build.sh > run.log 2>&1`.
+  a copy, redirect: `ci/verify-build.sh > run.log 2>&1`.
 - **`ci/evict-swiftpm-build.sh`** and **`ci/lib/swiftpm-build.sh`** — move
   `packages/nicegram-assistant-ios/.build` out of the package, permanently, to
   `../.swiftpm-scratch/<checkout>`. `verify-build.sh` and `generate-project.sh`
@@ -548,7 +557,7 @@ erased — as happened once already.
   construction. Reach for it only to answer "is the API path itself broken, or
   is my code broken?", and expect a full rebuild of whatever configuration it
   builds, since nothing else populates it:
-  `cd ci && fastlane compile_check configuration:debug_arm64`. There is
+  `(cd ci && fastlane compile_check configuration:debug_arm64)`. There is
   deliberately **no `--make-py` flag** on the gate any more: a blessed one-flag
   fallback invites reaching for it instead of fixing the shared cache, which is
   the thing actually worth keeping working.
@@ -632,17 +641,17 @@ one owned by a single skill and producing a fixed set of artifacts:
 | stage | skill | artifacts |
 |---|---|---|
 | start | `start-feature` | worktree + branch in both repos, change record stub, spec, plan whose last task completes the change record, ticket → IN PROGRESS |
-| implement | `superpowers:subagent-driven-development`, in a fresh session started from the prompt `start-feature` prints | code, `docs/changes/<date>-<slug>.md`, a self-test checklist the human runs on a device |
+| implement | `superpowers:subagent-driven-development`, in a fresh child session `start-feature` starts once the plan is approved (or from the prompt it prints, where it cannot) | code, `docs/changes/<date>-<slug>.md`, a self-test checklist the human runs on a device |
 | refresh | `sync-from-develop` | merge commits in both repos |
 | share early | `extract-to-develop` | the approved part of the feature as one commit per repo on develop, pushed directly; the feature branch re-synced |
 | ship to QA | `build-to-testflight` | `build/{N}`, a TestFlight build, a change-record comment on each ticket, tickets → READY FOR QA, a Confluence row; for develop tickets never in a QA build, a stamp commit on develop, pushed directly |
 | bug round | `fix-qa-bugs` | fix commits on the feature branch, a change-record delta, bug linked and → DEV COMPLETED |
 | land | `merge-to-develop` | squash on develop in both repos, the change record re-posted at the freeze point, branches and worktree removed |
 | upstream | `tg-merge` | its own branch + worktree, a `docs/changes` record it writes but does not deliver, and a self-test checklist for its 🔴 features |
-| crashes | `triage-crashes` → `diagnose-crash` | records in `docs/crashes/`; an approved fix then enters this table at "start" |
+| crashes | `triage-crashes` → `diagnose-crash` → `fix-crash` | the round's records, pushed straight to develop; per crash, a `feat/crash-<slug>` worktree holding its diagnosis and, when fixed, the fix, its change record and ticket → IN PROGRESS; landed by `merge-to-develop`, records-only straight to develop when not fixed |
 
 **Between implement and ship to QA, the human runs a self-test.** The
-implementation session, and `tg-merge` at handover, end with a short checklist
+implementation session, `fix-crash`, and `tg-merge` at handover end with a short checklist
 the human runs on a real device: the main paths only, so that a broken task
 never reaches QA and the human sees what changed for the user. How it is written
 is owned by `.claude/reference/self-test-checklist.md`.
@@ -674,32 +683,52 @@ written and unread.
 
 ## Crashes
 
-Production crashes are triaged through two skills and one registry, so that the
-analysis accumulates instead of being redone. `triage-crashes` runs a round —
-verify what we shipped, pick the live version, rank and triage its top crashes;
-`diagnose-crash` takes one crash in its own session and finds the root cause.
-Several diagnoses run in parallel.
+Production crashes go through three skills and one registry, so that the
+analysis accumulates instead of being redone. `triage-crashes` runs a round in
+the main clone — verify what we shipped, pick the live version, rank and triage
+its top crashes — pushes the records straight to `develop`, and proposes one
+session per crash worth taking on. That session runs `diagnose-crash` in its own
+`feat/crash-<slug>` worktree: it finds the root cause and tells the human whose
+crash it is, whether and how it can be fixed, and whether that is worth doing.
+The human decides. On "fix", `fix-crash` continues in the same session and
+branch: ticket, fix, the human's code review, a device self-test, then a build
+or a merge. Any other decision lands the record on `develop` by itself, through
+`merge-to-develop`'s records-only path. Several crash sessions run in parallel.
 
 **`docs/crashes/` is the single source of truth** — one markdown file per
 Crashlytics issue, keyed by issue id, with a flat frontmatter header over mostly
 prose. `README.md` there is generated and must never be hand-edited; on a
-conflict, discard both sides and regenerate. The tree is stripped from the
-public mirror.
+conflict, discard both sides and regenerate. Crash branches never regenerate
+it while they work, only when they land, so parallel crash branches do not
+collide in it. The tree is stripped from the public mirror.
 
-**A diagnosis never writes app code.** It reports, drafts a patch, and stops for
-a human decision. An approved fix is an ordinary feature via `start-feature`,
-one per crash — which is why the lifecycle table above has a row for this. Two
-rules bind every diagnosis: never remove a `fatalError` or `assert` to make a
+**A conflict in a record** — a crash branch landing after a triage round
+touched the same record — keeps both sides: observation rows in date order,
+decision-log lines newest first, and in the frontmatter the branch's value for
+the fields a crash session owns (`status`, `ownership`, `subsystem`, `files`,
+`markers`, `fix_*`, `verified_*`) and `develop`'s for the rest, which triage
+owns (counts, `share`, `trend`, ids, `console`, `triaged_*`).
+
+**A diagnosis writes no app code before a human decision.** It reports, drafts
+a patch, and stops. A fix is written only after the human says to fix and names
+the option, by `fix-crash`, in the branch the diagnosis started; a small fix
+needs no spec or plan, because the approved option in the record is the spec.
+Two rules bind every diagnosis: never remove a `fatalError` or `assert` to make a
 crash go away (that trades a visible crash for silent data corruption), and
 "upstream race — do not touch it" counts as a successful diagnosis, because a
 session under pressure to produce a patch will patch someone else's engine on a
 theory.
 
-The status chain has one owner per transition: `triage-crashes` opens a record,
-`diagnose-crash` decides it, a fix feature's **first** plan task sets `fixing`,
-`merge-to-develop` sets `shipped` when it lands, and the next round's verify
-pass closes it as `verified` or reopens it as `regressed`. `tg-merge` also reads
-the registry, reporting where an upstream change touches an open crash's files.
+The status chain has one owner per transition: `triage-crashes` opens a record
+on `develop`; `diagnose-crash` sets `diagnosed` on the crash branch, `wont-fix`
+or `skipped` when the human decides not to fix, and `fixing` under another
+crash's `fix_branch` when that crash's fix covers it; `fix-crash` sets `fixing`
+when the human decides to fix, and `wont-fix` or `skipped` when a fix is
+abandoned; `merge-to-develop` sets `shipped` when the fix lands; and the next
+round's verify pass closes it as `verified` or reopens it as `regressed`. A
+crash left to upstream stays `skipped` until the human asks for it by name.
+`tg-merge` also reads the registry, open crash branches included, reporting
+where an upstream change touches an open crash's files.
 
 ## Cross-repo feature workflow
 
@@ -749,30 +778,36 @@ than letting a skill infer a host branch name that does not exist.
 **Creating and entering the worktree is one shared procedure**,
 `.claude/reference/entering-a-worktree.md` — the script above, then
 `EnterWorktree` and `change_directory`, then an assert that the move happened.
-`start-feature` and `tg-merge` both follow it, so change the flow there rather
-than in either skill.
+`start-feature`, `tg-merge` and `diagnose-crash` follow it, so change the flow
+there rather than in any of them.
 
 Two of its consequences reach the rest of this document. An entered worktree
-**clamps git to itself**: redirecting git at the main clone is refused, and so
-is any `-C` whose argument is a shell variable, even one pointing inside the
-worktree — the check is static and reads the command text, and shell state does
-not survive between Bash calls. And `EnterWorktree` does not move the **file
-viewer**, which is why the procedure also calls `change_directory`; without that
-second call every file link written during feature work comes back "Couldn't
-find this file".
+**clamps git to itself**: the harness reads each command's text and refuses
+git redirected outside the worktree, git beside a value existing only at run
+time — a `$(…)`, a `${X:?}`, or a variable an earlier Bash call set, since
+shell state does not survive between calls — and any command it cannot parse.
+The reference states the measured rule in full. And `EnterWorktree` does not
+move the **file viewer**, which is why the procedure also calls
+`change_directory`; without that second call every file link written during
+feature work comes back "Couldn't find this file".
 
 So: **`start-feature`, `superpowers:subagent-driven-development`, `sync-from-develop`,
 `extract-to-develop` and `merge-to-develop` run inside the feature worktree;
 `build-to-testflight` and `fix-qa-bugs` run from the main clone, in a session
 that has not entered one.**
-Those two are written throughout in the variable `-C` form — deliberately, so
-that a failed `cd` cannot silently leave a command operating on the wrong
+Those two are written throughout in the `git -C "${WT:?}"` form — deliberately,
+so that a failed `cd` cannot silently leave a command operating on the wrong
 repository — and that form does not survive the clamp. The worktree skills are
-the opposite: bare git from the working directory, the one shape the clamp
-permits. `merge-to-develop` is the awkward one — it has to land from the
+the opposite: bare git from the working directory, every value written
+literally. `merge-to-develop` is the awkward one — it has to land from the
 worktree, because its landing procedure diffs and pushes `HEAD`, and then leave
 with `ExitWorktree` before cleanup, because the removal deletes the directory
 the shell was standing in.
+
+The crash skills follow the same split: `triage-crashes` runs in the main clone
+on `develop`, and `diagnose-crash` and `fix-crash` run in the crash's own
+`feat/crash-<slug>` worktree, which `diagnose-crash` creates from the main
+clone — so the two crash-branch skills use bare git, like the worktree skills.
 
 **Each of those skills now opens with its own `## Where this runs` section**,
 naming the position and carrying a probe that halts rather than guessing. That
@@ -885,7 +920,7 @@ main clone's copy automatically — see "Build" above. No manual sourcing needed
 
 ### Building for QA
 
-    cd ci && ./build-to-testflight.sh "<version> (<build>)"
+    (cd ci && ./build-to-testflight.sh "<version> (<build>)")
 
 **Preconditions, in this order:**
 
@@ -940,7 +975,7 @@ referencing a commit nobody else can resolve.
 
 ### Verifying
 
-- Full app: `cd ci && ./generate-project.sh` in the worktree generates the
+- Full app: `ci/generate-project.sh` in the worktree generates the
   project and opens it in Xcode, without closing any Xcode window. This is a
   human's step. An agent never opens Xcode: it passes `--no-open` when it needs
   the project regenerated, and its compile check is `ci/verify-build.sh`.
