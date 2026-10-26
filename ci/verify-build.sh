@@ -278,10 +278,10 @@ fi
 # read by anything at all, and the directory had no bound.
 #
 # Nothing is lost by deleting them. `tee` still puts every line on stdout, so an
-# interactive run has the whole thing in the terminal, and the two skills that
-# drive this gate redirect it to their own scratch file
-# (`./verify-build.sh > "$SCRATCH/build.log"`) and read that. The closing report
-# block carries the numbers.
+# interactive run has the whole thing in the terminal, and the skills that drive
+# this gate either redirect it to their own scratch file
+# (`ci/verify-build.sh > "$SCRATCH/build.log"`) or read the output of the
+# background call they run it in. The closing report block carries the numbers.
 #
 # INT/TERM exit rather than being ignored, so the EXIT trap fires and a run cut
 # short by Ctrl-C cleans up after itself too. If the shell is killed outright,

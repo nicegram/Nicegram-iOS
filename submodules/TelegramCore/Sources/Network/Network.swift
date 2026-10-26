@@ -540,8 +540,8 @@ func initializedNetwork(accountId: AccountRecordId, arguments: NetworkInitializa
                 } else {
                     useNetworkFramework = false
                 }
-                // Nicegram waiting network bug
-                if useNetworkFramework || true {
+                
+                if useNetworkFramework {
                     if #available(iOS 12.0, macOS 14.0, *) {
                         context.makeTcpConnectionInterface = { delegate, delegateQueue in
                             return NetworkFrameworkTcpConnectionInterface(delegate: delegate, delegateQueue: delegateQueue)
@@ -1363,13 +1363,7 @@ public final class Network: NSObject {
         }
     }
     
-    // Nicegram waiting network bug    
-    public func simulateDisconnection() {
-        // The engine seam hides MTProto: pausing drops the session's transport and resuming reconnects it.
-        self.mainSession.setPaused(true)
-        self.mainSession.setPaused(false)
-    }
-    
+    // Nicegram Keywords
     public func addMessageService(with service: NetworkEngineUpdateSink) {
         self.mainSession.addUpdateSink(service)
     }

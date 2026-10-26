@@ -18,9 +18,7 @@ func preparedChatHistoryViewTransition(from fromView: ChatHistoryView?, to toVie
         // Nicegram ChatHistoryMergeGuard
         mergeResult = guardedChatHistoryMergeResult(
             mergeResult,
-            chatLocation: chatLocation,
             leftList: fromView?.filteredEntries ?? [],
-            reason: reason,
             rightList: toView.filteredEntries
         )
         //

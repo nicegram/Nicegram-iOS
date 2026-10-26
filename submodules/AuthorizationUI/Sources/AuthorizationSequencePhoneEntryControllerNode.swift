@@ -804,8 +804,14 @@ final class AuthorizationSequencePhoneEntryControllerNode: ASDisplayNode {
                     self?.refreshQrToken()
                 }))
                 strongSelf.refreshQrToken()
-            case .loggedIn, .passwordRequested:
+            // Nicegram AppReviewLogin, pass up the account .passwordRequested carries (it is on the account's DC after a migration), as .changeAccountAndRetry does
+            case .loggedIn:
                 strongSelf.exportTokenDisposable.set(nil)
+            case let .passwordRequested(account):
+                strongSelf.exportTokenDisposable.set(nil)
+                strongSelf.account = account
+                strongSelf.accountUpdated?(account)
+            //
             }
         }))
     }

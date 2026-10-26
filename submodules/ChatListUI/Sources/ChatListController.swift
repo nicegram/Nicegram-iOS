@@ -7567,12 +7567,6 @@ private final class ChatListLocationContext {
             }
             self.parentController?.maybeDisplayStoryTooltip()
         })
-        
-        // Nicegram waiting network bug
-        if case .waitingForNetwork = networkState {
-            context.account.network.simulateDisconnection()
-        }
-        //
     }
     
     private func updateForum(

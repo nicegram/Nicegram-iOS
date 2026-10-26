@@ -546,9 +546,10 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
             telegramThemeProvider: {
                 TelegramThemeProviderImpl(sharedContextProvider: sharedContextProvider)
             },
-            telegramTokenLoginHandler: {
-                TelegramTokenLoginHandlerImpl(sharedContextProvider: sharedContextProvider)
+            telegramTokenLoginFlow: {
+                TelegramTokenLoginFlowImpl(sharedContextProvider: sharedContextProvider)
             },
+            //
             userMessagesHistoryProvider: {
                 UserMessagesHistoryProviderImpl(contextProvider: contextProvider)
             },
@@ -575,9 +576,6 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
                 )
             }
         )
-        //
-        // Nicegram PostboxFailureReporting
-        setPostboxFailureReporter(sendPostboxFailureAnalytics)
         //
         // Nicegram AccountBackup
         accountManagerCallbacks = AccountManagerCallbacks(

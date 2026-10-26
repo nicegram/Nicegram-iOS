@@ -945,12 +945,41 @@ func verifyPassword(_ account: UnauthorizedAccount, password: String) -> Signal<
         let kdfResult = passwordKDF(encryptionProvider: account.network.encryptionProvider, keychain: account.network.context.keychain, password: password, derivation: currentPasswordDerivation, srpSessionData: srpSessionData)
         
         if let kdfResult = kdfResult {
-            return account.network.request(Api.functions.auth.checkPassword(password: .inputCheckPasswordSRP(.init(srpId: kdfResult.id, A: Buffer(data: kdfResult.A), M1: Buffer(data: kdfResult.M1)))), automaticFloodWait: false)
+            // Nicegram Token Login, the request moved to checkPassword(_:srpId:A:M1:) so a proof built elsewhere sends the same one
+            return checkPassword(
+                account,
+                srpId: kdfResult.id,
+                A: kdfResult.A,
+                M1: kdfResult.M1
+            )
+            //
         } else {
             return .fail(MTRpcError(errorCode: 400, errorDescription: "KDF_ERROR"))
         }
     }
 }
+
+// Nicegram Token Login
+func checkPassword(
+    _ account: UnauthorizedAccount,
+    srpId: Int64,
+    A: Data,
+    M1: Data
+) -> Signal<Api.auth.Authorization, MTRpcError> {
+    return account.network.request(
+        Api.functions.auth.checkPassword(
+            password: .inputCheckPasswordSRP(
+                .init(
+                    srpId: srpId,
+                    A: Buffer(data: A),
+                    M1: Buffer(data: M1)
+                )
+            )
+        ),
+        automaticFloodWait: false
+    )
+}
+//
 
 public enum AccountServiceTaskMasterMode {
     case now

@@ -1,6 +1,9 @@
 // Nicegram Analytics
 import CoreAnalytics
 //
+// Nicegram AppReviewLogin
+import FeatAppReview
+//
 import Foundation
 import UIKit
 import AsyncDisplayKit
@@ -1271,6 +1274,11 @@ public final class AuthorizationSequenceController: NavigationController, ASAuth
         
         if case .authorized = state {
             analyticsManager.trackEvent("telegram_profile_added")
+            // Nicegram AppReviewLogin
+            Task {
+                await ReviewerLogin.shared.completeLogin()
+            }
+            //
         }
         //
         

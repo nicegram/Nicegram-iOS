@@ -624,8 +624,6 @@ public func managedCleanupAccounts(networkArguments: NetworkInitializationArgume
                             }
                             //
                             if !validPaths.contains(url.lastPathComponent) {
-                                // Nicegram PostboxFailureReporting
-                                notePostboxFolderRemoval(url.lastPathComponent)
                                 try? FileManager.default.removeItem(at: url)
                             }
                         }

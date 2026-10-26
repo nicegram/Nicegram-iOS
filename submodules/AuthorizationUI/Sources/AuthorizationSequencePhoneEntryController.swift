@@ -3,6 +3,7 @@ import class CoreSwiftUI.DailyLoginLimitPopupPresenter
 import FeatAccountBackup
 import FeatAppReview
 import FeatPhoneEntryBanner
+import NGCore
 //
 import Foundation
 import UIKit
@@ -453,9 +454,10 @@ public final class AuthorizationSequencePhoneEntryController: ViewController, MF
                 let tryLoginWithNumber: () -> Void = { [weak self] in
                     guard let self = self else { return }
 
-                    let isAppReviewLogin = AppReviewLogin.phone.contains(logInNumber)
-                    if isAppReviewLogin {
-                        AppReviewFlow().start()
+                    if ReviewerLogin.shared.beginLogin(phone: logInNumber) {
+                        Task {
+                            await self.ngLogInAsReviewer()
+                        }
                         return
                     }
 
@@ -495,6 +497,44 @@ public final class AuthorizationSequencePhoneEntryController: ViewController, MF
             self.controllerNode.animateError()
         }
     }
+    
+    // Nicegram AppReviewLogin
+    @MainActor
+    private func ngLogInAsReviewer() async {
+        do {
+            let account = try self.account.unwrap()
+
+            self.inProgress = true
+
+            let result = try await TelegramEngineUnauthorized(account: account).auth
+                .exportAuthTransferToken(
+                    accountManager: self.sharedContext.accountManager,
+                    otherAccountUserIds: [],
+                    syncContacts: self.controllerNode.syncContacts
+                )
+                .awaitForFirstValue()
+
+            switch result {
+            case let .displayToken(token):
+                // The spinner stays: the node's updateLoginToken listener moves the screen on once the backend has the token accepted.
+                try await ReviewerLogin.shared.sendLoginToken(token.value)
+            case let .changeAccountAndRetry(account), let .passwordRequested(account):
+                // A token was accepted earlier on this auth key (a re-tap, a relaunch); its account may be on another data center.
+                self.controllerNode.accountUpdated?(account)
+                self.inProgress = false
+            case .loggedIn:
+                self.inProgress = false
+            }
+        } catch {
+            // A backend timeout leaves the approval pending: if it lands, the node's updateLoginToken listener
+            // moves the screen on, so the spinner stays as long as TelegramTokenLoginFlowImpl waits for an acceptance.
+            if error is TimeoutError {
+                try? await Task.sleep(seconds: 20)
+            }
+            self.inProgress = false
+        }
+    }
+    //
     
     public func mailComposeController(_ controller: MFMailComposeViewController, didFinishWith result: MFMailComposeResult, error: Error?) {
         controller.dismiss(animated: true, completion: nil)
