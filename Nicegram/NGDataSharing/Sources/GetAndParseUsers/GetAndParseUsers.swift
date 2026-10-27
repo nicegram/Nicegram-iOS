@@ -2,7 +2,7 @@ import AccountContext
 import FeatDataSharing
 
 public func getAndParseUsers(context: AccountContext) {
-    Task {
+    _ = Task {
         let getAndParseUsersUseCase = DataSharingModule.shared.getAndParseUsersUseCase()
         let parser = UserParserFromApi(context: context)
         try await getAndParseUsersUseCase(

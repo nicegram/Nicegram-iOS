@@ -1,5 +1,4 @@
 import Foundation
-import Postbox
 import TelegramCore
 import RichTextEditorCore
 import TextFormat
@@ -37,7 +36,7 @@ import RichTextEditorMessageConversion
 public func chatInputContent(
     fromDocument document: Document,
     resolveEmoji: (EmojiRef) -> (fileId: Int64, file: TelegramMediaFile?)?,
-    resolveMedia: (String) -> Media?
+    resolveMedia: (String) -> EngineMedia?
 ) -> ChatInputContent {
     var blocks: [ChatInputBlock] = []
     for block in document.blocks {
@@ -62,7 +61,7 @@ public func chatInputContent(
             let resolvedItems: [ChatInputMediaItem] = media.items.compactMap { item in
                 guard let resolved = resolveMedia(item.mediaID) else { return nil }
                 return ChatInputMediaItem(
-                    media: resolved,
+                    media: resolved._asMedia(),
                     kind: chatInputMediaKind(fromKind: item.kind),
                     naturalSize: ChatInputSize(width: item.naturalSize.width, height: item.naturalSize.height),
                     isSpoiler: item.isSpoiler)
@@ -332,7 +331,7 @@ private func chatInputInlineAttributes(
 public func document(
     fromChatInputContent content: ChatInputContent,
     registerEmoji: (Int64, TelegramMediaFile?) -> EmojiRef,
-    registerMedia: (Media) -> String
+    registerMedia: (EngineMedia) -> String
 ) -> Document {
     var blocks: [Block] = []
     for block in content.blocks {
@@ -345,7 +344,7 @@ public func document(
 private func documentBlocks(
     fromChatInputBlock block: ChatInputBlock,
     registerEmoji: (Int64, TelegramMediaFile?) -> EmojiRef,
-    registerMedia: (Media) -> String
+    registerMedia: (EngineMedia) -> String
 ) -> [Block] {
     switch block {
     case let .paragraph(paragraph):
@@ -371,7 +370,7 @@ private func documentBlocks(
             id: BlockID.generate(),
             items: media.items.map { item in
                 MediaItem(
-                    mediaID: registerMedia(item.media),
+                    mediaID: registerMedia(EngineMedia(item.media)),
                     kind: mediaKind(fromChatInputKind: item.kind),
                     naturalSize: Size2D(width: item.naturalSize.width, height: item.naturalSize.height),
                     isSpoiler: item.isSpoiler)
@@ -524,7 +523,23 @@ private func runs(
     fromChatInputRuns runs: [ChatInputRun],
     registerEmoji: (Int64, TelegramMediaFile?) -> EmojiRef
 ) -> [TextRun] {
-    return runs.map { run in
+    return runs.flatMap { run -> [TextRun] in
+        // ONE custom emoji per character. A custom-emoji run whose text holds several emoji — two adjacent
+        // identical emoji are runs with EQUAL attributes, and anything that coalesces runs merges them — was
+        // one `U+FFFC` holding both as its alt text: the composer drew one emoji where the model held two, and
+        // the engine's axis and the model's disagreed from then on (composer harness p23, default fuzz seed 48,
+        // `HarnessAdjacentCustomEmojiRunTests`). Each character is its own atom with its own ref, as the editor
+        // makes them (`insertEmoji` mints a fresh instance per occurrence).
+        if case .customEmoji? = run.attributes.entity, run.text.count > 1 {
+            return run.text.map { character in
+                var attributes = characterAttributes(fromChatInputInlineAttributes: run.attributes, registerEmoji: registerEmoji)
+                if var emoji = attributes.emoji {
+                    emoji.altText = String(character)
+                    attributes.emoji = emoji
+                }
+                return TextRun(text: "\u{FFFC}", attributes: attributes)
+            }
+        }
         var attributes = characterAttributes(fromChatInputInlineAttributes: run.attributes, registerEmoji: registerEmoji)
         // The reverse of the forward `chatInputRuns` substitution: a custom emoji must be a single `U+FFFC`
         // in the editor `Document` (the editor's emoji invariant), with the chat-currency run text preserved
@@ -533,13 +548,32 @@ private func runs(
         if case .customEmoji? = run.attributes.entity, var emoji = attributes.emoji {
             emoji.altText = run.text
             attributes.emoji = emoji
-            return TextRun(text: "\u{FFFC}", attributes: attributes)
+            return [TextRun(text: "\u{FFFC}", attributes: attributes)]
         }
         if attributes.formula != nil || attributes.button != nil {
-            return TextRun(text: "\u{FFFC}", attributes: attributes)
+            // One atom per occurrence for these too (the custom-emoji rule above): a formula run's text is its
+            // LaTeX and a pill's is one `U+FFFC`, so two adjacent identical ones coalesced into one run hold the
+            // LaTeX twice / two `U+FFFC`. One atom for the run drew one formula where the model held two
+            // (composer harness p24, `HarnessUnreportedSetNormalisationTests`).
+            return [TextRun](repeating: TextRun(text: "\u{FFFC}", attributes: attributes),
+                             count: atomOccurrences(inRunText: run.text, formula: attributes.formula))
         }
-        return TextRun(text: run.text, attributes: attributes)
+        return [TextRun(text: run.text, attributes: attributes)]
     }
+}
+
+/// How many formula / pill atoms one chat-currency run holds: a formula run whose text is its LaTeX repeated
+/// `k` times holds `k`, a pill run one per `U+FFFC`; anything else (an empty LaTeX, text that is not a whole
+/// repetition) is one atom, as before.
+private func atomOccurrences(inRunText text: String, formula: String?) -> Int {
+    if let formula {
+        let unit = (formula as NSString).length
+        let total = (text as NSString).length
+        guard unit > 0, total > unit, total % unit == 0 else { return 1 }
+        let count = total / unit
+        return String(repeating: formula, count: count) == text ? count : 1
+    }
+    return max(1, text.filter { $0 == "\u{FFFC}" }.count)
 }
 
 private func characterAttributes(

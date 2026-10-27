@@ -634,7 +634,7 @@ final class ThemePreviewControllerNode: ASDisplayNode, ASScrollViewDelegate {
         sampleMessages.append(message8)
         
         items = sampleMessages.reversed().map { message in
-            self.context.sharedContext.makeChatMessagePreviewItem(context: self.context, messages: [message], theme: self.previewTheme, strings: self.presentationData.strings, wallpaper: self.wallpaper, fontSize: self.presentationData.chatFontSize, chatBubbleCorners: self.presentationData.chatBubbleCorners, dateTimeFormat: self.presentationData.dateTimeFormat, nameOrder: self.presentationData.nameDisplayOrder, forcedResourceStatus: !message.media.isEmpty ? FileMediaResourceStatus(mediaStatus: .playbackStatus(.paused), fetchStatus: .Local) : nil, tapMessage: nil, clickThroughMessage: nil, backgroundNode: self.wallpaperNode, availableReactions: nil, accountPeer: nil, isCentered: false, isPreview: true, isStandalone: false, rank: nil, rankRole: nil, isGiftMessageComposerPreview: false)
+            self.context.sharedContext.makeChatMessagePreviewItem(context: self.context, messages: [EngineMessage(message)], theme: self.previewTheme, strings: self.presentationData.strings, wallpaper: self.wallpaper, fontSize: self.presentationData.chatFontSize, chatBubbleCorners: self.presentationData.chatBubbleCorners, dateTimeFormat: self.presentationData.dateTimeFormat, nameOrder: self.presentationData.nameDisplayOrder, forcedResourceStatus: !message.media.isEmpty ? FileMediaResourceStatus(mediaStatus: .playbackStatus(.paused), fetchStatus: .Local) : nil, tapMessage: nil, clickThroughMessage: nil, backgroundNode: self.wallpaperNode, availableReactions: nil, accountPeer: nil, isCentered: false, isPreview: true, isStandalone: false, rank: nil, rankRole: nil, isGiftMessageComposerPreview: false, activateGiftMessageInput: nil)
         }
                 
         let width: CGFloat
@@ -751,7 +751,9 @@ final class ThemePreviewControllerNode: ASDisplayNode, ASScrollViewDelegate {
         self.updateMessagesLayout(layout: layout, bottomInset: self.isPreview ? 0.0 : (toolbarHeight + bottomInset), transition: transition)
         
         let pageControlSize = self.pageControlNode.measure(CGSize(width: bounds.width, height: 100.0))
-        let pageControlFrame = CGRect(origin: CGPoint(x: floor((bounds.width - pageControlSize.width) / 2.0), y: layout.size.height - toolbarHeight - 28.0), size: pageControlSize)
+        // Centred in the band between the side insets, over the toolbar's buttons, which keep to it beside iPhone Duo's
+        // side strip (as TextSizeSelectionController's page control does).
+        let pageControlFrame = CGRect(origin: CGPoint(x: layout.safeInsets.left + floor((bounds.width - layout.safeInsets.left - layout.safeInsets.right - pageControlSize.width) / 2.0), y: layout.size.height - toolbarHeight - 28.0), size: pageControlSize)
         self.pageControlNode.frame = pageControlFrame
         self.pageControlBackgroundNode.frame = CGRect(x: pageControlFrame.minX - 7.0, y: pageControlFrame.minY - 7.0, width: pageControlFrame.width + 14.0, height: 21.0)
         transition.updateFrame(node: self.maskNode, frame: CGRect(x: 0.0, y: layout.size.height - toolbarHeight - 80.0, width: bounds.width, height: 80.0))

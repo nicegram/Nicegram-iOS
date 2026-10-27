@@ -1,11 +1,10 @@
 import FeatDataSharing
-import Postbox
 import TelegramApi
 import TelegramCore
 
 extension Channel {
     static func build(
-        peer: Peer?,
+        peer: EngineRawPeer?,
         channelFull: ChannelFull? = nil,
         inviteLinks: [InviteLink] = [],
         messages: [FeatDataSharing.Message] = [],

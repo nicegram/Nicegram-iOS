@@ -1,7 +1,7 @@
-import Postbox
 import TelegramBridge
+import TelegramCore
 
-public extension MediaId {
+public extension EngineMedia.Id {
     init(_ id: TelegramMediaId) {
         self.init(
             namespace: id.namespace,
@@ -11,7 +11,7 @@ public extension MediaId {
 }
 
 public extension TelegramMediaId {
-    init(_ id: MediaId) {
+    init(_ id: EngineMedia.Id) {
         self.init(
             namespace: id.namespace,
             id: id.id

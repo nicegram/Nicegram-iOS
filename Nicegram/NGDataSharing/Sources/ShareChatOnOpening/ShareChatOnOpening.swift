@@ -1,14 +1,13 @@
 import AccountContext
 import FeatDataSharing
 import NGCore
-import Postbox
 import TelegramCore
 
 public func shareChatOnOpening(
-    peerId: PeerId,
+    peerId: EnginePeer.Id,
     context: AccountContext
 ) {
-    Task {
+    _ = Task {
         let shareChatOnOpeningUseCase = DataSharingModule.shared.shareChatOnOpeningUseCase()
         
         let peerType: ShareChatOnOpeningUseCase.PeerType

@@ -44,7 +44,7 @@ public extension CallRecorder {
         self.call = call
         
         if isInitial, NGSettings.recordAllCalls {
-            Task {
+            _ = Task {
                 try await waitForCallActive()
                 trackCallRecorderEvent(.startAuto)
                 startRecordCall()
@@ -143,7 +143,7 @@ private extension CallRecorder {
         let partNumber = self.partNumber
         self.partNumber += 1
         
-        Task {
+        _ = Task {
             let receiverId = try await sendAudioToChat(
                 audio: audio,
                 partNumber: partNumber

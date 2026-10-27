@@ -1,7 +1,6 @@
 import AccountContext
 import FeatCalls
 import NGCore
-import Postbox
 import TelegramCore
 
 //  MARK: - Public Functions
@@ -12,9 +11,9 @@ public func isNicegramCallsEnabled() -> Bool {
 
 public extension CallParticipant {
     static func make(
-        peer: Peer
+        peer: EnginePeer
     ) throws -> CallParticipant {
-        guard let user = peer as? TelegramUser, user.botInfo == nil else {
+        guard case let .user(user) = peer, user.botInfo == nil else {
             throw UnexpectedError()
         }
         
@@ -26,13 +25,13 @@ public extension CallParticipant {
     
     static func make(
         context: AccountContext,
-        peerId: PeerId
+        peerId: EnginePeer.Id
     ) async throws -> CallParticipant {
         let peer = try await context.engine.data
             .get(TelegramEngine.EngineData.Item.Peer.Peer(id: peerId))
             .awaitForFirstValue()
             .unwrap()
         
-        return try .make(peer: peer._asPeer())
+        return try .make(peer: peer)
     }
 }

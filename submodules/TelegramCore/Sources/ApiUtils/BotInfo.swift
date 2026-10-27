@@ -1,6 +1,6 @@
 import Foundation
 import Postbox
-import TelegramApi
+internal import TelegramApi
 
 extension BotMenuButton {
     init(apiBotMenuButton: Api.BotMenuButton) {
@@ -53,8 +53,7 @@ extension BotVerifierSettings {
 }
 
 extension BotInfo {
-    // Nicegram NGDataSharing, 'public'
-    public convenience init(apiBotInfo: Api.BotInfo) {
+    convenience init(apiBotInfo: Api.BotInfo) {
         switch apiBotInfo {
             case let .botInfo(botInfoData):
                 let (_, _, description, descriptionPhoto, descriptionDocument, apiCommands, apiMenuButton, privacyPolicyUrl, appSettings, verifierSettings) = (botInfoData.flags, botInfoData.userId, botInfoData.description, botInfoData.descriptionPhoto, botInfoData.descriptionDocument, botInfoData.commands, botInfoData.menuButton, botInfoData.privacyPolicyUrl, botInfoData.appSettings, botInfoData.verifierSettings)

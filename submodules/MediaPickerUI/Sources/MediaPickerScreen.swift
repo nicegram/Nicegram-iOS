@@ -181,6 +181,14 @@ struct Month: Equatable {
 
 private var savedStoriesContentOffset: CGFloat?
 
+/// The x of the "N selected" pill, right of the bar's close/back button. Beside a side strip (iPhone Duo, folded
+/// landscape-right: the strip and its status block are on the left) that button stands past the left inset, so the
+/// pill does too rather than sitting in the status block over it; equal insets keep it where it was.
+private func selectedButtonMinX(layout: ContainerViewLayout) -> CGFloat {
+    let stripLeftInset: CGFloat = layout.safeInsets.left != layout.safeInsets.right ? layout.safeInsets.left : 0.0
+    return stripLeftInset + 16.0 + 44.0 + 12.0
+}
+
 public final class MediaPickerScreenImpl: ViewController, MediaPickerScreen, AttachmentContainable {
     public enum Style {
         case glass
@@ -1343,8 +1351,20 @@ public final class MediaPickerScreenImpl: ViewController, MediaPickerScreen, Att
             self.currentAssetDownloadDisposable.set(
                 (downloadManager.downloadProgress(identifier: asset.localIdentifier)
                 |> deliverOnMainQueue).start(next: { [weak self] status in
-                    if let self, case .completed = status, let controller = self.controller, let customSelection = self.controller?.customSelection {
-                        customSelection(controller, asset)
+                    guard let self, let controller = self.controller else {
+                        return
+                    }
+                    switch status {
+                    case .completed:
+                        if let customSelection = controller.customSelection {
+                            customSelection(controller, asset)
+                        }
+                    case .failed:
+                        // Tapping did nothing at all before this: the download simply stopped
+                        // reporting and the asset never opened.
+                        controller.presentMediaUnavailableAlert()
+                    case .none, .progress:
+                        break
                     }
                 })
             )
@@ -1687,15 +1707,21 @@ public final class MediaPickerScreenImpl: ViewController, MediaPickerScreen, Att
             }
         }
         
-        private var previousContentOffset: GridNodeVisibleContentOffset?
-        
+        /// The legacy style's bar had an opaque background that faded in as the grid scrolled under it; the glass style's
+        /// backdrop is clear (`hideBackground`), so only the legacy style fades it.
+        private func setNavigationBackdropAlpha(_ alpha: CGFloat) {
+            guard let controller = self.controller, controller.style != .glass else {
+                return
+            }
+            controller.navigationBar?.setBackdropAlpha(alpha, transition: .immediate)
+        }
+
         func updateNavigation(delayDisappear: Bool = false, transition: ContainedViewLayoutTransition) {
             if let selectionNode = self.selectionNode, selectionNode.alpha > 0.0 {
-                self.controller?.navigationBar?.updateBackgroundAlpha(1.0, transition: .immediate)
+                self.setNavigationBackdropAlpha(1.0)
                 self.controller?.updateTabBarAlpha(1.0, transition)
             } else if self.placeholderNode != nil {
-                self.controller?.navigationBar?.updateBackgroundAlpha(0.0, transition: .immediate)
-                
+                self.setNavigationBackdropAlpha(0.0)
                 if delayDisappear {
                     Queue.mainQueue().after(0.25) {
                         self.controller?.updateTabBarAlpha(0.0, transition)
@@ -1704,23 +1730,11 @@ public final class MediaPickerScreenImpl: ViewController, MediaPickerScreen, Att
                     self.controller?.updateTabBarAlpha(0.0, transition)
                 }
             } else {
-                var previousContentOffsetValue: CGFloat?
-                if let previousContentOffset = self.previousContentOffset, case let .known(value) = previousContentOffset {
-                    previousContentOffsetValue = value
-                }
-                
-                let offset = self.gridNode.visibleContentOffset()
-                switch offset {
-                    case let .known(value):
-                        let transition: ContainedViewLayoutTransition
-                        if let previousContentOffsetValue = previousContentOffsetValue, value <= 0.0, previousContentOffsetValue > 2.0 {
-                            transition = .animated(duration: 0.2, curve: .easeInOut)
-                        } else {
-                            transition = .immediate
-                        }
-                        self.controller?.navigationBar?.updateBackgroundAlpha(min(2.0, value) / 2.0, transition: transition)
-                    case .unknown, .none:
-                        self.controller?.navigationBar?.updateBackgroundAlpha(1.0, transition: .immediate)
+                switch self.gridNode.visibleContentOffset() {
+                case let .known(value):
+                    self.setNavigationBackdropAlpha(min(2.0, value) / 2.0)
+                case .unknown, .none:
+                    self.setNavigationBackdropAlpha(1.0)
                 }
                 self.controller?.updateTabBarAlpha(1.0, transition)
             }
@@ -2055,6 +2069,8 @@ public final class MediaPickerScreenImpl: ViewController, MediaPickerScreen, Att
     private let groupedPromise = ValuePromise<Bool>(true)
     
     private let downloadManager = AssetDownloadManager()
+    private let assetAvailabilityDisposable = MetaDisposable()
+    private let batchDownloadDisposable = MetaDisposable()
     
     private var isDismissing = false
     
@@ -2199,7 +2215,7 @@ public final class MediaPickerScreenImpl: ViewController, MediaPickerScreen, Att
         
         var navigationBarPresentationData: NavigationBarPresentationData?
         if case .glass = style {
-            navigationBarPresentationData = NavigationBarPresentationData(presentationData: presentationData, hideBackground: true, hideBadge: true, hideSeparator: true)
+            navigationBarPresentationData = NavigationBarPresentationData(presentationData: presentationData, hideBackground: true, hideBadge: true)
         } else {
             navigationBarPresentationData = NavigationBarPresentationData(presentationData: presentationData)
         }
@@ -2476,6 +2492,75 @@ public final class MediaPickerScreenImpl: ViewController, MediaPickerScreen, Att
     
     deinit {
         self.presentationDataDisposable?.dispose()
+        self.assetAvailabilityDisposable.dispose()
+        self.batchDownloadDisposable.dispose()
+    }
+    
+    /// Hands `assets` on only once each one is readable on this device, downloading the ones iCloud
+    /// has evicted first. `openMedia` already does this for a single tap; a multi-selection used to
+    /// skip it entirely and reach the editor with assets that cannot be read, which surfaced later
+    /// as a blank story or a Post spinner that never stopped.
+    ///
+    /// Assets that cannot be downloaded are dropped rather than failing the whole selection. If
+    /// none survive there is nothing to open, so the user is told instead.
+    fileprivate func withLocallyAvailableAssets(_ assets: [PHAsset], completion: @escaping ([PHAsset]) -> Void) {
+        guard !assets.isEmpty else {
+            completion([])
+            return
+        }
+        
+        let availabilitySignals = assets.map { asset in
+            return checkIfAssetIsLocal(asset)
+            |> map { isLocal -> (PHAsset, Bool) in
+                return (asset, isLocal)
+            }
+        }
+        self.assetAvailabilityDisposable.set((combineLatest(availabilitySignals)
+        |> deliverOnMainQueue).start(next: { [weak self] availability in
+            guard let self else {
+                return
+            }
+            let missing = availability.filter({ !$0.1 }).map({ $0.0 })
+            guard !missing.isEmpty else {
+                completion(assets)
+                return
+            }
+            
+            // Drop any batch still in flight BEFORE starting this one: `MetaDisposable.set`
+            // disposes the old value after the new signal has already started, and disposing a
+            // batch cancels the manager's only queue — which would be this new batch.
+            self.batchDownloadDisposable.set(nil)
+            
+            // Per-asset progress reaches the grid cells through the same manager, so the selected
+            // thumbnails show their own download rings while this runs.
+            self.batchDownloadDisposable.set((self.downloadManager.downloadBatch(assets: missing)
+            |> deliverOnMainQueue).start(next: { [weak self] status in
+                guard let self, case let .completed(unavailableIdentifiers) = status else {
+                    return
+                }
+                let unavailable = Set(unavailableIdentifiers)
+                let available = assets.filter { !unavailable.contains($0.localIdentifier) }
+                if available.isEmpty {
+                    self.presentMediaUnavailableAlert()
+                } else {
+                    completion(available)
+                }
+            }))
+        }))
+    }
+    
+    fileprivate func presentMediaUnavailableAlert() {
+        let presentationData = self.context.sharedContext.currentPresentationData.with { $0 }.withUpdated(theme: defaultDarkColorPresentationTheme)
+        self.present(
+            textAlertController(
+                context: self.context,
+                forceTheme: defaultDarkColorPresentationTheme,
+                title: nil,
+                text: presentationData.strings.Story_Editor_MediaUnavailable,
+                actions: [TextAlertAction(type: .defaultAction, title: presentationData.strings.Common_OK, action: {})]
+            ),
+            in: .window(.root)
+        )
     }
     
     override public func loadDisplayNode() {
@@ -2746,14 +2831,14 @@ public final class MediaPickerScreenImpl: ViewController, MediaPickerScreen, Att
             let selectedSize = self.selectedButtonNode.update(count: count)
             
             let navigationHeight = navigationLayout(layout: layout).navigationFrame.height
-            self.selectedButtonNode.frame = CGRect(origin: CGPoint(x: 16.0 + 44.0 + 12.0, y: self._hasGlassStyle ? 16.0 : floorToScreenPixels((navigationHeight - selectedSize.height) / 2.0) + 1.0), size: selectedSize)
+            self.selectedButtonNode.frame = CGRect(origin: CGPoint(x: selectedButtonMinX(layout: layout), y: self._hasGlassStyle ? 16.0 : floorToScreenPixels((navigationHeight - selectedSize.height) / 2.0) + 1.0), size: selectedSize)
             
             let isSelectionButtonVisible = count > 0 && self.controllerNode.currentDisplayMode == .all
             transition.updateAlpha(node: self.selectedButtonNode, alpha: isSelectionButtonVisible ? 1.0 : 0.0)
             transition.updateTransformScale(node: self.selectedButtonNode, scale: isSelectionButtonVisible ? 1.0 : 0.01)
             
             if self.selectedButtonNode.supernode == nil {
-                self.navigationBar?.addSubnode(self.selectedButtonNode)
+                self.navigationBar?.additionalContentNode.addSubnode(self.selectedButtonNode)
             }
             
             self.titleView.segmentsHidden = true
@@ -2937,7 +3022,7 @@ public final class MediaPickerScreenImpl: ViewController, MediaPickerScreen, Att
     private func updateThemeAndStrings() {
         var navigationBarPresentationData: NavigationBarPresentationData
         if case .glass = style {
-            navigationBarPresentationData = NavigationBarPresentationData(presentationData: self.presentationData, hideBackground: true, hideBadge: true, hideSeparator: true)
+            navigationBarPresentationData = NavigationBarPresentationData(presentationData: self.presentationData, hideBackground: true, hideBadge: true)
         } else {
             navigationBarPresentationData = NavigationBarPresentationData(presentationData: self.presentationData)
         }
@@ -3393,7 +3478,7 @@ public final class MediaPickerScreenImpl: ViewController, MediaPickerScreen, Att
         self.controllerNode.containerLayoutUpdated(layout, navigationBarHeight: navigationLayout(layout: layout).navigationFrame.maxY, transition: transition)
 
         let navigationHeight = navigationLayout(layout: layout).navigationFrame.height
-        self.selectedButtonNode.frame = CGRect(origin: CGPoint(x: 16.0 + 44.0 + 12.0, y: self._hasGlassStyle ? 16.0 : floorToScreenPixels((navigationHeight - self.selectedButtonNode.frame.height) / 2.0) + 1.0), size: self.selectedButtonNode.frame.size)
+        self.selectedButtonNode.frame = CGRect(origin: CGPoint(x: selectedButtonMinX(layout: layout), y: self._hasGlassStyle ? 16.0 : floorToScreenPixels((navigationHeight - self.selectedButtonNode.frame.height) / 2.0) + 1.0), size: self.selectedButtonNode.frame.size)
     }
     
     public func dismissAnimated() {
@@ -3586,7 +3671,7 @@ private final class MediaPickerContextReferenceContentSource: ContextReferenceCo
     }
     
     func transitionInfo() -> ContextControllerReferenceViewInfo? {
-        return ContextControllerReferenceViewInfo(referenceView: self.sourceView, contentAreaInScreenSpace: UIScreen.main.bounds)
+        return ContextControllerReferenceViewInfo(referenceView: self.sourceView, contentAreaInScreenSpace: mainWindowScreenBounds)
     }
 }
 
@@ -3785,6 +3870,26 @@ public func storyMediaPickerController(
     )
     controller.forceSourceRect = true
     controller.getSourceRect = getSourceRect
+    weak var pickerController: MediaPickerScreenImpl?
+    let sendSelection: (TGMediaSelectionContext?, Bool) -> Void = { selectionContext, forCollage in
+        guard let selectionContext, let selectedItems = selectionContext.selectedItems() else {
+            return
+        }
+        var assets: [PHAsset] = []
+        for item in selectedItems {
+            if let item = item as? TGMediaAsset, let asset = item.backingAsset {
+                assets.append(asset)
+            }
+        }
+        guard let pickerController else {
+            multipleCompletion(assets, forCollage)
+            return
+        }
+        pickerController.withLocallyAvailableAssets(assets, completion: { availableAssets in
+            multipleCompletion(availableAssets, forCollage)
+        })
+    }
+    
     controller.requestController = { [selectionContext] _, present in
         let mediaPickerController = MediaPickerScreenImpl(
             context: context,
@@ -3800,28 +3905,13 @@ public func storyMediaPickerController(
             selectionContext: selectionContext,
             mainButtonState: nil,
             mainButtonAction: { [weak selectionContext] in
-                if let selectionContext, let selectedItems = selectionContext.selectedItems() {
-                    var results: [Any] = []
-                    for item in selectedItems {
-                        if let item = item as? TGMediaAsset, let asset = item.backingAsset {
-                            results.append(asset)
-                        }
-                    }
-                    multipleCompletion(results, forCollage)
-                }
+                sendSelection(selectionContext, forCollage)
             },
             secondaryButtonAction: { [weak selectionContext] in
-                if let selectionContext, let selectedItems = selectionContext.selectedItems() {
-                    var results: [Any] = []
-                    for item in selectedItems {
-                        if let item = item as? TGMediaAsset, let asset = item.backingAsset {
-                            results.append(asset)
-                        }
-                    }
-                    multipleCompletion(results, true)
-                }
+                sendSelection(selectionContext, true)
             }
         )
+        pickerController = mediaPickerController
         mediaPickerController.groupsPresented = groupsPresented
         mediaPickerController.customSelection = { controller, result in
             if let result = result as? MediaEditorDraft {

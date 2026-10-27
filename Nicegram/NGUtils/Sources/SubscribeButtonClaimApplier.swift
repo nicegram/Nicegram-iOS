@@ -2,7 +2,7 @@ import AsyncDisplayKit
 import Combine
 import Factory
 import FeatAttentionEconomy
-import Postbox
+import TelegramCore
 
 public class SubscribeButtonClaimApplier {
     
@@ -18,7 +18,7 @@ public class SubscribeButtonClaimApplier {
     @Published public var showClaim = false
     
     @Published private var apply = true
-    @Published private var chatId: PeerId? = nil
+    @Published private var chatId: EnginePeer.Id? = nil
     @Published private var inviteHash: String? = nil
     
     private var cancellables = Set<AnyCancellable>()
@@ -68,7 +68,7 @@ public extension SubscribeButtonClaimApplier {
         buttonView: UIView,
         titleView: UIView,
         apply: Bool,
-        chatId: PeerId?,
+        chatId: EnginePeer.Id?,
         inviteHash: String?
     ) {
         if claimView.superview == nil {
@@ -101,7 +101,7 @@ public extension SubscribeButtonClaimApplier {
         buttonNode: ASDisplayNode,
         titleNode: ASDisplayNode,
         apply: Bool,
-        chatId: PeerId?,
+        chatId: EnginePeer.Id?,
         inviteHash: String?
     ) {
         update(

@@ -3,13 +3,12 @@ import ConvertOpusToAAC
 import FeatTranscription
 import Foundation
 import NGCore
-import Postbox
 import SwiftSignalKit
 import TelegramCore
 
 public func ngTranscribeVoiceMessage(
     context: AccountContext,
-    message: Message
+    message: EngineRawMessage
 ) async throws {
     let surface = VoiceMessageSurface()
     let gate = await GatePresenter()

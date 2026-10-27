@@ -2,7 +2,7 @@ import Foundation
 import Postbox
 import MtProtoKit
 import SwiftSignalKit
-import TelegramApi
+internal import TelegramApi
 
 public final class StarGiftsList: Codable, Equatable {
     public let items: [StarGift]
@@ -1428,6 +1428,45 @@ func _internal_convertStarGift(account: Account, reference: StarGiftReference) -
     }
 }
 
+func _internal_deleteStarGift(account: Account, reference: StarGiftReference) -> Signal<Never, NoError> {
+    return account.postbox.transaction { transaction in
+        return reference.apiStarGiftReference(transaction: transaction)
+    }
+    |> mapToSignal { starGift in
+        guard let starGift else {
+            return .complete()
+        }
+        return account.network.request(Api.functions.payments.deleteStarGift(stargift: starGift))
+        |> map(Optional.init)
+        |> `catch` { _ -> Signal<Api.Bool?, NoError> in
+            return .single(nil)
+        }
+        |> mapToSignal { result in
+            if let result, case .boolTrue = result {
+                let ownerPeerId: EnginePeer.Id
+                if case let .peer(peerId, _) = reference {
+                    ownerPeerId = peerId
+                } else {
+                    ownerPeerId = account.peerId
+                }
+                return account.postbox.transaction { transaction -> Void in
+                    transaction.updatePeerCachedData(peerIds: Set([ownerPeerId]), update: { _, cachedData -> CachedPeerData? in
+                        if let cachedData = cachedData as? CachedUserData, let starGiftsCount = cachedData.starGiftsCount {
+                            return cachedData.withUpdatedStarGiftsCount(max(0, starGiftsCount - 1))
+                        } else if let cachedData = cachedData as? CachedChannelData, let starGiftsCount = cachedData.starGiftsCount {
+                            return cachedData.withUpdatedStarGiftsCount(max(0, starGiftsCount - 1))
+                        } else {
+                            return cachedData
+                        }
+                    })
+                }
+            }
+            return .complete()
+        }
+        |> ignoreValues
+    }
+}
+
 func _internal_updateStarGiftAddedToProfile(account: Account, reference: StarGiftReference, added: Bool) -> Signal<Never, NoError> {
     var flags: Int32 = 0
     if !added {
@@ -2360,6 +2399,18 @@ private final class ProfileGiftsContextImpl {
         self.pushState()
     }
     
+    func deleteStarGift(reference: StarGiftReference) {
+        self.actionDisposable.set(
+            _internal_deleteStarGift(account: self.account, reference: reference).startStrict()
+        )
+        if let count = self.count {
+            self.count = max(0, count - 1)
+        }
+        self.gifts.removeAll(where: { $0.reference == reference })
+        self.filteredGifts.removeAll(where: { $0.reference == reference })
+        self.pushState()
+    }
+    
     func transferStarGift(prepaid: Bool, reference: StarGiftReference, peerId: EnginePeer.Id) -> Signal<Never, TransferStarGiftError> {
         if let count = self.count {
             self.count = max(0, count - 1)
@@ -2371,6 +2422,27 @@ private final class ProfileGiftsContextImpl {
         return _internal_transferStarGift(account: self.account, prepaid: prepaid, reference: reference, peerId: peerId)
     }
     
+    func withdrawStarGift(reference: StarGiftReference, keepOnProfile: Bool, password: String?) -> Signal<Never, WithdrawStarGiftError> {
+        return _internal_withdrawStarGift(account: self.account, reference: reference, keepOnProfile: keepOnProfile, password: password)
+        |> afterCompleted { [weak self] in
+            guard let self else {
+                return
+            }
+            self.queue.async {
+                if keepOnProfile {
+                    self.reload()
+                } else {
+                    if let count = self.count {
+                        self.count = max(0, count - 1)
+                    }
+                    self.gifts.removeAll(where: { $0.reference == reference })
+                    self.filteredGifts.removeAll(where: { $0.reference == reference })
+                    self.pushState()
+                }
+            }
+        }
+    }
+
     func buyStarGift(slug: String, peerId: EnginePeer.Id, price: CurrencyAmount?, hideName: Bool, text: String?, entities: [MessageTextEntity]?) -> Signal<Never, BuyStarGiftError> {
         var listingPrice: CurrencyAmount?
         if let gift = self.gifts.first(where: { gift in
@@ -3149,6 +3221,12 @@ public final class ProfileGiftsContext {
         }
     }
     
+    public func deleteStarGift(reference: StarGiftReference) {
+        self.impl.with { impl in
+            impl.deleteStarGift(reference: reference)
+        }
+    }
+    
     public func buyStarGift(slug: String, peerId: EnginePeer.Id, price: CurrencyAmount? = nil, hideName: Bool = true, text: String? = nil, entities: [MessageTextEntity]? = nil) -> Signal<Never, BuyStarGiftError> {
         return Signal { subscriber in
             let disposable = MetaDisposable()
@@ -3192,6 +3270,20 @@ public final class ProfileGiftsContext {
             let disposable = MetaDisposable()
             self.impl.with { impl in
                 disposable.set(impl.transferStarGift(prepaid: prepaid, reference: reference, peerId: peerId).start(error: { error in
+                    subscriber.putError(error)
+                }, completed: {
+                    subscriber.putCompletion()
+                }))
+            }
+            return disposable
+        }
+    }
+
+    public func withdrawStarGift(reference: StarGiftReference, keepOnProfile: Bool, password: String?) -> Signal<Never, WithdrawStarGiftError> {
+        return Signal { subscriber in
+            let disposable = MetaDisposable()
+            self.impl.with { impl in
+                disposable.set(impl.withdrawStarGift(reference: reference, keepOnProfile: keepOnProfile, password: password).start(error: { error in
                     subscriber.putError(error)
                 }, completed: {
                     subscriber.putCompletion()
@@ -3662,6 +3754,19 @@ public enum GetUniqueStarGiftError {
     case alreadyBurned
 }
 
+private func cachedUniqueStarGiftEntryId(slug: String) -> ItemCacheEntryId {
+    return ItemCacheEntryId(collectionId: Namespaces.CachedItemCollection.cachedUniqueStarGifts, key: ValueBoxKey(slug))
+}
+
+func _internal_cachedUniqueStarGift(account: Account, slug: String) -> Signal<StarGift.UniqueGift?, NoError> {
+    return account.postbox.transaction { transaction -> StarGift.UniqueGift? in
+        guard case let .unique(gift) = transaction.retrieveItemCacheEntry(id: cachedUniqueStarGiftEntryId(slug: slug))?.get(StarGift.self) else {
+            return nil
+        }
+        return gift
+    }
+}
+
 func _internal_getUniqueStarGift(account: Account, slug: String) -> Signal<StarGift.UniqueGift, GetUniqueStarGiftError> {
     return account.network.request(Api.functions.payments.getUniqueStarGift(slug: slug))
     |> mapError { error -> GetUniqueStarGiftError in
@@ -3681,6 +3786,9 @@ func _internal_getUniqueStarGift(account: Account, slug: String) -> Signal<StarG
                 updatePeers(transaction: transaction, accountPeerId: account.peerId, peers: parsedPeers)
                 guard case let .unique(uniqueGift) = StarGift(apiStarGift: gift) else {
                     return .fail(.invalidSlug)
+                }
+                if let entry = CodableEntry(StarGift.unique(uniqueGift)) {
+                    transaction.putItemCacheEntry(id: cachedUniqueStarGiftEntryId(slug: slug), entry: entry)
                 }
                 return .single(uniqueGift)
             }
@@ -3812,9 +3920,9 @@ func _internal_checkStarGiftWithdrawalAvailability(account: Account, reference: 
         guard let starGift else {
             return .fail(.generic)
         }
-        return account.network.request(Api.functions.payments.getStarGiftWithdrawalUrl(stargift: starGift, password: .inputCheckPasswordEmpty))
+        return account.network.request(Api.functions.payments.getStarGiftWithdrawalUrl(flags: 0, stargift: starGift, tmpPassword: Buffer()))
         |> mapError { error -> RequestStarGiftWithdrawalError in
-            if error.errorDescription == "PASSWORD_HASH_INVALID" {
+            if error.errorDescription == "PASSWORD_HASH_INVALID" || error.errorDescription.hasPrefix("TMP_PASSWORD") {
                 return .requestPassword
             } else if error.errorDescription == "PASSWORD_MISSING" {
                 return .twoStepAuthMissing
@@ -3835,71 +3943,245 @@ func _internal_checkStarGiftWithdrawalAvailability(account: Account, reference: 
     }
 }
 
-func _internal_requestStarGiftWithdrawalUrl(account: Account, reference: StarGiftReference, password: String) -> Signal<String, RequestStarGiftWithdrawalError> {
+private let starGiftWithdrawalTemporaryPasswordPeriod: Int32 = 10 * 60
+
+private func starGiftWithdrawalTemporaryPasswordEntryId() -> ItemCacheEntryId {
+    let key = ValueBoxKey(length: 1)
+    key.setUInt8(0, value: 1)
+    return ItemCacheEntryId(collectionId: Namespaces.CachedItemCollection.cachedTwoStepToken, key: key)
+}
+
+private func _internal_cachedStarGiftWithdrawalTemporaryPassword(account: Account) -> Signal<Data?, NoError> {
+    return account.postbox.transaction { transaction -> Data? in
+        guard let token = transaction.retrieveItemCacheEntry(id: starGiftWithdrawalTemporaryPasswordEntryId())?.get(TemporaryTwoStepPasswordToken.self) else {
+            return nil
+        }
+        let timestamp = Int32(account.network.getApproximateRemoteTimestamp())
+        guard token.validUntilDate > timestamp + 5 else {
+            return nil
+        }
+        return token.token
+    }
+}
+
+private func _internal_storeStarGiftWithdrawalTemporaryPassword(account: Account, token: TemporaryTwoStepPasswordToken?) -> Signal<Void, NoError> {
+    return account.postbox.transaction { transaction -> Void in
+        if let token, let entry = CodableEntry(token) {
+            transaction.putItemCacheEntry(id: starGiftWithdrawalTemporaryPasswordEntryId(), entry: entry)
+        } else {
+            transaction.removeItemCacheEntry(id: starGiftWithdrawalTemporaryPasswordEntryId())
+        }
+    }
+}
+
+private func _internal_starGiftWithdrawalTemporaryPassword(account: Account, password: String?) -> Signal<Data, RequestStarGiftWithdrawalError> {
+    guard let password else {
+        return _internal_cachedStarGiftWithdrawalTemporaryPassword(account: account)
+        |> castError(RequestStarGiftWithdrawalError.self)
+        |> mapToSignal { token -> Signal<Data, RequestStarGiftWithdrawalError> in
+            if let token {
+                return .single(token)
+            } else {
+                return .fail(.requestPassword)
+            }
+        }
+    }
     guard !password.isEmpty else {
         return .fail(.invalidPassword)
     }
-    
-    return account.postbox.transaction { transaction -> Signal<String, RequestStarGiftWithdrawalError> in
-        guard let starGift = reference.apiStarGiftReference(transaction: transaction) else {
+    return _internal_requestTemporaryTwoStepPasswordToken(account: account, password: password, period: starGiftWithdrawalTemporaryPasswordPeriod, requiresBiometrics: false)
+    |> mapError { error -> RequestStarGiftWithdrawalError in
+        switch error {
+        case .invalidPassword:
+            return .invalidPassword
+        case .limitExceeded:
+            return .limitExceeded
+        case .generic:
+            return .generic
+        }
+    }
+    |> mapToSignal { token -> Signal<Data, RequestStarGiftWithdrawalError> in
+        return _internal_storeStarGiftWithdrawalTemporaryPassword(account: account, token: token)
+        |> castError(RequestStarGiftWithdrawalError.self)
+        |> map { _ -> Data in
+            return token.token
+        }
+    }
+}
+
+private func starGiftWithdrawalError(_ error: MTRpcError) -> RequestStarGiftWithdrawalError {
+    if error.errorCode == 406 {
+        return .serverProvided(text: error.errorDescription)
+    } else if error.errorDescription.hasPrefix("FLOOD_WAIT") {
+        return .limitExceeded
+    } else if error.errorDescription == "PASSWORD_HASH_INVALID" || error.errorDescription.hasPrefix("TMP_PASSWORD") {
+        return .requestPassword
+    } else if error.errorDescription == "PASSWORD_MISSING" {
+        return .twoStepAuthMissing
+    } else if error.errorDescription.hasPrefix("PASSWORD_TOO_FRESH_") {
+        let timeout = String(error.errorDescription[error.errorDescription.index(error.errorDescription.startIndex, offsetBy: "PASSWORD_TOO_FRESH_".count)...])
+        if let value = Int32(timeout) {
+            return .twoStepAuthTooFresh(value)
+        }
+    } else if error.errorDescription.hasPrefix("SESSION_TOO_FRESH_") {
+        let timeout = String(error.errorDescription[error.errorDescription.index(error.errorDescription.startIndex, offsetBy: "SESSION_TOO_FRESH_".count)...])
+        if let value = Int32(timeout) {
+            return .authSessionTooFresh(value)
+        }
+    }
+    return .generic
+}
+
+private func _internal_performStarGiftWithdrawalRequest<T>(account: Account, reference: StarGiftReference, password: String?, request: @escaping (Api.InputSavedStarGift, Buffer) -> Signal<T, MTRpcError>) -> Signal<T, RequestStarGiftWithdrawalError> {
+    return account.postbox.transaction { transaction -> Api.InputSavedStarGift? in
+        return reference.apiStarGiftReference(transaction: transaction)
+    }
+    |> castError(RequestStarGiftWithdrawalError.self)
+    |> mapToSignal { starGift -> Signal<T, RequestStarGiftWithdrawalError> in
+        guard let starGift else {
             return .fail(.generic)
         }
-            
-        let checkPassword = _internal_twoStepAuthData(account.network)
-        |> mapError { error -> RequestStarGiftWithdrawalError in
-            if error.errorDescription.hasPrefix("FLOOD_WAIT") {
-                return .limitExceeded
-            } else {
-                return .generic
-            }
-        }
-        |> mapToSignal { authData -> Signal<Api.InputCheckPasswordSRP, RequestStarGiftWithdrawalError> in
-            if let currentPasswordDerivation = authData.currentPasswordDerivation, let srpSessionData = authData.srpSessionData {
-                guard let kdfResult = passwordKDF(encryptionProvider: account.network.encryptionProvider, keychain: account.network.context.keychain, password: password, derivation: currentPasswordDerivation, srpSessionData: srpSessionData) else {
-                    return .fail(.generic)
-                }
-                return .single(.inputCheckPasswordSRP(.init(srpId: kdfResult.id, A: Buffer(data: kdfResult.A), M1: Buffer(data: kdfResult.M1))))
-            } else {
-                return .fail(.twoStepAuthMissing)
-            }
-        }
-        
-        return checkPassword
-        |> mapToSignal { password -> Signal<String, RequestStarGiftWithdrawalError> in
-            return account.network.request(Api.functions.payments.getStarGiftWithdrawalUrl(stargift: starGift, password: password), automaticFloodWait: false)
-            |> mapError { error -> RequestStarGiftWithdrawalError in
-                if error.errorCode == 406 {
-                    return .serverProvided(text: error.errorDescription)
-                } else if error.errorDescription.hasPrefix("FLOOD_WAIT") {
-                    return .limitExceeded
-                } else if error.errorDescription == "PASSWORD_HASH_INVALID" {
-                    return .invalidPassword
-                } else if error.errorDescription == "PASSWORD_MISSING" {
-                    return .twoStepAuthMissing
-                } else if error.errorDescription.hasPrefix("PASSWORD_TOO_FRESH_") {
-                    let timeout = String(error.errorDescription[error.errorDescription.index(error.errorDescription.startIndex, offsetBy: "PASSWORD_TOO_FRESH_".count)...])
-                    if let value = Int32(timeout) {
-                        return .twoStepAuthTooFresh(value)
-                    }
-                } else if error.errorDescription.hasPrefix("SESSION_TOO_FRESH_") {
-                    let timeout = String(error.errorDescription[error.errorDescription.index(error.errorDescription.startIndex, offsetBy: "SESSION_TOO_FRESH_".count)...])
-                    if let value = Int32(timeout) {
-                        return .authSessionTooFresh(value)
+        return _internal_starGiftWithdrawalTemporaryPassword(account: account, password: password)
+        |> mapToSignal { token -> Signal<T, RequestStarGiftWithdrawalError> in
+            return request(starGift, Buffer(data: token))
+            |> `catch` { error -> Signal<T, RequestStarGiftWithdrawalError> in
+                let mappedError = starGiftWithdrawalError(error)
+                if case .requestPassword = mappedError {
+                    return _internal_storeStarGiftWithdrawalTemporaryPassword(account: account, token: nil)
+                    |> castError(RequestStarGiftWithdrawalError.self)
+                    |> mapToSignal { _ -> Signal<T, RequestStarGiftWithdrawalError> in
+                        return .fail(mappedError)
                     }
                 }
-                return .generic
-            }
-            |> map { result -> String in
-                switch result {
-                case let .starGiftWithdrawalUrl(starGiftWithdrawalUrlData):
-                    let url = starGiftWithdrawalUrlData.url
-                    return url
-                }
+                return .fail(mappedError)
             }
         }
     }
-    |> mapError { _ -> RequestStarGiftWithdrawalError in }
-    |> switchToLatest
+}
+
+func _internal_requestStarGiftWithdrawalUrl(account: Account, reference: StarGiftReference, password: String?) -> Signal<String, RequestStarGiftWithdrawalError> {
+    return _internal_performStarGiftWithdrawalRequest(account: account, reference: reference, password: password, request: { starGift, temporaryPassword in
+        return account.network.request(Api.functions.payments.getStarGiftWithdrawalUrl(flags: 0, stargift: starGift, tmpPassword: temporaryPassword), automaticFloodWait: false)
+        |> map { result -> String in
+            switch result {
+            case let .starGiftWithdrawalUrl(starGiftWithdrawalUrlData):
+                return starGiftWithdrawalUrlData.url
+            }
+        }
+    })
+}
+
+public enum WithdrawStarGiftError: Equatable {
+    case generic
+    case twoStepAuthMissing
+    case twoStepAuthTooFresh(Int32)
+    case authSessionTooFresh(Int32)
+    case limitExceeded
+    case requestPassword
+    case invalidPassword
+    case serverProvided(text: String)
+}
+
+func _internal_withdrawStarGift(account: Account, reference: StarGiftReference, keepOnProfile: Bool, password: String?) -> Signal<Never, WithdrawStarGiftError> {
+    return _internal_performStarGiftWithdrawalRequest(account: account, reference: reference, password: password, request: { starGift, temporaryPassword in
+        var flags: Int32 = 0
+        if keepOnProfile {
+            flags |= (1 << 0)
+        }
+        return account.network.request(Api.functions.payments.withdrawStarGift(flags: flags, stargift: starGift, tmpPassword: temporaryPassword), automaticFloodWait: false)
+    })
+    |> mapError { error -> WithdrawStarGiftError in
+        switch error {
+        case .generic:
+            return .generic
+        case .twoStepAuthMissing:
+            return .twoStepAuthMissing
+        case let .twoStepAuthTooFresh(value):
+            return .twoStepAuthTooFresh(value)
+        case let .authSessionTooFresh(value):
+            return .authSessionTooFresh(value)
+        case .limitExceeded:
+            return .limitExceeded
+        case .requestPassword:
+            return .requestPassword
+        case .invalidPassword:
+            return .invalidPassword
+        case let .serverProvided(text):
+            return .serverProvided(text: text)
+        }
+    }
+    |> ignoreValues
+}
+
+public struct StarGiftDepositPayload: Equatable {
+    public let nftAddress: String
+    public let payload: Data
+    public let amount: Int64
+
+    public init(nftAddress: String, payload: Data, amount: Int64) {
+        self.nftAddress = nftAddress
+        self.payload = payload
+        self.amount = amount
+    }
+}
+
+public enum DepositStarGiftError {
+    case generic
+}
+
+func _internal_depositStarGift(account: Account, peerId: EnginePeer.Id, slug: String, hideSender: Bool) -> Signal<StarGiftDepositPayload, DepositStarGiftError> {
+    return account.postbox.transaction { transaction -> Api.InputPeer? in
+        return transaction.getPeer(peerId).flatMap(apiInputPeer)
+    }
+    |> castError(DepositStarGiftError.self)
+    |> mapToSignal { inputPeer -> Signal<StarGiftDepositPayload, DepositStarGiftError> in
+        guard let inputPeer else {
+            return .fail(.generic)
+        }
+        var flags: Int32 = 0
+        if hideSender {
+            flags |= (1 << 0)
+        }
+        return account.network.request(Api.functions.payments.depositStarGift(flags: flags, peer: inputPeer, slug: slug))
+        |> mapError { _ -> DepositStarGiftError in
+            return .generic
+        }
+        |> map { result -> StarGiftDepositPayload in
+            switch result {
+            case let .starGiftDepositPayload(data):
+                return StarGiftDepositPayload(nftAddress: data.nftAddress, payload: data.payload.makeData(), amount: data.amount)
+            }
+        }
+    }
+}
+
+public enum DisplayStarGiftError {
+    case generic
+}
+
+func _internal_displayStarGift(account: Account, peerId: EnginePeer.Id?, slug: String) -> Signal<Never, DisplayStarGiftError> {
+    return account.postbox.transaction { transaction -> (peer: Api.InputPeer?, resolved: Bool) in
+        guard let peerId else {
+            return (nil, true)
+        }
+        let inputPeer = transaction.getPeer(peerId).flatMap(apiInputPeer)
+        return (inputPeer, inputPeer != nil)
+    }
+    |> castError(DisplayStarGiftError.self)
+    |> mapToSignal { result -> Signal<Never, DisplayStarGiftError> in
+        guard result.resolved else {
+            return .fail(.generic)
+        }
+        var flags: Int32 = 0
+        if result.peer != nil {
+            flags |= (1 << 0)
+        }
+        return account.network.request(Api.functions.payments.displayStarGift(flags: flags, peer: result.peer, slug: slug))
+        |> mapError { _ -> DisplayStarGiftError in
+            return .generic
+        }
+        |> ignoreValues
+    }
 }
 
 func _internal_toggleStarGiftsNotifications(account: Account, peerId: EnginePeer.Id, enabled: Bool) -> Signal<Never, NoError> {

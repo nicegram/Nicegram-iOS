@@ -172,7 +172,7 @@ public func navigateToChatControllerImpl(_ params: NavigateToChatControllerParam
                     }
                     var popAndComplete = true
                     var switchToThreadHandled = false
-                    if let subject = params.subject, case let .message(messageSubject, highlight, timecode, setupReply) = subject {
+                    if let subject = params.subject, case let .message(messageSubject, highlight, timecode, setupReply, _) = subject {
                         if case let .id(messageId) = messageSubject {
                             let navigationController = params.navigationController
                             let animated = params.animated
@@ -301,7 +301,7 @@ public func navigateToChatControllerImpl(_ params: NavigateToChatControllerParam
                     }
                 }
             } else {
-                controller = ChatControllerImpl(context: params.context, chatLocation: params.chatLocation.asChatLocation, chatLocationContextHolder: params.chatLocationContextHolder, subject: params.subject, botStart: params.botStart, attachBotStart: params.attachBotStart, botAppStart: params.botAppStart, peekData: params.peekData, chatListFilter: params.chatListFilter, chatNavigationStack: params.chatNavigationStack, customChatNavigationStack: params.customChatNavigationStack, initialTextInputState: params.updateTextInputState)
+                controller = ChatControllerImpl(context: params.context, chatLocation: params.chatLocation.asChatLocation, chatLocationContextHolder: params.chatLocationContextHolder, subject: params.subject, botStart: params.botStart, attachBotStart: params.attachBotStart, botAppStart: params.botAppStart, peekData: params.peekData, chatListFilter: params.chatListFilter, chatNavigationStack: params.chatNavigationStack, customChatNavigationStack: params.customChatNavigationStack, showsUnreadChatsBackBadge: params.showsUnreadChatsBackBadge, initialTextInputState: params.updateTextInputState)
                 
                 if let botAppStart = params.botAppStart, case let .peer(peer) = params.chatLocation {
                     Queue.mainQueue().after(0.1) {

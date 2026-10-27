@@ -442,14 +442,7 @@ public class ChatMessageTextBubbleContentNode: ChatMessageBubbleContentNode {
                 
                 
                 if incoming && item.associatedData.isSuspiciousPeer, let entities = messageEntities {
-                    messageEntities = entities.filter { entity in
-                        switch entity.type {
-                        case .Url, .TextUrl, .Mention, .TextMention, .Hashtag, .Email, .BankCard, .TonAddress:
-                            return false
-                        default:
-                            return true
-                        }
-                    }
+                    messageEntities = entities.filter(\.isShownFromSuspiciousPeer)
                 }
                 
                 var formattedDateUpdatePeriod: Int32?
@@ -550,6 +543,7 @@ public class ChatMessageTextBubbleContentNode: ChatMessageBubbleContentNode {
                     let codeBlockTitleColor: UIColor
                     let codeBlockAccentColor: UIColor
                     let codeBlockBackgroundColor: UIColor
+                    var codeBlockFillColor: UIColor?
                     if !incoming {
                         mainColor = messageTheme.accentTextColor
                         if let _ = nameColors?.secondary {
@@ -563,6 +557,9 @@ public class ChatMessageTextBubbleContentNode: ChatMessageBubbleContentNode {
                             codeBlockTitleColor = .white
                             codeBlockAccentColor = UIColor(white: 1.0, alpha: 0.5)
                             codeBlockBackgroundColor = UIColor(white: 0.0, alpha: 0.25)
+                            // Dark themes' outgoing bubbles are coloured (the default's a light blue gradient): the
+                            // white-tinted block made the code hard to read on them.
+                            codeBlockFillColor = UIColor(white: 0.0, alpha: 0.1)
                         } else {
                             codeBlockTitleColor = mainColor
                             codeBlockAccentColor = mainColor
@@ -601,7 +598,7 @@ public class ChatMessageTextBubbleContentNode: ChatMessageBubbleContentNode {
                         }
                     }
                     
-                    attributedText = stringWithAppliedEntities(rawText, entities: entities, strings: item.presentationData.strings, dateTimeFormat: item.presentationData.dateTimeFormat, baseColor: messageTheme.primaryTextColor, linkColor: messageTheme.linkTextColor, baseQuoteTintColor: mainColor, baseQuoteSecondaryTintColor: secondaryColor, baseQuoteTertiaryTintColor: tertiaryColor, codeBlockTitleColor: codeBlockTitleColor, codeBlockAccentColor: codeBlockAccentColor, codeBlockBackgroundColor: codeBlockBackgroundColor, baseFont: textFont, linkFont: textFont, boldFont: item.presentationData.messageBoldFont, italicFont: item.presentationData.messageItalicFont, boldItalicFont: item.presentationData.messageBoldItalicFont, fixedFont: item.presentationData.messageFixedFont, blockQuoteFont: item.presentationData.messageBlockQuoteFont, underlineLinks: underlineLinks, message: item.message, adjustQuoteFontSize: true, cachedMessageSyntaxHighlight: cachedMessageSyntaxHighlight)
+                    attributedText = stringWithAppliedEntities(rawText, entities: entities, strings: item.presentationData.strings, dateTimeFormat: item.presentationData.dateTimeFormat, baseColor: messageTheme.primaryTextColor, linkColor: messageTheme.linkTextColor, baseQuoteTintColor: mainColor, baseQuoteSecondaryTintColor: secondaryColor, baseQuoteTertiaryTintColor: tertiaryColor, codeBlockTitleColor: codeBlockTitleColor, codeBlockAccentColor: codeBlockAccentColor, codeBlockBackgroundColor: codeBlockBackgroundColor, codeBlockFillColor: codeBlockFillColor, baseFont: textFont, linkFont: textFont, boldFont: item.presentationData.messageBoldFont, italicFont: item.presentationData.messageItalicFont, boldItalicFont: item.presentationData.messageBoldItalicFont, fixedFont: item.presentationData.messageFixedFont, blockQuoteFont: item.presentationData.messageBlockQuoteFont, underlineLinks: underlineLinks, message: item.message, adjustQuoteFontSize: true, cachedMessageSyntaxHighlight: cachedMessageSyntaxHighlight)
                 } else if !rawText.isEmpty {
                     attributedText = NSAttributedString(string: rawText, font: textFont, textColor: messageTheme.primaryTextColor)
                 } else {
@@ -1829,5 +1826,22 @@ public class ChatMessageTextBubbleContentNode: ChatMessageBubbleContentNode {
             }
             self.containerNode.clipsToBounds = true
         })
+    }
+}
+
+extension ChatMessageTextBubbleContentNode: ChatMessageQuoteSourceContentNode {
+    public var hasTextSelection: Bool {
+        return self.getCurrentTextSelection() != nil
+    }
+
+    public func currentReplyQuote(maxLength: Int) -> EngineMessageReplyQuote? {
+        guard let textSelection = self.getCurrentTextSelection() else {
+            return nil
+        }
+        let trimmedText = trimStringWithEntities(string: textSelection.text, entities: textSelection.entities, maxLength: maxLength)
+        if trimmedText.string.isEmpty {
+            return nil
+        }
+        return EngineMessageReplyQuote(text: trimmedText.string, offset: textSelection.offset, entities: trimmedText.entities, media: nil)
     }
 }

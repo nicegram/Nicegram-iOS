@@ -1,6 +1,5 @@
 import AccountContext
 import NGCore
-import Postbox
 import TelegramCore
 
 class AutoJoinHandler {
@@ -51,7 +50,7 @@ extension AutoJoinHandler {
 private extension AutoJoinHandler {
     func join(
         inviteLink: String
-    ) async throws -> Peer {
+    ) async throws -> EngineRawPeer {
         let result = try await context.engine.peers
             .joinChatInteractively(with: inviteLink)
             .awaitForFirstValue()
@@ -64,7 +63,7 @@ private extension AutoJoinHandler {
     }
 
     func join(
-        peerId: PeerId
+        peerId: EnginePeer.Id
     ) async throws {
         try await context.peerChannelMemberCategoriesContextsManager
             .join(
@@ -76,7 +75,7 @@ private extension AutoJoinHandler {
     }
 
     func startBot(
-        peer: Peer,
+        peer: EngineRawPeer,
         payload: String?
     ) async throws {
         try? await unblockIfNeeded(peer: peer)
@@ -87,15 +86,13 @@ private extension AutoJoinHandler {
     }
 
     func unblockIfNeeded(
-        peer: Peer
+        peer: EngineRawPeer
     ) async throws {
-        let peerView = try await context.account.postbox
-            .peerView(id: peer.id)
+        let isBlocked = try await context.engine.data
+            .get(TelegramEngine.EngineData.Item.Peer.IsBlocked(id: peer.id))
             .awaitForFirstValue()
-        let peerCachedData = peerView.cachedData
         
-        guard let userCachedData = peerCachedData as? CachedUserData,
-              userCachedData.isBlocked else {
+        guard case .known(true) = isBlocked else {
             return
         }
         

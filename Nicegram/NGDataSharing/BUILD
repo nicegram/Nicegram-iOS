@@ -13,7 +13,7 @@ swift_library(
         "//Nicegram/NGUtils:NGUtils",
         "//Nicegram/NGLogging:NGLogging",
         "//submodules/AccountContext:AccountContext",
-        "//submodules/TelegramApi:TelegramApi",
+        # TelegramApi is imported but not listed: its visibility admits only TelegramCore, so the module comes through TelegramCore's transitive search path.
         "//submodules/SSignalKit/SwiftSignalKit:SwiftSignalKit",
         "@swiftpkg_nicegram_assistant_ios//:FeatDataSharing"
     ],

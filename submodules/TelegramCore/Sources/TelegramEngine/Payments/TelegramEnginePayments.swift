@@ -172,6 +172,10 @@ public extension TelegramEngine {
             return _internal_convertStarGift(account: self.account, reference: reference)
         }
         
+        public func deleteStarGift(reference: StarGiftReference) -> Signal<Never, NoError> {
+            return _internal_deleteStarGift(account: self.account, reference: reference)
+        }
+        
         public func updateStarGiftAddedToProfile(reference: StarGiftReference, added: Bool) -> Signal<Never, NoError> {
             return _internal_updateStarGiftAddedToProfile(account: self.account, reference: reference, added: added)
         }
@@ -184,6 +188,18 @@ public extension TelegramEngine {
             return _internal_transferStarGift(account: self.account, prepaid: prepaid, reference: reference, peerId: peerId)
         }
         
+        public func withdrawStarGift(reference: StarGiftReference, keepOnProfile: Bool, password: String?) -> Signal<Never, WithdrawStarGiftError> {
+            return _internal_withdrawStarGift(account: self.account, reference: reference, keepOnProfile: keepOnProfile, password: password)
+        }
+
+        public func depositStarGift(peerId: EnginePeer.Id, slug: String, hideSender: Bool) -> Signal<StarGiftDepositPayload, DepositStarGiftError> {
+            return _internal_depositStarGift(account: self.account, peerId: peerId, slug: slug, hideSender: hideSender)
+        }
+
+        public func displayStarGift(peerId: EnginePeer.Id?, slug: String) -> Signal<Never, DisplayStarGiftError> {
+            return _internal_displayStarGift(account: self.account, peerId: peerId, slug: slug)
+        }
+
         public func buyStarGift(slug: String, peerId: EnginePeer.Id, price: CurrencyAmount?, hideName: Bool = true, text: String? = nil, entities: [MessageTextEntity]? = nil) -> Signal<Never, BuyStarGiftError> {
             return _internal_buyStarGift(account: self.account, slug: slug, peerId: peerId, price: price, hideName: hideName, text: text, entities: entities)
         }
@@ -204,6 +220,10 @@ public extension TelegramEngine {
             return _internal_getUniqueStarGift(account: self.account, slug: slug)
         }
         
+        public func cachedUniqueStarGift(slug: String) -> Signal<StarGift.UniqueGift?, NoError> {
+            return _internal_cachedUniqueStarGift(account: self.account, slug: slug)
+        }
+        
         public func getUniqueStarGiftValueInfo(slug: String) -> Signal<StarGift.UniqueGift.ValueInfo?, NoError> {
             return _internal_getUniqueStarGiftValueInfo(account: self.account, slug: slug)
         }
@@ -212,7 +232,7 @@ public extension TelegramEngine {
             return _internal_checkStarGiftWithdrawalAvailability(account: self.account, reference: reference)
         }
         
-        public func requestStarGiftWithdrawalUrl(reference: StarGiftReference, password: String) -> Signal<String, RequestStarGiftWithdrawalError> {
+        public func requestStarGiftWithdrawalUrl(reference: StarGiftReference, password: String?) -> Signal<String, RequestStarGiftWithdrawalError> {
             return _internal_requestStarGiftWithdrawalUrl(account: account, reference: reference, password: password)
         }
         

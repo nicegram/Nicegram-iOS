@@ -1,4 +1,3 @@
-import Postbox
 import TelegramCore
 
 private let namespacePrefixes = [
@@ -6,20 +5,20 @@ private let namespacePrefixes = [
     (Namespaces.Peer.CloudGroup, "-"),
 ]
 
-public extension PeerId {
-    static func ng_fromInt64(_ id: Int64) -> PeerId {
+public extension EnginePeer.Id {
+    static func ng_fromInt64(_ id: Int64) -> EnginePeer.Id {
         let stringId = String(id)
         for (namespace, prefix) in namespacePrefixes {
             if stringId.hasPrefix(prefix) {
                 let id = Int64(stringId.removing(prefix: prefix)) ?? id
-                return PeerId(
+                return EnginePeer.Id(
                     namespace: namespace,
                     id: ._internalFromInt64Value(id)
                 )
             }
         }
         
-        return PeerId(
+        return EnginePeer.Id(
             namespace: Namespaces.Peer.CloudUser,
             id: ._internalFromInt64Value(id)
         )
@@ -42,11 +41,11 @@ public extension PeerId {
     }
 }
 
-public func extractPeerId(peer: Peer) -> Int64 {
+public func extractPeerId(peer: EngineRawPeer) -> Int64 {
     peer.id.ng_toInt64()
 }
 
-public func getMembersCount(cachedPeerData: CachedPeerData?) -> Int? {
+public func getMembersCount(cachedPeerData: EngineCachedPeerData?) -> Int? {
     guard let cachedPeerData else {
         return nil
     }

@@ -1,6 +1,6 @@
 import Foundation
 import Postbox
-import TelegramApi
+internal import TelegramApi
 import SwiftSignalKit
 
 func _internal_updateGlobalPrivacySettings(account: Account) -> Signal<Never, NoError> {
@@ -635,9 +635,12 @@ public func disablePhoneCallsAndCachePrivacyState(account: Account) {
 public func restoreCachedPhoneCallsPrivacyState(account: Account) {
     guard let data = UserDefaults.standard.data(forKey: "cachedPhoneCallsPrivacyStateData") else { return }
     
-    let buffer = Buffer(data: data)
-    let reader = BufferReader(buffer)
-    guard let rules = Api.account.PrivacyRules.parse_privacyRules(reader) else { return }
+    // The cache holds the rules unboxed (without their constructor id), as every earlier build wrote
+    // them, and since 13.1.1 TelegramApi parses boxed data only: put account.privacyRules' id back.
+    var boxedData = Data()
+    withUnsafeBytes(of: Int32(0x50a04e45).littleEndian) { boxedData.append(contentsOf: $0) }
+    boxedData.append(data)
+    guard let rules = Api.parse(Buffer(data: boxedData)) as? Api.account.PrivacyRules else { return }
     
     let voiceRules: [Api.PrivacyRule]
     var apiUsers: [Api.User] = []

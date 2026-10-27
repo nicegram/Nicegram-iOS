@@ -1,6 +1,6 @@
 import Foundation
 import Postbox
-import TelegramApi
+internal import TelegramApi
 
 func parsedTelegramProfilePhoto(_ photo: Api.UserProfilePhoto) -> [TelegramMediaImageRepresentation] {
     var representations: [TelegramMediaImageRepresentation] = []
@@ -24,8 +24,7 @@ func parsedTelegramProfilePhoto(_ photo: Api.UserProfilePhoto) -> [TelegramMedia
     return representations
 }
 
-// Nicegram NGDataSharing, 'public'
-public extension TelegramPeerUsername {
+extension TelegramPeerUsername {
     init(apiUsername: Api.Username) {
         switch apiUsername {
         case let .username(usernameData):
@@ -57,8 +56,7 @@ extension PeerVerification {
 }
 
 
-// Nicegram NGDataSharing, 'public'
-public extension TelegramUser {
+extension TelegramUser {
     convenience init(user: Api.User) {
         switch user {
         case let .user(userData):

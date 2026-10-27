@@ -1,6 +1,6 @@
 import Foundation
 import Postbox
-import TelegramApi
+internal import TelegramApi
 
 
 public func tagsForStoreMessage(incoming: Bool, attributes: [MessageAttribute], media: [Media], textEntities: [MessageTextEntity]?, isPinned: Bool) -> (MessageTags, GlobalMessageTags) {
@@ -311,7 +311,7 @@ func apiMessagePeerIds(_ message: Api.Message) -> [PeerId] {
             }
             
             switch action {
-            case .messageActionChannelCreate, .messageActionChatDeletePhoto, .messageActionChatEditPhoto, .messageActionChatEditTitle, .messageActionEmpty, .messageActionPinMessage, .messageActionHistoryClear, .messageActionGameScore, .messageActionPaymentSent, .messageActionPaymentSentMe, .messageActionPhoneCall, .messageActionScreenshotTaken, .messageActionCustomAction, .messageActionBotAllowed, .messageActionSecureValuesSent, .messageActionSecureValuesSentMe, .messageActionContactSignUp, .messageActionGroupCall, .messageActionSetMessagesTTL, .messageActionGroupCallScheduled, .messageActionSetChatTheme, .messageActionChatJoinedByRequest, .messageActionWebViewDataSent, .messageActionWebViewDataSentMe, .messageActionGiftPremium, .messageActionGiftStars, .messageActionTopicCreate, .messageActionTopicEdit, .messageActionSuggestProfilePhoto, .messageActionSetChatWallPaper, .messageActionGiveawayLaunch, .messageActionGiveawayResults, .messageActionBoostApply, .messageActionRequestedPeerSentMe, .messageActionStarGift, .messageActionStarGiftUnique, .messageActionPaidMessagesRefunded, .messageActionPaidMessagesPrice, .messageActionTodoCompletions, .messageActionTodoAppendTasks, .messageActionSuggestedPostApproval, .messageActionGiftTon, .messageActionGramTransfer, .messageActionWalletTonConnectRequest, .messageActionSuggestedPostSuccess, .messageActionSuggestedPostRefund, .messageActionSuggestBirthday, .messageActionStarGiftPurchaseOffer, .messageActionStarGiftPurchaseOfferDeclined, .messageActionNoForwardsToggle, .messageActionNoForwardsRequest, .messageActionPollAppendAnswer, .messageActionPollDeleteAnswer:
+            case .messageActionChannelCreate, .messageActionChatDeletePhoto, .messageActionChatEditPhoto, .messageActionChatEditTitle, .messageActionEmpty, .messageActionPinMessage, .messageActionHistoryClear, .messageActionGameScore, .messageActionPaymentSent, .messageActionPaymentSentMe, .messageActionPhoneCall, .messageActionScreenshotTaken, .messageActionCustomAction, .messageActionBotAllowed, .messageActionSecureValuesSent, .messageActionSecureValuesSentMe, .messageActionContactSignUp, .messageActionGroupCall, .messageActionSetMessagesTTL, .messageActionGroupCallScheduled, .messageActionSetChatTheme, .messageActionChatJoinedByRequest, .messageActionWebViewDataSent, .messageActionWebViewDataSentMe, .messageActionGiftPremium, .messageActionGiftStars, .messageActionTopicCreate, .messageActionTopicEdit, .messageActionSuggestProfilePhoto, .messageActionSetChatWallPaper, .messageActionGiveawayLaunch, .messageActionGiveawayResults, .messageActionBoostApply, .messageActionRequestedPeerSentMe, .messageActionStarGift, .messageActionStarGiftUnique, .messageActionPaidMessagesRefunded, .messageActionPaidMessagesPrice, .messageActionTodoCompletions, .messageActionTodoAppendTasks, .messageActionSuggestedPostApproval, .messageActionGiftTon, .messageActionGramTransfer, .messageActionWalletTonConnectRequest, .messageActionSuggestedPostSuccess, .messageActionSuggestedPostRefund, .messageActionSuggestBirthday, .messageActionStarGiftPurchaseOffer, .messageActionStarGiftPurchaseOfferDeclined, .messageActionNoForwardsToggle, .messageActionNoForwardsRequest, .messageActionPollAppendAnswer, .messageActionPollDeleteAnswer, .messageActionNoPaidMessagesTokenUsed:
                     break
                 case let .messageActionManagedBotCreated(messageActionManagedBotCreated):
                     let botId = messageActionManagedBotCreated.botId
@@ -540,14 +540,11 @@ extension StoreMessage {
             if let replyTo {
                 switch replyTo {
                 case let .messageReplyHeader(messageReplyHeaderData):
-                    let (innerFlags, replyToMsgId, replyToPeerId, replyHeader, replyMedia, replyToTopId, quoteText, quoteEntities, quoteOffset, todoItemId, pollOption) = (messageReplyHeaderData.flags, messageReplyHeaderData.replyToMsgId, messageReplyHeaderData.replyToPeerId, messageReplyHeaderData.replyFrom, messageReplyHeaderData.replyMedia, messageReplyHeaderData.replyToTopId, messageReplyHeaderData.quoteText, messageReplyHeaderData.quoteEntities, messageReplyHeaderData.quoteOffset, messageReplyHeaderData.todoItemId, messageReplyHeaderData.pollOption)
+                    let (innerFlags, replyToMsgId, replyToPeerId, replyHeader, replyMedia, replyToTopId, quoteText, quoteEntities, quoteOffset, todoItemId, pollOption, quoteRich) = (messageReplyHeaderData.flags, messageReplyHeaderData.replyToMsgId, messageReplyHeaderData.replyToPeerId, messageReplyHeaderData.replyFrom, messageReplyHeaderData.replyMedia, messageReplyHeaderData.replyToTopId, messageReplyHeaderData.quoteText, messageReplyHeaderData.quoteEntities, messageReplyHeaderData.quoteOffset, messageReplyHeaderData.todoItemId, messageReplyHeaderData.pollOption, messageReplyHeaderData.quoteRich)
                     let isQuote = (innerFlags & (1 << 9)) != 0
                     let replyNamespace: MessageId.Namespace = (innerFlags & (1 << 13)) != 0 ? Namespaces.Message.EphemeralLocal : Namespaces.Message.Cloud
 
-                    var quote: EngineMessageReplyQuote?
-                    if quoteText != nil || replyMedia != nil {
-                        quote = EngineMessageReplyQuote(text: quoteText ?? "", offset: quoteOffset.flatMap(Int.init), entities: messageTextEntitiesFromApiEntities(quoteEntities ?? []), media: textMediaAndExpirationTimerFromApiMedia(replyMedia, peerId).media)
-                    }
+                    let quote = engineReplyQuote(text: quoteText, entities: quoteEntities, offset: quoteOffset, rich: quoteRich, media: textMediaAndExpirationTimerFromApiMedia(replyMedia, peerId).media)
 
                     if let replyToMsgId {
                         let replyPeerId = replyToPeerId?.peerId ?? peerId
@@ -843,15 +840,6 @@ func textMediaAndExpirationTimerFromApiMedia(_ media: Api.MessageMedia?, _ peerI
     return (nil, nil, nil, nil, nil, nil)
 }
 
-// Nicegram NGDataSharing
-public func mediaFromApiMedia(_ media: Api.MessageMedia?) -> Media? {
-    textMediaAndExpirationTimerFromApiMedia(
-        media,
-        .init(namespace: Namespaces.Peer.CloudChannel, id: ._internalFromInt64Value(0))
-    ).media
-}
-//
-
 func mediaAreaFromApiMediaArea(_ mediaArea: Api.MediaArea) -> MediaArea? {
     func coodinatesFromApiMediaAreaCoordinates(_ coordinates: Api.MediaAreaCoordinates) -> MediaArea.Coordinates {
         switch coordinates {
@@ -1145,15 +1133,12 @@ extension StoreMessage {
                     var threadMessageId: MessageId?
                     switch replyTo {
                     case let .messageReplyHeader(messageReplyHeaderData):
-                        let (innerFlags, replyToMsgId, replyToPeerId, replyHeader, replyMedia, replyToTopId, quoteText, quoteEntities, quoteOffset, todoItemId, pollOption) = (messageReplyHeaderData.flags, messageReplyHeaderData.replyToMsgId, messageReplyHeaderData.replyToPeerId, messageReplyHeaderData.replyFrom, messageReplyHeaderData.replyMedia, messageReplyHeaderData.replyToTopId, messageReplyHeaderData.quoteText, messageReplyHeaderData.quoteEntities, messageReplyHeaderData.quoteOffset, messageReplyHeaderData.todoItemId, messageReplyHeaderData.pollOption)
+                        let (innerFlags, replyToMsgId, replyToPeerId, replyHeader, replyMedia, replyToTopId, quoteText, quoteEntities, quoteOffset, todoItemId, pollOption, quoteRich) = (messageReplyHeaderData.flags, messageReplyHeaderData.replyToMsgId, messageReplyHeaderData.replyToPeerId, messageReplyHeaderData.replyFrom, messageReplyHeaderData.replyMedia, messageReplyHeaderData.replyToTopId, messageReplyHeaderData.quoteText, messageReplyHeaderData.quoteEntities, messageReplyHeaderData.quoteOffset, messageReplyHeaderData.todoItemId, messageReplyHeaderData.pollOption, messageReplyHeaderData.quoteRich)
                         let isForumTopic = (innerFlags & (1 << 3)) != 0
                         
-                        var quote: EngineMessageReplyQuote?
                         let isQuote = (innerFlags & (1 << 9)) != 0
                         
-                        if quoteText != nil || replyMedia != nil {
-                            quote = EngineMessageReplyQuote(text: quoteText ?? "", offset: quoteOffset.flatMap(Int.init), entities: messageTextEntitiesFromApiEntities(quoteEntities ?? []), media: textMediaAndExpirationTimerFromApiMedia(replyMedia, peerId).media)
-                        }
+                        let quote = engineReplyQuote(text: quoteText, entities: quoteEntities, offset: quoteOffset, rich: quoteRich, media: textMediaAndExpirationTimerFromApiMedia(replyMedia, peerId).media)
                         
                         if let replyToMsgId = replyToMsgId {
                             let replyPeerId = replyToPeerId?.peerId ?? peerId
@@ -1547,12 +1532,9 @@ extension StoreMessage {
                     if chatPeerId.peerId.namespace == Namespaces.Peer.CloudChannel, let replyTo {
                         switch replyTo {
                         case let .messageReplyHeader(messageReplyHeaderData):
-                            let (innerFlags, replyToMsgId, replyToPeerId, replyHeader, replyMedia, quoteText, quoteEntities, quoteOffset, todoItemId, pollOption) = (messageReplyHeaderData.flags, messageReplyHeaderData.replyToMsgId, messageReplyHeaderData.replyToPeerId, messageReplyHeaderData.replyFrom, messageReplyHeaderData.replyMedia, messageReplyHeaderData.quoteText, messageReplyHeaderData.quoteEntities, messageReplyHeaderData.quoteOffset, messageReplyHeaderData.todoItemId, messageReplyHeaderData.pollOption)
-                            var quote: EngineMessageReplyQuote?
+                            let (innerFlags, replyToMsgId, replyToPeerId, replyHeader, replyMedia, quoteText, quoteEntities, quoteOffset, todoItemId, pollOption, quoteRich) = (messageReplyHeaderData.flags, messageReplyHeaderData.replyToMsgId, messageReplyHeaderData.replyToPeerId, messageReplyHeaderData.replyFrom, messageReplyHeaderData.replyMedia, messageReplyHeaderData.quoteText, messageReplyHeaderData.quoteEntities, messageReplyHeaderData.quoteOffset, messageReplyHeaderData.todoItemId, messageReplyHeaderData.pollOption, messageReplyHeaderData.quoteRich)
                             let isQuote = (innerFlags & (1 << 9)) != 0
-                            if quoteText != nil || replyMedia != nil {
-                                quote = EngineMessageReplyQuote(text: quoteText ?? "", offset: quoteOffset.flatMap(Int.init), entities: messageTextEntitiesFromApiEntities(quoteEntities ?? []), media: textMediaAndExpirationTimerFromApiMedia(replyMedia, peerId).media)
-                            }
+                            let quote = engineReplyQuote(text: quoteText, entities: quoteEntities, offset: quoteOffset, rich: quoteRich, media: textMediaAndExpirationTimerFromApiMedia(replyMedia, peerId).media)
 
                             if let replyToMsgId = replyToMsgId {
                                 let replyPeerId = replyToPeerId?.peerId ?? peerId
@@ -1577,12 +1559,9 @@ extension StoreMessage {
                     var threadMessageId: MessageId?
                     switch replyTo {
                     case let .messageReplyHeader(messageReplyHeaderData):
-                        let (innerFlags, replyToMsgId, replyToPeerId, replyHeader, replyMedia, replyToTopId, quoteText, quoteEntities, quoteOffset, todoItemId, pollOption) = (messageReplyHeaderData.flags, messageReplyHeaderData.replyToMsgId, messageReplyHeaderData.replyToPeerId, messageReplyHeaderData.replyFrom, messageReplyHeaderData.replyMedia, messageReplyHeaderData.replyToTopId, messageReplyHeaderData.quoteText, messageReplyHeaderData.quoteEntities, messageReplyHeaderData.quoteOffset, messageReplyHeaderData.todoItemId, messageReplyHeaderData.pollOption)
-                        var quote: EngineMessageReplyQuote?
+                        let (innerFlags, replyToMsgId, replyToPeerId, replyHeader, replyMedia, replyToTopId, quoteText, quoteEntities, quoteOffset, todoItemId, pollOption, quoteRich) = (messageReplyHeaderData.flags, messageReplyHeaderData.replyToMsgId, messageReplyHeaderData.replyToPeerId, messageReplyHeaderData.replyFrom, messageReplyHeaderData.replyMedia, messageReplyHeaderData.replyToTopId, messageReplyHeaderData.quoteText, messageReplyHeaderData.quoteEntities, messageReplyHeaderData.quoteOffset, messageReplyHeaderData.todoItemId, messageReplyHeaderData.pollOption, messageReplyHeaderData.quoteRich)
                         let isQuote = (innerFlags & (1 << 9)) != 0
-                        if quoteText != nil || replyMedia != nil {
-                            quote = EngineMessageReplyQuote(text: quoteText ?? "", offset: quoteOffset.flatMap(Int.init), entities: messageTextEntitiesFromApiEntities(quoteEntities ?? []), media: textMediaAndExpirationTimerFromApiMedia(replyMedia, peerId).media)
-                        }
+                        let quote = engineReplyQuote(text: quoteText, entities: quoteEntities, offset: quoteOffset, rich: quoteRich, media: textMediaAndExpirationTimerFromApiMedia(replyMedia, peerId).media)
                         
                         if let replyToMsgId = replyToMsgId {
                             let replyPeerId = replyToPeerId?.peerId ?? peerId

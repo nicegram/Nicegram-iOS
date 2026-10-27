@@ -1,7 +1,7 @@
-import Postbox
 import TelegramBridge
+import TelegramCore
 
-public extension MessageId {
+public extension EngineMessage.Id {
     init(_ id: TelegramMessageId) {
         self.init(
             peerId: .init(id.peerId),
@@ -12,7 +12,7 @@ public extension MessageId {
 }
 
 public extension TelegramMessageId {
-    init(_ id: MessageId) {
+    init(_ id: EngineMessage.Id) {
         self.init(
             peerId: .init(id.peerId),
             namespace: id.namespace,

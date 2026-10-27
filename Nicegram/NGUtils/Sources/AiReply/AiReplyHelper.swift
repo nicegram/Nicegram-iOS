@@ -1,7 +1,7 @@
 import AccountContext
 import FeatAiReply
-import Postbox
 import TelegramBridge
+import TelegramCore
 
 public final class AiReplyHelper {
     private let context: AccountContext
@@ -18,7 +18,7 @@ public extension AiReplyHelper {
     }
     
     func present(
-        messageId: MessageId,
+        messageId: EngineMessage.Id,
         draftText: String?,
         onSelectReply: @escaping (String) -> Void
     ) {
@@ -36,7 +36,7 @@ public extension AiReplyHelper {
     }
 }
 
-private extension MessageId {
+private extension EngineMessage.Id {
     func ng_toTelegramMessageId() -> TelegramMessageId {
         TelegramMessageId(
             peerId: TelegramId(peerId),

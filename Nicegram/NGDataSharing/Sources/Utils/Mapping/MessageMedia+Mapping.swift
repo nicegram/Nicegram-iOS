@@ -2,14 +2,13 @@ import FeatDataSharing
 import Foundation
 import NGCore
 import NGUtils
-import Postbox
 import TelegramApi
 import TelegramCore
 
 //  MARK: - Local
 
 extension FeatDataSharing.Message.Media {
-    init?(_ media: Media?) {
+    init?(_ media: EngineRawMedia?) {
         do {
             let media = try media.unwrap()
             let mediaId = try media.id.unwrap()
@@ -137,7 +136,7 @@ extension FeatDataSharing.Message.Media {
 
 extension FeatDataSharing.Message.Media {
     init?(_ media: Api.MessageMedia?) {
-        guard let media = mediaFromApiMedia(media) else {
+        guard let media = TelegramRawApi.media(media) else {
             return nil
         }
         self.init(media)

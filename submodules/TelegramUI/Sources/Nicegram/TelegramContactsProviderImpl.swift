@@ -2,7 +2,6 @@ import AccountContext
 import Combine
 import MemberwiseInit
 import NGUtils
-import Postbox
 import SwiftSignalKit
 import TelegramBridge
 import TelegramCore
@@ -29,7 +28,7 @@ extension TelegramContactsProviderImpl: TelegramContactsProvider {
             }
             
             if let userId = params.userId,
-               context.account.peerId != PeerId(userId) {
+               context.account.peerId != EnginePeer.Id(userId) {
                 return .single(nil)
             }
             

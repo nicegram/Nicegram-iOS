@@ -25,6 +25,6 @@ extension GeoLocation {
 extension GeoLocation {
     init?(_ location: Api.ChannelLocation?) {
         guard let location else { return nil }
-        self.init(PeerGeoLocation(apiLocation: location))
+        self.init(TelegramRawApi.geoLocation(location))
     }
 }

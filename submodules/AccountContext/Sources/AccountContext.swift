@@ -355,6 +355,7 @@ public enum ResolvedUrl {
     case peer(EngineRawPeer?, ChatControllerInteractionNavigateToPeer)
     case inaccessiblePeer
     case botStart(peer: EngineRawPeer, payload: String)
+    case noPaidMessagesToken(peer: EngineRawPeer, token: String)
     case groupBotStart(peerId: EnginePeer.Id, payload: String, adminRights: ResolvedBotAdminRights?, peerType: ResolvedBotStartPeerType?)
     case gameStart(peerId: EnginePeer.Id, game: String)
     case channelMessage(peer: EngineRawPeer, messageId: EngineMessage.Id, timecode: Double?)
@@ -663,7 +664,10 @@ public final class NavigateToChatControllerParams {
     public let forceOpenChat: Bool
     public let customChatNavigationStack: [EnginePeer.Id]?
     public let skipAgeVerification: Bool
-    
+    /// Whether the chat's back button shows the unread chats Back returns to. Off for a chat opened from
+    /// News, whose Back returns to the feed.
+    public let showsUnreadChatsBackBadge: Bool
+
     public init(
         navigationController: NavigationController,
         chatController: ChatController? = nil,
@@ -697,7 +701,8 @@ public final class NavigateToChatControllerParams {
         chatListCompletion: @escaping (ChatListController) -> Void = { _ in },
         forceOpenChat: Bool = false,
         customChatNavigationStack: [EnginePeer.Id]? = nil,
-        skipAgeVerification: Bool = false
+        skipAgeVerification: Bool = false,
+        showsUnreadChatsBackBadge: Bool = true
     ) {
         self.navigationController = navigationController
         self.chatController = chatController
@@ -732,6 +737,7 @@ public final class NavigateToChatControllerParams {
         self.forceOpenChat = forceOpenChat
         self.customChatNavigationStack = customChatNavigationStack
         self.skipAgeVerification = skipAgeVerification
+        self.showsUnreadChatsBackBadge = showsUnreadChatsBackBadge
     }
     
     public func withSkipAgeVerification(_ skipAgeVerification: Bool) -> NavigateToChatControllerParams {
@@ -768,7 +774,8 @@ public final class NavigateToChatControllerParams {
             chatListCompletion: self.chatListCompletion,
             forceOpenChat: self.forceOpenChat,
             customChatNavigationStack: self.customChatNavigationStack,
-            skipAgeVerification: skipAgeVerification
+            skipAgeVerification: skipAgeVerification,
+            showsUnreadChatsBackBadge: self.showsUnreadChatsBackBadge
         )
     }
 }
@@ -1086,6 +1093,13 @@ public protocol MediaPickerScreen: ViewController {
 }
 
 public protocol ChatQrCodeScreen: ViewController {
+    func prepareForNavigationExpansion(layout: ContainerViewLayout?, ready: @escaping () -> Void)
+}
+
+public extension ChatQrCodeScreen {
+    func prepareForNavigationExpansion(layout: ContainerViewLayout?, ready: @escaping () -> Void) {
+        ready()
+    }
 }
 
 public protocol MediaEditorScreenResult {
@@ -1494,9 +1508,9 @@ public protocol SharedAccountContext: AnyObject {
         mode: ChatHistoryListMode
     ) -> ChatHistoryListNode
     func subscribeChatListData(context: AccountContext, location: ChatListControllerLocation) -> Signal<EngineChatList, NoError>
-    func makeChatMessagePreviewItem(context: AccountContext, messages: [EngineRawMessage], theme: PresentationTheme, strings: PresentationStrings, wallpaper: TelegramWallpaper, fontSize: PresentationFontSize, chatBubbleCorners: PresentationChatBubbleCorners, dateTimeFormat: PresentationDateTimeFormat, nameOrder: PresentationPersonNameOrder, forcedResourceStatus: FileMediaResourceStatus?, tapMessage: ((EngineRawMessage) -> Void)?, clickThroughMessage: ((UIView?, CGPoint?) -> Void)?, backgroundNode: ASDisplayNode?, availableReactions: AvailableReactions?, accountPeer: EngineRawPeer?, isCentered: Bool, isPreview: Bool, isStandalone: Bool, rank: String?, rankRole: ChatRankInfoScreenRole?, isGiftMessageComposerPreview: Bool) -> ListViewItem
+    func makeChatMessagePreviewItem(context: AccountContext, messages: [EngineMessage], theme: PresentationTheme, strings: PresentationStrings, wallpaper: TelegramWallpaper, fontSize: PresentationFontSize, chatBubbleCorners: PresentationChatBubbleCorners, dateTimeFormat: PresentationDateTimeFormat, nameOrder: PresentationPersonNameOrder, forcedResourceStatus: FileMediaResourceStatus?, tapMessage: ((EngineMessage) -> Void)?, clickThroughMessage: ((UIView?, CGPoint?) -> Void)?, backgroundNode: ASDisplayNode?, availableReactions: AvailableReactions?, accountPeer: EnginePeer?, isCentered: Bool, isPreview: Bool, isStandalone: Bool, rank: String?, rankRole: ChatRankInfoScreenRole?, isGiftMessageComposerPreview: Bool, activateGiftMessageInput: (() -> Void)?) -> ListViewItem
     func makeChatMessageDateHeaderItem(context: AccountContext, timestamp: Int32, theme: PresentationTheme, strings: PresentationStrings, wallpaper: TelegramWallpaper, fontSize: PresentationFontSize, chatBubbleCorners: PresentationChatBubbleCorners, dateTimeFormat: PresentationDateTimeFormat, nameOrder: PresentationPersonNameOrder) -> ListViewItemHeader
-    func makeChatMessageAvatarHeaderItem(context: AccountContext, timestamp: Int32, peer: EngineRawPeer, message: EngineRawMessage, theme: PresentationTheme, strings: PresentationStrings, wallpaper: TelegramWallpaper, fontSize: PresentationFontSize, chatBubbleCorners: PresentationChatBubbleCorners, dateTimeFormat: PresentationDateTimeFormat, nameOrder: PresentationPersonNameOrder) -> ListViewItemHeader
+    func makeChatMessageAvatarHeaderItem(context: AccountContext, timestamp: Int32, peer: EnginePeer, message: EngineMessage, theme: PresentationTheme, strings: PresentationStrings, wallpaper: TelegramWallpaper, fontSize: PresentationFontSize, chatBubbleCorners: PresentationChatBubbleCorners, dateTimeFormat: PresentationDateTimeFormat, nameOrder: PresentationPersonNameOrder) -> ListViewItemHeader
     func makePeerSharedMediaController(context: AccountContext, peerId: EnginePeer.Id) -> ViewController?
     func makeContactSelectionController(_ params: ContactSelectionControllerParams) -> ContactSelectionController
     func makeContactMultiselectionController(_ params: ContactMultiselectionControllerParams) -> ContactMultiselectionController
@@ -1571,9 +1585,9 @@ public protocol SharedAccountContext: AnyObject {
         completedWithUploadingImage: @escaping (UIImage, Signal<PeerInfoAvatarUploadStatus, NoError>) -> UIView?
     )
     func openAddPeerMembers(context: AccountContext, updatedPresentationData: (initial: PresentationData, signal: Signal<PresentationData, NoError>)?, parentController: ViewController, groupPeer: EnginePeer, selectAddMemberDisposable: MetaDisposable, addMemberDisposable: MetaDisposable)
-    func makeInstantPageController(context: AccountContext, message: EngineRawMessage, sourcePeerType: MediaAutoDownloadPeerType?) -> ViewController?
+    func makeInstantPageController(context: AccountContext, message: EngineMessage, sourcePeerType: MediaAutoDownloadPeerType?) -> ViewController?
     func makeInstantPageController(context: AccountContext, webPage: TelegramMediaWebpage, anchor: String?, sourceLocation: InstantPageSourceLocation) -> ViewController
-    func openChatWallpaper(context: AccountContext, message: EngineRawMessage, present: @escaping (ViewController, Any?) -> Void)
+    func openChatWallpaper(context: AccountContext, message: EngineMessage, present: @escaping (ViewController, Any?) -> Void)
     func makeRecentSessionsController(context: AccountContext, activeSessionsContext: ActiveSessionsContext) -> ViewController & RecentSessionsController
     func makeChatQrCodeScreen(context: AccountContext, peer: EnginePeer, threadId: Int64?, temporary: Bool) -> ViewController
     func makePremiumIntroController(context: AccountContext, source: PremiumIntroSource, forceDark: Bool, dismissed: (() -> Void)?) -> ViewController
@@ -1581,8 +1595,9 @@ public protocol SharedAccountContext: AnyObject {
     func makePremiumDemoController(context: AccountContext, subject: PremiumDemoSubject, forceDark: Bool, action: @escaping () -> Void, dismissed: (() -> Void)?) -> ViewController
     func makePremiumLimitController(context: AccountContext, subject: PremiumLimitSubject, count: Int32, forceDark: Bool, cancel: @escaping () -> Void, action: @escaping () -> Bool) -> ViewController
     func makeStarsGiftController(context: AccountContext, birthdays: [EnginePeer.Id: TelegramBirthday]?, completion: @escaping (([EnginePeer.Id]) -> Void)) -> ViewController
-    func makePremiumGiftController(context: AccountContext, source: PremiumGiftSource, completion: (([EnginePeer.Id]) -> Signal<Never, TransferStarGiftError>)?) -> ViewController
+    func makePremiumGiftController(context: AccountContext, source: PremiumGiftSource, completion: (([EnginePeer.Id]) -> Signal<Never, TransferStarGiftError>)?, withdraw: ((StarGiftReference, String?) -> Signal<Never, WithdrawStarGiftError>)?) -> ViewController
     func makeGiftOptionsController(context: AccountContext, peerId: EnginePeer.Id, premiumOptions: [CachedPremiumGiftOption], hasBirthday: Bool, completion: (() -> Void)?) -> ViewController
+    func makeGiftCollectiblesController(context: AccountContext, peerId: EnginePeer.Id) -> ViewController
     func makeGiftStoreController(context: AccountContext, peerId: EnginePeer.Id, gift: StarGift.Gift) -> ViewController
     func makePremiumPrivacyControllerController(context: AccountContext, subject: PremiumPrivacySubject, peerId: EnginePeer.Id) -> ViewController
     func makePremiumBoostLevelsController(context: AccountContext, peerId: EnginePeer.Id, subject: BoostSubject, boostStatus: ChannelBoostStatus, myBoostStatus: MyBoostStatus, forceDark: Bool, openStats: (() -> Void)?) -> ViewController
@@ -1619,8 +1634,9 @@ public protocol SharedAccountContext: AnyObject {
     func makeStarsGiftScreen(context: AccountContext, message: EngineMessage) -> ViewController
     func makeStarsGiveawayBoostScreen(context: AccountContext, peerId: EnginePeer.Id, boost: ChannelBoostersContext.State.Boost) -> ViewController
     func makeStarsIntroScreen(context: AccountContext) -> ViewController
-    func makeWalletScreen(context: AccountContext) -> ViewController
+    func makeWalletScreen(context: AccountContext, opensCollectibles: Bool) -> ViewController
     func makeWalletReceiveScreen(context: AccountContext, address: String) -> ViewController
+    func makeWalletReceiveScreen(context: AccountContext, address: String, isOwnWallet: Bool) -> ViewController
     func makeWalletReceiveScreen(context: AccountContext, address: String, appeared: @escaping () -> Void) -> ViewController
     func makeWalletImportScreen(context: AccountContext, mode: WalletImportScreenMode, completion: (() -> Void)?) -> ViewController
     func makeWalletSettingsScreen(context: AccountContext) -> ViewController
@@ -1638,7 +1654,7 @@ public protocol SharedAccountContext: AnyObject {
     func makeWalletTransactionPreviewScreen(context: AccountContext, walletContext: WalletContext, address: String, amount: Int64, sendAll: Bool, comment: String?, initialFee: Int64?, dismissSendScreen: @escaping () -> Void) -> ViewController
     func makeWalletTransactionPreviewScreen(context: AccountContext, updatedPresentationData: (initial: PresentationData, signal: Signal<PresentationData, NoError>), walletContext: WalletContext, address: String, amount: Int64, sendAll: Bool, comment: String?, initialFee: Int64?, dismissSendScreen: @escaping () -> Void) -> ViewController
     func makeWalletTransactionPreviewScreen(context: AccountContext, walletContext: WalletContext, address: String, recipientPeer: EnginePeer?, collectible: WalletContext.Collectible, comment: String?, dismissSendScreen: @escaping () -> Void) -> ViewController
-    func makeWalletCollectibleScreen(context: AccountContext, walletContext: WalletContext, collectible: WalletContext.Collectible, collectibleSent: @escaping (String) -> Void) -> ViewController
+    func makeWalletCollectibleScreen(context: AccountContext, walletContext: WalletContext, collectible: WalletContext.Collectible, stickerHost: WalletCollectibleStickerHost?, collectibleSent: @escaping (String) -> Void) -> ViewController
     func authorizeWalletAccess(context: AccountContext, completion: @escaping (Bool) -> Void)
     func makeGiftViewScreen(context: AccountContext, message: EngineMessage, shareStory: ((StarGift.UniqueGift) -> Void)?) -> ViewController
     func makeGiftViewScreen(context: AccountContext, gift: StarGift.UniqueGift, shareStory: ((StarGift.UniqueGift) -> Void)?, openChatTheme: (() -> Void)?, dismissed: (() -> Void)?) -> ViewController
@@ -1656,6 +1672,7 @@ public protocol SharedAccountContext: AnyObject {
     func makeStorySharingScreen(context: AccountContext, subject: StorySharingSubject, parentController: ViewController) -> ViewController
     func makeContentReportScreen(context: AccountContext, subject: ReportContentSubject, forceDark: Bool, present: @escaping (ViewController) -> Void, completion: @escaping () -> Void, requestSelectMessages: ((String, Data, String?) -> Void)?)
     func makeShareController(context: AccountContext, params: ShareControllerParams) -> ViewController
+    func makeShareScreen(context: AccountContext, params: ShareControllerParams) -> ViewController
     func makeMiniAppListScreenInitialData(context: AccountContext) -> Signal<MiniAppListScreenInitialData, NoError>
     func makeMiniAppListScreen(context: AccountContext, initialData: MiniAppListScreenInitialData) -> ViewController
     func makeIncomingMessagePrivacyScreen(context: AccountContext, value: GlobalPrivacySettings.NonContactChatsPrivacy, exceptions: SelectivePrivacySettings, update: @escaping (GlobalPrivacySettings.NonContactChatsPrivacy) -> Void) -> ViewController
@@ -2202,5 +2219,41 @@ public struct GiftConfiguration {
         } else {
             return .defaultValue
         }
+    }
+}
+
+public struct WalletCollectibleStickerMenuState {
+    public let isOnCard: Bool
+    public let isStyled: Bool
+    public let canStyle: Bool
+    public let isStyleRestricted: Bool
+
+    public init(isOnCard: Bool, isStyled: Bool, canStyle: Bool, isStyleRestricted: Bool) {
+        self.isOnCard = isOnCard
+        self.isStyled = isStyled
+        self.canStyle = canStyle
+        self.isStyleRestricted = isStyleRestricted
+    }
+}
+
+public protocol WalletCollectibleStickerHost: AnyObject {
+    func stickerMenuState(collectible: WalletContext.Collectible) -> WalletCollectibleStickerMenuState?
+    func performStickerAction(collectible: WalletContext.Collectible, color: Bool)
+    func placeSticker(collectible: WalletContext.Collectible, color: Bool, sourceView: UIView) -> Bool
+    func stickerSilhouette(collectible: WalletContext.Collectible, side: CGFloat) -> (image: UIImage, frame: CGRect)?
+    func beginStickerTearOff(collectible: WalletContext.Collectible, sourceView: UIView, location: CGPoint) -> Bool
+    func updateStickerTearOff(location: CGPoint)
+    func endStickerTearOff()
+}
+
+public extension SharedAccountContext {
+    func makePremiumGiftController(context: AccountContext, source: PremiumGiftSource, completion: (([EnginePeer.Id]) -> Signal<Never, TransferStarGiftError>)?) -> ViewController {
+        return self.makePremiumGiftController(context: context, source: source, completion: completion, withdraw: nil)
+    }
+}
+
+public extension SharedAccountContext {
+    func makeWalletScreen(context: AccountContext) -> ViewController {
+        return self.makeWalletScreen(context: context, opensCollectibles: false)
     }
 }

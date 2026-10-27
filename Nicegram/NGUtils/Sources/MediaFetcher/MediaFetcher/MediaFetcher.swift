@@ -2,7 +2,6 @@ import AccountContext
 import Foundation
 import MemberwiseInit
 import NGCore
-import Postbox
 import SwiftSignalKit
 import TelegramCore
 
@@ -52,11 +51,11 @@ private extension MediaFetcher {
         mediaResourceReference: MediaResourceReference
     ) async -> URL? {
         do {
-            let data = try await context.account.postbox.mediaBox
-                .resourceData(mediaResourceReference.resource)
+            let data = try await context.engine.resources
+                .data(resource: EngineMediaResource(mediaResourceReference.resource))
                 .awaitForFirstValue()
             
-            if data.complete {
+            if data.isComplete {
                 return URL(fileURLWithPath: data.path)
             } else {
                 return nil
@@ -72,11 +71,10 @@ private extension MediaFetcher {
         userContentType: MediaResourceUserContentType,
         options: Options
     ) async throws -> URL {
-        let fetchSignal = fetchedMediaResource(
-            mediaBox: context.account.postbox.mediaBox,
+        let fetchSignal = context.engine.resources.fetch(
+            reference: mediaResourceReference,
             userLocation: userLocation,
-            userContentType: userContentType,
-            reference: mediaResourceReference
+            userContentType: userContentType
         )
         |> timeout(
             options.fetchTimeout,

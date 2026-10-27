@@ -1331,7 +1331,7 @@ final class StoryItemSetContainerSendMessage: @unchecked(Sendable) {
                 }))
             }
 
-            let shareController = component.context.sharedContext.makeShareController(context: component.context, params: ShareControllerParams(
+            let shareController = component.context.sharedContext.makeShareScreen(context: component.context, params: ShareControllerParams(
                 subject: .media(AnyMediaReference.standalone(media: TelegramMediaStory(storyId: EngineStoryId(peerId: peerId, id: focusedItem.storyItem.id), isMention: false)), nil),
                 preferredAction: preferredAction ?? .default,
                 externalShare: false,
@@ -1511,7 +1511,7 @@ final class StoryItemSetContainerSendMessage: @unchecked(Sendable) {
         let theme = component.theme
         let updatedPresentationData: (initial: PresentationData, signal: Signal<PresentationData, NoError>) = (component.context.sharedContext.currentPresentationData.with({ $0 }).withUpdated(theme: theme), component.context.sharedContext.presentationData |> map { $0.withUpdated(theme: theme) })
 
-        let shareController = component.context.sharedContext.makeShareController(context: component.context, params: ShareControllerParams(subject: .text(text), externalShare: true, immediateExternalShare: false, updatedPresentationData: updatedPresentationData, dismissed: { [weak self, weak view] _ in
+        let shareController = component.context.sharedContext.makeShareScreen(context: component.context, params: ShareControllerParams(subject: .text(text), externalShare: true, immediateExternalShare: false, updatedPresentationData: updatedPresentationData, dismissed: { [weak self, weak view] _ in
             guard let self, let view else {
                 return
             }
@@ -3250,7 +3250,7 @@ final class StoryItemSetContainerSendMessage: @unchecked(Sendable) {
             if peer.smallProfileImage == nil {
                 expandAvatar = false
             }
-            if component.metrics.widthClass == .regular {
+            if component.isCardLayout {
                 expandAvatar = false
             }
             if let infoController = component.context.sharedContext.makePeerInfoController(context: component.context, updatedPresentationData: nil, peer: peer, mode: mode, avatarInitiallyExpanded: expandAvatar, fromChat: false, requestsContext: nil) {
@@ -4302,7 +4302,7 @@ final class StoryItemSetContainerSendMessage: @unchecked(Sendable) {
             }
 
             func transitionInfo() -> ContextControllerReferenceViewInfo? {
-                return ContextControllerReferenceViewInfo(referenceView: self.sourceView, contentAreaInScreenSpace: UIScreen.main.bounds.inset(by: self.insets), insets: self.contentInsets, actionsPosition: .top)
+                return ContextControllerReferenceViewInfo(referenceView: self.sourceView, contentAreaInScreenSpace: mainWindowScreenBounds.inset(by: self.insets), insets: self.contentInsets, actionsPosition: .top)
             }
         }
 

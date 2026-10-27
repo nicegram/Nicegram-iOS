@@ -1,7 +1,7 @@
-import struct Postbox.MessageIndex
 import TelegramBridge
+import TelegramCore
 
-public extension Postbox.MessageIndex {
+public extension EngineMessage.Index {
     init(_ index: TelegramBridge.TelegramMessageIndex) {
         self.init(
             id: .init(index.id),

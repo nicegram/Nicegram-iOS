@@ -15,6 +15,8 @@ import MultilineTextComponent
 import BalancedTextComponent
 import ButtonComponent
 import GlassControls
+import CheckComponent
+import PlainButtonComponent
 import TableComponent
 import AvatarComponent
 import ContextUI
@@ -24,9 +26,12 @@ import UndoUI
 import WalletContext
 import WalletPagerComponent
 import WalletCollectibleHeaderComponent
+import GiftAnimationComponent
+import GlassBackgroundComponent
 import WalletPeerSelectionScreen
 import WalletAuthorizationUI
 import PasscodeCore
+import GiftViewScreen
 
 private func walletCollectibleRarityText(_ rarity: StarGift.UniqueGift.Attribute.Rarity?, strings: PresentationStrings) -> String {
     guard let rarity else {
@@ -53,7 +58,8 @@ private func walletCollectibleRarityText(_ rarity: StarGift.UniqueGift.Attribute
 }
 
 private func walletCollectibleExplorerUrl(explorerUrl: String, address: String) -> String? {
-    guard let encodedAddress = address.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed),
+    guard let address = WalletContext.transferAddress(from: address, preserveBounce: true),
+          let encodedAddress = address.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed),
           !encodedAddress.isEmpty else {
         return nil
     }
@@ -150,7 +156,7 @@ private final class WalletCollectibleActionComponent: Component {
             transition: ComponentTransition
         ) -> CGSize {
             self.component = component
-            let size = CGSize(width: availableSize.width, height: 60.0)
+            let size = CGSize(width: availableSize.width, height: 58.0)
             self.backgroundView.backgroundColor = component.theme.list.itemModalBlocksBackgroundColor
             transition.setFrame(view: self.backgroundView, frame: CGRect(origin: .zero, size: size))
             transition.setFrame(view: self.button, frame: CGRect(origin: .zero, size: size))
@@ -171,7 +177,7 @@ private final class WalletCollectibleActionComponent: Component {
                 }
                 transition.setFrame(view: iconView, frame: CGRect(
                     x: floorToScreenPixels((size.width - iconSize.width) / 2.0),
-                    y: 7.0,
+                    y: floorToScreenPixels(22.0 - iconSize.height * 0.5),
                     width: iconSize.width,
                     height: iconSize.height
                 ))
@@ -198,7 +204,7 @@ private final class WalletCollectibleActionComponent: Component {
                 }
                 transition.setFrame(view: titleView, frame: CGRect(
                     x: floorToScreenPixels((size.width - titleSize.width) / 2.0),
-                    y: 38.0 + UIScreenPixel,
+                    y: floorToScreenPixels(44.0 - titleSize.height * 0.5),
                     width: titleSize.width,
                     height: titleSize.height
                 ))
@@ -218,6 +224,100 @@ private final class WalletCollectibleActionComponent: Component {
         environment: Environment<Empty>,
         transition: ComponentTransition
     ) -> CGSize {
+        return view.update(component: self, availableSize: availableSize, transition: transition)
+    }
+}
+
+private final class WalletCollectibleHeaderButtonComponent: Component {
+    let title: String
+    let iconName: String
+    let buttonColor: UIColor
+    let isEnabled: Bool
+    let action: () -> Void
+
+    init(title: String, iconName: String, buttonColor: UIColor, isEnabled: Bool, action: @escaping () -> Void) {
+        self.title = title
+        self.iconName = iconName
+        self.buttonColor = buttonColor
+        self.isEnabled = isEnabled
+        self.action = action
+    }
+
+    static func ==(lhs: WalletCollectibleHeaderButtonComponent, rhs: WalletCollectibleHeaderButtonComponent) -> Bool {
+        return lhs.title == rhs.title && lhs.iconName == rhs.iconName && lhs.buttonColor == rhs.buttonColor && lhs.isEnabled == rhs.isEnabled
+    }
+
+    final class View: UIView {
+        private let backgroundView = GlassBackgroundView()
+        private let icon = ComponentView<Empty>()
+        private let title = ComponentView<Empty>()
+        private let button = HighlightTrackingButton()
+        private var component: WalletCollectibleHeaderButtonComponent?
+
+        override init(frame: CGRect) {
+            super.init(frame: frame)
+            self.addSubview(self.backgroundView)
+            self.backgroundView.contentView.addSubview(self.button)
+            self.button.addTarget(self, action: #selector(self.pressed), for: .touchUpInside)
+        }
+
+        required init?(coder: NSCoder) {
+            fatalError("init(coder:) has not been implemented")
+        }
+
+        @objc private func pressed() {
+            self.component?.action()
+        }
+
+        func update(component: WalletCollectibleHeaderButtonComponent, availableSize: CGSize, transition: ComponentTransition) -> CGSize {
+            self.component = component
+            let bounds = CGRect(origin: .zero, size: availableSize)
+            self.backgroundView.update(size: bounds.size, cornerRadius: 16.0, isDark: true, tintColor: .init(kind: .custom(style: .default, color: component.buttonColor)), isInteractive: true, transition: transition)
+            transition.setFrame(view: self.backgroundView, frame: bounds)
+            transition.setFrame(view: self.button, frame: bounds)
+
+            let iconSize = self.icon.update(
+                transition: transition,
+                component: AnyComponent(BundleIconComponent(name: component.iconName, tintColor: .white)),
+                environment: {},
+                containerSize: availableSize
+            )
+            if let iconView = self.icon.view {
+                if iconView.superview == nil {
+                    iconView.isUserInteractionEnabled = false
+                    self.backgroundView.contentView.addSubview(iconView)
+                }
+                iconView.frame = CGRect(origin: CGPoint(x: floorToScreenPixels((availableSize.width - iconSize.width) / 2.0), y: floorToScreenPixels(22.0 - iconSize.height * 0.5)), size: iconSize)
+                transition.setAlpha(view: iconView, alpha: component.isEnabled ? 1.0 : 0.5)
+            }
+
+            let titleSize = self.title.update(
+                transition: transition,
+                component: AnyComponent(MultilineTextComponent(
+                    text: .plain(NSAttributedString(string: component.title, font: Font.regular(11.0), textColor: .white)),
+                    horizontalAlignment: .center,
+                    maximumNumberOfLines: 1
+                )),
+                environment: {},
+                containerSize: CGSize(width: availableSize.width - 16.0, height: availableSize.height)
+            )
+            if let titleView = self.title.view {
+                if titleView.superview == nil {
+                    titleView.isUserInteractionEnabled = false
+                    self.backgroundView.contentView.addSubview(titleView)
+                }
+                titleView.frame = CGRect(origin: CGPoint(x: floorToScreenPixels((availableSize.width - titleSize.width) / 2.0), y: floorToScreenPixels(44.0 - titleSize.height * 0.5)), size: titleSize)
+                transition.setAlpha(view: titleView, alpha: component.isEnabled ? 1.0 : 0.5)
+            }
+            return availableSize
+        }
+    }
+
+    func makeView() -> View {
+        return View(frame: .zero)
+    }
+
+    func update(view: View, availableSize: CGSize, state: EmptyComponentState, environment: Environment<Empty>, transition: ComponentTransition) -> CGSize {
         return view.update(component: self, availableSize: availableSize, transition: transition)
     }
 }
@@ -337,35 +437,108 @@ private final class WalletCollectibleTraitValueComponent: Component {
     }
 }
 
+public func makeWalletStyleRestrictionTooltip(context: AccountContext, gifts: [StarGift]?, location: TooltipScreen.Location, openGift: @escaping (StarGift.Gift) -> Void) -> TooltipScreen? {
+    let collections = WalletConfiguration.with(appConfiguration: context.currentAppConfiguration.with { $0 }).cardBackgroundGiftCollections ?? []
+    guard !collections.isEmpty else {
+        return nil
+    }
+    var giftsByCollection: [String: StarGift.Gift] = [:]
+    for gift in gifts ?? [] {
+        if case let .generic(gift) = gift, let title = gift.title {
+            let collection = title.filter { $0.isLetter || $0.isNumber }
+            if giftsByCollection[collection] == nil {
+                giftsByCollection[collection] = gift
+            }
+        }
+    }
+    let strings = context.sharedContext.currentPresentationData.with { $0 }.strings
+    let font = Font.regular(14.0)
+    let linkColor = UIColor(rgb: 0x64d2ff)
+    let nameFont = Font.medium(14.0)
+    let available = collections.compactMap { collection -> (String, StarGift.Gift)? in
+        return giftsByCollection[collection].flatMap { (collection, $0) }
+    }
+    guard !available.isEmpty else {
+        return nil
+    }
+    let names = NSMutableAttributedString()
+    for (index, item) in available.enumerated() {
+        let (collection, gift) = item
+        if index > 0 {
+            names.append(NSAttributedString(string: index == available.count - 1 ? strings.CreateGroup_PeersTitleLastDelimeter : strings.CreateGroup_PeersTitleDelimeter, font: font, textColor: .white))
+        }
+        names.append(NSAttributedString(string: ".", attributes: [.font: font, ChatTextInputAttributes.customEmoji: ChatTextInputTextCustomEmojiAttribute(interactivelySelectedFromPackId: nil, fileId: gift.file.fileId.id, file: gift.file)]))
+        names.append(NSAttributedString(string: "\u{00A0}", font: font, textColor: .white))
+        names.append(NSAttributedString(string: strings.Wallet_Sticker_ColorRestrictedCollection(gift.title ?? collection).string, attributes: [.font: nameFont, .foregroundColor: linkColor, NSAttributedString.Key(rawValue: TelegramTextAttributes.URL): collection]))
+    }
+    let formatted = strings.Wallet_Sticker_ColorRestricted("")
+    let text = NSMutableAttributedString(string: formatted.string, font: font, textColor: .white)
+    if let range = formatted.ranges.first(where: { $0.index == 0 })?.range {
+        text.insert(names, at: range.location)
+    } else {
+        text.append(names)
+    }
+    return TooltipScreen(
+        context: context,
+        account: context.account,
+        sharedContext: context.sharedContext,
+        text: .attributedString(text: text),
+        arrowStyle: .none,
+        icon: generateTintedImage(image: UIImage(bundleImageName: "Wallet/ApplyColor"), color: .white).flatMap { .image($0) },
+        location: location,
+        displayDuration: .default,
+        cornerRadius: 26.0,
+        contentLayout: TooltipScreen.ContentLayout(insets: UIEdgeInsets(top: 11.0, left: 14.0, bottom: 11.0, right: 20.0), iconSpacing: 12.0),
+        shouldDismissOnTouch: { _, _ in
+            return .dismiss(consume: false)
+        },
+        openActiveTextItem: { item, _ in
+            guard case let .url(url, _) = item, let gift = giftsByCollection[url] else {
+                return
+            }
+            openGift(gift)
+        }
+    )
+}
+
 private final class WalletCollectibleContentComponent: Component {
     typealias EnvironmentType = ViewControllerComponentContainer.Environment
 
     let context: AccountContext
     let collectible: WalletContext.Collectible
+    weak var stickerHost: WalletCollectibleStickerHost?
     let openExternalUrl: (String, PresentationTheme) -> Void
     let openTransfer: () -> Void
     let animateOut: ActionSlot<Action<Void>>
+    let screenSize: CGSize
 
     init(
         context: AccountContext,
         collectible: WalletContext.Collectible,
+        stickerHost: WalletCollectibleStickerHost?,
         openExternalUrl: @escaping (String, PresentationTheme) -> Void,
         openTransfer: @escaping () -> Void,
-        animateOut: ActionSlot<Action<Void>>
+        animateOut: ActionSlot<Action<Void>>,
+        screenSize: CGSize
     ) {
         self.context = context
         self.collectible = collectible
+        self.stickerHost = stickerHost
         self.openExternalUrl = openExternalUrl
         self.openTransfer = openTransfer
         self.animateOut = animateOut
+        self.screenSize = screenSize
     }
 
     static func ==(lhs: WalletCollectibleContentComponent, rhs: WalletCollectibleContentComponent) -> Bool {
-        return lhs.context === rhs.context && lhs.collectible == rhs.collectible
+        return lhs.context === rhs.context && lhs.collectible == rhs.collectible && lhs.screenSize == rhs.screenSize
     }
 
-    final class View: UIView {
+    final class View: UIView, UIGestureRecognizerDelegate {
         private let controlButtons = ComponentView<Empty>()
+        /// How far the controls' trailing button keeps from a top corner block the sheet has risen beside (iPhone Duo), as
+        /// of the last layout: the controls are laid out with it before the content height that decides it is known.
+        private var controlsCornerRightInset: CGFloat = 0.0
         private let header = ComponentView<Empty>()
         private let descriptionText = ComponentView<Empty>()
         private let transferButton = ComponentView<Empty>()
@@ -373,8 +546,11 @@ private final class WalletCollectibleContentComponent: Component {
         private let sellButton = ComponentView<Empty>()
         private let table = ComponentView<Empty>()
         private let actionButton = ComponentView<Empty>()
+        private let visibilityText = ComponentView<Empty>()
 
         private let giftDisposable = MetaDisposable()
+        private let styleRestrictionDisposable = MetaDisposable()
+        private let giftVariantsDisposable = MetaDisposable()
         private let peerDisposable = MetaDisposable()
         private var component: WalletCollectibleContentComponent?
         private var environment: EnvironmentType?
@@ -382,9 +558,121 @@ private final class WalletCollectibleContentComponent: Component {
         private var configuredAddress: String?
         private var uniqueGift: StarGift.UniqueGift?
         private var currentPeer: EnginePeer?
+        private var isOpeningValue = false
+        private var displayedOverride: Bool?
+        private let composition = ComponentView<Empty>()
+        private let compositionState = GiftCompositionComponent.ExternalState()
+        private let giftTitle = ComponentView<Empty>()
+        private let giftSubtitle = ComponentView<Empty>()
+        private let giftTransferButton = ComponentView<Empty>()
+        private let giftSellButton = ComponentView<Empty>()
+        private let giftApplyColorButton = ComponentView<Empty>()
+        private let giftAddToCardButton = ComponentView<Empty>()
+        private let tearOffAnchor = UIView()
+        private var giftSilhouetteView: UIImageView?
+        private var displaysGiftHeader = false
+        private let tearOffGesture = UILongPressGestureRecognizer()
+        private weak var tearOffHost: WalletCollectibleStickerHost?
+        private var tearOffSheetGone = false
+        private var tearOffFinished = false
 
         override init(frame: CGRect) {
             super.init(frame: frame)
+            self.tearOffGesture.minimumPressDuration = 0.25
+            self.tearOffGesture.delegate = self
+            self.tearOffGesture.addTarget(self, action: #selector(self.tearOffGestureChanged(_:)))
+            self.addGestureRecognizer(self.tearOffGesture)
+            self.tearOffAnchor.isUserInteractionEnabled = false
+        }
+
+        private var tearOffSourceView: UIView? {
+            if self.displaysGiftHeader {
+                return self.tearOffAnchor.superview != nil ? self.tearOffAnchor : nil
+            }
+            return (self.header.view as? WalletCollectibleHeaderComponent.View)?.giftView
+        }
+
+        private func hideModelForFlight(host: WalletCollectibleStickerHost, collectible: WalletContext.Collectible, sourceView: UIView) {
+            var color = UIColor(white: 0.0, alpha: 0.2)
+            for case let .backdrop(_, _, inner, _, pattern, _, _) in (collectible.nft?.gift ?? self.uniqueGift)?.attributes ?? [] {
+                color = UIColor(rgb: UInt32(bitPattern: pattern)).mixedWith(UIColor(rgb: UInt32(bitPattern: inner)), alpha: 0.5)
+            }
+            let silhouette = host.stickerSilhouette(collectible: collectible, side: sourceView.bounds.width)
+            if self.displaysGiftHeader {
+                if let silhouette {
+                    self.showTearOffSilhouette(image: silhouette.image, frame: silhouette.frame, color: color)
+                } else {
+                    (self.composition.view as? GiftCompositionComponent.View)?.setModelHidden(true)
+                }
+            } else if let silhouette, let headerView = self.header.view as? WalletCollectibleHeaderComponent.View {
+                headerView.showModelSilhouette(image: silhouette.image, frame: silhouette.frame, color: color)
+            } else {
+                sourceView.isHidden = true
+            }
+        }
+
+        private func showTearOffSilhouette(image: UIImage, frame: CGRect, color: UIColor) {
+            guard let compositionView = self.composition.view as? GiftCompositionComponent.View else { return }
+            compositionView.setModelHidden(true)
+            let silhouetteView = self.giftSilhouetteView ?? UIImageView()
+            self.giftSilhouetteView = silhouetteView
+            silhouetteView.isUserInteractionEnabled = false
+            silhouetteView.image = image.withRenderingMode(.alwaysTemplate)
+            silhouetteView.tintColor = color
+            silhouetteView.frame = frame.offsetBy(dx: self.tearOffAnchor.frame.minX - compositionView.frame.minX, dy: self.tearOffAnchor.frame.minY - compositionView.frame.minY)
+            if silhouetteView.superview !== compositionView {
+                compositionView.addSubview(silhouetteView)
+            }
+        }
+
+        override func gestureRecognizerShouldBegin(_ gestureRecognizer: UIGestureRecognizer) -> Bool {
+            if gestureRecognizer === self.tearOffGesture {
+                guard let component = self.component, component.collectible.kind == .gift, component.stickerHost != nil,
+                      let sourceView = self.tearOffSourceView else {
+                    return false
+                }
+                return sourceView.bounds.contains(gestureRecognizer.location(in: sourceView))
+            }
+            return super.gestureRecognizerShouldBegin(gestureRecognizer)
+        }
+
+        @objc private func tearOffGestureChanged(_ recognizer: UILongPressGestureRecognizer) {
+            let location = recognizer.location(in: nil)
+            switch recognizer.state {
+            case .began:
+                guard let component = self.component, let host = component.stickerHost, let sourceView = self.tearOffSourceView,
+                      host.beginStickerTearOff(collectible: component.collectible, sourceView: sourceView, location: location) else {
+                    recognizer.isEnabled = false
+                    recognizer.isEnabled = true
+                    return
+                }
+                self.tearOffHost = host
+                self.hideModelForFlight(host: host, collectible: component.collectible, sourceView: sourceView)
+                self.close(completion: { [weak self] dismiss in
+                    guard let self else {
+                        dismiss()
+                        return
+                    }
+                    self.tearOffSheetGone = true
+                    if self.tearOffFinished {
+                        dismiss()
+                    }
+                })
+            case .changed:
+                self.tearOffHost?.updateStickerTearOff(location: location)
+            case .ended, .cancelled, .failed:
+                guard let host = self.tearOffHost else {
+                    return
+                }
+                self.tearOffHost = nil
+                host.endStickerTearOff()
+                self.tearOffFinished = true
+                if self.tearOffSheetGone {
+                    (self.environment?.controller() as? WalletCollectibleScreen)?.dismiss(completion: nil)
+                }
+            default:
+                break
+            }
         }
 
         required init?(coder: NSCoder) {
@@ -393,12 +681,15 @@ private final class WalletCollectibleContentComponent: Component {
 
         deinit {
             self.giftDisposable.dispose()
+            self.styleRestrictionDisposable.dispose()
+            self.giftVariantsDisposable.dispose()
             self.peerDisposable.dispose()
         }
 
         private func configure(component: WalletCollectibleContentComponent) {
             self.configuredAddress = component.collectible.address
             self.uniqueGift = nil
+            self.displayedOverride = nil
             self.currentPeer = nil
             self.giftDisposable.set(nil)
             self.peerDisposable.set((component.context.engine.data.subscribe(
@@ -413,13 +704,15 @@ private final class WalletCollectibleContentComponent: Component {
             }))
 
             if component.collectible.kind == .gift, let slug = component.collectible.giftSlug {
-                self.giftDisposable.set((component.context.engine.payments.getUniqueStarGift(slug: slug)
+                let remoteGift = component.context.engine.payments.getUniqueStarGift(slug: slug)
                 |> map(Optional.init)
                 |> `catch` { _ -> Signal<StarGift.UniqueGift?, NoError> in
                     return .single(nil)
                 }
+                self.giftDisposable.set((component.context.engine.payments.cachedUniqueStarGift(slug: slug)
+                |> then(remoteGift)
                 |> deliverOnMainQueue).start(next: { [weak self] gift in
-                    guard let self, self.configuredAddress == component.collectible.address else {
+                    guard let self, self.configuredAddress == component.collectible.address, let gift, self.uniqueGift != gift else {
                         return
                     }
                     self.uniqueGift = gift
@@ -428,7 +721,103 @@ private final class WalletCollectibleContentComponent: Component {
             }
         }
 
-        private func close() {
+        private func presentStyleRestriction() {
+            guard let component = self.component else {
+                return
+            }
+            self.styleRestrictionDisposable.set((component.context.engine.payments.cachedStarGifts()
+            |> take(1)
+            |> deliverOnMainQueue).start(next: { [weak self] gifts in
+                guard let self, let component = self.component, let controller = self.environment?.controller() as? WalletCollectibleScreen,
+                      let sourceView = self.giftApplyColorButton.view, sourceView.window != nil, !sourceView.isHidden else {
+                    return
+                }
+                let sourceFrame = sourceView.convert(sourceView.bounds, to: nil)
+                guard let tooltip = makeWalletStyleRestrictionTooltip(context: component.context, gifts: gifts, location: .point(sourceFrame, .bottom), openGift: { [weak self] gift in
+                    self?.openGiftStore(gift: gift)
+                }) else {
+                    return
+                }
+                controller.dismissAllTooltips()
+                controller.present(tooltip, in: .current)
+            }))
+        }
+
+        private func openGiftVariants(attributeKey: String) {
+            guard let component = self.component, let gift = self.uniqueGift ?? component.collectible.nft?.gift else {
+                return
+            }
+            let focusedAttribute = gift.attributes.first(where: { attribute in
+                switch attribute {
+                case .model:
+                    return attributeKey == "model"
+                case .backdrop:
+                    return attributeKey == "backdrop"
+                case .pattern:
+                    return attributeKey == "symbol"
+                default:
+                    return false
+                }
+            })
+            let context = component.context
+            let starGift = StarGift.unique(gift)
+            self.giftVariantsDisposable.set((context.engine.payments.getStarGiftUpgradeAttributes(giftId: starGift.giftId)
+            |> take(1)
+            |> deliverOnMainQueue).start(next: { [weak self] attributes in
+                guard let self, let attributes, let controller = self.environment?.controller() else {
+                    return
+                }
+                controller.push(context.sharedContext.makeGiftUpgradeVariantsScreen(
+                    context: context,
+                    gift: starGift,
+                    crafted: false,
+                    attributes: attributes,
+                    selectedAttributes: gift.attributes,
+                    focusedAttribute: focusedAttribute
+                ))
+            }))
+        }
+
+        private func openGiftStore(gift: StarGift.Gift) {
+            guard let component = self.component, let controller = self.environment?.controller(),
+                  let navigationController = controller.navigationController as? NavigationController else {
+                return
+            }
+            let context = component.context
+            let storeController = context.sharedContext.makeGiftStoreController(context: context, peerId: context.account.peerId, gift: gift)
+            self.close(completion: { dismiss in
+                dismiss()
+                navigationController.pushViewController(storeController)
+            })
+        }
+
+        private func performStickerAction(color: Bool) {
+            guard let component = self.component, let host = component.stickerHost,
+                  let state = host.stickerMenuState(collectible: component.collectible) else {
+                return
+            }
+            let collectible = component.collectible
+            if !state.isOnCard, let sourceView = self.tearOffSourceView,
+               host.placeSticker(collectible: collectible, color: color, sourceView: sourceView) {
+                self.hideModelForFlight(host: host, collectible: collectible, sourceView: sourceView)
+                self.close()
+                return
+            }
+            self.close(completion: { [weak host] dismiss in
+                dismiss()
+                host?.performStickerAction(collectible: collectible, color: color)
+            })
+        }
+
+        func closeIfDisplaying(address: String) -> Bool {
+            guard self.configuredAddress == address else {
+                return false
+            }
+            self.close()
+            return true
+        }
+
+        private func close(completion: ((@escaping () -> Void) -> Void)? = nil) {
             guard let component = self.component,
                   let controller = self.environment?.controller() as? WalletCollectibleScreen else {
                 return
@@ -439,11 +828,18 @@ private final class WalletCollectibleContentComponent: Component {
                 transition: .easeInOut(duration: 0.3).withUserData(ViewControllerComponentContainer.AnimateOutTransition())
             )
             component.animateOut.invoke(Action { [weak controller] _ in
-                controller?.dismiss(completion: nil)
+                let dismiss: () -> Void = {
+                    controller?.dismiss(completion: nil)
+                }
+                if let completion {
+                    completion(dismiss)
+                } else {
+                    dismiss()
+                }
             })
         }
 
-        private func openExplorer(sourceView: UIView) {
+        private func openMenu(sourceView: UIView) {
             guard let component = self.component,
                   let environment = self.environment,
                   let controller = environment.controller() as? WalletCollectibleScreen else {
@@ -467,13 +863,191 @@ private final class WalletCollectibleContentComponent: Component {
                     }
                 }
             )
+            var items: [ContextMenuItem] = []
+            if component.collectible.kind == .gift, let slug = component.collectible.giftSlug {
+                let link = "https://t.me/nft/\(slug)"
+                items.append(.action(ContextMenuActionItem(
+                    text: environment.strings.Gift_View_Context_CopyLink,
+                    icon: { theme in
+                        return generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Link"), color: theme.contextMenu.primaryColor)
+                    },
+                    action: { [weak controller] _, dismiss in
+                        dismiss(.default)
+                        UIPasteboard.general.string = link
+                        let presentationData = component.context.sharedContext.currentPresentationData.with { $0 }
+                        controller?.present(UndoOverlayController(presentationData: presentationData, content: .linkCopied(title: nil, text: presentationData.strings.Conversation_LinkCopied), elevatedLayout: false, animateInAsReplacement: false, action: { _ in return false }), in: .current)
+                    }
+                )))
+                items.append(.action(ContextMenuActionItem(
+                    text: environment.strings.Gift_View_Context_Share,
+                    icon: { theme in
+                        return generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Forward"), color: theme.contextMenu.primaryColor)
+                    },
+                    action: { [weak self] _, dismiss in
+                        dismiss(.default)
+                        self?.shareGift(link: link)
+                    }
+                )))
+            }
+            if component.collectible.kind == .gift, let uniqueGift = self.uniqueGift {
+                let displayed = uniqueGift.hostPeerId != nil
+                items.append(.action(ContextMenuActionItem(
+                    text: displayed ? environment.strings.Gift_View_Context_HideFromProfile : environment.strings.Gift_View_Context_ShowOnProfile,
+                    icon: { theme in
+                        return generateTintedImage(image: UIImage(bundleImageName: displayed ? "Peer Info/HideIcon" : "Peer Info/ShowIcon"), color: theme.contextMenu.primaryColor)
+                    },
+                    action: { [weak self] _, dismiss in
+                        dismiss(.default)
+                        self?.updateDisplayedOnProfile(gift: uniqueGift, displayed: !displayed)
+                    }
+                )))
+            }
+            if component.collectible.kind == .gift {
+                items.append(.action(ContextMenuActionItem(
+                    text: environment.strings.Gift_View_Context_Transfer,
+                    icon: { theme in
+                        return generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Replace"), color: theme.contextMenu.primaryColor)
+                    },
+                    action: { _, dismiss in
+                        dismiss(.default)
+                        component.openTransfer()
+                    }
+                )))
+            }
+            items.append(.action(item))
+            var stickerItems: [ContextMenuItem] = []
+            if let host = component.stickerHost, let state = host.stickerMenuState(collectible: component.collectible) {
+                let strings = environment.strings
+                let perform: (Bool) -> Void = { [weak self] color in
+                    self?.performStickerAction(color: color)
+                }
+                if state.canStyle || state.isStyled || state.isStyleRestricted {
+                    let isStyleRestricted = state.isStyleRestricted && !state.isStyled
+                    stickerItems.append(.action(ContextMenuActionItem(
+                        text: state.isStyled ? strings.Wallet_Sticker_RemoveColor : strings.Wallet_Sticker_ApplyColor,
+                        icon: { theme in generateTintedImage(image: UIImage(bundleImageName: state.isStyled ? "Media Editor/Erase" : "Chat/Context Menu/Palette"), color: theme.contextMenu.primaryColor) },
+                        action: { [weak self] _, dismiss in
+                            dismiss(.default)
+                            if isStyleRestricted {
+                                self?.presentStyleRestriction()
+                            } else {
+                                perform(true)
+                            }
+                        }
+                    )))
+                }
+                stickerItems.append(.action(ContextMenuActionItem(
+                    text: state.isOnCard ? strings.Wallet_Sticker_RemoveFromCard : strings.Wallet_Sticker_AddToCard,
+                    icon: { theme in generateTintedImage(image: UIImage(bundleImageName: state.isOnCard ? "Chat/Context Menu/Clear" : "Chat/Context Menu/Card"), color: theme.contextMenu.primaryColor) },
+                    action: { _, dismiss in
+                        dismiss(.default)
+                        perform(false)
+                    }
+                )))
+            }
+            if !stickerItems.isEmpty {
+                items = stickerItems + [.separator] + items
+            }
             let contextController = makeContextController(
                 presentationData: component.context.sharedContext.currentPresentationData.with { $0 }.withUpdated(theme: environment.theme),
                 source: .reference(WalletCollectibleContextReferenceContentSource(sourceView: sourceView)),
-                items: .single(ContextController.Items(content: .list([.action(item)]))),
+                items: .single(ContextController.Items(content: .list(items))),
                 gesture: nil
             )
             controller.presentInGlobalOverlay(contextController)
+        }
+
+        private func shareGift(link: String) {
+            guard let component = self.component, let controller = self.environment?.controller() as? WalletCollectibleScreen else {
+                return
+            }
+            let context = component.context
+            let shareController = context.sharedContext.makeShareScreen(
+                context: context,
+                params: ShareControllerParams(
+                    subject: .url(link),
+                    externalShare: false,
+                    actionCompleted: { [weak controller] in
+                        let presentationData = context.sharedContext.currentPresentationData.with { $0 }
+                        controller?.present(UndoOverlayController(presentationData: presentationData, content: .linkCopied(title: nil, text: presentationData.strings.Conversation_LinkCopied), elevatedLayout: false, animateInAsReplacement: false, action: { _ in return false }), in: .current)
+                    },
+                    enqueued: { [weak controller] peerIds, _ in
+                        let _ = (context.engine.data.get(EngineDataList(peerIds.map(TelegramEngine.EngineData.Item.Peer.Peer.init)))
+                        |> deliverOnMainQueue).startStandalone(next: { [weak controller] peerList in
+                            let peers = peerList.compactMap { $0 }
+                            let presentationData = context.sharedContext.currentPresentationData.with { $0 }
+                            let savedMessages = peerIds.count == 1 && peerIds.first == context.account.peerId
+                            let text: String
+                            if savedMessages {
+                                text = presentationData.strings.Conversation_ForwardTooltip_SavedMessages_One
+                            } else if peers.count == 1, let peer = peers.first {
+                                text = presentationData.strings.Conversation_ForwardTooltip_Chat_One(peer.displayTitle(strings: presentationData.strings, displayOrder: presentationData.nameDisplayOrder).replacingOccurrences(of: "**", with: "")).string
+                            } else if peers.count == 2, let firstPeer = peers.first, let secondPeer = peers.last {
+                                text = presentationData.strings.Conversation_ForwardTooltip_TwoChats_One(firstPeer.displayTitle(strings: presentationData.strings, displayOrder: presentationData.nameDisplayOrder).replacingOccurrences(of: "**", with: ""), secondPeer.displayTitle(strings: presentationData.strings, displayOrder: presentationData.nameDisplayOrder).replacingOccurrences(of: "**", with: "")).string
+                            } else if let peer = peers.first {
+                                text = presentationData.strings.Conversation_ForwardTooltip_ManyChats_One(peer.displayTitle(strings: presentationData.strings, displayOrder: presentationData.nameDisplayOrder).replacingOccurrences(of: "**", with: ""), "\(peers.count - 1)").string
+                            } else {
+                                return
+                            }
+                            controller?.present(UndoOverlayController(presentationData: presentationData, content: .forward(savedMessages: savedMessages, text: text), elevatedLayout: false, animateInAsReplacement: false, action: { _ in return false }), in: .current)
+                        })
+                    }
+                )
+            )
+            controller.present(shareController, in: .window(.root))
+        }
+
+        private func updateDisplayedOnProfile(gift: StarGift.UniqueGift, displayed: Bool) {
+            guard let component = self.component, let environment = self.environment, let controller = environment.controller() as? WalletCollectibleScreen else {
+                return
+            }
+            let context = component.context
+            let address = component.collectible.address
+            let _ = (context.engine.payments.displayStarGift(peerId: displayed ? context.account.peerId : nil, slug: gift.slug)
+            |> deliverOnMainQueue).startStandalone(completed: { [weak self] in
+                guard let self, self.configuredAddress == address else {
+                    return
+                }
+                self.giftDisposable.set((context.engine.payments.getUniqueStarGift(slug: gift.slug)
+                |> map(Optional.init)
+                |> `catch` { _ -> Signal<StarGift.UniqueGift?, NoError> in
+                    return .single(nil)
+                }
+                |> deliverOnMainQueue).start(next: { [weak self] updatedGift in
+                    guard let self, self.configuredAddress == address, let updatedGift else {
+                        return
+                    }
+                    self.displayedOverride = nil
+                    self.uniqueGift = updatedGift
+                    self.componentState?.updated(transition: .easeInOut(duration: 0.25))
+                }))
+            })
+
+            var animationFile: TelegramMediaFile?
+            for attribute in gift.attributes {
+                if case let .model(_, file, _, _) = attribute {
+                    animationFile = file
+                    break
+                }
+            }
+            guard let animationFile else {
+                return
+            }
+            let presentationData = context.sharedContext.currentPresentationData.with { $0 }
+            controller.present(UndoOverlayController(
+                presentationData: presentationData,
+                content: .sticker(
+                    context: context,
+                    file: animationFile,
+                    loop: false,
+                    title: nil,
+                    text: displayed ? environment.strings.Gift_Displayed_NewText : environment.strings.Gift_Hidden_NewText,
+                    undoText: nil,
+                    customAction: nil
+                ),
+                elevatedLayout: false,
+                action: { _ in return true }
+            ), in: .current)
         }
 
         private func giftTrait(
@@ -498,99 +1072,139 @@ private final class WalletCollectibleContentComponent: Component {
             return (collectible.attributes[key] ?? "—", "—")
         }
 
-        private func giftValue() -> String {
-            guard let uniqueGift = self.uniqueGift else {
-                return "—"
+        private func openValue() {
+            guard let component = self.component, let controller = self.environment?.controller() as? WalletCollectibleScreen, let uniqueGift = self.uniqueGift, !self.isOpeningValue else {
+                return
             }
-            var parts: [String] = []
-            if let amount = uniqueGift.valueAmount, let currency = uniqueGift.valueCurrency {
-                parts.append(formatCurrencyAmount(amount, currency: currency))
-            }
-            if let usdAmount = uniqueGift.valueUsdAmount {
-                parts.append("~\(formatCurrencyAmount(usdAmount, currency: "USD"))")
-            }
-            return parts.isEmpty ? "—" : parts.joined(separator: " ")
+            self.isOpeningValue = true
+            let context = component.context
+            let _ = (context.engine.payments.getUniqueStarGiftValueInfo(slug: uniqueGift.slug)
+            |> deliverOnMainQueue).start(next: { [weak self, weak controller] valueInfo in
+                self?.isOpeningValue = false
+                guard let controller, let valueInfo else {
+                    return
+                }
+                controller.push(GiftValueScreen(context: context, gift: .unique(uniqueGift), valueInfo: valueInfo))
+            })
         }
 
         private func giftTableItems(
             component: WalletCollectibleContentComponent,
             theme: PresentationTheme,
-            strings: PresentationStrings
+            strings: PresentationStrings,
+            dateTimeFormat: PresentationDateTimeFormat,
+            displaysOwner: Bool
         ) -> [TableComponent.Item] {
-            var ownerItems: [AnyComponentWithIdentity<Empty>] = []
-            if let currentPeer = self.currentPeer {
-                ownerItems.append(AnyComponentWithIdentity(
-                    id: "avatar",
-                    component: AnyComponent(AvatarComponent(
-                        context: component.context,
-                        theme: theme,
-                        peer: currentPeer,
-                        size: CGSize(width: 20.0, height: 20.0)
-                    ))
-                ))
+            let ownerFont = Font.monospace(15.0)
+            let ownerAddress = component.context.walletContext?.stateValue.walletAddress ?? ""
+            let ownerText = NSMutableAttributedString()
+            var ownerIndex = ownerAddress.startIndex
+            var ownerGroupIndex = 0
+            while ownerIndex < ownerAddress.endIndex {
+                let row = ownerGroupIndex / 4
+                let column = ownerGroupIndex % 4
+                let color = (row + column).isMultiple(of: 2) ? theme.list.itemPrimaryTextColor : theme.list.itemSecondaryTextColor
+                if ownerGroupIndex != 0 {
+                    ownerText.append(NSAttributedString(string: column == 0 ? "\n" : " ", font: ownerFont, textColor: color))
+                }
+                let endIndex = ownerAddress.index(ownerIndex, offsetBy: 4, limitedBy: ownerAddress.endIndex) ?? ownerAddress.endIndex
+                ownerText.append(NSAttributedString(string: String(ownerAddress[ownerIndex ..< endIndex]), font: ownerFont, textColor: color))
+                ownerIndex = endIndex
+                ownerGroupIndex += 1
             }
-            ownerItems.append(AnyComponentWithIdentity(
-                id: "title",
-                component: AnyComponent(MultilineTextComponent(
-                    text: .plain(NSAttributedString(
-                        string: strings.DialogList_You,
-                        font: Font.regular(15.0),
-                        textColor: theme.list.itemAccentColor
-                    )),
-                    maximumNumberOfLines: 1
-                ))
-            ))
 
             let model = self.giftTrait(key: "model", collectible: component.collectible, strings: strings)
             let symbol = self.giftTrait(key: "symbol", collectible: component.collectible, strings: strings)
             let backdrop = self.giftTrait(key: "backdrop", collectible: component.collectible, strings: strings)
-            return [
+            var items: [TableComponent.Item] = [
                 TableComponent.Item(
                     id: "owner",
                     title: strings.Gift_Unique_Owner,
-                    component: AnyComponent(HStack(ownerItems, spacing: 6.0))
+                    component: AnyComponent(MultilineTextComponent(
+                        text: .plain(ownerText),
+                        maximumNumberOfLines: 0,
+                        lineSpacing: 0.2
+                    ))
                 ),
                 TableComponent.Item(
                     id: "model",
                     title: strings.Gift_Unique_Model,
-                    component: AnyComponent(WalletCollectibleTraitValueComponent(
-                        theme: theme,
-                        value: model.value,
-                        rarity: model.rarity
-                    ))
-                ),
-                TableComponent.Item(
-                    id: "symbol",
-                    title: strings.Gift_Unique_Symbol,
-                    component: AnyComponent(WalletCollectibleTraitValueComponent(
-                        theme: theme,
-                        value: symbol.value,
-                        rarity: symbol.rarity
+                    component: AnyComponent(Button(
+                        content: AnyComponent(WalletCollectibleTraitValueComponent(
+                            theme: theme,
+                            value: model.value,
+                            rarity: model.rarity
+                        )),
+                        action: { [weak self] in
+                            self?.openGiftVariants(attributeKey: "model")
+                        }
                     ))
                 ),
                 TableComponent.Item(
                     id: "backdrop",
                     title: strings.Gift_Unique_Backdrop,
-                    component: AnyComponent(WalletCollectibleTraitValueComponent(
-                        theme: theme,
-                        value: backdrop.value,
-                        rarity: backdrop.rarity
+                    component: AnyComponent(Button(
+                        content: AnyComponent(WalletCollectibleTraitValueComponent(
+                            theme: theme,
+                            value: backdrop.value,
+                            rarity: backdrop.rarity
+                        )),
+                        action: { [weak self] in
+                            self?.openGiftVariants(attributeKey: "backdrop")
+                        }
+                    ))
+                ),
+                TableComponent.Item(
+                    id: "symbol",
+                    title: strings.Gift_Unique_Symbol,
+                    component: AnyComponent(Button(
+                        content: AnyComponent(WalletCollectibleTraitValueComponent(
+                            theme: theme,
+                            value: symbol.value,
+                            rarity: symbol.rarity
+                        )),
+                        action: { [weak self] in
+                            self?.openGiftVariants(attributeKey: "symbol")
+                        }
                     ))
                 )
-//                ,
-//                TableComponent.Item(
-//                    id: "value",
-//                    title: "Value",
-//                    component: AnyComponent(MultilineTextComponent(
-//                        text: .plain(NSAttributedString(
-//                            string: self.giftValue(),
-//                            font: Font.regular(15.0),
-//                            textColor: theme.list.itemPrimaryTextColor
-//                        )),
-//                        maximumNumberOfLines: 1
-//                    ))
-//                )
             ]
+            if !displaysOwner {
+                items.removeAll(where: { $0.id == AnyHashable("owner") })
+            }
+            if let uniqueGift = self.uniqueGift {
+                let issuedString = presentationStringsFormattedNumber(uniqueGift.availability.issued, dateTimeFormat.groupingSeparator)
+                let totalString = presentationStringsFormattedNumber(uniqueGift.availability.total, dateTimeFormat.groupingSeparator)
+                items.append(TableComponent.Item(
+                    id: "availability",
+                    title: strings.Gift_Unique_Availability,
+                    component: AnyComponent(MultilineTextComponent(
+                        text: .plain(NSAttributedString(
+                            string: strings.Gift_Unique_Issued("\(issuedString)/\(totalString)").string,
+                            font: Font.regular(15.0),
+                            textColor: theme.list.itemPrimaryTextColor
+                        )),
+                        maximumNumberOfLines: 1
+                    ))
+                ))
+                if let valueAmount = uniqueGift.valueAmount, let valueCurrency = uniqueGift.valueCurrency {
+                    items.append(TableComponent.Item(
+                        id: "value",
+                        title: strings.Gift_Unique_Value,
+                        component: AnyComponent(Button(
+                            content: AnyComponent(WalletCollectibleTraitValueComponent(
+                                theme: theme,
+                                value: "~\(formatCurrencyAmount(valueAmount, currency: valueCurrency))",
+                                rarity: strings.Gift_Unique_LearnMore
+                            )),
+                            action: { [weak self] in
+                                self?.openValue()
+                            }
+                        ))
+                    ))
+                }
+            }
+            return items
         }
 
         func update(
@@ -609,41 +1223,86 @@ private final class WalletCollectibleContentComponent: Component {
             }
 
             let theme = environment.theme
+            let headerGift: StarGift.UniqueGift? = component.collectible.kind == .gift ? (component.collectible.nft?.gift ?? self.uniqueGift) : nil
+            self.displaysGiftHeader = headerGift != nil
+            let giftHeaderButtonHeight: CGFloat = 58.0
+            let giftHeaderButtonsBottomInset: CGFloat = 16.0
+            let giftHeaderHeight: CGFloat = 220.0 + giftHeaderButtonHeight + giftHeaderButtonsBottomInset
+            var controlsBackground: GlassControlGroupComponent.Background = .panel
+            var vibrantColor = UIColor.white.withAlphaComponent(0.6)
+            var headerButtonColor = UIColor(rgb: 0xffffff, alpha: 0.1)
+            if let headerGift {
+                let compositionSize = self.composition.update(
+                    transition: transition,
+                    component: AnyComponent(GiftCompositionComponent(
+                        context: component.context,
+                        theme: theme,
+                        subject: .unique(nil, headerGift),
+                        externalState: self.compositionState
+                    )),
+                    environment: {},
+                    containerSize: CGSize(width: availableSize.width, height: giftHeaderHeight)
+                )
+                if let compositionView = self.composition.view {
+                    if compositionView.superview == nil {
+                        self.insertSubview(compositionView, at: 0)
+                    }
+                    transition.setFrame(view: compositionView, frame: CGRect(origin: .zero, size: compositionSize))
+                    compositionView.alpha = 1.0
+                }
+                if let backgroundColor = self.compositionState.backgroundColor {
+                    let color = backgroundColor.mixedWith(.white, alpha: 0.2)
+                    controlsBackground = .color(color)
+                    headerButtonColor = color
+                }
+                if let patternColor = self.compositionState.previewPatternColor {
+                    vibrantColor = patternColor.withMultiplied(hue: 1.0, saturation: 1.02, brightness: 1.25).mixedWith(UIColor.white, alpha: 0.3)
+                }
+                let anchorSide = 136.0 / 0.7
+                self.tearOffAnchor.frame = CGRect(x: floorToScreenPixels((availableSize.width - anchorSide) / 2.0), y: 88.0 - anchorSide / 2.0, width: anchorSide, height: anchorSide)
+                if self.tearOffAnchor.superview == nil {
+                    self.addSubview(self.tearOffAnchor)
+                }
+            } else {
+                self.composition.view?.alpha = 0.0
+                self.tearOffAnchor.removeFromSuperview()
+            }
+            let controlsComponent = AnyComponent(GlassControlPanelComponent(
+                theme: theme,
+                leftItem: GlassControlPanelComponent.Item(
+                    items: [GlassControlGroupComponent.Item(
+                        id: AnyHashable("close"),
+                        content: .icon("Navigation/Close"),
+                        action: { [weak self] in
+                            self?.close()
+                        }
+                    )],
+                    background: controlsBackground
+                ),
+                centralItem: nil,
+                rightItem: GlassControlPanelComponent.Item(
+                    items: [GlassControlGroupComponent.Item(
+                        id: AnyHashable("more"),
+                        content: .animation("anim_morewide"),
+                        action: { [weak self] in
+                            guard let self,
+                                  let controlsView = self.controlButtons.view as? GlassControlPanelComponent.View,
+                                  let sourceView = controlsView.rightItemView?.itemView(id: AnyHashable("more")) else {
+                                return
+                            }
+                            self.openMenu(sourceView: sourceView)
+                        }
+                    )],
+                    background: controlsBackground
+                ),
+                centerAlignmentIfPossible: true,
+                isDark: headerGift != nil ? true : theme.overallDarkAppearance
+            ))
             let controlsSize = self.controlButtons.update(
                 transition: transition,
-                component: AnyComponent(GlassControlPanelComponent(
-                    theme: theme,
-                    leftItem: GlassControlPanelComponent.Item(
-                        items: [GlassControlGroupComponent.Item(
-                            id: AnyHashable("close"),
-                            content: .icon("Navigation/Close"),
-                            action: { [weak self] in
-                                self?.close()
-                            }
-                        )],
-                        background: .panel
-                    ),
-                    centralItem: nil,
-                    rightItem: GlassControlPanelComponent.Item(
-                        items: [GlassControlGroupComponent.Item(
-                            id: AnyHashable("more"),
-                            content: .animation("anim_morewide"),
-                            action: { [weak self] in
-                                guard let self,
-                                      let controlsView = self.controlButtons.view as? GlassControlPanelComponent.View,
-                                      let sourceView = controlsView.rightItemView?.itemView(id: AnyHashable("more")) else {
-                                    return
-                                }
-                                self.openExplorer(sourceView: sourceView)
-                            }
-                        )],
-                        background: .panel
-                    ),
-                    centerAlignmentIfPossible: true,
-                    isDark: theme.overallDarkAppearance
-                )),
+                component: controlsComponent,
                 environment: {},
-                containerSize: CGSize(width: availableSize.width - 32.0, height: 44.0)
+                containerSize: CGSize(width: max(1.0, availableSize.width - 32.0 - self.controlsCornerRightInset), height: 44.0)
             )
             if let controlsView = self.controlButtons.view {
                 if controlsView.superview == nil {
@@ -652,166 +1311,269 @@ private final class WalletCollectibleContentComponent: Component {
                 transition.setFrame(view: controlsView, frame: CGRect(x: 16.0, y: 16.0, width: controlsSize.width, height: controlsSize.height))
             }
 
-            let displaysCollection: Bool
-            switch component.collectible.kind {
-            case .username, .anonymousNumber:
-                displaysCollection = false
-            case .gift, .other:
-                displaysCollection = true
-            }
             var contentHeight: CGFloat = 44.0
-            let headerSize = self.header.update(
-                transition: transition,
-                component: AnyComponent(WalletCollectibleHeaderComponent(
-                    context: component.context,
-                    theme: theme,
-                    item: WalletCollectibleHeaderComponent.Item(
-                        name: component.collectible.name,
-                        image: component.collectible.image,
-                        lottie: component.collectible.lottie,
-                        collectionName: component.collectible.collectionName,
-                        collectionUrl: component.collectible.collectionUrl
-                    ),
-                    displaysCollection: displaysCollection,
-                    openCollection: { url in
-                        component.openExternalUrl(url, theme)
-                    }
-                )),
-                environment: {},
-                containerSize: CGSize(width: availableSize.width, height: 1000.0)
-            )
-            if let headerView = self.header.view {
-                if headerView.superview == nil {
-                    self.addSubview(headerView)
+            let sideInset: CGFloat = headerGift != nil ? 16.0 : 20.0
+            if let headerGift {
+                if let headerView = self.header.view {
+                    headerView.isHidden = true
                 }
-                transition.setFrame(view: headerView, frame: CGRect(x: 0.0, y: contentHeight, width: headerSize.width, height: headerSize.height))
-                (headerView as? WalletCollectibleHeaderComponent.View)?.setAnimationVisible(true)
-            }
-            contentHeight += headerSize.height
+                self.descriptionText.view?.alpha = 0.0
+                self.transferButton.view?.isHidden = true
+                self.wearButton.view?.isHidden = true
+                self.sellButton.view?.isHidden = true
 
-            if component.collectible.kind != .gift,
-               let description = component.collectible.description,
-               !description.isEmpty {
-                contentHeight += 12.0
-                let descriptionSize = self.descriptionText.update(
-                    transition: transition,
-                    component: AnyComponent(BalancedTextComponent(
-                        text: .plain(NSAttributedString(
-                            string: description,
-                            font: Font.regular(15.0),
-                            textColor: theme.actionSheet.secondaryTextColor,
-                            paragraphAlignment: .center
-                        )),
+                let titleFont = Font.bold(20.0)
+                let numberFont = headerGift.number < 1000 ? titleFont : Font.bold(15.0)
+                let titleString = NSMutableAttributedString(string: headerGift.title + " ", font: titleFont, textColor: .white)
+                titleString.append(NSAttributedString(string: "#" + formatCollectibleNumber(headerGift.number, dateTimeFormat: environment.dateTimeFormat), font: numberFont, textColor: vibrantColor))
+                let titleSize = self.giftTitle.update(
+                    transition: .immediate,
+                    component: AnyComponent(MultilineTextComponent(
+                        text: .plain(titleString),
                         horizontalAlignment: .center,
-                        maximumNumberOfLines: 0,
-                        lineSpacing: 0.2
+                        maximumNumberOfLines: 1
                     )),
                     environment: {},
-                    containerSize: CGSize(width: availableSize.width - 48.0, height: 1000.0)
+                    containerSize: CGSize(width: availableSize.width - 32.0 - 60.0, height: 100.0)
                 )
-                if let descriptionView = self.descriptionText.view {
-                    if descriptionView.superview == nil {
-                        descriptionView.isUserInteractionEnabled = false
-                        self.addSubview(descriptionView)
+                if let titleView = self.giftTitle.view {
+                    if titleView.superview == nil {
+                        titleView.isUserInteractionEnabled = false
+                        self.addSubview(titleView)
                     }
-                    transition.setFrame(view: descriptionView, frame: CGRect(
-                        x: floorToScreenPixels((availableSize.width - descriptionSize.width) / 2.0),
-                        y: contentHeight,
-                        width: descriptionSize.width,
-                        height: descriptionSize.height
-                    ))
-                    transition.setAlpha(view: descriptionView, alpha: 1.0)
+                    titleView.isHidden = false
+                    titleView.frame = CGRect(origin: CGPoint(x: floorToScreenPixels((availableSize.width - titleSize.width) / 2.0), y: floorToScreenPixels(190.0 - titleSize.height / 2.0)), size: titleSize)
                 }
-                contentHeight += descriptionSize.height
-            } else if let descriptionView = self.descriptionText.view {
-                transition.setAlpha(view: descriptionView, alpha: 0.0)
-            }
 
-            contentHeight += 28.0
-            let buttonSpacing: CGFloat = 10.0
-            let sideInset: CGFloat = 20.0
-            let buttonCount: CGFloat = component.collectible.kind == .gift && !"".isEmpty ? 3.0 : 2.0
-            let buttonWidth = floor((availableSize.width - sideInset * 2.0 - buttonSpacing * (buttonCount - 1.0)) / buttonCount)
-            var buttonX = sideInset
-            let transferSize = self.transferButton.update(
-                transition: transition,
-                component: AnyComponent(WalletCollectibleActionComponent(
-                    theme: theme,
-                    title: environment.strings.Gift_View_Header_Transfer,
-                    iconName: "Premium/Collectible/Transfer",
-                    action: {
+                self.giftSubtitle.view?.isHidden = true
+
+                let headerSideInset: CGFloat = 16.0
+                let headerButtonSpacing: CGFloat = 10.0
+                let headerButtonY = giftHeaderHeight - giftHeaderButtonHeight - giftHeaderButtonsBottomInset
+                var headerButtons: [(ComponentView<Empty>, String, String, Bool, () -> Void)] = [
+                    (self.giftTransferButton, environment.strings.Gift_View_Header_Transfer, "Premium/Collectible/Transfer", true, {
                         component.openTransfer()
-                    }
-                )),
-                environment: {},
-                containerSize: CGSize(width: buttonWidth, height: 60.0)
-            )
-            if let transferView = self.transferButton.view {
-                if transferView.superview == nil {
-                    self.addSubview(transferView)
-                }
-                transition.setFrame(view: transferView, frame: CGRect(x: buttonX, y: contentHeight, width: transferSize.width, height: transferSize.height))
-            }
-            buttonX += buttonWidth + buttonSpacing
-
-            if !"".isEmpty, component.collectible.kind == .gift {
-                let wearSize = self.wearButton.update(
-                    transition: transition,
-                    component: AnyComponent(WalletCollectibleActionComponent(
-                        theme: theme,
-                        title: environment.strings.Gift_View_Header_Wear,
-                        iconName: "Premium/Collectible/Wear",
-                        action: {
+                    })
+                ]
+                if let stickerState = component.stickerHost?.stickerMenuState(collectible: component.collectible) {
+                    let isStyleRestricted = stickerState.isStyleRestricted && !stickerState.isStyled
+                    headerButtons.append((self.giftApplyColorButton, stickerState.isStyled ? environment.strings.Wallet_Collectible_Header_RemoveColor : environment.strings.Wallet_Collectible_Header_ApplyColor, stickerState.isStyled ? "Wallet/RemoveColor" : "Wallet/ApplyColor", !isStyleRestricted, { [weak self] in
+                        if isStyleRestricted {
+                            self?.presentStyleRestriction()
+                        } else {
+                            self?.performStickerAction(color: true)
                         }
-                    )),
-                    environment: {},
-                    containerSize: CGSize(width: buttonWidth, height: 60.0)
-                )
-                if let wearView = self.wearButton.view {
-                    if wearView.superview == nil {
-                        self.addSubview(wearView)
-                    }
-                    transition.setFrame(view: wearView, frame: CGRect(x: buttonX, y: contentHeight, width: wearSize.width, height: wearSize.height))
-                    transition.setAlpha(view: wearView, alpha: 1.0)
-                }
-                buttonX += buttonWidth + buttonSpacing
-            } else if let wearView = self.wearButton.view {
-                transition.setAlpha(view: wearView, alpha: 0.0)
-            }
-
-            let sellSize = self.sellButton.update(
-                transition: transition,
-                component: AnyComponent(WalletCollectibleActionComponent(
-                    theme: theme,
-                    title: environment.strings.Gift_View_Sell,
-                    iconName: "Premium/Collectible/Sell",
-                    action: {
+                    }))
+                    headerButtons.append((self.giftAddToCardButton, stickerState.isOnCard ? environment.strings.Wallet_Collectible_Header_RemoveFromCard : environment.strings.Wallet_Collectible_Header_AddToCard, stickerState.isOnCard ? "Wallet/RemoveFromCard" : "Wallet/MoveToWallet", true, { [weak self] in
+                        self?.performStickerAction(color: false)
+                    }))
+                } else {
+                    headerButtons.append((self.giftSellButton, environment.strings.Gift_View_Sell, "Premium/Collectible/Sell", true, {
                         guard let url = walletCollectibleFragmentUrl(collectible: component.collectible) else {
                             return
                         }
                         component.openExternalUrl(url, theme)
-                    }
-                )),
-                environment: {},
-                containerSize: CGSize(width: buttonWidth, height: 60.0)
-            )
-            if let sellView = self.sellButton.view {
-                if sellView.superview == nil {
-                    self.addSubview(sellView)
+                    }))
                 }
-                transition.setFrame(view: sellView, frame: CGRect(x: buttonX, y: contentHeight, width: sellSize.width, height: sellSize.height))
+                for view in [self.giftSellButton, self.giftApplyColorButton, self.giftAddToCardButton] where !headerButtons.contains(where: { $0.0 === view }) {
+                    view.view?.isHidden = true
+                }
+                let headerButtonCount = CGFloat(headerButtons.count)
+                let headerButtonWidth = floor((availableSize.width - headerSideInset * 2.0 - headerButtonSpacing * (headerButtonCount - 1.0)) / headerButtonCount)
+                for (index, item) in headerButtons.enumerated() {
+                    let size = item.0.update(
+                        transition: transition,
+                        component: AnyComponent(WalletCollectibleHeaderButtonComponent(
+                            title: item.1,
+                            iconName: item.2,
+                            buttonColor: headerButtonColor,
+                            isEnabled: item.3,
+                            action: item.4
+                        )),
+                        environment: {},
+                        containerSize: CGSize(width: headerButtonWidth, height: giftHeaderButtonHeight)
+                    )
+                    if let view = item.0.view {
+                        if view.superview == nil {
+                            self.addSubview(view)
+                        }
+                        view.isHidden = false
+                        transition.setFrame(view: view, frame: CGRect(x: headerSideInset + CGFloat(index) * (headerButtonWidth + headerButtonSpacing), y: headerButtonY, width: size.width, height: size.height))
+                    }
+                }
+                contentHeight = giftHeaderHeight - 4.0
+            } else {
+                self.header.view?.isHidden = false
+                self.giftTitle.view?.isHidden = true
+                self.giftSubtitle.view?.isHidden = true
+                self.giftTransferButton.view?.isHidden = true
+                self.giftSellButton.view?.isHidden = true
+                self.giftApplyColorButton.view?.isHidden = true
+                self.giftAddToCardButton.view?.isHidden = true
+                self.transferButton.view?.isHidden = false
+                self.sellButton.view?.isHidden = false
+                let displaysCollection: Bool
+                switch component.collectible.kind {
+                case .username, .anonymousNumber:
+                    displaysCollection = false
+                case .gift, .other:
+                    displaysCollection = true
+                }
+                let headerSize = self.header.update(
+                    transition: transition,
+                    component: AnyComponent(WalletCollectibleHeaderComponent(
+                        context: component.context,
+                        theme: theme,
+                        item: WalletCollectibleHeaderComponent.Item(
+                            name: component.collectible.name,
+                            image: component.collectible.image,
+                            lottie: component.collectible.lottie,
+                            collectionName: component.collectible.collectionName,
+                            collectionUrl: component.collectible.collectionUrl,
+                            uniqueGift: component.collectible.nft?.gift
+                        ),
+                        displaysCollection: displaysCollection,
+                        openCollection: { url in
+                            component.openExternalUrl(url, theme)
+                        }
+                    )),
+                    environment: {},
+                    containerSize: CGSize(width: availableSize.width, height: 1000.0)
+                )
+                if let headerView = self.header.view {
+                    if headerView.superview == nil {
+                        self.addSubview(headerView)
+                    }
+                    transition.setFrame(view: headerView, frame: CGRect(x: 0.0, y: contentHeight, width: headerSize.width, height: headerSize.height))
+                    (headerView as? WalletCollectibleHeaderComponent.View)?.setAnimationVisible(true)
+                }
+                contentHeight += headerSize.height
+
+                if component.collectible.kind != .gift,
+                   let description = component.collectible.description,
+                   !description.isEmpty {
+                    contentHeight += 12.0
+                    let descriptionSize = self.descriptionText.update(
+                        transition: transition,
+                        component: AnyComponent(BalancedTextComponent(
+                            text: .plain(NSAttributedString(
+                                string: description,
+                                font: Font.regular(15.0),
+                                textColor: theme.actionSheet.secondaryTextColor,
+                                paragraphAlignment: .center
+                            )),
+                            horizontalAlignment: .center,
+                            maximumNumberOfLines: 0,
+                            lineSpacing: 0.2
+                        )),
+                        environment: {},
+                        containerSize: CGSize(width: availableSize.width - 48.0, height: 1000.0)
+                    )
+                    if let descriptionView = self.descriptionText.view {
+                        if descriptionView.superview == nil {
+                            descriptionView.isUserInteractionEnabled = false
+                            self.addSubview(descriptionView)
+                        }
+                        transition.setFrame(view: descriptionView, frame: CGRect(
+                            x: floorToScreenPixels((availableSize.width - descriptionSize.width) / 2.0),
+                            y: contentHeight,
+                            width: descriptionSize.width,
+                            height: descriptionSize.height
+                        ))
+                        transition.setAlpha(view: descriptionView, alpha: 1.0)
+                    }
+                    contentHeight += descriptionSize.height
+                } else if let descriptionView = self.descriptionText.view {
+                    transition.setAlpha(view: descriptionView, alpha: 0.0)
+                }
+
+                contentHeight += 28.0
+                let buttonSpacing: CGFloat = 10.0
+                let buttonCount: CGFloat = component.collectible.kind == .gift && !"".isEmpty ? 3.0 : 2.0
+                let buttonWidth = floor((availableSize.width - sideInset * 2.0 - buttonSpacing * (buttonCount - 1.0)) / buttonCount)
+                var buttonX = sideInset
+                let transferSize = self.transferButton.update(
+                    transition: transition,
+                    component: AnyComponent(WalletCollectibleActionComponent(
+                        theme: theme,
+                        title: environment.strings.Gift_View_Header_Transfer,
+                        iconName: "Premium/Collectible/Transfer",
+                        action: {
+                            component.openTransfer()
+                        }
+                    )),
+                    environment: {},
+                    containerSize: CGSize(width: buttonWidth, height: 58.0)
+                )
+                if let transferView = self.transferButton.view {
+                    if transferView.superview == nil {
+                        self.addSubview(transferView)
+                    }
+                    transition.setFrame(view: transferView, frame: CGRect(x: buttonX, y: contentHeight, width: transferSize.width, height: transferSize.height))
+                }
+                buttonX += buttonWidth + buttonSpacing
+
+                if !"".isEmpty, component.collectible.kind == .gift {
+                    let wearSize = self.wearButton.update(
+                        transition: transition,
+                        component: AnyComponent(WalletCollectibleActionComponent(
+                            theme: theme,
+                            title: environment.strings.Gift_View_Header_Wear,
+                            iconName: "Premium/Collectible/Wear",
+                            action: {
+                            }
+                        )),
+                        environment: {},
+                        containerSize: CGSize(width: buttonWidth, height: 58.0)
+                    )
+                    if let wearView = self.wearButton.view {
+                        if wearView.superview == nil {
+                            self.addSubview(wearView)
+                        }
+                        transition.setFrame(view: wearView, frame: CGRect(x: buttonX, y: contentHeight, width: wearSize.width, height: wearSize.height))
+                        transition.setAlpha(view: wearView, alpha: 1.0)
+                    }
+                    buttonX += buttonWidth + buttonSpacing
+                } else if let wearView = self.wearButton.view {
+                    transition.setAlpha(view: wearView, alpha: 0.0)
+                }
+
+                let sellSize = self.sellButton.update(
+                    transition: transition,
+                    component: AnyComponent(WalletCollectibleActionComponent(
+                        theme: theme,
+                        title: environment.strings.Gift_View_Sell,
+                        iconName: "Premium/Collectible/Sell",
+                        action: {
+                            guard let url = walletCollectibleFragmentUrl(collectible: component.collectible) else {
+                                return
+                            }
+                            component.openExternalUrl(url, theme)
+                        }
+                    )),
+                    environment: {},
+                    containerSize: CGSize(width: buttonWidth, height: 58.0)
+                )
+                if let sellView = self.sellButton.view {
+                    if sellView.superview == nil {
+                        self.addSubview(sellView)
+                    }
+                    transition.setFrame(view: sellView, frame: CGRect(x: buttonX, y: contentHeight, width: sellSize.width, height: sellSize.height))
+                }
+                contentHeight += 58.0
             }
-            contentHeight += 60.0
 
             if component.collectible.kind == .gift {
                 contentHeight += 20.0
+                var isDuo = false
+                if case .iPhoneDuo = environment.deviceMetrics {
+                    isDuo = true
+                }
                 let tableSize = self.table.update(
                     transition: transition,
                     component: AnyComponent(TableComponent(
                         theme: theme,
-                        items: self.giftTableItems(component: component, theme: theme, strings: environment.strings),
-                        semiTransparent: true,
-                        rightColumnBackgroundColor: theme.list.itemModalBlocksBackgroundColor
+                        items: self.giftTableItems(component: component, theme: theme, strings: environment.strings, dateTimeFormat: environment.dateTimeFormat, displaysOwner: !isDuo)
                     )),
                     environment: {},
                     containerSize: CGSize(width: availableSize.width - sideInset * 2.0, height: 1000.0)
@@ -833,7 +1595,77 @@ private final class WalletCollectibleContentComponent: Component {
                 transition.setAlpha(view: tableView, alpha: 0.0)
             }
 
-            contentHeight += 30.0
+            if component.collectible.kind == .gift {
+                let uniqueGift = self.uniqueGift
+                let displayed = self.displayedOverride ?? (uniqueGift?.hostPeerId != nil)
+                let checkTheme = CheckComponent.Theme(
+                    backgroundColor: theme.list.itemCheckColors.fillColor,
+                    strokeColor: theme.list.itemCheckColors.foregroundColor,
+                    borderColor: theme.list.itemCheckColors.strokeColor,
+                    overlayBorder: false,
+                    hasInset: false,
+                    hasShadow: false
+                )
+
+                contentHeight += 18.0
+                let visibilityTextSize = self.visibilityText.update(
+                    transition: self.visibilityText.view?.superview == nil ? .immediate : transition,
+                    component: AnyComponent(PlainButtonComponent(
+                        content: AnyComponent(HStack([
+                            AnyComponentWithIdentity(id: AnyHashable(0), component: AnyComponent(CheckComponent(
+                                theme: checkTheme,
+                                size: CGSize(width: 22.0, height: 22.0),
+                                selected: displayed
+                            ))),
+                            AnyComponentWithIdentity(id: AnyHashable(1), component: AnyComponent(MultilineTextComponent(
+                                text: .plain(NSAttributedString(string: environment.strings.Wallet_Collectible_AlsoShowInMyGifts, font: Font.regular(15.0), textColor: theme.list.itemPrimaryTextColor))
+                            )))
+                        ], spacing: 10.0)),
+                        effectAlignment: .center,
+                        action: { [weak self] in
+                            guard let self, let uniqueGift = self.uniqueGift else {
+                                return
+                            }
+                            let displayed = !(self.displayedOverride ?? (uniqueGift.hostPeerId != nil))
+                            self.displayedOverride = displayed
+                            self.componentState?.updated(transition: .easeInOut(duration: 0.2))
+                            self.updateDisplayedOnProfile(gift: uniqueGift, displayed: displayed)
+                        },
+                        animateAlpha: false,
+                        animateScale: false
+                    )),
+                    environment: {},
+                    containerSize: CGSize(width: availableSize.width - sideInset * 2.0, height: 100.0)
+                )
+                if let visibilityTextView = self.visibilityText.view {
+                    let visibilityTextFrame = CGRect(
+                        x: floorToScreenPixels((availableSize.width - visibilityTextSize.width) / 2.0),
+                        y: contentHeight,
+                        width: visibilityTextSize.width,
+                        height: visibilityTextSize.height
+                    )
+                    if uniqueGift == nil {
+                        if visibilityTextView.superview == nil {
+                            self.addSubview(visibilityTextView)
+                        }
+                        visibilityTextView.isHidden = true
+                        visibilityTextView.frame = visibilityTextFrame
+                    } else if visibilityTextView.superview == nil || visibilityTextView.isHidden {
+                        if visibilityTextView.superview == nil {
+                            self.addSubview(visibilityTextView)
+                        }
+                        visibilityTextView.isHidden = false
+                        visibilityTextView.frame = visibilityTextFrame
+                        transition.animateAlpha(view: visibilityTextView, from: 0.0, to: 1.0)
+                    } else {
+                        transition.setFrame(view: visibilityTextView, frame: visibilityTextFrame)
+                    }
+                }
+                contentHeight += visibilityTextSize.height + 16.0
+            } else {
+                self.visibilityText.view?.isHidden = true
+                contentHeight += 30.0
+            }
             let actionSize = self.actionButton.update(
                 transition: transition,
                 component: AnyComponent(ButtonComponent(
@@ -868,6 +1700,28 @@ private final class WalletCollectibleContentComponent: Component {
             }
             contentHeight += actionSize.height + 30.0
 
+            // A tall sheet rises beside the status corner (iPhone Duo, folded portrait: 84x170 at the top right): the
+            // trailing button keeps clear of it, which takes the content height, so the controls are laid out again when it
+            // changes (the next pass starts from it, so an animated pass does not move the button twice). The sheet is
+            // bottom-anchored and centred, its top `contentHeight` (and the glass inset) up. In landscape the sheet keeps to
+            // the band beside the strip, where its environment has no side insets, and needs nothing.
+            var cornerRightInset: CGFloat = 0.0
+            if environment.safeInsets.left > 0.0 || environment.safeInsets.right > 0.0 || environment.navigationBarTrailingButtonsInset > 0.0 {
+                cornerRightInset = sheetHeaderCornerInsets(containerWidth: component.screenSize.width, sheetMinX: floorToScreenPixels((component.screenSize.width - availableSize.width) / 2.0), sheetWidth: availableSize.width, sheetMinY: component.screenSize.height - contentHeight - 6.0, reservedCorners: environment.reservedCorners).right
+            }
+            if cornerRightInset != self.controlsCornerRightInset {
+                self.controlsCornerRightInset = cornerRightInset
+                let cornerControlsSize = self.controlButtons.update(
+                    transition: transition,
+                    component: controlsComponent,
+                    environment: {},
+                    containerSize: CGSize(width: max(1.0, availableSize.width - 32.0 - cornerRightInset), height: 44.0)
+                )
+                if let controlsView = self.controlButtons.view {
+                    transition.setFrame(view: controlsView, frame: CGRect(x: 16.0, y: 16.0, width: cornerControlsSize.width, height: cornerControlsSize.height))
+                }
+            }
+
             return CGSize(width: availableSize.width, height: contentHeight)
         }
     }
@@ -900,6 +1754,7 @@ private final class WalletCollectiblePagerComponent: Component {
     let collectibles: [WalletContext.Collectible]
     let initialIndex: Int
     let itemSpacing: CGFloat
+    weak var stickerHost: WalletCollectibleStickerHost?
     let openExternalUrl: (String, PresentationTheme) -> Void
     let openTransfer: (WalletContext.Collectible) -> Void
     let indexUpdated: (Int) -> Void
@@ -910,6 +1765,7 @@ private final class WalletCollectiblePagerComponent: Component {
         collectibles: [WalletContext.Collectible],
         initialIndex: Int,
         itemSpacing: CGFloat,
+        stickerHost: WalletCollectibleStickerHost?,
         openExternalUrl: @escaping (String, PresentationTheme) -> Void,
         openTransfer: @escaping (WalletContext.Collectible) -> Void,
         indexUpdated: @escaping (Int) -> Void,
@@ -919,6 +1775,7 @@ private final class WalletCollectiblePagerComponent: Component {
         self.collectibles = collectibles
         self.initialIndex = initialIndex
         self.itemSpacing = itemSpacing
+        self.stickerHost = stickerHost
         self.openExternalUrl = openExternalUrl
         self.openTransfer = openTransfer
         self.indexUpdated = indexUpdated
@@ -957,6 +1814,7 @@ private final class WalletCollectiblePagerComponent: Component {
                 return AnyComponent(WalletCollectibleSheetComponent(
                     context: self.context,
                     collectible: collectible,
+                    stickerHost: self.stickerHost,
                     openExternalUrl: self.openExternalUrl,
                     openTransfer: {
                         self.openTransfer(collectible)
@@ -974,17 +1832,20 @@ private final class WalletCollectibleSheetComponent: CombinedComponent {
 
     let context: AccountContext
     let collectible: WalletContext.Collectible
+    weak var stickerHost: WalletCollectibleStickerHost?
     let openExternalUrl: (String, PresentationTheme) -> Void
     let openTransfer: () -> Void
 
     init(
         context: AccountContext,
         collectible: WalletContext.Collectible,
+        stickerHost: WalletCollectibleStickerHost?,
         openExternalUrl: @escaping (String, PresentationTheme) -> Void,
         openTransfer: @escaping () -> Void
     ) {
         self.context = context
         self.collectible = collectible
+        self.stickerHost = stickerHost
         self.openExternalUrl = openExternalUrl
         self.openTransfer = openTransfer
     }
@@ -1006,12 +1867,14 @@ private final class WalletCollectibleSheetComponent: CombinedComponent {
                     content: AnyComponent<EnvironmentType>(WalletCollectibleContentComponent(
                         context: context.component.context,
                         collectible: context.component.collectible,
+                        stickerHost: context.component.stickerHost,
                         openExternalUrl: context.component.openExternalUrl,
                         openTransfer: context.component.openTransfer,
-                        animateOut: animateOut
+                        animateOut: animateOut,
+                        screenSize: context.availableSize
                     )),
                     style: .glass,
-                    backgroundColor: .color(environment.theme.list.modalBlocksBackgroundColor),
+                    backgroundColor: .color(context.component.collectible.kind == .gift ? environment.theme.list.modalPlainBackgroundColor : environment.theme.list.modalBlocksBackgroundColor),
                     followContentSizeChanges: true,
                     clipsContent: true,
                     hasDimView: false,
@@ -1034,7 +1897,7 @@ private final class WalletCollectibleSheetComponent: CombinedComponent {
                         metrics: environment.metrics,
                         deviceMetrics: environment.deviceMetrics,
                         isDisplaying: environment.value.isVisible,
-                        isCentered: environment.metrics.widthClass == .regular,
+                        isCentered: environment.presentsFloatingPanels,
                         hasInputHeight: !environment.inputHeight.isZero,
                         regularMetricsSize: CGSize(width: 430.0, height: 900.0),
                         dismiss: { animated in
@@ -1080,8 +1943,10 @@ private final class WalletCollectibleSheetComponent: CombinedComponent {
                             bottom: 0.0,
                             right: max(sideInset, environment.safeInsets.right)
                         ),
+                        reservedCorners: environment.reservedCorners,
+                        division: nil,
                         additionalInsets: .zero,
-                        statusBarHeight: environment.statusBarHeight,
+                        statusBarHeight: environment.fullStatusBarHeight,
                         inputHeight: nil,
                         inputHeightIsInteractivellyChanging: false,
                         inVoiceOver: false,
@@ -1100,6 +1965,8 @@ public final class WalletCollectibleScreen: ViewControllerComponentContainer {
     private let walletContext: WalletContext
     private let openExternalUrl: (String, PresentationTheme) -> Void
     private let collectibleSent: (String) -> Void
+    private let moveToGifts: ((WalletContext.Collectible, ViewController, @escaping () -> Void) -> Void)?
+    private weak var stickerHost: WalletCollectibleStickerHost?
     private let walletPresentationData: (initial: PresentationData, signal: Signal<PresentationData, NoError>)
     private let stateDisposable = MetaDisposable()
     private let loadMoreDisposable = MetaDisposable()
@@ -1122,7 +1989,9 @@ public final class WalletCollectibleScreen: ViewControllerComponentContainer {
         context: AccountContext,
         walletContext: WalletContext,
         collectible: WalletContext.Collectible,
-        collectibleSent: @escaping (String) -> Void
+        stickerHost: WalletCollectibleStickerHost? = nil,
+        collectibleSent: @escaping (String) -> Void,
+        moveToGifts: ((WalletContext.Collectible, ViewController, @escaping () -> Void) -> Void)? = nil
     ) {
         let updatedPresentationData = presentationDataWithDefaultAccent((
             initial: context.sharedContext.currentPresentationData.with { $0 },
@@ -1151,6 +2020,8 @@ public final class WalletCollectibleScreen: ViewControllerComponentContainer {
         self.walletContext = walletContext
         self.openExternalUrl = openExternalUrl
         self.collectibleSent = collectibleSent
+        self.moveToGifts = moveToGifts
+        self.stickerHost = stickerHost
         self.walletPresentationData = updatedPresentationData
         self.collectiblesState = initialState
         self.collectibles = initialCollectibles
@@ -1166,6 +2037,7 @@ public final class WalletCollectibleScreen: ViewControllerComponentContainer {
                 collectibles: initialCollectibles,
                 initialIndex: initialIndex,
                 itemSpacing: 10.0,
+                stickerHost: stickerHost,
                 openExternalUrl: openExternalUrl,
                 openTransfer: { collectible in
                     openTransferImpl?(collectible)
@@ -1300,6 +2172,7 @@ public final class WalletCollectibleScreen: ViewControllerComponentContainer {
                 collectibles: self.collectibles,
                 initialIndex: initialIndex,
                 itemSpacing: 10.0,
+                stickerHost: self.stickerHost,
                 openExternalUrl: self.openExternalUrl,
                 openTransfer: { [weak self] collectible in
                     self?.openTransfer(collectible)
@@ -1319,6 +2192,28 @@ public final class WalletCollectibleScreen: ViewControllerComponentContainer {
         guard self.isScreenVisible, self.pendingSigningTransfer == nil,
               self.recoveryPhraseImportController == nil else { return }
         guard case let .wallet(info) = self.walletContext.stateValue.phase else { return }
+        if let balance = self.walletContext.stateValue.balance.currentValue, balance < 100_000_000 {
+            let strings = self.walletPresentationData.initial.strings
+            self.present(textAlertController(
+                context: self.accountContext,
+                updatedPresentationData: self.walletPresentationData,
+                title: strings.Wallet_Backup_InsufficientFundsTitle,
+                text: strings.Wallet_Transfer_CollectibleTopUpText,
+                actions: [
+                    TextAlertAction(type: .genericAction, title: strings.Common_Cancel, action: {}),
+                    TextAlertAction(type: .defaultAction, title: strings.Wallet_Backup_TopUp, action: { [weak self] in
+                        guard let self else {
+                            return
+                        }
+                        self.push(self.accountContext.sharedContext.makeWalletReceiveScreen(
+                            context: self.accountContext,
+                            address: info.address
+                        ))
+                    })
+                ]
+            ), in: .window(.root))
+            return
+        }
         if info.canSign {
             self.routeToTransfer(collectible)
         } else if info.canExportPhrase {
@@ -1430,7 +2325,25 @@ public final class WalletCollectibleScreen: ViewControllerComponentContainer {
         ), in: .window(.root))
     }
 
+    private func closeAnimated(address: String) {
+        func findContentView(_ view: UIView) -> WalletCollectibleContentComponent.View? {
+            if let view = view as? WalletCollectibleContentComponent.View, view.closeIfDisplaying(address: address) {
+                return view
+            }
+            for subview in view.subviews {
+                if let result = findContentView(subview) {
+                    return result
+                }
+            }
+            return nil
+        }
+        if findContentView(self.view) == nil {
+            self.dismiss(animated: true)
+        }
+    }
+
     private func routeToTransfer(_ collectible: WalletContext.Collectible) {
+        var moveToGiftsImpl: (() -> Void)?
         let peerSelectionScreen = WalletPeerSelectionScreen(
             context: self.accountContext,
             walletContext: self.walletContext,
@@ -1447,8 +2360,27 @@ public final class WalletCollectibleScreen: ViewControllerComponentContainer {
                 } else {
                     self.dismiss(animated: false)
                 }
-            }
+            },
+            moveToGifts: collectible.kind == .gift && collectible.giftSlug != nil && self.moveToGifts != nil ? {
+                moveToGiftsImpl?()
+            } : nil
         )
+        moveToGiftsImpl = { [weak self, weak peerSelectionScreen] in
+            guard let self, let peerSelectionScreen else {
+                return
+            }
+            peerSelectionScreen.view.window?.endEditing(true)
+            if let navigationController = self.navigationController as? NavigationController {
+                navigationController.setViewControllers(navigationController.viewControllers.filter { $0 !== peerSelectionScreen }, animated: true)
+            }
+            self.moveToGifts?(collectible, self, { [weak self] in
+                guard let self else {
+                    return
+                }
+                self.collectibleSent(collectible.address)
+                self.closeAnimated(address: collectible.address)
+            })
+        }
         peerSelectionScreen.navigationPresentation = .modal
         self.push(peerSelectionScreen)
     }
@@ -1503,7 +2435,7 @@ private final class WalletCollectibleContextReferenceContentSource: ContextRefer
     func transitionInfo() -> ContextControllerReferenceViewInfo? {
         return ContextControllerReferenceViewInfo(
             referenceView: self.sourceView,
-            contentAreaInScreenSpace: UIScreen.main.bounds,
+            contentAreaInScreenSpace: mainWindowScreenBounds,
             actionsPosition: .bottom
         )
     }

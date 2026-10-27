@@ -129,7 +129,7 @@ public final class DrawingMessageRenderer {
                 mockPresentationData = mockPresentationData.withUpdated(theme: darkTheme).withUpdated(chatWallpaper: darkTheme.chat.defaultWallpaper)
             }
             
-            let layout = ContainerViewLayout(size: CGSize(width: 360.0, height: 640.0), metrics: LayoutMetrics(widthClass: .compact, heightClass: .compact, orientation: .portrait), deviceMetrics: .iPhoneX, intrinsicInsets: .zero, safeInsets: .zero, additionalInsets: .zero, statusBarHeight: 0.0, inputHeight: nil, inputHeightIsInteractivellyChanging: false, inVoiceOver: false, presentedInFormSheet: false)
+            let layout = ContainerViewLayout(size: CGSize(width: 360.0, height: 640.0), metrics: LayoutMetrics(widthClass: .compact, heightClass: .compact, orientation: .portrait), deviceMetrics: .iPhoneX, intrinsicInsets: .zero, safeInsets: .zero, reservedCorners: .none, division: nil, additionalInsets: .zero, statusBarHeight: 0.0, inputHeight: nil, inputHeightIsInteractivellyChanging: false, inVoiceOver: false, presentedInFormSheet: false)
             let size = self.updateMessagesLayout(layout: layout, presentationData: mockPresentationData)
             let _ = self.updateMessagesLayout(layout: layout, presentationData: mockPresentationData)
             
@@ -228,11 +228,11 @@ public final class DrawingMessageRenderer {
                 } else {
                     avatarPeer = author
                 }
-                avatarHeaderItem = self.context.sharedContext.makeChatMessageAvatarHeaderItem(context: self.context, timestamp: self.messages.first?.timestamp ?? 0, peer: avatarPeer._asPeer(), message: self.messages.first!._asMessage(), theme: theme, strings: presentationData.strings, wallpaper: presentationData.chatWallpaper, fontSize: presentationData.chatFontSize, chatBubbleCorners: chatBubbleCorners, dateTimeFormat: presentationData.dateTimeFormat, nameOrder: presentationData.nameDisplayOrder)
+                avatarHeaderItem = self.context.sharedContext.makeChatMessageAvatarHeaderItem(context: self.context, timestamp: self.messages.first?.timestamp ?? 0, peer: avatarPeer, message: self.messages.first!, theme: theme, strings: presentationData.strings, wallpaper: presentationData.chatWallpaper, fontSize: presentationData.chatFontSize, chatBubbleCorners: chatBubbleCorners, dateTimeFormat: presentationData.dateTimeFormat, nameOrder: presentationData.nameDisplayOrder)
             } else {
                 avatarHeaderItem = nil
             }
-            let items: [ListViewItem] = [self.context.sharedContext.makeChatMessagePreviewItem(context: self.context, messages: self.messages.map { $0._asMessage() }, theme: theme, strings: presentationData.strings, wallpaper: presentationData.theme.chat.defaultWallpaper, fontSize: presentationData.chatFontSize, chatBubbleCorners: chatBubbleCorners, dateTimeFormat: presentationData.dateTimeFormat, nameOrder: presentationData.nameDisplayOrder, forcedResourceStatus: nil, tapMessage: nil, clickThroughMessage: nil, backgroundNode: nil, availableReactions: nil, accountPeer: nil, isCentered: false, isPreview: true, isStandalone: false, rank: nil, rankRole: nil, isGiftMessageComposerPreview: false)]
+            let items: [ListViewItem] = [self.context.sharedContext.makeChatMessagePreviewItem(context: self.context, messages: self.messages, theme: theme, strings: presentationData.strings, wallpaper: presentationData.theme.chat.defaultWallpaper, fontSize: presentationData.chatFontSize, chatBubbleCorners: chatBubbleCorners, dateTimeFormat: presentationData.dateTimeFormat, nameOrder: presentationData.nameDisplayOrder, forcedResourceStatus: nil, tapMessage: nil, clickThroughMessage: nil, backgroundNode: nil, availableReactions: nil, accountPeer: nil, isCentered: false, isPreview: true, isStandalone: false, rank: nil, rankRole: nil, isGiftMessageComposerPreview: false, activateGiftMessageInput: nil)]
         
             let inset: CGFloat = 16.0
             var leftInset: CGFloat = 37.0

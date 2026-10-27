@@ -1,6 +1,5 @@
 import Foundation
 import MemberwiseInit
-import Postbox
 import SwiftSignalKit
 import TelegramApi
 import TelegramBridge
@@ -31,13 +30,13 @@ private extension TelegramMessageByIdProviderImpl {
         messageId: TelegramMessageId
     ) async throws -> TelegramMessage? {
         let context = try contextProvider.context().unwrap()
-        let id = MessageId(messageId)
+        let id = EngineMessage.Id(messageId)
         
-        let message = try await context.account.postbox
-            .messageAtId(id)
+        let message = try await context.engine.data
+            .get(TelegramEngine.EngineData.Item.Messages.Message(id: id))
             .awaitForFirstValue()
         
-        return message.map { TelegramMessage($0) }
+        return message.map { TelegramMessage($0._asMessage()) }
     }
     
     func fetchFromRemote(
@@ -45,29 +44,29 @@ private extension TelegramMessageByIdProviderImpl {
         timeout timeoutValue: TimeInterval?
     ) async throws -> TelegramMessage? {
         let context = try contextProvider.context().unwrap()
-        let id = MessageId(messageId)
+        let id = EngineMessage.Id(messageId)
         
-        let inputPeer = try await context.account.postbox
-            .transaction { transaction -> Api.InputPeer? in
-                guard let peer = transaction.getPeer(id.peerId) else { return nil }
-                return apiInputPeer(peer)
-            }
+        let peer = try await context.engine.data
+            .get(TelegramEngine.EngineData.Item.Peer.Peer(id: id.peerId))
             .awaitForFirstValue()
             .unwrap()
+        let inputPeer = try TelegramRawApi.inputPeer(peer._asPeer()).unwrap()
         
         let apiMessagesSignal = switch inputPeer {
         case let .inputPeerChannel(data):
-            context.account.network.request(
+            TelegramRawApi.request(
                 Api.functions.channels.getMessages(
                     channel: .inputChannel(.init(channelId: data.channelId, accessHash: data.accessHash)),
                     id: [.inputMessageID(.init(id: id.id))]
-                )
+                ),
+                network: context.account.network
             )
         default:
-            context.account.network.request(
+            TelegramRawApi.request(
                 Api.functions.messages.getMessages(
                     id: [.inputMessageID(.init(id: id.id))]
-                )
+                ),
+                network: context.account.network
             )
         }
         

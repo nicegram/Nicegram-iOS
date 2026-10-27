@@ -256,7 +256,15 @@ class ThemeSettingsAppIconItemNode: ListViewItemNode, ItemListItemNode {
             let separatorHeight = UIScreenPixel
             
             let nodeSize = CGSize(width: 74.0, height: 102.0)
-            let height: CGFloat = nodeSize.height * ceil(CGFloat(item.icons.count) / 4.0) + 12.0
+            let sideInset: CGFloat = 8.0
+            let availableWidth = params.width - sideInset * 2.0 - params.leftInset - params.rightInset
+            let columnCount: Int
+            if UIDevice.current.userInterfaceIdiom == .pad && availableWidth >= nodeSize.width * 5.0 + 4.0 * 8.0 {
+                columnCount = 5
+            } else {
+                columnCount = 4
+            }
+            let height: CGFloat = nodeSize.height * ceil(CGFloat(item.icons.count) / CGFloat(columnCount)) + 12.0
             
             contentSize = CGSize(width: params.width, height: height)
             insets = itemListNeighborsGroupedInsets(neighbors, params)
@@ -338,14 +346,13 @@ class ThemeSettingsAppIconItemNode: ListViewItemNode, ItemListItemNode {
                     
                     strongSelf.backgroundNode.frame = CGRect(origin: CGPoint(x: 0.0, y: -min(insets.top, separatorHeight)), size: CGSize(width: params.width, height: contentSize.height + min(insets.top, separatorHeight) + min(insets.bottom, separatorHeight)))
                     strongSelf.highlightNode.frame = CGRect(origin: CGPoint(x: 0.0, y: -min(insets.top, separatorHeight)), size: CGSize(width: params.width, height: contentSize.height + min(insets.top, separatorHeight) + min(insets.bottom, separatorHeight)))
-                    strongSelf.maskNode.frame = strongSelf.backgroundNode.frame.insetBy(dx: params.leftInset, dy: 0.0)
+                    strongSelf.maskNode.frame = strongSelf.backgroundNode.frame.inset(by: UIEdgeInsets(top: 0.0, left: params.leftInset, bottom: 0.0, right: params.rightInset))
                     strongSelf.topStripeNode.frame = CGRect(origin: CGPoint(x: 0.0, y: -min(insets.top, separatorHeight)), size: CGSize(width: layoutSize.width, height: separatorHeight))
                     strongSelf.bottomStripeNode.frame = CGRect(origin: CGPoint(x: bottomStripeInset, y: contentSize.height + bottomStripeOffset), size: CGSize(width: layoutSize.width - bottomStripeInset, height: separatorHeight))
                     
                     strongSelf.containerNode.frame = CGRect(origin: CGPoint(x: params.leftInset, y: 2.0), size: CGSize(width: layoutSize.width - params.leftInset - params.rightInset, height: layoutSize.height))
                     
-                    let sideInset: CGFloat = 8.0
-                    let spacing: CGFloat = floorToScreenPixels((params.width - sideInset * 2.0 - params.leftInset - params.rightInset - nodeSize.width * 4.0) / 3.0)
+                    let spacing: CGFloat = floorToScreenPixels((availableWidth - nodeSize.width * CGFloat(columnCount)) / CGFloat(columnCount - 1))
                     let verticalSpacing: CGFloat = 0.0
                     
                     var x: CGFloat = sideInset
@@ -353,7 +360,7 @@ class ThemeSettingsAppIconItemNode: ListViewItemNode, ItemListItemNode {
                     
                     var i = 0
                     for icon in item.icons {
-                        if i > 0 && i % 4 == 0 {
+                        if i > 0 && i % columnCount == 0 {
                             x = sideInset
                             y += nodeSize.height + verticalSpacing
                         }

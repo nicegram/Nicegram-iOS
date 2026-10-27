@@ -1,11 +1,10 @@
 import AccountContext
-import class Postbox.Message
 import TelegramApi
 import TelegramBridge
 import TelegramCore
 
 public extension TelegramBridge.TelegramMessage {
-    init(_ message: Postbox.Message) {
+    init(_ message: EngineRawMessage) {
         self.init(
             author: message.author?.toTelegramBridgePeer(),
             forwardInfo: message.forwardInfo.flatMap {
@@ -27,7 +26,7 @@ public extension TelegramBridge.TelegramMessage {
 }
 
 public extension [TelegramBridge.TelegramMessage] {
-    init(_ messages: [Postbox.Message]) {
+    init(_ messages: [EngineRawMessage]) {
         self = messages.map { .init($0) }
     }
     
@@ -35,8 +34,8 @@ public extension [TelegramBridge.TelegramMessage] {
         apiMessages: Api.messages.Messages,
         context: AccountContext
     ) {
-        let messages = [Postbox.Message](
-            apiMessages: apiMessages,
+        let messages = TelegramRawApi.messages(
+            apiMessages,
             accountPeerId: context.account.peerId
         )
         self = messages.map { .init($0) }

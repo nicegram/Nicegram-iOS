@@ -8,7 +8,6 @@ import MtProtoKit
 import NGUtils
 import NGCore
 import NGLogging
-import Postbox
 import FeatKeywords
 
 public final class KeywordsContext {
@@ -63,7 +62,8 @@ public final class KeywordsContext {
     }
     
     private func startUpdate(with accountContext: AccountContext) {
-        self.queue.async {
+        self.queue.async { [weak self] in
+            guard let self else { return }
             if self.updateService == nil {
                 self.updateService = UpdateMessageService(peerId: accountContext.account.peerId)
 
@@ -102,7 +102,10 @@ public final class KeywordsContext {
                             }
                         })
                     )
-                    accountContext.account.network.addMessageService(with: updateService)
+                    TelegramRawApi.addUpdateSink(
+                        updateService,
+                        network: accountContext.account.network
+                    )
                 }
             }
         }
@@ -197,7 +200,7 @@ private final class SearchContext {
         searchDisposable?.dispose()
     }
     
-    private func convert(from message: Message, keywordId: String) -> TelegramMessage? {
+    private func convert(from message: EngineRawMessage, keywordId: String) -> TelegramMessage? {
         guard let author = message.author,
               author.id != context.account.peerId else { return nil }
         
@@ -222,7 +225,7 @@ private final class SearchContext {
     }
 }
 
-private extension Peer {
+private extension EngineRawPeer {
     var authorName: String? {
         switch self {
         case let user as TelegramUser:
@@ -238,14 +241,14 @@ private extension Peer {
 }
 
 private class UpdateMessageService: NSObject, NetworkEngineUpdateSink {
-    var peerId: PeerId!
+    var peerId: EnginePeer.Id!
     let pipe: ValuePipe<[Api.Message]> = ValuePipe()
     
     override init() {
         super.init()
     }
     
-    convenience init(peerId: PeerId) {
+    convenience init(peerId: EnginePeer.Id) {
         self.init()
         self.peerId = peerId
     }

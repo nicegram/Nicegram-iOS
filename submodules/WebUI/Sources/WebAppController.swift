@@ -21,7 +21,7 @@ import PhotoResources
 import MediaResources
 import LegacyComponents
 import UrlHandling
-import MoreButtonNode
+import MoreHeaderButton
 import BotPaymentsUI
 import PromptUI
 import PhoneNumberFormat
@@ -226,6 +226,7 @@ public final class WebAppController: ViewController, AttachmentContainable {
         private var placeholderIcon: (UIImage, Bool)?
         private var placeholderNode: ShimmerEffectNode?
         private var fullscreenControls: ComponentView<Empty>?
+        private var sideColumnBackButton: ComponentView<Empty>?
             
         fileprivate let loadingProgressPromise = Promise<CGFloat?>(nil)
         
@@ -894,7 +895,7 @@ public final class WebAppController: ViewController, AttachmentContainable {
         private func updateNavigationBarAlpha(transition: ContainedViewLayoutTransition) {
             let contentOffset = self.webView?.scrollView.contentOffset.y ?? 0.0
             let backgroundAlpha = min(30.0, contentOffset) / 30.0
-            self.controller?.navigationBar?.updateBackgroundAlpha(backgroundAlpha, transition: transition)
+            self.controller?.navigationBar?.setBackdropAlpha(backgroundAlpha, transition: transition)
         }
         
         private var targetContentOffset: CGPoint?
@@ -943,6 +944,9 @@ public final class WebAppController: ViewController, AttachmentContainable {
                 }
                 let controlsMargin: CGFloat = 8.0
                 let componentTransition: ComponentTransition = added ? .immediate : ComponentTransition(transition)
+                // iPhone Duo: the back/close button goes in the side strip, where a screen's own back button belongs;
+                // the row keeps minimize and more. Nil without a strip.
+                let sideColumnFrame = layout.sideColumnNavigationButtonFrame
                 let controlsSize = fullscreenControls.update(
                     transition: componentTransition,
                     component: AnyComponent(
@@ -951,9 +955,10 @@ public final class WebAppController: ViewController, AttachmentContainable {
                             strings: self.presentationData.strings,
                             title: controller.botName,
                             isVerified: controller.botVerified,
-                            insets: UIEdgeInsets(top: 0.0, left: layout.safeInsets.left, bottom: 0.0, right: layout.safeInsets.right),
+                            insets: UIEdgeInsets(top: 0.0, left: layout.safeInsets.left, bottom: 0.0, right: layout.safeInsets.right + layout.navigationBarTrailingButtonsInset),
                             statusBarStyle: self.fullScreenStatusBarStyle,
                             hasBack: self.hasBackButton,
+                            showsBackButton: sideColumnFrame == nil,
                             backPressed: { [weak self] in
                                 guard let self else {
                                     return
@@ -981,13 +986,61 @@ public final class WebAppController: ViewController, AttachmentContainable {
                     if view.superview == nil {
                         self.view.addSubview(view)
                     }
-                    transition.updateFrame(view: view, frame: CGRect(origin: CGPoint(x: 0.0, y: (layout.statusBarHeight ?? 0.0) + controlsMargin), size: controlsSize))
+                    // iPhone Duo unfolded portrait: the controls sit beside the status island, the right ones clear of it.
+                    transition.updateFrame(view: view, frame: CGRect(origin: CGPoint(x: 0.0, y: (layout.navigationBarStatusBarHeight ?? 0.0) + controlsMargin), size: controlsSize))
                     if added {
                         view.layer.animateAlpha(from: 0.0, to: 1.0, duration: 0.25)
                     }
                 }
+                if let sideColumnFrame {
+                    let sideColumnBackButton: ComponentView<Empty>
+                    var sideColumnTransition = componentTransition
+                    if let current = self.sideColumnBackButton {
+                        sideColumnBackButton = current
+                    } else {
+                        sideColumnBackButton = ComponentView<Empty>()
+                        self.sideColumnBackButton = sideColumnBackButton
+                        sideColumnTransition = .immediate
+                    }
+                    let buttonSize = sideColumnBackButton.update(
+                        transition: sideColumnTransition,
+                        component: AnyComponent(GlassBarButtonComponent(
+                            size: CGSize(width: 44.0, height: 44.0),
+                            backgroundColor: nil,
+                            isDark: self.presentationData.theme.overallDarkAppearance,
+                            state: .glass,
+                            component: AnyComponentWithIdentity(id: self.hasBackButton ? "back" : "close", component: AnyComponent(
+                                BundleIconComponent(name: self.hasBackButton ? "Navigation/Back" : "Navigation/Close", tintColor: self.presentationData.theme.chat.inputPanel.panelControlColor)
+                            )),
+                            action: { [weak self] _ in
+                                self?.controller?.cancelPressed()
+                            }
+                        )),
+                        environment: {},
+                        containerSize: CGSize(width: 44.0, height: 44.0)
+                    )
+                    if let view = sideColumnBackButton.view {
+                        if view.superview == nil {
+                            self.view.addSubview(view)
+                            view.layer.animateAlpha(from: 0.0, to: 1.0, duration: 0.25)
+                        }
+                        sideColumnTransition.setFrame(view: view, frame: CGRect(origin: CGPoint(x: sideColumnFrame.midX - buttonSize.width / 2.0, y: sideColumnFrame.midY - buttonSize.height / 2.0), size: buttonSize))
+                    }
+                } else if let sideColumnBackButton = self.sideColumnBackButton {
+                    self.sideColumnBackButton = nil
+                    sideColumnBackButton.view?.removeFromSuperview()
+                }
+                
                 contentTopInset = controlsSize.height + controlsMargin * 2.0
+                if let island = layout.topBarStatusIsland {
+                    // The page's content starts below both the controls and the island beside them.
+                    contentTopInset = max(contentTopInset, island.height - (layout.navigationBarStatusBarHeight ?? 0.0))
+                }
             } else if let fullscreenControls = self.fullscreenControls {
+                if let sideColumnBackButton = self.sideColumnBackButton {
+                    self.sideColumnBackButton = nil
+                    sideColumnBackButton.view?.removeFromSuperview()
+                }
                 self.fullscreenControls = nil
                 fullscreenControls.view?.layer.animateAlpha(from: 1.0, to: 0.0, duration: 0.25, removeOnCompletion: false, completion: { _ in
                     fullscreenControls.view?.removeFromSuperview()
@@ -1059,7 +1112,8 @@ public final class WebAppController: ViewController, AttachmentContainable {
                 
                 var customInsets: UIEdgeInsets = .zero
                 if controller.isFullscreen {
-                    customInsets.top = layout.statusBarHeight ?? 0.0
+                    // The status height the controls sit under (compact beside iPhone Duo's status island).
+                    customInsets.top = layout.navigationBarStatusBarHeight ?? 0.0
                 }
                 if layout.intrinsicInsets.bottom > 44.0 || (layout.inputHeight ?? 0.0) > 0.0 {
                     customInsets.bottom = 0.0
@@ -1067,7 +1121,7 @@ public final class WebAppController: ViewController, AttachmentContainable {
                     customInsets.bottom = layout.intrinsicInsets.bottom
                 }
                 customInsets.left = layout.safeInsets.left
-                customInsets.right = layout.safeInsets.left
+                customInsets.right = layout.safeInsets.right
                 webView.customInsets = customInsets
                 
                 if let controller = self.controller {
@@ -2059,8 +2113,6 @@ public final class WebAppController: ViewController, AttachmentContainable {
             }
             
             controller.titleView?.updateTextColors(primary: primaryTextColor, secondary: secondaryTextColor, transition: transition)
-            controller.cancelButtonNode.updateColor(primaryTextColor, transition: transition)
-            controller.moreButtonNode.updateColor(primaryTextColor, transition: transition)
             transition.updateBackgroundColor(node: self.headerBackgroundNode, color: color ?? .clear)
             transition.updateBackgroundColor(node: self.topOverscrollNode, color: color ?? .clear)
         }
@@ -3577,11 +3629,10 @@ public final class WebAppController: ViewController, AttachmentContainable {
     }
     
     private var titleView: WebAppTitleView?
-    fileprivate let cancelButtonNode: WebAppCancelButtonNode
-    fileprivate let moreButtonNode: MoreButtonNode
-    private var cancelBarButtonNode: BarComponentHostNode?
-    private var moreBarButtonNode: BarComponentHostNode?
-    private let moreButtonPlayOnce = ActionSlot<Void>()
+    /// The "…" in the bar's own platter, as the chat's; drawn in the bar's button colour (`updateNavigationBarTheme`).
+    private let moreBarButton: MoreHeaderButton
+    /// Whether the bar's left item is its back button (the app shows one) rather than its close button.
+    private var leftItemIsBack: Bool?
     
     private let context: AccountContext
     public let source: WebAppParameters.Source
@@ -3647,31 +3698,29 @@ public final class WebAppController: ViewController, AttachmentContainable {
         presentationData = presentationData.withUpdated(theme: updatedTheme)
         self.presentationData = presentationData
         
-        self.cancelButtonNode = WebAppCancelButtonNode(theme: self.presentationData.theme, strings: self.presentationData.strings)
+        let navigationBarPresentationData = NavigationBarPresentationData(theme: NavigationBarTheme(rootControllerTheme: self.presentationData.theme), strings: NavigationBarStrings(back: "", close: "", more: ""))
+        self.moreBarButton = MoreHeaderButton(color: navigationBarPresentationData.theme.buttonColor)
+        self.moreBarButton.isUserInteractionEnabled = true
         
-        self.moreButtonNode = MoreButtonNode(theme: self.presentationData.theme)
-        self.moreButtonNode.iconNode.enqueueState(.more, animated: false)
-        
-        let navigationBarPresentationData = NavigationBarPresentationData(theme: NavigationBarTheme(rootControllerTheme: self.presentationData.theme), strings: NavigationBarStrings(back: "", close: ""))
         super.init(navigationBarPresentationData: navigationBarPresentationData)
         
         self.statusBar.statusBarStyle = self.presentationData.theme.rootController.statusBarStyle.style
         self.automaticallyControlPresentationContextLayout = false
+        // A mini app sheet opens to the whole screen beside iPhone Duo's status island (unfolded portrait).
+        self.fillsScreenBesideStatusIsland = true
         
-        if case .attachMenu = self.source {
-            
-        } else if self.isVerifyAgeBot {
-            
-        } else {
-            self.navigationItem.leftBarButtonItem = UIBarButtonItem(customDisplayNode: self.cancelButtonNode)
-            self.navigationItem.leftBarButtonItem?.action = #selector(self.cancelPressed)
-            self.navigationItem.leftBarButtonItem?.target = self
-            
-            if !self.isVerifyAgeBot {
-                self.navigationItem.rightBarButtonItem = UIBarButtonItem(customDisplayNode: self.moreButtonNode)
-                self.navigationItem.rightBarButtonItem?.action = #selector(self.moreButtonPressed)
-                self.navigationItem.rightBarButtonItem?.target = self
+        // The bar's own buttons, as on every screen on it: close or back on the left (`updateNavigationButtons`), and the
+        // "…" on the right (none for the age verification bot).
+        self.moreBarButton.setContent(.more(MoreHeaderButton.optionsCircleImage(color: navigationBarPresentationData.theme.buttonColor)))
+        self.moreBarButton.contextAction = { [weak self] sourceNode, gesture in
+            guard let self else {
+                return
             }
+            self.morePressed(view: self.navigationBar?.navigationButtonContextContainer(sourceView: sourceNode.view) ?? sourceNode.view, gesture: gesture)
+        }
+        self.moreBarButton.addTarget(self, action: #selector(self.moreButtonPressed), forControlEvents: .touchUpInside)
+        if !self.isVerifyAgeBot {
+            self.navigationItem.rightBarButtonItem = UIBarButtonItem(customDisplayNode: self.moreBarButton)
         }
         
         self.navigationItem.backBarButtonItem = UIBarButtonItem(title: self.presentationData.strings.Common_Back, style: .plain, target: nil, action: nil)
@@ -3683,12 +3732,6 @@ public final class WebAppController: ViewController, AttachmentContainable {
             self.titleView = titleView
         }
         
-        self.moreButtonNode.action = { [weak self] _, gesture in
-            if let strongSelf = self {
-                strongSelf.morePressed(view: strongSelf.moreButtonNode.contextSourceNode.view, gesture: gesture)
-            }
-        }
-        
         self.presentationDataDisposable = ((updatedPresentationData?.signal ?? context.sharedContext.presentationData)
         |> deliverOnMainQueue).start(next: { [weak self] presentationData in
             if let strongSelf = self {
@@ -3698,9 +3741,6 @@ public final class WebAppController: ViewController, AttachmentContainable {
                 
                 strongSelf.updateNavigationBarTheme(transition: .immediate)
                 strongSelf.titleView?.theme = presentationData.theme
-
-                strongSelf.cancelButtonNode.theme = presentationData.theme
-                strongSelf.moreButtonNode.theme = presentationData.theme
                 
                 if strongSelf.isNodeLoaded {
                     strongSelf.controllerNode.updatePresentationData(presentationData)
@@ -3738,83 +3778,20 @@ public final class WebAppController: ViewController, AttachmentContainable {
         self.presentationDataDisposable?.dispose()
     }
     
+    /// The bar's left item: its close button, or its back button while the app shows one (`web_app_setup_back_button`).
+    /// Set only when that changes, since a new item lays the bar out again.
     private func updateNavigationButtons() {
-        var showGlassButtons = self.isOnramp
-        if case .attachMenu = self.source {
-            showGlassButtons = true
-        } else if self.isVerifyAgeBot {
-            showGlassButtons = true
+        let isBack = self.controllerNode.hasBackButton
+        guard self.leftItemIsBack != isBack else {
+            return
         }
-        if showGlassButtons {
-            let barButtonSize = CGSize(width: 44.0, height: 44.0)
-            let closeComponent: AnyComponentWithIdentity<Empty> = AnyComponentWithIdentity(
-                id: "close",
-                component: AnyComponent(GlassBarButtonComponent(
-                    size: barButtonSize,
-                    backgroundColor: nil,
-                    isDark: self.presentationData.theme.overallDarkAppearance,
-                    state: .glass,
-                    component: AnyComponentWithIdentity(id: self.controllerNode.hasBackButton ? "back" : "close", component: AnyComponent(
-                        BundleIconComponent(
-                            name: self.controllerNode.hasBackButton ? "Navigation/Back" : "Navigation/Close",
-                            tintColor: self.presentationData.theme.chat.inputPanel.panelControlColor
-                        )
-                    )),
-                    action: { [weak self] _ in
-                        self?.cancelPressed()
-                    }
-                ))
-            )
-            
-            let moreComponent: AnyComponentWithIdentity<Empty> = AnyComponentWithIdentity(
-                id: "more",
-                component: AnyComponent(GlassBarButtonComponent(
-                    size: barButtonSize,
-                    backgroundColor: nil,
-                    isDark: self.presentationData.theme.overallDarkAppearance,
-                    state: .glass,
-                    component: AnyComponentWithIdentity(id: "more", component: AnyComponent(
-                        LottieComponent(
-                            content: LottieComponent.AppBundleContent(
-                                name: "anim_morewide"
-                            ),
-                            color: self.presentationData.theme.chat.inputPanel.panelControlColor,
-                            size: CGSize(width: 34.0, height: 34.0),
-                            playOnce: self.moreButtonPlayOnce,
-                            lottieSettings: self.context.lottieRenderingSettings
-                        )
-                    )),
-                    action: { [weak self] view in
-                        self?.morePressed(view: view, gesture: nil)
-                        self?.moreButtonPlayOnce.invoke(Void())
-                    }
-                ))
-            )
-            
-            let cancelButtonNode: BarComponentHostNode
-            if let current = self.cancelBarButtonNode {
-                cancelButtonNode = current
-                cancelButtonNode.component = closeComponent
-            } else {
-                cancelButtonNode = BarComponentHostNode(component: closeComponent, size: barButtonSize)
-                self.cancelBarButtonNode = cancelButtonNode
-                self.navigationItem.leftBarButtonItem = UIBarButtonItem(customDisplayNode: cancelButtonNode)
-            }
-            
-            if !self.isVerifyAgeBot {
-                let moreButtonNode: BarComponentHostNode
-                if let current = self.moreBarButtonNode {
-                    moreButtonNode = current
-                    moreButtonNode.component = moreComponent
-                } else {
-                    moreButtonNode = BarComponentHostNode(component: moreComponent, size: barButtonSize)
-                    self.moreBarButtonNode = moreButtonNode
-                    self.navigationItem.rightBarButtonItem = UIBarButtonItem(customDisplayNode: moreButtonNode)
-                }
-            }
+        let animated = self.leftItemIsBack != nil
+        self.leftItemIsBack = isBack
+        if isBack {
+            self.navigationItem.setLeftBarButton(UIBarButtonItem(backButtonAppearanceWithTitle: self.presentationData.strings.Common_Back, target: self, action: #selector(self.cancelPressed)), animated: animated)
+        } else {
+            self.navigationItem.setLeftBarButton(UIBarButtonItem(title: "___close", style: .plain, target: self, action: #selector(self.cancelPressed)), animated: animated)
         }
-            
-        self.cancelButtonNode.setState(self.controllerNode.hasBackButton ? .back : .cancel, animated: true)
     }
     
     private var isVerifyAgeBot: Bool {
@@ -3866,29 +3843,27 @@ public final class WebAppController: ViewController, AttachmentContainable {
                     buttonColor: textColor,
                     disabledButtonColor: textColor,
                     primaryTextColor: textColor,
-                    backgroundColor: backgroundColor,
-                    enableBackgroundBlur: true,
-                    separatorColor: UIColor(rgb: 0x000000, alpha: 0.25),
                     badgeBackgroundColor: .clear,
-                    badgeStrokeColor: .clear,
                     badgeTextColor: .clear,
+                    edgeEffectColor: backgroundColor,
                     accentButtonColor: self.presentationData.theme.list.itemCheckColors.fillColor,
                     accentDisabledButtonColor: self.presentationData.theme.chat.inputPanel.panelControlDisabledColor,
                     accentForegroundColor: self.presentationData.theme.list.itemCheckColors.foregroundColor
                 ),
-                strings: NavigationBarStrings(back: "", close: "")
+                strings: NavigationBarStrings(back: "", close: "", more: "")
             )
         } else {
             navigationBarPresentationData = NavigationBarPresentationData(
                 theme: NavigationBarTheme(rootControllerTheme: self.presentationData.theme),
-                strings: NavigationBarStrings(back: "", close: "")
+                strings: NavigationBarStrings(back: "", close: "", more: "")
             )
         }
         self.navigationBar?.updatePresentationData(navigationBarPresentationData, transition: .immediate)
+        self.moreBarButton.updateColor(color: navigationBarPresentationData.theme.buttonColor)
     }
     
     @objc fileprivate func cancelPressed() {
-        if case .back = self.cancelButtonNode.state {
+        if self.controllerNode.hasBackButton {
             self.controllerNode.sendBackButtonEvent()
         } else {
             self.requestDismiss {
@@ -3898,7 +3873,8 @@ public final class WebAppController: ViewController, AttachmentContainable {
     }
     
     @objc fileprivate func moreButtonPressed() {
-        self.moreButtonNode.buttonPressed()
+        self.moreBarButton.play()
+        self.moreBarButton.contextAction?(self.moreBarButton.containerNode, nil)
     }
     
     @objc fileprivate func morePressed(view: UIView, gesture: ContextGesture?) {
@@ -4013,7 +3989,7 @@ public final class WebAppController: ViewController, AttachmentContainable {
                     guard let self else {
                         return
                     }
-                    let shareController = context.sharedContext.makeShareController(context: context, params: ShareControllerParams(subject: .url("https://t.me/\(addressName)?profile"), actionCompleted: { [weak self] in
+                    let shareController = context.sharedContext.makeShareScreen(context: context, params: ShareControllerParams(subject: .url("https://t.me/\(addressName)?profile"), actionCompleted: { [weak self] in
                         let presentationData = context.sharedContext.currentPresentationData.with { $0 }
                         self?.present(UndoOverlayController(presentationData: presentationData, content: .linkCopied(title: nil, text: presentationData.strings.Conversation_LinkCopied), elevatedLayout: false, animateInAsReplacement: false, action: { _ in return false }), in: .window(.root))
                     }))
@@ -4125,7 +4101,7 @@ public final class WebAppController: ViewController, AttachmentContainable {
     override public func loadDisplayNode() {
         self.displayNode = Node(context: self.context, controller: self)
         
-        self.navigationBar?.updateBackgroundAlpha(0.0, transition: .immediate)
+        self.navigationBar?.setBackdropAlpha(0.0, transition: .immediate)
         self.updateTabBarAlpha(1.0, .immediate)
     }
     
@@ -4309,7 +4285,7 @@ private final class WebAppContextReferenceContentSource: ContextReferenceContent
     }
     
     func transitionInfo() -> ContextControllerReferenceViewInfo? {
-        return ContextControllerReferenceViewInfo(referenceView: self.sourceView, contentAreaInScreenSpace: UIScreen.main.bounds)
+        return ContextControllerReferenceViewInfo(referenceView: self.sourceView, contentAreaInScreenSpace: mainWindowScreenBounds)
     }
 }
 

@@ -8,6 +8,80 @@ import PasscodeCore
 private let walletTransferResolutionInterval: Int32 = 15
 private let walletTransferSubmissionTimeout: UInt64 = 45_000_000_000
 
+/// Tracks execution, not pending transactions or their blockchain confirmation.
+final class WalletTransferBackgroundTasks: @unchecked Sendable {
+    final class Lease: Disposable, @unchecked Sendable {
+        private let owner: WalletTransferBackgroundTasks
+        private let id: UUID
+
+        fileprivate init(owner: WalletTransferBackgroundTasks, id: UUID) {
+            self.owner = owner
+            self.id = id
+        }
+
+        deinit {
+            self.dispose()
+        }
+
+        func dispose() {
+            self.owner.release(self.id)
+        }
+    }
+
+    private let lock = NSRecursiveLock()
+    private var ids = Set<UUID>()
+    private var isShutdown = false
+    private var isPublishing = false
+    private let hasTasksPromise = ValuePromise<Bool>(false, ignoreRepeated: true)
+
+    var hasTasks: Signal<Bool, NoError> {
+        Signal { subscriber in
+            self.lock.lock()
+            defer { self.lock.unlock() }
+            return self.hasTasksPromise.get().start(next: subscriber.putNext)
+        }
+    }
+
+    func acquire() -> Lease {
+        self.lock.lock()
+        defer { self.lock.unlock() }
+        let id = UUID()
+        if !self.isShutdown {
+            self.ids.insert(id)
+            self.publish()
+        }
+        return Lease(owner: self, id: id)
+    }
+
+    private func release(_ id: UUID) {
+        self.lock.lock()
+        defer { self.lock.unlock() }
+        guard self.ids.remove(id) != nil else { return }
+        self.publish()
+    }
+
+    func shutdown() {
+        self.lock.lock()
+        defer { self.lock.unlock() }
+        self.isShutdown = true
+        self.ids.removeAll()
+        self.publish()
+    }
+
+    // Called under the lock so publications cannot overtake mutations. An observer
+    // may acquire/release a lease: finish this emission before publishing its change.
+    private func publish() {
+        guard !self.isPublishing else { return }
+        self.isPublishing = true
+        defer { self.isPublishing = false }
+        while true {
+            let hasTasks = !self.ids.isEmpty
+            self.hasTasksPromise.set(hasTasks)
+            if hasTasks == !self.ids.isEmpty { return }
+        }
+    }
+}
+
 @available(macOS 10.15, *)
 struct WalletTransferSubmissionClock: Sendable {
     var now: @Sendable () -> Int32 = { Int32(clamping: Int64(Date().timeIntervalSince1970)) }
@@ -313,6 +387,19 @@ func walletTransferResolutionCandidate(_ pending: WalletContext.PendingTransfer,
 }
 
 @available(macOS 10.15, *)
+func walletTransactionMatchesMessageHash(_ transaction: WalletContext.Transaction, _ msgHash: String) -> Bool {
+    return transaction.transactionHash == msgHash || transaction.id.hasSuffix(":" + msgHash)
+}
+
+@available(macOS 10.15, *)
+func walletTransactionApplicableToMessageHash(_ transaction: WalletContext.Transaction, _ msgHash: String, isCollectibleTransfer: Bool) -> Bool {
+    if isCollectibleTransfer || transaction.collectible != nil {
+        return walletTransactionMatchesMessageHash(transaction, msgHash)
+    }
+    return true
+}
+
+@available(macOS 10.15, *)
 private func walletTransferConfirmed(_ pending: WalletContext.PendingTransfer, transaction: WalletContext.Transaction) -> WalletContext.PendingTransfer {
     WalletContext.PendingTransfer(
         id: pending.id, recipient: pending.recipient, amount: pending.amount,
@@ -432,6 +519,14 @@ extension WalletContextImpl {
 
     func markWalletTransferConsumed(_ operationId: String, successful: Bool = true) {
         guard self.transferSubmissions.resolve(operationId, as: .consumed, confirmed: successful) else { return }
+        if let recipientPeerId = self.transferRecipientPeerIds.removeValue(forKey: operationId), successful {
+            let engine = self.engine
+            let _ = (Signal<Void, NoError>.single(Void())
+            |> delay(5.0, queue: Queue.concurrentDefaultQueue())
+            |> mapToSignal { _ -> Signal<Bool, NoError> in
+                return engine.peers.fetchAndUpdateCachedPeerData(peerId: recipientPeerId)
+            }).start()
+        }
         Task {
             do { try await self.persistWalletTransferResolution(operationId) }
             catch { self.logger.error("wallet_transfer_confirmation_persist_failed", error) }
@@ -456,7 +551,8 @@ extension WalletContextImpl {
         control: WalletTransferSubmissionControl,
         minimumSeqno: UInt32?,
         pendingRegistration: WalletContext.PendingTransferRegistration? = nil,
-        registrationSession: PasscodeSession? = nil
+        registrationSession: PasscodeSession? = nil,
+        allowsGasless: Bool = true
     ) async throws -> WalletAPISubmission {
         let startedAt = ProcessInfo.processInfo.systemUptime
         do {
@@ -481,7 +577,8 @@ extension WalletContextImpl {
             }
             let data = try WalletTransferData(
                 prepared: preparedData.data,
-                includeInternalBoc: prepared.amount >= self.transferGaslessMinAmount
+                includeInternalBoc: allowsGasless
+                    && prepared.amount >= self.transferGaslessMinAmount
                     && !WalletContext.isSelfTransfer(recipient: prepared.recipient, walletAddress: walletAddress)
             )
             var persistedPending = pending
@@ -528,10 +625,12 @@ extension WalletContextImpl {
             let requestStartedAt = ProcessInfo.processInfo.systemUptime
             self.transferSubmissions.startedRPC(pending.id)
             let task = WalletAuthorizationScope.$session.withValue(nil) {
+                let backgroundTask = self.output.transferBackgroundTasks.acquire()
                 request.start(self.engine.wallet.sendTransfer(dataNormal: data.normal, dataGasless: data.gasless,
                     recipientPeerId: recipientPeerId, randomId: randomId, pendingMessage: submittedPending.pendingMessage))
                 return Task {
-                    try await self.submitTransferData(request, pending: submittedPending,
+                    defer { backgroundTask.dispose() }
+                    return try await self.submitTransferData(request, pending: submittedPending,
                         generation: generation, startedAt: startedAt, requestStartedAt: requestStartedAt)
                 }
             }
@@ -694,7 +793,8 @@ extension WalletContextImpl {
 
     func trackWalletTransferResolution(_ pending: PendingTransfer, receivedAt: Int32? = nil) {
         guard self.walletTransferResolutions[pending.id] == nil,
-              let sent = pending.sentTransfer, !sent.msgHash.isEmpty, pending.collectibleAddress == nil else { return }
+              let sent = pending.sentTransfer, !sent.msgHash.isEmpty,
+              pending.collectibleAddress == nil || pending.streamingData != nil else { return }
         let acceptedAt = receivedAt ?? pending.uiExpiresAt.map {
             Int32(clamping: Int64($0) - Int64(walletPendingTransferUILifetime))
         } ?? pending.createdAt
@@ -807,7 +907,15 @@ extension WalletContextImpl {
                 |> map { walletTransactions(from: $0.items) }
             )
             guard self.isCurrentWalletTransferResolution(generation) else { return }
-            for transaction in transactions {
+            let isCollectibleTransfer = unresolvedIds.contains { self.walletTransferResolutions[$0]?.pending.collectibleAddress != nil }
+            let applicableTransactions = transactions.filter { walletTransactionApplicableToMessageHash($0, hash, isCollectibleTransfer: isCollectibleTransfer) }
+            if applicableTransactions.count != transactions.count {
+                self.logger.log("event=wallet_transfer_lookup_skipped msg_hash=\(hash) skipped=\(transactions.count - applicableTransactions.count) applicable=\(applicableTransactions.count)")
+                if applicableTransactions.isEmpty {
+                    self.requestSynchronization(scope: [.account, .transactions], force: true)
+                }
+            }
+            for transaction in applicableTransactions {
                 self.rememberWalletFinalTransaction(transaction, msgHash: hash)
                 await self.applyWalletFinalTransaction(transaction, pending: nil, generation: generation, source: "message_lookup")
                 guard self.isCurrentWalletTransferResolution(generation) else { return }
@@ -815,7 +923,7 @@ extension WalletContextImpl {
             for id in unresolvedIds {
                 guard self.isCurrentWalletTransferResolution(generation),
                       let pending = self.pendingWalletTransferResolution(id),
-                      let transaction = walletTransferResolutionCandidate(pending, transactions: transactions, history: self.currentState.transactions.items) else { continue }
+                      let transaction = walletTransferResolutionCandidate(pending, transactions: applicableTransactions, history: self.currentState.transactions.items) else { continue }
                 let sameRecipient = self.walletTransferResolutions.values.filter {
                     $0.expiresAt > currentWalletTimestamp() && $0.pending.sentTransfer?.msgHash == hash
                         && walletEngineAddressesEqual($0.pending.recipient, pending.recipient)
@@ -845,6 +953,7 @@ extension WalletContextImpl {
 
     func applyWalletFinalTransaction(_ transaction: Transaction, pending: PendingTransfer?, generation: UInt64, source: String = "transfer_resolution") async {
         guard !self.isShutdown, self.activationGeneration == generation, !transaction.id.isEmpty else { return }
+        self.logger.log("event=wallet_final_transaction_applied source=\(source) transaction_id=\(transaction.id) transaction_hash=\(transaction.transactionHash ?? "") pending_id=\(pending?.id ?? "") collectible=\(transaction.collectible != nil ? 1 : 0)")
         if transaction.status == .failed, let pending,
            pending.status == .confirmed || self.transferSubmissions.entries[pending.id]?.confirmed == true {
             return
@@ -936,7 +1045,10 @@ extension WalletContextImpl {
                 if let state = self.walletTransferHashStates[transfer.msgHash], state.expiresAt <= now {
                     self.walletTransferHashStates[transfer.msgHash] = nil
                 }
-                if let apiTransaction, let transaction = walletTransactions(from: [apiTransaction]).first {
+                if let apiTransaction, let transaction = walletTransactions(from: [apiTransaction]).first, !walletTransactionApplicableToMessageHash(transaction, transfer.msgHash, isCollectibleTransfer: false) {
+                    self.logger.log("event=wallet_transfer_update_skipped msg_hash=\(transfer.msgHash) transaction_id=\(transaction.id)")
+                    self.requestSynchronization(scope: [.account, .transactions], force: true)
+                } else if let apiTransaction, let transaction = walletTransactions(from: [apiTransaction]).first {
                     self.rememberWalletFinalTransaction(transaction, msgHash: transfer.msgHash)
                     let candidates = self.currentState.pendingTransfers.filter {
                         $0.sentTransfer?.msgHash == transfer.msgHash

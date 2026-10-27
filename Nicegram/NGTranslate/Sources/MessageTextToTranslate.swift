@@ -1,7 +1,6 @@
-import Postbox
 import TelegramCore
 
-public extension Message {
+public extension EngineRawMessage {
     func textToTranslate() -> String {
         (transcribedText() ?? "")
             .appending("\n")
@@ -10,7 +9,7 @@ public extension Message {
     }
 }
 
-private extension Message {
+private extension EngineRawMessage {
     func transcribedText() -> String? {
         for attribute in attributes {
             if let attribute = attribute as? AudioTranscriptionMessageAttribute {

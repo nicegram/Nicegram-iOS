@@ -526,6 +526,11 @@ public final class AuthorizationSequencePhoneEntryController: ViewController, MF
                 self.inProgress = false
             }
         } catch {
+            // A backend timeout leaves the approval pending: if it lands, the node's updateLoginToken listener
+            // moves the screen on, so the spinner stays as long as TelegramTokenLoginFlowImpl waits for an acceptance.
+            if error is TimeoutError {
+                try? await Task.sleep(seconds: 20)
+            }
             self.inProgress = false
         }
     }

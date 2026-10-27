@@ -61,7 +61,7 @@ extension PeerInfoScreenNode {
         case .avatar:
             self.controller?.openAvatarForEditing()
         case .edit:
-            self.headerNode.navigationButtonContainer.performAction?(.edit, nil, nil)
+            self.performNavigationButtonAction?(.edit, nil, nil)
         case .proxy:
             self.controller?.push(proxySettingsController(context: self.context))
         case .profile:

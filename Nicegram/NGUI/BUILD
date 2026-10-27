@@ -13,7 +13,6 @@ swift_library(
         "//submodules/AccountContext:AccountContext",
         "//submodules/Display:Display",
         "//submodules/ItemListUI:ItemListUI",
-        "//submodules/Postbox:Postbox",
         "//submodules/SSignalKit/SwiftSignalKit:SwiftSignalKit",
         "//submodules/TelegramCore:TelegramCore",
         "//submodules/TelegramNotices:TelegramNotices",

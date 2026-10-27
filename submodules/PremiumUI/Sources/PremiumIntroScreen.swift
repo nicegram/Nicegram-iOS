@@ -1841,6 +1841,9 @@ private final class PremiumIntroScreenContentComponent: CombinedComponent {
             
             let availableWidth = context.availableSize.width
             let sideInsets = sideInset * 2.0 + environment.safeInsets.left + environment.safeInsets.right
+            // iPhone Duo: the content is centered in the band between the side safe insets (one of them is the
+            // side strip). With equal insets this is the full width's center.
+            let bandCenterX = environment.safeInsets.left + (availableWidth - environment.safeInsets.left - environment.safeInsets.right) / 2.0
             var size = CGSize(width: context.availableSize.width, height: 0.0)
             
             var topBackgroundColor = theme.list.plainBackgroundColor
@@ -1967,7 +1970,7 @@ private final class PremiumIntroScreenContentComponent: CombinedComponent {
                 transition: .immediate
             )
             context.add(text
-                .position(CGPoint(x: size.width / 2.0, y: size.height + text.size.height / 2.0))
+                .position(CGPoint(x: bandCenterX, y: size.height + text.size.height / 2.0))
                 .appear(.default(alpha: true))
                 .disappear(.default(alpha: true))
             )
@@ -2126,7 +2129,7 @@ private final class PremiumIntroScreenContentComponent: CombinedComponent {
                         transition: context.transition
                     )
                     context.add(optionsSection
-                        .position(CGPoint(x: availableWidth / 2.0, y: size.height + optionsSection.size.height / 2.0))
+                        .position(CGPoint(x: bandCenterX, y: size.height + optionsSection.size.height / 2.0))
                         .clipsToBounds(true)
                         .cornerRadius(26.0)
                     )
@@ -2312,7 +2315,7 @@ private final class PremiumIntroScreenContentComponent: CombinedComponent {
                     transition: context.transition
                 )
                 context.add(perksSection
-                    .position(CGPoint(x: availableWidth / 2.0, y: size.height + perksSection.size.height / 2.0))
+                    .position(CGPoint(x: bandCenterX, y: size.height + perksSection.size.height / 2.0))
                     .disappear(.default(alpha: true))
                 )
                 size.height += perksSection.size.height
@@ -2540,7 +2543,7 @@ private final class PremiumIntroScreenContentComponent: CombinedComponent {
                     transition: context.transition
                 )
                 context.add(businessSection
-                    .position(CGPoint(x: availableWidth / 2.0, y: size.height + businessSection.size.height / 2.0))
+                    .position(CGPoint(x: bandCenterX, y: size.height + businessSection.size.height / 2.0))
                 )
                 size.height += businessSection.size.height
                 size.height += 23.0
@@ -2691,7 +2694,7 @@ private final class PremiumIntroScreenContentComponent: CombinedComponent {
                     transition: context.transition
                 )
                 context.add(moreBusinessSection
-                    .position(CGPoint(x: availableWidth / 2.0, y: size.height + moreBusinessSection.size.height / 2.0))
+                    .position(CGPoint(x: bandCenterX, y: size.height + moreBusinessSection.size.height / 2.0))
                 )
                 size.height += moreBusinessSection.size.height
                 size.height += 23.0
@@ -2784,7 +2787,7 @@ private final class PremiumIntroScreenContentComponent: CombinedComponent {
                     transition: context.transition
                 )
                 context.add(adsSettingsSection
-                    .position(CGPoint(x: availableWidth / 2.0, y: size.height + adsSettingsSection.size.height / 2.0))
+                    .position(CGPoint(x: bandCenterX, y: size.height + adsSettingsSection.size.height / 2.0))
                 )
                 size.height += adsSettingsSection.size.height
                 size.height += 23.0
@@ -2806,11 +2809,13 @@ private final class PremiumIntroScreenContentComponent: CombinedComponent {
                                 copyLink(link)
                             }
                         ),
-                        availableSize: CGSize(width: context.availableSize.width - sideInset * 2.0, height: 50.0),
+                        // Centred on the band, so measured within it beside iPhone Duo's side strip (strip-only, so
+                        // equal insets keep the width they had).
+                        availableSize: CGSize(width: context.availableSize.width - sideInset * 2.0 - (environment.safeInsets.left != environment.safeInsets.right ? environment.safeInsets.left + environment.safeInsets.right : 0.0), height: 50.0),
                         transition: .immediate
                     )
                     context.add(linkButton
-                        .position(CGPoint(x: availableWidth / 2.0, y: size.height + linkButton.size.height / 2.0))
+                        .position(CGPoint(x: bandCenterX, y: size.height + linkButton.size.height / 2.0))
                         .disappear(.default(alpha: true))
                     )
                     size.height += linkButton.size.height
@@ -2876,7 +2881,7 @@ private final class PremiumIntroScreenContentComponent: CombinedComponent {
                         transition: context.transition
                     )
                     context.add(infoBackground
-                        .position(CGPoint(x: size.width / 2.0, y: size.height + infoBackground.size.height / 2.0))
+                        .position(CGPoint(x: bandCenterX, y: size.height + infoBackground.size.height / 2.0))
                     )
                     context.add(infoText
                         .position(CGPoint(x: sideInset + environment.safeInsets.left + textSideInset + infoText.size.width / 2.0, y: size.height + textPadding + infoText.size.height / 2.0))
@@ -3499,6 +3504,11 @@ private final class PremiumIntroScreenComponent: CombinedComponent {
             let topInset: CGFloat = environment.navigationHeight - 56.0
             let headerSize = CGSize(width: min(414.0, context.availableSize.width), height: 220.0)
             let headerOriginY = topInset - 30.0
+            // iPhone Duo: the header and the titles are centered in the band between the side safe
+            // insets (one of them is the side strip), and the titles narrowed by the difference. With equal
+            // insets this is the full width's center and width.
+            let bandCenterX = environment.safeInsets.left + (context.availableSize.width - environment.safeInsets.left - environment.safeInsets.right) / 2.0
+            let bandWidthReduction = abs(environment.safeInsets.left - environment.safeInsets.right)
             let headerVisibleOriginY = headerOriginY - (state.topContentOffset ?? 0.0)
             let starIsVisible = headerVisibleOriginY + headerSize.height > 0.0 && headerVisibleOriginY < context.availableSize.height
 
@@ -3596,7 +3606,7 @@ private final class PremiumIntroScreenComponent: CombinedComponent {
                     truncationType: .end,
                     maximumNumberOfLines: 1
                 ),
-                availableSize: context.availableSize,
+                availableSize: CGSize(width: context.availableSize.width - bandWidthReduction, height: context.availableSize.height),
                 transition: context.transition
             )
 
@@ -3737,7 +3747,7 @@ private final class PremiumIntroScreenComponent: CombinedComponent {
                         }
                     }
                 ),
-                availableSize: CGSize(width: context.availableSize.width - 32.0, height: context.availableSize.width),
+                availableSize: CGSize(width: context.availableSize.width - 32.0 - bandWidthReduction, height: context.availableSize.width),
                 transition: context.transition
             )
             
@@ -3807,7 +3817,7 @@ private final class PremiumIntroScreenComponent: CombinedComponent {
 
             if let scrollView = state.scrollExternalState.scrollView {
                 context.addWithExternalContainer(header
-                    .position(CGPoint(x: context.availableSize.width / 2.0, y: headerOriginY + header.size.height / 2.0)),
+                    .position(CGPoint(x: bandCenterX, y: headerOriginY + header.size.height / 2.0)),
                     container: scrollView
                 )
             }
@@ -3862,14 +3872,14 @@ private final class PremiumIntroScreenComponent: CombinedComponent {
             }
             
             context.addWithExternalContainer(title
-                .position(CGPoint(x: context.availableSize.width / 2.0, y: max(topInset + 160.0 - titleOffset, navigationTitleCenterY)))
+                .position(CGPoint(x: bandCenterX, y: max(topInset + 160.0 - titleOffset, navigationTitleCenterY)))
                 .scale(titleScale)
                 .opacity(titleAlpha),
                 container: context.component.overNavigationContainer
             )
             
             context.addWithExternalContainer(secondaryTitle
-                .position(CGPoint(x: context.availableSize.width / 2.0, y: max(topInset + 160.0 - titleOffset, navigationTitleCenterY)))
+                .position(CGPoint(x: bandCenterX, y: max(topInset + 160.0 - titleOffset, navigationTitleCenterY)))
                 .scale(titleScale)
                 .opacity(max(0.0, 1.0 - titleAlpha * 1.8)),
                 container: context.component.overNavigationContainer
@@ -3929,6 +3939,9 @@ private final class PremiumIntroScreenComponent: CombinedComponent {
                 }
                 
                 let controller = environment.controller
+                // A bottom button spans iPhone Duo's side strip; it keeps clear only of a corner block at the bottom.
+                let buttonBottomInsets = environment.bottomEdgeSideInsets()
+                let buttonCenterX = buttonBottomInsets.left + (context.availableSize.width - buttonBottomInsets.left - buttonBottomInsets.right) / 2.0
                 let buttonGradientColors = [
                     UIColor(rgb: 0x0077ff),
                     UIColor(rgb: 0x6b93ff),
@@ -3984,7 +3997,7 @@ private final class PremiumIntroScreenComponent: CombinedComponent {
                             }
                         }
                     ),
-                    availableSize: CGSize(width: context.availableSize.width - buttonInsets.left - buttonInsets.right - environment.safeInsets.left - environment.safeInsets.right, height: 52.0),
+                    availableSize: CGSize(width: context.availableSize.width - buttonInsets.left - buttonInsets.right - buttonBottomInsets.left - buttonBottomInsets.right, height: 52.0),
                     transition: context.transition)
                                
                 let bottomEdgeEffectHeight = 13.0 + buttonInsets.bottom + button.size.height
@@ -4013,7 +4026,7 @@ private final class PremiumIntroScreenComponent: CombinedComponent {
                     })
                 )
                 context.add(button
-                    .position(CGPoint(x: context.availableSize.width / 2.0, y: context.availableSize.height - buttonInsets.bottom - button.size.height / 2.0))
+                    .position(CGPoint(x: buttonCenterX, y: context.availableSize.height - buttonInsets.bottom - button.size.height / 2.0))
                     .disappear(ComponentTransition.Disappear { view, transition, completion in
                         if case .none = transition.animation {
                             completion()

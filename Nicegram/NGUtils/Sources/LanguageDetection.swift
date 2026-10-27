@@ -1,10 +1,9 @@
 import AccountContext
 import NaturalLanguage
-import Postbox
 import SwiftSignalKit
 import TelegramCore
 
-public func detectInterlocutorLanguage(forChatWith id: PeerId, context: AccountContext) -> Signal<String?, NoError> {
+public func detectInterlocutorLanguage(forChatWith id: EnginePeer.Id, context: AccountContext) -> Signal<String?, NoError> {
     let userId = context.account.peerId
     return context.engine.messages.allMessages(peerId: id, namespace: Namespaces.Message.Cloud)
     |> map { messages -> String? in

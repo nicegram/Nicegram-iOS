@@ -1,6 +1,6 @@
 import Foundation
 import Postbox
-import TelegramApi
+internal import TelegramApi
 
 
 func imageRepresentationsForApiChatPhoto(_ photo: Api.ChatPhoto) -> [TelegramMediaImageRepresentation] {
@@ -63,13 +63,6 @@ private func parseTelegramCommunity(communityData: Api.Chat.Cons_community) -> T
         defaultBannedRights: defaultBannedRights.flatMap(TelegramChatBannedRights.init)
     )
 }
-// Nicegram NGDataSharing
-public func peer(with chat: Api.Chat?) -> Peer? {
-    guard let chat else { return nil }
-    
-    return parseTelegramGroupOrChannel(chat: chat)
-}
-//
 
 func parseTelegramGroupOrChannel(chat: Api.Chat) -> Peer? {
     switch chat {
@@ -198,6 +191,12 @@ func parseTelegramGroupOrChannel(chat: Api.Chat) -> Peer? {
         if (flags2 & Int32(1 << 19)) != 0 {
             channelFlags.insert(.displayForumAsTabs)
         }
+        // in_news (flags2.21) is parked with the feed API: layer 232's channel has no such field.
+#if TELEGRAM_NEWS_FEED_API
+        if (flags2 & Int32(1 << 21)) != 0 {
+            channelFlags.insert(.isInNews)
+        }
+#endif
         var storiesHidden: Bool?
         if flags2 & (1 << 2) == 0 { // stories_hidden_min
             if flags2 & (1 << 1) != 0 {

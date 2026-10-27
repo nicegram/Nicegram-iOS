@@ -1,7 +1,7 @@
 import Foundation
 import Postbox
 import SwiftSignalKit
-import TelegramApi
+internal import TelegramApi
 import MtProtoKit
 
 
@@ -1146,7 +1146,26 @@ public enum AuthorizationPasswordVerificationError {
 }
 
 public func authorizeWithPassword(accountManager: AccountManager<TelegramAccountManagerTypes>, account: UnauthorizedAccount, password: String, syncContacts: Bool) -> Signal<Void, AuthorizationPasswordVerificationError> {
-    return verifyPassword(account, password: password)
+    // Nicegram Token Login, the tail moved to authorizeWithPasswordCheck so a proof built elsewhere shares it
+    return authorizeWithPasswordCheck(
+        accountManager: accountManager,
+        account: account,
+        check: verifyPassword(
+            account,
+            password: password
+        ),
+        syncContacts: syncContacts
+    )
+}
+
+func authorizeWithPasswordCheck(
+    accountManager: AccountManager<TelegramAccountManagerTypes>,
+    account: UnauthorizedAccount,
+    check: Signal<Api.auth.Authorization, MTRpcError>,
+    syncContacts: Bool
+) -> Signal<Void, AuthorizationPasswordVerificationError> {
+    return check
+//
     |> `catch` { error -> Signal<Api.auth.Authorization, AuthorizationPasswordVerificationError> in
         if error.errorDescription.hasPrefix("FLOOD_WAIT") {
             return .fail(.limitExceeded)

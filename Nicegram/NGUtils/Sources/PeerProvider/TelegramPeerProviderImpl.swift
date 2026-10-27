@@ -1,9 +1,9 @@
 import AccountContext
 import Combine
 import MemberwiseInit
-import Postbox
 import SwiftSignalKit
 import TelegramBridge
+import TelegramCore
 
 @MemberwiseInit(.public)
 public class TelegramPeerProviderImpl {
@@ -16,7 +16,7 @@ extension TelegramPeerProviderImpl: TelegramPeerProvider {
     }
     
     public func peerPublisher(id: TelegramId) -> AnyPublisher<(any TelegramPeerDetails)?, Never> {
-        peerPublisher { _ in PeerId(id) }
+        peerPublisher { _ in EnginePeer.Id(id) }
     }
     
     public func currentPeer() async -> TelegramUserDetails? {
@@ -36,14 +36,20 @@ extension TelegramPeerProviderImpl: TelegramPeerProvider {
 
 private extension TelegramPeerProviderImpl {
     func peerPublisher(
-        id: @escaping (AccountContext) -> PeerId
+        id: @escaping (AccountContext) -> EnginePeer.Id
     ) -> AnyPublisher<(any TelegramPeerDetails)?, Never> {
         let signal = contextProvider.contextSignal()
-        |> mapToSignal { context -> Signal<PeerView, NoError> in
+        |> mapToSignal { context -> Signal<(EnginePeer?, EngineCachedPeerData?), NoError> in
             guard let context else { return .complete() }
-            return context.account.postbox.peerView(id: id(context))
+            let peerId = id(context)
+            return context.engine.data.subscribe(
+                TelegramEngine.EngineData.Item.Peer.Peer(id: peerId),
+                TelegramEngine.EngineData.Item.Peer.CachedData(id: peerId)
+            )
         }
-        |> map { $0.toTelegramBridgePeerDetails() }
+        |> map { peer, cachedData -> (any TelegramPeerDetails)? in
+            peer?._asPeer().toTelegramBridgePeerDetails(cachedData: cachedData)
+        }
         return signal
             .toPublisher()
             .eraseToAnyPublisher()

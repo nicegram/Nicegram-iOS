@@ -1,10 +1,9 @@
 import Foundation
 import Postbox
-import TelegramApi
+internal import TelegramApi
 
 
-// Nicegram NGDataSharing, 'public'
-public extension ExportedInvitation {
+extension ExportedInvitation {
     init(apiExportedInvite: Api.ExportedChatInvite) {
         switch apiExportedInvite {
             case let .chatInviteExported(chatInviteExportedData):

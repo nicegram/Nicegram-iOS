@@ -1,6 +1,5 @@
 import AccountContext
 import Display
-import Postbox
 import SwiftSignalKit
 import TelegramCore
 import TextFormat
@@ -18,7 +17,7 @@ struct OpenResolvedUrlParams {
     let sendSticker: ((FileMediaReference, UIView?, CGRect?) -> Bool)?
     let sendEmoji: ((String, ChatTextInputTextCustomEmojiAttribute) -> Void)?
     let requestMessageActionUrlAuth: ((MessageActionUrlSubject) -> Void)?
-    let joinVoiceChat: ((PeerId, String?, CachedChannelData.ActiveCall) -> Void)?
+    let joinVoiceChat: ((EnginePeer.Id, String?, CachedChannelData.ActiveCall) -> Void)?
     let present: (ViewController, Any?) -> Void
     let dismissInput: () -> Void
     let contentContext: Any?

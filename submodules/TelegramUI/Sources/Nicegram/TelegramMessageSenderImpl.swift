@@ -1,7 +1,6 @@
 import MemberwiseInit
 import NGCore
 import NGUtils
-import Postbox
 import SwiftSignalKit
 import TelegramBridge
 import TelegramCore
@@ -38,7 +37,7 @@ extension TelegramMessageSenderImpl: TelegramMessageSender {
 private extension TelegramMessageSenderImpl {
     func send(
         media: TelegramSendMessageIntent.Media?,
-        peerId: PeerId,
+        peerId: EnginePeer.Id,
         text: String
     ) async throws {
         let context = try contextProvider.context().unwrap()
@@ -69,10 +68,10 @@ private extension TelegramMessageSenderImpl {
     
     func resolvePeerId(
         _ recipient: TelegramSendMessageIntent.Recipient
-    ) async throws -> PeerId {
+    ) async throws -> EnginePeer.Id {
         switch recipient {
         case let .peerId(peerId):
-            return PeerId(peerId)
+            return EnginePeer.Id(peerId)
         case .savedMessages:
             let context = try contextProvider.context().unwrap()
             return context.account.peerId
@@ -115,11 +114,11 @@ private extension TelegramMessageSenderImpl {
     
     func toTelegramMedia(
         _ file: LocalFile
-    ) throws -> Media {
+    ) throws -> TelegramMediaFile {
         let context = try contextProvider.context().unwrap()
         
         let path = file.url.path
-        let size = try fileSize(path).unwrap()
+        let size = try engineFileSize(path).unwrap()
         let id = Int64.random(in: Int64.min...Int64.max)
         let resource = LocalFileMediaResource(
             fileId: id,
@@ -127,19 +126,19 @@ private extension TelegramMessageSenderImpl {
         )
         
         if file.isTemporary {
-            context.account.postbox.mediaBox.moveResourceData(
-                resource.id,
+            context.engine.resources.moveResourceData(
+                id: EngineMediaResource.Id(resource.id),
                 fromTempPath: path
             )
         } else {
-            context.account.postbox.mediaBox.copyResourceData(
-                resource.id,
+            context.engine.resources.copyResourceData(
+                id: EngineMediaResource.Id(resource.id),
                 fromTempPath: path
             )
         }
         
         let media = TelegramMediaFile(
-            fileId: MediaId(namespace: Namespaces.Media.LocalFile, id: id),
+            fileId: EngineMedia.Id(namespace: Namespaces.Media.LocalFile, id: id),
             partialReference: nil,
             resource: resource,
             previewRepresentations: [],

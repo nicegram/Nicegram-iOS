@@ -3,7 +3,6 @@ import UIKit
 import AVFoundation
 import AsyncDisplayKit
 import TelegramCore
-import Postbox
 import Display
 import ComponentFlow
 import SwiftSignalKit
@@ -47,7 +46,7 @@ import OpenInExternalAppUI
 import CreateBotScreen
 import WalletSendScreen
 
-private func defaultNavigationForPeerId(_ peerId: PeerId?, navigation: ChatControllerInteractionNavigateToPeer) -> ChatControllerInteractionNavigateToPeer {
+private func defaultNavigationForPeerId(_ peerId: EnginePeer.Id?, navigation: ChatControllerInteractionNavigateToPeer) -> ChatControllerInteractionNavigateToPeer {
     if case .default = navigation {
         if let peerId = peerId {
             if peerId.namespace == Namespaces.Peer.CloudUser {
@@ -75,7 +74,7 @@ func openResolvedUrlImpl(
     sendSticker: ((FileMediaReference, UIView?, CGRect?) -> Bool)?,
     sendEmoji: ((String, ChatTextInputTextCustomEmojiAttribute) -> Void)?,
     requestMessageActionUrlAuth: ((MessageActionUrlSubject) -> Void)? = nil,
-    joinVoiceChat: ((PeerId, String?, CachedChannelData.ActiveCall) -> Void)?,
+    joinVoiceChat: ((EnginePeer.Id, String?, CachedChannelData.ActiveCall) -> Void)?,
     present: @escaping (ViewController, Any?) -> Void,
     dismissInput: @escaping () -> Void,
     contentContext: Any?,
@@ -122,6 +121,50 @@ func openResolvedUrlImpl(
             requestMessageActionUrlAuth?(.url(url: url, inAppOrigin: nil))
             dismissInput()
             break
+        case let .noPaidMessagesToken(peer, token):
+            dismissInput()
+            
+            let progressSignal = Signal<Never, NoError> { subscriber in
+                progress?.set(.single(true))
+                return ActionDisposable {
+                    Queue.mainQueue().async() {
+                        progress?.set(.single(false))
+                    }
+                }
+            }
+            |> runOn(Queue.mainQueue())
+            |> delay(0.1, queue: Queue.mainQueue())
+            let progressDisposable = progressSignal.startStrict()
+            
+            let _ = (context.engine.peers.importNoPaidMessagesToken(peerId: peer.id, token: token)
+            |> map(Optional.init)
+            |> `catch` { error -> Signal<EnginePeer?, ImportNoPaidMessagesTokenError> in
+                if case .invalidToken = error {
+                    return .single(nil)
+                }
+                return .fail(error)
+            }
+            |> afterDisposed {
+                Queue.mainQueue().async {
+                    progressDisposable.dispose()
+                }
+            }
+            |> deliverOnMainQueue).startStandalone(next: { updatedPeer in
+                let enginePeer = updatedPeer ?? EnginePeer(peer)
+                openPeer(enginePeer, .chat(textInputState: nil, subject: nil, peekData: nil))
+                let text: String
+                if updatedPeer != nil {
+                    text = presentationData.strings.QrStudio_NoPaidToken_Imported(enginePeer.compactDisplayTitle).string
+                } else {
+                    text = presentationData.strings.QrStudio_NoPaidToken_Invalid
+                }
+                Queue.mainQueue().after(0.4, {
+                    present(UndoOverlayController(presentationData: presentationData, content: .info(title: nil, text: text, timeout: nil, customUndoText: nil), elevatedLayout: true, animateInAsReplacement: false, action: { _ in return true }), nil)
+                })
+            }, error: { _ in
+                openPeer(EnginePeer(peer), .chat(textInputState: nil, subject: nil, peekData: nil))
+                present(textAlertController(context: context, updatedPresentationData: updatedPresentationData, title: nil, text: presentationData.strings.Login_UnknownError, actions: [TextAlertAction(type: .defaultAction, title: presentationData.strings.Common_OK, action: {})]), nil)
+            })
         case let .peer(peer, navigation):
             if let peer = peer {
                 openPeer(EnginePeer(peer), defaultNavigationForPeerId(peer.id, navigation: navigation))
@@ -473,7 +516,7 @@ func openResolvedUrlImpl(
                             if let photoRepresentation = invite.photoRepresentation {
                                 photo.append(photoRepresentation)
                             }
-                            let channel = TelegramChannel(id: PeerId(namespace: Namespaces.Peer.CloudChannel, id: PeerId.Id._internalFromInt64Value(0)), accessHash: .genericPublic(0), title: invite.title, username: nil, photo: photo, creationDate: 0, version: 0, participationStatus: .left, info: .broadcast(TelegramChannelBroadcastInfo(flags: [])), flags: [], restrictionInfo: nil, adminRights: nil, bannedRights: nil, defaultBannedRights: nil, usernames: [], storiesHidden: nil, nameColor: invite.nameColor, backgroundEmojiId: nil, profileColor: nil, profileBackgroundEmojiId: nil, emojiStatus: nil, approximateBoostLevel: nil, subscriptionUntilDate: nil, verificationIconFileId: nil, sendPaidMessageStars: nil, linkedMonoforumId: nil)
+                            let channel = TelegramChannel(id: EnginePeer.Id(namespace: Namespaces.Peer.CloudChannel, id: EnginePeer.Id.Id._internalFromInt64Value(0)), accessHash: .genericPublic(0), title: invite.title, username: nil, photo: photo, creationDate: 0, version: 0, participationStatus: .left, info: .broadcast(TelegramChannelBroadcastInfo(flags: [])), flags: [], restrictionInfo: nil, adminRights: nil, bannedRights: nil, defaultBannedRights: nil, usernames: [], storiesHidden: nil, nameColor: invite.nameColor, backgroundEmojiId: nil, profileColor: nil, profileBackgroundEmojiId: nil, emojiStatus: nil, approximateBoostLevel: nil, subscriptionUntilDate: nil, verificationIconFileId: nil, sendPaidMessageStars: nil, linkedMonoforumId: nil)
                             let invoice = TelegramMediaInvoice(title: "", description: "", photo: nil, receiptMessageId: nil, currency: "XTR", totalAmount: subscriptionPricing.amount.value, startParam: "", extendedMedia: nil, subscriptionPeriod: nil, flags: [], version: 0)
                             
                             inputData.set(.single(BotCheckoutController.InputData(
@@ -656,7 +699,7 @@ func openResolvedUrlImpl(
             })
             dismissInput()
         case let .share(url, text, to):
-            let continueWithPeer: (PeerId, Int64?) -> Void = { [navigationController] peerId, threadId in
+            let continueWithPeer: (EnginePeer.Id, Int64?) -> Void = { [navigationController] peerId, threadId in
                 let textInputState: ChatTextInputState?
                 if let text = text, !text.isEmpty {
                     if let url = url, !url.isEmpty {
@@ -741,7 +784,7 @@ func openResolvedUrlImpl(
                 }
             } else {
                 if let url = url, !url.isEmpty {
-                    let shareController = context.sharedContext.makeShareController(context: context, params: ShareControllerParams(subject: .url(url), presetText: text, externalShare: false, immediateExternalShare: false, actionCompleted: {
+                    let shareController = context.sharedContext.makeShareScreen(context: context, params: ShareControllerParams(subject: .url(url), presetText: text, externalShare: false, immediateExternalShare: false, actionCompleted: {
                         present(UndoOverlayController(presentationData: presentationData, content: .linkCopied(title: nil, text: presentationData.strings.Conversation_LinkCopied), elevatedLayout: false, animateInAsReplacement: false, action: { _ in return false }), nil)
                     }))
                     present(shareController, nil)
@@ -1586,7 +1629,7 @@ func openResolvedUrlImpl(
             }
         case let .story(peerId, id):
             let _ = (context.account.postbox.transaction { transaction -> Bool in
-                if let value = transaction.getStory(id: StoryId(peerId: peerId, id: id)), !value.data.isEmpty {
+                if let value = transaction.getStory(id: EngineStoryId(peerId: peerId, id: id)), !value.data.isEmpty {
                     return true
                 } else {
                     return false
@@ -1594,7 +1637,7 @@ func openResolvedUrlImpl(
             }
             |> deliverOnMainQueue).startStandalone(next: { [navigationController] exists in
                 if exists {
-                    let storyContent = SingleStoryContentContextImpl(context: context, storyId: StoryId(peerId: peerId, id: id), readGlobally: true)
+                    let storyContent = SingleStoryContentContextImpl(context: context, storyId: EngineStoryId(peerId: peerId, id: id), readGlobally: true)
                     let _ = (storyContent.state
                     |> take(1)
                     |> deliverOnMainQueue).startStandalone(next: { [weak navigationController] _ in
@@ -1712,7 +1755,7 @@ func openResolvedUrlImpl(
             |> deliverOnMainQueue).startStandalone(next: { [weak navigationController] giftCode in
                 if let giftCode {
                     if giftCode.fromPeerId == nil, let toPeerId = giftCode.toPeerId {
-                        let fromPeerId: PeerId
+                        let fromPeerId: EnginePeer.Id
                         if case let .chat(peerId, message, _) = urlContext {
                             fromPeerId = message?.author?.id ?? peerId
                         } else {

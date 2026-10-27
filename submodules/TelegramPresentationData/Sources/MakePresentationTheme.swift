@@ -3,13 +3,18 @@ import UIKit
 import Postbox
 import TelegramUIPreferences
 import TelegramCore
+// Nicegram DefaultTheme
+import AppBundle
+//
 
 public func makeDefaultPresentationTheme(reference: PresentationBuiltinThemeReference, extendingThemeReference: PresentationThemeReference? = nil, serviceBackgroundColor: UIColor?, preview: Bool = false) -> PresentationTheme {
     let theme: PresentationTheme
     switch reference {
         // Nicegram DefaultTheme
         case .nicegram:
-            if let nicegramThemeFileUrl = Bundle.main.url(forResource: "nicegram-theme", withExtension: "txt"),
+            // The file ships only in the main app; Bundle.main in an extension is the .appex, which
+            // made the share extension fall back to the light classic theme.
+            if let nicegramThemeFileUrl = getAppBundle().url(forResource: "nicegram-theme", withExtension: "txt"),
                let nicegramThemeData = try? Data(contentsOf: nicegramThemeFileUrl),
                let nicegramTheme = makePresentationTheme(data: nicegramThemeData) {
                 theme = nicegramTheme

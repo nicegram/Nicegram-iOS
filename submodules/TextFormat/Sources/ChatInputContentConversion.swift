@@ -413,8 +413,21 @@ public func chatInputContent(from attributedText: NSAttributedString) -> ChatInp
     var cursor = 0
     for carve in carves {
         var gapEnd = carve.range.location
-        if gapEnd > cursor && full.character(at: gapEnd - 1) == 0x0A { gapEnd -= 1 }
-        if gapEnd > cursor { blocks.append(contentsOf: paragraphBlocks(in: NSRange(location: cursor, length: gapEnd - cursor))) }
+        var gapHadSeparator = false
+        if gapEnd > cursor && full.character(at: gapEnd - 1) == 0x0A {
+            gapEnd -= 1
+            gapHadSeparator = true
+        }
+        if gapEnd > cursor {
+            blocks.append(contentsOf: paragraphBlocks(in: NSRange(location: cursor, length: gapEnd - cursor)))
+        } else if gapHadSeparator {
+            // The gap is exactly one "\n": the separator BEFORE this carve, with the cursor already past
+            // the separator after the previous block (or at the start). Between those two separators is
+            // one EMPTY line — `"A\n\nB"` between two quotes or code blocks is `[A] [p ""] [B]`, which
+            // `attributedString(from:)` encodes exactly so. Emitting nothing lost that line on every edit
+            // load of a sent message (composer harness p20, `HarnessSendPathBlankLineReloadTests`).
+            blocks.append(.paragraph(ChatInputParagraph(style: .body, runs: [])))
+        }
         switch carve.kind {
         case let .code(language):
             blocks.append(.code(ChatInputCode(
@@ -431,7 +444,18 @@ public func chatInputContent(from attributedText: NSAttributedString) -> ChatInp
                 collapsed: true)))
         }
         cursor = carve.range.location + carve.range.length
-        if cursor < full.length && full.character(at: cursor) == 0x0A { cursor += 1 }
+        if cursor < full.length && full.character(at: cursor) == 0x0A {
+            cursor += 1
+            if cursor == full.length {
+                // The separator after the block is the text's LAST character, so an empty line
+                // follows it: `"abc\n"` is `[code "abc"] [p ""]`, which `attributedString(from:)`
+                // encodes exactly so. Emitting nothing dropped the line, and the legacy composer,
+                // which writes the model back into its text view, then removed the line break
+                // outside UIKit's undo stack — the next Undo raised `NSRangeException`
+                // (`HarnessLegacyDeleteLineAfterBlockUndoTests`).
+                blocks.append(.paragraph(ChatInputParagraph(style: .body, runs: [])))
+            }
+        }
     }
     if cursor < full.length { blocks.append(contentsOf: paragraphBlocks(in: NSRange(location: cursor, length: full.length - cursor))) }
 

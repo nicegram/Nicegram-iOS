@@ -1,7 +1,6 @@
 import AccountContext
 import Factory
 import FeatAiChatAnalysis
-import Postbox
 import TelegramCore
 
 public class SourceMessagesMapper {
@@ -23,14 +22,14 @@ public class SourceMessagesMapper {
 //  MARK: - Public Functions
 
 public extension SourceMessagesMapper {
-    func toSourceMessages(_ messages: [Message]) async -> [SourceData.Message] {
+    func toSourceMessages(_ messages: [EngineRawMessage]) async -> [SourceData.Message] {
         await messages.asyncMap {
             await toSourceMessage($0)
         }
     }
 }
 
-public extension [Message] {
+public extension [EngineRawMessage] {
     func toSourceMessages(context: AccountContext) async -> [SourceData.Message] {
         await SourceMessagesMapper(context: context).toSourceMessages(self)
     }
@@ -39,7 +38,7 @@ public extension [Message] {
 //  MARK: - Private Functions
 
 private extension SourceMessagesMapper {
-    func toSourceMessage(_ message: Message) async -> SourceData.Message {
+    func toSourceMessage(_ message: EngineRawMessage) async -> SourceData.Message {
         let author = message.author?.debugDisplayTitle ?? ""
         let date = Double(message.timestamp)
         let content = await getContent(message)
@@ -51,7 +50,7 @@ private extension SourceMessagesMapper {
         )
     }
     
-    func getContent(_ message: Message) async -> String {
+    func getContent(_ message: EngineRawMessage) async -> String {
         var result = message.text
         
         let mediaText = message.media
@@ -65,10 +64,11 @@ private extension SourceMessagesMapper {
             }
             
             do {
-                let replyMessage = try await context.account.postbox
-                    .messageAtId(reply.messageId)
+                let replyMessage = try await context.engine.data
+                    .get(TelegramEngine.EngineData.Item.Messages.Message(id: reply.messageId))
                     .awaitForFirstValue()
                     .unwrap()
+                    ._asMessage()
                 let sourceMessage = await toSourceMessage(replyMessage)
                 let sourceMessageString = sourceDataEncoder.toString(message: sourceMessage)
                 result += " (Reply to: \(sourceMessageString))"
@@ -78,7 +78,7 @@ private extension SourceMessagesMapper {
         return result
     }
     
-    func getText(for media: Media) -> String? {
+    func getText(for media: EngineRawMedia) -> String? {
         switch media {
         case let media as TelegramMediaFile:
             "[File_attached_\(media.fileName ?? media.mimeType)]"

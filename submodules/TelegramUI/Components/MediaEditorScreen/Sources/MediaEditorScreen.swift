@@ -9,7 +9,6 @@ import ViewControllerComponent
 import ComponentDisplayAdapters
 import TelegramPresentationData
 import AccountContext
-import Postbox
 import TelegramCore
 import MultilineTextComponent
 import DrawingUI
@@ -56,6 +55,41 @@ import GlassBarButtonComponent
 import GlassBackgroundComponent
 import Weather
 import UniformTypeIdentifiers
+import MediaAssetsContext
+
+/// iPhone Duo, sticker editor: the square sticker frame (0.97 of the preview's width), the undo button above it and the
+/// cut-out and outline buttons below it have to fit between the top of the screen and the editor's bottom bar, and keep
+/// to the band beside a side strip. Around a full-width 9:16 preview they do not on these screens, which are wide for
+/// their height (466x678 folded: the outline button fell below the screen; 669x951 unfolded: so did cut-out), so the
+/// preview is narrowed and placed with the frame in that space. The sticker is the canvas-centred square either way, so
+/// only the preview's scale changes. Returns the preview's frame on iPhone Duo (reserved corners), nil elsewhere, where
+/// the usual placement is kept.
+func mediaEditorStickerPreviewFrame(screenSize: CGSize, safeInsets: UIEdgeInsets, reservedCorners: ContainerViewLayoutCorners, statusBarHeight: CGFloat, hasStatusIsland: Bool, homeIndicatorInset: CGFloat) -> CGRect? {
+    if reservedCorners == .none {
+        return nil
+    }
+    let frameFraction: CGFloat = 0.97
+    let spaceAboveFrame: CGFloat = 35.0 + 40.0
+    let spaceBelowFrame: CGFloat = 35.0 + 40.0 + 16.0 + 40.0
+    // The bottom bar's buttons start 8pt above where the editor's controls inset puts them (see the component's
+    // `controlsBottomInset`: mirrored on the status island's clock line beside the island, 62pt above the home
+    // indicator otherwise).
+    let controlsBottomInset: CGFloat = hasStatusIsland ? -(statusBarHeight + 31.0 + 30.0) : -62.0 - homeIndicatorInset
+    let bottomLimit = screenSize.height + 8.0 + controlsBottomInset - 8.0
+    let topLimit = statusBarHeight + 8.0
+    let available = bottomLimit - topLimit
+    
+    let bandMinX = safeInsets.left
+    let bandWidth = screenSize.width - safeInsets.left - safeInsets.right
+    let frameWidth = max(100.0, min(floor(bandWidth * frameFraction), available - spaceAboveFrame - spaceBelowFrame))
+    let previewWidth = min(bandWidth, floorToScreenPixels(frameWidth / frameFraction))
+    let previewHeight = floorToScreenPixels(previewWidth * 1.77778)
+    let actualFrameWidth = floorToScreenPixels(previewWidth * frameFraction)
+    let slack = max(0.0, available - spaceAboveFrame - spaceBelowFrame - actualFrameWidth)
+    let frameMinY = topLimit + spaceAboveFrame + floorToScreenPixels(slack / 2.0)
+    let previewMinY = frameMinY - floorToScreenPixels((previewHeight - actualFrameWidth) / 2.0)
+    return CGRect(origin: CGPoint(x: bandMinX + floorToScreenPixels((bandWidth - previewWidth) / 2.0), y: previewMinY), size: CGSize(width: previewWidth, height: previewHeight))
+}
 
 private let playbackButtonTag = GenericComponentViewTag()
 private let muteButtonTag = GenericComponentViewTag()
@@ -772,6 +806,14 @@ final class MediaEditorScreenComponent: Component {
                 return availableSize
             }
             let environment = environment[ViewControllerComponentContainer.Environment.self].value
+            // iPhone Duo unfolded portrait: the top row sits on the status island's clock line (as the drawing
+            // screen's does), its right buttons left of the island; elsewhere the row keeps its usual place.
+            func topRowY(height: CGFloat) -> CGFloat {
+                if environment.navigationBarTrailingButtonsInset > 0.0 {
+                    return environment.statusBarHeight + 31.0 - height / 2.0
+                }
+                return max(environment.statusBarHeight + 10.0, environment.safeInsets.top + 20.0)
+            }
             guard let controller = environment.controller() as? MediaEditorScreenImpl else {
                 return availableSize
             }
@@ -810,7 +852,7 @@ final class MediaEditorScreenComponent: Component {
             let buttonSideInset: CGFloat
             let buttonBottomInset: CGFloat = 8.0
             var controlsBottomInset: CGFloat = 0.0
-            let previewSize: CGSize
+            var previewSize: CGSize
             var topInset: CGFloat = environment.statusBarHeight + 5.0
             if isTablet {
                 let previewHeight = availableSize.height - topInset - 75.0
@@ -822,7 +864,19 @@ final class MediaEditorScreenComponent: Component {
                 if availableSize.height < previewSize.height + 30.0 {
                     topInset = 0.0
                     controlsBottomInset = -62.0
-                    buttonSideInset = 9.0
+                    if environment.navigationBarTrailingButtonsInset > 0.0 {
+                        // Beside a status island the bottom bar mirrors the top row (see topRowY): its 44pt buttons
+                        // centred compact status height + 31 above the bottom edge, as the drawing screen's are.
+                        controlsBottomInset = min(controlsBottomInset, -(environment.statusBarHeight + 31.0 + 30.0))
+                    } else {
+                        // Elsewhere 62pt above the home indicator. The 62pt was set for home-button phones, the only phones
+                        // with a preview taller than the screen until iPhone Duo, whose folded screen it left with the
+                        // buttons on the indicator.
+                        controlsBottomInset -= component.bottomSafeInset
+                    }
+                    // Beside a status island the bottom buttons keep the top rows' 16pt side inset; so do they on the folded
+                    // screen, whose outer corners (59pt) would clip a button 9pt from the edge (iPhone Duo).
+                    buttonSideInset = (environment.navigationBarTrailingButtonsInset > 0.0 || environment.reservedCorners != .none) ? 16.0 : 9.0
                 } else {
                     if availableSize.width > 320.0 {
                         buttonSideInset = 16.0
@@ -834,6 +888,15 @@ final class MediaEditorScreenComponent: Component {
             var previewFrame = CGRect(origin: CGPoint(x: floorToScreenPixels((availableSize.width - previewSize.width) / 2.0), y: topInset), size: previewSize)
             if availableSize.height < 680.0, case .stickerEditor = controller.mode {
                 previewFrame = previewFrame.offsetBy(dx: 0.0, dy: -44.0)
+            }
+            // The sticker frame's buttons centre on the frame, which beside a side strip is the band's centre, not the screen's
+            // (iPhone Duo folded: an erase and restore pair centred on the screen reached 16pt into the strip).
+            var stickerButtonsCenterX: CGFloat = availableSize.width / 2.0
+            if !isTablet, case .stickerEditor = controller.mode, let stickerPreviewFrame = mediaEditorStickerPreviewFrame(screenSize: availableSize, safeInsets: environment.safeInsets, reservedCorners: environment.reservedCorners, statusBarHeight: environment.statusBarHeight, hasStatusIsland: environment.navigationBarTrailingButtonsInset > 0.0, homeIndicatorInset: component.bottomSafeInset) {
+                // iPhone Duo: see `mediaEditorStickerPreviewFrame` (the node places the preview the same way).
+                previewSize = stickerPreviewFrame.size
+                previewFrame = stickerPreviewFrame
+                stickerButtonsCenterX = stickerPreviewFrame.midX
             }
             let topButtonsAlpha: CGFloat = isRecordingAdditionalVideo ? 0.3 : 1.0
             let bottomButtonsAlpha: CGFloat = isRecordingAdditionalVideo ? 0.3 : 1.0
@@ -963,7 +1026,9 @@ final class MediaEditorScreenComponent: Component {
                 containerSize: CGSize(width: availableSize.width, height: 44.0)
             )
             let doneButtonFrame = CGRect(
-                origin: CGPoint(x: availableSize.width - buttonSideInset - doneButtonSize.width, y: availableSize.height - environment.safeInsets.bottom + buttonBottomInset + controlsBottomInset),
+                // The wide (tablet) layout keeps the button clear of the right inset. A bottom button spans iPhone Duo's
+                // side strip; it keeps clear only of a corner block at the bottom.
+                origin: CGPoint(x: availableSize.width - (isTablet ? environment.bottomEdgeSideInsets().right : 0.0) - buttonSideInset - doneButtonSize.width, y: availableSize.height - environment.safeInsets.bottom + buttonBottomInset + controlsBottomInset),
                 size: doneButtonSize
             )
             if let doneButtonView = self.doneButton.view {
@@ -1272,6 +1337,10 @@ final class MediaEditorScreenComponent: Component {
             }
             
             var inputPanelAvailableWidth = previewSize.width
+            if environment.navigationBarTrailingButtonsInset > 0.0 {
+                // Beside a status island the caption field keeps the top rows' 16pt side inset (its own is 9pt).
+                inputPanelAvailableWidth -= 7.0 * 2.0
+            }
             var inputPanelAvailableHeight = 103.0
             if case .regular = environment.metrics.widthClass {
                 if (self.inputPanelExternalState.isEditing || self.inputPanelExternalState.hasText) {
@@ -1730,7 +1799,7 @@ final class MediaEditorScreenComponent: Component {
                     containerSize: CGSize(width: 44.0, height: 44.0)
                 )
                 let saveButtonFrame = CGRect(
-                    origin: CGPoint(x: availableSize.width - 20.0 - saveButtonSize.width, y: max(environment.statusBarHeight + 10.0, environment.safeInsets.top + 20.0)),
+                    origin: CGPoint(x: availableSize.width - environment.safeInsets.right - environment.navigationBarTrailingButtonsInset - 20.0 - saveButtonSize.width, y: topRowY(height: saveButtonSize.height)),
                     size: saveButtonSize
                 )
                 if let saveButtonView = self.saveButton.view {
@@ -1828,7 +1897,7 @@ final class MediaEditorScreenComponent: Component {
                         containerSize: CGSize(width: 44.0, height: 44.0)
                     )
                     let dayNightButtonFrame = CGRect(
-                        origin: CGPoint(x: availableSize.width - 20.0 - dayNightButtonSize.width - 50.0, y: max(environment.statusBarHeight + 10.0, environment.safeInsets.top + 20.0)),
+                        origin: CGPoint(x: availableSize.width - environment.safeInsets.right - environment.navigationBarTrailingButtonsInset - 20.0 - dayNightButtonSize.width - 50.0, y: topRowY(height: dayNightButtonSize.height)),
                         size: dayNightButtonSize
                     )
                     if let dayNightButtonView = self.dayNightButton.view {
@@ -1923,7 +1992,7 @@ final class MediaEditorScreenComponent: Component {
                     }
                     
                     let muteButtonFrame = CGRect(
-                        origin: CGPoint(x: availableSize.width - 20.0 - muteButtonSize.width + xOffset, y: max(environment.statusBarHeight + 10.0, environment.safeInsets.top + 20.0) + yOffset),
+                        origin: CGPoint(x: availableSize.width - environment.safeInsets.right - environment.navigationBarTrailingButtonsInset - 20.0 - muteButtonSize.width + xOffset, y: topRowY(height: muteButtonSize.height) + yOffset),
                         size: muteButtonSize
                     )
                     if let muteButtonView = self.muteButton.view {
@@ -2013,7 +2082,7 @@ final class MediaEditorScreenComponent: Component {
                     }
                     
                     let playbackButtonFrame = CGRect(
-                        origin: CGPoint(x: availableSize.width - 20.0 - playbackButtonSize.width + xOffset, y: max(environment.statusBarHeight + 10.0, environment.safeInsets.top + 20.0) + yOffset),
+                        origin: CGPoint(x: availableSize.width - environment.safeInsets.right - environment.navigationBarTrailingButtonsInset - 20.0 - playbackButtonSize.width + xOffset, y: topRowY(height: playbackButtonSize.height) + yOffset),
                         size: playbackButtonSize
                     )
                     if let playbackButtonView = self.playbackButton.view {
@@ -2561,7 +2630,7 @@ final class MediaEditorScreenComponent: Component {
                         containerSize: CGSize(width: availableSize.width, height: 44.0)
                     )
                     let undoButtonFrame = CGRect(
-                        origin: CGPoint(x: floorToScreenPixels((availableSize.width - undoButtonSize.width) / 2.0), y: stickerFrameRect.minY - 35.0 - undoButtonSize.height),
+                        origin: CGPoint(x: floorToScreenPixels(stickerButtonsCenterX - undoButtonSize.width / 2.0), y: stickerFrameRect.minY - 35.0 - undoButtonSize.height),
                         size: undoButtonSize
                     )
                     if let undoButtonView = self.undoButton.view {
@@ -2607,7 +2676,7 @@ final class MediaEditorScreenComponent: Component {
                         containerSize: CGSize(width: availableSize.width, height: 44.0)
                     )
                     let cutoutButtonFrame = CGRect(
-                        origin: CGPoint(x: floorToScreenPixels((availableSize.width - cutoutButtonSize.width) / 2.0), y: stickerFrameRect.maxY + 35.0),
+                        origin: CGPoint(x: floorToScreenPixels(stickerButtonsCenterX - cutoutButtonSize.width / 2.0), y: stickerFrameRect.maxY + 35.0),
                         size: cutoutButtonSize
                     )
                     if let cutoutButtonView = self.cutoutButton.view {
@@ -2662,7 +2731,7 @@ final class MediaEditorScreenComponent: Component {
                     )
                     totalButtonsWidth += eraseButtonSize.width
                     
-                    var buttonOriginX = floorToScreenPixels((availableSize.width - totalButtonsWidth) / 2.0)
+                    var buttonOriginX = floorToScreenPixels(stickerButtonsCenterX - totalButtonsWidth / 2.0)
                        
                     if hasRestoreButton {
                         let restoreButtonSize = self.restoreButton.update(
@@ -2685,7 +2754,7 @@ final class MediaEditorScreenComponent: Component {
                         )
                         totalButtonsWidth += restoreButtonSize.width
                         
-                        buttonOriginX = floorToScreenPixels((availableSize.width - totalButtonsWidth) / 2.0)
+                        buttonOriginX = floorToScreenPixels(stickerButtonsCenterX - totalButtonsWidth / 2.0)
                         let restoreButtonFrame = CGRect(
                             origin: CGPoint(x: buttonOriginX + eraseButtonSize.width + buttonSpacing, y: stickerFrameRect.maxY + 35.0),
                             size: restoreButtonSize
@@ -2774,7 +2843,7 @@ final class MediaEditorScreenComponent: Component {
                     )
                     
                     let outlineButtonFrame = CGRect(
-                        origin: CGPoint(x: floorToScreenPixels((availableSize.width - outlineButtonSize.width) / 2.0), y: stickerFrameRect.maxY + 35.0 + 40.0 + 16.0),
+                        origin: CGPoint(x: floorToScreenPixels(stickerButtonsCenterX - outlineButtonSize.width / 2.0), y: stickerFrameRect.maxY + 35.0 + 40.0 + 16.0),
                         size: outlineButtonSize
                     )
                     if let outlineButtonView = self.outlineButton.view {
@@ -2821,7 +2890,7 @@ final class MediaEditorScreenComponent: Component {
                 containerSize: CGSize(width: 100.0, height: 30.0)
             )
             let textCancelButtonFrame = CGRect(
-                origin: CGPoint(x: 13.0, y: max(environment.statusBarHeight + 10.0, environment.safeInsets.top + 20.0)),
+                origin: CGPoint(x: 13.0, y: topRowY(height: textCancelButtonSize.height)),
                 size: textCancelButtonSize
             )
             if let textCancelButtonView = self.textCancelButton.view {
@@ -2850,7 +2919,7 @@ final class MediaEditorScreenComponent: Component {
                 containerSize: CGSize(width: 100.0, height: 30.0)
             )
             let textDoneButtonFrame = CGRect(
-                origin: CGPoint(x: availableSize.width - textDoneButtonSize.width - 13.0, y: max(environment.statusBarHeight + 10.0, environment.safeInsets.top + 20.0)),
+                origin: CGPoint(x: availableSize.width - environment.safeInsets.right - environment.navigationBarTrailingButtonsInset - textDoneButtonSize.width - 13.0, y: topRowY(height: textDoneButtonSize.height)),
                 size: textDoneButtonSize
             )
             if let textDoneButtonView = self.textDoneButton.view {
@@ -3134,6 +3203,8 @@ public final class MediaEditorScreenImpl: ViewController, MediaEditorScreen, UID
         
         private let gradientView: UIImageView
         private var gradientColorsDisposable: Disposable?
+        private var sourceLoadStateDisposable: Disposable?
+        private weak var sourceLoadingTooltip: SaveProgressScreen?
         
         fileprivate var cropScrollView: CropScrollView?
         private var cropScrollViewFrame: CGRect = .zero
@@ -3557,6 +3628,7 @@ public final class MediaEditorScreenImpl: ViewController, MediaEditorScreen, UID
         deinit {
             self.subjectDisposable?.dispose()
             self.gradientColorsDisposable?.dispose()
+            self.sourceLoadStateDisposable?.dispose()
             self.appInForegroundDisposable?.dispose()
             self.playbackPositionDisposable?.dispose()
             self.availableReactionsDisposable?.dispose()
@@ -3841,24 +3913,24 @@ public final class MediaEditorScreenImpl: ViewController, MediaEditorScreen, UID
                 controller.stickerSelectedEmoji = emoji
             case .message, .gift:
                 var isGift = false
-                let messages: Signal<[Message], NoError>
+                let messages: Signal<[EngineMessage], NoError>
                 if case let .message(messageIds) = subject {
                     messages = self.context.engine.data.get(
                         EngineDataMap(messageIds.map(TelegramEngine.EngineData.Item.Messages.Message.init(id:)))
                     )
                     |> map { result in
-                        var messages: [Message] = []
+                        var messages: [EngineMessage] = []
                         for id in messageIds {
                             if let maybeMessage = result[id], let message = maybeMessage {
-                                messages.append(message._asMessage())
+                                messages.append(message)
                             }
                         }
                         return messages
                     }
                 } else if case let .gift(gift) = subject {
                     isGift = true
-                    let media: [Media] = [TelegramMediaAction(action: .starGiftUnique(gift: .unique(gift), isUpgrade: false, isTransferred: false, savedToProfile: false, canExportDate: nil, transferStars: nil, isRefunded: false, isPrepaidUpgrade: false, peerId: nil, senderId: nil, savedId: nil, resaleAmount: nil, canTransferDate: nil, canResaleDate: nil, dropOriginalDetailsStars: nil, assigned: false, fromOffer: false, canCraftAt: nil, isCrafted: false, text: nil, entities: nil, nameHidden: false))]
-                    let message = Message(stableId: 0, stableVersion: 0, id: MessageId(peerId: self.context.account.peerId, namespace: Namespaces.Message.Cloud, id: -1), globallyUniqueId: nil, groupingKey: nil, groupInfo: nil, threadId: nil, timestamp: 0, flags: [], tags: [], globalTags: [], localTags: [], customTags: [], forwardInfo: nil, author: nil, text: "", attributes: [], media: media, peers: SimpleDictionary(), associatedMessages: SimpleDictionary(), associatedMessageIds: [], associatedMedia: [:], associatedThreadInfo: nil, associatedStories: [:])
+                    let media: [EngineMedia] = [.action(TelegramMediaAction(action: .starGiftUnique(gift: .unique(gift), isUpgrade: false, isTransferred: false, savedToProfile: false, canExportDate: nil, transferStars: nil, isRefunded: false, isPrepaidUpgrade: false, peerId: nil, senderId: nil, savedId: nil, resaleAmount: nil, canTransferDate: nil, canResaleDate: nil, dropOriginalDetailsStars: nil, assigned: false, fromOffer: false, canCraftAt: nil, isCrafted: false, text: nil, entities: nil, nameHidden: false)))]
+                    let message = EngineMessage(stableId: 0, stableVersion: 0, id: EngineMessage.Id(peerId: self.context.account.peerId, namespace: Namespaces.Message.Cloud, id: -1), globallyUniqueId: nil, groupingKey: nil, groupInfo: nil, threadId: nil, timestamp: 0, flags: [], tags: [], globalTags: [], localTags: [], customTags: [], forwardInfo: nil, author: nil, text: "", attributes: [], media: media, peers: [:], associatedMessages: [:], associatedMessageIds: [], associatedMedia: [:], associatedThreadInfo: nil, associatedStories: [:])
                     messages = .single([message])
                 } else {
                     fatalError()
@@ -3907,7 +3979,7 @@ public final class MediaEditorScreenImpl: ViewController, MediaEditorScreen, UID
                         guard let self else {
                             return
                         }
-                        let renderer = DrawingMessageRenderer(context: self.context, messages: messages.map(EngineMessage.init), parentView: self.view, isGift: isGift, wallpaperDayColor: wallpaperColors.0, wallpaperNightColor: wallpaperColors.1)
+                        let renderer = DrawingMessageRenderer(context: self.context, messages: messages, parentView: self.view, isGift: isGift, wallpaperDayColor: wallpaperColors.0, wallpaperNightColor: wallpaperColors.1)
                         renderer.render(completion: { result in
                             if isDraft, let existingEntityView = self.entitiesView.getView(where: { entityView in
                                 if let stickerEntityView = entityView as? DrawingStickerEntityView {
@@ -3999,6 +4071,13 @@ public final class MediaEditorScreenImpl: ViewController, MediaEditorScreen, UID
                     }
                 }
             })
+            // Reading the subject can mean an iCloud download. Report it, and if the media never
+            // arrives say so — the editor would otherwise sit on an empty canvas indefinitely.
+            self.sourceLoadStateDisposable = (mediaEditor.sourceLoadState
+            |> deliverOnMainQueue).start(next: { [weak self] state in
+                self?.updateSourceLoadState(state)
+            })
+            
             self.mediaEditor = mediaEditor
             self.updateCrop()
             self.mediaEditorPromise.set(.single(mediaEditor))
@@ -5047,6 +5126,36 @@ public final class MediaEditorScreenImpl: ViewController, MediaEditorScreen, UID
             }
         }
         
+        private func updateSourceLoadState(_ state: MediaEditorSourceLoadState) {
+            guard let controller = self.controller else {
+                return
+            }
+            switch state {
+            case let .loading(progress):
+                guard let progress else {
+                    return
+                }
+                let text = self.presentationData.strings.Story_Editor_DownloadingMedia
+                if let tooltip = self.sourceLoadingTooltip {
+                    tooltip.content = .progress(text, progress)
+                } else {
+                    let tooltip = SaveProgressScreen(context: self.context, content: .progress(text, progress))
+                    tooltip.cancelled = { [weak self] in
+                        self?.sourceLoadingTooltip = nil
+                    }
+                    controller.present(tooltip, in: .window(.root))
+                    self.sourceLoadingTooltip = tooltip
+                }
+            case .ready:
+                self.sourceLoadingTooltip?.dismiss()
+                self.sourceLoadingTooltip = nil
+            case .unavailable:
+                self.sourceLoadingTooltip?.dismiss()
+                self.sourceLoadingTooltip = nil
+                controller.presentMediaUnavailableAlert()
+            }
+        }
+        
         func updateVideoExportProgress(_ progress: Float) {
             guard let controller = self.controller else {
                 return
@@ -5124,15 +5233,13 @@ public final class MediaEditorScreenImpl: ViewController, MediaEditorScreen, UID
                 }
                 
                 if let asset = result as? PHAsset {
-                    let options = PHImageRequestOptions()
-                    options.deliveryMode = .highQualityFormat
-                    PHImageManager.default().requestImage(for: asset, targetSize: PHImageManagerMaximumSize, contentMode: .default, options: options) { image, _ in
-                        if let image {
-                            Queue.mainQueue().async {
-                                completeWithImage(image)
-                            }
+                    let _ = (assetFullImage(asset)
+                    |> deliverOnMainQueue).start(next: { result in
+                        guard case let .result(image) = result else {
+                            return
                         }
-                    }
+                        completeWithImage(image)
+                    })
                 } else if let image = result as? UIImage {
                     completeWithImage(image)
                 }
@@ -5279,7 +5386,7 @@ public final class MediaEditorScreenImpl: ViewController, MediaEditorScreen, UID
                         if case let .data(data) = state {
                             let path = data.path
                             
-                            try? FileManager.default.createDirectory(atPath: draftPath(engine: self.context.engine), withIntermediateDirectories: true)
+                            ensureStoryDraftDirectory(peerId: self.context.engine.account.peerId)
                             
                             var originalFileName: String = "audio_\(Int.random(in: 0 ..< .max)).mp3"
                             if let file = file.media as? TelegramMediaFile {
@@ -5321,7 +5428,7 @@ public final class MediaEditorScreenImpl: ViewController, MediaEditorScreen, UID
                 }
                 isSettingTrack = true
                 
-                try? FileManager.default.createDirectory(atPath: draftPath(engine: self.context.engine), withIntermediateDirectories: true)
+                ensureStoryDraftDirectory(peerId: self.context.engine.account.peerId)
                 
                 let isScopedResource = url.startAccessingSecurityScopedResource()
                 Logger.shared.log("MediaEditor", "isScopedResource = \(isScopedResource)")
@@ -5554,7 +5661,7 @@ public final class MediaEditorScreenImpl: ViewController, MediaEditorScreen, UID
             }
             
             let presentationData = self.context.sharedContext.currentPresentationData.with { $0 }.withUpdated(theme: defaultDarkPresentationTheme)
-            let contextController = makeContextController(presentationData: presentationData, source: .reference(ReferenceContentSource(sourceView: sourceView, contentArea: UIScreen.main.bounds, customPosition: CGPoint(x: 0.0, y: -3.0))), items: .single(ContextController.Items(content: .list(items))))
+            let contextController = makeContextController(presentationData: presentationData, source: .reference(ReferenceContentSource(sourceView: sourceView, contentArea: mainWindowScreenBounds, customPosition: CGPoint(x: 0.0, y: -3.0))), items: .single(ContextController.Items(content: .list(items))))
             self.controller?.present(contextController, in: .window(.root))
         }
         
@@ -5874,7 +5981,11 @@ public final class MediaEditorScreenImpl: ViewController, MediaEditorScreen, UID
             let progress = 1.0 - value
             let maxScale = (layout.size.width - 16.0 * 2.0) / layout.size.width
             
-            let topInset: CGFloat = (layout.statusBarHeight ?? 0.0) + 5.0
+            var topInset: CGFloat = (layout.statusBarHeight ?? 0.0) + 5.0
+            if floorToScreenPixels(layout.size.width * 1.77778) > layout.size.height + 30.0 {
+                // A 9:16 preview much taller than the whole screen (iPhone Duo) starts at the top (see `containerLayoutUpdated`).
+                topInset = 0.0
+            }
             let targetTopInset = ceil((layout.statusBarHeight ?? 0.0) - (layout.size.height - layout.size.height * maxScale) / 2.0)
             let deltaOffset = (targetTopInset - topInset)
             
@@ -6002,7 +6113,7 @@ public final class MediaEditorScreenImpl: ViewController, MediaEditorScreen, UID
             let isTablet = layout.metrics.isTablet
 
             var topInset: CGFloat = (layout.statusBarHeight ?? 0.0) + 5.0
-            let previewSize: CGSize
+            var previewSize: CGSize
             if isTablet {
                 let previewHeight = layout.size.height - topInset - 75.0
                 previewSize = CGSize(width: floorToScreenPixels(previewHeight / 1.77778), height: previewHeight)
@@ -6013,6 +6124,14 @@ public final class MediaEditorScreenImpl: ViewController, MediaEditorScreen, UID
                 }
             }
             let bottomInset = max(0.0, layout.size.height - previewSize.height - topInset)
+            // iPhone Duo, sticker editor: a narrowed preview that fits the sticker frame and its buttons (see
+            // `mediaEditorStickerPreviewFrame`; the component places them the same way). The insets above stay those of
+            // the full-width preview, so the bottom bar keeps its place.
+            var stickerPreviewOrigin: CGPoint?
+            if !isTablet, case .stickerEditor = controller.mode, let stickerPreviewFrame = mediaEditorStickerPreviewFrame(screenSize: layout.size, safeInsets: layout.safeInsets, reservedCorners: layout.reservedCorners, statusBarHeight: layout.navigationBarStatusBarHeight ?? 0.0, hasStatusIsland: layout.navigationBarTrailingButtonsInset > 0.0, homeIndicatorInset: layout.intrinsicInsets.bottom) {
+                previewSize = stickerPreviewFrame.size
+                stickerPreviewOrigin = stickerPreviewFrame.origin
+            }
             
             var layoutInputHeight = layout.inputHeight ?? 0.0
             if self.stickerScreen != nil {
@@ -6020,7 +6139,10 @@ public final class MediaEditorScreenImpl: ViewController, MediaEditorScreen, UID
             }
             
             let environment = ViewControllerComponentContainer.Environment(
-                statusBarHeight: layout.statusBarHeight ?? 0.0,
+                // Beside iPhone Duo's status island (unfolded portrait) the top row sits at the compact status height,
+                // its right buttons clear of the island (`navigationBarTrailingButtonsInset`).
+                statusBarHeight: layout.navigationBarStatusBarHeight ?? 0.0,
+                fullStatusBarHeight: layout.statusBarHeight ?? 0.0,
                 navigationHeight: 0.0,
                 safeInsets: UIEdgeInsets(
                     top: topInset,
@@ -6028,6 +6150,8 @@ public final class MediaEditorScreenImpl: ViewController, MediaEditorScreen, UID
                     bottom: bottomInset,
                     right: layout.safeInsets.right
                 ),
+                reservedCorners: layout.reservedCorners,
+                navigationBarTrailingButtonsInset: layout.navigationBarTrailingButtonsInset,
                 additionalInsets: layout.additionalInsets,
                 inputHeight: layoutInputHeight,
                 metrics: layout.metrics,
@@ -6534,6 +6658,9 @@ public final class MediaEditorScreenImpl: ViewController, MediaEditorScreen, UID
             if layout.size.height < 680.0, case .stickerEditor = controller.mode {
                 previewFrame = previewFrame.offsetBy(dx: 0.0, dy: -44.0)
             }
+            if let stickerPreviewOrigin {
+                previewFrame = CGRect(origin: CGPoint(x: stickerPreviewOrigin.x, y: stickerPreviewOrigin.y - bottomInputOffset + self.dismissOffset), size: previewSize)
+            }
             
             var previewScale: CGFloat = 1.0
             var previewOffset: CGFloat = 0.0
@@ -6756,7 +6883,7 @@ public final class MediaEditorScreenImpl: ViewController, MediaEditorScreen, UID
         case collage(MediaEditorCollage)
         case asset(PHAsset)
         case draft(MediaEditorDraft, Int64?)
-        case message([MessageId])
+        case message([EngineMessage.Id])
         case gift(StarGift.UniqueGift)
         case sticker(TelegramMediaFile, [String])
         case multiple([Subject])
@@ -7965,10 +8092,6 @@ public final class MediaEditorScreenImpl: ViewController, MediaEditorScreen, UID
                             self.stickerResultController?.disappeared = nil
                         }
                         
-                        if self.node.mediaEditor?.values.hasChanges == true {
-                            print()
-                        }
-                        
                         let _ = (imagesReady.get()
                         |> filter { $0 }
                         |> take(1)
@@ -8458,7 +8581,7 @@ public final class MediaEditorScreenImpl: ViewController, MediaEditorScreen, UID
         })
     }
         
-    private func performSave(toStickerResource: MediaResource? = nil, collagePrepared: Bool = false) {
+    private func performSave(toStickerResource: TelegramMediaResource? = nil, collagePrepared: Bool = false) {
         guard let mediaEditor = self.node.mediaEditor, let subject = self.node.subject else {
             return
         }
@@ -8495,7 +8618,7 @@ public final class MediaEditorScreenImpl: ViewController, MediaEditorScreen, UID
                 }
             }, completionHandler: { _, error in
                 if let error = error {
-                    print("\(error)")
+                    Logger.shared.log("MediaEditor", "Failed to save to the photo library: \(error)")
                 }
                 let _ = try? FileManager.default.removeItem(atPath: tempVideoPath)
             })
@@ -8554,14 +8677,17 @@ public final class MediaEditorScreenImpl: ViewController, MediaEditorScreen, UID
                 case let .video(path, _):
                     assetSignal = .single(AVURLAsset(url: NSURL(fileURLWithPath: path) as URL))
                 case let .asset(asset):
-                    assetSignal = Signal { subscriber in
-                        PHImageManager.default().requestAVAsset(forVideo: asset, options: nil) { avAsset, _, _ in
-                            if let avAsset {
-                                subscriber.putNext(avAsset)
-                                subscriber.putCompletion()
-                            }
+                    assetSignal = assetVideoAsset(asset)
+                    |> mapToSignal { [weak self] result -> Signal<AVAsset, NoError> in
+                        switch result {
+                        case let .result(avAsset):
+                            return .single(avAsset)
+                        case .unavailable:
+                            self?.presentMediaUnavailableAlert()
+                            return .complete()
+                        case .progress:
+                            return .complete()
                         }
-                        return EmptyDisposable
                     }
                 default:
                     fatalError()
@@ -8573,25 +8699,32 @@ public final class MediaEditorScreenImpl: ViewController, MediaEditorScreen, UID
             case let .image(image, _, _, _, _):
                 exportSubject = .single(.image(image: image))
             case let .asset(asset):
-                exportSubject = Signal { subscriber in
-                    if asset.mediaType == .video {
-                        PHImageManager.default().requestAVAsset(forVideo: asset, options: nil) { avAsset, _, _ in
-                            if let avAsset {
-                                subscriber.putNext(.video(asset: avAsset, isStory: true))
-                                subscriber.putCompletion()
-                            }
-                        }
-                    } else {
-                        let options = PHImageRequestOptions()
-                        options.deliveryMode = .highQualityFormat
-                        PHImageManager.default().requestImage(for: asset, targetSize: PHImageManagerMaximumSize, contentMode: .default, options: options) { image, _ in
-                            if let image {
-                                subscriber.putNext(.image(image: image))
-                                subscriber.putCompletion()
-                            }
+                if asset.mediaType == .video {
+                    exportSubject = assetVideoAsset(asset)
+                    |> mapToSignal { [weak self] result -> Signal<MediaEditorVideoExport.Subject, NoError> in
+                        switch result {
+                        case let .result(avAsset):
+                            return .single(.video(asset: avAsset, isStory: true))
+                        case .unavailable:
+                            self?.presentMediaUnavailableAlert()
+                            return .complete()
+                        case .progress:
+                            return .complete()
                         }
                     }
-                    return EmptyDisposable
+                } else {
+                    exportSubject = assetFullImage(asset)
+                    |> mapToSignal { [weak self] result -> Signal<MediaEditorVideoExport.Subject, NoError> in
+                        switch result {
+                        case let .result(image):
+                            return .single(.image(image: image))
+                        case .unavailable:
+                            self?.presentMediaUnavailableAlert()
+                            return .complete()
+                        case .progress:
+                            return .complete()
+                        }
+                    }
                 }
             case let .draft(draft, _):
                 if draft.isVideo {
@@ -9028,7 +9161,7 @@ private final class HeaderContextReferenceContentSource: ContextReferenceContent
     }
 
     func transitionInfo() -> ContextControllerReferenceViewInfo? {
-        return ContextControllerReferenceViewInfo(referenceView: self.sourceView, contentAreaInScreenSpace: UIScreen.main.bounds, actionsPosition: .top)
+        return ContextControllerReferenceViewInfo(referenceView: self.sourceView, contentAreaInScreenSpace: mainWindowScreenBounds, actionsPosition: .top)
     }
 }
 
@@ -9246,11 +9379,11 @@ public final class BlurredGradientComponent: Component {
 }
 
 func draftPath(engine: TelegramEngine) -> String {
-    return NSSearchPathForDirectoriesInDomains(.documentDirectory, .userDomainMask, true)[0] + "/storyDrafts_\(engine.account.peerId.toInt64())"
+    return storyDraftDirectory(peerId: engine.account.peerId)
 }
 
 private func fullDraftPath(peerId: EnginePeer.Id, path: String) -> String {
-    return NSSearchPathForDirectoriesInDomains(.documentDirectory, .userDomainMask, true)[0] + "/storyDrafts_\(peerId.toInt64())/" + path
+    return storyDraftDirectory(peerId: peerId) + "/" + path
 }
 
 func hasFirstResponder(_ view: UIView) -> Bool {
@@ -9426,7 +9559,7 @@ private func stickerFile(resource: TelegramMediaResource, thumbnailResource: Tel
         previewRepresentations.append(TelegramMediaImageRepresentation(dimensions: dimensions, resource: thumbnailResource, progressiveSizes: [], immediateThumbnailData: nil))
     }
     
-    return TelegramMediaFile(fileId: MediaId(namespace: Namespaces.Media.LocalFile, id: Int64.random(in: Int64.min ... Int64.max)), partialReference: nil, resource: resource, previewRepresentations: previewRepresentations, videoThumbnails: [], immediateThumbnailData: nil, mimeType: isVideo ? "video/webm" : "image/webp", size: size, attributes: fileAttributes, alternativeRepresentations: [])
+    return TelegramMediaFile(fileId: EngineMedia.Id(namespace: Namespaces.Media.LocalFile, id: Int64.random(in: Int64.min ... Int64.max)), partialReference: nil, resource: resource, previewRepresentations: previewRepresentations, videoThumbnails: [], immediateThumbnailData: nil, mimeType: isVideo ? "video/webm" : "image/webp", size: size, attributes: fileAttributes, alternativeRepresentations: [])
 }
 
 private struct MediaEditorConfiguration {

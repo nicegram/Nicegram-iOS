@@ -84,9 +84,9 @@ private extension ActiveAccountsProviderImpl {
         let peerId = context.account.peerId
         let nicegramAttribute = record.attributes.nicegramAttribute()
         
-        return context.account.postbox.peerView(id: peerId)
-        |> map { view -> ActiveAccount? in
-            guard let peer = view.peers[view.peerId] else { return nil }
+        return context.engine.data.subscribe(TelegramEngine.EngineData.Item.Peer.Peer(id: peerId))
+        |> map { peer -> ActiveAccount? in
+            guard let peer = peer?._asPeer() else { return nil }
             
             return ActiveAccount(
                 accountId: record.id.int64,

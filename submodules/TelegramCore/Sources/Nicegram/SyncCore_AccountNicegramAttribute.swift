@@ -1,5 +1,4 @@
 import Foundation
-import Postbox
 
 public final class AccountNicegramAttribute: Codable, Equatable {
     public var exported: Bool

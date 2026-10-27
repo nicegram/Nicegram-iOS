@@ -1,8 +1,8 @@
 import MemberwiseInit
 import NGCore
 import NGUtils
-import Postbox
 import TelegramBridge
+import TelegramCore
 
 @MemberwiseInit
 class TelegramChatInviteCheckerImpl {
@@ -17,7 +17,7 @@ extension TelegramChatInviteCheckerImpl: TelegramChatInviteChecker {
             .joinLinkInformation(inviteHash)
             .awaitForFirstValue()
         
-        let peerId: PeerId?
+        let peerId: EnginePeer.Id?
         switch result {
         case let .alreadyJoined(peer):
             peerId = peer.id

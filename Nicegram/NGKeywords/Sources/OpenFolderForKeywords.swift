@@ -4,7 +4,6 @@ import Display
 import FeatKeywords
 import Foundation
 import NGUI
-import Postbox
 import SwiftSignalKit
 import TelegramCore
 import TelegramStringFormatting
@@ -66,7 +65,7 @@ private func openSettings(
     context: AccountContext,
     navigationController: NavigationController
 ) {
-    Task { @MainActor in
+    _ = Task { @MainActor in
         let accountsAndPeers = try await activeAccountsAndPeers(context: context).awaitForFirstValue().1
         navigationController.pushViewController(
             nicegramSettingsController(
@@ -83,9 +82,9 @@ private func openMessage(
     id: Int32,
     peerId: Int64
 ) {
-    Task {
-        let peerId = PeerId(peerId)
-        let messageId = MessageId(peerId: peerId, namespace: 0, id: id)
+    _ = Task {
+        let peerId = EnginePeer.Id(peerId)
+        let messageId = EngineMessage.Id(peerId: peerId, namespace: 0, id: id)
         
         let message = try? await context.engine.messages
             .getMessagesLoadIfNecessary([messageId])

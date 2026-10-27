@@ -1,6 +1,5 @@
 import AccountContext
 import FeatAttentionEconomy
-import Postbox
 import TelegramCore
 
 final class ChatNicegramAdsContext {
@@ -24,7 +23,7 @@ extension ChatNicegramAdsContext: ChatStateObserver {
         headerAdViewModel.update(isHostVisible: isScreenVisible)
     }
     
-    func update(peerView: PeerView?) {
+    func update(peerView: EngineRawPeerView?) {
         guard let peerView,
               let peer = peerView.peers[peerView.peerId] else {
             return

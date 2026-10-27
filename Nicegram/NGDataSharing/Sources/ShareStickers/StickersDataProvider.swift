@@ -2,6 +2,7 @@ import AccountContext
 import FeatDataSharing
 import MemberwiseInit
 import NGUtils
+import SwiftSignalKit
 import TelegramCore
 
 @MemberwiseInit(.public)
@@ -12,12 +13,15 @@ public class StickersDataProvider {
 extension StickersDataProvider {
     public func getStickersData() async -> [StickerSet] {
         do {
-            let signal = context.account.postbox.transaction { transaction in
-                transaction
-                    .getItemCollectionsInfos(
-                        namespace: Namespaces.ItemCollection.CloudStickerPacks
-                    ).compactMap {
-                        $0.1 as? StickerPackCollectionInfo
+            let signal = context.engine.data.get(
+                TelegramEngine.EngineData.Item.ItemCollections.InstalledPackInfos(
+                    namespace: Namespaces.ItemCollection.CloudStickerPacks
+                )
+            )
+            |> map { entries -> [StickerSet] in
+                entries
+                    .compactMap {
+                        $0.info as? StickerPackCollectionInfo
                     }.map { pack in
                         let resource = pack.thumbnail?.resource as? CloudStickerPackThumbnailMediaResource
                         
