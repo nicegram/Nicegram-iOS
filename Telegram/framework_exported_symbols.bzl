@@ -32,7 +32,11 @@ def _scan(ctx, kind, archives):
     # TelegramUI's 1.8 GB of debug archives takes ~8.5 s); the merge below is cheap.
     outputs = []
     for archive in sorted(archives, key = lambda archive: archive.path):
-        output = ctx.actions.declare_file("%s.%s/%s.txt" % (ctx.label.name, kind, archive.path.replace("/", "_")))
+        # Nicegram: the whole path as a file name exceeds NAME_MAX (255) for archives inside
+        # long external repository paths (GoogleAppMeasurementIdentitySupport), so name the
+        # output by basename plus a hash of the path. The path alone keeps the name stable, so
+        # an edit still rescans only the archive it changed.
+        output = ctx.actions.declare_file("%s.%s/%s_%x.txt" % (ctx.label.name, kind, archive.basename, hash(archive.path) & 0xffffffff))
         ctx.actions.run(
             executable = "/bin/bash",
             arguments = [ctx.file._worker.path, "scan", kind, archive.path, output.path],
