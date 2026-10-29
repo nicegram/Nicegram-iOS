@@ -746,9 +746,13 @@ In this repository the steps fall at fixed points of the lifecycle:
   `tg-merge`, or the start of a change that goes straight to `develop`.
 - **After** is when the work lands on `develop` — `merge-to-develop`,
   `extract-to-develop` or a direct push — and not earlier: QA builds and bug
-  rounds are part of their feature, not tasks of their own. The work log entry
-  names the `develop` commit in each repository the task changed, and is
-  written under the approval the landing already asks for.
+  rounds are part of their feature, not tasks of their own. Each repository
+  the task changed gets its own work log entry naming its `develop` commit
+  (the dataroom's rule: one entry per repository, the same slug with the
+  repository's name in it), so a cross-repo feature writes one for
+  `bitbucket:mobyrix/nicegram-ios` and one for
+  `bitbucket:mobyrix/nicegram-assistant-ios`. Both are written under the
+  approval the landing already asks for.
 - A feature's `docs/kb/` record in the dataroom is taken from its change record
   in `docs/changes/`, which stays the source of truth here.
 
