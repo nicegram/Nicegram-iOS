@@ -1,5 +1,5 @@
-// Nicegram
-import NGCore
+// Nicegram Links
+import CoreLinkHandling
 //
 import Foundation
 import LottieSettings
@@ -746,12 +746,22 @@ public final class WebAppController: ViewController, AttachmentContainable {
         
         func webView(_ webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction, decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
             if let url = navigationAction.request.url?.absoluteString {
-                // Nicegram
-                let isNicegramDeeplink = NGCore.UrlUtils.refersToNicegramApplication(url)
+                // Nicegram Links
+                // Our screens open without the confirmation Telegram shows a mini app's concealed link: accepted. A
+                // wrapped link no deeplink takes still goes through it.
+                let isTakenByNicegram = NicegramLinkHandler.open(
+                    url,
+                    openNested: { [weak self] nestedLink in
+                        self?.controller?.openUrl(nestedLink, true, false, {})
+                    }
+                )
+                if isTakenByNicegram {
+                    decisionHandler(.cancel)
+                    return
+                }
                 //
-                
-                // Nicegram, added isNicegramDeeplink
-                if isNicegramDeeplink || isTelegramMeLink(url) || isTelegraPhLink(url) {
+
+                if isTelegramMeLink(url) || isTelegraPhLink(url) {
                     decisionHandler(.cancel)
                     self.controller?.openUrl(url, true, false, {})
                 } else {
@@ -1850,7 +1860,8 @@ public final class WebAppController: ViewController, AttachmentContainable {
                             self.webView?.sendEvent(name: "device_storage_failed", data: data.string)
                             return
                         }
-                        let _ = self.context.engine.peers.setBotStorageValue(peerId: controller.botId, key: key, value: effectiveValue).start(error: { [weak self] error in
+                        let _ = (self.context.engine.peers.setBotStorageValue(peerId: controller.botId, key: key, value: effectiveValue)
+                        |> deliverOnMainQueue).start(error: { [weak self] error in
                             var errorValue = "UNKNOWN_ERROR"
                             if case .quotaExceeded = error {
                                 errorValue = "QUOTA_EXCEEDED"
@@ -2424,13 +2435,14 @@ public final class WebAppController: ViewController, AttachmentContainable {
                                 initialUsername: createBot.suggestedUsername,
                                 initialTitle: createBot.suggestedName,
                                 openAutomatically: false,
+                                viaDeeplink: false,
                                 completion: { [weak self] resultId in
                                     guard let self, let controller = self.controller else {
                                         return
                                     }
                                     if let resultId {
-                                        let _ = self.context.engine.peers.sendBotRequestedPeer(peerId: controller.botId, requestId: requestId, buttonId: buttonId, requestedPeerIds: [resultId]
-                                        ).startStandalone(error: { [weak self] _ in
+                                        let _ = (self.context.engine.peers.sendBotRequestedPeer(peerId: controller.botId, requestId: requestId, buttonId: buttonId, requestedPeerIds: [resultId])
+                                        |> deliverOnMainQueue).startStandalone(error: { [weak self] _ in
                                             guard let self else {
                                                 return
                                             }

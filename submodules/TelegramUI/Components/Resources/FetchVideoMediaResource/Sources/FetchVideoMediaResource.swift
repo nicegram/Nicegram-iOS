@@ -382,7 +382,8 @@ public func fetchVideoLibraryMediaResource(postbox: Postbox, resource: VideoLibr
                                 subscriber.putCompletion()
                                 
                                 EngineTempBox.shared.dispose(tempFile)
-                            case .failed:
+                            case let .failed(error):
+                                Logger.shared.log("FetchVideoResource", "Video export failed for \(resource.localIdentifier): \(error)")
                                 subscriber.putError(.generic)
                             case let .progress(progress):
                                 subscriber.putNext(.progressUpdated(progress))
@@ -454,7 +455,8 @@ public func fetchVideoLibraryMediaResource(postbox: Postbox, resource: VideoLibr
                                 
                                 EngineTempBox.shared.dispose(tempFile)
                             }
-                        }, error: { _ in
+                        }, error: { error in
+                            Logger.shared.log("FetchVideoResource", "Video conversion failed for \(resource.localIdentifier): \(String(describing: error))")
                             subscriber.putError(.generic)
                         }, completed: nil)
                         disposable.set(ActionDisposable {
@@ -586,7 +588,8 @@ public func fetchLocalFileVideoMediaResource(postbox: Postbox, resource: LocalFi
                     subscriber.putCompletion()
                     
                     EngineTempBox.shared.dispose(tempFile)
-                case .failed:
+                case let .failed(error):
+                    Logger.shared.log("FetchVideoResource", "Video export failed for local file: \(error)")
                     subscriber.putError(.generic)
                 case let .progress(progress):
                     subscriber.putNext(.progressUpdated(progress))
@@ -698,7 +701,8 @@ public func fetchLocalFileVideoMediaResource(postbox: Postbox, resource: LocalFi
                     }
                     subscriber.putCompletion()
                 }
-            }, error: { _ in
+            }, error: { error in
+                Logger.shared.log("FetchVideoResource", "Video conversion failed for local file: \(String(describing: error))")
             }, completed: nil)
             
             let disposable = ActionDisposable {

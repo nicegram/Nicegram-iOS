@@ -1,5 +1,6 @@
 import AccountContext
 import Display
+import Factory
 import MemberwiseInit
 import NGUtils
 import TelegramBridge
@@ -7,7 +8,9 @@ import TelegramCore
 import UIKit
 
 @MemberwiseInit
-class TelegramStoryPosterImpl {
+final class TelegramStoryPosterImpl {
+    @LazyInjected(\TelegramBridgeModule.telegramNavigator) private var telegramNavigator
+
     @Init(.internal) private let contextProvider: ContextProvider
 }
 
@@ -42,14 +45,7 @@ extension TelegramStoryPosterImpl: TelegramStoryPoster {
             
             rootController.pushViewController(storyController)
             
-            dismissModalControllersIfNeeded()
+            telegramNavigator.dismissToTelegram()
         } catch {}
-    }
-}
-
-private func dismissModalControllersIfNeeded() {
-    let rootController = UIApplication.findKeyWindow()?.rootViewController
-    if let rootController, rootController.presentedViewController != nil {
-        rootController.dismiss(animated: true)
     }
 }

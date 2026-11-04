@@ -14,6 +14,8 @@ NGDEPS = [
     "//Nicegram/NGUI:NGUI",
     "//Nicegram/NGUtils:NGUtils",
     "//Nicegram/NGWebDomains:NGWebDomains",
+    # Nicegram Links
+    "@swiftpkg_nicegram_assistant_ios//:CoreLinkHandling",
     "@swiftpkg_nicegram_assistant_ios//:FeatAccountBackup",
     "@swiftpkg_nicegram_assistant_ios//:FeatAiShortcuts",
     "@swiftpkg_nicegram_assistant_ios//:FeatAssistant",

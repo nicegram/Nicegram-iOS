@@ -43,6 +43,10 @@ Whatever the change, choose the **highest** applicable option:
 1. **Keep it out of Telegram code.** Put it in `nicegram-assistant-ios`, or in a
    brand-new **separate file** here (a new file never conflicts on merge). Bridge
    Telegram dependencies through `TelegramBridge`.
+   That includes Telegram code that already calls an assistant API: when every
+   caller should get the new behaviour, change what the API returns and leave the
+   host line alone. WhiteBridge's ads gate lives in `GetWhitebridgeConfigUseCase`,
+   not beside its three host callers.
 2. **Add new code to an existing Telegram file**, wrapped in Nicegram markers.
 3. **Modify an existing Telegram line** — last resort, with a marker above it.
 
@@ -641,7 +645,7 @@ one owned by a single skill and producing a fixed set of artifacts:
 | stage | skill | artifacts |
 |---|---|---|
 | start | `start-feature` | worktree + branch in both repos, change record stub, spec, plan whose last task completes the change record, ticket → IN PROGRESS |
-| implement | `superpowers:subagent-driven-development`, in a fresh child session `start-feature` starts once the plan is approved (or from the prompt it prints, where it cannot) | code, `docs/changes/<date>-<slug>.md`, a self-test checklist the human runs on a device |
+| implement | `superpowers:subagent-driven-development`, in a fresh child session `start-feature` starts once the plan is approved (or from the prompt it prints, where it cannot) | code, `docs/changes/<date>-<slug>.md`, the human's code review, then a self-test checklist the human runs on a device |
 | refresh | `sync-from-develop` | merge commits in both repos |
 | share early | `extract-to-develop` | the approved part of the feature as one commit per repo on develop, pushed directly; the feature branch re-synced |
 | ship to QA | `build-to-testflight` | `build/{N}`, a TestFlight build, a change-record comment on each ticket, tickets → READY FOR QA, a Confluence row; for develop tickets never in a QA build, a stamp commit on develop, pushed directly |
@@ -650,11 +654,15 @@ one owned by a single skill and producing a fixed set of artifacts:
 | upstream | `tg-merge` | its own branch + worktree, a `docs/changes` record it writes but does not deliver, and a self-test checklist for its 🔴 features |
 | crashes | `triage-crashes` → `diagnose-crash` → `fix-crash` | the round's records, pushed straight to develop; per crash, a `feat/crash-<slug>` worktree holding its diagnosis and, when fixed, the fix, its change record and ticket → IN PROGRESS; landed by `merge-to-develop`, records-only straight to develop when not fixed |
 
-**Between implement and ship to QA, the human runs a self-test.** The
-implementation session, `fix-crash`, and `tg-merge` at handover end with a short checklist
+**Between implement and ship to QA, the human reviews the code, then runs a
+self-test.** The implementation session and `fix-crash` hand over for a code
+review first; then they, and `tg-merge` at handover, end with a short checklist
 the human runs on a real device: the main paths only, so that a broken task
-never reaches QA and the human sees what changed for the user. How it is written
-is owned by `.claude/reference/self-test-checklist.md`.
+never reaches QA and the human sees what changed for the user. At both stages
+the human answers with an OK or a list, and a list is answered item by item,
+changing nothing before the human approves. That procedure is owned by
+`.claude/reference/human-review.md`; how the checklist is written, by
+`.claude/reference/self-test-checklist.md`.
 
 Ship to QA and bug round form a loop, not a line: a build surfaces bugs, a bug
 round fixes them, the next build ships the fixes, and QA may bounce it back
@@ -1045,7 +1053,23 @@ the subagent has no way to know something is missing. Instead, name the files:
 
 The same applies to reviewers — a reviewer never asked to check against
 `swift-conventions.md` will not check against it. Give every reviewer the rules
-files that match the paths in its diff as a named check.
+files that match the paths in its diff as a named check. Naming gets one more,
+because no rules file can show a reviewer that a name misreads: the reviewer
+lists each name the diff or plan introduces with what it reads as on its own,
+and flags each whose reading misses what it is, then reads them together and flags
+a word that names different things in two of them (`packages/nicegram-assistant-ios/AGENTS.md`,
+"Module taxonomy").
+A name the plan or spec chose gets the same check: a plan's choice is not a reading
+(`LinkRoute` and `isNcgLink` passed every review because the plan had named them).
+Function bodies get one more, because "readable top to bottom" (`swift-conventions.md`)
+was missed twice: the reviewer lists each function the diff adds to or lengthens and
+flags one that runs several steps inline where a helper per step would read
+(`NGEntryPoint.onAppLaunch` grew a registration block).
+Fallbacks get one more, because `unwrap()` and one `do`/`catch` (`swift-conventions.md`) was
+corrected four times: the reviewer lists each `guard` or `if` the diff adds that returns a fallback
+value, and flags one that more than one step can reach (`NicegramLinkHandler.adapt`) — but not one
+that decides whether the input is this code's at all, which stays a `guard` above the `do`
+(`AuthImportDeeplink`'s scheme and host).
 
 **Consistency with the surrounding code never outranks a written convention —
 in either direction.** Do not triage a reviewer's finding away as "pre-existing
@@ -1238,10 +1262,12 @@ When the human gives feedback on a spec, a plan, or code, they may ask you to
 repairs whatever let each one through, so the same correction is not needed
 twice.
 
-**Only invoke it when asked.** Not all feedback should change the instructions —
-corrections during brainstorming are the design converging, not a rule failing.
-The human decides. The skill never commits an instruction change without
-showing it for approval first.
+**Never invoke it without the human's go-ahead.** Not all feedback should change
+the instructions — corrections during brainstorming are the design converging,
+not a rule failing. The human decides: they ask for it, or approve a code-review
+or self-test reply that proposed it for an item
+(`.claude/reference/human-review.md`). The skill never commits an instruction
+change without showing it for approval first.
 
 Feedback on mockups in our Figma file is the exception: `edit-figma-design`
 runs its own learning step, which offers after each approved round and writes
