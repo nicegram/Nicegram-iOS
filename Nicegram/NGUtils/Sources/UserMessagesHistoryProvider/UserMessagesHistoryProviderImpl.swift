@@ -1,7 +1,6 @@
 import AccountContext
 import Foundation
 import MemberwiseInit
-import Postbox
 import SwiftSignalKit
 import TelegramApi
 import TelegramBridge
@@ -146,7 +145,7 @@ private extension UserMessagesHistoryProviderImpl {
     ) async throws -> [TelegramDialogMessage] {
         let context = try contextProvider.context().unwrap()
         
-        let result: Api.messages.Messages = try await context.account.network.request(
+        let result: Api.messages.Messages = try await TelegramRawApi.request(
             Api.functions.messages.search(
                 flags: (1 << 0) | (1 << 1),
                 peer: dialog.peer.inputPeer(),
@@ -164,7 +163,8 @@ private extension UserMessagesHistoryProviderImpl {
                 maxId: 0,
                 minId: 0,
                 hash: 0
-            )
+            ),
+            network: context.account.network
         )
             .awaitForFirstValue()
         
@@ -215,8 +215,9 @@ private extension UserMessagesHistoryProviderImpl {
     
     func fetchUserContacts() async throws -> Set<Int64> {
         let context = try contextProvider.context().unwrap()
-        let result: Api.contacts.Contacts = try await context.account.network.request(
-            Api.functions.contacts.getContacts(hash: 0)
+        let result: Api.contacts.Contacts = try await TelegramRawApi.request(
+            Api.functions.contacts.getContacts(hash: 0),
+            network: context.account.network
         ).awaitForFirstValue()
         
         let contactIds: Set<Int64>
@@ -239,7 +240,7 @@ private extension UserMessagesHistoryProviderImpl {
     ) async throws -> DialogsPage {
         let context = try contextProvider.context().unwrap()
         
-        let result: Api.messages.Dialogs = try await context.account.network.request(
+        let result: Api.messages.Dialogs = try await TelegramRawApi.request(
             Api.functions.messages.getDialogs(
                 flags: 1 << 1,
                 folderId: 0,
@@ -248,7 +249,8 @@ private extension UserMessagesHistoryProviderImpl {
                 offsetPeer: offset.offsetPeerId?.inputPeer() ?? .inputPeerEmpty,
                 limit: limit,
                 hash: 0
-            )
+            ),
+            network: context.account.network
         )
             .awaitForFirstValue()
         
@@ -363,7 +365,7 @@ private extension UserMessagesHistoryProviderImpl {
         switch peer {
         case let .peerUser(userData):
             guard let user = users[userData.userId],
-                  TelegramUser(user: user).botInfo == nil,
+                  TelegramRawApi.user(user).botInfo == nil,
                   case let .user(userData) = user,
                   let accessHash = userData.accessHash
             else {
@@ -395,7 +397,7 @@ private extension UserMessagesHistoryProviderImpl {
         switch peer {
         case let .peerUser(userData):
             guard let user = users[userData.userId] else { return nil }
-            let telegramUser = TelegramUser(user: user)
+            let telegramUser = TelegramRawApi.user(user)
             return [telegramUser.firstName, telegramUser.lastName]
                 .compactMap({ $0 })
                 .joined(separator: " ")

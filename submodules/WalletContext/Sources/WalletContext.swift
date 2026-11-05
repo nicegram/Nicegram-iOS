@@ -9,6 +9,7 @@ import TelegramUIPreferences
 @available(macOS 10.15, *)
 final class WalletContextOutput {
     private let stateValue: Atomic<WalletContext.State>
+    let transferBackgroundTasks = WalletTransferBackgroundTasks()
     let tonConnectStatePromise = ValuePromise<WalletContext.TonConnectState>(.empty, ignoreRepeated: true)
     let statePromise: ValuePromise<WalletContext.State>
     private let cancelOperationImpl: (UUID) -> Void
@@ -87,6 +88,7 @@ public final class WalletContext {
     private let environmentDisposable = MetaDisposable()
     private let walletConfigurationDisposable = MetaDisposable()
     private let walletStateUpdatesDisposable = MetaDisposable()
+    private let walletCardDisposable = MetaDisposable()
     private let tonConnectUpdatesDisposable = MetaDisposable()
     private var tonConnectUpdatesTask: Task<Void, Never>?
     private let walletTransferUpdatesDisposable = MetaDisposable()
@@ -95,6 +97,7 @@ public final class WalletContext {
     private let operationTaskRegistry: WalletOperationTaskRegistry
     private let environmentRevision = Atomic<UInt64>(value: 0)
     private let walletConfigurationRevision = Atomic<UInt64>(value: 0)
+    private let walletCardRevision = Atomic<UInt64>(value: 0)
     private let walletStateRevision = Atomic<UInt64>(value: 0)
     private let subscriberDemand = Atomic<WalletSubscriberDemand>(value: WalletSubscriberDemand())
     private let walletScreenDemand = Atomic<WalletScreenDemand>(value: WalletScreenDemand())
@@ -142,7 +145,13 @@ public final class WalletContext {
         self.output.currentState()
     }
 
+    /// Preparation and submission work, excluding blockchain confirmation.
+    public var hasTransferBackgroundTasks: Signal<Bool, NoError> {
+        self.output.transferBackgroundTasks.hasTasks
+    }
+
     public func beginWalletScreenUpdates() -> Disposable {
+        Task { await self.impl.refreshCard() }
         return self.beginScreenUpdates(collectiblesOnly: false)
     }
 
@@ -262,6 +271,12 @@ public final class WalletContext {
             }
         }))
 
+        self.walletCardDisposable.set(engine.wallet.card().start(next: { [weak self] card in
+            guard let self else { return }
+            let revision = self.walletCardRevision.modify { $0 &+ 1 }
+            Task { await impl.receiveServerCard(card, revision: revision) }
+        }))
+
         self.walletStateUpdatesDisposable.set(engine.wallet.stateUpdates().start(next: { [weak self] value in
             guard let self else { return }
             let revision = self.walletStateRevision.modify { value in
@@ -361,12 +376,14 @@ public final class WalletContext {
         self.environmentDisposable.dispose()
         self.walletConfigurationDisposable.dispose()
         self.walletStateUpdatesDisposable.dispose()
+        self.walletCardDisposable.dispose()
         self.walletTransferUpdatesDisposable.dispose()
         self.walletTransferUpdatesTask?.cancel()
         self.tonConnectUpdatesDisposable.dispose()
         self.tonConnectUpdatesTask?.cancel()
         self.storedStateDisposable.dispose()
         self.operationTaskRegistry.shutdown()
+        self.output.transferBackgroundTasks.shutdown()
         let impl = self.impl
         Task {
             await impl.shutdown()
@@ -376,6 +393,7 @@ public final class WalletContext {
     func signal<Value: Sendable>(
         name: String,
         cancelOnDispose: Bool = true,
+        keepsTransferInBackground: Bool = false,
         submissionControl: WalletTransferSubmissionControl? = nil,
         deliverWhenAvailable: Bool = false,
         discardResult: (@Sendable (Value) -> Void)? = nil,
@@ -389,6 +407,7 @@ public final class WalletContext {
                 return EmptyDisposable
             }
             let operationId = UUID()
+            let backgroundTask = keepsTransferInBackground ? self.output.transferBackgroundTasks.acquire() : nil
             let cancellation = WalletOperationCancellation()
             let registry = self.operationTaskRegistry
             let logger = self.logger
@@ -453,6 +472,7 @@ public final class WalletContext {
             registry.register(id: operationId, cancellation: cancellation)
             let task = Task {
                 defer {
+                    backgroundTask?.dispose()
                     registry.remove(id: operationId)
                     if deliverWhenAvailable { authorization.finishResultDelivery(id: operationId) }
                 }
@@ -534,7 +554,8 @@ public struct WalletConfiguration: Equatable, Sendable {
             explorerUrl: "https://tonscan.org",
             transferMinAmount: 100_000_000,
             transferGaslessMinAmount: 100_000_000,
-            transferGaslessDailyLimit: 5
+            transferGaslessDailyLimit: 5,
+            cardBackgroundGiftCollections: nil
         )
     }
 
@@ -543,19 +564,36 @@ public struct WalletConfiguration: Equatable, Sendable {
     public let transferMinAmount: Int64
     public let transferGaslessMinAmount: Int64
     public let transferGaslessDailyLimit: Int32
+    public let cardBackgroundGiftCollections: [String]?
 
     private init(
         isAvailable: Bool,
         explorerUrl: String,
         transferMinAmount: Int64,
         transferGaslessMinAmount: Int64,
-        transferGaslessDailyLimit: Int32
+        transferGaslessDailyLimit: Int32,
+        cardBackgroundGiftCollections: [String]?
     ) {
         self.isAvailable = isAvailable
         self.explorerUrl = explorerUrl
         self.transferMinAmount = transferMinAmount
         self.transferGaslessMinAmount = transferGaslessMinAmount
         self.transferGaslessDailyLimit = transferGaslessDailyLimit
+        self.cardBackgroundGiftCollections = cardBackgroundGiftCollections
+    }
+
+    public static func giftCollection(slug: String) -> String {
+        if let range = slug.range(of: "-", options: .backwards), !slug[range.upperBound...].isEmpty, slug[range.upperBound...].allSatisfy(\.isNumber) {
+            return String(slug[..<range.lowerBound])
+        }
+        return slug
+    }
+
+    public func allowsCardBackground(giftSlug: String?) -> Bool {
+        guard let collections = self.cardBackgroundGiftCollections, let giftSlug else {
+            return false
+        }
+        return collections.contains(WalletConfiguration.giftCollection(slug: giftSlug))
     }
 
     public static func with(appConfiguration: AppConfiguration) -> WalletConfiguration {
@@ -578,12 +616,17 @@ public struct WalletConfiguration: Equatable, Sendable {
         if let value = appConfiguration.data?["wallet_gasless_daily_transfers"] as? Double {
             transferGaslessDailyLimit = Int32(value)
         }
+        var cardBackgroundGiftCollections: [String]?
+        if let value = appConfiguration.data?["wallet_card_bg_gifts"] as? [Any] {
+            cardBackgroundGiftCollections = value.compactMap { $0 as? String }
+        }
         return WalletConfiguration(
             isAvailable: isAvailable,
             explorerUrl: explorerUrl,
             transferMinAmount: transferMinAmount,
             transferGaslessMinAmount: transferGaslessMinAmount,
-            transferGaslessDailyLimit: transferGaslessDailyLimit
+            transferGaslessDailyLimit: transferGaslessDailyLimit,
+            cardBackgroundGiftCollections: cardBackgroundGiftCollections
         )
     }
 }

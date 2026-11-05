@@ -374,9 +374,12 @@ public class InfoItemNode: ListViewItemNode {
                                 hasTopCorners = true
                                 strongSelf.topStripeNode.isHidden = hasCorners || !item.hasDecorations
                         }
-                    } else if case .blocks = item.style, case .glass = item.systemStyle {
+                    } else {
+                        // A standalone info item (the contact list's access notice) draws no separator above itself.
                         strongSelf.topStripeNode.isHidden = true
-                        hasTopCorners = true
+                        if case .blocks = item.style, case .glass = item.systemStyle {
+                            hasTopCorners = true
+                        }
                     }
                     let bottomStripeInset: CGFloat
                     if let neighbors = neighbors {
@@ -405,7 +408,7 @@ public class InfoItemNode: ListViewItemNode {
                     strongSelf.maskNode.image = hasCorners ? PresentationResourcesItemList.cornersImage(item.presentationData.theme, top: hasTopCorners, bottom: hasBottomCorners, glass: item.systemStyle == .glass) : nil
                     
                     strongSelf.backgroundNode.frame = CGRect(origin: CGPoint(x: 0.0, y: -min(insets.top, separatorHeight)), size: CGSize(width: params.width, height: contentSize.height + min(insets.top, separatorHeight) + min(insets.bottom, separatorHeight)))
-                    strongSelf.maskNode.frame = strongSelf.backgroundNode.frame.insetBy(dx: params.leftInset, dy: 0.0)
+                    strongSelf.maskNode.frame = strongSelf.backgroundNode.frame.inset(by: UIEdgeInsets(top: 0.0, left: params.leftInset, bottom: 0.0, right: params.rightInset))
                     strongSelf.topStripeNode.frame = CGRect(origin: CGPoint(x: 0.0, y: -min(insets.top, separatorHeight)), size: CGSize(width: params.width, height: separatorHeight))
                     strongSelf.bottomStripeNode.frame = CGRect(origin: CGPoint(x: bottomStripeInset, y: contentSize.height - separatorHeight), size: CGSize(width: params.width - bottomStripeInset - params.rightInset - separatorRightInset, height: separatorHeight))
                     

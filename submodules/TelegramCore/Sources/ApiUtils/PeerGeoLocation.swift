@@ -1,10 +1,9 @@
 import Foundation
 import Postbox
-import TelegramApi
+internal import TelegramApi
 
 
-// Nicegram NGDataSharing, 'public'
-public extension PeerGeoLocation {
+extension PeerGeoLocation {
     init?(apiLocation: Api.ChannelLocation) {
         switch apiLocation {
             case let .channelLocation(channelLocationData):

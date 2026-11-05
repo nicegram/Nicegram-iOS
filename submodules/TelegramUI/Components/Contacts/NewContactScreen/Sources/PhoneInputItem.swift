@@ -141,7 +141,7 @@ final class PhoneInputItem: ListViewItem, ItemListItem, ListItemComponentAdaptor
 }
 
 final class PhoneInputItemNode: ListViewItemNode, ItemListItemNode {
-    private let countryButton: ASButtonNode
+    private let countryButton: CountryButtonNode
     private let arrowNode: ASImageNode
     private let phoneBackground: ASImageNode
     private let phoneInputNode: PhoneInputNode
@@ -159,7 +159,7 @@ final class PhoneInputItemNode: ListViewItemNode, ItemListItemNode {
     }
     
     init() {
-        self.countryButton = ASButtonNode()
+        self.countryButton = CountryButtonNode()
         self.arrowNode = ASImageNode()
         self.arrowNode.displaysAsynchronously = false
         self.arrowNode.isLayerBacked = true
@@ -204,19 +204,17 @@ final class PhoneInputItemNode: ListViewItemNode, ItemListItemNode {
             
             if self.processNumberChange(self.phoneInputNode.number) {
             } else if let code = Int(code), let name = name, let countryName = countryCodeAndIdToName[CountryCodeAndId(code: code, id: name)] {
-                let flagString = emojiFlagForISOCountryCode(name)
                 var localizedName: String = AuthorizationSequenceCountrySelectionController.lookupCountryNameById(name, strings: item.strings) ?? countryName
                 if name == "FT" {
                     localizedName = item.strings.Login_AnonymousNumbers
                 }
-                self.countryButton.setTitle("\(flagString) \(localizedName)", with: Font.regular(17.0), with: item.theme.list.itemPrimaryTextColor, for: [])
+                self.countryButton.setCountryTitle(countryId: name, name: localizedName, font: Font.regular(17.0), color: item.theme.list.itemPrimaryTextColor)
             } else if let code = Int(code), let (countryId, countryName) = countryCodeToIdAndName[code] {
-                let flagString = emojiFlagForISOCountryCode(countryId)
                 var localizedName: String = AuthorizationSequenceCountrySelectionController.lookupCountryNameById(countryId, strings: item.strings) ?? countryName
                 if countryId == "FT" {
                     localizedName = item.strings.Login_AnonymousNumbers
                 }
-                self.countryButton.setTitle("\(flagString) \(localizedName)", with: Font.regular(17.0), with: item.theme.list.itemPrimaryTextColor, for: [])
+                self.countryButton.setCountryTitle(countryId: countryId, name: localizedName, font: Font.regular(17.0), color: item.theme.list.itemPrimaryTextColor)
             } else {
                 self.countryButton.setTitle(item.strings.Login_SelectCountry, with: Font.regular(17.0), with: item.theme.list.itemPrimaryTextColor, for: [])
             }
@@ -251,9 +249,8 @@ final class PhoneInputItemNode: ListViewItemNode, ItemListItemNode {
             return false
         }
         if let (country, _) = AuthorizationSequenceCountrySelectionController.lookupCountryIdByNumber(number, preferredCountries: self.preferredCountryIdForCode) {
-            let flagString = emojiFlagForISOCountryCode(country.id)
             let localizedName: String = AuthorizationSequenceCountrySelectionController.lookupCountryNameById(country.id, strings: item.strings) ?? country.name
-            self.countryButton.setTitle("\(flagString) \(localizedName)", with: Font.regular(17.0), with: item.theme.list.itemPrimaryTextColor, for: [])
+            self.countryButton.setCountryTitle(countryId: country.id, name: localizedName, font: Font.regular(17.0), color: item.theme.list.itemPrimaryTextColor)
             
             let maskFont = Font.with(size: 17.0, design: .regular, traits: [.monospacedNumbers])
             var rawMask = ""
@@ -376,14 +373,19 @@ final class PhoneInputItemNode: ListViewItemNode, ItemListItemNode {
                     
                     strongSelf.countryButton.frame = CGRect(origin: CGPoint(x: 0.0, y: 0.0), size: CGSize(width: params.width, height: 52.0 + 6.0))
                     
+                    //Beside a side strip the margins differ: the fields and trailing content move in by the surplus on their side.
+                    let leftShift = max(0.0, params.leftInset - params.rightInset)
+                    let rightShift = max(0.0, params.rightInset - params.leftInset)
+                    let trailingEdge = rightShift > 0.0 ? params.width - params.rightInset : params.width
+                    
                     if let arrowImage = strongSelf.arrowNode.image {
-                        strongSelf.arrowNode.frame = CGRect(origin: CGPoint(x: params.width - arrowImage.size.width - 8.0, y: floorToScreenPixels((countryButtonHeight - arrowImage.size.height) / 2.0)), size: arrowImage.size)
+                        strongSelf.arrowNode.frame = CGRect(origin: CGPoint(x: trailingEdge - arrowImage.size.width - 8.0, y: floorToScreenPixels((countryButtonHeight - arrowImage.size.height) / 2.0)), size: arrowImage.size)
                     }
                     
-                    strongSelf.phoneBackground.frame = CGRect(origin: CGPoint(x: 0.0, y: 52.0), size: CGSize(width: params.width, height: 52.0))
+                    strongSelf.phoneBackground.frame = CGRect(origin: CGPoint(x: leftShift, y: 52.0), size: CGSize(width: params.width - leftShift, height: 52.0))
                     
-                    let countryCodeFrame = CGRect(origin: CGPoint(x: 7.0, y: 52.0), size: CGSize(width: 67.0, height: 52.0))
-                    let numberFrame = CGRect(origin: CGPoint(x: 88.0, y: 52.0), size: CGSize(width: layout.size.width - 70.0 - 8.0, height: 52.0))
+                    let countryCodeFrame = CGRect(origin: CGPoint(x: 7.0 + leftShift, y: 52.0), size: CGSize(width: 67.0, height: 52.0))
+                    let numberFrame = CGRect(origin: CGPoint(x: 88.0 + leftShift, y: 52.0), size: CGSize(width: layout.size.width - 70.0 - 8.0 - leftShift - rightShift, height: 52.0))
                     let placeholderFrame = numberFrame.offsetBy(dx: 0.0, dy: 8.0)
                     
                     let phoneInputFrame = countryCodeFrame.union(numberFrame)
@@ -399,7 +401,7 @@ final class PhoneInputItemNode: ListViewItemNode, ItemListItemNode {
                         strongSelf.checkNode.isHidden = true
                     }
                     if let checkImage = strongSelf.checkNode.image {
-                        strongSelf.checkNode.frame = CGRect(origin: CGPoint(x: params.width - checkImage.size.width - 10.0, y: countryButtonHeight + floorToScreenPixels((inputFieldHeight - checkImage.size.height) / 2.0)), size: checkImage.size)
+                        strongSelf.checkNode.frame = CGRect(origin: CGPoint(x: trailingEdge - checkImage.size.width - 10.0, y: countryButtonHeight + floorToScreenPixels((inputFieldHeight - checkImage.size.height) / 2.0)), size: checkImage.size)
                     }
                     
                     if case .activity = item.accessory {
@@ -419,7 +421,7 @@ final class PhoneInputItemNode: ListViewItemNode, ItemListItemNode {
                         }
                         
                         let activityIndicatorSize = activityIndicatorView.bounds.size
-                        let activityIndicatorFrame = CGRect(origin: CGPoint(x: params.width - 16.0 - activityIndicatorSize.width, y: countryButtonHeight + floor((inputFieldHeight - activityIndicatorSize.height) * 0.5)), size: activityIndicatorSize)
+                        let activityIndicatorFrame = CGRect(origin: CGPoint(x: trailingEdge - 16.0 - activityIndicatorSize.width, y: countryButtonHeight + floor((inputFieldHeight - activityIndicatorSize.height) * 0.5)), size: activityIndicatorSize)
                         
                         activityIndicatorView.tintColor = item.theme.list.itemPrimaryTextColor.withMultipliedAlpha(0.5)
                         

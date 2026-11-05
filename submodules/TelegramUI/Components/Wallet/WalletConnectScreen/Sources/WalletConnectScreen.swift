@@ -90,11 +90,11 @@ public final class WalletConnectAppIconComponent: Component {
 
                 if let icon = component.icon, icon.size > 0, icon.size <= 2 * 1024 * 1024,
                    icon.mimeType.lowercased().hasPrefix("image/") {
-                    let mediaBox = component.context.account.postbox.mediaBox
+                    let resources = component.context.engine.resources
                     let resource = WebFileReferenceMediaResource(url: icon.url, size: Int64(icon.size), accessHash: icon.accessHash)
-                    self.dataDisposable.set((mediaBox.resourceData(resource)
+                    self.dataDisposable.set((resources.data(resource: EngineMediaResource(resource))
                     |> map { data -> UIImage? in
-                        guard data.complete, data.size <= 2 * 1024 * 1024 else { return nil }
+                        guard data.isComplete, data.availableSize <= 2 * 1024 * 1024 else { return nil }
                         return UIImage(contentsOfFile: data.path)
                     }
                     |> deliverOnMainQueue).start(next: { [weak self, weak context = component.context] image in
@@ -102,8 +102,8 @@ public final class WalletConnectAppIconComponent: Component {
                         self.imageView.image = image
                         self.fallbackLabel.isHidden = true
                     }))
-                    self.fetchDisposable.set(fetchedMediaResource(mediaBox: mediaBox, userLocation: .other,
-                        userContentType: .image, reference: .standalone(resource: resource), statsCategory: .image).start())
+                    self.fetchDisposable.set(resources.fetch(reference: .standalone(resource: resource), userLocation: .other,
+                        userContentType: .image, statsCategory: .image).start())
                 }
             }
             return size
@@ -468,7 +468,11 @@ private final class WalletConnectSheetContent: CombinedComponent {
                 innerDiameter: 52.0,
                 sideInset: 30.0
             )
-            let buttonsWidth = max(2.0, safeContentWidth - buttonInsets.left - buttonInsets.right)
+            // The bottom buttons span iPhone Duo's side strip; they keep clear only of a corner block at the bottom.
+            let buttonsSideInsets = environment.bottomEdgeSideInsets()
+            let buttonsBandWidth = max(0.0, context.availableSize.width - buttonsSideInsets.left - buttonsSideInsets.right)
+            let buttonsCenterX = buttonsSideInsets.left + buttonsBandWidth / 2.0
+            let buttonsWidth = max(2.0, buttonsBandWidth - buttonInsets.left - buttonInsets.right)
             let cancelButtonWidth = floorToScreenPixels((buttonsWidth - buttonSpacing) / 2.0)
             let connectButtonWidth = buttonsWidth - buttonSpacing - cancelButtonWidth
 
@@ -498,7 +502,7 @@ private final class WalletConnectSheetContent: CombinedComponent {
                 transition: context.transition
             )
             context.add(cancelButton.position(CGPoint(
-                x: contentCenterX - buttonSpacing / 2.0 - cancelButton.size.width / 2.0,
+                x: buttonsCenterX - buttonSpacing / 2.0 - cancelButton.size.width / 2.0,
                 y: contentHeight + cancelButton.size.height / 2.0
             )))
 
@@ -529,7 +533,7 @@ private final class WalletConnectSheetContent: CombinedComponent {
                 transition: context.transition
             )
             context.add(connectButton.position(CGPoint(
-                x: contentCenterX + buttonSpacing / 2.0 + connectButton.size.width / 2.0,
+                x: buttonsCenterX + buttonSpacing / 2.0 + connectButton.size.width / 2.0,
                 y: contentHeight + connectButton.size.height / 2.0
             )))
             contentHeight += max(cancelButton.size.height, connectButton.size.height)
@@ -638,7 +642,7 @@ private final class WalletConnectSheetComponent: CombinedComponent {
                         metrics: environment.metrics,
                         deviceMetrics: environment.deviceMetrics,
                         isDisplaying: environment.value.isVisible,
-                        isCentered: environment.metrics.widthClass == .regular,
+                        isCentered: environment.presentsFloatingPanels,
                         hasInputHeight: !environment.inputHeight.isZero,
                         regularMetricsSize: CGSize(width: 430.0, height: 900.0),
                         dismiss: { animated in
@@ -680,8 +684,10 @@ private final class WalletConnectSheetComponent: CombinedComponent {
                         bottom: 0.0,
                         right: max(sideInset, environment.safeInsets.right)
                     ),
+                    reservedCorners: environment.reservedCorners,
+                    division: nil,
                     additionalInsets: .zero,
-                    statusBarHeight: environment.statusBarHeight,
+                    statusBarHeight: environment.fullStatusBarHeight,
                     inputHeight: nil,
                     inputHeightIsInteractivellyChanging: false,
                     inVoiceOver: false,

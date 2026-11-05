@@ -1,6 +1,5 @@
 import protocol Combine.Publisher
 import FeatChatBanner
-import Postbox
 import SwiftSignalKit
 import TelegramCore
 
@@ -21,7 +20,7 @@ extension ChatControllerImpl {
 
 private extension ChatControllerImpl {
     func chatKindPublisher(
-        peerId: PeerId
+        peerId: EnginePeer.Id
     ) -> some Publisher<ChatKind, Never> {
         let signal = combineLatest(
             context.engine.data.subscribe(

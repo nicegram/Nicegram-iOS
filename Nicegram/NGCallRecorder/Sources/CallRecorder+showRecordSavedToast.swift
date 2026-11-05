@@ -1,16 +1,15 @@
 import AccountContext
 import FeatCallRecorder
 import NGStrings
-import Postbox
 import TelegramCore
 import UIKit
 import UndoUI
 
 extension CallRecorder {
     func showRecordSavedToast(
-        receiverId: PeerId?
+        receiverId: EnginePeer.Id?
     ) {
-        Task {
+        _ = Task {
             let context = try call.unwrap().accountContext
             let presentationData = context.sharedContext.currentPresentationData.with { $0 }
 
@@ -44,7 +43,7 @@ extension CallRecorder {
 private extension CallRecorder {
     func toastText(
         context: AccountContext,
-        receiverId: PeerId?
+        receiverId: EnginePeer.Id?
     ) async -> String {
         await FeatCallRecorder.strings.recordSavedToast(
             receiverChatName(context: context, receiverId: receiverId)
@@ -53,7 +52,7 @@ private extension CallRecorder {
 
     func receiverChatName(
         context: AccountContext,
-        receiverId: PeerId?
+        receiverId: EnginePeer.Id?
     ) async -> String {
         guard let receiverId else {
             return FeatCallRecorder.strings.savedMessages()

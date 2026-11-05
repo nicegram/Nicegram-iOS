@@ -1,11 +1,9 @@
 import AccountContext
-import protocol Postbox.Peer
-import struct Postbox.PeerId
 import TelegramApi
 import TelegramBridge
 import TelegramCore
 
-public extension Postbox.Peer {
+public extension EngineRawPeer {
     func toTelegramBridgePeer() -> TelegramBridge.TelegramPeer {
         let displayName = debugDisplayTitle
         let id = TelegramBridge.TelegramId(id)
@@ -87,16 +85,16 @@ public extension TelegramBridge.TelegramPeer {
         context: AccountContext
     ) async throws -> Api.InputPeer {
         let peer = try await toTelegramPeer(context: context)
-        return try apiInputPeer(peer).unwrap()
+        return try TelegramRawApi.inputPeer(peer).unwrap()
     }
     
     func toTelegramPeer(
         context: AccountContext
-    ) async throws -> Postbox.Peer {
-        let peerId = PeerId(id)
-        let peerView = try await context.account.postbox
-            .peerView(id: peerId)
+    ) async throws -> EngineRawPeer {
+        try await context.engine.data
+            .get(TelegramEngine.EngineData.Item.Peer.Peer(id: EnginePeer.Id(id)))
             .awaitForFirstValue()
-        return try peerView.peers[peerId].unwrap()
+            .unwrap()
+            ._asPeer()
     }
 }

@@ -3,7 +3,6 @@ import Combine
 import MemberwiseInit
 import NGUtils
 import PeerMessagesMediaPlaylist
-import Postbox
 import SwiftSignalKit
 import TelegramBridge
 import TelegramCore
@@ -15,10 +14,10 @@ class TelegramMediaManagerImpl {
 
 extension TelegramMediaManagerImpl: TelegramMediaManager {
     func playAudio(_ messageId: TelegramMessageId) {
-        Task { @MainActor in
+        _ = Task { @MainActor in
             let context = try contextProvider.context().unwrap()
             
-            let messageId = MessageId(messageId)
+            let messageId = EngineMessage.Id(messageId)
             
             let playlist = PeerMessagesMediaPlaylist(
                 context: context,

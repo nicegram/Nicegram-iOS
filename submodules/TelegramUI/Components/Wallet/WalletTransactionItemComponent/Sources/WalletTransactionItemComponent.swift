@@ -394,6 +394,10 @@ public final class WalletTransactionItemComponent: Component {
         private let clockMinute = CALayer()
         private let clockHour = CALayer()
 
+        public var transferAmountFrame: CGRect {
+            return self.amount.view?.frame ?? .zero
+        }
+
         public var transferIconFrame: CGRect {
             guard let view = self.amountIcon.view else { return .zero }
             return CGRect(x: view.center.x - view.bounds.width * 0.5, y: view.center.y - view.bounds.height * 0.5, width: view.bounds.width, height: view.bounds.height)
@@ -404,8 +408,9 @@ public final class WalletTransactionItemComponent: Component {
             guard self.component?.animatesPendingTransfer == true else { return }
             if let view = self.amount.view {
                 let scale = 1.0 + 0.33 * expansion
+                let offset: CGFloat = self.component?.transaction?.collectible != nil ? -19.0 : -23.0
                 view.transform = CGAffineTransform(a: scale, b: 0.0, c: 0.0, d: scale,
-                    tx: -23.0 * expansion - (scale - 1.0) * view.bounds.width * 0.5, ty: 20.35 * expansion)
+                    tx: offset * expansion - (scale - 1.0) * view.bounds.width * 0.5, ty: 20.35 * expansion)
             }
             self.amountIcon.view?.alpha = iconAlpha
             self.amountIcon.view?.transform = CGAffineTransform(scaleX: max(0.001, iconScale), y: max(0.001, iconScale))
@@ -782,8 +787,18 @@ public final class WalletTransactionItemComponent: Component {
                 if case let .onramp(_, _, providerName) = transaction.peer {
                     subtitleText = providerName
                 }
+                if case .telegramGift(true) = transaction.peer {
+                    switch displayedDirection {
+                    case .incoming:
+                        subtitleText = component.strings.Wallet_Transaction_MovedFromProfile
+                    case .outgoing:
+                        subtitleText = component.strings.Wallet_Transaction_MovedToProfile
+                    case .unknown:
+                        break
+                    }
+                }
             }
-            if !isServiceTransaction, case let .user(peer, _, _) = transaction.peer {
+            if !isServiceTransaction, let peer = transaction.peer.peer {
                 avatarPeer = .transactionPeer(.peer(peer))
             }
             
@@ -1071,8 +1086,10 @@ public final class WalletTransactionItemComponent: Component {
             let peerTitle: String
             var titleAddress: String?
             switch transaction.peer {
-            case let .user(peer, _, _):
+            case let .user(peer, _, _), let .channel(peer, _, _):
                 peerTitle = peer.debugDisplayTitle
+            case .telegramGift:
+                peerTitle = component.strings.Wallet_Transaction_Telegram
             case let .address(address, domain):
                 if let domain = domain?.trimmingCharacters(in: .whitespacesAndNewlines), !domain.isEmpty {
                     peerTitle = domain

@@ -2,7 +2,6 @@ import AccountContext
 import Factory
 import FeatDataSharing
 import NGCore
-import Postbox
 import SwiftSignalKit
 import TelegramCore
 
@@ -18,7 +17,7 @@ class ChatParserFromLocal {
 }
 
 extension ChatParserFromLocal {
-    func parse(id: PeerId) async throws -> ShareChatOnOpeningUseCase.Peer {
+    func parse(id: EnginePeer.Id) async throws -> ShareChatOnOpeningUseCase.Peer {
         let peerView = try await getPeerView(id)
         let peer = try peerView.peers[id].unwrap()
         let cachedData = try peerView.cachedData.unwrap()
@@ -49,7 +48,7 @@ extension ChatParserFromLocal {
 private extension ChatParserFromLocal {
     func getChannel(
         channel: TelegramChannel,
-        cachedData: CachedPeerData?
+        cachedData: EngineCachedPeerData?
     ) async throws -> Channel {
         let cachedData = cachedData as? CachedChannelData
 
@@ -66,7 +65,7 @@ private extension ChatParserFromLocal {
         )
     }
     
-    func getInviteLinks(_ id: PeerId) async -> [InviteLink] {
+    func getInviteLinks(_ id: EnginePeer.Id) async -> [InviteLink] {
         do {
             let signal = context.engine.peers.direct_peerExportedInvitations(
                 peerId: id,
@@ -86,7 +85,7 @@ private extension ChatParserFromLocal {
         }
     }
     
-    func getSimilarChannels(_ id: PeerId) async -> [Channel] {
+    func getSimilarChannels(_ id: EnginePeer.Id) async -> [Channel] {
         do {
             try? await context.engine.peers.requestRecommendedChannels(peerId: id)
                 .awaitForCompletion()
@@ -112,7 +111,7 @@ private extension ChatParserFromLocal {
 private extension ChatParserFromLocal {
     func getUser(
         user: TelegramUser,
-        cachedData: CachedPeerData?
+        cachedData: EngineCachedPeerData?
     ) async throws -> User {
         let botInfo = try user.botInfo.unwrap()
         let cachedData = cachedData as? CachedUserData
@@ -132,13 +131,13 @@ private extension ChatParserFromLocal {
 //  MARK: - General
 
 private extension ChatParserFromLocal {
-    func getPeerView(_ id: PeerId) async throws -> PeerView {
+    func getPeerView(_ id: EnginePeer.Id) async throws -> EngineRawPeerView {
         try await context.account.viewTracker
             .peerView(id, updateData: true)
             .awaitForFirstValue()
     }
     
-    func getMessages(_ id: PeerId) async -> [FeatDataSharing.Message] {
+    func getMessages(_ id: EnginePeer.Id) async -> [FeatDataSharing.Message] {
         do {
             let config = getConfigUseCase()
 

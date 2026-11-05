@@ -319,7 +319,13 @@ public final class MessageInputActionButtonComponent: Component {
                 let scale: CGFloat = highlighted ? 0.6 : 1.0
                 
                 let transition = ComponentTransition(animation: .curve(duration: highlighted ? 0.5 : 0.3, curve: .spring))
-                transition.setSublayerTransform(view: self, transform: CATransform3DMakeScale(scale, scale, 1.0))
+                var endRasterization: [(Bool) -> Void] = []
+                if self.component?.style == .accent {
+                    endRasterization = self.subviews.map { $0.layer.beginRasterizedAnimation() }
+                }
+                transition.setSublayerTransform(view: self, transform: CATransform3DMakeScale(scale, scale, 1.0), completion: { finished in
+                    endRasterization.forEach { $0(finished) }
+                })
             }
             
             self.button.addTarget(self, action: #selector(self.touchDown), forControlEvents: .touchDown)
@@ -575,7 +581,7 @@ public final class MessageInputActionButtonComponent: Component {
                     ),
                     size: accentBackgroundSize
                 )
-                accentBackgroundView.backgroundColor = component.theme.chat.inputPanel.panelControlAccentColor
+                accentBackgroundView.backgroundColor = component.theme.list.itemCheckColors.fillColor
                 transition.setFrame(view: accentBackgroundView, frame: accentBackgroundFrame)
                 transition.setCornerRadius(layer: accentBackgroundView.layer, cornerRadius: accentBackgroundFrame.height * 0.5)
             } else if let accentBackgroundView = self.accentBackgroundView {
@@ -586,7 +592,15 @@ public final class MessageInputActionButtonComponent: Component {
             if self.sendIconView.image == nil || previousComponent?.mode.icon != component.mode.icon || previousComponent?.style != component.style || (component.style == .accent && themeUpdated) {
                 let updatedImage: UIImage?
                 if component.style == .accent, case .send = component.mode {
-                    updatedImage = PresentationResourcesChat.chatInputPanelSendIconImage(component.theme)
+                    let foregroundColor = component.theme.list.itemCheckColors.foregroundColor
+                    updatedImage = generateImage(CGSize(width: 34.0, height: 34.0), rotatedContext: { size, context in
+                        context.clear(CGRect(origin: CGPoint(), size: size))
+                        UIGraphicsPushContext(context)
+                        if let icon = generateTintedImage(image: UIImage(bundleImageName: "Chat/Input/Text/SendIcon"), color: foregroundColor) {
+                            icon.draw(in: CGRect(origin: CGPoint(x: floorToScreenPixels((size.width - icon.size.width) * 0.5), y: floorToScreenPixels((size.height - icon.size.height) * 0.5)), size: icon.size))
+                        }
+                        UIGraphicsPopContext()
+                    })
                 } else {
                     updatedImage = component.mode.icon?.image(withBackground: component.style == .legacy)
                 }

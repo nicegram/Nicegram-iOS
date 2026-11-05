@@ -386,7 +386,7 @@ public extension PeerInfoScreenImpl {
                             case .completed:
                                 if let data = try? Data(contentsOf: URL(fileURLWithPath: tempFile.path), options: .mappedIfSafe) {
                                     let resource = LocalFileMediaResource(fileId: Int64.random(in: Int64.min ... Int64.max))
-                                    account.postbox.mediaBox.storeResourceData(resource.id, data: data, synchronous: true)
+                                    TelegramEngine(account: account).resources.storeResourceData(id: EngineMediaResource.Id(resource.id), data: data, synchronous: true)
                                     subscriber.putNext(resource)
                                     subscriber.putCompletion()
                                 }
@@ -802,7 +802,6 @@ extension PeerInfoScreenImpl {
         if self.controllerNode.headerNode.isAvatarExpanded {
             self.controllerNode.headerNode.ignoreCollapse = true
             self.controllerNode.headerNode.updateIsAvatarExpanded(false, transition: .immediate)
-            self.controllerNode.updateNavigationExpansionPresentation(isExpanded: false, animated: true)
         }
         self.controllerNode.scrollNode.view.setContentOffset(CGPoint(), animated: false)
         
@@ -1007,7 +1006,7 @@ extension PeerInfoScreenImpl {
                             case .completed:
                                 if let data = try? Data(contentsOf: URL(fileURLWithPath: tempFile.path), options: .mappedIfSafe) {
                                     let resource = LocalFileMediaResource(fileId: Int64.random(in: Int64.min ... Int64.max))
-                                    account.postbox.mediaBox.storeResourceData(resource.id, data: data, synchronous: true)
+                                    TelegramEngine(account: account).resources.storeResourceData(id: EngineMediaResource.Id(resource.id), data: data, synchronous: true)
                                     subscriber.putNext(resource)
                                     subscriber.putCompletion()
                                 }
@@ -1197,7 +1196,7 @@ extension PeerInfoScreenImpl {
                 let signalDisposable = signal.start(next: { next in
                     if let result = next as? TGMediaVideoConversionResult {
                         if let image = result.coverImage, let data = image.jpegData(compressionQuality: 0.7) {
-                            account.postbox.mediaBox.storeResourceData(photoResource.id, data: data)
+                            TelegramEngine(account: account).resources.storeResourceData(id: EngineMediaResource.Id(photoResource.id), data: data)
                         }
                         
                         if let timestamp = videoStartTimestamp {
@@ -1213,7 +1212,7 @@ extension PeerInfoScreenImpl {
                                 } else {
                                     resource = LocalFileMediaResource(fileId: Int64.random(in: Int64.min ... Int64.max))
                                 }
-                                account.postbox.mediaBox.storeResourceData(resource.id, data: data, synchronous: true)
+                                TelegramEngine(account: account).resources.storeResourceData(id: EngineMediaResource.Id(resource.id), data: data, synchronous: true)
                                 subscriber.putNext(resource)
                                 
                                 EngineTempBox.shared.dispose(tempFile)

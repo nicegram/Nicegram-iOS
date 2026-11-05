@@ -1,6 +1,6 @@
 import Foundation
 import Postbox
-import TelegramApi
+internal import TelegramApi
 
 
 private func collectPreCachedResources(for photo: Api.Photo) -> [(MediaResource, Data)]? {
@@ -281,8 +281,7 @@ extension Api.Chat {
 }
 
 extension Api.User {
-    // Nicegram NGDataSharing, 'public'
-    public var peerId: PeerId {
+    var peerId: PeerId {
         switch self {
             case let .user(userData):
                 let id = userData.id
@@ -295,8 +294,7 @@ extension Api.User {
 }
 
 extension Api.Peer {
-    // Nicegram NGDataSharing, 'public'
-    public var peerId: PeerId {
+    var peerId: PeerId {
         switch self {
             case let .peerChannel(peerChannelData):
                 let channelId = peerChannelData.channelId
@@ -405,9 +403,19 @@ extension Api.Update {
     var peerIds: [PeerId] {
         switch self {
             case let .updateSentWalletTransaction(data):
+                if case let .walletTransaction(value)? = data.transaction {
+                    switch value.peer {
+                    case let .walletTransactionPeerUser(peer):
+                        return [PeerId(namespace: Namespaces.Peer.CloudUser, id: PeerId.Id._internalFromInt64Value(peer.userId))]
+                    case let .walletTransactionPeerChannel(peer):
+                        return [PeerId(namespace: Namespaces.Peer.CloudChannel, id: PeerId.Id._internalFromInt64Value(peer.channelId))]
+                    default:
+                        break
+                    }
+                }
                 if case let .walletTransaction(value)? = data.transaction,
-                   case let .walletTransactionPeerUser(peer) = value.peer {
-                    return [PeerId(namespace: Namespaces.Peer.CloudUser, id: PeerId.Id._internalFromInt64Value(peer.userId))]
+                   case let .walletTransactionPeerChannel(peer) = value.peer {
+                    return [PeerId(namespace: Namespaces.Peer.CloudChannel, id: PeerId.Id._internalFromInt64Value(peer.channelId))]
                 }
                 return []
             case let .updateChannel(updateChannelData):

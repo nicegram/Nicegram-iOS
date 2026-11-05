@@ -1,7 +1,7 @@
 import Foundation
 import Postbox
 import SwiftSignalKit
-import TelegramApi
+internal import TelegramApi
 import MtProtoKit
 import EncryptionProvider
 
@@ -2067,6 +2067,10 @@ private func finalStateWithUpdatesAndServerTime(accountPeerId: PeerId, postbox: 
                 updatedState.updateStarGiftAuctionMyState(giftId: giftId, state: GiftAuctionContext.State.MyState(apiAuctionUserState: userState))
             case let .updateEmojiGameInfo(updateEmojiGameInfoData):
                 updatedState.updateEmojiGameInfo(info: EmojiGameInfo(apiEmojiGameInfo: updateEmojiGameInfoData.info))
+#if TELEGRAM_NEWS_FEED_API
+            case let .updateReadFeed(updateReadFeedData):
+                updatedState.updateReadFeed(filterId: updateReadFeedData.filterId, maxPosition: EngineFeedPosition(apiPosition: updateReadFeedData.maxPosition))
+#endif
             default:
                 break
         }
@@ -2391,6 +2395,9 @@ func resolveForumThreads(accountPeerId: PeerId, postbox: Postbox, source: FetchM
         return postbox.transaction { transaction -> Signal<Void, NoError> in
             var missingForumThreadIds: [PeerId: [Int64]] = [:]
             for threadId in forumThreadIds {
+                if !peerCanHaveForumThreads(transaction.getPeer(threadId.peerId) ?? additionalPeers.get(threadId.peerId)) {
+                    continue
+                }
                 if let _ = transaction.getMessageHistoryThreadInfo(peerId: threadId.peerId, threadId: threadId.threadId) {
                 } else {
                     missingForumThreadIds[threadId.peerId, default: []].append(threadId.threadId)
@@ -3843,6 +3850,47 @@ private final class OptimizeAddMessagesState {
     }
 }
 
+/// The highest incoming read mark each peer's cloud messages get in `operations`, for counting new messages
+/// in forum topics. Operations the replay skips for a channel the account is not a member of
+/// (`readStateOperationTargetsNonMember`) are left out.
+func cloudReadInboxMarks(_ operations: [AccountStateMutationOperation], getPeer: (PeerId) -> Peer?) -> [PeerId: Int32] {
+    var marks: [PeerId: Int32] = [:]
+    for operation in operations {
+        let peerId: PeerId
+        let mark: Int32
+        switch operation {
+        case let .ReadInbox(messageId):
+            guard messageId.namespace == Namespaces.Message.Cloud else {
+                continue
+            }
+            peerId = messageId.peerId
+            mark = messageId.id
+        case let .ResetIncomingReadState(_, peerIdValue, namespace, maxIncomingReadId, _, _):
+            guard namespace == Namespaces.Message.Cloud else {
+                continue
+            }
+            peerId = peerIdValue
+            mark = maxIncomingReadId
+        case let .ResetReadState(peerIdValue, namespace, maxIncomingReadId, _, _, _, _):
+            guard namespace == Namespaces.Message.Cloud else {
+                continue
+            }
+            peerId = peerIdValue
+            mark = maxIncomingReadId
+        default:
+            continue
+        }
+        if readStateOperationTargetsNonMember(operation, getPeer: getPeer) {
+            continue
+        }
+        if let current = marks[peerId], current >= mark {
+            continue
+        }
+        marks[peerId] = mark
+    }
+    return marks
+}
+
 private func optimizedOperations(_ operations: [AccountStateMutationOperation]) -> [AccountStateMutationOperation] {
     var result: [AccountStateMutationOperation] = []
     
@@ -3856,7 +3904,7 @@ private func optimizedOperations(_ operations: [AccountStateMutationOperation]) 
     var currentAddQuickReplyMessages: OptimizeAddMessagesState?
     for operation in operations {
         switch operation {
-        case .DeleteMessages, .DeleteMessagesWithGlobalIds, .EditMessage, .UpsertEphemeralReplacement, .DeleteEphemeralMessages, .UpdateMessagePoll, .UpdateMessageReactions, .UpdateMedia, .MergeApiChats, .MergeApiUsers, .MergePeerPresences, .UpdatePeer, .ReadInbox, .ReadOutbox, .ReadGroupFeedInbox, .ResetReadState, .ResetIncomingReadState, .UpdatePeerChatUnreadMark, .ResetMessageTagSummary, .UpdateNotificationSettings, .UpdateGlobalNotificationSettings, .UpdateSecretChat, .AddSecretMessages, .ReadSecretOutbox, .AddPeerInputActivity, .AddPeerLiveTypingDraftUpdate, .AddPeerLiveTypingDraftStop, .UpdateCachedPeerData, .UpdatePinnedItemIds, .UpdatePinnedSavedItemIds, .UpdatePinnedTopic, .UpdatePinnedTopicOrder, .ReadMessageContents, .UpdateMessageImpressionCount, .UpdateMessageForwardsCount, .UpdateInstalledStickerPacks, .UpdateRecentGifs, .UpdateChatInputState, .UpdateCall, .AddCallSignalingData, .UpdateLangPack, .UpdateMinAvailableMessage, .UpdateIsContact, .UpdatePeerChatInclusion, .UpdateTheme, .SyncChatListFilters, .UpdateChatListFilter, .UpdateChatListFilterOrder, .UpdateReadThread, .UpdateMessagesPinned, .UpdateGroupCallParticipants, .UpdateGroupCall, .UpdateGroupCallChainBlocks, .UpdateGroupCallMessage, .UpdateGroupCallOpaqueMessage, .UpdateAutoremoveTimeout, .UpdateAttachMenuBots, .UpdateAudioTranscription, .UpdateConfig, .UpdateExtendedMedia, .ResetForumTopic, .UpdateStory, .UpdateReadStories, .UpdateStoryStealthMode, .UpdateStorySentReaction, .UpdateNewAuthorization, .UpdateNewBotConnection, .UpdateWebBrowserSettings, .UpdateWebBrowserException, .UpdateWallpaper, .UpdateStarsBalance, .UpdateStarsRevenueStatus, .UpdateStarsReactionsDefaultPrivacy, .ReportMessageDelivery, .UpdateMonoForumNoPaidException, .UpdateStarGiftAuctionState, .UpdateStarGiftAuctionMyState, .UpdateEmojiGameInfo, .UpdateWalletState, .UpdateWalletTransfer, .UpdateWalletTonConnectEvent:
+        case .DeleteMessages, .DeleteMessagesWithGlobalIds, .EditMessage, .UpsertEphemeralReplacement, .DeleteEphemeralMessages, .UpdateMessagePoll, .UpdateMessageReactions, .UpdateMedia, .MergeApiChats, .MergeApiUsers, .MergePeerPresences, .UpdatePeer, .ReadInbox, .ReadOutbox, .ReadGroupFeedInbox, .ResetReadState, .ResetIncomingReadState, .UpdatePeerChatUnreadMark, .ResetMessageTagSummary, .UpdateNotificationSettings, .UpdateGlobalNotificationSettings, .UpdateSecretChat, .AddSecretMessages, .ReadSecretOutbox, .AddPeerInputActivity, .AddPeerLiveTypingDraftUpdate, .AddPeerLiveTypingDraftStop, .UpdateCachedPeerData, .UpdatePinnedItemIds, .UpdatePinnedSavedItemIds, .UpdatePinnedTopic, .UpdatePinnedTopicOrder, .ReadMessageContents, .UpdateMessageImpressionCount, .UpdateMessageForwardsCount, .UpdateInstalledStickerPacks, .UpdateRecentGifs, .UpdateChatInputState, .UpdateCall, .AddCallSignalingData, .UpdateLangPack, .UpdateMinAvailableMessage, .UpdateIsContact, .UpdatePeerChatInclusion, .UpdateTheme, .SyncChatListFilters, .UpdateChatListFilter, .UpdateChatListFilterOrder, .UpdateReadThread, .UpdateMessagesPinned, .UpdateGroupCallParticipants, .UpdateGroupCall, .UpdateGroupCallChainBlocks, .UpdateGroupCallMessage, .UpdateGroupCallOpaqueMessage, .UpdateAutoremoveTimeout, .UpdateAttachMenuBots, .UpdateAudioTranscription, .UpdateConfig, .UpdateExtendedMedia, .ResetForumTopic, .UpdateStory, .UpdateReadStories, .UpdateStoryStealthMode, .UpdateStorySentReaction, .UpdateNewAuthorization, .UpdateNewBotConnection, .UpdateWebBrowserSettings, .UpdateWebBrowserException, .UpdateWallpaper, .UpdateStarsBalance, .UpdateStarsRevenueStatus, .UpdateStarsReactionsDefaultPrivacy, .ReportMessageDelivery, .UpdateMonoForumNoPaidException, .UpdateReadFeed, .UpdateStarGiftAuctionState, .UpdateStarGiftAuctionMyState, .UpdateEmojiGameInfo, .UpdateWalletState, .UpdateWalletTransfer, .UpdateWalletTonConnectEvent:
                 if let currentAddMessages = currentAddMessages, !currentAddMessages.messages.isEmpty {
                     result.append(.AddMessages(currentAddMessages.messages, currentAddMessages.location))
                 }
@@ -4151,7 +4199,9 @@ func replayFinalState(
     
     var wasOperationScheduledMessageIds: [MessageId] = []
     
-    var readInboxCloudMessageIds: [PeerId: Int32] = [:]
+    // Judged by each peer as this batch leaves it, the way the replay below judges it when it applies the
+    // operation: a channel joined earlier in the batch counts.
+    let readInboxCloudMessageIds = cloudReadInboxMarks(finalState.state.operations, getPeer: { finalState.state.peers[$0] ?? transaction.getPeer($0) })
     
     var addedOperationIncomingMessageIds: [MessageId] = []
     var addedConferenceInvitationMessagesIds: [MessageId] = []
@@ -4221,36 +4271,6 @@ func replayFinalState(
                     }
                 }
             }
-        case let .ReadInbox(messageId):
-            if messageId.namespace == Namespaces.Message.Cloud {
-                if let current = readInboxCloudMessageIds[messageId.peerId] {
-                    if current < messageId.id {
-                        readInboxCloudMessageIds[messageId.peerId] = messageId.id
-                    }
-                } else {
-                    readInboxCloudMessageIds[messageId.peerId] = messageId.id
-                }
-            }
-        case let .ResetIncomingReadState(_, peerId, namespace, maxIncomingReadId, _, _):
-            if namespace == Namespaces.Message.Cloud {
-                if let current = readInboxCloudMessageIds[peerId] {
-                    if current < maxIncomingReadId {
-                        readInboxCloudMessageIds[peerId] = maxIncomingReadId
-                    }
-                } else {
-                    readInboxCloudMessageIds[peerId] = maxIncomingReadId
-                }
-            }
-        case let .ResetReadState(peerId, namespace, maxIncomingReadId, _, _, _, _):
-            if namespace == Namespaces.Message.Cloud {
-                if let current = readInboxCloudMessageIds[peerId] {
-                    if current < maxIncomingReadId {
-                        readInboxCloudMessageIds[peerId] = maxIncomingReadId
-                    }
-                } else {
-                    readInboxCloudMessageIds[peerId] = maxIncomingReadId
-                }
-            }
         default:
             break
         }
@@ -4312,6 +4332,11 @@ func replayFinalState(
     
     for operation in optimizedOperations(finalState.state.operations) {
         walletTonConnectEventBatch.append(contentsOf: walletTonConnectEvents(operation: operation))
+        // The server's read state for a channel the account is not a member of is not kept
+        // (NonMemberChannelReadState.swift). A join earlier in this replay is already stored.
+        if readStateOperationTargetsNonMember(operation, getPeer: { transaction.getPeer($0) }) {
+            continue
+        }
         switch operation {
             case let .AddMessages(messages, location):
                 if case .UpperHistoryBlock = location {
@@ -4645,51 +4670,17 @@ func replayFinalState(
             case let .EditMessage(id, message):
                 var generatedEvent: (reactionAuthor: Peer, reaction: MessageReaction.Reaction, message: Message, timestamp: Int32)?
                 transaction.updateMessage(id, update: { previousMessage in
-                    var updatedFlags = message.flags
-                    var updatedLocalTags = message.localTags
-                    var updatedAttributes = message.attributes
-                    if previousMessage.localTags.contains(.OutgoingLiveLocation) {
-                        updatedLocalTags.insert(.OutgoingLiveLocation)
-                    }
-                    if previousMessage.flags.contains(.Incoming) {
-                        updatedFlags.insert(.Incoming)
-                    } else {
-                        updatedFlags.remove(.Incoming)
-                    }
-                    
                     let peers: [PeerId:Peer] = previousMessage.peers.reduce([:], { current, value in
                         var current = current
                         current[value.0] = value.1
                         return current
                     })
                     
-                    if previousMessage.text == message.text {
-                        let previousEntities = previousMessage.textEntitiesAttribute?.entities ?? []
-                        let updatedEntities = (message.attributes.first(where: { $0 is TextEntitiesMessageAttribute }) as? TextEntitiesMessageAttribute)?.entities ?? []
-                        if previousEntities == updatedEntities, let translation = previousMessage.attributes.first(where: { $0 is TranslationMessageAttribute }) as? TranslationMessageAttribute {
-                            if message.attributes.firstIndex(where: { $0 is TranslationMessageAttribute }) == nil {
-                                updatedAttributes.append(translation)
-                            }
-                        }
-                    }
-                    
-                    if let previousFactCheckAttribute = previousMessage.attributes.first(where: { $0 is FactCheckMessageAttribute }) as? FactCheckMessageAttribute, let updatedFactCheckAttribute = message.attributes.first(where: { $0 is FactCheckMessageAttribute }) as? FactCheckMessageAttribute {
-                        if case .Pending = updatedFactCheckAttribute.content, updatedFactCheckAttribute.hash == previousFactCheckAttribute.hash {
-                            updatedAttributes.removeAll(where: { $0 is FactCheckMessageAttribute })
-                            updatedAttributes.append(previousFactCheckAttribute)
-                        }
-                    }
-                    
                     if let message = locallyRenderedMessage(message: message, peers: peers) {
                         generatedEvent = reactionGeneratedEvent(previousMessage.reactionsAttribute, message.reactionsAttribute, message: message, transaction: transaction)
                     }
                     
-                    var updatedMedia = message.media
-                    if let previousPaidContent = previousMessage.media.first(where: { $0 is TelegramMediaPaidContent }) as? TelegramMediaPaidContent, case .full = previousPaidContent.extendedMedia.first {
-                        updatedMedia = previousMessage.media
-                    }
-                    
-                    return .update(message.withUpdatedLocalTags(updatedLocalTags).withUpdatedFlags(updatedFlags).withUpdatedAttributes(updatedAttributes).withUpdatedMedia(updatedMedia))
+                    return .update(mergedServerMessageUpdate(previous: previousMessage, updated: message))
                 })
                 if let generatedEvent = generatedEvent {
                     addedReactionEvents.append(generatedEvent)
@@ -4857,15 +4848,13 @@ func replayFinalState(
                         if namespace == currentNamespace {
                             switch currentState {
                             case let .idBased(localMaxIncomingReadId, _, _, localCount, localMarkedUnread):
-                                if count != 0 || markedUnreadValue {
-                                    if localMaxIncomingReadId > maxIncomingReadId {
-                                        transaction.setNeedsIncomingReadStateSynchronization(peerId)
-                                        
-                                        transaction.resetIncomingReadStates([peerId: [namespace: .idBased(maxIncomingReadId: localMaxIncomingReadId, maxOutgoingReadId: maxOutgoingReadId, maxKnownId: maxKnownId, count: localCount, markedUnread: localMarkedUnread)]])
-                                        
-                                        Logger.shared.log("State", "not applying incoming read state for \(peerId): \(localMaxIncomingReadId) > \(maxIncomingReadId)")
-                                        ignore = true
-                                    }
+                                if localReadMarkIsAheadOfServer(localMaxIncomingReadId: localMaxIncomingReadId, serverMaxIncomingReadId: maxIncomingReadId, serverCount: count, serverMarkedUnread: markedUnreadValue) {
+                                    transaction.setNeedsIncomingReadStateSynchronization(peerId)
+
+                                    transaction.resetIncomingReadStates([peerId: [namespace: .idBased(maxIncomingReadId: localMaxIncomingReadId, maxOutgoingReadId: maxOutgoingReadId, maxKnownId: maxKnownId, count: localCount, markedUnread: localMarkedUnread)]])
+
+                                    Logger.shared.log("State", "not applying incoming read state for \(peerId): \(localMaxIncomingReadId) > \(maxIncomingReadId)")
+                                    ignore = true
                                 }
                             default:
                                 break
@@ -5770,6 +5759,8 @@ func replayFinalState(
                         transaction.setMessageHistoryThreadInfo(peerId: peerId, threadId: threadId, info: entry)
                     }
                 }
+            case let .UpdateReadFeed(filterId, maxPosition):
+                applyFeedReadState(transaction: transaction, filterId: filterId, maxPosition: maxPosition)
             case let .UpdateStarGiftAuctionState(giftId, state):
                 updatedStarGiftAuctionState[giftId] = state
             case let .UpdateStarGiftAuctionMyState(giftId, state):

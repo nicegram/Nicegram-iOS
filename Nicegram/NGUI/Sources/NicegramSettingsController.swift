@@ -23,7 +23,6 @@ import ItemListUI
 import NGData
 import NGLogging
 import NGStrings
-import Postbox
 import PresentationDataUtils
 import SwiftSignalKit
 import TelegramCore
@@ -385,7 +384,7 @@ private enum NicegramSettingsControllerEntry: ItemListNodeEntry {
         case let .recomendedPrivacySettings(text):
             return ItemListActionItem(presentationData: presentationData, title: text, kind: .neutral, alignment: .natural, sectionId: section, style: .blocks) {
                 showPrivacySettingsApplyingAlert(with: arguments) {
-                    Task {
+                    _ = Task {
                         try await NGDefaultPrivacySettingsApplyer.applyDefaultPrivacySettings(for: arguments.context)
                     }
                 }
@@ -736,7 +735,7 @@ public func nicegramSettingsController(context: AccountContext, accountsContexts
                     title: banner.banner.name,
                     enabled: banner.isPinned,
                     setEnabled: { isPinned in
-                        Task {
+                        _ = Task {
                             let flow = BannerPinningFlow()
                             let id = banner.banner.id
                             if isPinned {

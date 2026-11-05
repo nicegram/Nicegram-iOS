@@ -1,6 +1,5 @@
 import Foundation
 import MemberwiseInit
-import Postbox
 import SwiftSignalKit
 import TelegramApi
 import TelegramBridge
@@ -64,28 +63,27 @@ private extension TelegramChatHistoryProviderImpl {
     ) async throws -> [TelegramMessage] {
         let context = try contextProvider.context().unwrap()
         
-        let peerId = PeerId(peer.id)
+        let peerId = EnginePeer.Id(peer.id)
         let namespace = Namespaces.Message.Cloud
         
-        let from: MessageIndex
+        let from: EngineMessage.Index
         if let olderThan = pagination.olderThan {
-            from = MessageIndex(olderThan)
+            from = EngineMessage.Index(olderThan)
         } else {
             from = .upperBound(peerId: peerId, namespace: namespace)
         }
         
-        let messages = try await context.account.postbox
-            .transaction { transaction in
-                transaction.getMessages(
-                    peerId: peerId,
-                    namespace: namespace,
-                    from: from,
-                    to: .lowerBound(peerId: peerId, namespace: namespace),
-                    limit: pagination.limit
-                )
-            }
+        let messages = try await TelegramRawPostbox
+            .messages(
+                peerId: peerId,
+                namespace: namespace,
+                from: from,
+                to: .lowerBound(peerId: peerId, namespace: namespace),
+                limit: pagination.limit,
+                engine: context.engine
+            )
             .awaitForFirstValue()
-        return [TelegramMessage](messages)
+        return [TelegramMessage](messages.map { $0._asMessage() })
     }
     
     func fetchMessagesFromRemote(
@@ -96,7 +94,7 @@ private extension TelegramChatHistoryProviderImpl {
         let context = try contextProvider.context().unwrap()
         
         let inputPeer = try await peer.toTelegramApiInputPeer(context: context)
-        let apiMessagesSignal = context.account.network.request(
+        let apiMessagesSignal = TelegramRawApi.request(
             Api.functions.messages.getHistory(
                 peer: inputPeer,
                 offsetId: pagination.olderThan?.id.id ?? 0,
@@ -106,7 +104,8 @@ private extension TelegramChatHistoryProviderImpl {
                 maxId: 0,
                 minId: 0,
                 hash: 0
-            )
+            ),
+            network: context.account.network
         )
         |> timeout(timeoutValue, queue: Queue.concurrentDefaultQueue(), alternate: .complete())
         let apiMessages = try await apiMessagesSignal.awaitForFirstValue()

@@ -255,7 +255,7 @@ final class RankChatPreviewItemNode: ListViewItemNode {
                 }
                 
                 let message = EngineRawMessage(stableId: 1, stableVersion: 0, id: EngineMessage.Id(peerId: groupPeerId, namespace: Namespaces.Message.Local, id: 1), globallyUniqueId: nil, groupingKey: nil, groupInfo: nil, threadId: nil, timestamp: 20460, flags: [.Incoming], tags: [], globalTags: [], localTags: [], customTags: [], forwardInfo: nil, author: peers[authorPeerId], text: messageItem.text, attributes: attributes, media: media, peers: peers, associatedMessages: messages, associatedMessageIds: [], associatedMedia: [:], associatedThreadInfo: nil, associatedStories: [:])
-                items.append(item.context.sharedContext.makeChatMessagePreviewItem(context: item.context, messages: [message], theme: item.componentTheme, strings: item.strings, wallpaper: item.wallpaper, fontSize: item.fontSize, chatBubbleCorners: item.chatBubbleCorners, dateTimeFormat: item.dateTimeFormat, nameOrder: item.nameDisplayOrder, forcedResourceStatus: nil, tapMessage: nil, clickThroughMessage: nil, backgroundNode: currentBackgroundNode, availableReactions: nil, accountPeer: nil, isCentered: item.containerWidth != nil, isPreview: true, isStandalone: false, rank: messageItem.rank, rankRole: messageItem.rankRole, isGiftMessageComposerPreview: false))
+                items.append(item.context.sharedContext.makeChatMessagePreviewItem(context: item.context, messages: [EngineMessage(message)], theme: item.componentTheme, strings: item.strings, wallpaper: item.wallpaper, fontSize: item.fontSize, chatBubbleCorners: item.chatBubbleCorners, dateTimeFormat: item.dateTimeFormat, nameOrder: item.nameDisplayOrder, forcedResourceStatus: nil, tapMessage: nil, clickThroughMessage: nil, backgroundNode: currentBackgroundNode, availableReactions: nil, accountPeer: nil, isCentered: item.containerWidth != nil, isPreview: true, isStandalone: false, rank: messageItem.rank, rankRole: messageItem.rankRole, isGiftMessageComposerPreview: false, activateGiftMessageInput: nil))
             }
             
             let itemParams = ListViewItemLayoutParams(width: item.containerWidth ?? params.width, leftInset: params.leftInset, rightInset: params.rightInset, availableHeight: params.availableHeight, isStandalone: params.isStandalone)
@@ -307,7 +307,7 @@ final class RankChatPreviewItemNode: ListViewItemNode {
             let layoutSize = layout.size
             
             let leftInset = params.leftInset
-            let rightInset = params.leftInset
+            let rightInset = params.rightInset
             
             return (layout, { [weak self] in
                 if let strongSelf = self {
@@ -461,7 +461,7 @@ final class RankChatPreviewItemNode: ListViewItemNode {
                         backgroundNode.frame = backgroundFrame
                         backgroundNode.updateLayout(size: backgroundNode.bounds.size, displayMode: displayMode, transition: .immediate)
                     }
-                    strongSelf.maskNode.frame = backgroundFrame.insetBy(dx: params.leftInset, dy: 0.0)
+                    strongSelf.maskNode.frame = backgroundFrame.inset(by: UIEdgeInsets(top: 0.0, left: params.leftInset, bottom: 0.0, right: params.rightInset))
                 }
             })
         }

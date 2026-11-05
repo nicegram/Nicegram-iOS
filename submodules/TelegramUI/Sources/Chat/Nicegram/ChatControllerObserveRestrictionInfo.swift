@@ -1,6 +1,5 @@
 import protocol Combine.Publisher
 import FeatSensitiveContentAccess
-import Postbox
 import SwiftSignalKit
 import TelegramCore
 
@@ -49,7 +48,7 @@ private extension ChatControllerImpl {
     }
     
     func restrictedChatInfoPublisher(
-        peerId: PeerId
+        peerId: EnginePeer.Id
     ) -> some Publisher<RestrictedChatInfo?, Never> {
         let signal = combineLatest(
             context.engine.data.subscribe(

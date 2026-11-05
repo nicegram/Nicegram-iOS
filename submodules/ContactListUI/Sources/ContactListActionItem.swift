@@ -36,6 +36,7 @@ public class ContactListActionItem: ListViewItem, ListViewItemWithHeader {
     let highlight: ContactListActionItemHighlight
     let clearHighlightAutomatically: Bool
     let accessible: Bool
+    let hideBackground: Bool
     let action: () -> Void
     public let header: ListViewItemHeader?
 
@@ -43,7 +44,8 @@ public class ContactListActionItem: ListViewItem, ListViewItemWithHeader {
         return AnyEquatable(HeaderNeighborDescriptor(headerId: self.header?.id, headerFamily: .contactList))
     }
     
-    public init(presentationData: ItemListPresentationData, style: ItemListStyle = .plain, systemStyle: ItemListSystemStyle = .legacy, title: String, subtitle: String? = nil, icon: ContactListActionItemIcon, actionStyle: Style = .accent, height: Height = .generic, highlight: ContactListActionItemHighlight = .cell, clearHighlightAutomatically: Bool = true, accessible: Bool = true, header: ListViewItemHeader?, action: @escaping () -> Void) {
+    public init(presentationData: ItemListPresentationData, style: ItemListStyle = .plain, systemStyle: ItemListSystemStyle = .legacy, title: String, subtitle: String? = nil, icon: ContactListActionItemIcon, actionStyle: Style = .accent, height: Height = .generic, highlight: ContactListActionItemHighlight = .cell, clearHighlightAutomatically: Bool = true, accessible: Bool = true, hideBackground: Bool = false, header: ListViewItemHeader?, action: @escaping () -> Void) {
+        self.hideBackground = hideBackground
         self.presentationData = presentationData
         self.style = style
         self.systemStyle = systemStyle
@@ -265,7 +267,7 @@ class ContactListActionItemNode: ListViewItemNode {
                     if let _ = updatedTheme {
                         strongSelf.topStripeNode.backgroundColor = item.presentationData.theme.list.itemPlainSeparatorColor
                         strongSelf.bottomStripeNode.backgroundColor = item.presentationData.theme.list.itemPlainSeparatorColor
-                        strongSelf.backgroundNode.backgroundColor = item.presentationData.theme.list.plainBackgroundColor
+                        strongSelf.backgroundNode.backgroundColor = item.hideBackground ? .clear : item.presentationData.theme.list.plainBackgroundColor
                         strongSelf.highlightedBackgroundNode.backgroundColor = item.presentationData.theme.list.itemHighlightedBackgroundColor
                         
                         if case .generic = item.actionStyle {
@@ -327,13 +329,19 @@ class ContactListActionItemNode: ListViewItemNode {
                             strongSelf.addSubnode(strongSelf.maskNode)
                         }
                         strongSelf.maskNode.image = hasCorners ? PresentationResourcesItemList.cornersImage(item.presentationData.theme, top: false, bottom: true, glass: item.systemStyle == .glass) : nil
-                        strongSelf.maskNode.frame = strongSelf.backgroundNode.frame.insetBy(dx: params.leftInset, dy: 0.0)
+                        strongSelf.maskNode.frame = strongSelf.backgroundNode.frame.inset(by: UIEdgeInsets(top: 0.0, left: params.leftInset, bottom: 0.0, right: params.rightInset))
                     }
                     
                     strongSelf.topStripeNode.isHidden = true
                     strongSelf.bottomStripeNode.isHidden = hideBottomStripe
                     
-                    strongSelf.bottomStripeNode.frame = CGRect(origin: CGPoint(x: leftInset, y: contentSize.height - separatorHeight), size: CGSize(width: params.width - leftInset, height: separatorHeight))
+                    // iPhone Duo: the part of one side's inset beyond the other's is the side strip; the separator
+                    // and the highlight stop at it instead of running under it. Equal insets give today's frames.
+                    let stripExcessLeft = max(0.0, params.leftInset - params.rightInset)
+                    let stripExcessRight = max(0.0, params.rightInset - params.leftInset)
+                    // Glass rows end their separator 16pt short of the edge, as the contact rows below do.
+                    let separatorRightInset: CGFloat = (item.systemStyle == .glass ? 16.0 : 0.0) + stripExcessRight
+                    strongSelf.bottomStripeNode.frame = CGRect(origin: CGPoint(x: leftInset, y: contentSize.height - separatorHeight), size: CGSize(width: params.width - leftInset - separatorRightInset, height: separatorHeight))
                     
                     let titleFrame: CGRect
                     if subtitleAttributedString != nil {
@@ -346,7 +354,7 @@ class ContactListActionItemNode: ListViewItemNode {
                     let subtitleFrame = CGRect(origin: CGPoint(x: titleOffset, y: titleFrame.maxY - 1.0), size: subtitleLayout.size)
                     strongSelf.subtitleNode.frame = subtitleFrame
                     
-                    strongSelf.highlightedBackgroundNode.frame = CGRect(origin: CGPoint(x: 0.0, y: -UIScreenPixel), size: CGSize(width: params.width, height: contentSize.height + UIScreenPixel + UIScreenPixel))
+                    strongSelf.highlightedBackgroundNode.frame = CGRect(origin: CGPoint(x: stripExcessLeft, y: -UIScreenPixel), size: CGSize(width: params.width - stripExcessLeft - stripExcessRight, height: contentSize.height + UIScreenPixel + UIScreenPixel))
                 }
             })
         }

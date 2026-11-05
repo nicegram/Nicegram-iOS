@@ -486,7 +486,7 @@ func chatContextMenuItems(context: AccountContext, peerId: EnginePeer.Id, promoI
                                                 text: option.title,
                                                 icon: { _ in nil },
                                                 action: { _, f in
-                                                    Task { @MainActor in
+                                                    _ = Task { @MainActor in
                                                         try await exportChatViewModel.export(using: option)
                                                     
                                                         let toastController = UndoOverlayController(
@@ -513,7 +513,7 @@ func chatContextMenuItems(context: AccountContext, peerId: EnginePeer.Id, promoI
                             
                                 // Nicegram AiChatAnalysis
                                 func copySourceMessages(_ count: Int) {
-                                    Task {
+                                    _ = Task {
                                         let messages = try await context.engine.messages
                                             .allMessages(
                                                 peerId: peerId,
@@ -527,7 +527,7 @@ func chatContextMenuItems(context: AccountContext, peerId: EnginePeer.Id, promoI
                                         let sourceDataEncoder = aiChatAnalysisModule.sourceDataEncoder()
                                         let sourceMessagesString = sourceDataEncoder.toString(messages: messages)
                                     
-                                        Task { @MainActor in
+                                        _ = Task { @MainActor in
                                             UIPasteboard.general.string = sourceMessagesString
                                         
                                             try await Task.sleep(seconds: 0.2)

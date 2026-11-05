@@ -2,7 +2,7 @@ import AccountContext
 import FeatDataSharing
 
 public func shareStickers(context: AccountContext) {
-    Task {
+    _ = Task {
         let shareStickersUseCase = DataSharingModule.shared.shareStickersUseCase()
         try await shareStickersUseCase(
             dataProvider: {

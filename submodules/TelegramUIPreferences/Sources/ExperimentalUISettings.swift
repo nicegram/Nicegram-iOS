@@ -3,6 +3,13 @@ import TelegramCore
 import SwiftSignalKit
 
 public struct ExperimentalUISettings: Codable, Equatable {
+    public enum VideoMessageCameraMode: String, CaseIterable {
+        case legacy
+        case vga
+        case hdBilinear
+        case hdLanczos
+    }
+
     public struct AccountReactionOverrides: Equatable, Codable {
         public struct Item: Equatable, Codable {
             public var key: MessageReaction.Reaction
@@ -75,11 +82,18 @@ public struct ExperimentalUISettings: Codable, Equatable {
     public var enablePWA: Bool
     public var forceClearGlass: Bool
     public var debugRipple: Bool
-    public var forceNewTextInput: Bool
+    public var useInputDecEngine: Bool
     public var coreListChatBackend: Bool
+    public var inputDecTextBackend: Bool
     public var forceRLottieBackend: Bool
     public var respectSystemMicrophone: Bool
+    public var springSendAnimation: Bool
+    /// Debug Settings ▸ "Wallet: fake transfers", offered to dev accounts only (and only honoured for them): a send
+    /// from the transfer form sends nothing and closes as a registered transfer would, against a fixed balance.
+    public var fakeWalletTransfers: Bool
+    public var showCrashReportAlerts: Bool?
     public var useModernVideoMessagePipeline: Bool?
+    public var videoMessageCameraMode: VideoMessageCameraMode
 
     public static var defaultSettings: ExperimentalUISettings {
         return ExperimentalUISettings(
@@ -130,11 +144,15 @@ public struct ExperimentalUISettings: Codable, Equatable {
             enablePWA: false,
             forceClearGlass: false,
             debugRipple: false,
-            forceNewTextInput: false,
+            useInputDecEngine: false,
             coreListChatBackend: false,
+            inputDecTextBackend: false,
             forceRLottieBackend: false,
             respectSystemMicrophone: false,
-            useModernVideoMessagePipeline: nil
+            springSendAnimation: false,
+            fakeWalletTransfers: false,
+            useModernVideoMessagePipeline: nil,
+            showCrashReportAlerts: nil
         )
     }
     
@@ -186,11 +204,16 @@ public struct ExperimentalUISettings: Codable, Equatable {
         enablePWA: Bool,
         forceClearGlass: Bool,
         debugRipple: Bool,
-        forceNewTextInput: Bool,
+        useInputDecEngine: Bool,
         coreListChatBackend: Bool,
+        inputDecTextBackend: Bool,
         forceRLottieBackend: Bool,
         respectSystemMicrophone: Bool,
-        useModernVideoMessagePipeline: Bool? = nil
+        springSendAnimation: Bool,
+        fakeWalletTransfers: Bool,
+        useModernVideoMessagePipeline: Bool? = nil,
+        videoMessageCameraMode: VideoMessageCameraMode = .hdBilinear,
+        showCrashReportAlerts: Bool? = nil
     ) {
         self.keepChatNavigationStack = keepChatNavigationStack
         self.skipReadHistory = skipReadHistory
@@ -239,11 +262,16 @@ public struct ExperimentalUISettings: Codable, Equatable {
         self.enablePWA = enablePWA
         self.forceClearGlass = forceClearGlass
         self.debugRipple = debugRipple
-        self.forceNewTextInput = forceNewTextInput
+        self.useInputDecEngine = useInputDecEngine
         self.coreListChatBackend = coreListChatBackend
+        self.inputDecTextBackend = inputDecTextBackend
         self.forceRLottieBackend = forceRLottieBackend
         self.respectSystemMicrophone = respectSystemMicrophone
+        self.springSendAnimation = springSendAnimation
+        self.fakeWalletTransfers = fakeWalletTransfers
+        self.showCrashReportAlerts = showCrashReportAlerts
         self.useModernVideoMessagePipeline = useModernVideoMessagePipeline
+        self.videoMessageCameraMode = videoMessageCameraMode
     }
     
     public init(from decoder: Decoder) throws {
@@ -296,11 +324,18 @@ public struct ExperimentalUISettings: Codable, Equatable {
         self.enablePWA = try container.decodeIfPresent(Bool.self, forKey: "enablePWA") ?? false
         self.forceClearGlass = try container.decodeIfPresent(Bool.self, forKey: "forceClearGlass") ?? false
         self.debugRipple = try container.decodeIfPresent(Bool.self, forKey: "debugRipple") ?? false
-        self.forceNewTextInput = try container.decodeIfPresent(Bool.self, forKey: "forceNewTextInput") ?? false
+        // `?? false` like its neighbours: an existing settings blob predates this key, and a
+        // decode failure here would reset every other experimental flag the user has set.
+        self.useInputDecEngine = try container.decodeIfPresent(Bool.self, forKey: "useInputDecEngine") ?? false
         self.coreListChatBackend = try container.decodeIfPresent(Bool.self, forKey: "coreListChatBackend") ?? false
+        self.inputDecTextBackend = try container.decodeIfPresent(Bool.self, forKey: "inputDecTextBackend") ?? false
         self.forceRLottieBackend = try container.decodeIfPresent(Bool.self, forKey: "forceRLottieBackend") ?? false
         self.respectSystemMicrophone = try container.decodeIfPresent(Bool.self, forKey: "respectSystemMicrophone") ?? false
+        self.springSendAnimation = try container.decodeIfPresent(Bool.self, forKey: "springSendAnimation") ?? false
+        self.fakeWalletTransfers = try container.decodeIfPresent(Bool.self, forKey: "fakeWalletTransfers") ?? false
+        self.showCrashReportAlerts = try container.decodeIfPresent(Bool.self, forKey: "showCrashReportAlerts")
         self.useModernVideoMessagePipeline = try container.decodeIfPresent(Bool.self, forKey: "useModernVideoMessagePipeline")
+        self.videoMessageCameraMode = (try container.decodeIfPresent(String.self, forKey: "videoMessageCameraMode")).flatMap(VideoMessageCameraMode.init(rawValue:)) ?? .hdBilinear
     }
     
     public func encode(to encoder: Encoder) throws {
@@ -353,11 +388,16 @@ public struct ExperimentalUISettings: Codable, Equatable {
         try container.encodeIfPresent(self.enablePWA, forKey: "enablePWA")
         try container.encodeIfPresent(self.forceClearGlass, forKey: "forceClearGlass")
         try container.encodeIfPresent(self.debugRipple, forKey: "debugRipple")
-        try container.encodeIfPresent(self.forceNewTextInput, forKey: "forceNewTextInput")
+        try container.encodeIfPresent(self.useInputDecEngine, forKey: "useInputDecEngine")
         try container.encodeIfPresent(self.coreListChatBackend, forKey: "coreListChatBackend")
+        try container.encodeIfPresent(self.inputDecTextBackend, forKey: "inputDecTextBackend")
         try container.encodeIfPresent(self.forceRLottieBackend, forKey: "forceRLottieBackend")
         try container.encodeIfPresent(self.respectSystemMicrophone, forKey: "respectSystemMicrophone")
+        try container.encodeIfPresent(self.springSendAnimation, forKey: "springSendAnimation")
+        try container.encodeIfPresent(self.fakeWalletTransfers, forKey: "fakeWalletTransfers")
+        try container.encodeIfPresent(self.showCrashReportAlerts, forKey: "showCrashReportAlerts")
         try container.encodeIfPresent(self.useModernVideoMessagePipeline, forKey: "useModernVideoMessagePipeline")
+        try container.encode(self.videoMessageCameraMode.rawValue, forKey: "videoMessageCameraMode")
     }
 }
 

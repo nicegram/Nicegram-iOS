@@ -9,7 +9,6 @@
 import Display
 import Foundation
 import SwiftSignalKit
-import Postbox
 import TelegramCore
 import TelegramPresentationData
 import TelegramUIPreferences

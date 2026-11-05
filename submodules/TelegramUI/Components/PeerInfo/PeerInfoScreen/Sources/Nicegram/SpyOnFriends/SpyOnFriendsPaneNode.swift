@@ -2,7 +2,6 @@ import AsyncDisplayKit
 import Display
 import TelegramCore
 import SwiftSignalKit
-import Postbox
 import TelegramPresentationData
 import AccountContext
 import MergeLists
@@ -89,7 +88,7 @@ private enum SpyOnFriendsListEntry: Comparable, Identifiable {
     
     func item(
         accountContext: AccountContext,
-        peerId: PeerId,
+        peerId: EnginePeer.Id,
         presentationData: PresentationData,
         openMessage: @escaping (Int32) -> Void
     ) -> ListViewItem {
@@ -134,7 +133,7 @@ private func preparedTransition(
     from fromEntries: [SpyOnFriendsListEntry],
     to toEntries: [SpyOnFriendsListEntry],
     context: AccountContext,
-    peerId: PeerId,
+    peerId: EnginePeer.Id,
     presentationData: PresentationData,
     openMessage: @escaping (Int32) -> Void
 ) -> SpyOnFriendsListTransaction {
@@ -173,7 +172,7 @@ private func preparedTransition(
 @available(iOS 16.0, *)
 final class SpyOnFriendsPaneNode: ASDisplayNode, PeerInfoPaneNode {
     private let context: AccountContext
-    private let peerId: PeerId
+    private let peerId: EnginePeer.Id
     private let chatControllerInteraction: ChatControllerInteraction
     private let spyOnFriendsContext: SpyOnFriendsContext
     
@@ -210,7 +209,7 @@ final class SpyOnFriendsPaneNode: ASDisplayNode, PeerInfoPaneNode {
 
     init(
         context: AccountContext,
-        peerId: PeerId,
+        peerId: EnginePeer.Id,
         chatControllerInteraction: ChatControllerInteraction,
         spyOnFriendsContext: SpyOnFriendsContext
     ) {
@@ -473,7 +472,7 @@ final class SpyOnFriendsPaneNode: ASDisplayNode, PeerInfoPaneNode {
         }
     }
 
-    private func groups(from input: [(Api.Chat?, [Message])]) -> [(Date, [SpyOnFriendsGroup])] {
+    private func groups(from input: [(Api.Chat?, [EngineMessage])]) -> [(Date, [SpyOnFriendsGroup])] {
         var groupedByDate = [Date: [SpyOnFriendsGroup]]()
         
         for (chat, messages) in input {
@@ -521,24 +520,24 @@ final class SpyOnFriendsPaneNode: ASDisplayNode, PeerInfoPaneNode {
 }
 
 private extension Api.Chat {
-    var peerId: PeerId {
+    var peerId: EnginePeer.Id {
         switch self {
             case let .chat(chat):
-                return PeerId(namespace: Namespaces.Peer.CloudGroup, id: PeerId.Id._internalFromInt64Value(chat.id))
+                return EnginePeer.Id(namespace: Namespaces.Peer.CloudGroup, id: EnginePeer.Id.Id._internalFromInt64Value(chat.id))
             case let .chatEmpty(chatEmpty):
-                return PeerId(namespace: Namespaces.Peer.CloudGroup, id: PeerId.Id._internalFromInt64Value(chatEmpty.id))
+                return EnginePeer.Id(namespace: Namespaces.Peer.CloudGroup, id: EnginePeer.Id.Id._internalFromInt64Value(chatEmpty.id))
             case let .chatForbidden(chatForbidden):
-                return PeerId(namespace: Namespaces.Peer.CloudGroup, id: PeerId.Id._internalFromInt64Value(chatForbidden.id))
+                return EnginePeer.Id(namespace: Namespaces.Peer.CloudGroup, id: EnginePeer.Id.Id._internalFromInt64Value(chatForbidden.id))
             case let .channel(channel):
-                return PeerId(namespace: Namespaces.Peer.CloudChannel, id: PeerId.Id._internalFromInt64Value(channel.id))
+                return EnginePeer.Id(namespace: Namespaces.Peer.CloudChannel, id: EnginePeer.Id.Id._internalFromInt64Value(channel.id))
             case let .channelForbidden(channelForbidden):
-                return PeerId(namespace: Namespaces.Peer.CloudChannel, id: PeerId.Id._internalFromInt64Value(channelForbidden.id))
+                return EnginePeer.Id(namespace: Namespaces.Peer.CloudChannel, id: EnginePeer.Id.Id._internalFromInt64Value(channelForbidden.id))
             // Upstream 12.9.2 added communities. They live in the CloudChannel
             // namespace -- same as parseTelegramCommunity in TelegramCore.
             case let .community(community):
-                return PeerId(namespace: Namespaces.Peer.CloudChannel, id: PeerId.Id._internalFromInt64Value(community.id))
+                return EnginePeer.Id(namespace: Namespaces.Peer.CloudChannel, id: EnginePeer.Id.Id._internalFromInt64Value(community.id))
             case let .communityForbidden(communityForbidden):
-                return PeerId(namespace: Namespaces.Peer.CloudChannel, id: PeerId.Id._internalFromInt64Value(communityForbidden.id))
+                return EnginePeer.Id(namespace: Namespaces.Peer.CloudChannel, id: EnginePeer.Id.Id._internalFromInt64Value(communityForbidden.id))
         }
     }
 }

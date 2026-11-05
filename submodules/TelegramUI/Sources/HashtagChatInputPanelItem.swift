@@ -284,7 +284,7 @@ final class HashtagChatInputPanelItemNode: ListViewItemNode {
                     strongSelf.activateAreaNode.frame = CGRect(origin: .zero, size: nodeLayout.size)
                     
                     // Nicegram QuickReplies, !item.canDelete ? [] : added
-                    strongSelf.setRevealOptions(!item.canDelete ? [] : [ItemListRevealOption(key: 0, title: item.presentationData.strings.Common_Delete, icon: .none, color: item.presentationData.theme.list.itemDisclosureActions.destructive.fillColor, iconColor: item.presentationData.theme.list.itemDisclosureActions.destructive.foregroundColor, textColor: item.presentationData.theme.list.itemSecondaryTextColor)])
+                    strongSelf.setRevealOptions(!item.canDelete ? [] : [ItemListRevealOption(key: 0, title: item.presentationData.strings.Common_Delete, icon: .none, color: item.presentationData.theme.list.itemDisclosureActions.destructive.fillColor, iconColor: item.presentationData.theme.list.itemDisclosureActions.destructive.foregroundColor, textColor: item.presentationData.theme.list.itemSecondaryTextColor, isDestructive: true)])
                     strongSelf.setRevealOptionsOpened(item.revealed, animated: animation.isAnimated)
                 }
             })

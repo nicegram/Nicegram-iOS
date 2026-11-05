@@ -1,4 +1,4 @@
-import Postbox
+import TelegramCore
 
 public struct MessageTextBlock {
     let start: String
@@ -17,7 +17,7 @@ public extension MessageTextBlock {
     )
 }
 
-public extension Message {
+public extension EngineRawMessage {
     func hasTextBlock(_ block: MessageTextBlock) -> Bool {
         textBlockRange(block) != nil
     }
@@ -52,7 +52,7 @@ public extension Message {
     }
 }
 
-private extension Message {
+private extension EngineRawMessage {
     func textBlockRange(_ block: MessageTextBlock) -> Range<String.Index>? {
         text.findSubrange(
             start: block.start,
@@ -62,20 +62,17 @@ private extension Message {
 }
 
 public func updateMessageText(
-    message: Message,
+    message: EngineRawMessage,
     newMessageText: String,
     context: AccountContext
 ) {
-    let _ = (context.account.postbox.transaction { transaction -> Void in
-        transaction.updateMessage(message.id, update: { currentMessage in
-            var storeForwardInfo: StoreMessageForwardInfo?
-            if let forwardInfo = currentMessage.forwardInfo {
-                storeForwardInfo = StoreMessageForwardInfo(authorId: forwardInfo.author?.id, sourceId: forwardInfo.source?.id, sourceMessageId: forwardInfo.sourceMessageId, date: forwardInfo.date, authorSignature: forwardInfo.authorSignature, psaType: forwardInfo.psaType, flags: forwardInfo.flags)
-            }
-
-            return .update(StoreMessage(id: currentMessage.id, customStableId: nil, globallyUniqueId: currentMessage.globallyUniqueId, groupingKey: currentMessage.groupingKey, threadId:  currentMessage.threadId, timestamp: currentMessage.timestamp, flags: StoreMessageFlags(currentMessage.flags), tags: currentMessage.tags, globalTags: currentMessage.globalTags, localTags: currentMessage.localTags, forwardInfo: storeForwardInfo, authorId: currentMessage.author?.id, text: newMessageText, attributes: currentMessage.attributes, media: currentMessage.media))
-        })
-    }).start()
+    let _ = TelegramRawPostbox.updateMessage(
+        message.id,
+        engine: context.engine,
+        update: { _, attributes in
+            (newMessageText, attributes)
+        }
+    ).start()
 }
 
 private extension String {

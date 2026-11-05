@@ -1,13 +1,11 @@
 import FeatDataSharing
 import TelegramApi
-import class Postbox.Message
-import protocol Postbox.MessageAttribute
 import TelegramCore
 
 //  MARK: - Local
 
 extension FeatDataSharing.Message {
-    init(_ message: Postbox.Message) {
+    init(_ message: EngineRawMessage) {
         let reactionsAttr = message.getAttribute(ReactionsMessageAttribute.self)
         let replyThreadAttr = message.getAttribute(ReplyThreadMessageAttribute.self)
         let viewCountAttr = message.getAttribute(ViewCountMessageAttribute.self)
@@ -27,8 +25,8 @@ extension FeatDataSharing.Message {
     }
 }
 
-private extension Postbox.Message {
-    func getAttribute<T: MessageAttribute>(_ type: T.Type) -> T? {
+private extension EngineRawMessage {
+    func getAttribute<T: EngineMessage.Attribute>(_ type: T.Type) -> T? {
         for attribute in self.attributes {
             if let attribute = attribute as? T {
                 return attribute

@@ -18,11 +18,13 @@ import ItemListUI
 import ChatListUI
 import QuickReplyNameAlertController
 import ChatListHeaderComponent
+import NavigationBarComponent
 import PlainButtonComponent
 import MultilineTextComponent
 import AttachmentUI
 import SearchBarNode
 import BalancedTextComponent
+import SideColumnLayout
 
 final class QuickReplySetupScreenComponent: Component {
     typealias EnvironmentType = ViewControllerComponentContainer.Environment
@@ -512,6 +514,11 @@ final class QuickReplySetupScreenComponent: Component {
         private var emptySearchState: ComponentView<Empty>?
         
         private let navigationBarView = ComponentView<Empty>()
+
+        /// The chat-list-style header, for navigation transitions.
+        var navigationTransitionHeader: ChatListNavigationBar.View? {
+            return self.navigationBarView.view as? ChatListNavigationBar.View
+        }
         private var navigationHeight: CGFloat?
         
         private var searchBarNode: SearchBarNode?
@@ -730,16 +737,17 @@ final class QuickReplySetupScreenComponent: Component {
             size: CGSize,
             insets: UIEdgeInsets,
             statusBarHeight: CGFloat,
+            trailingButtonsInset: CGFloat,
             isModal: Bool,
             transition: ComponentTransition,
             deferScrollApplication: Bool
         ) -> CGFloat {
-            var rightButtons: [AnyComponentWithIdentity<NavigationButtonComponentEnvironment>] = []
+            var rightButtons: [NavigationBarComponent.Button] = []
             if let shortcutMessageList = self.shortcutMessageList, !shortcutMessageList.items.isEmpty {
                 if self.isEditing {
-                    rightButtons.append(AnyComponentWithIdentity(id: "done", component: AnyComponent(NavigationButtonComponent(
+                    rightButtons.append(NavigationBarComponent.Button(id: "done",
                         content: .text(title: strings.Common_Done, isBold: true),
-                        pressed: { [weak self] _ in
+                        action: { [weak self] _ in
                             guard let self else {
                                 return
                             }
@@ -747,18 +755,18 @@ final class QuickReplySetupScreenComponent: Component {
                             self.selectedIds.removeAll()
                             self.state?.updated(transition: .spring(duration: 0.4))
                         }
-                    ))))
+                    ))
                 } else {
-                    rightButtons.append(AnyComponentWithIdentity(id: "edit", component: AnyComponent(NavigationButtonComponent(
+                    rightButtons.append(NavigationBarComponent.Button(id: "edit",
                         content: .text(title: strings.Common_Edit, isBold: false),
-                        pressed: { [weak self] _ in
+                        action: { [weak self] _ in
                             guard let self else {
                                 return
                             }
                             self.isEditing = true
                             self.state?.updated(transition: .spring(duration: 0.4))
                         }
-                    ))))
+                    ))
                 }
             }
             
@@ -771,12 +779,11 @@ final class QuickReplySetupScreenComponent: Component {
             
             let headerContent: ChatListHeaderComponent.Content? = ChatListHeaderComponent.Content(
                 title: titleText,
-                navigationBackTitle: nil,
                 titleComponent: nil,
                 chatListTitle: nil,
-                leftButton: isModal ? AnyComponentWithIdentity(id: "close", component: AnyComponent(NavigationButtonComponent(
+                leftButton: isModal ? NavigationBarComponent.Button(id: "close",
                     content: .icon(imageName: "Navigation/Close"),
-                    pressed: { [weak self] _ in
+                    action: { [weak self] _ in
                         guard let self else {
                             return
                         }
@@ -784,7 +791,7 @@ final class QuickReplySetupScreenComponent: Component {
                             self.environment?.controller()?.dismiss()
                         }
                     }
-                ))) : nil,
+                ) : nil,
                 rightButtons: rightButtons,
                 backPressed: isModal ? nil :{ [weak self] in
                     guard let self else {
@@ -806,6 +813,7 @@ final class QuickReplySetupScreenComponent: Component {
                     statusBarHeight: statusBarHeight,
                     leftInset: insets.left,
                     rightInset: insets.right,
+                    trailingButtonsInset: trailingButtonsInset,
                     search: ChatListNavigationBar.Search(isEnabled: !self.isEditing),
                     activeSearch: self.isSearchDisplayControllerActive ? ChatListNavigationBar.ActiveSearch(isExternal: false) : nil,
                     primaryContent: headerContent,
@@ -830,7 +838,9 @@ final class QuickReplySetupScreenComponent: Component {
                     openStatusSetup: { _ in
                     },
                     allowAutomaticOrder: {
-                    }
+                    },
+                    // iPhone Duo: the back and icon buttons go into the side strip, as the chat list's do.
+                    sideColumn: pushedScreenSideColumnRegion(layout: self.environment?.controller()?.currentlyAppliedLayout)
                 )),
                 environment: {},
                 containerSize: size
@@ -995,6 +1005,7 @@ final class QuickReplySetupScreenComponent: Component {
                 size: availableSize,
                 insets: environment.safeInsets,
                 statusBarHeight: statusBarHeight,
+                trailingButtonsInset: environment.navigationBarTrailingButtonsInset,
                 isModal: isModal,
                 transition: transition,
                 deferScrollApplication: true
@@ -1122,7 +1133,9 @@ final class QuickReplySetupScreenComponent: Component {
                             animateScale: false,
                             animateContents: false
                         ))),
-                        insets: UIEdgeInsets(top: 4.0, left: environment.safeInsets.left, bottom: environment.safeInsets.bottom + environment.additionalInsets.bottom, right: environment.safeInsets.right)
+                        // The panel at the bottom spans iPhone Duo's side strip; it keeps clear only of a corner block at
+                        // the bottom.
+                        insets: UIEdgeInsets(top: 4.0, left: environment.bottomEdgeSideInsets().left, bottom: environment.safeInsets.bottom + environment.additionalInsets.bottom, right: environment.bottomEdgeSideInsets().right)
                     )),
                     environment: {},
                     containerSize: availableSize
@@ -1285,6 +1298,14 @@ final class QuickReplySetupScreenComponent: Component {
 }
 
 public final class QuickReplySetupScreen: ViewControllerComponentContainer, AttachmentContainable {
+
+    /// Draws its own header (no Display bar); it takes part in navigation transitions itself.
+    override public var navigationBarTransitionSource: NavigationBarTransitionSource? {
+        guard self.isNodeLoaded else {
+            return nil
+        }
+        return (self.node.hostView.componentView as? QuickReplySetupScreenComponent.View)?.navigationTransitionHeader
+    }
     public final class InitialData: QuickReplySetupScreenInitialData {
         let accountPeer: EnginePeer?
         let shortcutMessageList: ShortcutMessageList

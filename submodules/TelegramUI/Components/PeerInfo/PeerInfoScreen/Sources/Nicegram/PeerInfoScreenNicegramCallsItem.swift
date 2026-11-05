@@ -4,13 +4,13 @@ import Display
 import FeatCalls
 import MemberwiseInit
 import NGUtils
-import Postbox
+import TelegramCore
 import TelegramPresentationData
 
 @available(iOS 16.0, *)
 @MemberwiseInit
 final class PeerInfoScreenNicegramCallsItem: PeerInfoScreenItem {
-    let peer: Peer
+    let peer: TelegramUser
     
     var id: AnyHashable { ID() }
     struct ID: Hashable {}
@@ -43,7 +43,7 @@ private final class PeerInfoScreenNicegramCallsItemNode: PeerInfoScreenItemNode 
             return height
         }
         
-        if let user = try? CallParticipant.make(peer: item.peer) {
+        if let user = try? CallParticipant.make(peer: .user(item.peer)) {
             viewModel.set(user: user)
         }
         

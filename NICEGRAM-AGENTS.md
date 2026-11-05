@@ -730,6 +730,36 @@ crash left to upstream stays `skipped` until the human asks for it by name.
 `tg-merge` also reads the registry, open crash branches included, reporting
 where an upstream change touches an open crash's files.
 
+## The dataroom protocol
+
+`AGENTS.md` carries the Nicegram dataroom protocol: read `nicegram/dataroom`
+before a task, record the work in it after. The text between its markers
+belongs to the dataroom (`docs/operations/agent-protocol-block.md` there,
+applied by its `scripts/agentops/adopt.py`), so never edit inside the markers;
+a new version arrives as a replacement block. The dataroom's checks read the
+block only from the root `AGENTS.md` and need a bare `@AGENTS.md` line in
+`CLAUDE.md`, which is why it is not in this file.
+
+In this repository the steps fall at fixed points of the lifecycle:
+
+- **Before** is the first stage of the task: `start-feature`, `diagnose-crash`,
+  `tg-merge`, or the start of a change that goes straight to `develop`.
+- **After** is when the work lands on `develop` — `merge-to-develop`,
+  `extract-to-develop` or a direct push — and not earlier: QA builds and bug
+  rounds are part of their feature, not tasks of their own. Each repository
+  the task changed gets its own work log entry naming its `develop` commit
+  (the dataroom's rule: one entry per repository, the same slug with the
+  repository's name in it), so a cross-repo feature writes one for
+  `bitbucket:mobyrix/nicegram-ios` and one for
+  `bitbucket:mobyrix/nicegram-assistant-ios`. Both are written under the
+  approval the landing already asks for.
+- A feature's `docs/kb/` record in the dataroom is taken from its change record
+  in `docs/changes/`, which stays the source of truth here.
+
+The nightly audit reads `master` with `--first-parent`, so the block counts from
+the next release on, and a release merge is covered when any entry names a
+commit it brings in.
+
 ## Cross-repo feature workflow
 
 `nicegram-assistant-ios` is vendored as a git submodule at
@@ -919,6 +949,13 @@ main clone's copy automatically — see "Build" above. No manual sourcing needed
     in a fresh worktree then closes every Xcode window on the machine.
     tg-merge's merge-watch counts the guards and rejects any unguarded
     `killall`/`open`.
+  - `AGENTS.md` and the `@AGENTS.md` line in `CLAUDE.md`'s import — upstream
+    added its own `AGENTS.md` on 2026-10-17 (`51ff08f183f`), after our 13.0
+    base, so the merge that first brings it is an add/add conflict. Resolve it
+    as upstream's file with our marked pointer and the dataroom block right
+    under its `# AGENTS.md` heading, the block byte for byte, and keep
+    `@AGENTS.md` in the import at the top of `CLAUDE.md` (see "The dataroom
+    protocol" above). tg-merge's merge-watch asserts both.
 
 ### Building for QA
 
@@ -1244,8 +1281,8 @@ match none of them — which is where the worst of it accumulated.
 
 `CLAUDE.md` at the repo root is upstream Telegram's own file, not ours — except
 for three fork-owned spots: its marked "Nicegram branding overrides" subsection
-(hand-maintained, preserved across every upstream merge), the two-line import at
-the top that pulls this file in, and the `<!-- Nicegram: … -->` build-values
+(hand-maintained, preserved across every upstream merge), the three-line import at
+the top that pulls in this file and `AGENTS.md`, and the `<!-- Nicegram: … -->` build-values
 marker comment near the top of the file, flagging that its Build section's
 values are upstream's, not this fork's. Aside from those fork-owned spots,
 `CLAUDE.md` stays the authority on the embedded watch app, the Postbox →

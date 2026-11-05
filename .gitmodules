@@ -37,7 +37,7 @@
 	url = https://github.com/dkaraush/tlottie.git
 [submodule "third-party/mtproto-engine"]
 	path = third-party/mtproto-engine
-	url = https://github.com/macosswift/mtproto-engine.git
+	url = https://github.com/TelegramMessenger/mtproto-engine.git
 # MARK: Nicegram, assistant package vendored as a submodule.
 # See docs/superpowers/specs/2026-08-19-assistant-submodule-workflow-design.md
 [submodule "packages/nicegram-assistant-ios"]

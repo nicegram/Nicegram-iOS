@@ -3,6 +3,7 @@ import fcntl
 import os
 import json
 import re
+import shlex
 import shutil
 import signal
 import sys
@@ -53,6 +54,43 @@ def _vm_build_domain() -> str:
 # under different locks MUST NOT share a prefix, or the one that starts second stops and
 # deletes the first one's live VM.
 EPHEMERAL_VM_PREFIX = 'telegrambuild-{}-'.format(_vm_build_domain())
+
+
+# gitlab-runner usually runs as a launchd service, and launchd starts jobs with a minimal PATH
+# (/usr/bin:/bin:/usr/sbin:/sbin) that has no Homebrew, so a bare "tart" is not found there.
+# TART_PATH names the binary explicitly; otherwise PATH, then the usual Homebrew locations.
+TART_FALLBACK_PATHS = [
+    '/opt/homebrew/bin/tart',
+    '/opt/homebrew/tart',
+    '/usr/local/bin/tart',
+]
+
+_tart_executable_path: Optional[str] = None
+
+
+def tart_executable() -> str:
+    global _tart_executable_path
+    if _tart_executable_path is not None:
+        return _tart_executable_path
+
+    candidates = []
+    override = os.environ.get('TART_PATH')
+    if override:
+        candidates.append(override)
+    found_in_path = shutil.which('tart')
+    if found_in_path is not None:
+        candidates.append(found_in_path)
+    candidates += TART_FALLBACK_PATHS
+
+    for candidate in candidates:
+        if os.path.isfile(candidate) and os.access(candidate, os.X_OK):
+            _tart_executable_path = candidate
+            return candidate
+
+    raise TartBuildError(
+        'tart not found (looked in TART_PATH, PATH={}, and {}). Install it with `brew install cirruslabs/cli/tart`, '
+        'or set TART_PATH to the binary.'.format(os.environ.get('PATH', ''), ', '.join(TART_FALLBACK_PATHS))
+    )
 
 
 def list_local_vm_names() -> List[str]:
@@ -123,18 +161,35 @@ class TartLock:
         self.path = path
         self.fd: Optional[int] = None
 
-    def acquire(self, target: str, mode: str) -> None:
+    def acquire(self, target: str, mode: str, wait: bool = False) -> None:
+        """Take the lock, or fail at once if another VM job holds it.
+
+        With `wait` (CI, where jobs on one host must queue rather than fail) it polls instead,
+        so it can report the holder every few minutes while it waits; the job's own timeout
+        bounds the wait.
+        """
         os.makedirs(os.path.dirname(self.path), exist_ok=True)
         fd = os.open(self.path, os.O_RDWR | os.O_CREAT, 0o644)
-        try:
-            fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
-        except OSError:
-            holder = self._describe_holder()
-            os.close(fd)
-            raise TartBuildError(
-                'Another vm-build is already running on this host{}.\n'
-                'Only one build VM is allowed at a time; wait for it to finish, or stop it.'.format(holder)
-            )
+        wait_started_at = time.time()
+        last_report_at = 0.0
+        while True:
+            try:
+                fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                break
+            except OSError:
+                holder = self._describe_holder()
+                if not wait:
+                    os.close(fd)
+                    raise TartBuildError(
+                        'Another vm-build is already running on this host{}.\n'
+                        'Only one build VM is allowed at a time; wait for it to finish, or stop it.'.format(holder)
+                    )
+                now = time.time()
+                if now - last_report_at >= 300.0:
+                    print('Waiting for another VM job on this host{} (waited {})...'.format(holder, format_duration(now - wait_started_at)))
+                    sys.stdout.flush()
+                    last_report_at = now
+                time.sleep(10.0)
 
         self.fd = fd
         os.ftruncate(fd, 0)
@@ -190,7 +245,7 @@ _active_vm_build_lock: Optional[TartLock] = None
 
 
 @contextlib.contextmanager
-def exclusive_vm_build(target: str, mode: str):
+def exclusive_vm_build(target: str, mode: str, wait: bool = False):
     """Hold the host-wide vm-build lock, then reclaim orphans from earlier runs.
 
     Enter this BEFORE touching anything shared between runs -- in particular before
@@ -208,7 +263,7 @@ def exclusive_vm_build(target: str, mode: str):
     global _active_vm_build_lock
 
     lock = TartLock()
-    lock.acquire(target=target, mode=mode)
+    lock.acquire(target=target, mode=mode, wait=wait)
     _active_vm_build_lock = lock
     try:
         TartVMManager().reap_orphan_vms()
@@ -216,6 +271,24 @@ def exclusive_vm_build(target: str, mode: str):
     finally:
         _active_vm_build_lock = None
         lock.release()
+
+
+def require_vm_build_lock(operation: str) -> None:
+    """Every VM job runs inside exclusive_vm_build(): the caller owns the lock because it may also own
+    shared inputs (build-input/remote-input), and only one VM may run per host."""
+    if _active_vm_build_lock is None:
+        raise TartBuildError('{} must be called inside exclusive_vm_build().'.format(operation))
+
+
+def deploy_xcode_version() -> str:
+    """The Xcode that uploads run with: versions.json "deploy_xcode", or "xcode" when it is not set."""
+    with open('versions.json') as file:
+        configuration_dict = json.load(file)
+    if configuration_dict.get('deploy_xcode'):
+        return configuration_dict['deploy_xcode']
+    if configuration_dict.get('xcode') is None:
+        raise Exception('Missing xcode version in versions.json')
+    return configuration_dict['xcode']
 
 
 @contextlib.contextmanager
@@ -287,7 +360,7 @@ class TartVMManager:
                 # Clone the base image
                 logger.info(f"Cloning VM {vm_name} from image {image}")
                 clone_result = subprocess.run([
-                    "tart", "clone", image, vm_name
+                    tart_executable(), "clone", image, vm_name
                 ], check=True, capture_output=True, text=True)
 
                 logger.info(f"Successfully cloned VM {vm_name}")
@@ -296,7 +369,7 @@ class TartVMManager:
                 # host DHCP lease file keyed by MAC, so clones that inherited the base image's
                 # address would all resolve to the same guest. Disk size is deliberately left
                 # alone -- it comes from the (pre-configured) base image.
-                set_arguments = ["tart", "set", vm_name, "--random-mac", "--random-serial"]
+                set_arguments = [tart_executable(), "set", vm_name, "--random-mac", "--random-serial"]
                 if cpu is not None:
                     set_arguments += ["--cpu", str(cpu)]
                 if memory is not None:
@@ -310,7 +383,7 @@ class TartVMManager:
             def run_vm():
                 """Run the VM in background thread"""
                 try:
-                    run_arguments = ["tart", "run", vm_name]
+                    run_arguments = [tart_executable(), "run", vm_name]
                     for mount_directory in mount_directories.keys():
                         run_arguments.append(f"--dir={mount_directory}:{mount_directories[mount_directory]}")
                     subprocess.run(run_arguments, check=True, capture_output=False, text=True)
@@ -435,7 +508,7 @@ class TartVMManager:
 
         logger.info(f"Stopping VM {vm_name}")
         subprocess.run([
-            "tart", "stop", vm_name
+            tart_executable(), "stop", vm_name
         ], check=False, capture_output=True, text=True)
 
         if self._wait_for_vm_process_exit(vm_name, timeout):
@@ -499,7 +572,7 @@ class TartVMManager:
             try:
                 logger.info(f"Deleting VM {vm_name}")
                 subprocess.run([
-                    "tart", "delete", vm_name
+                    tart_executable(), "delete", vm_name
                 ], check=True, capture_output=True, text=True)
 
                 return True
@@ -515,7 +588,7 @@ class TartVMManager:
         """Check if a VM is currently running"""
         try:
             result = subprocess.run([
-                "tart", "list"
+                tart_executable(), "list"
             ], check=True, capture_output=True, text=True)
             
             # Check if the VM appears in the list with "running" status
@@ -598,7 +671,7 @@ class TartVMManager:
         """Get detailed information about a VM"""
         try:
             result = subprocess.run([
-                "tart", "ip", vm_name
+                tart_executable(), "ip", vm_name
             ], check=True, capture_output=True, text=True)
             
             ip_address = result.stdout.strip()
@@ -798,7 +871,13 @@ class TartBuildSession(RemoteBuildSessionInterface):
             raise TartBuildError("VM is not ready for file operations")
             
         print(f"Downloading {remote_path} to {local_path}...")
-        
+
+        # scp creates the destination itself but not its parent: in a fresh CI clone
+        # build/ does not exist yet, and `scp -r … build/artifacts` fails with "mkdir …
+        # No such file or directory". Create only the parent: if the destination already
+        # existed, `scp -r` would copy the directory INTO it (build/artifacts/artifacts).
+        os.makedirs(os.path.dirname(os.path.abspath(local_path)), exist_ok=True)
+
         try:
             # Use scp to download files
             cmd = [
@@ -892,9 +971,8 @@ def create_rsync_ignore_file(exclude_patterns: List[str] = []):
     
     return rsync_ignore_file.name
 
-def remote_build_tart(macos_version, bazel_cache_host, configuration, build_input_data_path, vm_image=None, override_xcode_version=False, ephemeral_vm=True, vm_cpu=None, vm_memory=None):
-    if _active_vm_build_lock is None:
-        raise TartBuildError('remote_build_tart must be called inside exclusive_vm_build(); the caller owns the lock because it also owns the shared build-input directory.')
+def remote_build_tart(macos_version, bazel_cache_host, configuration, build_input_data_path, vm_image=None, override_xcode_version=False, ephemeral_vm=True, vm_cpu=None, vm_memory=None, embed_watch_app=False, watch_api_id=None, watch_api_hash=None, watch_signing_identity=None, watch_provisioning_profile_remote_path=None):
+    require_vm_build_lock('remote_build_tart')
 
     base_dir = os.getcwd()
 
@@ -1031,6 +1109,14 @@ def remote_build_tart(macos_version, bazel_cache_host, configuration, build_inpu
         guest_build_sh += '--configurationPath=$HOME/telegram-build-input/configuration.json \\'
         guest_build_sh += '--codesigningInformationPath=$HOME/telegram-build-input \\'
         guest_build_sh += '--outputBuildArtifactsPath=/Users/Shared/telegram-ios/build/artifacts \\'
+        if embed_watch_app:
+            guest_build_sh += '--embedWatchApp \\'
+            guest_build_sh += '--watchApiId="{}" \\'.format(watch_api_id)
+            guest_build_sh += '--watchApiHash="{}" \\'.format(watch_api_hash)
+            if watch_signing_identity is not None:
+                guest_build_sh += '--watchSigningIdentity="{}" \\'.format(watch_signing_identity)
+            if watch_provisioning_profile_remote_path is not None:
+                guest_build_sh += '--watchProvisioningProfile="{}" \\'.format(watch_provisioning_profile_remote_path)
 
         guest_build_file_path = tempfile.mktemp()
         with open(guest_build_file_path, 'w+') as file:
@@ -1056,4 +1142,70 @@ def remote_build_tart(macos_version, bazel_cache_host, configuration, build_inpu
             sys.exit(0)
         else:
             print('Telegram.ipa not found')
+            sys.exit(1)
+
+
+def _ephemeral_vm_session(vm_image: str) -> TartBuildSessionContext:
+    """An ephemeral clone of `vm_image`, sized like a build's clone and deleted afterwards."""
+    return TartBuild().session(
+        macos_version='',
+        xcode_version='',
+        mount_directories={},
+        image=vm_image,
+        ephemeral=True,
+        cpu=default_vm_cpu_count(),
+        memory=default_vm_memory_mb()
+    )
+
+
+def remote_deploy_testflight_tart(vm_image: str, ipa_path: str, username: str, password: str):
+    """Upload an IPA to App Store Connect with altool from an ephemeral clone of `vm_image`."""
+    require_vm_build_lock('remote_deploy_testflight_tart')
+    if not os.path.isfile(ipa_path):
+        raise TartBuildError('IPA not found: {}'.format(ipa_path))
+
+    # The credentials reach the guest inside a script, never on a command line: session.run() prints its
+    # command to the job log. No `set -x` for the same reason.
+    guest_upload_sh = '''
+        set -e
+
+        export DELIVER_ITMSTRANSPORTER_ADDITIONAL_UPLOAD_PARAMETERS="-t DAV"
+        export FASTLANE_PASSWORD={password}
+        xcrun altool --upload-app --type ios --file "$HOME/Telegram.ipa" --username {username} --password "@env:FASTLANE_PASSWORD"
+    '''.format(password=shlex.quote(password), username=shlex.quote(username))
+
+    with teardown_signal_handlers(), _ephemeral_vm_session(vm_image) as session:
+        session.upload_file(local_path=ipa_path, remote_path='Telegram.ipa')
+
+        script_fd, script_path = tempfile.mkstemp(suffix='.sh')
+        try:
+            with os.fdopen(script_fd, 'w') as file:
+                file.write(guest_upload_sh)
+            session.upload_file(local_path=script_path, remote_path='guest-upload-telegram.sh')
+        finally:
+            os.unlink(script_path)
+
+        print('Uploading to TestFlight...')
+        result = session.run(command='bash -l guest-upload-telegram.sh')
+        if result['status'] != 0:
+            raise TartBuildError('TestFlight upload failed with exit code {}'.format(result['status']))
+
+
+def remote_ipa_diff_tart(vm_image: str, ipa1_path: str, ipa2_path: str):
+    """Run tools/ipadiff.py on two IPAs in an ephemeral clone of `vm_image`; exits 1 when they differ."""
+    require_vm_build_lock('remote_ipa_diff_tart')
+    for path in (ipa1_path, ipa2_path):
+        if not os.path.isfile(path):
+            raise TartBuildError('IPA not found: {}'.format(path))
+
+    with teardown_signal_handlers(), _ephemeral_vm_session(vm_image) as session:
+        session.upload_file(local_path='tools/ipadiff.py', remote_path='ipadiff.py')
+        session.upload_file(local_path='tools/main.cpp', remote_path='main.cpp')
+        session.upload_file(local_path=ipa1_path, remote_path='ipa1.ipa')
+        session.upload_file(local_path=ipa2_path, remote_path='ipa2.ipa')
+
+        print('Executing ipa-diff...')
+        result = session.run(command='bash -l -c "python3 ipadiff.py ipa1.ipa ipa2.ipa"')
+        if result['status'] != 0:
+            print('ipa-diff failed with exit code {}: the IPAs differ'.format(result['status']))
             sys.exit(1)

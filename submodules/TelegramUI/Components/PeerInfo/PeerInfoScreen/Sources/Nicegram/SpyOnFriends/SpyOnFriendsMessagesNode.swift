@@ -2,7 +2,6 @@ import AsyncDisplayKit
 import Display
 import TelegramCore
 import SwiftSignalKit
-import Postbox
 import TelegramPresentationData
 import ItemListUI
 import FeatSpyOnFriends
@@ -104,7 +103,7 @@ class SpyOnFriendsMessagesNode: ListViewItemNode {
             logoLoader: { [weak self] peerId in
                 guard let self else { return nil }
                 
-                return try await self.peerAvatar(with: item.context, peerId: PeerId(peerId)).awaitForFirstValue()
+                return try await self.peerAvatar(with: item.context, peerId: EnginePeer.Id(peerId)).awaitForFirstValue()
             }
         )
     }
@@ -131,7 +130,7 @@ class SpyOnFriendsMessagesNode: ListViewItemNode {
                 logoLoader: { [weak self] peerId in
                     guard let self else { return nil }
                     
-                    return try await self.peerAvatar(with: item.context, peerId: PeerId(peerId)).awaitForFirstValue()
+                    return try await self.peerAvatar(with: item.context, peerId: EnginePeer.Id(peerId)).awaitForFirstValue()
                 }
             )
             messagesView.updateConstraintsIfNeeded()
@@ -159,7 +158,7 @@ class SpyOnFriendsMessagesNode: ListViewItemNode {
         }
     }
     
-    private func peerAvatar(with context: AccountContext, peerId: PeerId) -> Signal<UIImage?, NoError> {
+    private func peerAvatar(with context: AccountContext, peerId: EnginePeer.Id) -> Signal<UIImage?, NoError> {
         return context.engine.data.subscribe(TelegramEngine.EngineData.Item.Peer.Peer(id: peerId))
         |> mapToSignal { peer -> Signal<UIImage?, NoError> in
             guard let peer else { return .single(nil) }

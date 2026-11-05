@@ -61,6 +61,7 @@ private final class GiftAuctionInfoSheetContent: CombinedComponent {
         private let getController: () -> ViewController?
         
         private(set) var rounds: Int32 = 50
+        private var auctionStateDisposable: Disposable?
         
         fileprivate let playButtonAnimation = ActionSlot<Void>()
         private var didPlayAnimation = false
@@ -78,13 +79,17 @@ private final class GiftAuctionInfoSheetContent: CombinedComponent {
             
             super.init()
             
-            let _ = (self.auctionContext.state
-            |> deliverOnMainQueue).startStandalone(next: { [weak self] state in
+            self.auctionStateDisposable = (self.auctionContext.state
+            |> deliverOnMainQueue).startStrict(next: { [weak self] state in
                 if let self, case let .ongoing(_, _, _, _, _, _, _, _, _, totalRounds, _, _) = state?.auctionState {
                     self.rounds = totalRounds
                     self.updated()
                 }
             })
+        }
+        
+        deinit {
+            self.auctionStateDisposable?.dispose()
         }
         
         func playAnimationIfNeeded() {
@@ -397,7 +402,7 @@ final class GiftAuctionInfoSheetComponent: CombinedComponent {
                         metrics: environment.metrics,
                         deviceMetrics: environment.deviceMetrics,
                         isDisplaying: environment.value.isVisible,
-                        isCentered: environment.metrics.widthClass == .regular,
+                        isCentered: environment.presentsFloatingPanels,
                         hasInputHeight: !environment.inputHeight.isZero,
                         regularMetricsSize: CGSize(width: 430.0, height: 900.0),
                         dismiss: { animated in
@@ -437,8 +442,10 @@ final class GiftAuctionInfoSheetComponent: CombinedComponent {
                     deviceMetrics: environment.deviceMetrics,
                     intrinsicInsets: UIEdgeInsets(top: 0.0, left: 0.0, bottom: bottomInset, right: 0.0),
                     safeInsets: UIEdgeInsets(top: 0.0, left: max(sideInset, environment.safeInsets.left), bottom: 0.0, right: max(sideInset, environment.safeInsets.right)),
+                    reservedCorners: environment.reservedCorners,
+                    division: nil,
                     additionalInsets: .zero,
-                    statusBarHeight: environment.statusBarHeight,
+                    statusBarHeight: environment.fullStatusBarHeight,
                     inputHeight: nil,
                     inputHeightIsInteractivellyChanging: false,
                     inVoiceOver: false,

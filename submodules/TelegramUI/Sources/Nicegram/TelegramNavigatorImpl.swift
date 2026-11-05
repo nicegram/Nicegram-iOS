@@ -2,7 +2,6 @@ import AccountContext
 import Display
 import MemberwiseInit
 import NGUtils
-import Postbox
 import TelegramBridge
 import TelegramCore
 
@@ -13,10 +12,10 @@ class TelegramNavigatorImpl {
 
 extension TelegramNavigatorImpl: TelegramNavigator {
     func navigateToChat(_ id: TelegramId) {
-        Task {
+        _ = Task {
             let context = try contextProvider.context().unwrap()
             let sharedContext = context.sharedContext
-            let peerId = PeerId(id)
+            let peerId = EnginePeer.Id(id)
             
             let navigationController = try (sharedContext.mainWindow?.viewController as? NavigationController).unwrap()
             

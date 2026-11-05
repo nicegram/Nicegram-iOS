@@ -267,7 +267,7 @@ final class TextProcessingContentComponent: Component {
             guard let slug = style.slug else {
                 return
             }
-            let shareController = component.context.sharedContext.makeShareController(context: component.context, params: ShareControllerParams(
+            let shareController = component.context.sharedContext.makeShareScreen(context: component.context, params: ShareControllerParams(
                 subject: .url("https://t.me/addstyle/\(slug)"),
                 completed: { [weak self] peerIds in
                     Task { @MainActor in
@@ -435,11 +435,11 @@ final class TextProcessingContentComponent: Component {
                 }
                 
                 func takeView() -> ContextControllerTakeViewInfo? {
-                    return ContextControllerTakeViewInfo(containingItem: .view(self.contentView), contentAreaInScreenSpace: UIScreen.main.bounds)
+                    return ContextControllerTakeViewInfo(containingItem: .view(self.contentView), contentAreaInScreenSpace: mainWindowScreenBounds)
                 }
                 
                 func putBack() -> ContextControllerPutBackViewInfo? {
-                    return ContextControllerPutBackViewInfo(contentAreaInScreenSpace: UIScreen.main.bounds)
+                    return ContextControllerPutBackViewInfo(contentAreaInScreenSpace: mainWindowScreenBounds)
                 }
             }
             
@@ -791,7 +791,9 @@ final class TextProcessingContentComponent: Component {
                         items: tabs,
                         search: nil,
                         selectedId: currentModeId,
-                        outerInsets: UIEdgeInsets()
+                        outerInsets: UIEdgeInsets(),
+                        axis: .horizontal,
+                        isCompact: false
                     )),
                     environment: {},
                     containerSize: CGSize(width: availableSize.width - sideInset * 2.0, height: 62.0)
@@ -1935,7 +1937,7 @@ private final class TextProcessingSheetComponent: Component {
                         metrics: environmentValue.metrics,
                         deviceMetrics: environmentValue.deviceMetrics,
                         isDisplaying: environmentValue.isVisible,
-                        isCentered: environmentValue.metrics.widthClass == .regular,
+                        isCentered: environmentValue.presentsFloatingPanels,
                         screenSize: availableSize,
                         regularMetricsSize: nil,
                         dismiss: { animated in

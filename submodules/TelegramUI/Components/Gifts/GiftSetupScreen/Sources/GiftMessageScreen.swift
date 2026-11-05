@@ -389,6 +389,7 @@ private final class GiftMessageScreenComponent: Component {
                 return
             }
             if let inputPanelView = self.inputPanel.view as? MessageInputPanelComponent.View, !inputPanelView.canDeactivateInput() {
+                inputPanelView.animateError()
                 return
             }
             self.isCommitted = true
@@ -787,7 +788,8 @@ private final class GiftMessageScreenComponent: Component {
                             bottomInset: max(0.0, containerFrame.height - previewHeight),
                             contentHeight: previewHeight,
                             maximumBubbleBottom: publicToggleFrame.minY - 16.0,
-                            action: { [weak self] in self?.commit() }
+                            action: { [weak self] in self?.commit() },
+                            activateInput: { [weak self] in self?.activateInput() }
                         ),
                         params: listItemParams
                     )),
@@ -809,8 +811,10 @@ private final class GiftMessageScreenComponent: Component {
                     deviceMetrics: environment.deviceMetrics,
                     intrinsicInsets: UIEdgeInsets(top: 66.0, left: 0.0, bottom: 0.0, right: 0.0),
                     safeInsets: UIEdgeInsets(top: 0.0, left: environment.safeInsets.left, bottom: 0.0, right: environment.safeInsets.right),
+                    reservedCorners: environment.reservedCorners,
+                    division: nil,
                     additionalInsets: .zero,
-                    statusBarHeight: environment.statusBarHeight,
+                    statusBarHeight: environment.fullStatusBarHeight,
                     inputHeight: nil,
                     inputHeightIsInteractivellyChanging: false,
                     inVoiceOver: false,

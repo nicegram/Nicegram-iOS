@@ -1,5 +1,4 @@
 import FeatDataSharing
-import Postbox
 import TelegramCore
 
 extension User {

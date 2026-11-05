@@ -2,7 +2,6 @@ import AsyncDisplayKit
 import Display
 import FeatNftSticker
 import PeerInfoPaneNode
-import Postbox
 import SwiftSignalKit
 import TelegramCore
 import TelegramPresentationData

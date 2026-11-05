@@ -5,6 +5,7 @@ import Display
 import CoreList
 import ComponentFlow
 import ComponentDisplayAdapters
+import CoreListComponentHost
 import ChatMessageItem
 import ChatMessageItemImpl
 import ChatMessageItemView
@@ -86,50 +87,6 @@ private final class CoreListChatScrollMotion {
         self.tiltValue = 0.0
         self.tiltSpeed = 0.0
         self.hold = 0.0
-    }
-}
-
-// CoreList cannot depend on ComponentFlow — its Bazel target has no `deps` and its demo builds
-// standalone in Xcode — so it carries a case-for-case copy of the transition value model. This is
-// where the two meet.
-//
-// The one asymmetry is interpretation, not data: CoreList treats a zero duration as immediate, while
-// ComponentFlow animates it. That difference is preserved here rather than smoothed over — a
-// zero-duration CoreList transition maps to `.immediate`, so a caller converting one and handing it
-// to UIKit gets the behavior CoreList meant.
-extension ComponentTransition {
-    init(_ transition: CoreListTransition) {
-        switch transition.animation {
-        case .none:
-            self.init(animation: .none)
-        case let .curve(duration, curve):
-            guard !transition.isImmediate else {
-                self.init(animation: .none)
-                return
-            }
-            self.init(animation: .curve(duration: duration,
-                                        curve: ComponentTransition.Animation.Curve(curve)))
-        }
-    }
-}
-
-private extension ComponentTransition.Animation.Curve {
-    init(_ curve: CoreListTransition.Animation.Curve) {
-        switch curve {
-        case .easeInOut: self = .easeInOut
-        case .easeIn: self = .easeIn
-        case .spring: self = .spring
-        case .linear: self = .linear
-        case let .custom(a, b, c, d): self = .custom(a, b, c, d)
-        case let .bounce(stiffness, damping): self = .bounce(stiffness: stiffness, damping: damping)
-        case .uiKitSmoothDeceleration:
-            // Lossy, and the only lossy arm here: ComponentFlow has no critically-damped-spring
-            // case, and its `.custom` is a cubic bezier, which is exactly what this curve is not.
-            // `.spring` is the nearest family. This bridge only feeds item-internal
-            // ContainedViewLayoutTransitions — the scroll itself is animated by CoreList from the
-            // real CASpringAnimation, so the approximation never reaches the offset.
-            self = .spring
-        }
     }
 }
 
@@ -339,6 +296,14 @@ final class CoreListChatHistoryBackend: ASDisplayNode, ChatHistoryListViewBacken
 
     var didInteractivelyDragFromTopOrigin: Bool {
         return self.beganDragPinnedToNewestEdge && self.didMoveContentDuringDrag
+    }
+
+    var isHoldingScrollTarget: Bool {
+        return self.coreList.isHoldingScrollTarget
+    }
+
+    func releaseScrollHold() {
+        self.coreList.releaseScrollHold()
     }
 
     // MARK: - Tracking
@@ -583,6 +548,7 @@ final class CoreListChatHistoryBackend: ASDisplayNode, ChatHistoryListViewBacken
     }
 
     private func pointOffset(for position: ListViewScrollPosition,
+                             excludesAttachedHeaderSpace: Bool,
                              index: Int,
                              height: CGFloat,
                              view: UIView & CoreListItemView) -> CGFloat {
@@ -617,13 +583,57 @@ final class CoreListChatHistoryBackend: ASDisplayNode, ChatHistoryListViewBacken
             return (viewportHeight - insetBottom + extensionOffset) - height - insetTop
         }
 
+        guard case .visible = position else {
+            return self.placementOffset(for: position, excludesAttachedHeaderSpace: excludesAttachedHeaderSpace, height: height, view: view)
+        }
+        // `.visible` is the one position that depends on where the row already is, so it needs
+        // the row loaded. It is produced only by ensureItemNodeVisible — which always holds a
+        // loaded node — and by the experimentalSnapScrollToItem path, which nothing in chat ever
+        // enables. An unloaded target therefore falls back to center-with-top-overflow.
+        //
+        // `.presented`: the question here is literally "is this row on screen right now", so the
+        // rendered position is the input, not where a pass in flight is taking it.
+        guard let frame = self.loadedFrame(atIndex: index, .presented) else {
+            return height <= contentAreaHeight + CGFloat.ulpOfOne
+                ? floor((contentAreaHeight - height) / 2.0)
+                : 0.0
+        }
+        if frame.maxY > viewportHeight - insetBottom {
+            let targetMaxY = (viewportHeight - insetBottom) + scrollPositioningInsets.bottom
+            return targetMaxY - height - insetTop
+        }
+        if height <= contentAreaHeight + CGFloat.ulpOfOne, frame.minY < insetTop {
+            return -scrollPositioningInsets.top
+        }
+        return frame.minY - insetTop
+    }
+
+    /// Where `.top`, `.bottom` and `.center` place a row of `height`, as an offset from the top inset
+    /// edge — `ListViewImpl`'s arithmetic. Index-free, so `scrollHold(for:)` can re-evaluate it on every
+    /// held pass without an index that rows arriving below have made stale.
+    private func placementOffset(for position: ListViewScrollPosition,
+                                 excludesAttachedHeaderSpace: Bool,
+                                 height: CGFloat,
+                                 view: UIView & CoreListItemView) -> CGFloat {
+        let node = (view as? CoreListNodeHostView)?.itemNode
+        let scrollPositioningInsets = node?.scrollPositioningInsets ?? UIEdgeInsets()
+        let viewportHeight = self.currentSize.height
+        let insetTop = self.currentInsets.top
+        let insetBottom = self.currentInsets.bottom
+        let contentAreaHeight = viewportHeight - insetTop - insetBottom
+        // Read on every evaluation, so a held row keeps its content in place when the header leaves it. The
+        // space is in the node's top layout inset, which the node's own π puts at the row's far end (maxY)
+        // under the rotated chat (`attachmentBandTrim`), so only `.bottom` measures across it there.
+        let headerSpace = excludesAttachedHeaderSpace ? ((node as? ChatMessageItemView)?.attachedDateHeaderInset ?? 0.0) : 0.0
+
         switch position {
         case let .top(additionalOffset):
-            return additionalOffset + scrollPositioningInsets.top
+            return additionalOffset + scrollPositioningInsets.top - (self.rotated ? 0.0 : headerSpace)
         case let .bottom(additionalOffset):
             let targetMaxY = (viewportHeight - insetBottom)
                 + scrollPositioningInsets.bottom
                 + additionalOffset
+                + (self.rotated ? headerSpace : 0.0)
             return targetMaxY - height - insetTop
         case let .center(overflow):
             if height <= contentAreaHeight + CGFloat.ulpOfOne {
@@ -645,26 +655,43 @@ final class CoreListChatHistoryBackend: ASDisplayNode, ChatHistoryListViewBacken
                 return targetMaxY - height - insetTop
             }
         case .visible:
-            // `.visible` is the one position that depends on where the row already is, so it needs
-            // the row loaded. It is produced only by ensureItemNodeVisible — which always holds a
-            // loaded node — and by the experimentalSnapScrollToItem path, which nothing in chat ever
-            // enables. An unloaded target therefore falls back to center-with-top-overflow.
-            //
-            // `.presented`: the question here is literally "is this row on screen right now", so the
-            // rendered position is the input, not where a pass in flight is taking it.
-            guard let frame = self.loadedFrame(atIndex: index, .presented) else {
-                return height <= contentAreaHeight + CGFloat.ulpOfOne
-                    ? floor((contentAreaHeight - height) / 2.0)
-                    : 0.0
+            // Routed by `pointOffset` before it gets here, and never held (`scrollHold(for:)`).
+            return 0.0
+        }
+    }
+
+    /// The hold reference for a scroll that asked to hold (`ListViewScrollToItem.hold`): the
+    /// edge the placement measured from, and the point in the row that placement put at a fixed
+    /// distance from it. `rowPoint = edge − placement` reproduces every case: the row's minY for `.top`,
+    /// its maxY for `.bottom`, its centre for a `.center` that fits, and for one that overflows the point
+    /// that sat on the visible centre — continuous where the row starts or stops fitting.
+    private func scrollHold(for position: ListViewScrollPosition, excludesAttachedHeaderSpace: Bool, yieldsToNewestEdge: Bool) -> CoreListScrollHold? {
+        let edge: CoreListScrollHold.Edge
+        switch position {
+        case .top:
+            edge = .topInset
+        case .bottom:
+            edge = .bottomInset
+        case .center:
+            edge = .visibleCenter
+        case .visible:
+            return nil
+        }
+        return CoreListScrollHold(edge: edge, yieldsToNewestEdge: yieldsToNewestEdge) { [weak self] height, view in
+            guard let self else {
+                return 0.0
             }
-            if frame.maxY > viewportHeight - insetBottom {
-                let targetMaxY = (viewportHeight - insetBottom) + scrollPositioningInsets.bottom
-                return targetMaxY - height - insetTop
+            let contentAreaHeight = self.currentSize.height - self.currentInsets.top - self.currentInsets.bottom
+            let edgeOffset: CGFloat
+            switch edge {
+            case .topInset:
+                edgeOffset = 0.0
+            case .bottomInset:
+                edgeOffset = contentAreaHeight
+            case .visibleCenter:
+                edgeOffset = contentAreaHeight * 0.5
             }
-            if height <= contentAreaHeight + CGFloat.ulpOfOne, frame.minY < insetTop {
-                return -scrollPositioningInsets.top
-            }
-            return frame.minY - insetTop
+            return edgeOffset - self.placementOffset(for: position, excludesAttachedHeaderSpace: excludesAttachedHeaderSpace, height: height, view: view)
         }
     }
 
@@ -862,8 +889,10 @@ final class CoreListChatHistoryBackend: ASDisplayNode, ChatHistoryListViewBacken
         // the re-pin as a second transaction from its completion, `applyChanges` takes `newInsets`
         // and `scrollTo` together — so this rides the same pass as one movement, with no
         // intermediate frame and a single animation.
+        // Skipped while a scroll target is held: the hold already re-places its row on an inset change.
         var effectiveScrollToItem = scrollToItem
         if maintainsUnreadItemAlignment,
+           !self.coreList.isHoldingScrollTarget,
            effectiveScrollToItem == nil,
            let sizeAndInsets = updateSizeAndInsets,
            sizeAndInsets.insets.bottom != self.currentInsets.bottom {
@@ -972,11 +1001,21 @@ final class CoreListChatHistoryBackend: ASDisplayNode, ChatHistoryListViewBacken
             case .Up:
                 direction = .backward
             }
-            scrollTo = CoreListScrollTarget(index: index, direction: direction) { [weak self] height, view in
+            let excludesAttachedHeaderSpace = scrollToItem.excludesAttachedHeaderSpace
+            let hold: CoreListScrollHold?
+            switch scrollToItem.hold {
+            case .none:
+                hold = nil
+            case .always, .yieldingToNewestEdge:
+                hold = self.isLowestPinToEdgeIndex(index)
+                    ? nil
+                    : self.scrollHold(for: position, excludesAttachedHeaderSpace: excludesAttachedHeaderSpace, yieldsToNewestEdge: scrollToItem.hold == .yieldingToNewestEdge)
+            }
+            scrollTo = CoreListScrollTarget(index: index, direction: direction, hold: hold) { [weak self] height, view in
                 guard let self else {
                     return 0.0
                 }
-                return self.pointOffset(for: position, index: index, height: height, view: view)
+                return self.pointOffset(for: position, excludesAttachedHeaderSpace: excludesAttachedHeaderSpace, index: index, height: height, view: view)
             }
         }
 
@@ -1009,6 +1048,13 @@ final class CoreListChatHistoryBackend: ASDisplayNode, ChatHistoryListViewBacken
             case let .Custom(duration, x1, y1, x2, y2):
                 transition = .init(animation: .curve(duration: duration,
                                                      curve: .custom(x1, y1, x2, y2)))
+            case let .CustomSpring(duration, mass, stiffness, damping, initialVelocity):
+                // The chat's send transition scrolls on the new bubble's own vertical spring; CoreList
+                // plays it as the same CASpringAnimation Display does, so the two stay in lockstep.
+                transition = .init(animation: .curve(duration: duration,
+                                                     curve: .customSpring(mass: mass, stiffness: stiffness,
+                                                                          damping: damping,
+                                                                          initialVelocity: initialVelocity)))
             }
         } else if let updateSizeAndInsets, updateSizeAndInsets.duration != 0.0 {
             switch updateSizeAndInsets.curve {
@@ -1022,6 +1068,11 @@ final class CoreListChatHistoryBackend: ASDisplayNode, ChatHistoryListViewBacken
                                                       duration ?? 0.3))
             case let .Custom(duration, x1, y1, x2, y2):
                 transition = .init(animation: .curve(duration: duration, curve: .custom(x1, y1, x2, y2)))
+            case let .CustomSpring(duration, mass, stiffness, damping, initialVelocity):
+                transition = .init(animation: .curve(duration: duration,
+                                                     curve: .customSpring(mass: mass, stiffness: stiffness,
+                                                                          damping: damping,
+                                                                          initialVelocity: initialVelocity)))
             }
         } else if let customAnimationTransition,
                   case let .animated(duration, curve) = customAnimationTransition.legacyAnimator.transition,
@@ -1045,21 +1096,7 @@ final class CoreListChatHistoryBackend: ASDisplayNode, ChatHistoryListViewBacken
             // (ChatControllerNode.swift:2619) and reaches the `updateSizeAndInsets` branch above, so
             // it is unaffected. The two were previously conflated, which is how this producer came to
             // be recorded as "the chat sets it in exactly one place".
-            switch curve {
-            case .easeInOut:
-                transition = .easeInOut(duration: duration)
-            case .easeIn:
-                transition = .init(animation: .curve(duration: duration, curve: .easeIn))
-            case .linear:
-                // `.linear(duration:)` is a CoreListDemoTests convenience, not shipping API.
-                transition = .init(animation: .curve(duration: duration, curve: .linear))
-            case .spring, .customSpring:
-                // CoreList has one spring; `.customSpring`'s mass/stiffness/damping have no analogue,
-                // so it degrades rather than silently rendering as a bezier of the wrong shape.
-                transition = .spring(duration: duration)
-            case let .custom(x1, y1, x2, y2):
-                transition = .init(animation: .curve(duration: duration, curve: .custom(x1, y1, x2, y2)))
-            }
+            transition = CoreListTransition(.animated(duration: duration, curve: curve))
         } else if options.contains(.AnimateInsertion) {
             transition = .spring(duration: 0.4)
         }
@@ -1129,6 +1166,17 @@ final class CoreListChatHistoryBackend: ASDisplayNode, ChatHistoryListViewBacken
                 animatesInsertions: animatesInsertions,
                 transition: transition
             )
+            // The range reported at the end of this transaction is where the rows are drawn now, before the pass has
+            // moved them, and nothing reports it again when a programmatic pass lands (`onVisibleWindowChanged` fires
+            // only on user scrolls). Without this report, what an animated jump brings on screen would stay
+            // unprocessed (read marks, unseen mentions and reactions) until the next drag or the history's 10 s refresh. ListViewImpl
+            // reports the landed range at the transaction itself, where its model is already final; here that would
+            // be the settled geometry, which mid-fling is the fling's destination (see `forEachVisibleItemNode`).
+            if !transition.isImmediate {
+                Queue.mainQueue().after(transition.duration * UIView.animationDurationFactor(), { [weak self] in
+                    self?.updateVisibleItemRange(force: false)
+                })
+            }
         }
 
         // Messages arriving at the newest edge slide in from beyond it, rather than fading into place
@@ -1593,7 +1641,7 @@ final class CoreListChatHistoryBackend: ASDisplayNode, ChatHistoryListViewBacken
     // `frame.minY == insets.top + offset` — the exact inverse. CoreList's scrollTo pointOffset uses
     // the identical convention (screen target = viewportInsets.top + pointOffset), so no unit
     // conversion is needed here. Both sides are live: the restore path resolves `.top(offset)`
-    // through pointOffset(for:index:height:view:).
+    // through pointOffset(for:excludesAttachedHeaderSpace:index:height:view:).
     func itemNodeRelativeOffset(_ node: ListViewItemNode) -> CGFloat? {
         guard let frame = self.loadedFrame(of: node) else {
             return nil

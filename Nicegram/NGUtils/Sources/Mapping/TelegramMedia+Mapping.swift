@@ -1,4 +1,3 @@
-import protocol Postbox.Media
 import TelegramBridge
 import TelegramCore
 
@@ -6,7 +5,7 @@ private struct TelegramMediaImpl: TelegramBridge.TelegramMedia {
     let type: TelegramMediaType
 }
 
-public extension Postbox.Media {
+public extension EngineRawMedia {
     func toTelegramBridgeMedia() -> TelegramBridge.TelegramMedia {
         let type: TelegramMediaType
         switch self {
@@ -24,7 +23,7 @@ public extension Postbox.Media {
     }
 }
 
-public extension [Postbox.Media] {
+public extension [EngineRawMedia] {
     func toTelegramBridgeMedia() -> [TelegramBridge.TelegramMedia] {
         self.map { $0.toTelegramBridgeMedia() }
     }

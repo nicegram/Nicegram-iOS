@@ -1,12 +1,11 @@
-import class Postbox.PeerView
 import TelegramBridge
 import TelegramCore
 
-public extension Postbox.PeerView {
-    func toTelegramBridgePeerDetails() -> (any TelegramBridge.TelegramPeerDetails)? {
-        guard let peer = peers[peerId]?.toTelegramBridgePeer() else {
-            return nil
-        }
+extension EngineRawPeer {
+    func toTelegramBridgePeerDetails(
+        cachedData: EngineCachedPeerData?
+    ) -> any TelegramBridge.TelegramPeerDetails {
+        let peer = toTelegramBridgePeer()
         
         let about = cachedData?.aboutText ?? ""
         

@@ -17,7 +17,7 @@ extension TelegramTokenLoginFlowImpl: TelegramTokenLoginFlow {
     func run(
         approveToken: (Data) async throws -> Void,
         password: TelegramLoginPassword
-    ) async throws -> TelegramId? {
+    ) async throws {
         let sharedContext = try await sharedContextProvider.sharedContext()
         let accountId = generateAccountRecordId()
         // The silent account's id stays registered while it lives, or the account manager's
@@ -53,7 +53,6 @@ extension TelegramTokenLoginFlowImpl: TelegramTokenLoginFlow {
             password: password,
             sharedContext: sharedContext
         )
-        return try await Self.signedInTelegramId(account: account)
     }
 }
 
@@ -211,16 +210,6 @@ private extension TelegramTokenLoginFlowImpl {
             }
         }
         throw UnexpectedError()
-    }
-
-    /// From the state Telegram has just written, not from the account list, which omits the account
-    /// until its user loads; it does not wait for the account to load either.
-    static func signedInTelegramId(account: UnauthorizedAccount) async throws -> TelegramId? {
-        try await account.postbox.transaction { transaction in
-            (transaction.getState() as? AuthorizedAccountState)?.peerId
-        }
-        .awaitForFirstValue()
-        .map { TelegramId($0) }
     }
 
     static func srpParameters(account: UnauthorizedAccount) async throws -> TelegramSrpParameters {

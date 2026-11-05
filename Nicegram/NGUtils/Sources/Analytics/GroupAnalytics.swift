@@ -1,10 +1,9 @@
 import AccountContext
 import CoreAnalytics
-import Postbox
 import SwiftSignalKit
 import TelegramCore
 
-public func trackChatOpen(peerId: PeerId, context: AccountContext) {
+public func trackChatOpen(peerId: EnginePeer.Id, context: AccountContext) {
     _ = (context.account.viewTracker.peerView(peerId, updateData: true)
     |> take(1))
     .start(next: { peerView in

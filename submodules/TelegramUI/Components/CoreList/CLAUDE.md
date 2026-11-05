@@ -250,6 +250,50 @@ cannot tell a transient absence from a real one.
 `docs/superpowers/specs/2026-08-04-corelist-pin-to-edge-design.md` (telegram-ios repo root) describes
 the **superseded** slack-only mechanism; this section is the current contract.
 
+**The scroll hold (`CoreListScrollHold`).** A `scrollTo` may carry a hold: an edge of the visible area
+(`topInset`, `bottomInset`, `visibleCenter`) and a point in the row. The pass that lands it records
+`rowPoint − edge` in its SETTLED geometry — where the row actually ended up after `buildWindow`'s edge
+alignment, so a clamped jump is held where it landed, not where it was asked to go — and
+`resolveAnchor` re-places the row at that distance on every later pass (`.resolved`, directly below
+the pin latch, above `preserveVisibleContent`). **A landing the list clamped against one of its ends
+is held against that end**, whatever reference the scroll carried: resting on the newest edge (window
+from index 0, settled offset on the natural minimum) by its minY from `topInset`, on the oldest by its
+maxY from `bottomInset`, the newest winning when both hold. Held from the edge it named, a `.bottom`
+landing clamped at the newest edge kept its distance from the bars, so the keyboard covered the newest
+rows and a top-inset shrink opened a gap under them. **A hold that `yieldsToNewestEdge` arms nothing
+on the newest edge** (the chat's unread line, 2026-10-16): the list then follows that edge as if no
+scroll had run, so a row arriving there pushes the content up instead of landing under the input
+panel, and a row under the landing grows away from the input edge instead of sinking the newest rows
+under it. Not arming is the whole change, because the landing pass is a scroll, which has already
+released any earlier hold and zeroed `holdSlack`. Off the newest edge such a hold arms as usual.
+Released when a drag begins (`onWillBeginDragging`: under `PhysicsScrollEngine` the pan's
+`.began`, after its movement hysteresis, or at once for a finger landing on moving content — a tap
+keeps the hold; under `UIKitScrollEngine`, `scrollViewWillBeginDragging`), any later `scrollTo` (a
+holding one arms a new hold), the held identity leaving the collection, a full replace,
+`rebuildFromScratch`, and `releaseScrollHold()`. Keyed by identity, never index.
+
+While held, `buildWindow` skips the underfill alignments and the loaded-top pin, and `heldWindowSlack`
+turns their gaps into scroll room (`holdSlack`, both edges, clamped at zero, measured against the
+unfolded edges or it would feed itself). It folds in beside the pin slack — `buildWindow`'s
+`topEdge` (`+ holdSlack.min`, adding to the pin slack at the newest edge), its `bottomEdge`
+(`− holdSlack.max`) and `loadedEdgeRange` — and is zeroed by every scroll, full replace and
+`rebuildFromScratch`. After release it only ever shrinks, to what the current offset still needs
+(`retireHoldSlack`, measured against the natural range), so release never moves content under the
+finger; the `topEdge`/`bottomEdge` folds are what keep a later pass from aligning onto the natural
+edge and closing the gap. It retires at the end of every `applyChanges`, on every `handleUserScroll`
+frame that is not a flight's tick, and once when a flight ends (`onFlightChanged(nil)` outside a
+pass). **Never on a flight's ticks:** each retire re-declares the minimum edge at the live offset,
+which is on the flight's remaining path, so `KeyframeFlight` rebaked every frame of a fling out of the
+slack; the flight plays against the extended edge instead. `resolveAnchor`'s
+resting-at-the-newest-edge shortcut reads the natural edge too (`includesHoldSlack: false`); that only
+matters when `pinsLoadedTop` declines (a nonzero `additionalScrollDistance`), where it would hand the
+anchor to row 0 at point offset 0 and move everything by the slack. `ScrollHoldTests` pins the hold,
+its releases, the clamped-landing rule, the newest-edge yield and the newest-edge retirement on `UIKitScrollEngine`, and the
+flight case (no rebake, retired once at the end) on `TestScrollEngine`'s `.keyframe` mode (not yet:
+oldest-edge retirement, the `rebuildFromScratch` release, pin and hold slack together); the chat runs
+`PhysicsScrollEngine`, whose release/retire path (a fling out of a released slack) has not been
+checked on device (2026-10-14).
+
 `activeWindow` is a pure settled `Window` value containing contiguous `(index, view, frame)` items.
 It is the loaded projection of the current item collection, not animation state. Frames are
 container-local; `minY` may be negative, and `render()` places each view at
@@ -297,6 +341,15 @@ edge transitions (above); `willBeginDragging` / `didEndDragging` fire on interac
 interval a host needs to reproduce `ListViewImpl.isTracking`); `shouldStopScrolling` forwards to
 `ScrollEngine.shouldStopScrollingOnRelease` so a host can decline the momentum of a release it has
 already spent elsewhere (above).
+`isScrollDecelerating` says, at `didEndDragging`, whether momentum follows the release in every
+deceleration mode (`ScrollEngine.isDecelerating`). `isScrollFlightActive` says it only for `.keyframe`,
+because `.stepped` and UIKit publish no flight. Likewise `didEndScrolling` fires when a `.keyframe` flight
+ends AND when a `.stepped` or UIKit deceleration comes to rest by itself (`ScrollEngine.onDidEndDecelerating`).
+Before that seam, a `.stepped` host (the News feeds) had no way to tell a fling from a still release, and
+`SteppedDecelerationEndTests` locks it.
+`init(forEmbedding:deceleration:)` picks how the `PhysicsScrollEngine` an embedding host gets plays a
+flick: `.keyframe` (the default, a render-server flight) or `.stepped` (main-thread physics); the engine
+type stays internal.
 `loadedItemViews` is a **non-copying** `Sequence` over the settled window's item views in ascending
 index order — it walks `activeWindow.items` in place (a COW snapshot; no array built, no element
 copied, safe to mutate the list mid-iteration), the iterator-based analogue of
@@ -513,9 +566,12 @@ predecessors are unchanged keeps the exact original position track, phase, and d
 self-contained copy of ComponentFlow's `ComponentTransition` value model, vendored because CoreList
 has no Bazel `deps` and the demo builds standalone. The case shape is identical, so
 `ComponentTransition.init(_ CoreListTransition)` — in
-`TelegramUI/Sources/CoreListChatHistoryBackend.swift`, the only consumer — is a case-for-case map.
+`TelegramUI/Components/CoreListComponentHost/Sources/CoreListTransitionBridge.swift`, shared by the
+chat history backend and the News feeds — is a case-for-case map.
 It deliberately does NOT round-trip a zero duration: CoreList means "immediate" by it, so the
-conversion yields `.immediate` rather than a zero-length animation.
+conversion yields `.immediate` rather than a zero-length animation. The same file has the other
+direction, `CoreListTransition.init(_ ContainedViewLayoutTransition)`, so a list moves on the exact curve
+of the layout around it.
 `applyChanges(…, transition:)` is the only mutation entry point; the parallel duration-only overloads
 are gone. Production uses `.easeInOut` throughout, and the tests keep `.linear` (via a test-only
 `CoreListTransition.linear(duration:)`) as the contrast curve their curve-identity assertions need.
@@ -527,6 +583,19 @@ returns (`listViewAnimationCurveSystem`, which samples the 0.5s spring), so Comp
 and emitted springs agree only at duration 0.5 — CoreList is analytic-first, so it follows the
 emitted curve. `.bounce` is not a unit curve (ComponentFlow's own `solve` asserts on it) and degrades
 to `.spring`.
+
+`.customSpring(mass:stiffness:damping:initialVelocity:)` is CoreList's counterpart of Display's
+`ContainedViewLayoutTransitionCurve.customSpring`, and the one curve here with no ComponentFlow case —
+it exists so the chat's spring send transition (behind a Debug Settings flag since 2026-10-16; the
+default is a bezier) scrolls the history on the bubble's own spring. It emits the
+object `CAAnimationUtils`' custom-spring branch builds (parameters quantized to `Float` as Display's
+string parsing does, `duration = settlingDuration`, linear timing) down the shared `isSystemSpring`
+path, so the settle reaches the pass as `speed`. Its `solve(at:)` is a **closed form**, not
+`_solveForInput:`, keyed to CA's cached `settlingDuration`. Two traps: `settlingDuration` is reported
+in the PARENT's time, so reading it back off an emitted animation divides it by `speed`; and the
+closed form has **no overdamped branch** because CA renders none — Display never sets
+`allowsOverdamping`, and at its default `false` a damping ratio above 1 plays as exactly critical.
+`CustomSpringParityTests` pins the closed form against `_solveForInput:` across both regimes.
 
 CoreList uses **no `CATransaction` at all**. Every layer it writes is UIView-backed — it creates no
 standalone `CALayer` — and a UIView's layer returns a null action by default outside an animation
@@ -1425,6 +1494,11 @@ Animation an authority.
     makes `hasHorizontalGestures` `.strict` and fails the pop pan in its own `touchesBegan`) also kills
     the edge swipe for the duration of a fling and needs a device pass. The one thing NOT to do is
     answer it from this engine's own delegate.
+  - **A pan that FAILS still reports the lift, from `reset()`.** When another recognizer wins the touch (a
+    row's swipe, a pager, the chat's swipe to reply) the list's pan receives no `touchesEnded`, so
+    `onTouchUp` never fired and content caught overscrolled at touch-down stayed off its edge until the
+    next drag. `PhysicsPanGestureRecognizer` tracks whether a touch went down without its lift being
+    reported and reports it from `reset()`, once (`PhysicsPanTouchUpTests`). Delivered lifts are unchanged.
   - **`delaysTouchesEnded` must stay `false`.** A freshly constructed recognizer defaults to `true`,
     and `UIScrollView.panGestureRecognizer` — what `ListViewImpl` scrolls on — is `false` (measured on
     iOS 26.2, and asserted as a control in `PhysicsScrollEngineTests`). Left at the default, the list's

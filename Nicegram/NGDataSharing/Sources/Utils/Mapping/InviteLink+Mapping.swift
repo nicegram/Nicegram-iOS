@@ -36,7 +36,7 @@ extension [InviteLink] {
         self.init(
             [invite]
                 .compactMap { $0 }
-                .map { .init(apiExportedInvite: $0) }
+                .map { TelegramRawApi.exportedInvitation($0) }
         )
     }
 }

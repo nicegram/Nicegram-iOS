@@ -41,7 +41,8 @@ extension ChatControllerImpl {
                 let _ = (enqueueMessages(account: self.context.account, peerId: self.context.account.peerId, messages: messages.map { message -> EnqueueMessage in
                     return .forward(source: message.id, threadId: nil, grouping: .auto, attributes: [], correlationId: nil)
                 })
-                         |> deliverOnMainQueue).start(next: { messageIds in
+                         |> deliverOnMainQueue).start(next: { [weak self] messageIds in
+                    guard let self else { return }
                     let signals: [Signal<Bool, NoError>] = messageIds.compactMap({ id -> Signal<Bool, NoError>? in
                         guard let id = id else {
                             return nil
@@ -60,7 +61,8 @@ extension ChatControllerImpl {
                         self.shareStatusDisposable = MetaDisposable()
                     }
                     self.shareStatusDisposable?.set((combineLatest(signals)
-                                                     |> deliverOnMainQueue).start(completed: {
+                                                     |> deliverOnMainQueue).start(completed: { [weak self] in
+                        guard let self else { return }
                         let presentationData = self.context.sharedContext.currentPresentationData.with { $0 }
                         self.present(UndoOverlayController(presentationData: presentationData, content: .forward(savedMessages: true, text: messages.count == 1 ? presentationData.strings.Conversation_ForwardTooltip_SavedMessages_One : presentationData.strings.Conversation_ForwardTooltip_SavedMessages_Many), elevatedLayout: false, animateInAsReplacement: true, action: { [weak self] value in
                             if case .info = value, let strongSelf = self, let navigationController = strongSelf.effectiveNavigationController {

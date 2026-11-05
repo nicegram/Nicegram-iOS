@@ -34,7 +34,7 @@ private func generateCloseIcon() -> UIImage {
 
 private func textStringForForwardedMessage(_ message: EngineMessage, strings: PresentationStrings, dateTimeFormat: PresentationDateTimeFormat) -> (text: NSAttributedString, entities: [MessageTextEntity], isMedia: Bool) {
     if let richText = message.richText {
-        return (richText.instantPage.previewAttributedText(strings: strings, dateTimeFormat: dateTimeFormat, associatedMedia: message.associatedMedia), [], false)
+        return (richText.instantPage.previewAttributedText(strings: strings, dateTimeFormat: dateTimeFormat, associatedMedia: { message.associatedMedia[$0].map(EngineMedia.init) }), [], false)
     }
     for media in message.media {
         switch media {
@@ -927,7 +927,8 @@ public final class ChatInputMessageAccessoryPanel: Component {
                     text: .plain(textString),
                     insets: textRenderInsets,
                     spoilerColor: environment.theme.chat.inputPanel.primaryTextColor,
-                    handleSpoilers: true
+                    handleSpoilers: true,
+                    displaysAsynchronously: false
                 )),
                 environment: {},
                 containerSize: CGSize(width: availableSize.width - lineFrame.maxX - textInsets.left - textInsets.right, height: 100.0)
@@ -944,7 +945,8 @@ public final class ChatInputMessageAccessoryPanel: Component {
                     text: .plain(tintTextString),
                     insets: textRenderInsets,
                     spoilerColor: .black,
-                    handleSpoilers: true
+                    handleSpoilers: true,
+                    displaysAsynchronously: false
                 )),
                 environment: {},
                 containerSize: CGSize(width: availableSize.width - lineFrame.maxX - textInsets.left - textInsets.right, height: 100.0)

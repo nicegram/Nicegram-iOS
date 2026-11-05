@@ -1,8 +1,8 @@
-import Postbox
 import TelegramBridge
+import TelegramCore
 
 public extension TelegramBridge.TelegramId {
-    init(_ peerId: PeerId) {
+    init(_ peerId: EnginePeer.Id) {
         self.init(
             namespace: peerId.namespace._internalGetInt32Value(),
             id: peerId.id._internalGetInt64Value()
@@ -10,7 +10,7 @@ public extension TelegramBridge.TelegramId {
     }
 }
 
-public extension PeerId {
+public extension EnginePeer.Id {
     init(_ id: TelegramBridge.TelegramId) {
         self.init(
             namespace: ._internalFromInt32Value(id.namespace),

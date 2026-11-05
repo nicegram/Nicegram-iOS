@@ -2,8 +2,8 @@ import AccountContext
 import MemberwiseInit
 import NGCore
 import NGUtils
-import Postbox
 import TelegramBridge
+import TelegramCore
 
 @MemberwiseInit
 class TelegramLinkResolverImpl {
@@ -94,25 +94,25 @@ private extension TelegramLinkResolverImpl {
 }
 
 private extension TelegramLinkResolverImpl {
-    func resolvePeer(peer: Peer?) -> TelegramLinkPeerResolution? {
+    func resolvePeer(peer: EngineRawPeer?) -> TelegramLinkPeerResolution? {
         peer.flatMap { .peer($0.toTelegramBridgePeer()) }
     }
     
-    func resolvePeer(peerId: PeerId) async -> TelegramLinkPeerResolution? {
+    func resolvePeer(peerId: EnginePeer.Id) async -> TelegramLinkPeerResolution? {
         do {
             let context = try contextProvider.context().unwrap()
             
-            let view = try await context.account.postbox
-                .peerView(id: peerId)
+            let peer = try await context.engine.data
+                .get(TelegramEngine.EngineData.Item.Peer.Peer(id: peerId))
                 .awaitForFirstValue()
-            let peer = try view.peers[peerId].unwrap()
-            return resolvePeer(peer: peer)
+                .unwrap()
+            return resolvePeer(peer: peer._asPeer())
         } catch {
             return nil
         }
     }
     
-    func resolvePeer(messageId: MessageId) async -> TelegramLinkPeerResolution? {
+    func resolvePeer(messageId: EngineMessage.Id) async -> TelegramLinkPeerResolution? {
         await resolvePeer(peerId: messageId.peerId)
     }
     

@@ -1,7 +1,6 @@
 import AccountContext
 import Factory
 import FeatAiChatAnalysis
-import Postbox
 import TelegramCore
 
 public class AiChatAnalysisHelper {
@@ -23,10 +22,10 @@ public class AiChatAnalysisHelper {
 //  MARK: - Public Functions
 
 public extension AiChatAnalysisHelper {
-    func presentFromChat(peerId: PeerId?) {
+    func presentFromChat(peerId: EnginePeer.Id?) {
         guard #available(iOS 17.0, *) else { return }
         
-        Task {
+        _ = Task {
             try await AiChatAnalysisPresenter().present(
                 source: .chat(
                     getSourceData(
@@ -37,10 +36,10 @@ public extension AiChatAnalysisHelper {
         }
     }
     
-    func presentFromChatContextMenu(peerId: PeerId?) {
+    func presentFromChatContextMenu(peerId: EnginePeer.Id?) {
         guard #available(iOS 17.0, *) else { return }
         
-        Task {
+        _ = Task {
             try await AiChatAnalysisPresenter().present(
                 source: .chatContextMenu(
                     getSourceData(
@@ -55,7 +54,7 @@ public extension AiChatAnalysisHelper {
 //  MARK: - Private Functions
 
 private extension AiChatAnalysisHelper {
-    func getSourceData(peerId: PeerId?) async throws -> SourceData {
+    func getSourceData(peerId: EnginePeer.Id?) async throws -> SourceData {
         let peerId = try peerId.unwrap()
         
         let config = getConfigUseCase()
@@ -80,10 +79,11 @@ private extension AiChatAnalysisHelper {
         )
     }
     
-    func getPeer(id: PeerId) async throws -> Peer {
-        let view = try await context.account.postbox
-            .peerView(id: id)
+    func getPeer(id: EnginePeer.Id) async throws -> EngineRawPeer {
+        try await context.engine.data
+            .get(TelegramEngine.EngineData.Item.Peer.Peer(id: id))
             .awaitForFirstValue()
-        return try view.peers[id].unwrap()
+            .unwrap()
+            ._asPeer()
     }
 }

@@ -1,7 +1,7 @@
 import AccountContext
-import Postbox
+import TelegramCore
 
-public extension Message {
+public extension EngineRawMessage {
     func hasNicegramTranslation() -> Bool {
         hasTextBlock(.ngTranslation)
     }

@@ -52,16 +52,69 @@ public class ChatMessageRichDataBubbleContentNode: ChatMessageBubbleContentNode 
                 return .original
             }
         }
+
+        func withPage(_ page: ObjectIdentifier) -> ResolvedRichDataPageKey {
+            switch self {
+            case let .pendingEdit(attribute, _):
+                return .pendingEdit(attribute: attribute, page: page)
+            case let .translated(language, attribute, _):
+                return .translated(language: language, attribute: attribute, page: page)
+            case let .original(attribute, _):
+                return .original(attribute: attribute, page: page)
+            }
+        }
     }
 
     private struct ResolvedRichDataContent {
-        let instantPage: InstantPage
+        var instantPage: InstantPage
         let originalAttribute: RichTextMessageAttribute?
-        let key: ResolvedRichDataPageKey
+        var key: ResolvedRichDataPageKey
         let isTranslated: Bool
         let isTranslating: Bool
+        /// Set when `instantPage` is a suspicious sender's page as shown (`showing(_:)`).
+        var suspiciousSenderPage: SuspiciousSenderPage? = nil
+
+        /// The page a selection quotes from: the page the server stored, which a suspicious sender's
+        /// shown page maps back to only when stripping it left every quotable node's text alone.
+        var quotablePage: InstantPage? {
+            guard let suspiciousSenderPage = self.suspiciousSenderPage else {
+                return self.instantPage
+            }
+            return suspiciousSenderPage.keepsQuotes ? suspiciousSenderPage.original : nil
+        }
+
+        func showing(_ suspiciousSenderPage: SuspiciousSenderPage) -> ResolvedRichDataContent {
+            var result = self
+            result.instantPage = suspiciousSenderPage.shown
+            result.key = self.key.withPage(ObjectIdentifier(suspiciousSenderPage.shown))
+            result.suspiciousSenderPage = suspiciousSenderPage
+            return result
+        }
     }
-    
+
+    /// A suspicious sender's page as shown (`instantPageForSuspiciousSender`), kept across layouts so
+    /// the shown page's identity, and with it the page key the layout cache and the page view reuse
+    /// on, changes only when the original page does.
+    private struct SuspiciousSenderPage {
+        let original: InstantPage
+        let shown: InstantPage
+        /// Stripping left every quotable node's text as it was. Removing an inline pill drops its
+        /// label from its node, so a selection there would quote the wrong range.
+        let keepsQuotes: Bool
+
+        init(original: InstantPage, previous: SuspiciousSenderPage?) {
+            self.original = original
+            if let previous, previous.original === original {
+                self.shown = previous.shown
+                self.keepsQuotes = previous.keepsQuotes
+            } else {
+                let shown = instantPageForSuspiciousSender(original)
+                self.shown = shown
+                self.keepsQuotes = shown.quotableNodes.map(\.flatText) == original.quotableNodes.map(\.flatText)
+            }
+        }
+    }
+
     private let containerNode: ContainerNode
     /// Clips `containerNode` to the bubble's four (possibly unequal, when merged) corner radii —
     /// see `applyContainerCorners`. Created on first layout, since an unloaded node has no layer.
@@ -101,6 +154,7 @@ public class ChatMessageRichDataBubbleContentNode: ChatMessageBubbleContentNode 
     // materialization), so this is a straight structural compare. It runs only on the
     // about-to-crossfade path, never on the hot same-content path.
     private var appliedInstantPage: InstantPage?
+    private var suspiciousSenderPage: SuspiciousSenderPage?
     // messageStableVersion is in the cache key because the synthesized instantPage content
     // mutates between streamed AI message chunks (each chunk bumps stableVersion); without
     // this, the cached layout would shadow newly-arrived content during streaming.
@@ -135,6 +189,22 @@ public class ChatMessageRichDataBubbleContentNode: ChatMessageBubbleContentNode 
     private var shimmeringNodeIsSkeleton: Bool = false
     private var textSelectionAdapter: InstantPageMultiTextAdapter?
     private var textSelectionNode: TextSelectionNode?
+    /// What the reply-options preview reads the current selection's quote from.
+    private var textSelectionState: Promise<ChatControllerSubject.MessageOptionsInfo.SelectionState>?
+    /// The page a selection can quote: the message's own page as laid out (`instantPage`, or
+    /// `fullInstantPage` after Show more). Nil under translation or a pending edit: those show a page
+    /// the server never stored, so a quote cut from it would not validate.
+    private var quotablePage: InstantPage?
+    /// `quotablePage.quotableNodes`, built once per page: a selection drag rebuilds the quote on every
+    /// range change.
+    private var quotableNodes: [InstantPageQuotableNode] = []
+    private var quoteHighlightingNode: LinkHighlightingNode?
+    /// The quote highlight being shown, re-applied after every page layout: a relayout (Show more, a
+    /// toggled details or quote, a width change) moves the text under it.
+    private var currentQuoteHighlight: (text: String, offset: Int?, color: UIColor)?
+    /// Whether this message may be quoted at all; Quote is offered only while the selection also maps
+    /// to a quote.
+    private var selectionEnablesQuote = false
 
     private var textRevealController: TextRevealController?
     private var textRevealLink: SharedDisplayLinkDriver.Link?
@@ -217,6 +287,11 @@ public class ChatMessageRichDataBubbleContentNode: ChatMessageBubbleContentNode 
         // Defensive: streaming is exempt from whole-content updates, so these are already inert.
         self.currentRevealCostMap = nil
         self.lastAppliedRevealedCount = 0
+        // Its rects are in the old page's coordinate space.
+        if let quoteHighlightingNode = self.quoteHighlightingNode {
+            self.quoteHighlightingNode = nil
+            quoteHighlightingNode.removeFromSupernode()
+        }
     }
 
     /// Fades `outgoing` out and hands it to `fadingOutPageView` for the duration. Durations match
@@ -452,10 +527,10 @@ public class ChatMessageRichDataBubbleContentNode: ChatMessageBubbleContentNode 
                 self?.item?.controllerInteraction.navigationController()
             },
             shouldAutoDownloadImage: { image in
-                return shouldDownloadMediaAutomatically(settings: autoDownloadSettings, peerType: autoDownloadPeerType, networkType: autoDownloadNetworkType, authorPeerId: messageAuthorPeerId, contactsPeerIds: autoDownloadContactsPeerIds, media: image)
+                return shouldDownloadMediaAutomatically(settings: autoDownloadSettings, peerType: autoDownloadPeerType, networkType: autoDownloadNetworkType, authorPeerId: messageAuthorPeerId, contactsPeerIds: autoDownloadContactsPeerIds, media: .image(image))
             },
             shouldAutoDownloadFile: { file in
-                return shouldDownloadMediaAutomatically(settings: autoDownloadSettings, peerType: autoDownloadPeerType, networkType: autoDownloadNetworkType, authorPeerId: messageAuthorPeerId, contactsPeerIds: autoDownloadContactsPeerIds, media: file)
+                return shouldDownloadMediaAutomatically(settings: autoDownloadSettings, peerType: autoDownloadPeerType, networkType: autoDownloadNetworkType, authorPeerId: messageAuthorPeerId, contactsPeerIds: autoDownloadContactsPeerIds, media: .file(file))
             },
             shouldAutoplayVideo: { file in
                 let enabled = file.isAnimated ? policyContext.sharedContext.energyUsageSettings.autoplayGif : policyContext.sharedContext.energyUsageSettings.autoplayVideo
@@ -514,7 +589,9 @@ public class ChatMessageRichDataBubbleContentNode: ChatMessageBubbleContentNode 
         // (`fullInstantPage`) rendering carries the same key but a different page object, so an
         // identity check excludes it. `originalAttribute` is Optional (it is the pending edit's
         // attribute in the `.pendingEdit` case).
-        guard let attribute = resolved.originalAttribute, resolved.instantPage === attribute.instantPage else {
+        // A suspicious sender's shown page is a copy of the stored one, with the same paths.
+        let page = resolved.suspiciousSenderPage?.original ?? resolved.instantPage
+        guard let attribute = resolved.originalAttribute, page === attribute.instantPage else {
             return false
         }
         return item.controllerInteraction.canEditMessageRichText(item.message)
@@ -561,6 +638,7 @@ public class ChatMessageRichDataBubbleContentNode: ChatMessageBubbleContentNode 
         let currentPageLayout = self.currentPageLayout
         let currentExpandedDetails = self.currentExpandedDetails
         let currentExpandedQuotePaths = self.currentExpandedQuotePaths
+        let currentSuspiciousSenderPage = self.suspiciousSenderPage
         let showMoreExpandedState = self.showMoreExpanded
         let statusLayout = ChatMessageDateAndStatusNode.asyncLayout(self.statusNode)
         let showMoreTextLayout = TextNode.asyncLayout(self.showMoreTextNode)
@@ -784,7 +862,15 @@ public class ChatMessageRichDataBubbleContentNode: ChatMessageBubbleContentNode 
 
                 // Resolve the node-local expand state for THIS message (collapsed for any other).
                 let showMoreExpanded = (showMoreExpandedState?.messageId == item.message.id) ? (showMoreExpandedState?.value ?? false) : false
-                let resolvedContent = ChatMessageRichDataBubbleContentNode.resolvedRichDataContent(item: item, showMoreExpanded: showMoreExpanded)
+                var resolvedContent = ChatMessageRichDataBubbleContentNode.resolvedRichDataContent(item: item, showMoreExpanded: showMoreExpanded)
+                // A suspicious sender's links show as text and their buttons not at all, as in a plain
+                // message from them (`ChatMessageTextBubbleContentNode`).
+                var suspiciousSenderPage: SuspiciousSenderPage?
+                if let content = resolvedContent, item.associatedData.isSuspiciousPeer, item.message.effectivelyIncoming(item.context.account.peerId) {
+                    let page = SuspiciousSenderPage(original: content.instantPage, previous: currentSuspiciousSenderPage)
+                    suspiciousSenderPage = page
+                    resolvedContent = content.showing(page)
+                }
 
                 if let resolvedContent {
                     #if DEBUG && false
@@ -1320,6 +1406,7 @@ public class ChatMessageRichDataBubbleContentNode: ChatMessageBubbleContentNode 
                             codeHighlightState.disposable.dispose()
                         }
 
+                        self.suspiciousSenderPage = suspiciousSenderPage
                         if let pageLayout, let pageWebpage, let resolvedContent {
                             self.currentPageLayout = (
                                 suggestedBoundingWidth,
@@ -1334,6 +1421,15 @@ public class ChatMessageRichDataBubbleContentNode: ChatMessageBubbleContentNode 
                                 cachedMessageSyntaxHighlight,
                                 pageLayout
                             )
+                            if case .original = resolvedContent.key, !resolvedContent.isTranslated, !resolvedContent.isTranslating, let quotablePage = resolvedContent.quotablePage {
+                                if self.quotablePage !== quotablePage {
+                                    self.quotablePage = quotablePage
+                                    self.quotableNodes = quotablePage.quotableNodes
+                                }
+                            } else {
+                                self.quotablePage = nil
+                                self.quotableNodes = []
+                            }
                             let pageView = self.ensurePageView(
                                 item: item,
                                 webpage: pageWebpage,
@@ -1409,8 +1505,30 @@ public class ChatMessageRichDataBubbleContentNode: ChatMessageBubbleContentNode 
                                     self.scrollToAnchor(pendingAnchor)
                                 }
                             }
+                            if let subject = item.associatedData.subject, case let .messageOptions(_, _, info) = subject, case let .reply(replyInfo) = info, self.textSelectionNode == nil {
+                                self.updateIsExtractedToContextPreview(true)
+                                if let initialQuote = replyInfo.quote, initialQuote.messageId == item.message.id, self.quotablePage != nil, let adapter = self.textSelectionAdapter {
+                                    let ranges = adapter.ranges(showing: richReplyQuoteNodeRanges(nodes: self.quotableNodes, quoteText: initialQuote.text, offset: initialQuote.offset))
+                                    // Display order is not document order (a spanned table cell), so the
+                                    // selection spans the outermost ranges rather than the first and last.
+                                    if let lower = ranges.map(\.location).min(), let upper = ranges.map({ $0.location + $0.length }).max() {
+                                        self.beginTextSelection(range: NSRange(location: lower, length: upper - lower), displayMenu: true)
+                                    }
+                                }
+                                if self.textSelectionState == nil {
+                                    self.textSelectionState = Promise(self.selectionState(range: self.textSelectionNode?.getSelection()))
+                                }
+                                if let textSelectionState = self.textSelectionState {
+                                    replyInfo.selectionState.set(textSelectionState.get())
+                                }
+                            }
+                            if let quoteHighlight = self.currentQuoteHighlight {
+                                self.updateQuoteTextHighlightState(text: quoteHighlight.text, offset: quoteHighlight.offset, color: quoteHighlight.color, animated: false)
+                            }
                         } else {
                             self.currentPageLayout = nil
+                            self.quotablePage = nil
+                            self.quotableNodes = []
                             self.updateIsTranslating(false, showTextAsPlaceholder: false)
                             self.pageView?.update(
                                 layout: InstantPageV2Layout(contentSize: .zero, items: [], detailsIndices: []),
@@ -2193,6 +2311,7 @@ public class ChatMessageRichDataBubbleContentNode: ChatMessageBubbleContentNode 
             self.textSelectionAdapter = nil
             adapter.removeFromSupernode()
         }
+        self.textSelectionState = nil
         guard let textSelectionNode = self.textSelectionNode else {
             return
         }
@@ -2232,26 +2351,9 @@ public class ChatMessageRichDataBubbleContentNode: ChatMessageBubbleContentNode 
             return
         }
 
-        // pageView sits flush at (0, 0) inside containerNode; the adapter is placed at
-        // containerNode.bounds, so shift each item's page-space origin into
-        // containerNode-local coords for the adapter to operate in.
-        let pageOrigin = pageView.frame.origin
-        let entries = pageView.selectableTextItems()
-            .filter { $0.item.selectable && !$0.item.attributedString.string.isEmpty }
-            .map { entry in
-                InstantPageMultiTextAdapter.Entry(
-                    item: entry.item,
-                    frameOrigin: CGPoint(
-                        x: entry.parentOffset.x + pageOrigin.x,
-                        y: entry.parentOffset.y + pageOrigin.y
-                    )
-                )
-            }
-        guard !entries.isEmpty else {
+        guard let adapter = self.makeTextAdapter(pageView: pageView) else {
             return
         }
-
-        let adapter = InstantPageMultiTextAdapter(entries: entries)
         adapter.frame = self.containerNode.bounds
         self.textSelectionAdapter = adapter
         self.containerNode.addSubnode(adapter)
@@ -2296,6 +2398,16 @@ public class ChatMessageRichDataBubbleContentNode: ChatMessageBubbleContentNode 
                 item.controllerInteraction.performTextSelectionAction(item.message, true, text, nil, action)
             }
         )
+        textSelectionNode.updateRange = { [weak self, weak textSelectionNode] range in
+            guard let self else {
+                return
+            }
+            let state = self.selectionState(range: range)
+            // Text no quote can hold (a document caption, a title block) would otherwise turn Quote
+            // into a plain reply.
+            textSelectionNode?.enableQuote = self.selectionEnablesQuote && state.quote != nil
+            self.textSelectionState?.set(.single(state))
+        }
 
         let enableCopy = (!messageItem.associatedData.isCopyProtectionEnabled && !messageItem.message.isCopyProtected()) || messageItem.message.id.peerId.isVerificationCodes
         textSelectionNode.enableCopy = enableCopy
@@ -2305,7 +2417,20 @@ public class ChatMessageRichDataBubbleContentNode: ChatMessageBubbleContentNode 
             enableOtherActions = false
         }
 
-        textSelectionNode.enableQuote = false
+        // As in the text bubble. The controller's `.quote` asks this node for the quote
+        // (`currentReplyQuote`): the selection's range is in the adapter's combined text, not the message's.
+        var enableQuote = self.quotablePage != nil
+        if !messageItem.controllerInteraction.canSendMessages() && !enableCopy {
+            enableQuote = false
+        }
+        if messageItem.message.id.peerId.namespace == Namespaces.Peer.SecretChat || messageItem.message.id.peerId.isVerificationCodes {
+            enableQuote = false
+        }
+        if messageItem.message.containsSecretMedia {
+            enableQuote = false
+        }
+        self.selectionEnablesQuote = enableQuote
+        textSelectionNode.enableQuote = enableQuote
         textSelectionNode.enableTranslate = enableOtherActions
         textSelectionNode.enableShare = enableOtherActions && enableCopy
         textSelectionNode.enableLookup = true
@@ -2526,5 +2651,181 @@ private func richDataBlockEndsWithVisualMedia(_ block: InstantPageBlock) -> Bool
         return richDataBlockEndsWithVisualMedia(inner)
     default:
         return false
+    }
+}
+
+extension ChatMessageRichDataBubbleContentNode: ChatMessageQuoteSourceContentNode {
+    /// A selection adapter over the page's selectable text, in `containerNode` coordinates: the page
+    /// view sits inside `containerNode`, so each item's page-space origin is shifted by the page
+    /// view's origin. Nil when the page has no selectable text.
+    private func makeTextAdapter(pageView: InstantPageV2View) -> InstantPageMultiTextAdapter? {
+        let pageOrigin = pageView.frame.origin
+        let entries = pageView.selectableTextItems()
+            .filter { $0.item.selectable && !$0.item.attributedString.string.isEmpty }
+            .map { entry in
+                InstantPageMultiTextAdapter.Entry(
+                    item: entry.item,
+                    frameOrigin: CGPoint(
+                        x: entry.parentOffset.x + pageOrigin.x,
+                        y: entry.parentOffset.y + pageOrigin.y
+                    )
+                )
+            }
+        guard !entries.isEmpty else {
+            return nil
+        }
+        return InstantPageMultiTextAdapter(entries: entries)
+    }
+
+    private func selectionQuote(range: NSRange?, maxLength: Int) -> EngineMessageReplyQuote? {
+        guard self.quotablePage != nil, let range, range.length > 0, let adapter = self.textSelectionAdapter else {
+            return nil
+        }
+        let nodes = self.quotableNodes
+        guard let boundaries = richQuoteSelectionBoundaries(nodes: nodes, runs: adapter.richQuoteRuns(for: range)) else {
+            return nil
+        }
+        return makeRichReplyQuote(nodes: nodes, start: boundaries.start, end: boundaries.end, maxLength: maxLength)
+    }
+
+    private func selectionState(range: NSRange?) -> ChatControllerSubject.MessageOptionsInfo.SelectionState {
+        var quote: ChatControllerSubject.MessageOptionsInfo.Quote?
+        if let item = self.item, let replyQuote = self.selectionQuote(range: range, maxLength: quoteMaxLength(appConfig: item.context.currentAppConfiguration.with({ $0 }))) {
+            quote = ChatControllerSubject.MessageOptionsInfo.Quote(messageId: item.message.id, text: replyQuote.text, offset: replyQuote.offset)
+        }
+        return ChatControllerSubject.MessageOptionsInfo.SelectionState(canQuote: true, quote: quote)
+    }
+
+    public var hasTextSelection: Bool {
+        return (self.textSelectionNode?.getSelection()?.length ?? 0) > 0
+    }
+
+    public func currentReplyQuote(maxLength: Int) -> EngineMessageReplyQuote? {
+        return self.selectionQuote(range: self.textSelectionNode?.getSelection(), maxLength: maxLength)
+    }
+
+    public func beginTextSelection(range: NSRange?, displayMenu: Bool) {
+        guard let textSelectionNode = self.textSelectionNode, let text = self.textSelectionAdapter?.currentText else {
+            return
+        }
+        textSelectionNode.setSelection(range: range ?? NSRange(location: 0, length: text.length), displayMenu: displayMenu)
+    }
+
+    public func cancelTextSelection() {
+        self.textSelectionNode?.cancelSelection()
+    }
+
+    /// The rects (in `containerNode` coordinates) of the text a rich quote shows: its flat text is
+    /// located among the page's quotable nodes, then mapped to display ranges through the stamps.
+    private func quoteRects(text: String?, offset: Int?) -> [CGRect] {
+        guard let text, !text.isEmpty, self.quotablePage != nil, let pageView = self.pageView else {
+            return []
+        }
+        guard let adapter = self.textSelectionAdapter ?? self.makeTextAdapter(pageView: pageView) else {
+            return []
+        }
+        var rects: [CGRect] = []
+        for range in adapter.ranges(showing: richReplyQuoteNodeRanges(nodes: self.quotableNodes, quoteText: text, offset: offset)) {
+            if let result = adapter.textRangeRects(in: range) {
+                rects.append(contentsOf: result.rects)
+            }
+        }
+        return rects
+    }
+
+    public func getQuoteRect(quote: String, offset: Int?) -> CGRect? {
+        let rects = self.quoteRects(text: quote, offset: offset)
+        guard var rect = rects.first else {
+            return nil
+        }
+        for other in rects.dropFirst() {
+            rect = rect.union(other)
+        }
+        return self.containerNode.view.convert(rect, to: self.view)
+    }
+
+    public func updateQuoteTextHighlightState(text: String?, offset: Int?, color: UIColor, animated: Bool) {
+        if let text, !text.isEmpty {
+            self.currentQuoteHighlight = (text, offset, color)
+        } else {
+            self.currentQuoteHighlight = nil
+        }
+        let rects = self.quoteRects(text: text, offset: offset)
+        if rects.isEmpty, let text, !text.isEmpty {
+            self.expandShowMoreIfQuoteIsHidden(text: text, offset: offset)
+        }
+        if !rects.isEmpty {
+            let highlightingNode: LinkHighlightingNode
+            if let current = self.quoteHighlightingNode {
+                highlightingNode = current
+            } else {
+                highlightingNode = LinkHighlightingNode(color: color)
+                highlightingNode.useModernPathCalculation = true
+                self.quoteHighlightingNode = highlightingNode
+                self.containerNode.insertSubnode(highlightingNode, at: 0)
+            }
+            highlightingNode.frame = self.containerNode.bounds
+            highlightingNode.updateRects(rects)
+        } else if let quoteHighlightingNode = self.quoteHighlightingNode {
+            self.quoteHighlightingNode = nil
+            if animated {
+                quoteHighlightingNode.layer.animateAlpha(from: 1.0, to: 0.0, duration: 0.2, removeOnCompletion: false, completion: { [weak quoteHighlightingNode] _ in
+                    quoteHighlightingNode?.removeFromSupernode()
+                })
+            } else {
+                quoteHighlightingNode.removeFromSupernode()
+            }
+        }
+    }
+
+    /// A long message shows a partial page until Show more, and a quote may lie in the part not shown.
+    /// Expands to the full page when it holds the quote (or has not been fetched yet, so it might);
+    /// the highlight is re-applied after that layout.
+    private func expandShowMoreIfQuoteIsHidden(text: String, offset: Int?) {
+        guard let item = self.item, let attribute = item.message.richText, !attribute.instantPage.isComplete, let page = self.quotablePage, page === attribute.instantPage else {
+            return
+        }
+        if let fullPage = attribute.fullInstantPage, richReplyQuoteNodeRanges(nodes: fullPage.quotableNodes, quoteText: text, offset: offset).isEmpty {
+            return
+        }
+        // Not from inside a layout pass: the expansion asks for a message update.
+        Queue.mainQueue().justDispatch { [weak self] in
+            self?.activateShowMore()
+        }
+    }
+
+    /// Morphs the bubble-wide highlight into the quote's own rects, as the text bubble does.
+    public func animateQuoteTextHighlightIn(sourceFrame: CGRect, transition: ContainedViewLayoutTransition) -> CGRect? {
+        guard let quoteHighlightingNode = self.quoteHighlightingNode else {
+            return nil
+        }
+        var currentRect = CGRect()
+        for rect in quoteHighlightingNode.rects {
+            if currentRect.isEmpty {
+                currentRect = rect
+            } else {
+                currentRect = currentRect.union(rect)
+            }
+        }
+        if currentRect.isEmpty {
+            return nil
+        }
+        currentRect = currentRect.insetBy(dx: -quoteHighlightingNode.inset, dy: -quoteHighlightingNode.inset)
+        let innerRect = currentRect.offsetBy(dx: quoteHighlightingNode.frame.minX, dy: quoteHighlightingNode.frame.minY)
+
+        quoteHighlightingNode.layer.animateAlpha(from: 0.0, to: 1.0, duration: 0.1, delay: 0.04)
+
+        let fromScale = CGPoint(x: sourceFrame.width / innerRect.width, y: sourceFrame.height / innerRect.height)
+        var fromTransform = CATransform3DIdentity
+        let fromOffset = CGPoint(x: sourceFrame.midX - innerRect.midX, y: sourceFrame.midY - innerRect.midY)
+        fromTransform = CATransform3DTranslate(fromTransform, fromOffset.x, fromOffset.y, 0.0)
+        fromTransform = CATransform3DTranslate(fromTransform, -quoteHighlightingNode.bounds.width * 0.5 + currentRect.midX, -quoteHighlightingNode.bounds.height * 0.5 + currentRect.midY, 0.0)
+        fromTransform = CATransform3DScale(fromTransform, fromScale.x, fromScale.y, 1.0)
+        fromTransform = CATransform3DTranslate(fromTransform, quoteHighlightingNode.bounds.width * 0.5 - currentRect.midX, quoteHighlightingNode.bounds.height * 0.5 - currentRect.midY, 0.0)
+
+        quoteHighlightingNode.transform = fromTransform
+        transition.updateTransform(node: quoteHighlightingNode, transform: CGAffineTransformIdentity)
+
+        return currentRect.offsetBy(dx: quoteHighlightingNode.frame.minX, dy: quoteHighlightingNode.frame.minY)
     }
 }

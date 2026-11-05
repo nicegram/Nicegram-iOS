@@ -18,10 +18,10 @@ extension UserParserFromApi {
         let apiUser = try await getApiUser(username)
         let apiUserFull = try? await getApiUserFull(apiUser)
         
-        let user = TelegramUser(user: apiUser)
+        let user = TelegramRawApi.user(apiUser)
         let botInfo = try user.botInfo.unwrap()
         let botInfoDetails = (apiUserFull?.botInfo).flatMap {
-            BotInfo(apiBotInfo: $0)
+            TelegramRawApi.botInfo($0)
         }
 
         return User.build(
@@ -37,13 +37,14 @@ private extension UserParserFromApi {
     func getApiUser(
         _ username: String
     ) async throws -> Api.User {
-        let result = try await context.account.network
+        let result = try await TelegramRawApi
             .request(
                 Api.functions.contacts.resolveUsername(
                     flags: 0,
                     username: username,
                     referer: nil
-                )
+                ),
+                network: context.account.network
             )
             .awaitForFirstValue()
         
@@ -53,7 +54,7 @@ private extension UserParserFromApi {
             let users = resolvedPeer.users
             
             let user = users.first {
-                $0.peerId == peer.peerId
+                TelegramRawApi.peerId($0) == TelegramRawApi.peerId(peer)
             }
             return try user.unwrap()
         }
@@ -74,8 +75,11 @@ private extension UserParserFromApi {
             throw UnexpectedError()
         }
         
-        let result = try await context.account.network
-            .request(Api.functions.users.getFullUser(id: inputUser))
+        let result = try await TelegramRawApi
+            .request(
+                Api.functions.users.getFullUser(id: inputUser),
+                network: context.account.network
+            )
             .awaitForFirstValue()
         
         switch result {

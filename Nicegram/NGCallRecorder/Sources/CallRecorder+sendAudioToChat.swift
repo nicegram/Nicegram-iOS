@@ -2,14 +2,13 @@ import FeatCallRecorder
 import Foundation
 import NGCore
 import NGUtils
-import Postbox
 import TelegramCore
 
 extension CallRecorder {
     func sendAudioToChat(
         audio: RecordedAudio,
         partNumber: Int
-    ) async throws -> PeerId? {
+    ) async throws -> EnginePeer.Id? {
         defer {
             deleteFile(path: audio.path)
         }
@@ -54,11 +53,11 @@ private extension CallRecorder {
         try? FileManager.default.removeItem(at: url)
     }
     
-    func getReceiverId() async -> PeerId? {
+    func getReceiverId() async -> EnginePeer.Id? {
         let getSettingsUseCase = CallRecorderModule.shared.getSettingsUseCase()
         
         if let receiverId = await getSettingsUseCase().receiverId {
-            return PeerId.ng_fromInt64(receiverId)
+            return EnginePeer.Id.ng_fromInt64(receiverId)
         } else {
             return nil
         }
@@ -110,7 +109,7 @@ private extension CallRecorder {
     
     func send(
         message: EnqueueMessage,
-        to: PeerId?
+        to: EnginePeer.Id?
     ) async throws {
         let context = try call.unwrap().accountContext
         let account = context.account

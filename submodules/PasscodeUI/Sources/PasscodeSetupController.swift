@@ -25,7 +25,7 @@ private final class PasscodeModeContextSource: ContextReferenceContentSource {
         let bounds = self.sourceNode.bounds
         return ContextControllerReferenceViewInfo(
             referenceView: self.sourceNode.view,
-            contentAreaInScreenSpace: UIScreen.main.bounds,
+            contentAreaInScreenSpace: mainWindowScreenBounds,
             insets: UIEdgeInsets(top: titleFrame.minY - bounds.minY, left: titleFrame.minX - bounds.minX, bottom: bounds.maxY - titleFrame.maxY, right: bounds.maxX - titleFrame.maxX),
             actionsPosition: .top
         )
@@ -95,7 +95,7 @@ public final class PasscodeSetupController: ViewController {
         }
         
         // Nicegram DB Changes, hideBackground: isOpaqueNavigationBar
-        super.init(navigationBarPresentationData: NavigationBarPresentationData(presentationData: self.presentationData, hideBackground: isOpaqueNavigationBar, hideBadge: false, style: .glass))
+        super.init(navigationBarPresentationData: NavigationBarPresentationData(presentationData: self.presentationData, hideBackground: isOpaqueNavigationBar, hideBadge: false))
         
         self.supportedOrientations = ViewControllerSupportedOrientations(regularSize: .all, compactSize: .portrait)
         self.statusBar.statusBarStyle = self.presentationData.theme.rootController.statusBarStyle.style
@@ -135,7 +135,6 @@ public final class PasscodeSetupController: ViewController {
         self.displayNode = PasscodeSetupControllerNode(presentationData: self.presentationData, mode: self.mode, useCustomNumericKeyboard: self.useCustomNumericKeyboard, isChangeModeAllowed: self.isChangeModeAllowed)
         self.displayNodeDidLoad()
         
-        self.navigationBar?.updateBackgroundAlpha(0.0, transition: .immediate)
         
         self.controllerNode.selectPasscodeMode = { [weak self] sourceNode in
             self?.openPasscodeModeMenu(sourceNode: sourceNode)

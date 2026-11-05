@@ -1,6 +1,6 @@
 import Foundation
 import Postbox
-import TelegramApi
+public import TelegramApi
 import SwiftSignalKit
 
 public final class SpyOnFriendsContext {
@@ -57,7 +57,7 @@ public struct SpyOnFriendsState: Equatable {
         lhs.chatsWithMessages.first?.0?.peerId == rhs.chatsWithMessages.first?.0?.peerId
     }
     
-    public var chatsWithMessages: [(Api.Chat?, [Message])]
+    public var chatsWithMessages: [(Api.Chat?, [EngineMessage])]
     public var dataState: SpyOnFriendsDataState
 }
 
@@ -73,7 +73,7 @@ private final class SpyOnFriendsContextImpl {
     private let loadMore = Promise<Void>()
 
     private var commonChats: [Api.Chat] = []
-    private var chatsWithMessages: [(Api.Chat?, [Message])] = []
+    private var chatsWithMessages: [(Api.Chat?, [EngineMessage])] = []
     private var dataState: SpyOnFriendsDataState = .ready(canLoadMore: true)
     
     private let stateValue = Promise<SpyOnFriendsState>()
@@ -184,7 +184,7 @@ private final class SpyOnFriendsContextImpl {
     private func loadMessages() {
         let peerId = self.peerId
         let signal = combineLatest(
-            commonChats.map { chat -> Signal<(Api.Chat?, [Message]), NoError> in
+            commonChats.map { chat -> Signal<(Api.Chat?, [EngineMessage]), NoError> in
                 let location = SearchMessagesLocation.peer(
                     peerId: chat.peerId,
                     fromId: peerId,
@@ -202,7 +202,7 @@ private final class SpyOnFriendsContextImpl {
                     limit: 15
                 )
                 |> map {
-                    (chat, $0.0.messages)
+                    (chat, $0.0.messages.map(EngineMessage.init))
                 }
                 |> timeout(1.0, queue: .mainQueue(), alternate: .single((nil, [])))
             }
@@ -236,22 +236,5 @@ public extension Api.Chat {
             return chat.title
         default: return nil
         }
-    }
-}
-
-extension Message: @retroactive Equatable {
-    public static func == (lhs: Message, rhs: Message) -> Bool {
-        lhs.id == rhs.id
-    }
-}
-
-extension Api.Chat: @retroactive Hashable {
-    public static func == (lhs: Api.Chat, rhs: Api.Chat) -> Bool {
-        lhs.peerId == rhs.peerId
-    }
-    
-    public func hash(into hasher: inout Hasher) {
-        hasher.combine(peerId)
-        hasher.combine(title)
     }
 }

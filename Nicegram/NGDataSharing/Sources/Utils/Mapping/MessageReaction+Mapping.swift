@@ -48,6 +48,6 @@ extension [Message.Reaction] {
             return
         }
         
-        self.init(ReactionsMessageAttribute(apiReactions: reactions))
+        self.init(TelegramRawApi.reactions(reactions))
     }
 }

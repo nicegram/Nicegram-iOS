@@ -19,7 +19,7 @@ extension [String] {
         }
         
         self.init(
-            usernames.map { TelegramPeerUsername(apiUsername: $0) }
+            usernames.map { TelegramRawApi.username($0) }
         )
     }
 }

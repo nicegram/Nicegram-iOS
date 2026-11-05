@@ -2,7 +2,7 @@ import AccountContext
 import FeatDataSharing
 
 public func getAndParseChannels(context: AccountContext) {
-    Task {
+    _ = Task {
         let getAndParseChannelsUseCase = DataSharingModule.shared.getAndParseChannelsUseCase()
         try await getAndParseChannelsUseCase(
             parse: { username in

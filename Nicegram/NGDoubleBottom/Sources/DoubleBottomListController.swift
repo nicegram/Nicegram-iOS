@@ -4,7 +4,6 @@ import Foundation
 import ItemListUI
 import NGData
 import NGStrings
-import Postbox
 import PresentationDataUtils
 import SwiftSignalKit
 import TelegramCore

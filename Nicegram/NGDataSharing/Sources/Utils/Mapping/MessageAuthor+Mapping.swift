@@ -1,13 +1,12 @@
 import FeatDataSharing
 import NGCore
-import Postbox
 import TelegramApi
 import TelegramCore
 
 //  MARK: - Local
 
 extension FeatDataSharing.Message.Author {
-    init?(_ peer: Peer?) {
+    init?(_ peer: EngineRawPeer?) {
         guard let peer else { return nil }
         
         let id = peer.id.id._internalGetInt64Value()
@@ -57,8 +56,8 @@ extension FeatDataSharing.Message.Author {
         chats: [Api.Chat],
         users: [Api.User]
     ) {
-        let chatPeers = chats.compactMap { peer(with: $0) }
-        let userPeers = users.compactMap { TelegramUser(user: $0) }
+        let chatPeers = chats.compactMap { TelegramRawApi.peer($0) }
+        let userPeers = users.compactMap { TelegramRawApi.user($0) }
         let peers = chatPeers + userPeers
 
         let fromId = (message.fromId ?? message.peerId).id

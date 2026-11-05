@@ -261,6 +261,110 @@ extension DocumentCanvasView {
         })
     }
 
+    /// The chat's ⇧⌘N: every inline mark the USER set — inline code, bold, italic, underline,
+    /// strikethrough, spoiler — leaves the selection, and no block changes. One edit, so one undo
+    /// step. A collapsed caret changes nothing, as the legacy composer's shortcut does not.
+    ///
+    /// It removes marks directly rather than pressing the toggles: a toggle's remove step is not the
+    /// inverse of its set step. Inline code's writes a plain system font over its whole range, so a
+    /// heading came back in the body face, and Italic reads the font trait, which a pull quote's
+    /// body carries by its STYLE, so it drew the body roman (`ClearInlineFormattingTests`). Here bold
+    /// is removed only where the user marker `.rtBold` says the user set it, italic is left alone
+    /// where the style supplies it (a pull quote's body and any quote author), inline code gives its
+    /// run back the paragraph style's own face, and a link keeps the underline it is drawn with.
+    func clearInlineFormatting() {
+        let targets = clearFormattingTargets()
+        guard !targets.isEmpty else { return }
+        synchronizingExternalChange(reason: .formatting, markedTextPolicy: .preserveIfRebasable) {
+            editing {
+                for (region, range) in targets {
+                    guard let storage = region.layout.backingStorage else { continue }
+                    let italicIsAmbient: Bool
+                    switch region.ref {
+                    case .code, .codeLanguage:
+                        continue   // plain text by construction
+                    case .pullQuote, .quoteAuthor:
+                        italicIsAmbient = true
+                    case .paragraph, .caption, .detailsTitle:
+                        italicIsAmbient = false
+                    }
+                    let plainFace = plainFont(forRegion: region)
+                    storage.beginEditing()
+                    storage.enumerateAttribute(.rtInlineCode, in: range, options: []) { value, sub, _ in
+                        guard value != nil else { return }
+                        storage.removeAttribute(.rtInlineCode, range: sub)
+                        storage.removeAttribute(.backgroundColor, range: sub)
+                        storage.enumerateAttribute(.font, in: sub, options: []) { font, piece, _ in
+                            let size = ((font as? UIFont) ?? plainFace).pointSize
+                            storage.addAttribute(.font, value: plainFace.withSize(size), range: piece)
+                        }
+                    }
+                    storage.enumerateAttribute(.rtBold, in: range, options: []) { value, sub, _ in
+                        guard value != nil else { return }
+                        storage.removeAttribute(.rtBold, range: sub)
+                        Self.removeTrait(.traitBold, from: storage, in: sub)
+                    }
+                    if !italicIsAmbient {
+                        Self.removeTrait(.traitItalic, from: storage, in: range)
+                    }
+                    storage.removeAttribute(.strikethroughStyle, range: range)
+                    storage.removeAttribute(.rtSpoiler, range: range)
+                    storage.enumerateAttribute(.link, in: range, options: []) { link, sub, _ in
+                        if link == nil { storage.removeAttribute(.underlineStyle, range: sub) }
+                    }
+                    storage.endEditing()
+                    region.layout.bumpRenderVersion()
+                }
+                return .unchanged
+            }
+        }
+    }
+
+    /// `characterFormatTargets`, keeping each target's region (clearing needs to know what kind of
+    /// text it is in).
+    private func clearFormattingTargets() -> [(region: LeafTextRegion, range: NSRange)] {
+        if let regions = tableStructuralSelectionRegions() {
+            return regions.compactMap { r in
+                r.length > 0 ? (r, NSRange(location: 0, length: r.length)) : nil
+            }
+        }
+        guard selFrom < selTo else { return [] }
+        return allLeafRegions().compactMap { r in
+            let a = max(selFrom, r.globalStart), b = min(selTo, r.globalStart + r.length)
+            guard a < b else { return nil }
+            return (r, NSRange(location: a - r.globalStart, length: b - a))
+        }
+    }
+
+    /// The face a run of `region` has with no inline marks: its paragraph style's plain font, from the
+    /// box's OWN mapper (a table cell renders body text smaller).
+    private func plainFont(forRegion region: LeafTextRegion) -> UIFont {
+        switch region.ref {
+        case .paragraph:
+            if let box = activeStack(at: region.globalStart)?.box as? BlockBox {
+                return box.mapper.styleSheet.font(for: box.style, attributes: .plain)
+            }
+        case .caption:
+            return mapper.styleSheet.font(for: .caption, attributes: .plain)
+        case .pullQuote:
+            return mapper.styleSheet.font(for: .pullQuote, attributes: .plain)
+        case .code, .codeLanguage, .quoteAuthor, .detailsTitle:
+            break
+        }
+        return mapper.styleSheet.font(for: .body, attributes: .plain)
+    }
+
+    private static func removeTrait(_ trait: UIFontDescriptor.SymbolicTraits, from storage: NSTextStorage, in range: NSRange) {
+        storage.enumerateAttribute(.font, in: range, options: []) { value, sub, _ in
+            guard let font = value as? UIFont, font.fontDescriptor.symbolicTraits.contains(trait) else { return }
+            var traits = font.fontDescriptor.symbolicTraits
+            traits.remove(trait)
+            if let descriptor = font.fontDescriptor.withSymbolicTraits(traits) {
+                storage.addAttribute(.font, value: UIFont(descriptor: descriptor, size: font.pointSize), range: sub)
+            }
+        }
+    }
+
     /// Inline code swaps the run's font for a monospaced one (and marks it). GFM code spans can't
     /// carry emphasis, so toggling off restores a plain system font at the same size (any bold/italic
     /// inside is intentionally dropped); the named-style font returns on the next model round-trip.

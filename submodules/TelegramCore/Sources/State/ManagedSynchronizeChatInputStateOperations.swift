@@ -1,7 +1,7 @@
 import Foundation
 import Postbox
 import SwiftSignalKit
-import TelegramApi
+internal import TelegramApi
 import MtProtoKit
 
 
@@ -165,7 +165,7 @@ private func synchronizeChatInputState(transaction: Transaction, postbox: Postbo
 
     var draftMedia: [Media] = []
     if case let .instantPage(page) = inputState?.content {
-        for (_, media) in page.media where isPreuploadableMedia(media) {
+        for (_, media) in page.rawMedia where isPreuploadableMedia(media) {
             draftMedia.append(media)
         }
     }
@@ -210,27 +210,7 @@ private func synchronizeChatInputState(transaction: Transaction, postbox: Postbo
                 }
             }
             
-            var quoteText: String?
-            var quoteEntities: [Api.MessageEntity]?
-            var quoteOffset: Int32?
-            if let replyQuote = replySubject.quote {
-                quoteText = replyQuote.text
-                quoteOffset = replyQuote.offset.flatMap { Int32(clamping: $0) }
-                
-                if !replyQuote.entities.isEmpty {
-                    var associatedPeers = SimpleDictionary<PeerId, Peer>()
-                    for entity in replyQuote.entities {
-                        for associatedPeerId in entity.associatedPeerIds {
-                            if associatedPeers[associatedPeerId] == nil {
-                                if let associatedPeer = transaction.getPeer(associatedPeerId) {
-                                    associatedPeers[associatedPeerId] = associatedPeer
-                                }
-                            }
-                        }
-                    }
-                    quoteEntities = apiEntitiesFromMessageTextEntities(replyQuote.entities, associatedPeers: associatedPeers)
-                }
-            }
+            let quoteFields = apiReplyQuoteFields(replySubject.quote, peer: { transaction.getPeer($0) })
             
             var replyTodoItemId: Int32?
             var replyPollOption: Buffer?
@@ -246,15 +226,7 @@ private func synchronizeChatInputState(transaction: Transaction, postbox: Postbo
             if replyToPeer != nil {
                 innerFlags |= 1 << 1
             }
-            if quoteText != nil {
-                innerFlags |= 1 << 2
-            }
-            if quoteEntities != nil {
-                innerFlags |= 1 << 3
-            }
-            if quoteOffset != nil {
-                innerFlags |= 1 << 4
-            }
+            innerFlags |= quoteFields.flags
             if let _ = replyTodoItemId {
                 innerFlags |= 1 << 6
             }
@@ -262,14 +234,14 @@ private func synchronizeChatInputState(transaction: Transaction, postbox: Postbo
                 innerFlags |= 1 << 7
             }
             if !discard {
-                replyTo = .inputReplyToMessage(.init(flags: innerFlags, replyToMsgId: replySubject.messageId.id, topMsgId: topMsgId, replyToPeerId: replyToPeer, quoteText: quoteText, quoteEntities: quoteEntities, quoteOffset: quoteOffset, monoforumPeerId: monoforumPeerId, todoItemId: replyTodoItemId, pollOption: replyPollOption))
+                replyTo = .inputReplyToMessage(.init(flags: innerFlags, replyToMsgId: replySubject.messageId.id, topMsgId: topMsgId, replyToPeerId: replyToPeer, quoteText: quoteFields.text, quoteEntities: quoteFields.entities, quoteOffset: quoteFields.offset, monoforumPeerId: monoforumPeerId, todoItemId: replyTodoItemId, pollOption: replyPollOption, quoteRich: quoteFields.rich))
             }
         } else if let topMsgId {
             flags |= 1 << 0
             
             var innerFlags: Int32 = 0
             innerFlags |= 1 << 0
-            replyTo = .inputReplyToMessage(.init(flags: innerFlags, replyToMsgId: topMsgId, topMsgId: topMsgId, replyToPeerId: nil, quoteText: nil, quoteEntities: nil, quoteOffset: nil, monoforumPeerId: nil, todoItemId: nil, pollOption: nil))
+            replyTo = .inputReplyToMessage(.init(flags: innerFlags, replyToMsgId: topMsgId, topMsgId: topMsgId, replyToPeerId: nil, quoteText: nil, quoteEntities: nil, quoteOffset: nil, monoforumPeerId: nil, todoItemId: nil, pollOption: nil, quoteRich: nil))
         } else if let monoforumPeerId {
             flags |= 1 << 0
             replyTo = .inputReplyToMonoForum(.init(monoforumPeerId: monoforumPeerId))

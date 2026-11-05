@@ -1,6 +1,6 @@
 import Foundation
 import Postbox
-import TelegramApi
+internal import TelegramApi
 
 extension ReactionsMessageAttribute {
     func withUpdatedResults(_ reactions: Api.MessageReactions) -> ReactionsMessageAttribute {
@@ -259,8 +259,7 @@ public func mergedMessageReactions(attributes: [MessageAttribute], isTags: Bool)
     }
 }
 
-// Nicegram NGDataSharing, 'public'
-public extension ReactionsMessageAttribute {
+extension ReactionsMessageAttribute {
     convenience init(apiReactions: Api.MessageReactions) {
         switch apiReactions {
         case let .messageReactions(messageReactionsData):

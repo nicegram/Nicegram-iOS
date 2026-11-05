@@ -147,6 +147,7 @@ private final class TooltipScreenNode: ViewControllerTracingNode {
     private var arrowGradientNode: ASDisplayNode?
     private let arrowNode: ASImageNode
     private let arrowContainer: ASDisplayNode
+    private let contentLayout: TooltipScreen.ContentLayout?
     private let animatedStickerNode: DefaultAnimatedStickerNodeImpl
     private var downArrowsNode: DownArrowsIconNode?
     private var iconNode: ASImageNode?
@@ -185,10 +186,12 @@ private final class TooltipScreenNode: ViewControllerTracingNode {
         displayDuration: TooltipScreen.DisplayDuration,
         inset: CGFloat = 12.0,
         cornerRadius: CGFloat? = nil,
+        contentLayout: TooltipScreen.ContentLayout? = nil,
         isShimmering: Bool = false,
         shouldDismissOnTouch: @escaping (CGPoint, CGRect) -> TooltipScreen.DismissOnTouch, requestDismiss: @escaping () -> Void, openActiveTextItem: ((TooltipActiveTextItem, TooltipActiveTextAction) -> Void)?)
     {
         self.context = context
+        self.contentLayout = contentLayout
         self.tooltipStyle = style
         self.arrowStyle = arrowStyle
         self.icon = icon
@@ -270,6 +273,9 @@ private final class TooltipScreenNode: ViewControllerTracingNode {
                 let _ = try? drawSvgPath(context, path: "M85.882251,0 C79.5170552,0 73.4125613,2.52817247 68.9116882,7.02834833 L51.4264069,24.5109211 C46.7401154,29.1964866 39.1421356,29.1964866 34.4558441,24.5109211 L16.9705627,7.02834833 C12.4696897,2.52817247 6.36519576,0 0,0 L85.882251,0 ")
                 context.fillPath()
             })
+        case .none:
+            arrowSize = CGSize()
+            self.arrowNode = ASImageNode()
         }
         
         self.arrowContainer = ASDisplayNode()
@@ -298,7 +304,9 @@ private final class TooltipScreenNode: ViewControllerTracingNode {
             self.effectNode = NavigationBackgroundNode(color: backgroundColor, enableSaturation: enableSaturation)
             self.backgroundMaskNode.addSubnode(self.backgroundClipNode)
             self.backgroundClipNode.clipsToBounds = true
-            if case .bottom = location {
+            if let cornerRadius {
+                self.backgroundClipNode.cornerRadius = cornerRadius
+            } else if case .bottom = location {
                 self.backgroundClipNode.cornerRadius = 8.5
             } else {
                 self.backgroundClipNode.cornerRadius = 14.0
@@ -340,6 +348,8 @@ private final class TooltipScreenNode: ViewControllerTracingNode {
                 arrowScale = 1.0
             case .small:
                 arrowScale = 0.62
+            case .none:
+                arrowScale = 0.0
             }
             if let path = try? svgPath("M85.882251,0 C79.5170552,0 73.4125613,2.52817247 68.9116882,7.02834833 L51.4264069,24.5109211 C46.7401154,29.1964866 39.1421356,29.1964866 34.4558441,24.5109211 L16.9705627,7.02834833 C12.4696897,2.52817247 6.36519576,0 0,0 L85.882251,0 ", scale: CGPoint(x: 0.333333 * arrowScale, y: 0.333333 * arrowScale), offset: CGPoint()) {
                 maskLayer.path = path.cgPath
@@ -384,6 +394,8 @@ private final class TooltipScreenNode: ViewControllerTracingNode {
                 arrowScale = 1.0
             case .small:
                 arrowScale = 0.62
+            case .none:
+                arrowScale = 0.0
             }
             if let path = try? svgPath("M85.882251,0 C79.5170552,0 73.4125613,2.52817247 68.9116882,7.02834833 L51.4264069,24.5109211 C46.7401154,29.1964866 39.1421356,29.1964866 34.4558441,24.5109211 L16.9705627,7.02834833 C12.4696897,2.52817247 6.36519576,0 0,0 L85.882251,0 ", scale: CGPoint(x: 0.333333 * arrowScale, y: 0.333333 * arrowScale), offset: CGPoint()) {
                 maskLayer.path = path.cgPath
@@ -487,9 +499,12 @@ private final class TooltipScreenNode: ViewControllerTracingNode {
         self.scrollingContainer.frame = CGRect(origin: CGPoint(), size: layout.size)
         
         let sideInset: CGFloat = self.inset + layout.safeInsets.left
+        // Each side keeps its own safe inset (beside iPhone Duo's side strip only one side has one).
+        let rightSideInset: CGFloat = self.inset + layout.safeInsets.right
         let bottomInset: CGFloat = 10.0
-        let contentInset: CGFloat = 11.0
-        let contentVerticalInset: CGFloat = 8.0
+        let contentInset: CGFloat = self.contentLayout?.insets.left ?? 11.0
+        let contentTrailingInset: CGFloat = self.contentLayout?.insets.right ?? contentInset
+        let contentVerticalInset: CGFloat = self.contentLayout?.insets.top ?? 8.0
         let animationSize: CGSize
         var animationInset: CGFloat = 0.0
         var animationSpacing: CGFloat = 0.0
@@ -518,14 +533,14 @@ private final class TooltipScreenNode: ViewControllerTracingNode {
         case .image:
             animationSize = CGSize(width: 32.0, height: 32.0)
             animationInset = 0.0
-            animationSpacing = 8.0
+            animationSpacing = self.contentLayout?.iconSpacing ?? 8.0
         case .peer:
             animationSize = CGSize(width: 32.0, height: 32.0)
             animationInset = 0.0
             animationSpacing = 8.0
         }
         
-        var containerWidth = max(100.0, min(layout.size.width - sideInset * 2.0, 614.0))
+        var containerWidth = max(100.0, min(layout.size.width - sideInset - rightSideInset, 614.0))
         if let constrainWidth = self.constrainWidth, constrainWidth > 100.0 {
             containerWidth = constrainWidth
         }
@@ -650,12 +665,13 @@ private final class TooltipScreenNode: ViewControllerTracingNode {
                     truncationType: .end,
                     maximumNumberOfLines: 0,
                     lineSpacing: 0.2,
-                    highlightAction: nil,
-                    tapAction: { _, _ in
+                    highlightAction: self.openActiveTextItem == nil ? nil : highlightAction,
+                    tapAction: { attributes, index in
+                        tapAction?(attributes, index)
                     }
                 )),
                 environment: {},
-                containerSize: CGSize(width: containerWidth - contentInset * 2.0 - animationSize.width - animationSpacing - buttonInset, height: 1000000.0)
+                containerSize: CGSize(width: containerWidth - contentInset - contentTrailingInset - animationSize.width - animationSpacing - buttonInset, height: 1000000.0)
             )
             let inset: CGFloat?
             switch self.tooltipStyle {
@@ -683,7 +699,7 @@ private final class TooltipScreenNode: ViewControllerTracingNode {
                     longTapAction: longTapAction
                 )),
                 environment: {},
-                containerSize: CGSize(width: containerWidth - contentInset * 2.0 - animationSize.width - animationSpacing - buttonInset, height: 1000000.0)
+                containerSize: CGSize(width: containerWidth - contentInset - contentTrailingInset - animationSize.width - animationSpacing - buttonInset, height: 1000000.0)
             )
         }
         
@@ -737,7 +753,7 @@ private final class TooltipScreenNode: ViewControllerTracingNode {
         var invertArrow = false
         switch self.location {
         case let .point(rect, arrowPosition):
-            var backgroundWidth = textContentSize.width + contentInset * 2.0 + animationSize.width + animationSpacing
+            var backgroundWidth = textContentSize.width + contentInset + contentTrailingInset + animationSize.width + animationSpacing
             if self.closeButtonNode != nil || self.actionButtonNode != nil {
                 backgroundWidth += buttonInset
             }
@@ -754,11 +770,21 @@ private final class TooltipScreenNode: ViewControllerTracingNode {
 
             }
             
-            if backgroundFrame.minX < sideInset {
-                backgroundFrame.origin.x = sideInset
+            // Clamped to the screen's side insets; beside iPhone Duo's side strip (the insets differ) only where a corner
+            // block reaches the bubble's rows, so a tooltip pointing at a control in the free part of the strip (beside the
+            // input panel) keeps its arrow inside the bubble.
+            var pointMinX = sideInset
+            var pointMaxX = layout.size.width - sideInset
+            if layout.safeInsets.left != layout.safeInsets.right {
+                let bandInsets = layout.sideInsets(forBandFrom: backgroundFrame.minY, to: backgroundFrame.maxY)
+                pointMinX = self.inset + bandInsets.left
+                pointMaxX = layout.size.width - self.inset - bandInsets.right
             }
-            if backgroundFrame.maxX > layout.size.width - sideInset {
-                backgroundFrame.origin.x = layout.size.width - sideInset - backgroundFrame.width
+            if backgroundFrame.minX < pointMinX {
+                backgroundFrame.origin.x = pointMinX
+            }
+            if backgroundFrame.maxX > pointMaxX {
+                backgroundFrame.origin.x = pointMaxX - backgroundFrame.width
             }
             if backgroundFrame.minY < layout.insets(options: .statusBar).top {
                 backgroundFrame.origin.y = rect.maxY + bottomInset
@@ -771,10 +797,10 @@ private final class TooltipScreenNode: ViewControllerTracingNode {
             self.isArrowInverted = invertArrow
         case .top:
             let backgroundWidth = containerWidth
-            backgroundFrame = CGRect(origin: CGPoint(x: floor((layout.size.width - backgroundWidth) / 2.0), y: layout.insets(options: [.statusBar]).top + 13.0), size: CGSize(width: backgroundWidth, height: backgroundHeight))
+            backgroundFrame = CGRect(origin: CGPoint(x: sideInset + floor((layout.size.width - sideInset - rightSideInset - backgroundWidth) / 2.0), y: layout.insets(options: [.statusBar]).top + 13.0), size: CGSize(width: backgroundWidth, height: backgroundHeight))
         case .bottom:
             let backgroundWidth = containerWidth
-            backgroundFrame = CGRect(origin: CGPoint(x: floor((layout.size.width - backgroundWidth) / 2.0), y: layout.size.height - layout.insets(options: []).bottom - 12.0 - backgroundHeight), size: CGSize(width: backgroundWidth, height: backgroundHeight))
+            backgroundFrame = CGRect(origin: CGPoint(x: sideInset + floor((layout.size.width - sideInset - rightSideInset - backgroundWidth) / 2.0), y: layout.size.height - layout.insets(options: []).bottom - 12.0 - backgroundHeight), size: CGSize(width: backgroundWidth, height: backgroundHeight))
         }
         
         transition.updateFrame(node: self.containerNode, frame: backgroundFrame)
@@ -1094,6 +1120,8 @@ private final class TooltipScreenNode: ViewControllerTracingNode {
            
             let startPoint: CGPoint
             switch arrowPosition {
+                case .bottom where self.arrowStyle == .none, .top where self.arrowStyle == .none:
+                    startPoint = CGPoint(x: 0.0, y: (self.isArrowInverted ? -1.0 : 1.0) * self.containerNode.bounds.height / 2.0)
                 case .bottom, .top:
                     let arrowY: CGFloat = self.isArrowInverted ? self.arrowContainer.frame.minY : self.arrowContainer.frame.maxY
                     startPoint = CGPoint(x: self.arrowContainer.frame.midX - self.containerNode.bounds.width / 2.0, y: arrowY - self.containerNode.bounds.height / 2.0)
@@ -1146,6 +1174,8 @@ private final class TooltipScreenNode: ViewControllerTracingNode {
             
             let targetPoint: CGPoint
             switch arrowPosition {
+                case .bottom where self.arrowStyle == .none, .top where self.arrowStyle == .none:
+                    targetPoint = CGPoint(x: 0.0, y: (self.isArrowInverted ? -1.0 : 1.0) * self.containerNode.bounds.height / 2.0)
                 case .bottom, .top:
                     let arrowY: CGFloat = self.isArrowInverted ? self.arrowContainer.frame.minY : self.arrowContainer.frame.maxY
                     targetPoint = CGPoint(x: self.arrowContainer.frame.midX - self.containerNode.bounds.width / 2.0, y: arrowY - self.containerNode.bounds.height / 2.0)
@@ -1215,6 +1245,17 @@ public final class TooltipScreen: ViewController {
     public enum ArrowStyle {
         case `default`
         case small
+        case none
+    }
+
+    public struct ContentLayout {
+        public var insets: UIEdgeInsets
+        public var iconSpacing: CGFloat
+
+        public init(insets: UIEdgeInsets, iconSpacing: CGFloat) {
+            self.insets = insets
+            self.iconSpacing = iconSpacing
+        }
     }
     
     public enum Location {
@@ -1266,6 +1307,7 @@ public final class TooltipScreen: ViewController {
     private let displayDuration: DisplayDuration
     private let inset: CGFloat
     private let cornerRadius: CGFloat?
+    private let contentLayout: TooltipScreen.ContentLayout?
     private let shouldDismissOnTouch: (CGPoint, CGRect) -> TooltipScreen.DismissOnTouch
     private let openActiveTextItem: ((TooltipActiveTextItem, TooltipActiveTextAction) -> Void)?
     
@@ -1301,6 +1343,7 @@ public final class TooltipScreen: ViewController {
         isShimmering: Bool = false,
         inset: CGFloat = 12.0,
         cornerRadius: CGFloat? = nil,
+        contentLayout: TooltipScreen.ContentLayout? = nil,
         shouldDismissOnTouch: @escaping (CGPoint, CGRect) -> TooltipScreen.DismissOnTouch,
         openActiveTextItem: ((TooltipActiveTextItem, TooltipActiveTextAction) -> Void)? = nil
     ) {
@@ -1321,6 +1364,7 @@ public final class TooltipScreen: ViewController {
         self.isShimmering = isShimmering
         self.inset = inset
         self.cornerRadius = cornerRadius
+        self.contentLayout = contentLayout
         self.shouldDismissOnTouch = shouldDismissOnTouch
         self.openActiveTextItem = openActiveTextItem
         
@@ -1384,7 +1428,7 @@ public final class TooltipScreen: ViewController {
     }
     
     override public func loadDisplayNode() {
-        self.displayNode = TooltipScreenNode(context: self.context, account: self.account, sharedContext: self.sharedContext, text: self.text, textBadge: self.textBadge, textAlignment: self.textAlignment, balancedTextLayout: self.balancedTextLayout, constrainWidth: self.constrainWidth, style: self.style, arrowStyle: self.arrowStyle, icon: self.icon, action: self.action, location: self.location, displayDuration: self.displayDuration, inset: self.inset, cornerRadius: self.cornerRadius, isShimmering: self.isShimmering, shouldDismissOnTouch: self.shouldDismissOnTouch, requestDismiss: { [weak self] in
+        self.displayNode = TooltipScreenNode(context: self.context, account: self.account, sharedContext: self.sharedContext, text: self.text, textBadge: self.textBadge, textAlignment: self.textAlignment, balancedTextLayout: self.balancedTextLayout, constrainWidth: self.constrainWidth, style: self.style, arrowStyle: self.arrowStyle, icon: self.icon, action: self.action, location: self.location, displayDuration: self.displayDuration, inset: self.inset, cornerRadius: self.cornerRadius, contentLayout: self.contentLayout, isShimmering: self.isShimmering, shouldDismissOnTouch: self.shouldDismissOnTouch, requestDismiss: { [weak self] in
             guard let strongSelf = self else {
                 return
             }

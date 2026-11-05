@@ -1,7 +1,6 @@
 import AccountContext
 import MemberwiseInit
 import NGUtils
-import Postbox
 import TelegramCore
 import UIKit
 import SwiftSignalKit
@@ -15,16 +14,16 @@ class TelegramPeerImageProviderImpl {
 
 extension TelegramPeerImageProviderImpl: TelegramPeerImageProvider {
     func image(for id: Int64) async -> UIImage? {
-        await getAvatar(PeerId(id))
+        await getAvatar(EnginePeer.Id(id))
     }
     
     func image(for id: TelegramId) async -> UIImage? {
-        await getAvatar(PeerId(id))
+        await getAvatar(EnginePeer.Id(id))
     }
 }
 
 private extension TelegramPeerImageProviderImpl {
-    func getAvatar(_ peerId: PeerId) async -> UIImage? {
+    func getAvatar(_ peerId: EnginePeer.Id) async -> UIImage? {
         do {
             let context = try contextProvider.context().unwrap()
             

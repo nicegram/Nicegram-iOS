@@ -2,7 +2,7 @@ import Foundation
 import Postbox
 import MtProtoKit
 import SwiftSignalKit
-import TelegramApi
+internal import TelegramApi
 
 private func roundUp(_ value: Int, to multiple: Int) -> Int {
     if multiple == 0 {
@@ -37,8 +37,7 @@ private func wrapMethodBody(_ body: (FunctionDescription, Buffer, DeserializeFun
     return body
 }
 
-// Nicegram, 'public'
-public class Download: NSObject {
+class Download: NSObject {
     let datacenterId: Int
     let isCdn: Bool
     let context: MTContext
@@ -270,8 +269,7 @@ public class Download: NSObject {
         |> retryRequest
     }
     
-    // Nicegram, 'public'
-    public func request<T>(_ data: (FunctionDescription, Buffer, DeserializeFunctionResponse<T>), expectedResponseSize: Int32? = nil, automaticFloodWait: Bool = true, onFloodWaitError: ((String) -> Void)? = nil) -> Signal<T, MTRpcError> {
+    func request<T>(_ data: (FunctionDescription, Buffer, DeserializeFunctionResponse<T>), expectedResponseSize: Int32? = nil, automaticFloodWait: Bool = true, onFloodWaitError: ((String) -> Void)? = nil) -> Signal<T, MTRpcError> {
         return Signal { subscriber in
             let request = NetworkEngineRequest(
                 payload: data.1.makeData(),

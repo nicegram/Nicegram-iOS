@@ -1,6 +1,5 @@
 import AccountContext
 import NGUtils
-import Postbox
 import SwiftSignalKit
 import TelegramCore
 import NGCore
@@ -14,11 +13,11 @@ class ChatLanguageStorage {
     
     //  MARK: - Public Functions
 
-    func langCode(forChatWith id: PeerId) -> String? {
+    func langCode(forChatWith id: EnginePeer.Id) -> String? {
         return fileStorage.read()?[id.id._internalGetInt64Value()]
     }
     
-    func setLangCode(_ code: String, forChatWith id: PeerId) {
+    func setLangCode(_ code: String, forChatWith id: EnginePeer.Id) {
         var dict = fileStorage.read() ?? [:]
         dict[id.id._internalGetInt64Value()] = code
         fileStorage.save(dict)
@@ -32,7 +31,7 @@ public enum TranslateEnteredTextError: Error {
 
 private let chatLanguageStorage = ChatLanguageStorage()
 
-public func translateEnteredText(text: String, chatId: PeerId?, context: AccountContext) -> Signal<String, TranslateEnteredTextError> {
+public func translateEnteredText(text: String, chatId: EnginePeer.Id?, context: AccountContext) -> Signal<String, TranslateEnteredTextError> {
     return getLanguageCode(forChatWith: chatId, context: context)
     |> castError(TranslateEnteredTextError.self)
     |> mapToSignal { code -> Signal<String, TranslateEnteredTextError> in
@@ -47,7 +46,7 @@ public func translateEnteredText(text: String, chatId: PeerId?, context: Account
     }
 }
 
-public func getLanguageCode(forChatWith id: PeerId?, context: AccountContext) -> Signal<String?, NoError> {
+public func getLanguageCode(forChatWith id: EnginePeer.Id?, context: AccountContext) -> Signal<String?, NoError> {
     guard let id = id else {
         return .single(nil)
     }
@@ -64,12 +63,12 @@ public func getLanguageCode(forChatWith id: PeerId?, context: AccountContext) ->
     }
 }
 
-public func getCachedLanguageCode(forChatWith id: PeerId?) -> String? {
+public func getCachedLanguageCode(forChatWith id: EnginePeer.Id?) -> String? {
     guard let id = id else { return nil }
     return chatLanguageStorage.langCode(forChatWith: id)
 }
 
-public func setLanguageCode(_ code: String, forChatWith id: PeerId?) {
+public func setLanguageCode(_ code: String, forChatWith id: EnginePeer.Id?) {
     guard let id = id else { return }
     chatLanguageStorage.setLangCode(code, forChatWith: id)
 }

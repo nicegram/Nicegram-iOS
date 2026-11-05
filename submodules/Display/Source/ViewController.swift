@@ -6,6 +6,7 @@ import Foundation
 import UIKit
 import AsyncDisplayKit
 import SwiftSignalKit
+import UIKitRuntimeUtils
 
 public protocol StandalonePresentableController: ViewController {
 }
@@ -169,6 +170,9 @@ public protocol CustomViewControllerNavigationDataSummary: AnyObject {
     open var _presentedInModal: Bool = false
     open var _hasGlassStyle: Bool = false
     open var flatReceivesModalTransition: Bool = false
+    /// A full-screen viewer (a web page, a document) presented as a modal fills the screen beside a top-right status
+    /// island (iPhone Duo, unfolded portrait) rather than becoming a card below it; its bar then sits beside the island.
+    open var fillsScreenBesideStatusIsland: Bool = false
     
     public var presentedOverCoveringView: Bool = false
     
@@ -215,11 +219,51 @@ public protocol CustomViewControllerNavigationDataSummary: AnyObject {
     open var transitionNavigationBar: NavigationBar? {
         return self.navigationBar
     }
+    /// The bar a navigation push or pop morphs into the other screen's (`NavigationBarTransitionSource`); nil keeps
+    /// today's slide. A screen with its own header returns nil.
+    open var navigationBarTransitionSource: NavigationBarTransitionSource? {
+        guard self.displayNavigationBar, let navigationBar = self.navigationBar, !navigationBar.isHidden else {
+            return nil
+        }
+        return navigationBar
+    }
+    /// This screen's side when the screen above it expands out of it (a push or pop between the two); nil: it does not
+    /// take part.
+    open func navigationExpansionSource(above controller: ViewController, operation: NavigationExpansionOperation) -> NavigationExpansionSource? {
+        return nil
+    }
+
+    /// This screen's side when it expands out of the screen below it; nil: it does not (the slide).
+    open func navigationExpansionDestination(below controller: ViewController, operation: NavigationExpansionOperation) -> NavigationExpansionDestination? {
+        return nil
+    }
     public private(set) var toolbar: Toolbar?
     
     public var displayNavigationBar = true
     open var navigationBarRequiresEntireLayoutUpdate: Bool {
         return true
+    }
+    
+    /// iPhone Duo: whether the navigation bar lays out its side column (back or close, icon buttons, overflow) in the side strip (docs/iphone-duo-layout.md). A screen that lays out its own side column returns false.
+    open var placesNavigationButtonInSideColumn: Bool {
+        return true
+    }
+
+    /// iPhone Duo: where the bar puts its side column for `layout`, or nil while it puts none there.
+    private func navigationBarSideColumnPlacement(layout: ContainerViewLayout) -> NavigationBarSideColumnPlacement? {
+        guard self.placesNavigationButtonInSideColumn && self.displayNavigationBar else {
+            return nil
+        }
+        return NavigationBarSideColumnPlacement(layout: layout, reservedBelow: (self.parent as? TabBarController)?.verticalTabBarFrame(for: layout))
+    }
+
+    /// iPhone Duo: the side column the bar lays out for `layout` (nil without one), for a screen whose content keeps
+    /// clear of it.
+    public final func navigationBarSideColumnExtent(layout: ContainerViewLayout) -> NavigationBarSideColumnExtent? {
+        guard let navigationBar = self.navigationBar, let placement = self.navigationBarSideColumnPlacement(layout: layout) else {
+            return nil
+        }
+        return navigationBar.sideColumnExtent(placement: placement)
     }
 
     public struct TabBarSearchState: Equatable {
@@ -265,7 +309,8 @@ public protocol CustomViewControllerNavigationDataSummary: AnyObject {
     }
 
     open func navigationLayout(layout: ContainerViewLayout) -> NavigationLayout {
-        let statusBarHeight: CGFloat = layout.statusBarHeight ?? 0.0
+        // Beside iPhone Duo's status island the bar stays near the top rather than below the island.
+        let statusBarHeight: CGFloat = layout.navigationBarStatusBarHeight ?? 0.0
         var defaultNavigationBarHeight: CGFloat
         if self._presentedInModal && self._hasGlassStyle {
             defaultNavigationBarHeight = 68.0
@@ -432,6 +477,9 @@ public protocol CustomViewControllerNavigationDataSummary: AnyObject {
                 }
             }
         }
+        self.navigationBar?.sideColumnExtentUpdated = { [weak self] transition in
+            self?.requestLayout(transition: transition)
+        }
         self.navigationBar?.item = self.navigationItem
         //self.automaticallyAdjustsScrollViewInsets = false
         
@@ -449,11 +497,11 @@ public protocol CustomViewControllerNavigationDataSummary: AnyObject {
     }
 
     open func updateNavigationBarLayout(_ layout: ContainerViewLayout, transition: ContainedViewLayoutTransition) {
-        self.applyNavigationBarLayout(layout, navigationLayout: self.navigationLayout(layout: layout), additionalBackgroundHeight: 0.0, additionalCutout: nil, transition: transition)
+        self.applyNavigationBarLayout(layout, navigationLayout: self.navigationLayout(layout: layout), additionalBackgroundHeight: 0.0, transition: transition)
     }
     
-    public func applyNavigationBarLayout(_ layout: ContainerViewLayout, navigationLayout: NavigationLayout, additionalBackgroundHeight: CGFloat, additionalCutout: CGSize?, transition: ContainedViewLayoutTransition) {
-        let statusBarHeight: CGFloat = layout.statusBarHeight ?? 0.0
+    public func applyNavigationBarLayout(_ layout: ContainerViewLayout, navigationLayout: NavigationLayout, additionalBackgroundHeight: CGFloat, transition: ContainedViewLayoutTransition) {
+        let statusBarHeight: CGFloat = layout.navigationBarStatusBarHeight ?? 0.0
 
         var navigationBarFrame = CGRect(origin: CGPoint(x: 0.0, y: 0.0), size: CGSize(width: layout.size.width, height: navigationLayout.navigationFrame.maxY))
         
@@ -463,10 +511,6 @@ public protocol CustomViewControllerNavigationDataSummary: AnyObject {
         
         self.navigationBarOrigin = navigationBarFrame.origin.y
 
-        var isLandscape = layout.size.width > layout.size.height
-        if case .regular = layout.metrics.widthClass {
-            isLandscape = false
-        }
         if let navigationBar = self.navigationBar {
             if let contentNode = navigationBar.contentNode, case .expansion = contentNode.mode, !self.displayNavigationBar {
                 navigationBarFrame.origin.y -= navigationLayout.defaultContentHeight + statusBarHeight
@@ -491,7 +535,9 @@ public protocol CustomViewControllerNavigationDataSummary: AnyObject {
                 additionalTopHeight += 8.0
             }
             
-            navigationBar.updateLayout(size: navigationBarFrame.size, defaultHeight: navigationLayout.defaultContentHeight, additionalTopHeight: additionalTopHeight, additionalContentHeight: self.additionalNavigationBarHeight, additionalBackgroundHeight: additionalBackgroundHeight, additionalCutout: additionalCutout, leftInset: layout.safeInsets.left, rightInset: layout.safeInsets.right, appearsHidden: !self.displayNavigationBar, isLandscape: isLandscape, transition: transition)
+            navigationBar.trailingButtonsInset = layout.navigationBarTrailingButtonsInset
+            navigationBar.sideColumnPlacement = self.navigationBarSideColumnPlacement(layout: layout)
+            navigationBar.updateLayout(size: navigationBarFrame.size, defaultHeight: navigationLayout.defaultContentHeight, additionalTopHeight: additionalTopHeight, additionalContentHeight: self.additionalNavigationBarHeight, additionalBackgroundHeight: additionalBackgroundHeight, leftInset: layout.safeInsets.left, rightInset: layout.safeInsets.right, appearsHidden: !self.displayNavigationBar, transition: transition)
             if !transition.isAnimated {
                 navigationBar.layer.removeAnimation(forKey: "bounds")
                 navigationBar.layer.removeAnimation(forKey: "position")

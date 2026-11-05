@@ -29,7 +29,7 @@ extension ChannelParserFromApi {
         let recommendedChannels = (try? await getSimilarChannels(channel)) ?? []
         
         return try Channel.build(
-            peer: peer(with: apiChat),
+            peer: TelegramRawApi.peer(apiChat),
             channelFull: .init(channelFull),
             inviteLinks: .init(channelFull.exportedInvite),
             messages: messages,
@@ -43,13 +43,14 @@ private extension ChannelParserFromApi {
     func resolveUsername(
         _ username: String
     ) async throws -> Api.Chat {
-        let resolvedPeer = try await context.account.network
+        let resolvedPeer = try await TelegramRawApi
             .request(
                 Api.functions.contacts.resolveUsername(
                     flags: 0,
                     username: username,
                     referer: nil
-                )
+                ),
+                network: context.account.network
             )
             .awaitForFirstValue()
         
@@ -62,7 +63,7 @@ private extension ChannelParserFromApi {
     func getFullChannel(
         _ channel: Api.Chat.Cons_channel
     ) async throws -> Api.ChatFull.Cons_channelFull {
-        let result = try await context.account.network
+        let result = try await TelegramRawApi
             .request(
                 Api.functions.channels.getFullChannel(
                     channel: .inputChannel(
@@ -71,7 +72,8 @@ private extension ChannelParserFromApi {
                             accessHash: channel.accessHash ?? 0
                         )
                     )
-                )
+                ),
+                network: context.account.network
             )
             .awaitForFirstValue()
         
@@ -86,7 +88,7 @@ private extension ChannelParserFromApi {
     ) async throws -> [Message] {
         let config = getConfigUseCase()
 
-        let result = try await context.account.network
+        let result = try await TelegramRawApi
             .request(
                 Api.functions.messages.getHistory(
                     peer: .inputPeerChannel(
@@ -102,7 +104,8 @@ private extension ChannelParserFromApi {
                     maxId: 0,
                     minId: 0,
                     hash: 0
-                )
+                ),
+                network: context.account.network
             )
             .awaitForFirstValue()
         
@@ -137,7 +140,7 @@ private extension ChannelParserFromApi {
         var flags: Int32 = 0
         flags |= (1 << 0)
         
-        let result = try await context.account.network
+        let result = try await TelegramRawApi
             .request(
                 Api.functions.channels.getChannelRecommendations(
                     flags: flags,
@@ -147,7 +150,8 @@ private extension ChannelParserFromApi {
                             accessHash: channel.accessHash ?? 0
                         )
                     )
-                )
+                ),
+                network: context.account.network
             )
             .awaitForFirstValue()
         
@@ -161,7 +165,7 @@ private extension ChannelParserFromApi {
         
         return chats.compactMap { apiChat in
             try? Channel.build(
-                peer: peer(with: apiChat),
+                peer: TelegramRawApi.peer(apiChat),
                 participantsCount: apiChat.channel?.participantsCount
             )
         }

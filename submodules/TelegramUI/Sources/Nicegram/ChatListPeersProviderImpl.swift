@@ -34,20 +34,14 @@ extension ChatListPeersProviderImpl: ChatListPeersProvider {
                 ),
                 accountPeerId: context.account.peerId
             )
-            return context.account.postbox.tailChatListView(
-                groupId: .root,
+            return context.engine.messages.chatListPeers(
+                group: .root,
                 filterPredicate: filterPredicate,
-                count: 100,
-                summaryComponents: .init(components: [:])
+                count: 100
             )
-            |> map { chatListView, _ in
-                chatListView.entries.compactMap { entry in
-                    if case let .MessageEntry(messageEntry) = entry {
-                        messageEntry.renderedPeer.peer?.addressName
-                    } else {
-                        nil
-                    }
-                }
+            |> map { peers, _ in
+                // chatListPeers lists the newest chat first; keep the chat list's own order.
+                peers.reversed().compactMap(\.addressName)
             }
         }
         |> distinctUntilChanged
