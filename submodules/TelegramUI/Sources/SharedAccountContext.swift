@@ -202,6 +202,12 @@ public final class SharedAccountContextImpl: SharedAccountContext {
     public var activeAccountsWithInfo: Signal<(primary: AccountRecordId?, accounts: [AccountWithInfo]), NoError> {
         return self.activeAccountsWithInfoPromise.get()
     }
+    // Nicegram NCG-13424
+    // An account whose own user is not stored never finished its first sync: the account switcher hides it,
+    // and making it primary after a logout leaves the app in "Updating…".
+    private var accountIdsWithOwnPeer = Set<AccountRecordId>()
+    private let accountIdsWithOwnPeerDisposable = MetaDisposable()
+    //
     
     private var activeUnauthorizedAccountValue: UnauthorizedAccount?
     private let activeUnauthorizedAccountPromise = Promise<UnauthorizedAccount?>()
@@ -820,7 +826,8 @@ public final class SharedAccountContextImpl: SharedAccountContext {
                     }
                 }
                 if primary == nil && !self.activeAccountsValue!.accounts.isEmpty {
-                    primary = self.activeAccountsValue!.accounts.first?.1
+                    // Nicegram NCG-13424, the first account whose own user is stored is preferred
+                    primary = self.activeAccountsValue!.accounts.first(where: { self.accountIdsWithOwnPeer.contains($0.0) })?.1 ?? self.activeAccountsValue!.accounts.first?.1
                 }
                 if primary !== self.activeAccountsValue!.primary {
                     hadUpdates = true
@@ -872,7 +879,14 @@ public final class SharedAccountContextImpl: SharedAccountContext {
                 return (primary?.account.id, accountsWithInfoResult)
             }
         })
-        
+
+        // Nicegram NCG-13424
+        self.accountIdsWithOwnPeerDisposable.set((self.activeAccountsWithInfoPromise.get()
+        |> deliverOnMainQueue).start(next: { [weak self] _, accounts in
+            self?.accountIdsWithOwnPeer = Set(accounts.map { $0.account.id })
+        }))
+        //
+
         if let mainWindow = mainWindow, applicationBindings.isMainApp {
             let webProxyCarrierHost = WebProxyCarrierWindowHost(containerView: mainWindow.hostView.containerView)
             self.webProxyCarrierHost = webProxyCarrierHost
@@ -1188,6 +1202,9 @@ public final class SharedAccountContextImpl: SharedAccountContext {
     deinit {
         assertionFailure("SharedAccountContextImpl is not supposed to be deallocated")
         self.registeredNotificationTokensDisposable.dispose()
+        // Nicegram NCG-13424
+        self.accountIdsWithOwnPeerDisposable.dispose()
+        //
         self.presentationDataDisposable.dispose()
         self.automaticMediaDownloadSettingsDisposable.dispose()
         self.currentAutodownloadSettingsDisposable.dispose()
@@ -4993,6 +5010,7 @@ public final class SharedAccountContextImpl: SharedAccountContext {
         initialUsername: String?,
         initialTitle: String?,
         openAutomatically: Bool,
+        viaDeeplink: Bool,
         completion: @escaping (EnginePeer.Id?) -> Void
     ) async -> ViewController? {
         return await CreateBotScreen(
@@ -5001,6 +5019,7 @@ public final class SharedAccountContextImpl: SharedAccountContext {
             initialUsername: initialUsername,
             initialTitle: initialTitle,
             openAutomatically: openAutomatically,
+            viaDeeplink: viaDeeplink,
             completion: completion
         )
     }

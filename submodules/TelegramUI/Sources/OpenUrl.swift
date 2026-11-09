@@ -1,6 +1,9 @@
-// Nicegram Deeplink
+// Nicegram NCG-7467
 import NGCore
 import SafariServices
+//
+// Nicegram Links
+import CoreLinkHandling
 //
 import Foundation
 import Display
@@ -375,33 +378,47 @@ private func makeTelegramUrl(_ path: String, queryItems: [URLQueryItem] = []) ->
     return appendQueryItems(to: "https://t.me\(path)", items: queryItems)
 }
 
-// Nicegram, skipNicegramProcessing added
-func openExternalUrlImpl(context: AccountContext, urlContext: OpenURLContext, url: String, forceExternal: Bool, presentationData: PresentationData, navigationController: NavigationController?, skipNicegramProcessing: Bool = false, dismissInput: @escaping () -> Void) {
-    // Nicegram
-    if !skipNicegramProcessing {
-        let url = NGCore.UrlUtils.normalizeNicegramDeeplink(url)
-        
-        if let nicegramDeeplink = NGCore.UrlUtils.extractNicegramDeeplink(from: url) {
-            openExternalUrlImpl(context: context, urlContext: urlContext, url: nicegramDeeplink, forceExternal: false, presentationData: presentationData, navigationController: navigationController, dismissInput: dismissInput)
-            return
-        }
-        
-        Task { @MainActor in
-            let nicegramHandler = NGDeeplinkHandler(
-                tgAccountContext: context,
-                navigationController: navigationController
+func openExternalUrlImpl(context: AccountContext, urlContext: OpenURLContext, url: String, forceExternal: Bool, presentationData: PresentationData, navigationController: NavigationController?, dismissInput: @escaping () -> Void) {
+    // Nicegram Links
+    // Links opened inside the app; AppDelegate.openUrl takes the system's, which reach here only once signed in.
+    let isTakenByNicegram = NicegramLinkHandler.open(
+        url,
+        openNested: { nestedLink in
+            openExternalUrlImpl(
+                context: context,
+                urlContext: urlContext,
+                url: nestedLink,
+                forceExternal: false,
+                presentationData: presentationData,
+                navigationController: navigationController,
+                dismissInput: dismissInput
             )
-            if nicegramHandler.handle(url: url) {
-                return
-            }
-            
-            openExternalUrlImpl(context: context, urlContext: urlContext, url: url, forceExternal: forceExternal, presentationData: presentationData, navigationController: navigationController, skipNicegramProcessing: true, dismissInput: dismissInput)
         }
-        
+    )
+    if isTakenByNicegram {
+        dismissInput()
+        return
+    }
+    // The binding adapts what is handed to the system past this opener. The login-part confirmation below is
+    // skipped for an adapted link, so only a link without a login part is adapted.
+    if externalUrlWithLoginPart(url) == nil,
+       NicegramLinkHandler.isAdaptable(url) {
+        Task { @MainActor in
+            let url = await NicegramLinkHandler.adapt(url)
+            openCheckedExternalUrl(
+                context: context,
+                urlContext: urlContext,
+                url: url,
+                forceExternal: forceExternal,
+                presentationData: presentationData,
+                navigationController: navigationController,
+                dismissInput: dismissInput
+            )
+        }
         return
     }
     //
-    
+
     // A login part hides the host a link opens (see `externalUrlWithLoginPart`). Every external link leaves through
     // here, whoever opens it, so here it is confirmed, unless a prompt that showed the real host was just accepted.
     if let loginPartUrl = externalUrlWithLoginPart(url), !consumeLoginPartConfirmation(loginPartUrl) {
@@ -1092,9 +1109,6 @@ private func openCheckedExternalUrl(context: AccountContext, urlContext: OpenURL
                 handleInternalUrl(convertedUrl)
             } else if let path = parsedUrl.host {
                 handleResolvedUrl(.unknownDeepLink(path: path))
-            } else {
-                // Nicegram Deeplink, added 'else' block
-                showUpdateAppAlert()
             }
             return
         }
@@ -1136,35 +1150,3 @@ private func openCheckedExternalUrl(context: AccountContext, urlContext: OpenURL
         continueHandling()
     }
 }
-
-// Nicegram Deeplink
-private func showUpdateAppAlert() {
-    let alert = UIAlertController(
-        title: "Update the app",
-        message: "Please update the app to use the newest features!",
-        preferredStyle: .alert
-    )
-    
-    alert.addAction(
-        UIAlertAction(
-            title: "Close",
-            style: .cancel
-        )
-    )
-    
-    alert.addAction(
-        UIAlertAction(
-            title: "Update",
-            style: .default,
-            handler: { _ in
-                Task { @MainActor in
-                    let urlOpener = CoreContainer.shared.urlOpener()
-                    urlOpener.open(NGCore.links.appStore)
-                }
-            }
-        )
-    )
-    
-    UIApplication.topViewController?.present(alert, animated: true)
-}
-//

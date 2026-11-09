@@ -16,6 +16,9 @@ import NGStrings
 import NGUtils
 import NGWebDomains
 //
+// Nicegram Links
+import CoreLinkHandling
+//
 import UIKit
 import SwiftSignalKit
 import Display
@@ -277,6 +280,7 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
     //
 
     // Nicegram Onboarding
+    private var inFlightNicegramOnboarding: InFlightOnboarding?
     private var presentNicegramOnboarding: (() -> Void)?
     //
 
@@ -435,10 +439,11 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
         //
         
         // Nicegram NGEntryPoint
+        // Not 'contextValue': it is assigned only once the Nicegram onboarding finishes, and a token login can sign an account in under that onboarding
+        let currentContext = Locked<AccountContext?>(nil)
+        let _ = self.context.get().start(next: { currentContext.set($0?.context) })
         let contextProvider = ContextProvider(
-            context: { [self] in
-                contextValue?.context
-            },
+            context: { currentContext.get() },
             contextPublisher: { [self] in
                 context.get().toPublisher()
                     .map { $0?.context }
@@ -533,9 +538,17 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
             telegramMessageSender: {
                 TelegramMessageSenderImpl(contextProvider: contextProvider)
             },
+            // Nicegram Onboarding, 'inFlightOnboarding' and 'sharedContextProvider' added
             telegramNavigator: {
-                TelegramNavigatorImpl(contextProvider: contextProvider)
+                TelegramNavigatorImpl(
+                    contextProvider: contextProvider,
+                    inFlightOnboarding: { @MainActor [self] in
+                        inFlightNicegramOnboarding
+                    },
+                    sharedContextProvider: sharedContextProvider
+                )
             },
+            //
             telegramPeerImageProvider: {
                 TelegramPeerImageProviderImpl(contextProvider: contextProvider)
             },
@@ -1071,6 +1084,18 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
                     return
                 }
             }
+            
+            // Nicegram Links
+            // openExternalUrlImpl adapts what its opener opens; this covers links handed to the system directly.
+            if let link = parsedUrl?.absoluteString,
+               NicegramLinkHandler.isAdaptable(link) {
+                _ = Task { @MainActor in
+                    let adaptedUrl = try URL(string: await NicegramLinkHandler.adapt(link)).unwrap()
+                    _ = await UIApplication.shared.open(adaptedUrl, options: [:])
+                }
+                return
+            }
+            //
             
             if let parsedUrl = parsedUrl {
                 UIApplication.shared.open(parsedUrl, options: [:], completionHandler: nil)
@@ -1877,12 +1902,19 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
             onNicegramOnboardingComplete()
         } else {
             if let rootController = window.rootViewController {
-                let controller = OnboardingRoot().makeController(
-                    onFinish: { [weak rootController] in
+                // finish clears the property first: dismissToTelegram() can run it too, and a second run would start Telegram twice
+                self.inFlightNicegramOnboarding = InFlightOnboarding(
+                    finish: { [weak self, weak rootController] in
+                        self?.inFlightNicegramOnboarding = nil
                         AppCache.wasOnboardingShown = true
                         
                         rootController?.dismiss(animated: true)
                         onNicegramOnboardingComplete()
+                    }
+                )
+                let controller = OnboardingRoot().makeController(
+                    onFinish: { [weak self] in
+                        self?.inFlightNicegramOnboarding?.finish()
                     }
                 )
                 
@@ -2256,6 +2288,12 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
 
         for context in connectionOptions.urlContexts {
             let url = context.url
+            // Nicegram Links, a cold-start ncg link opens at once, signed out and during the onboarding too
+            if let buildConfig = self.buildConfig, url.scheme == buildConfig.appSpecificUrlScheme {
+                self.openUrl(url: url)
+                continue
+            }
+            //
             if let buildConfig = self.buildConfig, url.scheme == "tg" || url.scheme == "ton" || url.scheme == buildConfig.appSpecificUrlScheme || WalletContext.isTonConnectUrl(url.absoluteString) {
                 self.openUrlWhenReady(url: url, external: true)
             } else {
@@ -3131,6 +3169,20 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
             }
         }
         |> deliverOnMainQueue).start(next: { sharedContext, context, authContext in
+            // Nicegram Links
+            // System links, signed out too, which the branches below drop; links opened inside the app go to openExternalUrlImpl.
+            let isTakenByNicegram = NicegramLinkHandler.open(
+                url.absoluteString,
+                openNested: { nestedLink in
+                    if let nestedUrl = URL(string: nestedLink) {
+                        self.openUrl(url: nestedUrl)
+                    }
+                }
+            )
+            if isTakenByNicegram {
+                return
+            }
+            //
             if let authContext = authContext, let confirmationCode = parseConfirmationCodeUrl(sharedContext: sharedContext, url: url) {
                 authContext.rootController.applyConfirmationCode(confirmationCode)
             } else if let context = context {

@@ -162,11 +162,11 @@ private extension TelegramTokenLoginFlowImpl {
                 proof: proof,
                 sharedContext: sharedContext
             )
-        case let .raw(rawPassword):
+        case let .raw(raw):
             try await authorizeWithPassword(
                 accountManager: sharedContext.accountManager,
                 account: passwordAccount,
-                password: rawPassword.unwrap(),
+                password: try await raw.read().unwrap(),
                 syncContacts: false
             ).awaitForCompletion()
         }
