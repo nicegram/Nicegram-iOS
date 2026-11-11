@@ -85,6 +85,47 @@ upstream merge that rewrites `Telegram/BUILD`'s
 `associated_domains_fragment` must keep the `{nicegram_applinks}` interpolation
 rather than reverting to literal `<string>applinks:…</string>` entries.
 
+### Strings and translations
+
+New Nicegram strings go in the assistant package's `en.lproj` files. Their
+translations live in the SSOT, the shared repository
+`nicegram/nicegram-localization`, which iOS and Android both translate through,
+so one English sentence gets one translation on both. The
+`localization@nicegram-localization` plugin, enabled in `.claude/settings.json`,
+carries the flow:
+- `translate-upload` puts new strings into the SSOT and translates them there;
+- `sync-translations` writes the SSOT's translations back into an app, for the
+  apps the installed version supports.
+
+If the session lists no `localization:` skills, the plugin is not installed on
+this machine: the entry in `.claude/settings.json` turns it on but downloads
+nothing. Ask the human to run these once in a terminal and start a new session,
+rather than working around it:
+
+```sh
+claude plugin marketplace add nicegram/nicegram-localization
+claude plugin install localization@nicegram-localization --scope user
+```
+
+**Read `packages/nicegram-assistant-ios/.claude/rules/localization.md` before
+running either skill.** It does not attach from here, and it says what to do
+when sync refuses or rewrites translations users already see.
+
+**Run the plugin from `packages/nicegram-assistant-ios`, never from this
+repository's root.**
+- It recognises the iOS app by `Package.swift` plus `Sources/NGCore`, which only
+  the package root has. From here it stops with `no Nicegram app layout
+  matches`.
+- Its skills say "run from the app repository root", which in a session opened
+  here reads as the wrong directory.
+- Use the subshell form `(cd packages/nicegram-assistant-ios && <command>)`, so
+  the `cd` does not carry into later calls.
+
+The host's legacy `Telegram/Telegram-iOS/*/NiceLocalizable.strings` is outside
+the plugin, which never scans it. A change that edits an existing string there
+updates that string's translation by hand, in the same change, in every `.lproj`
+that holds the file. Nothing else will.
+
 ## Build
 
 Bazel (`BUILD` files; some legacy `BUCK` remain), not hand-managed SPM/Xcode.

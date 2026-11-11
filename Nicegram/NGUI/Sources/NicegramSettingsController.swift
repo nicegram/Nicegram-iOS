@@ -291,11 +291,22 @@ private enum NicegramSettingsControllerEntry: ItemListNodeEntry {
             return ItemListSectionHeaderItem(presentationData: presentationData, text: text, sectionId: section)
             
         case let .showContactsTab(text, value):
-            return ItemListSwitchItem(presentationData: presentationData, title: text, value: value, enabled: true, sectionId: section, style: .blocks, updated: { value in
-                ngLog("[showContactsTab] invoked with \(value)", LOGTAG)
-                NGSettings.showContactsTab = value
-                arguments.updateTabs()
-            })
+            return ItemListSwitchItem(
+                presentationData: presentationData,
+                title: text,
+                value: value,
+                enabled: true,
+                sectionId: section,
+                style: .blocks,
+                updated: { value in
+                    ngLog(
+                        "[showContactsTab] invoked with \(value)",
+                        LOGTAG
+                    )
+                    NGSettings.showContactsTab = value
+                    arguments.updateTabs()
+                }
+            )
             
         case let .showCallsTab(text, value):
             return ItemListSwitchItem(presentationData: presentationData, title: text, value: value, enabled: true, sectionId: section, style: .blocks, updated: { value in

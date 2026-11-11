@@ -46,45 +46,51 @@ public struct NGStorage<T: Codable> {
 }
 
 public struct NGSettings {
+    @NGStorage(key: "ignoreTranslate", defaultValue: [])
+    public static var ignoreTranslate: [String]
+    
+    @NGStorage(key: "lastFolder", defaultValue: -1)
+    public static var lastFolder: Int32
+    
     @NGStorage(key: "oneTapTr", defaultValue: true)
     public static var oneTapTr: Bool
+    
+    @NGStorage(key: "rememberFolderOnExit", defaultValue: false)
+    public static var rememberFolderOnExit: Bool
     
     @NGStorage(key: "useIgnoreLanguages", defaultValue: false)
     public static var useIgnoreLanguages: Bool
     
-    @NGStorage(key: "ignoreTranslate", defaultValue: [])
-    public static var ignoreTranslate: [String]
-    
-    @NGStorage(key: "rememberFolderOnExit", defaultValue: false)
-    public static var rememberFolderOnExit: Bool
-
-    @NGStorage(key: "lastFolder", defaultValue: -1)
-    public static var lastFolder: Int32
-    
     // MARK: App Settings
-    @NGStorage(key: "showContactsTab", defaultValue: true)
-    public static var showContactsTab: Bool
-    
-    @NGStorage(key: "showNicegramButtonInChat", defaultValue: true)
-    public static var showNicegramButtonInChat: Bool
-    
-    @NGStorage(key: "sendWithEnter", defaultValue: false)
-    public static var sendWithEnter: Bool
-    
-    @NGStorage(key: "hidePhoneSettings", defaultValue: false)
-    public static var hidePhoneSettings: Bool
-    
-    @NGStorage(key: "useRearCamTelescopy", defaultValue: false)
-    public static var useRearCamTelescopy: Bool
+    @NGStorage(key: "fixNotifications", defaultValue: false)
+    public static var fixNotifications: Bool
     
     @NGStorage(key: "hideNotifyAccount", defaultValue: false)
     public static var hideNotifyAccount: Bool
     
-    @NGStorage(key: "fixNotifications", defaultValue: false)
-    public static var fixNotifications: Bool
+    @NGStorage(key: "hidePhoneSettings", defaultValue: false)
+    public static var hidePhoneSettings: Bool
+    
+    @NGStorage(key: "recordAllCalls", defaultValue: false)
+    public static var recordAllCalls: Bool
+    
+    @NGStorage(key: "sendWithEnter", defaultValue: false)
+    public static var sendWithEnter: Bool
+    
+    @NGStorage(key: "shareChannelsInfo", defaultValue: false)
+    public static var shareChannelsInfo: Bool
+    
+    @NGStorage(key: "shouldDownloadVideo", defaultValue: false)
+    public static var shouldDownloadVideo: Bool
+    
+    @NGStorage(key: "showContactsTab", defaultValue: true)
+    public static var showContactsTab: Bool
     
     @NGStorage(key: "showGmodIcon", defaultValue: true)
     public static var showGmodIcon: Bool
+    
+    @NGStorage(key: "showNicegramButtonInChat", defaultValue: true)
+    public static var showNicegramButtonInChat: Bool
     
     @NGStorage(key: "showProfileId", defaultValue: true)
     public static var showProfileId: Bool
@@ -92,14 +98,8 @@ public struct NGSettings {
     @NGStorage(key: "showRegDate", defaultValue: true)
     public static var showRegDate: Bool
     
-    @NGStorage(key: "shouldDownloadVideo", defaultValue: false)
-    public static var shouldDownloadVideo: Bool
-    
-    @NGStorage(key: "shareChannelsInfo", defaultValue: false)
-    public static var shareChannelsInfo: Bool
-    
-    @NGStorage(key: "recordAllCalls", defaultValue: false)
-    public static var recordAllCalls: Bool
+    @NGStorage(key: "useRearCamTelescopy", defaultValue: false)
+    public static var useRearCamTelescopy: Bool
 }
 
 public struct NGWebSettings {

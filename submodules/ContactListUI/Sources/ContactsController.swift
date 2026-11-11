@@ -221,7 +221,9 @@ public class ContactsController: ViewController {
             |> deliverOnMainQueue).start(next: { [weak self] status, suppressedAndSortOrder in
                 if let strongSelf = self {
                     let (suppressed, sortOrder) = suppressedAndSortOrder
-                    strongSelf.tabBarItem.badgeValue = ![.allowed, .limited].contains(status) && !suppressed ? "!" : nil
+                    let needsAttention = ![.allowed, .limited].contains(status) && !suppressed
+                    strongSelf.tabBarItem.badgeValue = needsAttention ? "!" : nil
+                    strongSelf.tabBarItem.accessibilityValue = needsAttention ? strongSelf.presentationData.strings.VoiceOver_TabBar_AttentionRequired : nil
                     strongSelf.sortOrderPromise.set(.single(sortOrder))
                 }
             }).strict()
@@ -556,9 +558,13 @@ public class ContactsController: ViewController {
     }
     
     private func deactivateSearch(animated: Bool) {
-        self.contactsNode.deactivateSearch(placeholderNode: self.searchContentNode()?.placeholderNode, animated: animated)
+        // The search bar animates back into the placeholder's frame as it is when the search deactivates, so the
+        // bar is laid out without the active search first (beside iPhone Duo's status island the active search's
+        // placeholder is narrower), as the chat list does.
+        let completion = self.contactsNode.deactivateSearch(placeholderNode: self.searchContentNode()?.placeholderNode, animated: animated)
         (self.parent as? TabBarController)?.updateIsTabBarHidden(false, transition: .animated(duration: 0.5, curve: .spring))
         self.requestLayout(transition: .animated(duration: 0.5, curve: .spring))
+        completion?()
     }
     
     func presentSortMenu(sourceView: UIView, gesture: ContextGesture?) {
@@ -589,11 +595,11 @@ public class ContactsController: ViewController {
             items.append(.action(ContextMenuActionItem(text: presentationData.strings.Contacts_Sort_ByLastSeen, icon: { theme in return currentSettings.sortOrder == .presence ? generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Check"), color: theme.contextMenu.primaryColor) : UIImage() }, action: { _, f in
                 f(.default)
                 updateSortOrder(.presence)
-            })))
+            }, accessibilityIsSelected: currentSettings.sortOrder == .presence)))
             items.append(.action(ContextMenuActionItem(text: presentationData.strings.Contacts_Sort_ByName, icon: { theme in return currentSettings.sortOrder == .natural ? generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Check"), color: theme.contextMenu.primaryColor) : UIImage() }, action: { _, f in
                 f(.default)
                 updateSortOrder(.natural)
-            })))
+            }, accessibilityIsSelected: currentSettings.sortOrder == .natural)))
             return items
         }
         

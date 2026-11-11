@@ -114,8 +114,9 @@ tools/sim-watcher/dist/
 # real directory of Bazel patch files, not a convenience symlink.
 !/bazel-patches
 .mcp.json
-.l10n-config.json
 # Generated from swift_scheme.tl by generate-swiftpm.sh for SwiftPM builds (Bazel generates its own).
 submodules/TelegramApi/Sources/SwiftPMGenerated/
 submodules/TelegramApi/ObjC/SwiftPMGenerated/
 submodules/TelegramApi/Tests/SwiftPMGenerated/
+/Telegram.app/
+build/accessibility/

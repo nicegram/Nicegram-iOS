@@ -6,7 +6,6 @@ import NGStrings
 import NGTranslate
 //
 import Foundation
-import LottieSettings
 import UIKit
 import Display
 import AsyncDisplayKit
@@ -1188,10 +1187,10 @@ final class ChatSendMessageContextScreenComponent: Component {
                                 let standaloneReactionAnimation: AnimatedStickerNode
                                 var effectiveScale: CGFloat = 1.0
                                 #if targetEnvironment(simulator)
-                                standaloneReactionAnimation = DirectAnimatedStickerNode(lottieSettings: component.context.lottieRenderingSettings)
+                                standaloneReactionAnimation = DirectAnimatedStickerNode()
                                 effectiveScale = 1.4
                                 #else
-                                standaloneReactionAnimation = DirectAnimatedStickerNode(lottieSettings: component.context.lottieRenderingSettings)
+                                standaloneReactionAnimation = DirectAnimatedStickerNode()
                                 effectiveScale = 1.4
                                 #endif
                                 

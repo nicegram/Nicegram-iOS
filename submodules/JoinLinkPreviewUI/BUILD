@@ -26,6 +26,8 @@ swift_library(
         "//submodules/SelectablePeerNode:SelectablePeerNode",
         "//submodules/UndoUI:UndoUI",
         "//submodules/SolidRoundedButtonNode:SolidRoundedButtonNode",
+        "//submodules/TelegramUI/Components/ButtonComponent",
+        "//submodules/Components/ComponentDisplayAdapters",
         "//submodules/ComponentFlow",
         "//submodules/TelegramUI/Components/EmojiStatusComponent",
         "//submodules/TelegramUI/Components/PeerManagement/OldChannelsController",

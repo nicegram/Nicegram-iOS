@@ -77,9 +77,11 @@ public extension SubscribeButtonClaimApplier {
         
         let size = CGSize(width: 20, height: 20)
         buttonView.layoutIfNeeded()
+        // The title can sit deeper than a direct subview (ComponentFlow buttons nest it).
+        let titleFrame = titleView.convert(titleView.bounds, to: buttonView)
         claimView.frame = CGRect(
-            x: titleView.frame.maxX + 5,
-            y: titleView.frame.midY - size.height / 2,
+            x: titleFrame.maxX + 5,
+            y: titleFrame.midY - size.height / 2,
             width: size.width,
             height: size.height
         )

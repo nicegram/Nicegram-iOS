@@ -152,15 +152,11 @@ func openResolvedUrlImpl(
             |> deliverOnMainQueue).startStandalone(next: { updatedPeer in
                 let enginePeer = updatedPeer ?? EnginePeer(peer)
                 openPeer(enginePeer, .chat(textInputState: nil, subject: nil, peekData: nil))
-                let text: String
-                if updatedPeer != nil {
-                    text = presentationData.strings.QrStudio_NoPaidToken_Imported(enginePeer.compactDisplayTitle).string
-                } else {
-                    text = presentationData.strings.QrStudio_NoPaidToken_Invalid
+                if updatedPeer == nil {
+                    Queue.mainQueue().after(0.4, {
+                        present(UndoOverlayController(presentationData: presentationData, content: .info(title: nil, text: presentationData.strings.QrStudio_NoPaidToken_Invalid, timeout: nil, customUndoText: nil), elevatedLayout: false, animateInAsReplacement: false, action: { _ in return true }), nil)
+                    })
                 }
-                Queue.mainQueue().after(0.4, {
-                    present(UndoOverlayController(presentationData: presentationData, content: .info(title: nil, text: text, timeout: nil, customUndoText: nil), elevatedLayout: true, animateInAsReplacement: false, action: { _ in return true }), nil)
-                })
             }, error: { _ in
                 openPeer(EnginePeer(peer), .chat(textInputState: nil, subject: nil, peekData: nil))
                 present(textAlertController(context: context, updatedPresentationData: updatedPresentationData, title: nil, text: presentationData.strings.Login_UnknownError, actions: [TextAlertAction(type: .defaultAction, title: presentationData.strings.Common_OK, action: {})]), nil)
@@ -422,9 +418,11 @@ func openResolvedUrlImpl(
             } else if let navigationController = navigationController, let effectiveMessageId = replyThreadMessage.effectiveMessageId {
                 // A link tapped in a message carries its inline progress; the thread fetch then shimmers the link
                 // instead of covering the chat with a modal spinner.
+                // The resolver already fetched a comment thread, so it is only preloaded; a forum topic's resolved thread
+                // carries no read state and is opened as before.
                 let _ = ChatControllerImpl.openMessageReplies(context: context, navigationController: navigationController, present: { c, a in
                     present(c, a)
-                }, messageId: effectiveMessageId, isChannelPost: replyThreadMessage.isChannelPost, atMessage: messageId, displayModalProgress: true, progress: progress).startStandalone()
+                }, messageId: effectiveMessageId, isChannelPost: replyThreadMessage.isChannelPost, atMessage: messageId, displayModalProgress: true, progress: progress, resolvedThread: replyThreadMessage.isForumPost ? nil : replyThreadMessage).startStandalone()
             }
         case let .replyThread(messageId):
             if let navigationController = navigationController {

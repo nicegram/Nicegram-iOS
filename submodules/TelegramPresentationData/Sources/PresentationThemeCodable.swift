@@ -2060,13 +2060,13 @@ extension PresentationBuiltinThemeReference: @retroactive Codable {
             case .nicegram:
                 try container.encode("nicegram")
             //
-            case .day:
+            case .day, .neutral:
                 try container.encode("day")
             case .dayClassic:
                 try container.encode("classic")
             case .nightAccent:
                 try container.encode("nighttinted")
-            case .night:
+            case .night, .neutralNight:
                 try container.encode("night")
         }
     }
