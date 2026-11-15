@@ -208,7 +208,11 @@ func infoItems(
             ))
         }
         
-        if let phone = user.phone {
+        // Nicegram Business, work-account phone: my-profile
+        let hidesPhone = user.id == context.account.peerId && context.nicegramBusiness.restrictsAccountControl()
+        //
+        // Nicegram Business, '!hidesPhone' added
+        if let phone = user.phone, !hidesPhone {
             let formattedPhone = formatPhoneNumber(context: context, number: phone)
             let label: String
             if formattedPhone.hasPrefix("+888 ") {

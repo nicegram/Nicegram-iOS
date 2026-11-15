@@ -1,6 +1,9 @@
 // Nicegram Links
 import CoreLinkHandling
 //
+// Nicegram Business
+import NGUtils
+//
 import Foundation
 import UIKit
 @preconcurrency import WebKit
@@ -2363,6 +2366,17 @@ public final class WebAppController: ViewController, AttachmentContainable {
                 ]
                 self.webView?.sendEvent(name: "phone_requested", data: data.string)
             }
+            
+            // Nicegram Business, work-account phone: mini-app-phone
+            if context.nicegramBusiness.restrictsAccountControl() {
+                self.controller?.present(
+                    accountControlAlert(context: context),
+                    in: .window(.root)
+                )
+                sendEvent(false)
+                return
+            }
+            //
             
             let _ = (self.context.engine.data.get(
                 TelegramEngine.EngineData.Item.Peer.Peer(id: self.context.account.peerId),

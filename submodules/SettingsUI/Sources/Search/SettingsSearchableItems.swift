@@ -540,6 +540,9 @@ private func devicesSearchableItems(context: AccountContext, activeSessionsConte
             )
         )
     }
+    // Nicegram Business
+    items = items.map { $0.withAccountControlCheck() }
+    //
     return items
 }
 
@@ -4488,6 +4491,14 @@ func settingsSearchableItems(
         )
         allItems.append(deleteAccount)
     
+        // Nicegram Business, work-account phone: settings-search
+        allItems = allItems.withAccountControlCheck(ids: [
+            "edit/change-number",
+            "privacy/phone-number",
+            "privacy/phone-number/always",
+            "privacy/phone-number/never"
+        ])
+        //
         return allItems
     }
 }

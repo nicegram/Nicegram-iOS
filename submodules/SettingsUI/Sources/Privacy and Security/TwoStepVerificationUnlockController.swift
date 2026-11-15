@@ -1,3 +1,6 @@
+// Nicegram Business
+import NGUtils
+//
 import Foundation
 import UIKit
 import Display
@@ -482,6 +485,15 @@ public func twoStepVerificationUnlockSettingsController(context: AccountContext,
             }))
         }
     }, openForgotPassword: {
+        // Nicegram Business
+        if context.nicegramBusiness.restrictsAccountControl() {
+            presentControllerImpl?(
+                accountControlAlert(context: context),
+                nil
+            )
+            return
+        }
+        //
         setupDisposable.set((dataPromise.get()
         |> take(1)
         |> deliverOnMainQueue).start(next: { data in

@@ -2328,6 +2328,15 @@ final class PeerInfoScreenNode: ViewControllerTracingNode, PeerInfoScreenNodePro
                 if copyPhone, let phone = user.phone, !phone.isEmpty {
                     actions.append(ContextMenuAction(content: .text(title: strongSelf.presentationData.strings.Settings_CopyPhoneNumber, accessibilityLabel: strongSelf.presentationData.strings.Settings_CopyPhoneNumber), action: { [weak self] in
                         if let strongSelf = self {
+                            // Nicegram Business, work-account phone: copy-phone
+                            if strongSelf.context.nicegramBusiness.restrictsAccountControl() {
+                                strongSelf.controller?.present(
+                                    accountControlAlert(context: strongSelf.context),
+                                    in: .window(.root)
+                                )
+                                return
+                            }
+                            //
                             UIPasteboard.general.string = formatPhoneNumber(context: strongSelf.context, number: phone)
                             
                             let presentationData = strongSelf.context.sharedContext.currentPresentationData.with { $0 }

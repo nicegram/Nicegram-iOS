@@ -3,6 +3,7 @@ import NGData
 import NGStrings
 import FeatGodsEye
 import FeatWhitebridge
+import NGUtils
 //
 import Foundation
 import UIKit
@@ -1330,6 +1331,11 @@ final class PeerInfoHeaderNode: ASDisplayNode {
         
         var displayStandardTitle = false
         
+        // Nicegram Business, work-account phone: settings-header
+        let hidesWorkAccountPhone = self.context.nicegramBusiness.restrictsAccountControl()
+        let hidesPhone = NGSettings.hidePhoneSettings || hidesWorkAccountPhone
+        //
+        
         if let peer = peer {
             var title: String
             if peer.id == self.context.account.peerId && !self.isSettings && !self.isMyProfile {
@@ -1352,7 +1358,8 @@ final class PeerInfoHeaderNode: ASDisplayNode {
             }
             if title.isEmpty {
                 // Nicegram HidePhone, hidePhoneSettings check added
-                if case let .user(user) = peer, let phone = user.phone, !NGSettings.hidePhoneSettings {
+                // Nicegram Business, hidesPhone in place of NGSettings.hidePhoneSettings
+                if case let .user(user) = peer, let phone = user.phone, !hidesPhone {
                     title = formatPhoneNumber(context: self.context, number: phone)
                 } else if let addressName = peer.addressName {
                     title = "@\(addressName)"
@@ -1368,7 +1375,8 @@ final class PeerInfoHeaderNode: ASDisplayNode {
             if self.isSettings, case let .user(user) = peer {
                 // Nicegram HidePhone
                 var formattedPhone = formatPhoneNumber(context: self.context, number: user.phone ?? "")
-                if !formattedPhone.isEmpty && NGSettings.hidePhoneSettings {
+                // Nicegram Business, hidesPhone in place of NGSettings.hidePhoneSettings
+                if !formattedPhone.isEmpty && hidesPhone {
                     formattedPhone = ""
                 }
                 //
@@ -1377,7 +1385,8 @@ final class PeerInfoHeaderNode: ASDisplayNode {
                 var subtitle = formattedPhone
                 
                 if let mainUsername = user.addressName, !mainUsername.isEmpty {
-                    subtitle = "\(subtitle) • @\(mainUsername)"
+                    // Nicegram Business, the username alone when the number is hidden: with the number gone, "\(subtitle) • @name" would start with a bare separator
+                    subtitle = hidesPhone ? "@\(mainUsername)" : "\(subtitle) • @\(mainUsername)"
                 }
                 subtitleStringText = subtitle
                 subtitleAttributes = MultiScaleTextState.Attributes(font: Font.regular(17.0), color: .white)

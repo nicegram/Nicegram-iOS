@@ -1,3 +1,6 @@
+// Nicegram Business
+import NGUtils
+//
 import Foundation
 import UIKit
 import Display
@@ -508,6 +511,15 @@ final class SetupTwoStepVerificationControllerNode: ViewControllerTracingNode {
         if self.innerState.data.activity {
             return
         }
+        // Nicegram Business
+        if self.context.nicegramBusiness.restrictsAccountControl() {
+            self.present(
+                accountControlAlert(context: self.context),
+                nil
+            )
+            return
+        }
+        //
         let continueImpl: () -> Void = { [weak self] in
             guard let strongSelf = self else {
                 return

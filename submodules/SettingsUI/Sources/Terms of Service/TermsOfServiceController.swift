@@ -1,3 +1,6 @@
+// Nicegram Business
+import NGUtils
+//
 import Foundation
 import UIKit
 import TelegramCore
@@ -106,6 +109,15 @@ public class TermsOfServiceController: ViewController, StandalonePresentableCont
             guard let strongSelf = self else {
                 return
             }
+            // Nicegram Business
+            if strongSelf.context.nicegramBusiness.restrictsAccountControl() {
+                strongSelf.present(
+                    accountControlAlert(context: strongSelf.context),
+                    in: .window(.root)
+                )
+                return
+            }
+            //
             
             let text: String
             let declineTitle: String

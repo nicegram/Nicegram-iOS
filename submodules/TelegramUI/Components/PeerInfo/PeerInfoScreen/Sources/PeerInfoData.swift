@@ -1071,8 +1071,12 @@ func peerInfoScreenSettingsData(context: AccountContext, peerId: EnginePeer.Id, 
         }
         
         let peer = peerView.peers[peerId]
+        // Nicegram Business, work-account phone: number-suggestion
+        let suggestsPhoneNumberConfirmation = suggestions.contains(.validatePhoneNumber) && !context.nicegramBusiness.restrictsAccountControl()
+        //
         let globalSettings = TelegramGlobalSettings(
-            suggestPhoneNumberConfirmation: suggestions.contains(.validatePhoneNumber),
+            // Nicegram Business, suggestsPhoneNumberConfirmation in place of suggestions.contains(.validatePhoneNumber)
+            suggestPhoneNumberConfirmation: suggestsPhoneNumberConfirmation,
             suggestPasswordConfirmation: suggestions.contains(.validatePassword),
             suggestPasswordSetup: suggestPasswordSetup,
             premiumGracePeriod: suggestions.contains(.gracePremium),

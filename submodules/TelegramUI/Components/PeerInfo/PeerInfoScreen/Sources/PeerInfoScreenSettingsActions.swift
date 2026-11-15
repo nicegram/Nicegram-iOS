@@ -91,6 +91,15 @@ extension PeerInfoScreenNode {
         case .recentCalls:
             push(CallListController(context: context, mode: .navigation))
         case .devices:
+            // Nicegram Business
+            if self.context.nicegramBusiness.restrictsAccountControl() {
+                self.controller?.present(
+                    accountControlAlert(context: self.context),
+                    in: .window(.root)
+                )
+                return
+            }
+            //
             let _ = (self.activeSessionsContextAndCount.get()
             |> take(1)
             |> deliverOnMainQueue).startStandalone(next: { [weak self] activeSessionsContextAndCount in
@@ -205,6 +214,15 @@ extension PeerInfoScreenNode {
             guard let controller = self.controller, !controller.presentAccountFrozenInfoIfNeeded() else {
                 return
             }
+            // Nicegram Business, work-account phone: change-number
+            if self.context.nicegramBusiness.restrictsAccountControl() {
+                controller.present(
+                    accountControlAlert(context: self.context),
+                    in: .window(.root)
+                )
+                return
+            }
+            //
             if case let .user(user) = self.data?.peer, let phoneNumber = user.phone {
                 let introController = PrivacyIntroController(context: self.context, mode: .changePhoneNumber(phoneNumber), proceedAction: { [weak self] in
                     if let strongSelf = self, let navigationController = strongSelf.controller?.navigationController as? NavigationController {

@@ -482,8 +482,13 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
                 premiumProductId: NGENV.premium_bundle,
                 referralBot: NGENV.referral_bot,
                 telegramAuthBot: NGENV.telegram_auth_bot,
+                // Nicegram Business, business added
                 webDomains: WebDomains(
                     all: NicegramWebDomains.all,
+                    business: WebDomains.Business(
+                        primary: NicegramWebDomains.businessPrimary,
+                        universalLink: NicegramWebDomains.businessUniversalLink
+                    ),
                     primary: NicegramWebDomains.primary
                 ),
                 webSocketUrl: NGENV.websocket_url

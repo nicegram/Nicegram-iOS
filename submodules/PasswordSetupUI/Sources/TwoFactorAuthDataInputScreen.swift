@@ -1,3 +1,8 @@
+// Nicegram Business
+import FeatNicegramBusiness
+import NGUtils
+import TelegramBridge
+//
 import Foundation
 import UIKit
 import AppBundle
@@ -562,6 +567,19 @@ public final class TwoFactorDataInputScreen: ViewController {
                 guard case let .authorized(engine) = strongSelf.engine else {
                     return
                 }
+                // Nicegram Business
+                let nicegramBusiness = NicegramBusiness(telegramAccountId: TelegramAccountId(engine.account.id))
+                if nicegramBusiness.restrictsAccountControl() {
+                    strongSelf.present(
+                        accountControlAlert(
+                            nicegramBusiness: nicegramBusiness,
+                            sharedContext: strongSelf.sharedContext
+                        ),
+                        in: .window(.root)
+                    )
+                    return
+                }
+                //
                 
                 strongSelf.view.endEditing(true)
                 

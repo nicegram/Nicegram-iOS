@@ -1,3 +1,6 @@
+// Nicegram Business
+import NGUtils
+//
 import Foundation
 import UIKit
 import Display
@@ -275,7 +278,8 @@ final class NewContactScreenComponent: Component {
                     self.resolvedPeer = .peer(peer: peer, isContact: false)
                 }
                 
-                if component.initialData.shareViaException {
+                // Nicegram Business, work-account phone: new-contact-share (a work account starts with it off)
+                if component.initialData.shareViaException && !component.context.nicegramBusiness.restrictsAccountControl() {
                     self.addToPrivacyExceptions = true
                 }
                 
@@ -681,6 +685,17 @@ final class NewContactScreenComponent: Component {
                             guard let self else {
                                 return
                             }
+                            // Nicegram Business, work-account phone: new-contact-share
+                            if component.context.nicegramBusiness.restrictsAccountControl() {
+                                self.environment?.controller()?.present(
+                                    accountControlAlert(context: component.context),
+                                    in: .window(.root)
+                                )
+                                // The switch moved under the finger: drawing it again puts it back off.
+                                self.state?.updated(transition: .spring(duration: 0.4))
+                                return
+                            }
+                            //
                             self.addToPrivacyExceptions = !self.addToPrivacyExceptions
                             self.state?.updated(transition: .spring(duration: 0.4))
                         })),

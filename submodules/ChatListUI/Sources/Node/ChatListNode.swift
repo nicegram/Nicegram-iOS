@@ -10,6 +10,9 @@ import NGUI
 // Nicegram HiddenChats
 import FeatHiddenChats
 //
+// Nicegram Business
+import NGUtils
+//
 import Foundation
 import UIKit
 import Display
@@ -1903,6 +1906,12 @@ public final class ChatListNode: ListViewImpl {
             guard let self else {
                 return
             }
+            // Nicegram Business
+            if self.context.nicegramBusiness.restrictsAccountControl() {
+                self.present?(accountControlAlert(context: self.context))
+                return
+            }
+            //
             
             let activeSessionsContext = self.context.engine.privacy.activeSessions()
             let _ = (activeSessionsContext.state
@@ -1950,6 +1959,12 @@ public final class ChatListNode: ListViewImpl {
                 
                 let _ = self.context.engine.privacy.confirmNewSessionReview(id: newSessionReview.id).startStandalone()
             } else {
+                // Nicegram Business
+                if self.context.nicegramBusiness.restrictsAccountControl() {
+                    self.present?(accountControlAlert(context: self.context))
+                    return
+                }
+                //
                 self.push?(NewSessionInfoScreen(context: self.context, newSessionReview: newSessionReview))
                 
                 #if DEBUG

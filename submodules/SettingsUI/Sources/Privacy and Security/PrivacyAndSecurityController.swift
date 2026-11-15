@@ -1,3 +1,6 @@
+// Nicegram Business
+import NGUtils
+//
 import Foundation
 import UIKit
 import Display
@@ -1145,6 +1148,12 @@ public func privacyAndSecurityController(
             }
         }))
     }, openPhoneNumberPrivacy: { [currentInfoDisposable] in
+        // Nicegram Business, work-account phone: privacy-phone-number
+        if context.nicegramBusiness.restrictsAccountControl() {
+            presentControllerImpl?(accountControlAlert(context: context))
+            return
+        }
+        //
         let signal = privacySettingsPromise.get()
         |> take(1)
         |> deliverOnMainQueue

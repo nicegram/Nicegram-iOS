@@ -1,3 +1,6 @@
+// Nicegram Business
+import NGUtils
+//
 import Foundation
 import UIKit
 import Display
@@ -216,5 +219,15 @@ public func loginEmailSetupController(context: AccountContext, blocking: Bool, e
         dismiss()
         emailController?.dismiss()
     }
+    // Nicegram Business
+    if context.nicegramBusiness.restrictsAccountControl() {
+        emailController.proceedWithEmail = { _ in
+            presentControllerImpl?(accountControlAlert(context: context))
+        }
+        emailController.signInWithApple = {
+            presentControllerImpl?(accountControlAlert(context: context))
+        }
+    }
+    //
     return emailController
 }

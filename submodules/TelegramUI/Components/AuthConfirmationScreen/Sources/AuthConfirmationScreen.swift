@@ -1,3 +1,6 @@
+// Nicegram Business
+import NGUtils
+//
 import Foundation
 import UIKit
 import Display
@@ -221,6 +224,14 @@ private final class AuthConfirmationSheetContent: CombinedComponent {
         }
         
         func displayPhoneNumberConfirmation(commit: @escaping (Bool) -> Void) {
+            // Nicegram Business, work-account phone: site-login-phone
+            let accountContext = self.forcedAccount?.0 ?? self.context
+            if accountContext.nicegramBusiness.restrictsAccountControl() {
+                self.controller?.present(accountControlAlert(context: accountContext), in: .window(.root))
+                commit(false)
+                return
+            }
+            //
             guard case let .request(domain, _, clientData, _, _, _) = self.subject else {
                 return
             }

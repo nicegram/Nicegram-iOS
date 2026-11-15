@@ -1,3 +1,6 @@
+// Nicegram Business
+import NGUtils
+//
 import Foundation
 import UIKit
 import AVFoundation
@@ -1083,6 +1086,15 @@ func openResolvedUrlImpl(
                         navigationController.setViewControllers(controllers, animated: true)
                     }
                 case .devices:
+                    // Nicegram Business
+                    if context.nicegramBusiness.restrictsAccountControl() {
+                        present(
+                            accountControlAlert(context: context),
+                            nil
+                        )
+                        return
+                    }
+                    //
                     if let navigationController {
                         let activeSessions = deferred { () -> Signal<(ActiveSessionsContext, Int, WebSessionsContext), NoError> in
                             let activeSessionsContext = context.engine.privacy.activeSessions()
@@ -1132,6 +1144,15 @@ func openResolvedUrlImpl(
                         }
                     }
                 case .phonePrivacy:
+                    // Nicegram Business, work-account phone: privacy-phone-number
+                    if context.nicegramBusiness.restrictsAccountControl() {
+                        present(
+                            accountControlAlert(context: context),
+                            nil
+                        )
+                        return
+                    }
+                    //
                     let privacySignal = context.engine.privacy.requestAccountPrivacySettings()
                     let _ = (privacySignal
                     |> deliverOnMainQueue).start(next: { info in

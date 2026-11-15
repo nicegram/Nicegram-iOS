@@ -65,9 +65,15 @@ re-apply and audit our changes at the next merge. Exact marker syntax and the
 ### The web domain
 
 `Nicegram/NGWebDomains/web_domains.bzl` is the only place the Nicegram web
-domain is written. `NICEGRAM_PRIMARY_DOMAIN` is what the app links to;
-`NICEGRAM_ALL_DOMAINS` is every domain it claims, with auxiliary entries written
-as prefixed forms of the primary so the domain itself is stated once.
+domains are written, in two families. `NICEGRAM_PRIMARY_DOMAIN` is what the app
+links to; `NICEGRAM_ALL_DOMAINS` is every Nicegram web domain it claims, with
+auxiliary entries written as prefixed forms of the primary so the domain itself
+is stated once. Nicegram Business is the second family:
+`NICEGRAM_BUSINESS_PRIMARY_DOMAIN`, the dashboard and its API, which the app
+does not claim, and `NICEGRAM_BUSINESS_UNIVERSAL_LINK_DOMAIN`, the
+universal-link host, which it does — both deliberately outside
+`NICEGRAM_ALL_DOMAINS`, because `WebDomains.contains` would count their hosts as
+the Nicegram domain.
 
 Everything derives from it. `Telegram/BUILD` generates one `applinks:` line per
 claimed domain into the associated-domains entitlement, and a `write_file` rule
@@ -75,15 +81,16 @@ generates the Swift constants behind `//Nicegram/NGWebDomains` — a module kept
 dependency-free because `submodules/UrlWhitelist`, a leaf module with no deps at
 all, needs the list.
 The assistant never learns the domain at compile time: `AppDelegate` passes it
-through `Env.webDomains` (and to the wallet as `appUniversalLinkDomain`), and
-inside the assistant `WebDomains` owns link recognition while `NicegramLinks` —
-read as `NGCore.links` — owns every hardcoded URL.
+through `Env.webDomains`, whose `business` carries both Business hosts, and to the
+wallet as `appUniversalLinkDomain`; inside the assistant, `WebDomains` owns link
+recognition while `NicegramLinks` — read as `NGCore.links` — owns every
+hardcoded URL.
 
-Two things to keep true. **Never write either domain anywhere else**, including
-in a test: assertions build their expectations from a fake domain. And an
-upstream merge that rewrites `Telegram/BUILD`'s
-`associated_domains_fragment` must keep the `{nicegram_applinks}` interpolation
-rather than reverting to literal `<string>applinks:…</string>` entries.
+Two things to keep true. **Never write any of these domains anywhere else**,
+including in a test: assertions build their expectations from a fake domain. And
+an upstream merge that rewrites `Telegram/BUILD`'s `associated_domains_fragment`
+must keep the `{nicegram_applinks}` interpolation rather than reverting to
+literal `<string>applinks:…</string>` entries.
 
 ### Strings and translations
 
@@ -979,7 +986,7 @@ main clone's copy automatically — see "Build" above. No manual sourcing needed
   - `Package.swift` — must stay `.package(path: "packages/nicegram-assistant-ios")`;
     never let a merge revert it back to a remote git URL dependency.
   - `Telegram/BUILD`'s `associated_domains_fragment` — must keep generating its
-    `applinks` entries from `NICEGRAM_ALL_DOMAINS`; see "The web domain" above.
+    `applinks` entries from `NICEGRAM_ALL_DOMAINS` and `NICEGRAM_BUSINESS_UNIVERSAL_LINK_DOMAIN`; see "The web domain" above.
   - `docs/tg-merge/state.json` — the merge skill's only record of the last
     merged upstream commit. Never hand-edit the sha to make a check pass; a
     wrong base silently produces a plausible merge against the wrong upstream.
@@ -1005,6 +1012,13 @@ main clone's copy automatically — see "Build" above. No manual sourcing needed
     under its `# AGENTS.md` heading, the block byte for byte, and keep
     `@AGENTS.md` in the import at the top of `CLAUDE.md` (see "The dataroom
     protocol" above). tg-merge's merge-watch asserts both.
+  - The work-account phone guards — every place in Telegram code that would show
+    or send a Nicegram Business work account's own number carries a
+    `// Nicegram Business, work-account phone: <site>` block. tg-merge's
+    merge-watch runs `.claude/skills/tg-merge/scripts/work-account-phone.py check`
+    over them, and its `review` mode lists the phone-number uses upstream added,
+    which are read at every merge: a new display or send of the account's number
+    gets a block and a `SITES` entry.
 
 ### Building for QA
 
@@ -1159,12 +1173,16 @@ blocks **or names any type, file or module**:
    handling are examples, not the set: both rules missed on the speech-to-text
    design (`Polymorphism`, "keep a type's public surface uniform") were in a file
    already read but absent from an earlier version of this list.
-4. Then ask what the rule-by-rule pass cannot: **for every type the plan invents,
-   does the codebase already provide the shape it should take?** A hand-written
+4. Then ask what the rule-by-rule pass cannot: **for every type or helper the plan
+   invents, and every call it spells out into Telegram's machinery, does the
+   codebase already provide the shape it should take?** A hand-written
    storage type breaks no style rule and is still wrong where `data-layer.md`
    names `UDRepository` and `{Name}Repository`. `public` is the same trap: it is
    correct only with a consumer outside the package — a fact about the tree, not
-   about the block.
+   about the block. So is a link opened with `openExternalUrl` and hand-picked
+   arguments: `CoreContainer.shared.urlOpener().open(url)` already passes them,
+   and the work-account row's plan and its reviewer missed it while step 4 asked
+   about types only.
 5. Then dispatch a **plan conventions reviewer**: a subagent given the plan and
    those rules files, asked 3 and 4 as a named checklist rather than open prose —
    which code blocks *or names* violate these? Self-review does not catch your

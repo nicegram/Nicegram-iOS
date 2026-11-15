@@ -2733,6 +2733,13 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
                 }
                 
                 let context = strongSelf.context
+                // Nicegram Business
+                let values = if context.nicegramBusiness.restrictsAccountControl() {
+                    values.filter { ![.setupLoginEmail, .setupLoginEmailBlocking, .setupPasskey].contains($0) }
+                } else {
+                    values
+                }
+                //
                 if values.contains(.setupLoginEmail) || values.contains(.setupLoginEmailBlocking) {
                     if strongSelf.didSuggestLoginEmailSetup {
                         return
@@ -2848,6 +2855,11 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
                         return
                     }
                     
+                    // Nicegram Business
+                    if strongSelf.context.nicegramBusiness.restrictsAccountControl() {
+                        return
+                    }
+                    //
                     guard let value = value else {
                         return
                     }

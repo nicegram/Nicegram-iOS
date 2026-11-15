@@ -3233,6 +3233,12 @@ public final class SharedAccountContextImpl: SharedAccountContext {
     }
     
     public func makeChatQrCodeScreen(context: AccountContext, peer: EnginePeer, threadId: Int64?, temporary: Bool) -> ViewController {
+        // Nicegram Business, work-account phone: own-qr
+        var temporary = temporary
+        if context.nicegramBusiness.restrictsAccountControl(), peer.id == context.account.peerId, peer.addressName?.isEmpty ?? true {
+            temporary = true
+        }
+        //
         return QrStudioScreen(context: context, peer: peer, threadId: threadId, temporary: temporary)
     }
     

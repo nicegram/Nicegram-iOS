@@ -26,6 +26,9 @@ swift_library(
         "-warnings-as-errors",
     ],
     deps = [
+        # Nicegram Business
+        "//Nicegram/NGUtils",
+        #
         "//submodules/SSignalKit/SwiftSignalKit:SwiftSignalKit",
         "//submodules/AsyncDisplayKit:AsyncDisplayKit",
         "//submodules/Display:Display",

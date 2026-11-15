@@ -1,3 +1,6 @@
+// Nicegram Business
+import NGUtils
+//
 import Foundation
 import UIKit
 import Display
@@ -509,6 +512,15 @@ public final class SecureIdAuthController: ViewController, StandalonePresentable
         guard let verificationState = self.state.verificationState, case let .passwordChallenge(_, state, hasRecoveryEmail) = verificationState else {
             return
         }
+        // Nicegram Business
+        if self.context.nicegramBusiness.restrictsAccountControl() {
+            self.present(
+                accountControlAlert(context: self.context),
+                in: .window(.root)
+            )
+            return
+        }
+        //
         switch state {
             case .checking:
                 return

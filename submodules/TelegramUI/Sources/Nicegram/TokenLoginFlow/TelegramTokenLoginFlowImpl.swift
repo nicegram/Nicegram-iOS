@@ -17,7 +17,7 @@ extension TelegramTokenLoginFlowImpl: TelegramTokenLoginFlow {
     func run(
         approveToken: (Data) async throws -> Void,
         password: TelegramLoginPassword
-    ) async throws {
+    ) async throws -> TelegramAccountId {
         let sharedContext = try await sharedContextProvider.sharedContext()
         let accountId = generateAccountRecordId()
         // The silent account's id stays registered while it lives, or the account manager's
@@ -53,6 +53,7 @@ extension TelegramTokenLoginFlowImpl: TelegramTokenLoginFlow {
             password: password,
             sharedContext: sharedContext
         )
+        return TelegramAccountId(accountId)
     }
 }
 

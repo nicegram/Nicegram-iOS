@@ -1,3 +1,6 @@
+// Nicegram Business
+import NGUtils
+//
 import Foundation
 import UIKit
 import Display
@@ -227,6 +230,15 @@ final class PrivacyIntroControllerNode: ViewControllerTracingNode {
     }
     
     @objc func buttonPressed() {
+        // Nicegram Business
+        if case .changePhoneNumber = self.mode, self.context.nicegramBusiness.restrictsAccountControl() {
+            self.context.sharedContext.mainWindow?.present(
+                accountControlAlert(context: self.context),
+                on: .root
+            )
+            return
+        }
+        //
         self.proceedAction()
     }
 }

@@ -3596,6 +3596,15 @@ public final class ChatControllerImpl: TelegramBaseController, ChatController, G
                     strongSelf.present(textAlertController(context: strongSelf.context, updatedPresentationData: strongSelf.updatedPresentationData, title: nil, text: strongSelf.presentationData.strings.ScheduledMessages_BotActionUnavailable, actions: [TextAlertAction(type: .defaultAction, title: strongSelf.presentationData.strings.Common_OK, action: {})]), in: .window(.root))
                     return
                 }
+                // Nicegram Business, work-account phone: bot-share-contact
+                if strongSelf.context.nicegramBusiness.restrictsAccountControl() {
+                    strongSelf.present(
+                        accountControlAlert(context: strongSelf.context),
+                        in: .window(.root)
+                    )
+                    return
+                }
+                //
                 strongSelf.present(textAlertController(context: strongSelf.context, updatedPresentationData: strongSelf.updatedPresentationData, title: strongSelf.presentationData.strings.Conversation_ShareBotContactConfirmationTitle, text: strongSelf.presentationData.strings.Conversation_ShareBotContactConfirmation, actions: [TextAlertAction(type: .genericAction, title: strongSelf.presentationData.strings.Common_Cancel, action: {}), TextAlertAction(type: .defaultAction, title: strongSelf.presentationData.strings.Common_OK, action: {
                     if let strongSelf = self {
                         let _ = (strongSelf.context.engine.data.get(TelegramEngine.EngineData.Item.Peer.Peer(id: strongSelf.context.account.peerId))
@@ -10112,6 +10121,15 @@ public final class ChatControllerImpl: TelegramBaseController, ChatController, G
     }
     
     func shareAccountContact() {
+        // Nicegram Business, work-account phone: non-contact-share
+        if self.context.nicegramBusiness.restrictsAccountControl() {
+            self.present(
+                accountControlAlert(context: self.context),
+                in: .window(.root)
+            )
+            return
+        }
+        //
         let _ = (self.context.engine.data.get(TelegramEngine.EngineData.Item.Peer.Peer(id: self.context.account.peerId))
         |> mapToSignal { peer -> Signal<EnginePeer, NoError> in
             if let peer {

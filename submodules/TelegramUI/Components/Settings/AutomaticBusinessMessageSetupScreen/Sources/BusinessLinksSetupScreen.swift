@@ -746,6 +746,11 @@ public final class BusinessLinksSetupScreen: ViewControllerComponentContainer {
             if let settings {
                 displayPhone = settings.phoneDiscoveryEnabled
             }
+            // Nicegram Business, work-account phone: business-links
+            if context.nicegramBusiness.restrictsAccountControl() {
+                displayPhone = false
+            }
+            //
             
             return InitialData(
                 accountPeer: accountPeer,

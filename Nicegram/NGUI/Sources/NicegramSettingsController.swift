@@ -365,7 +365,14 @@ private enum NicegramSettingsControllerEntry: ItemListNodeEntry {
             return ItemListSectionHeaderItem(presentationData: presentationData, text: text, sectionId: section)
             
         case let .hidePhoneInSettings(text, value):
-            return ItemListSwitchItem(presentationData: presentationData, title: text, value: value, enabled: true, sectionId: section, style: .blocks, updated: { value in
+            // Nicegram Business, work-account phone: nicegram-hide-phone
+            let restrictsAccountControl = arguments.context.nicegramBusiness.restrictsAccountControl()
+            //
+            return ItemListSwitchItem(presentationData: presentationData, title: text, value: value, enableInteractiveChanges: !restrictsAccountControl, enabled: true, sectionId: section, style: .blocks, updated: { value in
+                if restrictsAccountControl {
+                    arguments.presentController(accountControlAlert(context: arguments.context), nil)
+                    return
+                }
                 ngLog("[hidePhoneInSettings] invoked with \(value)", LOGTAG)
                 NGSettings.hidePhoneSettings = value
             })
@@ -611,7 +618,7 @@ private func nicegramSettingsControllerEntries(presentationData: PresentationDat
         l("NiceFeatures.Other").uppercased()))
     entries.append(.hidePhoneInSettings(
         l("NiceFeatures.HideNumber"),
-        NGSettings.hidePhoneSettings
+        NGSettings.hidePhoneSettings || context.nicegramBusiness.restrictsAccountControl()
     ))
     entries.append(.hidePhoneInSettingsNotice(
         l("NicegramSettings.Other.hidePhoneInSettingsNotice")
@@ -651,27 +658,31 @@ private func nicegramSettingsControllerEntries(presentationData: PresentationDat
     
     entries.append(.onetaptr(l("Premium.OnetapTranslate"), NGSettings.oneTapTr))
 
-    entries.append(
-        .shareBotsData(
-            l("NicegramSettings.ShareBotsToggle"),
-            sharingSettings.shareBotsData
+    // Nicegram Business, work-account data sharing: toggles
+    if !context.nicegramBusiness.restrictsAccountControl() {
+        entries.append(
+            .shareBotsData(
+                l("NicegramSettings.ShareBotsToggle"),
+                sharingSettings.shareBotsData
+            )
         )
-    )
-    entries.append(
-        .shareChannelsData(
-            l("NicegramSettings.ShareChannelsToggle"),
-            sharingSettings.shareChannelsData
+        entries.append(
+            .shareChannelsData(
+                l("NicegramSettings.ShareChannelsToggle"),
+                sharingSettings.shareChannelsData
+            )
         )
-    )
-    entries.append(
-        .shareStickersData(
-            l("NicegramSettings.ShareStickersToggle"),
-            sharingSettings.shareStickersData
+        entries.append(
+            .shareStickersData(
+                l("NicegramSettings.ShareStickersToggle"),
+                sharingSettings.shareStickersData
+            )
         )
-    )
-    entries.append(
-        .shareDataNote(l("NicegramSettings.ShareData.Note"))
-    )
+        entries.append(
+            .shareDataNote(l("NicegramSettings.ShareData.Note"))
+        )
+    }
+    //
     
     return entries
 }

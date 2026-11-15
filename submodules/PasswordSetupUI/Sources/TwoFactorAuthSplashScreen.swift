@@ -1,3 +1,8 @@
+// Nicegram Business
+import FeatNicegramBusiness
+import NGUtils
+import TelegramBridge
+//
 import Foundation
 import UIKit
 import AsyncDisplayKit
@@ -110,6 +115,21 @@ public final class TwoFactorAuthSplashScreen: ViewController {
             }
             switch strongSelf.mode {
             case let .intro(intro):
+                // Nicegram Business
+                if case let .authorized(engine) = strongSelf.engine {
+                    let nicegramBusiness = NicegramBusiness(telegramAccountId: TelegramAccountId(engine.account.id))
+                    if nicegramBusiness.restrictsAccountControl() {
+                        strongSelf.present(
+                            accountControlAlert(
+                                nicegramBusiness: nicegramBusiness,
+                                sharedContext: strongSelf.sharedContext
+                            ),
+                            in: .window(.root)
+                        )
+                        return
+                    }
+                }
+                //
                 strongSelf.push(TwoFactorDataInputScreen(sharedContext: strongSelf.sharedContext, engine: strongSelf.engine, mode: .password(phoneNumber: intro.phoneNumber, doneText: intro.doneText), stateUpdated: { _ in
                 }, presentation: strongSelf.navigationPresentation))
             case .done, .remember:
