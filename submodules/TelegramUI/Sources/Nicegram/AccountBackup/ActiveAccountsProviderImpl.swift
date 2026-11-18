@@ -4,6 +4,7 @@ import FeatAccountBackup
 import MemberwiseInit
 import NGUtils
 import SwiftSignalKit
+import TelegramBridge
 import TelegramCore
 
 @MemberwiseInit
@@ -93,7 +94,7 @@ private extension ActiveAccountsProviderImpl {
                 fullName: peer.debugDisplayTitle,
                 isExported: nicegramAttribute.exported,
                 isImported: nicegramAttribute.imported,
-                peerId: peerId.ng_toInt64(),
+                peerId: TelegramId(peerId),
                 telegramData: telegramData,
                 username: peer.usernameWithAtSign
             )

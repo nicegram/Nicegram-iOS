@@ -1,5 +1,7 @@
+// Nicegram Business
+import NGUtils
+//
 import Foundation
-import LottieSettings
 import UIKit
 import Display
 import AsyncDisplayKit
@@ -222,6 +224,14 @@ private final class AuthConfirmationSheetContent: CombinedComponent {
         }
         
         func displayPhoneNumberConfirmation(commit: @escaping (Bool) -> Void) {
+            // Nicegram Business, work-account phone: site-login-phone
+            let accountContext = self.forcedAccount?.0 ?? self.context
+            if accountContext.nicegramBusiness.restrictsAccountControl() {
+                self.controller?.present(accountControlAlert(context: accountContext), in: .window(.root))
+                commit(false)
+                return
+            }
+            //
             guard case let .request(domain, _, clientData, _, _, _) = self.subject else {
                 return
             }
@@ -495,8 +505,7 @@ private final class AuthConfirmationSheetContent: CombinedComponent {
                     if let file {
                         items.append(
                             AnyComponentWithIdentity(id: "animatedIcon", component: AnyComponent(
-                                LottieComponent(content: LottieComponent.ResourceContent(context: component.context, file: file, attemptSynchronously: true, providesPlaceholder: true), placeholderColor: theme.list.mediaPlaceholderColor, startingPosition: .begin, size: CGSize(width: 32.0, height: 32.0), loop: true, playOnce: nil,
-                    lottieSettings: component.context.lottieRenderingSettings)
+                                LottieComponent(content: LottieComponent.ResourceContent(context: component.context, file: file, attemptSynchronously: true, providesPlaceholder: true), placeholderColor: theme.list.mediaPlaceholderColor, startingPosition: .begin, size: CGSize(width: 32.0, height: 32.0), loop: true, playOnce: nil)
                             ))
                         )
                     } else {

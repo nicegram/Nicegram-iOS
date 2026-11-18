@@ -636,7 +636,7 @@ private final class PasscodeOptionsScreenComponent: Component {
                 }, action: { [weak self] _, completion in
                     completion(.default)
                     self?.component?.model.changeAutolockTimeout(timeout)
-                })))
+                }, accessibilityIsSelected: currentTimeout == timeout)))
             }
             let contextController = makeContextController(
                 presentationData: presentationData,

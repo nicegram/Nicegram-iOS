@@ -1,6 +1,7 @@
 load("@build_bazel_rules_swift//swift:swift.bzl", "swift_library")
 
 NGDEPS = [
+    "//Nicegram/NGUtils:NGUtils",
     "@swiftpkg_nicegram_assistant_ios//:CoreLinkHandling",
 ]
 
@@ -15,7 +16,6 @@ swift_library(
     ],
     deps = NGDEPS + [
         "//submodules/SSignalKit/SwiftSignalKit:SwiftSignalKit",
-        "//submodules/LottieSettings:LottieSettings",
     	"//submodules/AsyncDisplayKit:AsyncDisplayKit",
         "//submodules/Display:Display",
         "//submodules/TelegramCore:TelegramCore",

@@ -10,8 +10,10 @@ swift_library(
         "-warnings-as-errors",
     ],
     deps = [
+        # Nicegram Business
+        "//Nicegram/NGUtils",
+        #
         "//submodules/Display",
-        "//submodules/LottieSettings:LottieSettings",
         "//submodules/TelegramCore",
         "//submodules/SSignalKit/SwiftSignalKit",
         "//submodules/ComponentFlow",

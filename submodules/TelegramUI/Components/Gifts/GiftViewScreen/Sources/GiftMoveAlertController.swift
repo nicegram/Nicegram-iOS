@@ -410,6 +410,11 @@ public func giftMoveToProfileAlertController(
     if case let .user(user) = peer, let phone = user.phone, !phone.isEmpty {
         subtitle = formatPhoneNumber(context: context, number: phone)
     }
+    // Nicegram Business, work-account phone: gift-move
+    if context.nicegramBusiness.restrictsAccountControl() {
+        subtitle = nil
+    }
+    //
 
     var content: [AnyComponentWithIdentity<AlertComponentEnvironment>] = []
     content.append(AnyComponentWithIdentity(

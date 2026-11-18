@@ -540,6 +540,9 @@ private func devicesSearchableItems(context: AccountContext, activeSessionsConte
             )
         )
     }
+    // Nicegram Business
+    items = items.map { $0.withAccountControlCheck() }
+    //
     return items
 }
 
@@ -4073,6 +4076,19 @@ private func appearanceSearchableItems(context: AccountContext) -> [SettingsSear
             )
         )
     }
+    // Without bubbles Appearance hides Chat Themes and Chat Background, so search leaves out their screens too.
+    if !context.sharedContext.currentPresentationData.with({ $0 }).chatBubbleCorners.bubbleMode {
+        let hiddenIds: Set<AnyHashable> = [
+            "appearance/wallpapers",
+            "appearance/wallpapers/edit",
+            "appearance/wallpapers/set",
+            "appearance/wallpapers/choose-photo",
+            "appearance/themes",
+            "appearance/themes/edit",
+            "appearance/themes/create"
+        ]
+        items = items.filter { !hiddenIds.contains($0.id) }
+    }
     return items
 }
 
@@ -4475,6 +4491,14 @@ func settingsSearchableItems(
         )
         allItems.append(deleteAccount)
     
+        // Nicegram Business, work-account phone: settings-search
+        allItems = allItems.withAccountControlCheck(ids: [
+            "edit/change-number",
+            "privacy/phone-number",
+            "privacy/phone-number/always",
+            "privacy/phone-number/never"
+        ])
+        //
         return allItems
     }
 }

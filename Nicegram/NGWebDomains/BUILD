@@ -1,6 +1,6 @@
 load("@bazel_skylib//rules:write_file.bzl", "write_file")
 load("@build_bazel_rules_swift//swift:swift.bzl", "swift_library")
-load(":web_domains.bzl", "NICEGRAM_ALL_DOMAINS", "NICEGRAM_PRIMARY_DOMAIN")
+load(":web_domains.bzl", "NICEGRAM_ALL_DOMAINS", "NICEGRAM_BUSINESS_PRIMARY_DOMAIN", "NICEGRAM_BUSINESS_UNIVERSAL_LINK_DOMAIN", "NICEGRAM_PRIMARY_DOMAIN")
 
 write_file(
     name = "NicegramWebDomainsGenerated",
@@ -11,6 +11,8 @@ write_file(
         "let nicegramAllDomains: [String] = [{}]".format(
             ", ".join(['"{}"'.format(domain) for domain in NICEGRAM_ALL_DOMAINS]),
         ),
+        'let nicegramBusinessPrimaryDomain = "{}"'.format(NICEGRAM_BUSINESS_PRIMARY_DOMAIN),
+        'let nicegramBusinessUniversalLinkDomain = "{}"'.format(NICEGRAM_BUSINESS_UNIVERSAL_LINK_DOMAIN),
         'let nicegramPrimaryDomain = "{}"'.format(NICEGRAM_PRIMARY_DOMAIN),
     ],
 )

@@ -1,6 +1,9 @@
 // Nicegram AccountBackup
 import FeatAccountBackup
 //
+// Nicegram Business
+import NGUtils
+//
 import Foundation
 import UIKit
 import Display
@@ -193,6 +196,15 @@ public func logoutOptionsController(context: AccountContext, navigationControlle
         }))
         dismissImpl?()
     }, changePhoneNumber: {
+        // Nicegram Business, work-account phone: change-number
+        if context.nicegramBusiness.restrictsAccountControl() {
+            presentControllerImpl?(
+                accountControlAlert(context: context),
+                nil
+            )
+            return
+        }
+        //
         let introController = PrivacyIntroController(context: context, mode: .changePhoneNumber(phoneNumber), proceedAction: {
             replaceTopControllerImpl?(ChangePhoneNumberController(context: context))
         })

@@ -50,7 +50,8 @@ load("//build-system/bazel-utils:plist_fragment.bzl",
 )
 
 # Nicegram Domain, single source of truth for our web domains
-load("//Nicegram/NGWebDomains:web_domains.bzl", "NICEGRAM_ALL_DOMAINS")
+# Nicegram Business, NICEGRAM_BUSINESS_UNIVERSAL_LINK_DOMAIN added
+load("//Nicegram/NGWebDomains:web_domains.bzl", "NICEGRAM_ALL_DOMAINS", "NICEGRAM_BUSINESS_UNIVERSAL_LINK_DOMAIN")
 
 load(
     "@build_configuration//:variables.bzl",
@@ -575,7 +576,8 @@ icloud_fragment = "" if not telegram_enable_icloud else """
 # rewrites this block must keep the interpolation, not restore literal entries.
 nicegram_applinks_fragment = "\n".join([
     "    <string>applinks:{}</string>".format(domain)
-    for domain in NICEGRAM_ALL_DOMAINS
+    # Nicegram Business, NICEGRAM_BUSINESS_UNIVERSAL_LINK_DOMAIN added
+    for domain in NICEGRAM_ALL_DOMAINS + [NICEGRAM_BUSINESS_UNIVERSAL_LINK_DOMAIN]
 ])
 
 associated_domains_fragment = "" if telegram_bundle_id not in nicegram_bundle_ids else """

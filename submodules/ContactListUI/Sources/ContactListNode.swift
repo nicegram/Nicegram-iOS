@@ -2157,8 +2157,7 @@ public final class ContactListNode: ASDisplayNode {
     }
     
     public func updateSelectedChatLocation(_ chatLocation: ChatLocation?, progress: CGFloat, transition: ContainedViewLayoutTransition) {
-        self.interaction?.itemHighlighting.chatLocation = chatLocation
-        self.interaction?.itemHighlighting.progress = progress
+        self.interaction?.itemHighlighting.update(chatLocation: chatLocation, progress: progress)
         
         self.listNode.forEachItemNode { itemNode in
             if let itemNode = itemNode as? ContactsPeerItemNode {
@@ -2232,6 +2231,7 @@ public final class ContactListNode: ASDisplayNode {
             }
             transition.updateFrame(node: indexNode, frame: indexNodeFrame)
             self.indexNode.update(size: indexNodeFrame.size, color: self.presentationData.theme.list.itemAccentColor, sections: indexSections, transition: transition)
+            self.indexNode.accessibilityLabel = self.presentationData.strings.VoiceOver_Common_SectionIndex
         }
         
         if self.multipleSelection {
@@ -2301,6 +2301,7 @@ public final class ContactListNode: ASDisplayNode {
                     self.indexNode.frame = indexNodeFrame
 
                     self.indexNode.update(size: CGSize(width: 20.0, height: layout.size.height - insets.top - insets.bottom), color: self.presentationData.theme.list.itemAccentColor, sections: transition.indexSections, transition: .animated(duration: 0.2, curve: .easeInOut))
+                    self.indexNode.accessibilityLabel = self.presentationData.strings.VoiceOver_Common_SectionIndex
                     self.indexNode.isUserInteractionEnabled = !transition.indexSections.isEmpty
                 }
                 

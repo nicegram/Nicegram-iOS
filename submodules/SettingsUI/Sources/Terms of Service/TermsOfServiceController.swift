@@ -1,3 +1,6 @@
+// Nicegram Business
+import NGUtils
+//
 import Foundation
 import UIKit
 import TelegramCore
@@ -81,7 +84,7 @@ public class TermsOfServiceController: ViewController, StandalonePresentableCont
         self.decline = decline
         self.openUrl = openUrl
         
-        super.init(navigationBarPresentationData: NavigationBarPresentationData(theme: NavigationBarTheme(rootControllerTheme: presentationData.theme), strings: NavigationBarStrings(back: presentationData.strings.Common_Back, close: presentationData.strings.Common_Close, more: presentationData.strings.Common_More)))
+        super.init(navigationBarPresentationData: NavigationBarPresentationData(theme: NavigationBarTheme(rootControllerTheme: presentationData.theme), strings: NavigationBarStrings(back: presentationData.strings.Common_Back, close: presentationData.strings.Common_Close, more: presentationData.strings.Common_More, done: presentationData.strings.Common_Done)))
         
         self.statusBar.statusBarStyle = self.presentationData.theme.rootController.statusBarStyle.style
         
@@ -106,6 +109,15 @@ public class TermsOfServiceController: ViewController, StandalonePresentableCont
             guard let strongSelf = self else {
                 return
             }
+            // Nicegram Business
+            if strongSelf.context.nicegramBusiness.restrictsAccountControl() {
+                strongSelf.present(
+                    accountControlAlert(context: strongSelf.context),
+                    in: .window(.root)
+                )
+                return
+            }
+            //
             
             let text: String
             let declineTitle: String

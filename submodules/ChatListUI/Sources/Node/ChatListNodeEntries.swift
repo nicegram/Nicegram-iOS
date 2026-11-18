@@ -16,6 +16,7 @@ enum ChatListNodeEntryId: Hashable {
     case ngPinnedChat(PinnedChat.ID)
     //
     case Header
+    case SideListAllThreads
     case Hole(Int64)
     case PeerId(Int64)
     case ThreadId(Int64)
@@ -208,6 +209,9 @@ enum ChatListNodeEntry: Comparable, Identifiable {
             self.displayAsTopicList = displayAsTopicList
         }
         
+        /// The chat side list's "All Messages" row (`ChatListItemContent.PeerData.isSideListAllThreadsItem`).
+        var isSideListAllThreadsItem: Bool = false
+        
         static func ==(lhs: PeerEntryData, rhs: PeerEntryData) -> Bool {
             // Nicegram PinnedChats
             if lhs.nicegramItem != rhs.nicegramItem {
@@ -215,6 +219,9 @@ enum ChatListNodeEntry: Comparable, Identifiable {
             }
             //
             if lhs.index != rhs.index {
+                return false
+            }
+            if lhs.isSideListAllThreadsItem != rhs.isSideListAllThreadsItem {
                 return false
             }
             if lhs.presentationData !== rhs.presentationData {
@@ -502,7 +509,9 @@ enum ChatListNodeEntry: Comparable, Identifiable {
                 return .ngPinnedChat(nicegramItem.id)
             }
             //
-            
+            if peerEntry.isSideListAllThreadsItem {
+                return .SideListAllThreads
+            }
             switch peerEntry.index {
             case let .chatList(index):
                 return .PeerId(index.messageIndex.id.peerId.toInt64())
@@ -1123,4 +1132,38 @@ func chatListNodeEntriesForView(view: EngineChatList, state: ChatListNodeState, 
         return ([.HeaderEntry], true)
     }
     return (result, view.isLoading)
+}
+
+/// The chat side list's "All Messages" row for a Saved Messages list: the parent's own chat, previewing the latest
+/// message of any of its sub-chats, placed first (just below the header entry).
+func chatListSideListAllThreadsEntry(entries: [ChatListNodeEntry], parentPeer: EngineRenderedPeer) -> ChatListNodeEntry? {
+    var latest: ChatListNodeEntry.PeerEntryData?
+    for entry in entries {
+        guard case let .PeerEntry(peerEntry) = entry, let message = peerEntry.messages.last else {
+            continue
+        }
+        if let current = latest, let currentMessage = current.messages.last, currentMessage.index >= message.index {
+            continue
+        }
+        latest = peerEntry
+    }
+    guard var data = latest else {
+        return nil
+    }
+    data.index = .chatList(EngineChatList.Item.Index.ChatList.absoluteUpperBound.predecessor)
+    data.peer = parentPeer
+    data.avatarPeer = nil
+    data.readState = nil
+    data.hasUnseenMentions = false
+    data.hasUnseenReactions = false
+    data.hasUnseenPollVotes = false
+    data.draftState = nil
+    data.mediaDraftContentType = nil
+    data.inputActivities = nil
+    data.editing = false
+    data.hasActiveRevealControls = false
+    data.selected = false
+    data.storyState = nil
+    data.isSideListAllThreadsItem = true
+    return .PeerEntry(data)
 }

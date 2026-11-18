@@ -1,3 +1,6 @@
+// Nicegram Business
+import NGUtils
+//
 import Foundation
 import UIKit
 import Display
@@ -182,6 +185,16 @@ public func deleteAccountOptionsController(context: AccountContext, navigationCo
     
     let arguments = DeleteAccountOptionsArguments(changePhoneNumber: {
         context.engine.accountData.addAppLogEvent(type: "deactivate.options_phone_change_tap")
+        
+        // Nicegram Business, work-account phone: change-number
+        if context.nicegramBusiness.restrictsAccountControl() {
+            presentControllerImpl?(
+                accountControlAlert(context: context),
+                nil
+            )
+            return
+        }
+        //
         
         let _ = (context.engine.data.get(TelegramEngine.EngineData.Item.Peer.Peer(id: context.engine.account.peerId))
         |> deliverOnMainQueue).start(next: { accountPeer in
@@ -396,6 +409,15 @@ public func deleteAccountOptionsController(context: AccountContext, navigationCo
         }
         presentControllerImpl?(alertController, nil)
     }, deleteAccount: {
+        // Nicegram Business
+        if context.nicegramBusiness.restrictsAccountControl() {
+            presentControllerImpl?(
+                accountControlAlert(context: context),
+                nil
+            )
+            return
+        }
+        //
         let controller = deleteAccountDataController(context: context, mode: .peers, twoStepAuthData: twoStepAuthData)
         replaceTopControllerImpl?(controller, true)
     })

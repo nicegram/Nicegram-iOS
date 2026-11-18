@@ -5,6 +5,7 @@ import NGAiChatUI
 import NGData
 import NGEnv
 import NGStrings
+import NGUtils
 //
 import Foundation
 import UIKit
@@ -23,6 +24,9 @@ import PeerNameColorItem
 import WalletContext
 
 enum SettingsSection: Int, CaseIterable {
+    // Nicegram Business, work account
+    case workAccount
+    //
     case edit
     case phone
     case accounts
@@ -50,6 +54,11 @@ func settingsItems(data: PeerInfoScreenData?, context: AccountContext, presentat
         items[section] = []
     }
     
+    // Nicegram Business, work account
+    if let workAccountItem = workAccountSettingsItem(context: context) {
+        items[.workAccount]!.append(workAccountItem)
+    }
+    //
     let setPhotoTitle: String
     if let peer = data.peer, !peer.profileImageRepresentations.isEmpty {
         setPhotoTitle = presentationData.strings.Settings_ChangeProfilePhoto
@@ -336,7 +345,7 @@ func settingsItems(data: PeerInfoScreenData?, context: AccountContext, presentat
     } else {
         notificationsWarning = false
     }
-    items[.advanced]!.append(PeerInfoScreenDisclosureItem(id: 0, label: notificationsWarning ? .badge("!", presentationData.theme.list.itemDestructiveColor) : .none, text: presentationData.strings.Settings_NotificationsAndSounds, icon: PresentationResourcesSettings.notifications, action: {
+    items[.advanced]!.append(PeerInfoScreenDisclosureItem(id: 0, label: notificationsWarning ? .badge("!", presentationData.theme.list.itemDestructiveColor) : .none, text: presentationData.strings.Settings_NotificationsAndSounds, icon: PresentationResourcesSettings.notifications, labelAccessibilityText: notificationsWarning ? presentationData.strings.VoiceOver_TabBar_AttentionRequired : nil, action: {
         interaction.openSettings(.notificationsAndSounds)
     }))
     items[.advanced]!.append(PeerInfoScreenDisclosureItem(id: 1, text: presentationData.strings.Settings_PrivacySettings, icon: PresentationResourcesSettings.security, action: {
@@ -557,7 +566,11 @@ func settingsEditingItems(data: PeerInfoScreenData?, state: PeerInfoState, conte
     }
     
     if case let .user(user) = data.peer {
-        items[.info]!.append(PeerInfoScreenDisclosureItem(id: ItemPhoneNumber, label: .text(user.phone.flatMap({ formatPhoneNumber(context: context, number: $0) }) ?? ""), text: presentationData.strings.Settings_PhoneNumber, icon: PresentationResourcesSettings.recentCalls, action: {
+        // Nicegram Business, work-account phone: edit-profile-change-number
+        let phone = context.nicegramBusiness.restrictsAccountControl() ? nil : user.phone
+        //
+        // Nicegram Business, phone in place of user.phone
+        items[.info]!.append(PeerInfoScreenDisclosureItem(id: ItemPhoneNumber, label: .text(phone.flatMap({ formatPhoneNumber(context: context, number: $0) }) ?? ""), text: presentationData.strings.Settings_PhoneNumber, icon: PresentationResourcesSettings.recentCalls, action: {
             interaction.openSettings(.phoneNumber)
         }))
     }

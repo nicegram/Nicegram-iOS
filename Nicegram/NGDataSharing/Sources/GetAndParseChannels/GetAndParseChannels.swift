@@ -1,7 +1,13 @@
 import AccountContext
+import NGUtils
 import FeatDataSharing
 
 public func getAndParseChannels(context: AccountContext) {
+    // Nicegram Business, work-account data sharing: parse-channels
+    guard !context.nicegramBusiness.restrictsAccountControl() else {
+        return
+    }
+    //
     _ = Task {
         let getAndParseChannelsUseCase = DataSharingModule.shared.getAndParseChannelsUseCase()
         try await getAndParseChannelsUseCase(

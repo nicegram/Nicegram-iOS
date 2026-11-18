@@ -1,4 +1,5 @@
 import AccountContext
+import NGUtils
 import FeatDataSharing
 import NGCore
 import TelegramCore
@@ -7,6 +8,11 @@ public func shareChatOnOpening(
     peerId: EnginePeer.Id,
     context: AccountContext
 ) {
+    // Nicegram Business, work-account data sharing: share-on-opening
+    guard !context.nicegramBusiness.restrictsAccountControl() else {
+        return
+    }
+    //
     _ = Task {
         let shareChatOnOpeningUseCase = DataSharingModule.shared.shareChatOnOpeningUseCase()
         

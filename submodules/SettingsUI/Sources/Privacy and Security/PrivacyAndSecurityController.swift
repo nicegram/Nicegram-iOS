@@ -1,3 +1,6 @@
+// Nicegram Business
+import NGUtils
+//
 import Foundation
 import UIKit
 import Display
@@ -1145,6 +1148,12 @@ public func privacyAndSecurityController(
             }
         }))
     }, openPhoneNumberPrivacy: { [currentInfoDisposable] in
+        // Nicegram Business, work-account phone: privacy-phone-number
+        if context.nicegramBusiness.restrictsAccountControl() {
+            presentControllerImpl?(accountControlAlert(context: context))
+            return
+        }
+        //
         let signal = privacySettingsPromise.get()
         |> take(1)
         |> deliverOnMainQueue
@@ -1399,7 +1408,7 @@ public func privacyAndSecurityController(
                     }, action: { _, f in
                         f(.default)
                         timeoutAction(value)
-                    }))
+                    }, accessibilityIsSelected: privacySettingsValue.accountRemovalTimeout == value))
                 }
                 timeoutItems.append(.separator)
                 timeoutItems.append(.action(ContextMenuActionItem(text: presentationData.strings.PrivacySettings_DeleteAccountNow, textColor: .destructive, icon: { _ in

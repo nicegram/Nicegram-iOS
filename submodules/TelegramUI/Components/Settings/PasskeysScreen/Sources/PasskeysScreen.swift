@@ -1,3 +1,6 @@
+// Nicegram Business
+import NGUtils
+//
 import Foundation
 import UIKit
 import Display
@@ -117,6 +120,16 @@ final class PasskeysScreenComponent: Component {
         }
 
         private func createPasskey() {
+            // Nicegram Business
+            // mainWindow: forceCreate calls this before the screen may be in a window, where present(_:in:) drops an alert.
+            if let context = self.component?.context, context.nicegramBusiness.restrictsAccountControl() {
+                context.sharedContext.mainWindow?.present(
+                    accountControlAlert(context: context),
+                    on: .root
+                )
+                return
+            }
+            //
             if #available(iOS 15.0, *) {
                 Task { @MainActor [weak self] in
                     guard let self, let component = self.component else {
@@ -182,6 +195,15 @@ final class PasskeysScreenComponent: Component {
             guard let component = self.component, let environment = self.environment, let controller = environment.controller() else {
                 return
             }
+            // Nicegram Business
+            if component.context.nicegramBusiness.restrictsAccountControl() {
+                controller.present(
+                    accountControlAlert(context: component.context),
+                    in: .window(.root)
+                )
+                return
+            }
+            //
             let alertController = textAlertController(
                 context: component.context,
                 title: environment.strings.Passkeys_DeleteAlert_Title,
