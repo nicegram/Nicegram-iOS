@@ -144,9 +144,9 @@ if [ -n "$not_at_pin" ]; then
   if echo "$not_at_pin" | grep -qx 'packages/nicegram-assistant-ios'; then
     echo "" >&2
     echo "packages/nicegram-assistant-ios is a private Bitbucket repo" >&2
-    echo "(git@bitbucket.org:mobyrix/nicegram-assistant-ios.git). It needs your" >&2
+    echo "(git@ssh.bitbucket.org:mobyrix/nicegram-assistant-ios.git). It needs your" >&2
     echo "SSH key registered with Bitbucket and reachable via ssh-agent. Check with:" >&2
-    echo "  ssh -T git@bitbucket.org" >&2
+    echo "  ssh -T git@ssh.bitbucket.org" >&2
   fi
   echo "" >&2
   echo "Fix access/network for the path(s) above, then re-run the build --" >&2

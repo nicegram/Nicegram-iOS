@@ -10,7 +10,7 @@
 	url = https://github.com/bazelbuild/apple_support.git
 [submodule "submodules/TgVoipWebrtc/tgcalls"]
 	path = submodules/TgVoipWebrtc/tgcalls
-	url = git@bitbucket.org:mobyrix/tgcalls.git
+	url = git@ssh.bitbucket.org:mobyrix/tgcalls.git
 [submodule "third-party/libvpx/libvpx"]
 	path = third-party/libvpx/libvpx
 	url = https://github.com/webmproject/libvpx.git
@@ -40,5 +40,5 @@
 # See docs/superpowers/specs/2026-08-19-assistant-submodule-workflow-design.md
 [submodule "packages/nicegram-assistant-ios"]
 	path = packages/nicegram-assistant-ios
-	url = git@bitbucket.org:mobyrix/nicegram-assistant-ios.git
+	url = git@ssh.bitbucket.org:mobyrix/nicegram-assistant-ios.git
 	branch = develop
