@@ -166,7 +166,7 @@ echo "test_assistant_failure_keeps_the_ssh_hint"
 make_fixture hint packages/nicegram-assistant-ios unpushed
 run_bootstrap "$tmp/hint/main/wt"
 check "exit status" "1" "$rc"
-check_contains "ssh hint" "ssh -T git@bitbucket.org" "$out"
+check_contains "ssh hint" "ssh -T git@ssh.bitbucket.org" "$out"
 
 echo "test_stray_files_in_an_uninitialized_path_survive"
 make_fixture stray "deps/my sub" in-main

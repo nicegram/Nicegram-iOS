@@ -16,7 +16,7 @@ jobs:
            
       - name: Add SSH known hosts
         run: |
-          ssh-keyscan bitbucket.org >> ~/.ssh/known_hosts
+          ssh-keyscan ssh.bitbucket.org >> ~/.ssh/known_hosts
     
       - uses: actions/checkout@v2
         with:
