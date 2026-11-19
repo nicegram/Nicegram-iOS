@@ -12,36 +12,35 @@ extension User {
         let userFlags = user.flags
     
         let payload = UserPayload(
-            deleted: user.isDeleted,
             bot: true,
-            botChatHistory: botFlags.contains(.hasAccessToChatHistory),
-            botNochats: !botFlags.contains(.worksWithGroups),
-            verified: user.isVerified,
-            restricted: user.restrictionInfo != nil,
-            botInlineGeo: botFlags.contains(.requiresGeolocationForInlineRequests),
-            support: userFlags.contains(.isSupport),
-            scam: user.isScam,
-            fake: user.isFake,
             botAttachMenu: botFlags.contains(.canBeAddedToAttachMenu),
-            premium: user.isPremium,
             botCanEdit: botFlags.contains(.canEdit),
-            firstName: user.firstName,
-            lastName: user.lastName,
-            username: user.username,
-            phone: user.phone,
-            photo: .init(user.profileImageRepresentations),
-            restrictionReason: .init(user.restrictionInfo),
+            botChatHistory: botFlags.contains(.hasAccessToChatHistory),
+            botInlineGeo: botFlags.contains(.requiresGeolocationForInlineRequests),
             botInlinePlaceholder: botInfo.inlinePlaceholder,
+            botNochats: !botFlags.contains(.worksWithGroups),
+            deleted: user.isDeleted,
+            description: botInfoDetails?.description,
+            fake: user.isFake,
+            firstName: user.firstName,
             langCode: langCode,
+            lastName: user.lastName,
+            phone: user.phone,
+            premium: user.isPremium,
+            restricted: user.restrictionInfo != nil,
+            restrictionReason: .init(user.restrictionInfo),
+            scam: user.isScam,
+            subscriberCount: user.subscriberCount,
+            support: userFlags.contains(.isSupport),
+            username: user.username,
             usernames: user.usernames.map {
                 .init(
-                    editable: $0.flags.contains(.isEditable),
                     active: $0.isActive,
+                    editable: $0.flags.contains(.isEditable),
                     username: $0.username
                 )
             },
-            description: botInfoDetails?.description,
-            subscriberCount: user.subscriberCount
+            verified: user.isVerified
         )
         
         return User(
