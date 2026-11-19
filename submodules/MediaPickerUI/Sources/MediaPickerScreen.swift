@@ -1962,7 +1962,8 @@ public final class MediaPickerScreenImpl: ViewController, MediaPickerScreen, Att
                 return
             }
             
-            if !asFile && !controller.subjectIsFile && self.sendThroughChatMediaSend(fromGallery: fromGallery, silently: silently, scheduleTime: scheduleTime, animated: animated, parameters: parameters, completion: completion) {
+            // Nicegram RoundedVideos, '!NGRoundedVideos.sendAsRoundedVideo' added: only the legacy path cuts and sends round videos
+            if !asFile && !controller.subjectIsFile && !NGRoundedVideos.sendAsRoundedVideo && self.sendThroughChatMediaSend(fromGallery: fromGallery, silently: silently, scheduleTime: scheduleTime, animated: animated, parameters: parameters, completion: completion) {
                 return
             }
             
