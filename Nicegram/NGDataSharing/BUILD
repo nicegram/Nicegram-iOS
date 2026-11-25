@@ -10,13 +10,12 @@ swift_library(
         "-warnings-as-errors",
     ],
     deps = [
-        "//Nicegram/NGLogging:NGLogging",
         "//Nicegram/NGUtils:NGUtils",
+        "//Nicegram/NGLogging:NGLogging",
         "//submodules/AccountContext:AccountContext",
-        "//submodules/MtProtoKit:MtProtoKit",
         # TelegramApi is imported but not listed: its visibility admits only TelegramCore, so the module comes through TelegramCore's transitive search path.
         "//submodules/SSignalKit/SwiftSignalKit:SwiftSignalKit",
-        "@swiftpkg_nicegram_assistant_ios//:FeatDataSharing",
+        "@swiftpkg_nicegram_assistant_ios//:FeatDataSharing"
     ],
     visibility = [
         "//visibility:public",

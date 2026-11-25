@@ -6,8 +6,7 @@ public import TelegramApi
 // The only way Nicegram code outside TelegramCore reaches the Telegram API: since 13.1.1
 // TelegramApi is visible to TelegramCore alone and the helpers called below are internal there.
 // Requests go out as is: nothing is written to Postbox and Api.Updates in a response are not
-// applied. A FLOOD_WAIT is waited out and the request retried unless the caller turns
-// `automaticFloodWait` off, in which case it arrives as the request's error.
+// applied; a FLOOD_WAIT is waited out and the request retried.
 // Never name a member after the internal function it calls: the call resolves to the member
 // itself and recurses.
 public enum TelegramRawApi {
@@ -26,13 +25,9 @@ public extension TelegramRawApi {
 
     static func request<Result>(
         _ function: Function<Result>,
-        network: Network,
-        automaticFloodWait: Bool = true
+        network: Network
     ) -> Signal<Result, MTRpcError> {
-        network.request(
-            function,
-            automaticFloodWait: automaticFloodWait
-        )
+        network.request(function)
     }
 }
 

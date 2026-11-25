@@ -12,35 +12,36 @@ extension User {
         let userFlags = user.flags
     
         let payload = UserPayload(
-            bot: true,
-            botAttachMenu: botFlags.contains(.canBeAddedToAttachMenu),
-            botCanEdit: botFlags.contains(.canEdit),
-            botChatHistory: botFlags.contains(.hasAccessToChatHistory),
-            botInlineGeo: botFlags.contains(.requiresGeolocationForInlineRequests),
-            botInlinePlaceholder: botInfo.inlinePlaceholder,
-            botNochats: !botFlags.contains(.worksWithGroups),
             deleted: user.isDeleted,
-            description: botInfoDetails?.description,
-            fake: user.isFake,
-            firstName: user.firstName,
-            langCode: langCode,
-            lastName: user.lastName,
-            phone: user.phone,
-            premium: user.isPremium,
+            bot: true,
+            botChatHistory: botFlags.contains(.hasAccessToChatHistory),
+            botNochats: !botFlags.contains(.worksWithGroups),
+            verified: user.isVerified,
             restricted: user.restrictionInfo != nil,
-            restrictionReason: .init(user.restrictionInfo),
-            scam: user.isScam,
-            subscriberCount: user.subscriberCount,
+            botInlineGeo: botFlags.contains(.requiresGeolocationForInlineRequests),
             support: userFlags.contains(.isSupport),
+            scam: user.isScam,
+            fake: user.isFake,
+            botAttachMenu: botFlags.contains(.canBeAddedToAttachMenu),
+            premium: user.isPremium,
+            botCanEdit: botFlags.contains(.canEdit),
+            firstName: user.firstName,
+            lastName: user.lastName,
             username: user.username,
+            phone: user.phone,
+            photo: .init(user.profileImageRepresentations),
+            restrictionReason: .init(user.restrictionInfo),
+            botInlinePlaceholder: botInfo.inlinePlaceholder,
+            langCode: langCode,
             usernames: user.usernames.map {
                 .init(
-                    active: $0.isActive,
                     editable: $0.flags.contains(.isEditable),
+                    active: $0.isActive,
                     username: $0.username
                 )
             },
-            verified: user.isVerified
+            description: botInfoDetails?.description,
+            subscriberCount: user.subscriberCount
         )
         
         return User(

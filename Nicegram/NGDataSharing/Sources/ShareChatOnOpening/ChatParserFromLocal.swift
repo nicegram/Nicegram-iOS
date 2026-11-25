@@ -1,15 +1,19 @@
 import AccountContext
 import Factory
 import FeatDataSharing
-import MemberwiseInit
 import NGCore
 import SwiftSignalKit
 import TelegramCore
 
-@MemberwiseInit
-final class ChatParserFromLocal {
-    @Init(.internal) private let context: AccountContext
-    @Injected(\DataSharingModule.getConfigUseCase) private var getConfigUseCase
+class ChatParserFromLocal {
+    let context: AccountContext
+
+    @Injected(\DataSharingModule.getConfigUseCase)
+    private var getConfigUseCase
+    
+    init(context: AccountContext) {
+        self.context = context
+    }
 }
 
 extension ChatParserFromLocal {
@@ -49,11 +53,7 @@ private extension ChatParserFromLocal {
         let cachedData = cachedData as? CachedChannelData
 
         let inviteLinks = await getInviteLinks(channel.id)
-        let messageLimit = getConfigUseCase().historyLimits.messageLimit(for: Channel.Kind(channel.info))
-        let messages = await getMessages(
-            channel.id,
-            count: messageLimit
-        )
+        let messages = await getMessages(channel.id)
         let similarChannels = await getSimilarChannels(channel.id)
 
         return try Channel.build(
@@ -116,10 +116,7 @@ private extension ChatParserFromLocal {
         let botInfo = try user.botInfo.unwrap()
         let cachedData = cachedData as? CachedUserData
         
-        let messages = await getMessages(
-            user.id,
-            count: getConfigUseCase().messagesFetchLimit
-        )
+        let messages = await getMessages(user.id)
         let langCode = getLanguageCode(messages: messages)
         
         return User.build(
@@ -140,11 +137,10 @@ private extension ChatParserFromLocal {
             .awaitForFirstValue()
     }
     
-    func getMessages(
-        _ id: EnginePeer.Id,
-        count: Int
-    ) async -> [FeatDataSharing.Message] {
+    func getMessages(_ id: EnginePeer.Id) async -> [FeatDataSharing.Message] {
         do {
+            let config = getConfigUseCase()
+
             let result = try await context.account.viewTracker
                 .aroundMessageHistoryViewForLocation(
                     .peer(
@@ -153,7 +149,7 @@ private extension ChatParserFromLocal {
                     ),
                     index: .upperBound,
                     anchorIndex: .upperBound,
-                    count: count,
+                    count: config.messagesFetchLimit,
                     fixedCombinedReadStates: nil
                 )
                 .toPublisher()
@@ -165,7 +161,7 @@ private extension ChatParserFromLocal {
                 .awaitForFirstValue()
             
             let messages = result.0.entries.map(\.message)
-            return messages.compactMap { .init($0) }
+            return messages.map { .init($0) }
         } catch {
             return []
         }

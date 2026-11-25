@@ -1,29 +1,19 @@
 import FeatDataSharing
-import NGUtils
 import TelegramApi
 import TelegramCore
 
 //  MARK: - Local
 
 extension FeatDataSharing.Message {
-    /// Nil for a service message (a join, a pin) and for one not on the server yet (being sent, or failed to send):
-    /// neither is a post, and the local id of an unsent one could collide with a real post's id.
-    init?(_ message: EngineRawMessage) {
-        guard message.id.namespace == Namespaces.Message.Cloud,
-              !message.media.contains(where: { $0 is TelegramMediaAction }) else {
-            return nil
-        }
-
-        let forwardCountAttr = message.getAttribute(ForwardCountMessageAttribute.self)
+    init(_ message: EngineRawMessage) {
         let reactionsAttr = message.getAttribute(ReactionsMessageAttribute.self)
         let replyThreadAttr = message.getAttribute(ReplyThreadMessageAttribute.self)
         let viewCountAttr = message.getAttribute(ViewCountMessageAttribute.self)
         
         self.init(
+            author: .init(message.author),
             commentsCount: replyThreadAttr?.count ?? 0,
             date: message.timestamp,
-            forwardsCount: forwardCountAttr.map { Int32(clamping: $0.count) },
-            fwdFrom: .init(message.forwardInfo),
             groupedId: message.groupingKey,
             id: message.id.id,
             media: .init(message.media.first),
@@ -31,22 +21,6 @@ extension FeatDataSharing.Message {
             peerId: message.id.peerId.id._internalGetInt64Value(),
             reactions: .init(reactionsAttr),
             viewsCount: viewCountAttr?.count
-        )
-    }
-}
-
-extension FeatDataSharing.Message.FwdFrom {
-    init?(_ info: EngineMessage.ForwardInfo?) {
-        guard let info,
-              let source = info.sourceMessageId,
-              source.peerId.namespace == Namespaces.Peer.CloudChannel else {
-            return nil
-        }
-        
-        self.init(
-            chatId: source.peerId.ng_toInt64(),
-            date: info.date,
-            messageId: source.id
         )
     }
 }
@@ -65,9 +39,19 @@ private extension EngineRawMessage {
 //  MARK: - Api
 
 extension FeatDataSharing.Message {
-    init?(_ message: Api.Message) {
+    init?(
+        message: Api.Message,
+        chats: [Api.Chat],
+        users: [Api.User]
+    ) {
         do {
             let message = try message.message.unwrap()
+            
+            let author = Author(
+                message: message,
+                chats: chats,
+                users: users
+            )
             
             let commentsCount: Int32
             switch message.replies {
@@ -78,10 +62,9 @@ extension FeatDataSharing.Message {
             }
             
             self.init(
+                author: author,
                 commentsCount: commentsCount,
                 date: message.date,
-                forwardsCount: message.forwards,
-                fwdFrom: .init(message.fwdFrom),
                 groupedId: message.groupedId,
                 id: message.id,
                 media: .init(message.media),
@@ -96,28 +79,14 @@ extension FeatDataSharing.Message {
     }
 }
 
-extension FeatDataSharing.Message.FwdFrom {
-    init?(_ fwdHeader: Api.MessageFwdHeader?) {
-        guard case let .messageFwdHeader(header) = fwdHeader,
-              case let .peerChannel(peerChannel) = header.fromId,
-              let channelPost = header.channelPost else {
-            return nil
-        }
-        
-        let channelId = EnginePeer.Id(
-            namespace: Namespaces.Peer.CloudChannel,
-            id: ._internalFromInt64Value(peerChannel.channelId)
-        )
-        self.init(
-            chatId: channelId.ng_toInt64(),
-            date: header.date,
-            messageId: channelPost
-        )
-    }
-}
-
 extension [FeatDataSharing.Message] {
-    init(messages: [Api.Message]) {
-        self = messages.compactMap { .init($0) }
+    init(
+        messages: [Api.Message],
+        chats: [Api.Chat],
+        users: [Api.User]
+    ) {
+        self = messages.compactMap {
+            .init(message: $0, chats: chats, users: users)
+        }
     }
 }
