@@ -7,19 +7,14 @@ extension Channel {
         peer: EngineRawPeer?,
         channelFull: ChannelFull? = nil,
         inviteLinks: [InviteLink] = [],
-        messages: [FeatDataSharing.Message] = [],
+        messages: [FeatDataSharing.Message]? = nil,
         participantsCount: Int32? = nil,
         similarChannels: [Channel] = []
     ) throws -> Channel {
         let channel = try (peer as? TelegramChannel).unwrap()
         let flags = channel.flags
         
-        let lastMessageLang = getLanguageCode(messages: messages)
-        
-        let type = switch channel.info {
-        case .broadcast: "channel"
-        case .group: "group"
-        }
+        let lastMessageLang = messages.flatMap { getLanguageCode(messages: $0) }
         
         let payload = ChannelPayload(
             about: channelFull?.about ?? "",
@@ -29,9 +24,8 @@ extension Channel {
             gigagroup: flags.contains(.isGigagroup),
             hasGeo: flags.contains(.hasGeo),
             lastMessageLang: lastMessageLang,
-            messages: prepareForSharing(messages: messages),
+            messages: messages,
             participantsCount: channelFull?.participantsCount ?? participantsCount ?? 0,
-            photo: .init(channel.photo),
             restrictions: .init(channel.restrictionInfo),
             scam: flags.contains(.isScam),
             title: channel.title,
@@ -45,8 +39,17 @@ extension Channel {
             inviteLinks: inviteLinks,
             payload: payload,
             similarChannels: similarChannels,
-            type: type
+            type: Channel.Kind(channel.info)
         )
+    }
+}
+
+extension Channel.Kind {
+    init(_ info: TelegramChannelInfo) {
+        switch info {
+        case .broadcast: self = .channel
+        case .group: self = .group
+        }
     }
 }
 

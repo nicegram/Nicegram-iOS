@@ -63,7 +63,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: build-${{ env.BUILD_NUMBER }}
+          tag_name: v${{ env.APP_VERSION }}-build-${{ env.BUILD_NUMBER }}
           release_name: Nicegram ${{ env.APP_VERSION }} (${{ env.BUILD_NUMBER }})
           body: |
               Build of Nicegram for iOS ${{ env.APP_VERSION }} (${{ env.BUILD_NUMBER }})

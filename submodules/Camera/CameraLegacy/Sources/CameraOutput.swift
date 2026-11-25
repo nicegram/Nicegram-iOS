@@ -160,6 +160,11 @@ final class CameraOutput: NSObject {
     
     private func resetHighResolutionPhoto(device: CameraDevice) {
         self.hasHighResolutionPhoto = false
+        // Nicegram CameraPhotoDimensionsCrash
+        guard self.isPhotoOutputConnectedToVideo else {
+            return
+        }
+        //
         if #available(iOS 16.0, *) {
             guard let format = device.videoDevice?.activeFormat else {
                 return
@@ -182,6 +187,11 @@ final class CameraOutput: NSObject {
         guard session.session.outputs.contains(where: { $0 === self.photoOutput }) else {
             return
         }
+        // Nicegram CameraPhotoDimensionsCrash
+        guard self.isPhotoOutputConnectedToVideo else {
+            return
+        }
+        //
         if #available(iOS 16.0, *) {
             guard let photoDimensions = device.photoDimensions, let format = device.videoDevice?.activeFormat else {
                 return
@@ -198,6 +208,15 @@ final class CameraOutput: NSObject {
         }
     }
         
+    // Nicegram CameraPhotoDimensionsCrash
+    // AVCapturePhotoOutput throws NSInvalidArgumentException on maxPhotoDimensions (and the
+    // high-resolution flag) while no video connection feeds it: camera access denied, so
+    // no input was added, or a multicam session that refused the photo connection.
+    private var isPhotoOutputConnectedToVideo: Bool {
+        return self.photoOutput.connection(with: .video) != nil
+    }
+    //
+    
     func invalidate(for session: CameraSession, switchAudio: Bool = true) {
         if #available(iOS 13.0, *) {
             if let previewConnection = self.previewConnection {
