@@ -97,23 +97,43 @@ end
 
 lane :master_build do |options|
   versions = JSON.parse(File.read("#{SOURCE_PATH}/versions.json"))
-  app_version = versions["app"]
+  app_version = versions.fetch("app")
+  github_env = ENV.fetch("GITHUB_ENV")
 
-  build_number = app_store_build_number(
-    api_key: generate_app_store_connect_api_key(),
-    app_identifier: BUNDLE_ID,
-    version: app_version
-  )
+  generate_app_store_connect_api_key()
+  app = Spaceship::ConnectAPI::App.find(BUNDLE_ID)
+  UI.user_error!("App Store Connect app #{BUNDLE_ID} was not found") unless app
 
-  sh("echo BUILD_NUMBER=#{build_number} >> $GITHUB_ENV")
+  platform = Spaceship::ConnectAPI::Platform::IOS
+  store_version = app.get_app_store_versions(
+    filter: { platform: platform, versionString: app_version },
+    includes: "build"
+  ).find { |version| version.platform == platform && version.version_string == app_version }
+  UI.user_error!("App Store Connect iOS version #{app_version} was not found for #{BUNDLE_ID}") unless store_version
 
-  build(
+  build_number = store_version.build&.version.to_s
+  unless build_number.match?(/\A[1-9][0-9]*\z/)
+    UI.user_error!("No valid build number is attached to App Store Connect iOS version #{app_version}")
+  end
+
+  ipa_path = build(
     build_number: build_number,
     # Public GitHub-release IPA: do not embed the watch app so its API
     # credentials are not exposed in the downloadable bundle's Info.plist.
     embed_watch_app: false,
     upload_to_tf: false
   )
+
+  info_plist = FastlaneCore::IpaFileAnalyser.fetch_info_plist_file(ipa_path)
+  UI.user_error!("Could not read the app Info.plist from #{ipa_path}") unless info_plist
+
+  ipa_version = info_plist["CFBundleShortVersionString"]
+  ipa_build = info_plist["CFBundleVersion"]
+  unless ipa_version == app_version && ipa_build == build_number
+    UI.user_error!("IPA contains version #{ipa_version.inspect}, build #{ipa_build.inspect}; expected #{app_version} (#{build_number})")
+  end
+
+  File.open(github_env, "a") { |file| file.puts("BUILD_NUMBER=#{build_number}") }
 end
 
 lane :tg_report_release do |options|
@@ -168,6 +188,8 @@ lane :build do |options|
 
   # Nicegram Build cache: distribution keychain only -- see nicegram_match.
   delete_keychain_if_exists(name: DISTRIBUTION_KEYCHAIN)
+
+  ipa_path
 end
 
 lane :resolve_telegram_configuration do |options|
